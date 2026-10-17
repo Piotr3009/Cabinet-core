@@ -203,6 +203,9 @@ import { shelfHingeClashes } from './shelfHingeClash.js';
 // was written for — a FIX shelf.
 import { biscuitLayers, biscuitSets, markFromEnd } from './biscuits.js';
 import { dividerJointCuts } from './dividerJoints.js';
+// Chat fix 17.10.2026 (14:15): the TOP is drawn from its underside, one mirror
+// at the end (SKYLON_JOINTS_BISCUIT.lsp section J).
+import { mirrorTopRecords } from './topFrame.js';
 // Turn 24 (CLAUDE.md F3): G is a property of the PART, and this is the door.
 import { partitionSlot, thicknessOf } from './thickness.js';
 // Turn 35 (CLAUDE.md F8): ⌀3 or ⌀5 → the layer that carries the diameter.
@@ -11654,6 +11657,17 @@ export function computeCabinet(params, profileOverride) {
       derived.hanger_holes_bul = derived.hanger_holes_bul.map(([x, y]) => [roundTo(x + canopy.projection, 4), y]);
     }
   }
+  // ─── CHAT FIX 17.10.2026 (14:15) . THE TOP IS DRAWN FROM ITS UNDERSIDE ───
+  // The owner, of the nesting sheet: *"w 01 bottom i top nie powinno byc
+  // odbicie lustrzane?"*; *"lustro bottom i top, prosze, koduj"*. Every
+  // producer above draws the TOP in the BOTTOM's frame (drawTOP_ROT90, the
+  // view from above, which for the TOP is its OUTSIDE face). Here, once,
+  // after the last of them (the notch's and the recess's drilling included),
+  // the whole TOP record and its drills are mirrored across the width:
+  // y' = drawn_h - y, outlines read backwards, the notch corner renamed
+  // (engine/topFrame.js; LISP: SKYLON_JOINTS_BISCUIT.lsp section J, KIT_NOTCH
+  // .lsp D11, KIT_RECESS.lsp D19). panelPlacement('TOP') takes the same frame.
+  mirrorTopRecords({ panels, drills });
   const cutDrills = (() => {
     if (!cut) return drills;
     const topOf = new Map(panels.map((p) => [p.id, Number(p.cnc?.drawn_h) || Number(p.h) || 0]));

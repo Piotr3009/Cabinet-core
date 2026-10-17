@@ -40,6 +40,7 @@ import { partDetailDrawing } from '../src/engine/drawings/partDetail.js';
 import { buildUnitCard } from '../src/engine/drawings/unitCard.js';
 import { cutRows } from '../src/engine/drawings/setPaper.js';
 import { buildUnitDxfFiles } from '../src/engine/cnc/dxf.js';
+import { mirrorCornerName, mirrorOutline } from '../src/engine/topFrame.js';
 import { goldenOf } from '../scripts/t75-golden.mjs';
 import { dump } from '../scripts/t64-classify.mjs';
 
@@ -114,21 +115,30 @@ test('F7 · NUMBERS: the keep-out, the TOP and BOTTOM outline, the dog bone, the
   assert.deepEqual(N.notchRot90Pts(plan, 540), [[540, 0], [540, 564], [0, 564], [0, 200], [200, 200], [200, 0]]);
   const db = N.notchTopDogbone(600, 558, 18, 200, 200, 'BL', 4);
   assert.deepEqual(db.map(r2), [197.1716, 342.8284, 4]);
-  // …and on the engine's own TOP and BOTTOM, drawn ROT90.
+  // 17.10.2026, 14:15 (KIT_NOTCH.lsp D11, "lustro bottom i top"): the TOP is
+  // drawn from its UNDERSIDE: the ROT90 points with y' = 564 - y, read
+  // backwards; its corner "x0y0" is "x0y1"; the mark moves with the corner.
+  assert.deepEqual(mirrorOutline(N.notchRot90Pts(plan, 540), 564), [[200, 564], [200, 364], [0, 364], [0, 0], [540, 0], [540, 564]]);
+  assert.equal(mirrorCornerName('x0y0'), 'x0y1');
+  // …and on the engine's own TOP and BOTTOM, drawn ROT90 (the TOP mirrored).
   for (const id of ['TOP', 'BOTTOM']) {
     const p = panelOf(cut, id);
+    const topSide = id === 'TOP';
     assert.equal(p.w, 564);
     assert.equal(p.h, 540);
     assert.equal(r2(p.area_m2 * 1e6), 264560, `${id}: 0.305 -> 0.265 m2`);
     assert.deepEqual(p.meta.notch.outline, plan);
-    assert.deepEqual(p.cnc.notch, { fc: 'x0y0', nw: 200, nh: 200 });
+    assert.deepEqual(p.cnc.notch, { fc: topSide ? 'x0y1' : 'x0y0', nw: 200, nh: 200 });
     // 17.10.2026 (KIT_NOTCH.lsp D9), the owner: *"nie, nie dodawaj wiercenia,
     // dodaj jeden layer w samym cornerze okolo 40 mm w kazda strone na linii L
     // shape i nazwij to corner 4 mm"*: the dog bone (197.1716, 197.1716, d 8 on
     // PUZZLE_DOG_BONES until that morning) is not drilled; the corner (200, 200)
     // ROT90 carries two CORNER_4MM marks, 40 long, along the two edges.
     assert.equal(drillsOf(cut, id, 'notch_dogbone').length, 0, 'no dog bone is drilled at the notch');
-    assert.deepEqual(p.cnc.marks, [
+    assert.deepEqual(p.cnc.marks, topSide ? [
+      { layer: 'CORNER_4MM', from: [200, 364], to: [160, 364] },
+      { layer: 'CORNER_4MM', from: [200, 364], to: [200, 404] },
+    ] : [
       { layer: 'CORNER_4MM', from: [200, 200], to: [160, 200] },
       { layer: 'CORNER_4MM', from: [200, 200], to: [200, 160] },
     ]);
@@ -178,13 +188,21 @@ test('F7 · THE PROBE TABLE: BUL\'s sockets 95,445 -> 95,245, screws and pins re
 test('F7 · THE PROBE TABLE: TOP and BOTTOM tabs into BUL re-planned, into BUR unchanged, into BACK 95 -> 295', () => {
   const tj = N.notchTopJoints(600, 558, 18, 200, 200, 'BL', K);
   assert.deepEqual(tj, { LEFT: [95, 245], RIGHT: [95, 445], BACK: [295, 469] });
-  // In the TOP's drawn frame (x' from the BACK edge = 540 - y): the LEFT tabs
+  // In the BOTTOM's drawn frame (x' from the BACK edge = 540 - y): the LEFT tabs
   // stand at 295 and 445, the RIGHT at 95 and 445, the BACK at y' 295 and 469.
+  const bottom = panelOf(cut, 'BOTTOM');
+  const bBones = bottom.cnc.pockets.map((pk) => [r2((pk.x1 + pk.x2) / 2), r2((pk.y1 + pk.y2) / 2)]);
+  assert.deepEqual(bBones.filter(([, y]) => y < 0 && y > -18).map(([x]) => x).sort((a, b) => a - b), [295, 445]);
+  assert.deepEqual(bBones.filter(([, y]) => y > 564).map(([x]) => x).sort((a, b) => a - b), [95, 445]);
+  assert.deepEqual(bBones.filter(([x]) => x < 0).map(([, y]) => y).sort((a, b) => a - b), [295, 469]);
+  // 17.10.2026, 14:15 (D11): the TOP is drawn from its underside, y from the
+  // BUR end: the LEFT tabs stand past y 564, the RIGHT below y 0, the BACK's
+  // at y' 564 - 469 = 95 and 564 - 295 = 269. The same six reliefs.
   const top = panelOf(cut, 'TOP');
   const bones = top.cnc.pockets.map((pk) => [r2((pk.x1 + pk.x2) / 2), r2((pk.y1 + pk.y2) / 2)]);
-  assert.deepEqual(bones.filter(([, y]) => y < 0 && y > -18).map(([x]) => x).sort((a, b) => a - b), [295, 445]);
-  assert.deepEqual(bones.filter(([, y]) => y > 564).map(([x]) => x).sort((a, b) => a - b), [95, 445]);
-  assert.deepEqual(bones.filter(([x]) => x < 0).map(([, y]) => y).sort((a, b) => a - b), [295, 469]);
+  assert.deepEqual(bones.filter(([, y]) => y > 564).map(([x]) => x).sort((a, b) => a - b), [295, 445]);
+  assert.deepEqual(bones.filter(([, y]) => y < 0 && y > -18).map(([x]) => x).sort((a, b) => a - b), [95, 445]);
+  assert.deepEqual(bones.filter(([x]) => x < 0).map(([, y]) => y).sort((a, b) => a - b), [95, 269]);
 });
 
 test('F7 · THE PROBE TABLE: the BACK is 400 wide, its notch-edge sockets gone, its rows re-planned', () => {
@@ -479,7 +497,11 @@ test('F7 · the T71 drawings: the part detail draws the L, the cut list lists th
   const detail = partDetailDrawing(top, { drills: cut.drills, profile: P });
   assert.ok(detail, 'no part detail for the notched TOP');
   const json = JSON.stringify(detail);
-  assert.ok(json.includes('[200,200]') || json.includes('200,200'), 'the L\'s re-entrant corner is not on the drawing');
+  // 17.10.2026 (D11): the TOP's corner is (200, 364) in its underside frame.
+  assert.ok(json.includes('[200,364]') || json.includes('200,364'), 'the L\'s re-entrant corner is not on the drawing');
+  const bottomDetail = partDetailDrawing(panelOf(cut, 'BOTTOM'), { drills: cut.drills, profile: P });
+  const bottomJson = JSON.stringify(bottomDetail);
+  assert.ok(bottomJson.includes('[200,200]') || bottomJson.includes('200,200'), 'the BOTTOM\'s corner stays at (200, 200)');
   const rows = cutRows(cut);
   assert.deepEqual(rows.carcass.filter((r) => /NOTCH-/.test(r.part)).map((r) => [r.id, r.w, r.h]), [['RETURN', 182, 770], ['STEP', 218, 770]]);
   assert.ok(buildUnitCard(cut, { unitNum: '01', frontType: 'S', profile: P }), 'the unit card did not build');

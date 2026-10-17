@@ -37,6 +37,7 @@ import {
 // from that face: reflected through T76's one helper above, labelled OUTSIDE
 // FACE UP by partLabel.js. Only `isOutsideFace` is asked here.
 import { isOutsideFace } from '../cabineo.js';
+import { edgeArrowGeometry } from '../partNumbers.js';
 
 // ─── Low-level R12 serialiser (shape from production-core/dxfWriter.js) ───
 
@@ -516,6 +517,30 @@ export function panelEntities(panel, drills, { unitNum, profile, label = null })
       h: caption.h,
       str: line,
     });
+  }
+  // ─── CHAT FIX 17.10.2026 (14:10): THE EDGE ARROW, ON THE BOARD ────────────
+  // The owner: *"na projekcie nie ma strzalek ktora strone oklejamy, jak mam
+  // przykleic naklejki?"*  On every NUMBERED board (the ones with a sticker)
+  // the sticker's own arrow: a line inside the banded edge, the arrow at it,
+  // the word EDGE, all on the cabinet's text layer (drawn in VCarve, never
+  // cut), in the board's drawn frame (engine/partNumbers.js edgeArrowGeometry,
+  // the one geometry the sheet draws too). A file written without a plan has
+  // none of it, as it has no number.
+  if (partNo != null) {
+    const arrow = edgeArrowGeometry(panel, profile, { textMm: caption.h || cnc.labelMinHeight });
+    if (arrow) {
+      for (const pts of arrow.lines) entities.push({ type: 'poly', layer: textLayer, closed: false, pts: pts.map(([x, y]) => [x, y]) });
+      if (arrow.text && arrow.text.h > 0) {
+        // The word stands at the shaft's tail, reading away from the arrow:
+        // right-justified before a rightward arrow, left-justified after a
+        // leftward one; centred over or under a vertical shaft.
+        const halign = arrow.text.anchor === 'end' ? 2 : (arrow.text.anchor === 'start' ? 0 : 1);
+        const valign = arrow.text.anchor === 'top' ? 3 : (arrow.text.anchor === 'bottom' ? 1 : 2);
+        entities.push({
+          type: 'text', layer: textLayer, x: arrow.text.x, y: arrow.text.y, h: arrow.text.h, str: arrow.text.str, halign, valign,
+        });
+      }
+    }
   }
 
   // T78 F20 · the one reflection, applied once to the whole part.

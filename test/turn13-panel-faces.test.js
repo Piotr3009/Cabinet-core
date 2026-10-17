@@ -147,7 +147,7 @@ function basisDeterminant(panel) {
   return dot(cross(pl.u, pl.v), pl.n.map((x) => -x));
 }
 
-test('THE ASYMMETRY: TOP is the one placement whose basis is a reflection', () => {
+test('THE ASYMMETRY: the TOP was the one placement whose basis was a reflection; since 17.10.2026 it is not', () => {
   // This is the diagnosis, pinned. A placement is MACHINING truth — a TOP's CNC
   // x really does run along the cabinet's depth, and turning the frame round to
   // make the determinant tidy would move the drilling. So the handedness is not
@@ -173,7 +173,17 @@ test('THE ASYMMETRY: TOP is the one placement whose basis is a reflection', () =
   // The builder is unchanged — it decides from the DETERMINANT and not from a
   // list of parts, exactly so that the placement added in a later turn is
   // covered on the day it lands (3d/panelSolid.js).
-  assert.deepEqual(mirrored, ['BACK-RAIL|rotated', 'TOP|rotated'].sort(),
+  // ─── Chat fix 17.10.2026 (14:15): THE TOP LEFT THIS LIST ─────────────────
+  // The owner, of the nesting sheet: *"w 01 bottom i top nie powinno byc
+  // odbicie lustrzane?"*; *"lustro bottom i top, prosze, koduj"*. The
+  // reflection WAS the diagnosis: the TOP was drawn in the BOTTOM's frame,
+  // the view from above, its outside face. It is drawn from its underside
+  // now (engine/topFrame.js, one mirror at the end of computeCabinet;
+  // panelPlacement's TOP case is the BOTTOM's mirrored across the width), so
+  // its basis is right-handed like every other board's. The drilling did not
+  // move: the record and the frame turned together (T26 sheet-vs-scene holds it).
+  // BACK-RAIL stays what it was.
+  assert.deepEqual(mirrored, ['BACK-RAIL|rotated'],
     'if this list changes, the builder’s determinant check has a new case to cover — '
     + 'read the note in 3d/panelSolid.js before touching either side');
 });

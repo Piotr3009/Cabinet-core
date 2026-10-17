@@ -198,6 +198,12 @@ const byXY = (a, b) => (a.x - b.x) || (a.y - b.y);
 // takes the full light from the side's face since T24 F6 (x 18, the fixture's
 // 20), so its across moves by 2. Two readings of one frozen file, named here.
 const shelfToday = (want) => want.map((m) => ({ ...m, from: [m.from[1], m.from[0] + 2], to: [m.to[1], m.to[0] + 2] }));
+// 17.10.2026, 14:15 ("lustro bottom i top"): the fixture's TOP is T13's frame,
+// the view from above; the TOP is drawn from its UNDERSIDE now, y from the BUR
+// end, so the fixture's TOP y is read as W_int - y (864 - 441 = 423;
+// SKYLON_JOINTS_BISCUIT.lsp section J, NUMBERS I.1). x is untouched.
+const topToday = (want, wInt) => want.map((m) => ({ ...m, from: [m.from[0], wInt - m.from[1]], to: [m.to[0], wInt - m.to[1]] }));
+const topScrewsToday = (want, wInt) => want.map((s) => ({ ...s, y: wInt - s.y }));
 
 // ─── 17.10.2026 · every entity of it, back on the receivers ─────────────────
 for (const c of GOLDEN.cases) {
@@ -215,9 +221,13 @@ for (const c of GOLDEN.cases) {
         continue;
       }
       // TOP and BOTTOM: the screws, as the fixture lists them (sorted; the engine
-      // walks each set from the front, the fixture from the back edge).
-      assert.deepEqual(screwsOf(result, want.panel).sort(byXY), [...want.screws].sort(byXY), `${c.id} ${want.panel} screws`);
-      const wantMarks = want.panel.startsWith('SHELF') ? shelfToday(want.marks) : want.marks;
+      // walks each set from the front, the fixture from the back edge); the
+      // TOP's in the underside frame since 17.10.2026.
+      const wInt = result.derived.internal_width;
+      const wantScrews = want.panel === 'TOP' ? topScrewsToday(want.screws, wInt) : want.screws;
+      assert.deepEqual(screwsOf(result, want.panel).sort(byXY), [...wantScrews].sort(byXY), `${c.id} ${want.panel} screws`);
+      const wantMarks = want.panel.startsWith('SHELF') ? shelfToday(want.marks)
+        : (want.panel === 'TOP' ? topToday(want.marks, wInt) : want.marks);
       assert.deepEqual(
         marksOf(panel).filter((m) => m.layer === BISCUIT_LAYER).map(segment).sort(),
         wantMarks.map(segment).sort(),

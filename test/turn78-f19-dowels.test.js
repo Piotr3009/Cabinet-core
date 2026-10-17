@@ -167,7 +167,13 @@ test('F19 · the engine mirrors the LISP on the BUD 600: 26 dowels, 32 with one 
   assert.deepEqual(at('BUL', 'BUL-TOP', false).map((d) => [d.x, d.y]), [[50, 761], [270, 761], [490, 761]]);
   assert.deepEqual(at('BUL', 'BACK-BUL', true).map((d) => [d.x, d.y]), [[540, 50], [540, 273.3333], [540, 496.6667], [540, 720]]);
   assert.deepEqual(at('BACK', 'BACK-TOP', false).map((d) => [d.x, d.y]), [[68, 761], [300, 761], [532, 761]]);
-  assert.deepEqual(at('TOP', 'BACK-TOP', true).map((d) => [d.x, d.y]), [[0, 50], [0, 282], [0, 514]]);
+  // 17.10.2026 (14:15, "lustro bottom i top"): the TOP is drawn from its underside, y from the BUR end, so the
+  // back edge's three read from the other end (564 - 514 = 50 .. 564 - 50 = 514: the same three, the other way);
+  // the BOTTOM keeps the LISP's order.
+  assert.deepEqual(at('TOP', 'BACK-TOP', true).map((d) => [d.x, d.y]), [[0, 514], [0, 282], [0, 50]]);
+  assert.deepEqual(at('BOTTOM', 'BACK-BOTTOM', true).map((d) => [d.x, d.y]), [[0, 50], [0, 282], [0, 514]]);
+  assert.deepEqual(at('TOP', 'BUL-TOP', true).map((d) => [d.y, d.edge]), [[564, 'YH'], [564, 'YH'], [564, 'YH']], 'the BUL end of the TOP is its y = 564 edge');
+  assert.deepEqual(at('BOTTOM', 'BUL-BOTTOM', true).map((d) => [d.y, d.edge]), [[0, 'Y0'], [0, 'Y0'], [0, 'Y0']]);
   for (const d of r.drills.filter((x) => x.kind === 'dowel')) assert.equal(d.d, 6);
   // No gap over the pitch on any joint of the unit, and every joint has at least two.
   for (const j of r.derived.joints.joints) {

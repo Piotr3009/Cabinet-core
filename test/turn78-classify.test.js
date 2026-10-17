@@ -80,13 +80,17 @@ test('T78 classify . THE STRICT RUN is green, and its table says what the contra
   // The exit first, so a RED night reads as the FAIL rows and the summary, not the whole table.
   assert.equal(status, 0, `the strict run is RED:\n${out.split('\n').filter((l) => /FAIL|UNNAMED|DEAD|MOVED|^SUMMARY|^RED/.test(l)).join('\n')}`);
 
-  // The six: five identical, PANTRY re-pinned BY NAME (F15), none MOVED.
+  // The six: T78 left five identical and PANTRY re-pinned BY NAME (F15). The
+  // chat fix of 17.10.2026 (14:15, the owner: *"lustro bottom i top, prosze,
+  // koduj"*) re-pins all six BY NAME (f32: the TOP drawn from its underside);
+  // PANTRY carries both names. None MOVED.
   for (const id of ['WARDROBE', 'BUD', 'WUD', 'BUDR', 'BUDR4']) {
-    assert.match(out, new RegExp(`^  ${id}\\s+IDENTICAL\\s+[0-9a-f]{64}`, 'm'), `${id} is byte-identical to the base`);
+    assert.match(out, new RegExp(`^  ${id}\\s+RE-PINNED \\(named\\)\\s+[0-9a-f]{64}\\s+f32-owner-1710d\\.mjs: Owner 17\\.10\\.2026`, 'm'),
+      `${id} is re-pinned by name (f32), not MOVED`);
   }
-  assert.match(out, /^  PANTRY\s+RE-PINNED \(named\)\s+[0-9a-f]{64}\s+f15\.mjs: T78 F15/m,
-    'PANTRY\'s re-pin is named by f15, shown as RE-PINNED (named) and not MOVED');
-  assert.match(out, /six IDENTICAL=5 RE-PINNED\(named\)=1 MOVED=0/);
+  assert.match(out, /^  PANTRY\s+RE-PINNED \(named\)\s+[0-9a-f]{64}\s+f15\.mjs: T78 F15.*f32-owner-1710d\.mjs: Owner 17\.10\.2026/m,
+    'PANTRY\'s re-pin is named by f15 and by f32, shown as RE-PINNED (named) and not MOVED');
+  assert.match(out, /six IDENTICAL=0 RE-PINNED\(named\)=6 MOVED=0/);
 
   // Every delta named, every gate live, every golden held.
   assert.match(out, /not named: 0 \(allowed: 0\)/, 'every engine/lib delta is named by a fragment');

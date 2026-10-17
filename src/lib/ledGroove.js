@@ -44,6 +44,7 @@
 // scene and the BOM already ask.
 
 import { grooveWidthMm } from './ledSpec.js';
+import { isBoxTop } from '../engine/topFrame.js';
 
 /**
  * The layer the LISP declares, and the colour it declares it at.
@@ -106,6 +107,11 @@ export function panelPlane(panel) {
 /** One unit-frame coordinate, in the panel's own CNC frame. */
 function toPanel(panel, plane, axis, mm) {
   const b = panel.box;
+  // Chat fix 17.10.2026 (14:15): the TOP is drawn from its UNDERSIDE, its y
+  // running from the BUR end back to BUL's (engine/joinery.js panelPlacement,
+  // engine/topFrame.js), so a unit x lands at (box.x + box.w) - x on it. The
+  // BOTTOM and a shelf keep y from the BUL end.
+  if (axis === 'x' && isBoxTop(panel)) return round3(num(b.x) + num(b.w) - num(mm));
   const origin = { x: num(b.x), y: num(b.y), z: num(b.z) }[axis];
   return round3(num(mm) - origin);
 }

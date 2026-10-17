@@ -520,7 +520,9 @@ test('F20 · cabineoVerdict on the BUD\'s puzzle cut: a plan with the NUMBERS bl
   const bul = panels.find((p) => p.id === 'BUL');
   const back = panels.find((p) => p.id === 'BACK');
   assert.equal(top.cnc.outline.length, 24, 'plain ends, the back tenons still there after the Cabineo strip alone (64 points before)');
-  assert.deepEqual(top.cnc.pockets.filter((k) => k.layer === 'PUZZLE_DOG_BONES').map(box), [[-18, 65, 0, 125], [-18, 439, 0, 499]], 'the end dog bones go with the joint; the back ones go next');
+  // 17.10.2026 (14:15): the parent's TOP record is in its underside frame (mirrored, read backwards), so the
+  // two back reliefs come out in the other order; the same two boxes.
+  assert.deepEqual(top.cnc.pockets.filter((k) => k.layer === 'PUZZLE_DOG_BONES').map(box).sort((a, b) => a[1] - b[1]), [[-18, 65, 0, 125], [-18, 439, 0, 499]], 'the end dog bones go with the joint; the back ones go next');
   assert.equal(bul.cnc.outline.length, 34, 'a side keeps its outline through the Cabineo strip alone');
   assert.deepEqual(bul.cnc.holes, [], 'the eight dia 7.5 and the six dia 3 go');
   assert.deepEqual(back, parent.panels.find((p) => p.id === 'BACK'), 'the Cabineo strip does not touch the BACK');
@@ -663,8 +665,17 @@ test('F20 · a Cabineo 12 BUD: THE OWNER\'S THREE LAYERS and nothing else of the
   assert.deepEqual(bul.cnc.outline, [[0, 0], [540, 0], [540, 770], [0, 770]]);
   assert.deepEqual(back.cnc.outline, [[0, 0], [600, 0], [600, 770], [0, 770]]);
   assert.deepEqual(top.cnc.pockets.map((k) => k.layer), Array(9).fill('CABINEO_RECESS'), 'the TOP carries its nine skims and nothing else');
+  // 17.10.2026 (14:15, "lustro bottom i top"): the TOP is drawn from its underside, y from the BUR end, so its
+  // record is the BOTTOM's mirrored across the width: the y = 0 end ('Y0' after the mirror) is the BUR joint
+  // (BUR-TOP), the BUL joint stands at y 529.65..564, and the back row reads from the other end. The set is
+  // symmetric about both axes of the board, so the boxes are the ones the LISP's NUMBERS give, as sets.
   assert.deepEqual(top.cnc.pockets.filter((k) => k.meta.end === 'Y0').map(box), [[481.65, 0, 498.35, 34.35], [261.65, 0, 278.35, 34.35], [41.65, 0, 58.35, 34.35]]);
-  assert.deepEqual(top.cnc.pockets.filter((k) => k.meta.end === 'X0').map(box), [[0, 41.65, 34.35, 58.35], [0, 273.65, 34.35, 290.35], [0, 505.65, 34.35, 522.35]], 'the back pockets, the channel along x from the back end');
+  assert.deepEqual(top.cnc.pockets.filter((k) => k.meta.end === 'Y0').map((k) => k.meta.joint), ['BUR-TOP', 'BUR-TOP', 'BUR-TOP'], 'the y = 0 end of the TOP is the BUR end');
+  assert.deepEqual(top.cnc.pockets.filter((k) => k.meta.end === 'YH').map(box), [[481.65, 529.65, 498.35, 564], [261.65, 529.65, 278.35, 564], [41.65, 529.65, 58.35, 564]]);
+  assert.deepEqual(top.cnc.pockets.filter((k) => k.meta.end === 'X0').map(box).sort((a, b) => a[1] - b[1]), [[0, 41.65, 34.35, 58.35], [0, 273.65, 34.35, 290.35], [0, 505.65, 34.35, 522.35]], 'the back pockets, the channel along x from the back end');
+  assert.deepEqual(bottom.cnc.pockets.filter((k) => k.meta.end === 'Y0').map(box), [[481.65, 0, 498.35, 34.35], [261.65, 0, 278.35, 34.35], [41.65, 0, 58.35, 34.35]], 'the BOTTOM keeps its frame: Y0 is BUL-BOTTOM');
+  assert.deepEqual(bottom.cnc.pockets.filter((k) => k.meta.end === 'Y0').map((k) => k.meta.joint), ['BUL-BOTTOM', 'BUL-BOTTOM', 'BUL-BOTTOM']);
+  assert.deepEqual(bottom.cnc.pockets.filter((k) => k.meta.end === 'X0').map(box), [[0, 41.65, 34.35, 58.35], [0, 273.65, 34.35, 290.35], [0, 505.65, 34.35, 522.35]]);
   assert.deepEqual(bul.cnc.pockets.map((k) => [k.layer, k.face]), Array(4).fill(['CABINEO_RECESS', 'inside']), 'four skims at the side\'s back end, no dog bone');
   assert.deepEqual(bul.cnc.pockets.map(box), [[505.65, 41.65, 540, 58.35], [505.65, 264.9833, 540, 281.6833], [505.65, 488.3167, 540, 505.0167], [505.65, 711.65, 540, 728.35]]);
   assert.deepEqual(back.cnc.pockets, [], 'no socket on the BACK');

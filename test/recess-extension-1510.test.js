@@ -304,15 +304,26 @@ test('CASE A through computeCabinet: every board the LISP names, to its numbers'
   // meet there. The owner: *"nie, nie dodawaj wiercenia, dodaj jeden layer w
   // samym cornerze okolo 40 mm w kazda strone na linii L shape"*.
   assert.deepEqual(top.cnc.holes, []);
+  // 17.10.2026, 14:15 (KIT_RECESS.lsp D19, "lustro bottom i top"): the TOP is
+  // drawn from its UNDERSIDE, y from the BUR end: the corner (150, 310) of the
+  // BOTTOM's frame is (150, 564 - 310) = (150, 254) on the TOP, its legs with it.
   assert.deepEqual(top.cnc.marks, [
-    { layer: 'CORNER_4MM', from: [150, 310], to: [110, 310] },
-    { layer: 'CORNER_4MM', from: [150, 310], to: [150, 270] },
+    { layer: 'CORNER_4MM', from: [150, 254], to: [110, 254] },
+    { layer: 'CORNER_4MM', from: [150, 254], to: [150, 294] },
   ]);
   assert.deepEqual(top.meta.planOutline, [[0, 690], [564, 690], [564, 0], [310, 0], [310, 150], [0, 150]]);
   assert.deepEqual(top.box, { x: 18, y: 752, z: -132, w: 564, h: 18, d: 690 });
-  const corners = top.cnc.outline.filter(([x, y]) => (x === 690 || x === 0 || x === 150) && (y === 0 || y === 564 || y === 310));
-  assert.deepEqual(corners, [[690, 0], [690, 564], [0, 564], [0, 310], [150, 310], [150, 0]]);
+  const corners = top.cnc.outline.filter(([x, y]) => (x === 690 || x === 0 || x === 150) && (y === 0 || y === 564 || y === 254));
+  assert.deepEqual(corners, [[150, 564], [150, 254], [0, 254], [0, 0], [690, 0], [690, 564]], 'the NUMBERS of D19: the ROT90 walk mirrored and read backwards');
   assert.deepEqual(top.cnc.pockets.length, 6, 'two tabs into BUL, two into BUR, two into the BACK: six dog-bone reliefs');
+  // ...and the BOTTOM, the same board in plan, keeps the ROT90 frame it always had.
+  const bottom = panelOf(r, 'BOTTOM');
+  assert.deepEqual(bottom.cnc.marks, [
+    { layer: 'CORNER_4MM', from: [150, 310], to: [110, 310] },
+    { layer: 'CORNER_4MM', from: [150, 310], to: [150, 270] },
+  ]);
+  const bCorners = bottom.cnc.outline.filter(([x, y]) => (x === 690 || x === 0 || x === 150) && (y === 0 || y === 564 || y === 310));
+  assert.deepEqual(bCorners, [[690, 0], [690, 564], [0, 564], [0, 310], [150, 310], [150, 0]]);
   // BACK: 328 x 770, its sockets and rows. 17.10.2026 (D17): NO column into
   // the RETURN's end ([319, 50], [319, 385], [319, 720] until that morning).
   const back = panelOf(r, 'BACK');

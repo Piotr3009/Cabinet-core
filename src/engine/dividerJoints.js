@@ -21,8 +21,10 @@
 // THE JOINT LINE is the overlap in depth of the divider and its receiver; the
 // datum is the overlap's FRONT end, offsets run towards the back. THE ACROSS
 // is the divider's centre line. Both are projected into the receiver's own CNC
-// frame through engine/joinery.js panelPlacement: one placement, one answer for
-// the DXF, the sheet, the 3-D and this.
+// frame through engine/topFrame.js producerPlacement (engine/joinery.js
+// panelPlacement for every board but the TOP, whose record is mirrored once
+// at the end of computeCabinet into the frame panelPlacement publishes): one
+// placement, one answer for the DXF, the sheet, the 3-D and this.
 //
 // The wardrobe kit's own DP keeps drawWardrobeDPHolesBOTTOM (engine/
 // partitionFixings.js): the fossil's law for its own piece. The dia 3 row
@@ -30,7 +32,10 @@
 //
 // Pure functions, pure data: no React, no store, no three.js.
 import { biscuitLayers, biscuitSets, receiverTakesScrews } from './biscuits.js';
-import { panelPlacement } from './joinery.js';
+// Chat fix 17.10.2026 (14:15): the TOP's record is written in the LISP's
+// ROT90 frame and mirrored ONCE at the end of computeCabinet (topFrame.js),
+// so this producer projects into the producers' frame, not panelPlacement's.
+import { producerPlacement } from './topFrame.js';
 
 const EPS = 1e-6;
 const FACE_EPS = 1e-3;
@@ -82,7 +87,8 @@ function inFrame(placement, pt) {
  *   marks:  Array<{panelId:string, layer:string, from:number[], to:number[]}>,
  *   joints: Array<{divider:string, end:'foot'|'head', receiver:string|null, length:number, sets:number, screws:boolean}>,
  * }}
- *   `drills` and `marks` are in the RECEIVER's own CNC frame, the shape
+ *   `drills` and `marks` are in the RECEIVER's own CNC frame as its producers
+ *   draw it (the TOP's before the end mirror, engine/topFrame.js), the shape
  *   cabinet.js's addDrill and its marks writer take.
  */
 export function dividerJointCuts({ panels, profile }) {
@@ -106,7 +112,7 @@ export function dividerJointCuts({ panels, profile }) {
       const zb = Math.max(vp.box.z, receiver.box.z);
       const zf = Math.min(vp.box.z + vp.box.d, receiver.box.z + receiver.box.d);
       const length = zf - zb;
-      const placement = panelPlacement(receiver);
+      const placement = producerPlacement(receiver);
       if (!(length > EPS) || !placement) {
         joints.push({ divider: vp.id, end, receiver: receiver.id, length: r4(Math.max(0, length)), sets: 0, screws: false });
         continue;

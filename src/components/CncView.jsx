@@ -11,6 +11,7 @@ import { labelFit, symbolVisible } from '../engine/cnc/annotation.js';
 import { panelLabelBlock, panelNoteBlock } from '../engine/cnc/dxf.js';
 import { useElementSize, useSheetView } from '../lib/sheetView.js';
 import { projectLabelPlan } from '../lib/partLabels.js';
+import { edgeArrowGeometry } from '../engine/partNumbers.js';
 import { partRollovers } from '../engine/cnc/rollover.js';
 // Turn 38 (F5/F10): an arc on the sheet is its own chord run — one reading of
 // an arc in this app, and it lives with the objects.
@@ -748,6 +749,15 @@ function Part({
   // long for its board is truncated and then hidden, never printed over the
   // part beside it.
   const slopeNote = panelNoteBlock(panel, { profile, mmPerPx, minPx: annotation.minLabelPx });
+  // ─── CHAT FIX 17.10.2026 (14:10): THE EDGE ARROW ON THE BOARD ─────────────
+  // The owner: *"na projekcie nie ma strzalek ktora strone oklejamy, jak mam
+  // przykleic naklejki?"*  The sticker's arrow, drawn on the part in its own
+  // frame by the ONE geometry the DXF writes (engine/partNumbers.js
+  // edgeArrowGeometry): a line inside the banded edge, the arrow at it, the
+  // word EDGE, in the cabinet's colour. Only a numbered board (one with a
+  // sticker) carries it; the front face shows none.
+  const edgeArrow = (!front && partNo != null && label.visible)
+    ? edgeArrowGeometry(panel, profile, { textMm: label.size * 0.9 }) : null;
   const [noteX, noteY] = toSheet(place, box.w / 2, box.h - slopeNote.size * 1.2);
   // Drilling and machining marks are the drawing's own geometry now — a ⌀5 hole
   // is five millimetres wide at every zoom, never the screen-space minimum turn
@@ -1015,6 +1025,33 @@ function Part({
             </tspan>
           ))}
         </text>
+      )}
+      {edgeArrow && (
+        <g data-edge-arrow={panel.id} data-edge-side={edgeArrow.arrow} pointerEvents="none">
+          {edgeArrow.lines.map((pts, i) => (
+            <polyline
+              key={i}
+              points={pts.map(([x, y]) => toSheet(place, x, y).join(',')).join(' ')}
+              fill="none" stroke={labelColour || '#d6d6d2'}
+              strokeWidth={i === 0 ? 1.6 : 2.2} vectorEffect="non-scaling-stroke"
+              strokeLinecap="round" strokeLinejoin="round"
+            />
+          ))}
+          {edgeArrow.text && edgeArrow.text.h > 0 && (() => {
+            const [ax, ay] = toSheet(place, edgeArrow.text.x, edgeArrow.text.y);
+            const anchor = edgeArrow.text.anchor === 'end' ? 'end' : (edgeArrow.text.anchor === 'start' ? 'start' : 'middle');
+            return (
+              <text
+                x={ax} y={ay} textAnchor={anchor} dominantBaseline="central"
+                fontSize={edgeArrow.text.h} fill={labelColour || '#d6d6d2'}
+                transform={labelTurn ? `rotate(${-labelTurn} ${ax} ${ay})` : undefined}
+                style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', letterSpacing: '0.08em' }}
+              >
+                {edgeArrow.text.str}
+              </text>
+            );
+          })()}
+        </g>
       )}
       {label.visible && (() => {
         // ─── T48-F9: WHERE THE BLOCK GOES ───────────────────────────────────

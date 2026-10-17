@@ -188,8 +188,13 @@
 ;;; y up, seen from the face that is machined:
 ;;;   BUL     inner face; x from the FRONT edge (0) to the back edge (D - G)
 ;;;   BUR     inner face; x from the BACK edge (0) to the front edge (D - G)
-;;;   TOP     drawn ROT90; x from the BACK edge (0) to the front (D - G),
-;;;   BOTTOM  y from the BUL end (0) to the BUR end (W - 2G)
+;;;   BOTTOM  drawn ROT90 from its top face (the inside); x from the BACK edge
+;;;           (0) to the front (D - G), y from the BUL end (0) to the BUR end
+;;;           (W - 2G)
+;;;   TOP     drawn ROT90 from its UNDERSIDE (the inside; section J, the owner
+;;;           17.10.2026): x from the BACK edge (0) to the front (D - G), y from
+;;;           the BUR end (0) to the BUL end (W - 2G): the BOTTOM's drawing
+;;;           mirrored across the width, as BUR's is BUL's
 ;;;   SHELF   x from its FRONT edge (0) to the back, y from the BUL end (0)
 ;;;
 ;;; THE DATUM. Every offset of a set is counted from the EDGE BOARD'S FRONT
@@ -569,11 +574,14 @@
 ;;; towards the back (section C's datum, the edge board's front, where the
 ;;; two fronts agree; the overlap's front where they do not).
 ;;; THE ACROSS is the divider's centre line, x + G / 2 of its board, in the
-;;; receiver's frame (less the receiver's own left end, G).
+;;; receiver's frame (less the receiver's own left end, G); on the TOP, drawn
+;;; from its underside (section J), the same line counted from the BUR end:
+;;; (W - 2G) - that.
 ;;;
 ;;; FRAMES (engine/joinery.js panelPlacement, section C's table):
-;;;   TOP, BOTTOM   drawn ROT90, x from the BACK edge: x = z - zBack
+;;;   BOTTOM        drawn ROT90, x from the BACK edge: x = z - zBack
 ;;;                 (zBack = G, the back's thickness), y across from BUL's face
+;;;   TOP           the same x; y across from BUR's face (section J)
 ;;;   FIX SHELF     x from its FRONT edge: x = zFront - z, y across from its
 ;;;                 left end
 ;;; so a point t behind the overlap's front zf stands at x = zf - t - G on the
@@ -586,10 +594,11 @@
 ;;; A divider that meets neither (an end in the air) has no joint there.
 (defun biscuit-divider-receiver (yEnd foot W D H G fixShelves / out k sh)
   (cond
-    ;; (name zBack zFront leftEnd): the TOP and the BOTTOM run from the back's
-    ;; face G to the carcass front D, D - G deep, from BUL's face G.
-    ((and foot (< (abs (- yEnd G)) 0.001)) (list "BOTTOM" G D G))
-    ((and (null foot) (< (abs (- yEnd (- H G))) 0.001)) (list "TOP" G D G))
+    ;; (name zBack zFront leftEnd drawnH): the TOP and the BOTTOM run from the
+    ;; back's face G to the carcass front D, D - G deep, from BUL's face G;
+    ;; drawnH (W - 2G) is the width the TOP's across is mirrored in (17.10.2026).
+    ((and foot (< (abs (- yEnd G)) 0.001)) (list "BOTTOM" G D G (- W (* 2.0 G))))
+    ((and (null foot) (< (abs (- yEnd (- H G))) 0.001)) (list "TOP" G D G (- W (* 2.0 G))))
     (T
       (setq k 1)
       (foreach sh fixShelves
@@ -614,6 +623,10 @@
     (list nil nil nil)
     (progn
       (setq across (- (+ (car divider) (/ (cadr divider) 2.0)) (cadddr receiver)))
+      ;; 17.10.2026 (section J): the TOP is drawn from its underside, its y
+      ;; from the BUR end, so the centre line is mirrored in the drawn width.
+      (if (and (= name "TOP") (nth 4 receiver))
+        (setq across (biscuit-top-mirror-y across (nth 4 receiver))))
       (setq screws (biscuit-takes-screws name prof))
       (setq sets (biscuit-sets L screws prof))
       ;; TOP and BOTTOM count x from the BACK edge; a shelf from its FRONT edge.
@@ -644,12 +657,16 @@
 ;;;   across = 450 + 9 - 18 = 441
 ;;;   BOTTOM (x from the back): SCREW x 488.5 395.5 144.5 51.5  y 441
 ;;;                             MARK  x 477..407 and 133..63   y 441
-;;;   TOP:    the same four screws and two marks at y 441
+;;;   TOP:    the same four screws and two marks at y 864 - 441 = 423 (drawn
+;;;           from its underside, y from the BUR end; section J. Until
+;;;           17.10.2026 the TOP was drawn in the BOTTOM's frame and read 441)
 ;;;   VPART-1: nothing
-;;; The fixture's TOP and BOTTOM, to the decimal (it lists the screws from the
-;;; back edge upward: 51.5 144.5 395.5 488.5, the marks 63..133 and 407..477:
-;;; the same points, the other way round). Its VPART marks at 20 from the ends
-;;; were T13's transfer, ruled out on T26 (F7.1): the divider's ends are plain.
+;;; The fixture's BOTTOM, to the decimal (it lists the screws from the back
+;;; edge upward: 51.5 144.5 395.5 488.5, the marks 63..133 and 407..477: the
+;;; same points, the other way round); its TOP at 441 is the fixture's frame
+;;; of T13, the view from above, 423 in the underside frame. Its VPART marks
+;;; at 20 from the ends were T13's transfer, ruled out on T26 (F7.1): the
+;;; divider's ends are plain.
 ;;;
 ;;; NUMBERS I.2, the fixture's case B (BISCUIT-B): BUD 900 x 1200 x 558, a FIX
 ;;; shelf with its underside at 600 (18 thick, 20 behind the front: 864 x 520,
@@ -662,7 +679,7 @@
 ;;;     SHELF-1 (x from its front): MARK x 63..133 and 387..457   y 441
 ;;;   A second divider standing ON that shelf (y 600 + 18 .. 1182, under the
 ;;;   TOP) would set the same two marks on the shelf and the screw set on the
-;;;   TOP at y 441 with x from the back 540 - t.
+;;;   TOP at y 423 (864 - 441, section J) with x from the back 540 - t.
 ;;;   VPART-1: nothing
 ;;;
 ;;; WHAT THE DIVIDER LOSES: T30's two bare foot screws on the BOTTOM at 99 and
@@ -670,6 +687,59 @@
 ;;; board): the set's four screws stand on that same centre line. The DP of
 ;;; KIT_WARDROBE_FULL keeps them. The dia 3 row through the BACK along the
 ;;; divider (T23 F6, ends 50, pitch 400) stays: it is the back's joint.
+
+;;;========================================
+;;; J. THE TOP IS DRAWN FROM ITS UNDERSIDE (the owner, 17.10.2026)
+;;;========================================
+;;; The owner, 12:15, of the nesting sheet: *"w 01 bottom i top nie powinno
+;;; byc odbicie lustrzane?"*; 14:15: *"lustro bottom i top, prosze, koduj"*.
+;;;
+;;; WHAT WAS WRONG. Every board is drawn from the face the machine works, its
+;;; inside: BUL from the inside with x from the front, BUR its mirror with x
+;;; from the back, the BOTTOM from above. The TOP alone was drawn in the
+;;; BOTTOM's frame, drawTOP_ROT90 as COMMON draws it, which for the TOP is
+;;; the view from ABOVE: its outer face. Nothing showed it while a TOP's cuts
+;;; were symmetric (the puzzle's tenons and dog bones mirror themselves); the
+;;; notch (KIT_NOTCH), the recess bite (KIT_RECESS), a divider's slots in the
+;;; underside (section I) and a Cabineo pocket are not, and a TOP laid
+;;; underside up on the bed and cut from that drawing had its corner on the
+;;; wrong side.
+;;;
+;;; THE LAW. The TOP is drawn from its UNDERSIDE: its frame is the BOTTOM's
+;;; mirrored across the width. x keeps running from the BACK edge (0) to the
+;;; front (D - G): the banded front edge stays at the right of the drawing
+;;; and the edge code ">" stays true. y runs from the BUR end (0) to the BUL
+;;; end (W - 2G). Every point of the BOTTOM-frame drawing of a TOP becomes
+;;;
+;;;     x' = x,   y' = (W - 2G) - y
+;;;
+;;; and every closed outline is read backwards so it stays anticlockwise. One
+;;; mirror, applied once to the whole drawing after every routine has drawn
+;;; in the frame it always drew in (the engine: src/engine/topFrame.js at the
+;;; end of computeCabinet; the 3-D's placement of the TOP takes the same
+;;; frame, so the scene, the sheet and the file agree). COMMON's drawTOP_ROT90
+;;; is a fossil and is not touched; this section is the amendment.
+;;;
+;;; A notch corner "x0y0" of the BOTTOM frame is "x0y1" on the TOP, a bite's
+;;; y0..y1 becomes (W - 2G) - y1 .. (W - 2G) - y0, a hole's y the same.
+
+;;; A y of the BOTTOM frame, in the TOP's underside frame. h = W - 2G.
+(defun biscuit-top-mirror-y (y h) (- h y))
+
+;;; A closed outline of the BOTTOM frame as the TOP draws it: every y
+;;; mirrored, the walk reversed (anticlockwise again).
+(defun biscuit-top-mirror-pts (pts h)
+  (reverse (mapcar '(lambda (p) (list (car p) (biscuit-top-mirror-y (cadr p) h))) pts)))
+
+;;; NUMBERS J: a BUD 600 x 770 x 558 at KIT_BUD_FULL defaults, G 18. The TOP
+;;; is 564 x 540, drawn ROT90 (drawn 540 x 564). Its back tenons into the BACK
+;;; at x 0, their y (the BOTTOM frame) 95 and 469 -> on the TOP 469 and 95:
+;;; the same two tenons, named from the other end. The tenons into BUL (the
+;;; BOTTOM frame y 0 .. ) are the TOP's tenons at y 564 and the BUR end's at
+;;; y 0. A 600 TOP is its own mirror image, which is why the six base
+;;; goldens of the puzzle never saw the frame; their sha256 moves all the
+;;; same (every TOP point is written mirrored) and is re-pinned, named, in
+;;; scripts/t78-classify.d/f32-owner-1710d.mjs.
 
 (princ "\nSKYLON_JOINTS_BISCUIT loaded. Type BISCUIT_JOINTS to print the pattern.")
 (princ)

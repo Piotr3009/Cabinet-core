@@ -92,10 +92,17 @@ test('the puzzle tabs are not corners: the mark is read off the NOMINAL outline,
   const r = computeCabinet({ ...defaultParamsFor('BUD', P), width: 600, notch: { corner: 'BL', w: 200, d: 200, h: 0 } }, P);
   const top = panelOf(r, 'TOP');
   assert.ok(top.cnc.outline.length > 6, 'the drawn outline carries the tabs');
+  // 14:15 ("lustro bottom i top"): the TOP is drawn from its underside, y from
+  // the BUR end, so the rear-left corner (200, 200) of the BOTTOM's frame is
+  // (200, 564 - 200) = (200, 364) on the TOP (KIT_NOTCH.lsp D11, the NUMBERS).
   assert.deepEqual(marksOf(top), [
+    { layer: 'CORNER_4MM', from: [200, 364], to: [160, 364] },
+    { layer: 'CORNER_4MM', from: [200, 364], to: [200, 404] },
+  ]);
+  assert.deepEqual(marksOf(panelOf(r, 'BOTTOM')), [
     { layer: 'CORNER_4MM', from: [200, 200], to: [160, 200] },
     { layer: 'CORNER_4MM', from: [200, 200], to: [200, 160] },
-  ]);
+  ], 'the BOTTOM keeps the frame it always had');
   assert.equal(bonesOf(r, 'TOP').length, 0, 'no dog bone drilled (the owner: "nie dodawaj wiercenia")');
   assert.ok(top.cnc.pockets.length > 0, 'the puzzle dog bones beside the tabs are still there ("niech tak bedzie")');
   // ...and the DXF carries the two legs as OPEN polylines on CORNER_4MM.

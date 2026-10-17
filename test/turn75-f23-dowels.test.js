@@ -261,12 +261,17 @@ test('F23 · a dowel BUD: the LISP\'s holes, board by board (section H)', () => 
   assert.deepEqual(xs(dowelsOf(dowel, 'BUR', 'BUR-BOTTOM')), S90R);
   assert.deepEqual(ys(dowelsOf(dowel, 'BUR', 'BACK-BUR', true)), UP);
   assert.deepEqual(xs(dowelsOf(dowel, 'BUR', 'BACK-BUR', true)), UP.map(() => 0));
-  // TOP and BOTTOM: edge bores only, Y0, YH and X0.
+  // TOP and BOTTOM: edge bores only, Y0, YH and X0. 17.10.2026 (14:15, "lustro
+  // bottom i top"): the TOP is drawn from its underside, y from the BUR end, so
+  // its BUL end is y 564 (edge YH), its BUR end y 0, and the back edge's three
+  // read from the other end; the BOTTOM keeps the LISP's frame.
   for (const b of ['TOP', 'BOTTOM']) {
+    const top = b === 'TOP';
     assert.deepEqual(xs(dowelsOf(dowel, b, `BUL-${b}`, true)), S90R);
-    assert.deepEqual(ys(dowelsOf(dowel, b, `BUL-${b}`, true)), S90R.map(() => 0));
-    assert.deepEqual(ys(dowelsOf(dowel, b, `BUR-${b}`, true)), S90R.map(() => 564));
-    assert.deepEqual(ys(dowelsOf(dowel, b, `BACK-${b}`, true)), ACROSS);
+    assert.deepEqual(ys(dowelsOf(dowel, b, `BUL-${b}`, true)), S90R.map(() => (top ? 564 : 0)));
+    assert.deepEqual(dowelsOf(dowel, b, `BUL-${b}`, true).map((d) => d.edge), S90R.map(() => (top ? 'YH' : 'Y0')));
+    assert.deepEqual(ys(dowelsOf(dowel, b, `BUR-${b}`, true)), S90R.map(() => (top ? 0 : 564)));
+    assert.deepEqual(ys(dowelsOf(dowel, b, `BACK-${b}`, true)), top ? [...ACROSS].reverse() : ACROSS);
     assert.equal(dowel.drills.filter((d) => d.panel === b && d.kind === 'dowel' && d.face !== 'edge').length, 0);
   }
   // BACK: face holes only.

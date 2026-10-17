@@ -1163,8 +1163,11 @@ export const DEFAULT_CABINET_PROFILE = {
       pageW: 210, pageH: 297, cols: 4, rows: 11, labelW: 48.3, labelH: 25.4,
       gapX: 0, gapY: 0, marginLeft: null, marginTop: null,
     },
-    unitColours: ['#d7263d', '#1f6feb', '#e0a100', '#7a3ea1', '#0f9d8a', '#e4572e', '#3b8ea5', '#8c5e2a'],
-    unitAci: [1, 5, 2, 6, 3, 30, 4, 8],
+    // 14:15: *"zamien zolty na inny, malo widoczny na nadrukach, zolty
+    // ostatecznie"*: yellow goes LAST; the third cabinet is orange (green and
+    // purple are the element strips' own, so they come later in the cycle).
+    unitColours: ['#d7263d', '#1f6feb', '#e4572e', '#7a3ea1', '#0f9d8a', '#2e8b57', '#8c5e2a', '#e0a100'],
+    unitAci: [1, 5, 30, 6, 4, 3, 8, 2],
     kinds: {
       side: { label: 'SIDE', colour: '#1b5e20', order: 1 },
       topbottom: { label: 'TOP / BOTTOM', colour: '#6a1b9a', order: 2 },
@@ -1173,6 +1176,17 @@ export const DEFAULT_CABINET_PROFILE = {
     },
     dxf: { layerPrefix: 'LABEL_' },
     numberPad: 2,
+    // 14:10: *"na projekcie nie ma strzalek ktora strone oklejamy, jak mam
+    // przykleic naklejki?"*: the EDGE arrow and a line along the banded edge
+    // on every numbered board, on the sheet and in the DXF (the cabinet's label
+    // layer, drawn, never cut), the sticker's own arrow in the board's frame.
+    edgeArrow: {
+      insetMm: 3,        // the line stands this far inside the banded edge
+      headMm: 7,         // the arrow head, tip to base
+      shaftMm: 45,       // the shaft, clamped to a fifth of the part
+      minPartMm: 60,     // a part shorter than this across the arrow gets the line alone
+      lineSpan: 0.8,     // the edge line covers this share of the edge, centred
+    },
   },
 
   // ─── Partition fixing: the biscuit set (turn 13, CLAUDE.md F8 / #59) ─────
@@ -5773,6 +5787,7 @@ export function migrateCabinetProfile(profile) {
       sheet: { ...D.labels.sheet, ...(profile.labels?.sheet || {}) },
       kinds: { ...D.labels.kinds, ...(profile.labels?.kinds || {}) },
       dxf: { ...D.labels.dxf, ...(profile.labels?.dxf || {}) },
+      edgeArrow: { ...D.labels.edgeArrow, ...(profile.labels?.edgeArrow || {}) },
     },
     hoverDimensions: {
       ...D.hoverDimensions,

@@ -114,14 +114,34 @@ export function panelPlacement(panel) {
         n: [1, 0, 0],
       };
     case 'TOP':
+      // ─── CHAT FIX 17.10.2026 (14:15): DRAWN FROM ITS UNDERSIDE ─────────────
+      // The owner, of the nesting sheet: *"w 01 bottom i top nie powinno byc
+      // odbicie lustrzane?"*; *"lustro bottom i top, prosze, koduj"*. Until
+      // then the TOP shared the BOTTOM's case below with its origin lifted to
+      // the top face and n flipped, which made it the ONE placement whose
+      // u x v was +n (turn 13's "TOP is the exception"): the drawing was the
+      // view from ABOVE, the board's outside, and every other board is drawn
+      // from the face the machine works. Now it is the BOTTOM's frame mirrored
+      // across the width, as BUR's is BUL's: CNC x still spans the DEPTH from
+      // the back, CNC y runs from the BUR end back to the BUL end, and
+      // u x v = -n like the rest. The engine writes the TOP's record in this
+      // frame (engine/topFrame.js, one mirror at the end of computeCabinet;
+      // LISP: SKYLON_JOINTS_BISCUIT.lsp section J), so the scene lands every
+      // cut where the sheet puts it.
+      return {
+        origin: [box.x + box.w, box.y + box.h, box.z],
+        u: [0, 0, 1],
+        v: [-1, 0, 0],
+        n: [0, 1, 0],
+      };
     case 'BOTTOM':
       // Drawn rotated: CNC x spans the cabinet's DEPTH from the back, CNC y
       // spans the internal width.
       return {
-        origin: [box.x, box.y + (panel.part === 'TOP' ? box.h : 0), box.z],
+        origin: [box.x, box.y, box.z],
         u: [0, 0, 1],
         v: [1, 0, 0],
-        n: [0, panel.part === 'TOP' ? 1 : -1, 0],
+        n: [0, -1, 0],
       };
     // ─── Turn 13 (CLAUDE.md F8): the two interior boards CARRY MACHINING NOW ──
     //

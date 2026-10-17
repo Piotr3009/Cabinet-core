@@ -292,6 +292,24 @@
 ;;;     one day; this file draws nothing for it. The BACK's rows into the
 ;;;     sides, the TOP and the BOTTOM stay exactly where drawBACK puts them.
 ;;;
+;;; 17.10.2026, THE OWNER'S AFTERNOON:
+;;;
+;;; D11 THE TOP IS DRAWN FROM ITS UNDERSIDE. The owner, of the nesting sheet:
+;;;     *"w 01 bottom i top nie powinno byc odbicie lustrzane?"*; *"lustro
+;;;     bottom i top, prosze, koduj."*  notch-rot90-pts gives drawTOP_ROT90's
+;;;     frame, which is the BOTTOM's (seen from above, its inside) and was the
+;;;     TOP's too: the TOP seen from ABOVE is its outside, the one board of the
+;;;     carcass drawn from the wrong face. The notch is a rear-LEFT corner on
+;;;     both boards in plan, so the two drawings were the same, and a TOP laid
+;;;     underside up and cut from it had its corner at the rear RIGHT. The law
+;;;     (SKYLON_JOINTS_BISCUIT.lsp section J, stated once for every kit): the
+;;;     TOP's frame is the BOTTOM's mirrored across the width, y' = (W - 2G) -
+;;;     y, x unchanged, the walk reversed (notch-top-pts); its corner name
+;;;     swaps its y half ("x0y0" -> "x0y1"), its corner mark moves with it.
+;;;     Applied once, at the end, to the whole drawing (the engine's
+;;;     topFrame.js); every routine of this file keeps drawing in the ROT90
+;;;     frame. The NUMBERS block carries both boards.
+;;;
 ;;;========================================
 ;;; 4. THE JOINTS ON A SHORTENED EDGE
 ;;;========================================
@@ -626,6 +644,17 @@
 ;;; side. drawnW is the board's depth (cd - g).
 (defun notch-rot90-pts (pts drawnW)
   (mapcar '(lambda (p) (list (- drawnW (cadr p)) (car p))) pts))
+
+;;; D11 (17.10.2026): the same plan outline as the TOP draws it, from its
+;;; UNDERSIDE: the ROT90 points with y' = drawnH - y (drawnH = cw - 2g, the
+;;; internal width), read backwards so the walk stays anticlockwise.
+(defun notch-top-pts (pts drawnW drawnH)
+  (reverse (mapcar '(lambda (p) (list (car p) (- drawnH (cadr p)))) (notch-rot90-pts pts drawnW))))
+
+;;; D11: a corner name of the ROT90 frame on the TOP: its y half swapped.
+(defun notch-top-fc (fc)
+  (cond ((= fc "x0y0") "x0y1") ((= fc "x0y1") "x0y0")
+        ((= fc "x1y0") "x1y1") ((= fc "x1y1") "x1y0") (T fc)))
 
 ;;; A shorter rectangle, re-origined to its own bottom-left.
 (defun notch-reorigin (pts / mx my)
@@ -1189,16 +1218,24 @@
 ;;;                         (cut through, no re-entrant corner)
 ;;; BUR        540 x 770    unchanged
 ;;; TOP        564 x 540    564 x 540 less 200 x 200 at the rear-left
-;;; BOTTOM     564 x 540    the same as TOP
+;;; BOTTOM     564 x 540    the same as TOP in plan; its drawing is the TOP's
+;;;                         mirror image (D11, 17.10.2026)
 ;;;   plan frame (x from BUL's inner face, y from the front edge):
 ;;;     (0 0) (564 0) (564 540) (200 540) (200 340) (0 340)
-;;;   drawTOP_ROT90 frame (x from the BACK edge, y from the BUL edge):
+;;;   BOTTOM, drawTOP_ROT90 frame (x from the BACK edge, y from the BUL edge):
 ;;;     (540 0) (540 564) (0 564) (0 200) (200 200) (200 0)
+;;;     the corner "x0y0"
+;;;   TOP, drawn from its UNDERSIDE (D11: x from the BACK edge, y from the BUR
+;;;   edge; the ROT90 points with y' = 564 - y, read backwards):
+;;;     (200 564) (200 364) (0 364) (0 0) (540 0) (540 564)
+;;;     the corner "x0y1"
 ;;;   CORNER MARK (D9, 17.10.2026; until then a dog bone, circle r 4 at
 ;;;   (197.1716 342.8284) plan, (197.1716 197.1716) ROT90): the corner
-;;;   (200 340) plan = (200 200) ROT90, two open lines on CORNER_4MM, 40 long:
-;;;     plan  (200 340)-(160 340) and (200 340)-(200 380)
-;;;     ROT90 (200 200)-(200 160) and (200 200)-(160 200)
+;;;   (200 340) plan = (200 200) ROT90 = (200 364) on the TOP, two open lines
+;;;   on CORNER_4MM, 40 long:
+;;;     plan   (200 340)-(160 340) and (200 340)-(200 380)
+;;;     BOTTOM (200 200)-(200 160) and (200 200)-(160 200)
+;;;     TOP    (200 364)-(200 404) and (200 364)-(160 364)
 ;;;   area 0.305 -> 0.265 m2 (264560 mm2)
 ;;; BACK       600 x 770    400 x 770, carcass x 200..600
 ;;;   original frame (200 0) (600 0) (600 770) (200 770)

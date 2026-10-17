@@ -307,7 +307,16 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   // NOTHING else moves: no coordinate, no hole, no outline; the carcass-only
   // sheet below is byte-for-byte what it was, which is the proof the delta
   // lands where its cause is.
-  assert.equal(fingerprint(sheetOf(result, all)), '17582204', 'the whole-unit sheet has changed');
+  // ─── CHAT FIX 17.10.2026 (14:15): 17582204 → 7d4073bc ────────────────────
+  // THE TOP IS DRAWN FROM ITS UNDERSIDE (the owner, of the nesting sheet:
+  // *"bottom i top nie powinno byc odbicie lustrzane?"*; *"lustro bottom i
+  // top, prosze, koduj"*). ONE board moves on the sheet: the TOP's outline is
+  // written mirrored across its width and read backwards, its dog-bone
+  // reliefs with it (engine/topFrame.js, SKYLON_JOINTS_BISCUIT.lsp section J).
+  // No entity appears or disappears, no other board's coordinate moves, and
+  // the per-panel `01-BUL.dxf` above is byte-for-byte what it was. The two
+  // sheets that carry no carcass (sprayed, fronts) stand still to the byte.
+  assert.equal(fingerprint(sheetOf(result, all)), '7d4073bc', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -372,11 +381,14 @@ test('…and so is each preset’s', () => {
   // ─── T78 F21, 12.10.2026: THE CENSUS LOGIC AGAIN, THE FACES' WAY ────────
   // The paint code is a FACE's line (door, drawer front): the two sheets that
   // carry the faces move, the carcass-only sheet stands still to the character.
+  // ─── CHAT FIX 17.10.2026 (14:15): THE CENSUS LOGIC, THE CARCASS'S WAY ────
+  // The TOP's underside frame is a carcass board's delta: the two sheets that
+  // carry the carcass move, the two that are faces alone stand still.
   const expected = {
-    all: '17582204',           // was 666789ea: the faces' labels carry the paint code
-    'non-sprayed': '0224886a', // UNCHANGED: a carcass board prints no paint code
-    sprayed: 'ceb3045b',       // was 106a8227: the faces' labels, 2S + 4E
-    fronts: 'ceb3045b',        // was 106a8227: the same faces, the same file
+    all: '7d4073bc',           // was 17582204: the TOP drawn from its underside
+    'non-sprayed': '034c01aa', // was 0224886a: the same TOP, on the carcass sheet
+    sprayed: 'ceb3045b',       // UNCHANGED: no TOP among the faces
+    fronts: 'ceb3045b',        // UNCHANGED
   };
   for (const [preset, print] of Object.entries(expected)) {
     const ids = panelIdsForPreset(exportablePanels(result.panels), preset);
@@ -696,5 +708,7 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   // T41-F1: was 9294e301 — the twelve drawer-box boards now stand up.
   // T42-F1: was 0bfd72e9 — the rail partitioner and its nine screws leave
   // the carcass sheet, and this file is that sheet to the byte.
-  assert.equal(fingerprint(sheetOf(result, ids)), '0224886a');
+  // Chat fix 17.10.2026 (14:15): was 0224886a; the TOP drawn from its
+  // underside, and this file is still the "non-sprayed" sheet to the byte.
+  assert.equal(fingerprint(sheetOf(result, ids)), '034c01aa');
 });

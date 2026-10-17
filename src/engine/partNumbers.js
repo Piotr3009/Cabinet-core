@@ -216,6 +216,79 @@ export function edgeArrowOf(panel) {
 }
 
 /**
+ * THE EDGE ARROW ON THE BOARD ITSELF (14:10): the sticker's arrow, drawn on the
+ * part in its own DRAWN frame (x right, y up, the DXF's and the sheet's), so
+ * the nesting says which edge the sticker's arrow means. A line stands
+ * `insetMm` inside the banded edge over `lineSpan` of its length; the arrow
+ * (a shaft and a head) points at that edge from inside the board, in the
+ * upper quarter of a tall board or the right quarter of a wide one, clear of
+ * the label block in the middle; the word EDGE stands at the shaft's tail. A
+ * board with no banded edge, or banded all round (a front), gets nothing; a
+ * board too small across the arrow gets the line alone.
+ *
+ * @param {object} panel    an engine panel record
+ * @param {object} profile
+ * @param {{textMm?:number}} [opts]  the word's height; the caller's label size
+ * @returns {null | { arrow:string, lines:number[][][], text:{x:number,y:number,h:number,str:string}|null }}
+ *   `lines` are open polylines (each a list of [x, y] points) in the drawn frame.
+ */
+export function edgeArrowGeometry(panel, profile, { textMm = null } = {}) {
+  const e = edgeArrowOf(panel);
+  if (e.arrow === 'none' || e.arrow === 'all') return null;
+  const A = profile?.labels?.edgeArrow || {};
+  const inset = num(A.insetMm, 3);
+  const head = num(A.headMm, 7);
+  const shaftMax = num(A.shaftMm, 45);
+  const minPart = num(A.minPartMm, 60);
+  const span = Math.min(1, Math.max(0.1, num(A.lineSpan, 0.8)));
+  const w = Math.abs(Number(panel?.cnc?.drawn_w ?? panel?.w) || 0);
+  const h = Math.abs(Number(panel?.cnc?.drawn_h ?? panel?.h) || 0);
+  if (!(w > 2 * inset) || !(h > 2 * inset)) return null;
+  const r4 = (v) => Math.round(v * 1e4) / 1e4;
+  const pt = (x, y) => [r4(x), r4(y)];
+  const lines = [];
+  let text = null;
+  const horizontal = e.arrow === 'left' || e.arrow === 'right';
+  // the line along the banded edge
+  if (horizontal) {
+    const x = e.arrow === 'right' ? w - inset : inset;
+    const y0 = h * (1 - span) / 2;
+    lines.push([pt(x, y0), pt(x, h - y0)]);
+  } else {
+    const y = e.arrow === 'up' ? h - inset : inset;
+    const x0 = w * (1 - span) / 2;
+    lines.push([pt(x0, y), pt(w - x0, y)]);
+  }
+  // the arrow, when the board has room for it across
+  const across = horizontal ? w : h;
+  if (across >= minPart) {
+    const shaft = Math.min(shaftMax, across * 0.2);
+    const gap = inset + 2;
+    const hw = head * 0.45; // half the head's width
+    if (horizontal) {
+      const y = h * 0.75;
+      const tip = e.arrow === 'right' ? w - gap : gap;
+      const dir = e.arrow === 'right' ? 1 : -1;
+      const base = tip - dir * head;
+      const tail = base - dir * shaft;
+      lines.push([pt(tail, y), pt(base, y)]);
+      lines.push([pt(base, y - hw), pt(tip, y), pt(base, y + hw)]);
+      text = { x: r4(tail - dir * 2), y: r4(y), h: num(textMm, 0) || 0, str: 'EDGE', anchor: dir > 0 ? 'end' : 'start' };
+    } else {
+      const x = w * 0.75;
+      const tip = e.arrow === 'up' ? h - gap : gap;
+      const dir = e.arrow === 'up' ? 1 : -1;
+      const base = tip - dir * head;
+      const tail = base - dir * shaft;
+      lines.push([pt(x, tail), pt(x, base)]);
+      lines.push([pt(x - hw, base), pt(x, tip), pt(x + hw, base)]);
+      text = { x: r4(x), y: r4(tail - dir * 2), h: num(textMm, 0) || 0, str: 'EDGE', anchor: dir > 0 ? 'top' : 'bottom' };
+    }
+  }
+  return { arrow: e.arrow, lines, text };
+}
+
+/**
  * THE STICKERS: one record per numbered board, in number order, with
  * everything the printer needs and nothing it has to work out.
  *

@@ -61,15 +61,22 @@ test('WITHOUT slopeCut the six standard configs are byte-identical', () => {
     BUDR4: d.BUDR4.sha256,
     PANTRY: d.PANTRY.sha256,
   }, {
-    WARDROBE: 'f49a8c107dd6e66908412262c8c0c91613fe9d1523cce844b7ce68648a1f37c3',
-    BUD: '44d091b837b08075fd155719253b85b9cc8c65437395a1d8b2f31b80d3b2db4c',
-    WUD: '3b7ea2c4db6bce384bae7e3d1cd30d1a118179f78faa317a44dac65add1abfb7',
-    BUDR: '1919de3c261de0c14b0a4ac8d29e8575cb368c33cf0f4afe69c48094322252c2',
-    BUDR4: '583bdd7183cef63272186f3a6f8d4910cce8694c4feb93277f0826c29b2c2f17',
-    // AMENDED BY T78 F15 (12.10.2026): PANTRY's internal drawers got inner fronts
-    // by the owner's order (*"szuflady wewnetrzne powinny miec fronty"*); the sha
-    // is re-pinned knowingly, the same value verify/t70/goldens-base.json carries.
-    PANTRY: '8eeee6a05c17d21d745b1e83e849b3a344d051ff76173c1e3a8eb98f20cea727',
+    // AMENDED BY THE CHAT FIX OF 17.10.2026 (14:15): THE TOP IS DRAWN FROM ITS
+    // UNDERSIDE by the owner's order (*"bottom i top nie powinno byc odbicie
+    // lustrzane?"*; *"lustro bottom i top, prosze, koduj"*). Every one of the
+    // six has a TOP, so every sha moves: the TOP's record mirrored across its
+    // width and read backwards, nothing else (proved board by board against the
+    // engine before the change; test/chatfix-1710-top-frame.test.js). Re-pinned
+    // knowingly, the values verify/t70/goldens-base.json carries, named in
+    // scripts/t78-classify.d/f32-owner-1710d.mjs. The values until then:
+    // WARDROBE f49a8c10, BUD 44d091b8, WUD 3b7ea2c4, BUDR 1919de3c, BUDR4
+    // 583bdd71, PANTRY 8eeee6a0 (T78 F15's re-pin, the inner fronts).
+    WARDROBE: '5adc6f7fc977009013b4f79d6348ce44d40ba1d03f8e3a7e7218c2a8a844ec25',
+    BUD: '857c1503829fdc919fba049113b9ff83f863b6e26c46379e6640ef05140aef5a',
+    WUD: '9affdd412d8accaec1b9fcf3789e7847940e224eb701c605b56b2df26ee5cc35',
+    BUDR: 'cffa92780e121307f348382fb5e2537dda651e960afac4236d5456bca39c0354',
+    BUDR4: '64d072ec20e9adaecf12febef69ad8dcd3ed1226f18a6e92807e88651c7b35b1',
+    PANTRY: '89d95acfbd0849705dbffec1558b738acf6d99bb6e19603e23facef0571d4e7a',
   });
 });
 

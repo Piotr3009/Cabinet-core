@@ -21,7 +21,7 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { getCabinetProfile, migrateCabinetProfile } from '../src/engine/profile.js';
 import {
-  LABEL_KIND_ORDER, dxfLabelsFor, edgeArrowOf, formatPartNo, kindStyleOf, labelKindOf, labelLayerName, labelPages,
+  LABEL_KIND_ORDER, dxfLabelsFor, edgeArrowGeometry, edgeArrowOf, formatPartNo, kindStyleOf, labelKindOf, labelLayerName, labelPages,
   labelRecords, labelSettings, labelSheetGrid, partDisplayName, partNumberPlan, unitAciOf, unitColourOf, unitScreenColourOf,
 } from '../src/engine/partNumbers.js';
 import { numberTag, partLabelText } from '../src/engine/cnc/partLabel.js';
@@ -99,6 +99,29 @@ test('the edge arrow is read off the part\'s own edging code, in the drawn frame
   assert.equal(edgeArrowOf({ edging: { code: '^v' } }).arrow, 'up');
 });
 
+test('the edge arrow on the board (14:10): a line inside the banded edge, the arrow at it, the word; nothing on a back or a front; the line alone on a small board', () => {
+  const bul = r1.panels.find((p) => p.id === 'BUL');
+  const g = edgeArrowGeometry(bul, P, { textMm: 10 });
+  assert.equal(g.arrow, 'left');
+  assert.equal(g.lines.length, 3, 'the edge line, the shaft, the head');
+  assert.deepEqual(g.lines[0], [[3, 215], [3, 1935]], '3 mm inside the left edge, over the middle 80 percent');
+  assert.deepEqual(g.lines[1], [[57, 1612.5], [12, 1612.5]], 'the shaft, 45 long, in the upper quarter');
+  assert.deepEqual(g.lines[2], [[12, 1609.35], [5, 1612.5], [12, 1615.65]], 'the head, tip 5 mm off the edge');
+  assert.deepEqual(g.text, { x: 59, y: 1612.5, h: 10, str: 'EDGE', anchor: 'start' });
+  const top = edgeArrowGeometry(r1.panels.find((p) => p.id === 'TOP'), P, { textMm: 8 });
+  assert.equal(top.arrow, 'right');
+  assert.equal(top.lines[0][0][0], 547, 'the TOP\'s front edge is at the right of its drawing');
+  assert.equal(edgeArrowGeometry(r1.panels.find((p) => p.id === 'BACK'), P), null, 'no banded edge, nothing');
+  assert.equal(edgeArrowGeometry(r1.panels.find((p) => p.id === 'W01-FL'), P), null, 'banded all round, nothing');
+  const small = edgeArrowGeometry({ w: 40, h: 300, edging: { code: '>' } }, P, { textMm: 5 });
+  assert.equal(small.lines.length, 1, 'too narrow for the arrow: the line alone');
+  assert.equal(small.text, null);
+  const up = edgeArrowGeometry({ w: 400, h: 300, edging: { code: '^' } }, P, { textMm: 5 });
+  assert.equal(up.arrow, 'up');
+  assert.deepEqual(up.lines[0], [[40, 297], [360, 297]]);
+  assert.equal(up.text.anchor, 'top');
+});
+
 // ─── THE PLAN: ONE NUMBER THROUGH THE PROJECT ───────────────────────────────
 
 test('partNumberPlan numbers the carcass boards through the project, cabinet by cabinet, sides, top/bottom, shelves, back', () => {
@@ -113,7 +136,10 @@ test('partNumberPlan numbers the carcass boards through the project, cabinet by 
   assert.equal(plan.total, [...plan.units].reduce((n, u) => n + u.byPanel.size, 0));
   // colours and layers
   assert.deepEqual(plan.units.map((u) => u.colour), [unitColourOf(0, P), unitColourOf(1, P), unitColourOf(2, P)]);
-  assert.deepEqual(plan.units.map((u) => u.aci), [1, 5, 2]);
+  // 14:15: *"zamien zolty na inny, malo widoczny na nadrukach, zolty ostatecznie"*: the third is orange, yellow last.
+  assert.deepEqual(plan.units.map((u) => u.aci), [1, 5, 30]);
+  assert.equal(P.labels.unitColours[P.labels.unitColours.length - 1], '#e0a100');
+  assert.equal(P.labels.unitAci[P.labels.unitAci.length - 1], 2);
   assert.deepEqual(plan.units.map((u) => u.layer), ['LABEL_W01', 'LABEL_W_02_A', 'LABEL_W03']);
   assert.equal(unitColourOf(8, P), unitColourOf(0, P), 'the palette cycles');
   assert.equal(unitAciOf(9, P), unitAciOf(1, P));
@@ -163,9 +189,9 @@ test('a unit\'s files written with its labels put every text on LABEL_<cabinet> 
 
   const files = buildUnitDxfFiles(r1, P, { labels });
   const top = files.find((f) => f.panelId === 'TOP');
-  const texts = top.entities.filter((e) => e.type === 'text');
+  const texts = top.entities.filter((e) => e.type === 'text' && e.str !== 'EDGE');
   assert.ok(texts.length >= 1);
-  assert.ok(texts.every((e) => e.layer === 'LABEL_W01'));
+  assert.ok(top.entities.filter((e) => e.type === 'text').every((e) => e.layer === 'LABEL_W01'));
   assert.equal(texts.map((e) => e.str).join(' '), '#04 W01 TOP 1071x550');
   assert.ok(!top.dxf.includes('UNIT_NUMBER'), 'the old text layer is not declared when nothing is on it');
   const parsed = parseDxf(top.dxf);
@@ -175,12 +201,19 @@ test('a unit\'s files written with its labels put every text on LABEL_<cabinet> 
   const at = lines.indexOf('LABEL_W01');
   assert.deepEqual(lines.slice(at, at + 5), ['LABEL_W01', '70', '0', '62', '1'], 'the layer row carries the cabinet\'s colour index');
   // every other entity of the file is where it was
-  const strip = (f) => f.entities.filter((e) => e.type !== 'text');
+  const strip = (f) => f.entities.filter((e) => e.type !== 'text' && !(e.type === 'poly' && e.layer === 'LABEL_W01'));
   assert.deepEqual(strip(top), strip(plain.find((f) => f.panelId === 'TOP')));
+  // the edge arrow (14:10): three open polylines and the word on the same layer, on a numbered board only
+  const arrows = top.entities.filter((e) => e.type === 'poly' && e.layer === 'LABEL_W01' && !e.closed);
+  assert.equal(arrows.length, 3);
+  assert.equal(texts.filter((e) => e.str === 'EDGE').length + top.entities.filter((e) => e.type === 'text' && e.str === 'EDGE').length, 1);
+  const word = top.entities.find((e) => e.type === 'text' && e.str === 'EDGE');
+  assert.equal(word.halign, 2, 'right-justified before a rightward arrow');
   // the front: on the cabinet's layer, unnumbered
   const fl = files.find((f) => f.panelId === 'W01-FL');
   assert.ok(fl.entities.filter((e) => e.type === 'text').every((e) => e.layer === 'LABEL_W01'));
   assert.ok(!fl.entities.some((e) => e.type === 'text' && /^#/.test(e.str)));
+  assert.ok(!fl.entities.some((e) => e.type === 'poly' && e.layer === 'LABEL_W01'), 'no arrow on a front');
   // one part, through panelDxf, the same answer
   const one = panelDxf(r1.panels.find((p) => p.id === 'TOP'), r1.drills, { unitNum: 'W01', profile: P, labels });
   assert.equal(one, top.dxf);
@@ -277,6 +310,8 @@ test('the CNC sheet\'s caption carries the number and wears the cabinet\'s colou
   assert.match(view, /partNo=\{labelPlan\.byUnit\.get\(b\.unit\.id\)\?\.byPanel\.get\(place\.panel\.id\)\?\.no \?\? null\}/);
   assert.match(view, /fill=\{labelColour \|\| '#d6d6d2'\}/);
   assert.match(view, /no: partNo,/);
+  assert.match(view, /edgeArrowGeometry\(panel, profile, \{ textMm: label\.size \* 0\.9 \}\)/, 'the sheet draws the one arrow geometry');
+  assert.match(view, /data-edge-arrow=\{panel\.id\}/);
   const tree = read('src/components/CncTree.jsx');
   assert.match(tree, /plan: labelPlan,/);
   assert.match(tree, /labels: labelsForUnit\(labelPlan, sheet\.unit\.id\)/);

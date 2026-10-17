@@ -466,12 +466,22 @@
 ;;; right, y up, seen from the face drawn today:
 ;;;   BUL     inside face; x from the FRONT edge (0) to the back edge (D - G), y up
 ;;;   BUR     inside face; x from the BACK edge (0) to the front edge (D - G), y up
-;;;   TOP     drawn ROT90 from the inside; x the depth from the BACK edge (0) to
-;;;   BOTTOM  the front (D - G), y the width from the BUL end (0) to the BUR end (W - 2G)
+;;;   BOTTOM  drawn ROT90 from the inside (its top face); x the depth from the
+;;;           BACK edge (0) to the front (D - G), y the width from the BUL end
+;;;           (0) to the BUR end (W - 2G)
+;;;   TOP     drawn ROT90 from the inside (its UNDERSIDE): the same x; y the
+;;;           width from the BUR end (0) to the BUL end (W - 2G). (17.10.2026,
+;;;           SKYLON_JOINTS_BISCUIT.lsp section J: until that day the TOP was
+;;;           drawn in the BOTTOM's frame, the view from ABOVE, so "drawn from
+;;;           the inside" was not true of it and its REFLECTED file was the
+;;;           underside view under an OUTSIDE FACE UP label. The set below is
+;;;           symmetric about both axes of the board, which is why no pocket
+;;;           moved; the label is honest now.)
 ;;;   SHELF   drawn from its top face; x from its FRONT edge (0) to the back
 ;;;           (D - G - setback), y from the BUL end (0) to the BUR end (W - 2G)
-;;; The ENDS of a horizontal board, where its pockets open, are y = 0 (the BUL
-;;; end) and y = its width (the BUR end); the set-out runs along x (the depth).
+;;; The ENDS of a horizontal board, where its pockets open, are y = 0 and
+;;; y = its width (the BUL end and the BUR end of the BOTTOM and a shelf; the
+;;; BUR end and the BUL end of the TOP); the set-out runs along x (the depth).
 ;;;
 ;;; THE REFLECTION. A board whose pocket face is "outside" is exported as seen
 ;;; from THAT face: its coordinates reflected about the vertical axis,

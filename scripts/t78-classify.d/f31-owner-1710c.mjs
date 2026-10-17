@@ -15,7 +15,10 @@
 
 export const LICENSED = {
   'src/engine/partNumbers.js': {
-    why: 'Owner 17.10.2026 · NEW: the part number plan. labelKindOf (sides with dividers and the DP, top with bottom, '
+    why: 'Owner 17.10.2026 · NEW: the part number plan. 14:10 edgeArrowGeometry: the sticker\'s arrow on the board '
+      + 'itself in its drawn frame (the line inside the banded edge, the shaft, the head, the word EDGE), the one '
+      + 'geometry the DXF and the sheet draw (*"na projekcie nie ma strzalek ktora strone oklejamy"*). '
+      + 'labelKindOf (sides with dividers and the DP, top with bottom, '
       + 'shelves with a stack\'s PARTITION and the FIXED board, back; fronts and drawers none), partNumberPlan (one '
       + 'number through the project, cabinet by cabinet, the cabinet\'s colour, ACI and LABEL_<cabinet> layer), '
       + 'dxfLabelsFor, edgeArrowOf off the part\'s edging code, labelRecords, labelSheetGrid and labelPages off '
@@ -24,8 +27,10 @@ export const LICENSED = {
   },
   'src/engine/profile.js': {
     why: 'Owner 17.10.2026: the labels block, every number of the sticker: the paper (44 per A4, 4 x 11, 48.3 x 25.4, '
-      + 'margins centred), the cabinet palette and its ACI twin, the four element pairs and their colours, the DXF '
-      + 'layer prefix, the number padding; migrated block by block. No cut number touched',
+      + 'margins centred), the cabinet palette and its ACI twin (14:15: yellow last, the third cabinet orange: "zamien '
+      + 'zolty na inny, malo widoczny na nadrukach, zolty ostatecznie"), the four element pairs and their colours, the '
+      + 'DXF layer prefix, the number padding, the edge arrow\'s numbers (inset 3, head 7, shaft 45, the 60 mm floor, '
+      + 'the 0.8 span); migrated block by block. No cut number touched',
     gates: [],
   },
   'src/engine/cnc/partLabel.js': {
@@ -37,7 +42,8 @@ export const LICENSED = {
     why: 'Owner 17.10.2026: the label option. panelEntities({ label: { no, layer } }) writes the part\'s text on the '
       + 'cabinet\'s layer, numbered; labelFor and labelLayerRow; buildUnitDxfFiles, sheetEntities, sheetDxf, '
       + 'materialSheetEntities and materialSheetDxf take `labels` (per cabinet) and declare the layer with its colour '
-      + 'index. Left out, every writer produces the bytes it produced yesterday (asserted)',
+      + 'index; 14:10 a numbered board\'s file carries the EDGE arrow (three open polylines and the word) on the same '
+      + 'layer. Left out, every writer produces the bytes it produced yesterday (asserted)',
     gates: [],
   },
   'src/lib/cncExport.js': {

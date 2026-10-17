@@ -31,6 +31,7 @@ import {
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor, UNIT_TYPES } from '../src/engine/types.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
+import { mirrorOutline } from '../src/engine/topFrame.js';
 import { goldenOf } from '../scripts/t75-golden.mjs';
 
 const ROOT = new URL('../', import.meta.url).pathname;
@@ -279,8 +280,12 @@ test('F20 · section Z: the verdict on a puzzle BUD parent, the strip and the re
   for (const board of ['TOP', 'BOTTOM']) {
     assert.equal(was(board).outline.length, 64);
     assert.equal(now(board).outline.length, 24);
-    // The four corners and the back tenons' own 20 points, untouched and in the parent's order.
-    assert.deepEqual(now(board).outline, [[0, 0], [540, 0], [540, 564], [0, 564], ...was(board).outline.slice(44)]);
+    // The four corners and the back tenons' own 20 points, untouched and in the parent's order. 17.10.2026
+    // (14:15): the parent's TOP record is in its underside frame (one mirror at the end of computeCabinet,
+    // engine/topFrame.js) while the strip, run here on its own, draws in the producers' ROT90 frame as it does
+    // inside computeCabinet before that mirror; so the TOP's parent points are read back through the same mirror.
+    const parentFrame = board === 'TOP' ? mirrorOutline(was(board).outline, 564) : was(board).outline;
+    assert.deepEqual(now(board).outline, [[0, 0], [540, 0], [540, 564], [0, 564], ...parentFrame.slice(44)]);
     assert.deepEqual(now(board).outline, Bj.bjPlainEnds({
       drawnW: 540, drawnH: 564, G: 18, pz: P.puzzle, backTabs: true,
     }));

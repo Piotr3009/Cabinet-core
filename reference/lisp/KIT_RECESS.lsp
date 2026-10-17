@@ -279,6 +279,20 @@
 ;;;     corner to mark. COMMON's puzzle dog bones beside the tabs are not
 ;;;     this and do not move ("mamy puzzle i dogbones w systemie i niech tak
 ;;;     bedzie"). KIT_NOTCH.lsp D9 and KIT_CORNER_L.lsp state the same law.
+;;; D19 THE TOP IS DRAWN FROM ITS UNDERSIDE. The owner 17.10.2026, of the
+;;;     nesting sheet: *"w 01 bottom i top nie powinno byc odbicie
+;;;     lustrzane?"*; *"lustro bottom i top, prosze, koduj."*  The TOP was
+;;;     drawn in drawTOP_ROT90's frame, the BOTTOM's, which for the TOP is the
+;;;     view from above: its outside. A bite at the rear-left in plan (CASE A,
+;;;     CASE C) is NOT symmetric, so a TOP laid underside up and cut from the
+;;;     BOTTOM's drawing had its bite at the rear RIGHT. The law, stated once
+;;;     in SKYLON_JOINTS_BISCUIT.lsp section J and the routine in KIT_NOTCH
+;;;     .lsp D11 (notch-top-pts, notch-top-fc): the TOP's frame is the
+;;;     BOTTOM's mirrored across the width, y' = (W - 2G) - y, x unchanged,
+;;;     the walk reversed; the bump's corner name swaps its y half, the
+;;;     corner mark moves with it. Applied once, at the end, to the whole
+;;;     drawing (the engine's topFrame.js); every routine of this file keeps
+;;;     drawing in the ROT90 frame. The NUMBERS carry both boards.
 ;;;
 ;;;========================================
 ;;; 4. NOT HERE
@@ -821,17 +835,23 @@
 ;;;                         (690 0) (690 770) (0 770) (0 0); no dog bone; no
 ;;;                         back tabs (it meets the EXT-BACK)
 ;;; TOP        564 x 540    564 x 690 less 310 x 150 at the rear-left
-;;; BOTTOM     564 x 540    the same as TOP
+;;; BOTTOM     564 x 540    the same as TOP in plan; its drawing is the TOP's
+;;;                         mirror image (D19, 17.10.2026)
 ;;;   plan frame (x from BUL's inner face, y from the front edge):
 ;;;     (0 0) (564 0) (564 690) (310 690) (310 540) (0 540)
-;;;   drawTOP_ROT90 frame (x from the BACK edge, drawn width 690):
+;;;   BOTTOM, drawTOP_ROT90 frame (x from the BACK edge, drawn width 690, y
+;;;   from the BUL edge):
 ;;;     (690 0) (690 564) (0 564) (0 310) (150 310) (150 0)
+;;;   TOP, drawn from its UNDERSIDE (D19: y from the BUR edge, y' = 564 - y,
+;;;   the walk read backwards):
+;;;     (150 564) (150 254) (0 254) (0 0) (690 0) (690 564)
 ;;;   CORNER MARK (D18, 17.10.2026; until then a dog bone, circle r 4 at
-;;;   (307.1716 542.8284) plan): the corner (310 540) plan = (150 310) ROT90;
-;;;   two open lines on CORNER_4MM, 40 long, each along one of the two
-;;;   outline edges that meet there:
-;;;     plan  (310 540)-(270 540) and (310 540)-(310 580)
-;;;     ROT90 (150 310)-(110 310) and (150 310)-(150 270)
+;;;   (307.1716 542.8284) plan): the corner (310 540) plan = (150 310) ROT90
+;;;   = (150 254) on the TOP; two open lines on CORNER_4MM, 40 long, each
+;;;   along one of the two outline edges that meet there:
+;;;     plan   (310 540)-(270 540) and (310 540)-(310 580)
+;;;     BOTTOM (150 310)-(110 310) and (150 310)-(150 270)
+;;;     TOP    (150 254)-(110 254) and (150 254)-(150 294)
 ;;;   area 0.305 -> 0.343 m2 (342660 mm2)
 ;;; BACK       600 x 770    328 x 770, carcass x 0..328
 ;;;   (0 0) (328 0) (328 770) (0 770); no dog bone

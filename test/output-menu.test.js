@@ -40,6 +40,9 @@ test('Output carries the three groups CLAUDE.md asks for, in that order', () => 
     'CNC / DXF',
     'Cutting list CSV',
     'BOM PDF',
+    // Chat fix 17.10.2026: the sticker sheets, in the machine files' group
+    // (*"naklejki 44 na A4 bo takie mam ... ok koduj"*).
+    'Part labels (PDF)',
     'Bill of materials…',
     // T78 F21: the Spraying page, in the BOM's group (a live document, like it).
     'Spraying…',

@@ -178,21 +178,38 @@ export function paintTag(panel, { set2 = false, openUnit = false } = {}) {
 }
 
 /**
+ * THE PART NUMBER (chat fix 17.10.2026). The owner: *"ponumerujemy wszystkie
+ * elementy"*: one number per carcass board through the whole project
+ * (engine/partNumbers.js), and it leads the label: `#07 W01 TOP 1071x550`,
+ * the same `#07` as on the sticker. A label given no number prints exactly
+ * what it printed before, which is every file written before this day.
+ *
+ * @returns {string} '#07' or ''
+ */
+export function numberTag(no, { pad = 2 } = {}) {
+  if (no == null || !Number.isFinite(Number(no))) return '';
+  return `#${String(Math.max(0, Math.round(Number(no)))).padStart(pad, '0')}`;
+}
+
+/**
  * `F-01 BUR 597x568` — the cabinet, the part, the cut size.
  *
  * …and on a SHELF, the kind it is: `F-01 SHELF-1 564x520 (FIX)`.
  * …and on a board machined from the carcass's outside face (T78 F20):
  * `F-01 TOP 564x540 OUTSIDE FACE UP`.
  * …and on a sprayed element, its paint code (T78 F21): `F-01 F 597x767 2S+4E`.
+ * …and, numbered (17.10.2026), the number first: `#07 F-01 TOP 564x540`.
  *
  * @param {string} unitNum  what the cabinet is called (result.unitNum)
  * @param {object} panel    an engine panel record
- * @param {{set2?:boolean, openUnit?:boolean}} [opts]  T78 F21: the job's carcass is sprayed or veneered; the unit stands open
+ * @param {{set2?:boolean, openUnit?:boolean, no?:number|null, pad?:number}} [opts]
+ *   T78 F21: the job's carcass is sprayed or veneered; the unit stands open;
+ *   17.10.2026: the part's number in the project, when it has one
  * @returns {string}
  */
-export function partLabelText(unitNum, panel, { set2 = false, openUnit = false } = {}) {
+export function partLabelText(unitNum, panel, { set2 = false, openUnit = false, no = null, pad = 2 } = {}) {
   const name = String(unitNum ?? '').trim();
   const code = partCode(name, panel?.id);
   const size = `${formatMm(panel?.w)}x${formatMm(panel?.h)}`;
-  return [name, code, size, shelfTypeTag(panel), faceTag(panel), paintTag(panel, { set2, openUnit })].filter((s) => s !== '').join(' ');
+  return [numberTag(no, { pad }), name, code, size, shelfTypeTag(panel), faceTag(panel), paintTag(panel, { set2, openUnit })].filter((s) => s !== '').join(' ');
 }

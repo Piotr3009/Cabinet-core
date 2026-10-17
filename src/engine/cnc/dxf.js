@@ -228,12 +228,15 @@ export function panelLabelBlock(panel, {
   // whole. Default 'truncate' — every caller that predates tonight, the DXF
   // writer included, gets exactly the block it got yesterday.
   onOverflow = 'truncate',
+  // CHAT FIX 17.10.2026: the part's number in the project, when the caller
+  // has a plan for it (engine/partNumbers.js); null prints yesterday's label.
+  no = null,
 }) {
   const cnc = profile.cnc;
   const box = labelBox(panel);
   return labelBlock({
     onOverflow,
-    text: partLabelText(unitNum, panel),
+    text: partLabelText(unitNum, panel, { no }),
     sizeMm: profile.cnc.annotation.partLabelMm,
     boxW: box.w,
     boxH: box.h,
@@ -330,10 +333,10 @@ export function panelNoteBlock(panel, {
  *   `str` is the whole caption on one line — what the part says, however it is
  *   broken — and is '' where not even one character fits.
  */
-export function panelLabel(panel, { unitNum, profile }) {
+export function panelLabel(panel, { unitNum, profile, no = null }) {
   const cnc = profile.cnc;
   const box = labelBox(panel);
-  const block = panelLabelBlock(panel, { unitNum, profile });
+  const block = panelLabelBlock(panel, { unitNum, profile, no });
   if (!block.visible) return { lines: [], h: 0, str: '', step: 0 };
   const h = Math.max(
     cnc.labelMinHeight,
@@ -358,12 +361,19 @@ export function panelLabel(panel, { unitNum, profile }) {
  *
  * @param {object} panel   one entry of result.panels
  * @param {object[]} drills  result.drills (the whole list; filtered here)
- * @param {object} opts    { unitNum, profile }
+ * @param {object} opts    { unitNum, profile, label }
+ *   label  CHAT FIX 17.10.2026: `{ no, layer }`, the part's number in the
+ *          project and the cabinet's own text layer (LABEL_<cabinet>, coloured
+ *          in the layer table so VCarve shows each cabinet's words in its
+ *          colour). Left out, the text goes where it always went, unnumbered,
+ *          and the file is byte for byte yesterday's.
  */
-export function panelEntities(panel, drills, { unitNum, profile }) {
+export function panelEntities(panel, drills, { unitNum, profile, label = null }) {
   const pz = profile.puzzle;
   const cnc = profile.cnc;
   const entities = [];
+  const textLayer = label?.layer || cnc.unitNumberLayer;
+  const partNo = label?.no ?? null;
   // ─── T78 F20 · OUTSIDE FACE UP ──────────────────────────────────────────
   // The owner, 11.10.2026: a Cabineo pocket is cut from the OUTSIDE face of
   // the top, the bottom and a fixed shelf ("ciecie nie od srodka korpusu
@@ -481,7 +491,7 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
   // A panel with nothing extra to say contributes NO ENTITY AT ALL, which is
   // what keeps every existing file byte-identical.
   const note = panelNoteBlock(panel, { profile, ascii: true });
-  const label = panelLabel(panel, { unitNum, profile });
+  const caption = panelLabel(panel, { unitNum, profile, no: partNo });
   if (note.visible) {
     // At the part's TOP EDGE — beside the cut, not in the middle where the
     // label is — and laid out inside the part's own box, so it can never grow
@@ -489,7 +499,7 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
     for (const [i, l] of note.lines.entries()) {
       entities.push({
         type: 'text',
-        layer: cnc.unitNumberLayer,
+        layer: textLayer,
         x: w / 2,
         y: h - note.size * 1.2 - i * note.step,
         h: note.size,
@@ -497,13 +507,13 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
       });
     }
   }
-  for (const [i, line] of label.lines.entries()) {
+  for (const [i, line] of caption.lines.entries()) {
     entities.push({
       type: 'text',
-      layer: cnc.unitNumberLayer,
+      layer: textLayer,
       x: w / 2,
-      y: h / 2 + ((label.lines.length - 1) / 2 - i) * label.step,
-      h: label.h,
+      y: h / 2 + ((caption.lines.length - 1) / 2 - i) * caption.step,
+      h: caption.h,
       str: line,
     });
   }
@@ -567,10 +577,33 @@ export function dxfFileName(unitNum, panelId) {
   return `${safe}.dxf`;
 }
 
+// ─── CHAT FIX 17.10.2026: THE CABINET'S OWN TEXT LAYER, AND ITS NUMBERS ─────
+//
+// The owner: the label text of each cabinet in that cabinet's colour, so the
+// nesting in VCarve reads cabinet by cabinet (*"przynajmniej kolory napisow
+// pod kolory szafki"*), and every carcass board NUMBERED through the project
+// (*"ponumerujemy wszystkie elementy"*). A `labels` record is the plan's
+// answer for one cabinet (engine/partNumbers.js dxfLabelsFor): the text
+// layer, its colour index and the numbers by panel. Every writer below takes
+// it as an option; without it nothing moves.
+
+/** The per-panel `label` option out of a cabinet's `labels` record. */
+export function labelFor(labels, panelId) {
+  if (!labels?.layer) return null;
+  const no = labels.byPanel instanceof Map ? labels.byPanel.get(panelId) : labels.byPanel?.[panelId];
+  return { layer: labels.layer, no: no ?? null };
+}
+
+/** The layer table row a cabinet's text layer declares itself with. */
+export function labelLayerRow(labels) {
+  return labels?.layer ? [{ name: labels.layer, aci: Number(labels.aci) || 7 }] : [];
+}
+
 /** Complete DXF text for one part. */
 export function panelDxf(panel, drills, opts) {
-  const entities = panelEntities(panel, drills, opts);
-  const layers = layerTableFor(entities.map((e) => e.layer), opts?.userLayers);
+  const label = opts?.label ?? labelFor(opts?.labels, panel?.id);
+  const entities = panelEntities(panel, drills, { ...opts, label });
+  const layers = layerTableFor(entities.map((e) => e.layer), [...(opts?.userLayers || []), ...labelLayerRow(opts?.labels)]);
   return writeDxf(entities, layers, entitiesExtents(entities));
 }
 
@@ -584,13 +617,15 @@ export function panelDxf(panel, drills, opts) {
  * @param {object} profile the profile the result was computed with
  * @returns {{name:string, panelId:string, dxf:string, entities:object[]}[]}
  */
-export function buildUnitDxfFiles(result, profile, { userLayers = [] } = {}) {
+export function buildUnitDxfFiles(result, profile, { userLayers = [], labels = null } = {}) {
   const unitNum = result.unitNum;
+  // CHAT FIX 17.10.2026: the cabinet's text layer, declared once with its colour.
+  const layerRows = [...userLayers, ...labelLayerRow(labels)];
   return result.panels
     .filter((p) => p.cnc && Array.isArray(p.cnc.outline) && p.cnc.outline.length >= 2)
     .flatMap((panel) => {
-      const entities = panelEntities(panel, result.drills, { unitNum, profile });
-      const layers = layerTableFor(entities.map((e) => e.layer), userLayers);
+      const entities = panelEntities(panel, result.drills, { unitNum, profile, label: labelFor(labels, panel.id) });
+      const layers = layerTableFor(entities.map((e) => e.layer), layerRows);
       const name = dxfFileName(unitNum, panel.id);
       const files = [{
         name,
@@ -634,6 +669,8 @@ export function buildUnitDxfFiles(result, profile, { userLayers = [] } = {}) {
  */
 export function sheetEntities({
   panels, drills, layout, unitNum, profile, sheetHeight = null, offsetY = 0, setup = 'back',
+  // CHAT FIX 17.10.2026: this cabinet's text layer and numbers (dxfLabelsFor); null = yesterday's file.
+  labels = null,
 }) {
   const byId = new Map(layout.places.map((pl) => [pl.panel.id, pl]));
   const entities = [];
@@ -648,7 +685,7 @@ export function sheetEntities({
     if (!place) continue;
     const turn = place.bounds.turn || 0;
     const localEntities = setup === 'front' ? frontPanelEntities(panel)
-      : panelEntities(panel, drills, { unitNum, profile });
+      : panelEntities(panel, drills, { unitNum, profile, label: labelFor(labels, panel.id) });
     // Sheet (y-down, origin top-left) → DXF (y-up, origin bottom-left).
     let dx = place.x - place.bounds.minX;
     let dy = (total - (offsetY + place.y) - place.h) - place.bounds.minY;
@@ -731,7 +768,8 @@ export function sheetDxfFileName(unitNum, presetId, { project = null, now = new 
 export function sheetDxf(args) {
   const entities = sheetEntities(args);
   const userLayers = args?.setup === 'front'
-    ? [...(args.userLayers || []), ...frontDecorationLayers(args.panels)] : args?.userLayers;
+    ? [...(args.userLayers || []), ...frontDecorationLayers(args.panels)]
+    : [...(args?.userLayers || []), ...labelLayerRow(args?.labels)];
   const layers = layerTableFor(entities.map((e) => e.layer), userLayers);
   return writeDxf(entities, layers, entitiesExtents(entities));
 }
@@ -752,7 +790,8 @@ export function sheetDxf(args) {
 
 /**
  * @param {object} args
- *   blocks  [{ unitNum, panels, drills, layout }] — one per cabinet, in order
+ *   blocks  [{ unitNum, panels, drills, layout, labels? }]: one per cabinet, in order;
+ *           `labels` (17.10.2026) the cabinet's text layer and numbers (dxfLabelsFor)
  *   gap     profile.cnc.layoutGap; the blocks stand three gaps apart, exactly
  *           as the preview stacks them
  *   profile
@@ -773,6 +812,7 @@ export function materialSheetEntities({ blocks = [], gap = 0, profile, setup = '
       sheetHeight: height,
       offsetY,
       setup,
+      labels: block.labels || null,
     }));
     offsetY += block.layout.height + step;
   }
@@ -801,7 +841,7 @@ export function materialSheetDxf(args) {
   const entities = materialSheetEntities(args);
   const userLayers = args?.setup === 'front'
     ? [...(args.userLayers || []), ...frontDecorationLayers((args.blocks || []).flatMap((block) => block.panels))]
-    : args?.userLayers;
+    : [...(args?.userLayers || []), ...(args.blocks || []).flatMap((block) => labelLayerRow(block.labels))];
   const layers = layerTableFor(entities.map((e) => e.layer), userLayers);
   return writeDxf(entities, layers, entitiesExtents(entities));
 }

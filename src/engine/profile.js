@@ -1140,6 +1140,41 @@ export const DEFAULT_CABINET_PROFILE = {
     layer: 'SCREWS_3MM',
   },
 
+  // ─── CHAT FIX 17.10.2026: THE PART LABELS (stickers, the sheet, the DXF text) ──
+  //
+  // The owner, 13:07: *"naklejki 44 na A4 bo takie mam, kolorami: 3 szafy to
+  // 3 kolory, drugi kolor to kolor elementu, czyli polki, boki, plecy i top
+  // and bottom, parami ten sam kolor; szuflady nie trzeba; napis co to; i
+  // strzalka co oklejamy"*; 13:15: the project number off the sticker, every
+  // element NUMBERED instead; the label text on the CNC parts in the
+  // cabinet's colour (the DXF layer per cabinet carries the colour to VCarve).
+  // Every number of it lives here (engine/partNumbers.js reads them):
+  //   sheet        the owner's label paper: 44 per A4, 4 across x 11 down,
+  //                48.3 x 25.4 mm (the common 44-up layout; his product to
+  //                confirm). A null margin centres the grid on the page.
+  //   unitColours  one per cabinet, in project order, cycled; unitAci the
+  //                same palette as DXF colour indices (R12 has no RGB)
+  //   kinds        the element pairs and their colour: sides (a divider with
+  //                them), top + bottom, shelves (a fix board with them), back;
+  //                fronts and drawers take no sticker and no number
+  //   dxf          the text layer per cabinet: LABEL_<unit>
+  labels: {
+    sheet: {
+      pageW: 210, pageH: 297, cols: 4, rows: 11, labelW: 48.3, labelH: 25.4,
+      gapX: 0, gapY: 0, marginLeft: null, marginTop: null,
+    },
+    unitColours: ['#d7263d', '#1f6feb', '#e0a100', '#7a3ea1', '#0f9d8a', '#e4572e', '#3b8ea5', '#8c5e2a'],
+    unitAci: [1, 5, 2, 6, 3, 30, 4, 8],
+    kinds: {
+      side: { label: 'SIDE', colour: '#1b5e20', order: 1 },
+      topbottom: { label: 'TOP / BOTTOM', colour: '#6a1b9a', order: 2 },
+      shelf: { label: 'SHELF', colour: '#0277bd', order: 3 },
+      back: { label: 'BACK', colour: '#546e7a', order: 4 },
+    },
+    dxf: { layerPrefix: 'LABEL_' },
+    numberPad: 2,
+  },
+
   // ─── Partition fixing: the biscuit set (turn 13, CLAUDE.md F8 / #59) ─────
   //
   // The owner's workshop truth, given as the reference pattern for a butt
@@ -5730,6 +5765,15 @@ export function migrateCabinetProfile(profile) {
     partitionBack: { ...D.partitionBack, ...profile.partitionBack },
     // Turn 30 (CLAUDE.md F4): the divider's foot, restored from the LISP.
     partitionFoot: { ...D.partitionFoot, ...profile.partitionFoot },
+    // CHAT FIX 17.10.2026: the part labels' numbers, block by block, so a profile
+    // saved before this day comes back with the owner's label paper and palettes.
+    labels: {
+      ...D.labels,
+      ...(profile.labels || {}),
+      sheet: { ...D.labels.sheet, ...(profile.labels?.sheet || {}) },
+      kinds: { ...D.labels.kinds, ...(profile.labels?.kinds || {}) },
+      dxf: { ...D.labels.dxf, ...(profile.labels?.dxf || {}) },
+    },
     hoverDimensions: {
       ...D.hoverDimensions,
       ...profile.hoverDimensions,

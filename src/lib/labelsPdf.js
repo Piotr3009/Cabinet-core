@@ -1,0 +1,188 @@
+// ─── THE PART LABELS PDF (chat fix 17.10.2026) ──────────────────────────────
+//
+// The owner, 13:07: *"naklejki 44 na A4 bo takie mam, kolorami: 3 szafy to 3
+// kolory, drugi kolor to kolor elementu, parami ten sam kolor; szuflady nie
+// trzeba; napis co to; i strzalka co oklejamy"*; 13:13: *"strzalka ... zrob
+// troszeczke wieksza"*; 13:15: every element numbered, the project number
+// off the sticker. The mockup he saw (13:12 to 13:17) is this page: a band on
+// the left in the CABINET's colour with the cabinet's name up it, a strip on
+// top in the ELEMENT's colour with what the board is and its code, the cut
+// size large, the part's number large, and the board as a small rectangle in
+// its drawing's proportions with the banded edge thick and an arrow at it.
+//
+// The records and the grid are the engine's (engine/partNumbers.js, pure,
+// tested in node); this file is the jsPDF half, in src/lib for the reason
+// `drawingExport.js` is. The bytes go through T42 F0's own measurement
+// (`assertPdfBytes`) before the word "saved" is allowed. Plain ASCII in the
+// PDF text: jsPDF's built-in faces are WinAnsi.
+
+import jsPDFDefault from 'jspdf';
+import { assertPdfBytes, pdfBytes } from './drawingExport.js';
+import { exportFileName } from '../engine/naming.js';
+import { labelPages, labelSheetGrid } from '../engine/partNumbers.js';
+
+const jsPDF = jsPDFDefault?.jsPDF || jsPDFDefault;
+
+/** '#1b5e20' -> [27, 94, 32]; anything unreadable -> mid grey. */
+function rgb(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  if (!m) return [120, 120, 120];
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** mm of text height -> jsPDF's font size in points (cap height is about 0.72 of the em). */
+const pt = (mm) => (mm / 0.72) * 72 / 25.4;
+
+/**
+ * THE EDGE ICON: the board as a rectangle in its drawing's proportions, inside
+ * a box `bw x bh` at (bx, by); the banded edges thick in the element colour;
+ * one arrow at the banded edge the sticker points to; the word under it.
+ */
+function drawEdgeIcon(doc, rec, bx, by, bw, bh) {
+  const maxW = bw - 2;
+  const maxH = bh - 2.6;
+  const ratio = rec.drawnH > 0 ? rec.drawnW / rec.drawnH : 1;
+  let w = maxW;
+  let h = ratio > 0 ? maxW / ratio : maxH;
+  if (h > maxH) { h = maxH; w = maxH * ratio; }
+  w = Math.max(3, Math.min(maxW, w));
+  h = Math.max(3, Math.min(maxH, h));
+  const x0 = bx + (bw - w) / 2;
+  const y0 = by + (maxH - h) / 2 + 0.3;
+  const e = rec.edge;
+  // the board (a board with no banded edge in a lighter line: nothing to point at)
+  if (e.arrow === 'none') doc.setDrawColor(170, 170, 170); else doc.setDrawColor(110, 110, 110);
+  doc.setLineWidth(0.25);
+  doc.rect(x0, y0, w, h, 'S');
+  // the banded edges, thick, in the element colour
+  const [kr, kg, kb] = rgb(rec.kindColour);
+  doc.setDrawColor(kr, kg, kb);
+  doc.setLineWidth(1.1);
+  if (e.left) doc.line(x0, y0, x0, y0 + h);
+  if (e.right) doc.line(x0 + w, y0, x0 + w, y0 + h);
+  if (e.top) doc.line(x0, y0, x0 + w, y0);
+  if (e.bottom) doc.line(x0, y0 + h, x0 + w, y0 + h);
+  // the arrow: shaft and head, black, pointing AT the banded edge
+  doc.setDrawColor(20, 20, 20);
+  doc.setFillColor(20, 20, 20);
+  doc.setLineWidth(0.9);
+  const cx = x0 + w / 2;
+  const cy = y0 + h / 2;
+  const head = 2.2;
+  const shaft = 4.2;
+  if (e.arrow === 'right') {
+    const tip = x0 + w - 1.2;
+    doc.line(tip - head - shaft, cy, tip - head, cy);
+    doc.triangle(tip - head, cy - head * 0.75, tip, cy, tip - head, cy + head * 0.75, 'F');
+  } else if (e.arrow === 'left') {
+    const tip = x0 + 1.2;
+    doc.line(tip + head, cy, tip + head + shaft, cy);
+    doc.triangle(tip + head, cy - head * 0.75, tip, cy, tip + head, cy + head * 0.75, 'F');
+  } else if (e.arrow === 'up') {
+    const tip = y0 + 1.2;
+    doc.line(cx, tip + head, cx, tip + head + shaft);
+    doc.triangle(cx - head * 0.75, tip + head, cx, tip, cx + head * 0.75, tip + head, 'F');
+  } else if (e.arrow === 'down') {
+    const tip = y0 + h - 1.2;
+    doc.line(cx, tip - head - shaft, cx, tip - head);
+    doc.triangle(cx - head * 0.75, tip - head, cx, tip, cx + head * 0.75, tip - head, 'F');
+  } else if (e.arrow === 'all') {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(pt(2.4));
+    doc.setTextColor(20, 20, 20);
+    doc.text('ALL', cx, cy + 0.9, { align: 'center' });
+  }
+  // the word under it
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(pt(1.9));
+  doc.setTextColor(20, 20, 20);
+  doc.text(e.arrow === 'none' ? 'NO EDGE' : 'EDGE', bx + bw / 2, by + bh - 0.4, { align: 'center', charSpace: 0.2 });
+}
+
+/** One sticker at cell (x, y, w, h). */
+function drawLabel(doc, rec, cell) {
+  const { x, y, w, h } = cell;
+  const band = 7;
+  const head = 4.2;
+  const [ur, ug, ub] = rgb(rec.unitColour);
+  const [kr, kg, kb] = rgb(rec.kindColour);
+  // the white body and a hairline cutting guide
+  doc.setFillColor(255, 255, 255);
+  doc.rect(x, y, w, h, 'F');
+  // the cabinet's band, its name up it
+  doc.setFillColor(ur, ug, ub);
+  doc.rect(x, y, band, h, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(pt(4.4));
+  // Up the band: with angle 90 the baseline runs up the page from (x, y) and
+  // the glyphs stand to its left, so the baseline sits right of the band's
+  // middle by half a cap height and starts half the text's length below it.
+  const unitText = String(rec.unitNum);
+  const unitW = Math.min(doc.getTextWidth(unitText), h - 2);
+  doc.text(unitText, x + band / 2 + 4.4 * 0.5, y + h / 2 + unitW / 2, { angle: 90 });
+  // the element's strip: what it is, and its code
+  doc.setFillColor(kr, kg, kb);
+  doc.rect(x + band, y, w - band, head, 'F');
+  doc.setFontSize(pt(2.9));
+  doc.text(rec.name, x + band + 1.4, y + head - 1.2);
+  doc.setFontSize(pt(2.5));
+  doc.text(rec.code, x + w - 1.2, y + head - 1.2, { align: 'right' });
+  // the cut size, shrunk to the room beside the icon when it is long
+  const iconW = 18;
+  const textW = w - band - 1.4 - iconW - 0.6;
+  doc.setTextColor(17, 17, 17);
+  let sizeMm = 4.1;
+  doc.setFontSize(pt(sizeMm));
+  while (doc.getTextWidth(rec.size) > textW && sizeMm > 2.4) {
+    sizeMm -= 0.2;
+    doc.setFontSize(pt(sizeMm));
+  }
+  doc.text(rec.size, x + band + 1.4, y + head + 5.4);
+  // the number, large, and the count beside it
+  doc.setFontSize(pt(4.8));
+  doc.text(rec.noText, x + band + 1.4, y + head + 11.6);
+  const numW = doc.getTextWidth(rec.noText);
+  doc.setFontSize(pt(2.2));
+  doc.setTextColor(90, 90, 90);
+  doc.text(`/ ${rec.total}`, x + band + 1.4 + numW + 1.2, y + head + 11.6);
+  // the edge icon, bottom right
+  drawEdgeIcon(doc, rec, x + w - iconW - 0.4, y + head + 0.8, iconW, h - head - 1.2);
+  // the hairline round the sticker (cut guide, light)
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.15);
+  doc.rect(x, y, w, h, 'S');
+}
+
+/**
+ * The document: one page per 44 stickers (or whatever the paper holds), in
+ * number order, nothing else on the page (a label sheet has no frame).
+ *
+ * @returns {{doc:object, pages:number, labels:number, bytes:number}}
+ */
+export function labelsDoc({ records, profile }) {
+  const grid = labelSheetGrid(profile);
+  const pages = labelPages(records, profile);
+  if (!pages.length) throw new Error('There is nothing to label yet: no carcass board in the project.');
+  const doc = new jsPDF({ unit: 'mm', format: [grid.pageW, grid.pageH], orientation: grid.pageW >= grid.pageH ? 'landscape' : 'portrait' });
+  pages.forEach((page, i) => {
+    if (i > 0) doc.addPage([grid.pageW, grid.pageH], grid.pageW >= grid.pageH ? 'landscape' : 'portrait');
+    page.forEach((rec, k) => drawLabel(doc, rec, grid.cells[k]));
+  });
+  const measured = assertPdfBytes(pdfBytes(doc), { pages: doc.getNumberOfPages(), sheets: pages.length, what: 'The labels PDF' });
+  return { doc, pages: pages.length, labels: records.length, bytes: measured.bytes };
+}
+
+/** `{ProjectName}-labels-{DDMM-HHMM}.pdf`, by the one naming law (engine/naming.js). */
+export function labelsFilename({ project, ext = 'pdf', now = new Date() } = {}) {
+  return exportFileName({ project, kind: 'labels', ext, now });
+}
+
+/** The stickers as a file. */
+export function exportLabelsPdf({ records, profile, project = null, now = new Date() }) {
+  const { doc, pages, labels, bytes } = labelsDoc({ records, profile });
+  const filename = labelsFilename({ project, now });
+  doc.save(filename);
+  return { filename, pages, labels, bytes };
+}

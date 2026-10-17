@@ -81,10 +81,11 @@ export const DRAWING_KINDS = [
  *   onExportPdf   the project PDF
  *   onOpenBom     the live BOM panel
  *   onOpenSpraying  the Spraying page (T78 F21)
+ *   onExportLabels  the part labels PDF (chat fix 17.10.2026)
  * @returns {{label:string, items:Array}}  a MenuBar menu
  */
 export function buildOutputMenu({
-  onRender, onDrawing, onExportDxf, onExportCsv, onExportPdf, onOpenBom, onOpenSpraying,
+  onRender, onDrawing, onExportDxf, onExportCsv, onExportPdf, onOpenBom, onOpenSpraying, onExportLabels,
 } = {}) {
   return {
     label: 'Output',
@@ -113,6 +114,15 @@ export function buildOutputMenu({
       { label: 'CNC / DXF', hint: 'Every cut part of the selected unit, as a ZIP', run: onExportDxf },
       { label: 'Cutting list CSV', hint: 'The LISP cutting-list format, unchanged', run: onExportCsv },
       { label: 'BOM PDF', hint: 'The project sheet: 3D view, parts, materials, hardware', run: onExportPdf },
+      // CHAT FIX 17.10.2026 (the owner, 13:07): *"naklejki 44 na A4 bo takie
+      // mam, kolorami ... napis co to, i strzalka co oklejamy"*; 13:15: every
+      // element numbered. One sticker per carcass board of the whole project,
+      // in number order, on the owner's label paper (profile.labels).
+      {
+        label: 'Part labels (PDF)',
+        hint: 'A4 sticker sheets, 44 per page: cabinet colour, element colour, number, size, the edge to band',
+        run: onExportLabels,
+      },
       { divider: true },
       { label: 'Bill of materials…', hint: 'Live BOM, with the export buttons', run: onOpenBom },
       // T78 F21 (CLAUDE.md PART F): *"Output > Spraying"*, one page on the

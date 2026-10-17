@@ -242,7 +242,10 @@ test('EXPORT BY MATERIAL - selection controls stay unchanged; download awaits it
   // T77 F3 · the one call carries the level of the Ornate reference files
   // (CLAUDE.md T77 F3: "two levels in the existing export options"); still
   // pinned whole, still one caller.
-  assert.match(TREE, /const res = await exportMaterialDxf\(entries, \{\n {8}key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName, referenceLevel,\n {6}\}\);/);
+  // Chat fix 17.10.2026: the one call also carries the project's part number
+  // plan (the label text per cabinet on its coloured layer, numbered); still
+  // pinned whole, still one caller.
+  assert.match(TREE, /const res = await exportMaterialDxf\(entries, \{\n {8}key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName, referenceLevel,\n {8}plan: labelPlan,\n {6}\}\);/);
   // One caller, one path — this turn added no second way to write that file.
   assert.equal(TREE.split('exportMaterialDxf').length - 1, 2, 'imported once, called once');
 });

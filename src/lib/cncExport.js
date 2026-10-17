@@ -5,6 +5,7 @@ import {
 import { layoutPanels } from '../engine/cnc/layout.js';
 import { exportablePanels, presetOfSelection } from '../engine/cnc/groups.js';
 import { materialExportSection } from '../engine/cnc/views.js';
+import { labelsForUnit } from './partLabels.js';
 import { exportFileName, fileSafeName } from '../engine/naming.js';
 // Turn 31 (CLAUDE.md F3): both guards run before any file is written.
 import { exportGate, panelsThatGo } from '../engine/cnc/exportGate.js';
@@ -157,6 +158,9 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
   // are cut. Left out — every caller that predates this turn — nothing changes
   // at all, which is the gate stated as a default.
   unit = null, design = null, ledSpec = null,
+  // CHAT FIX 17.10.2026: this cabinet's text layer and part numbers
+  // (lib/partLabels.js labelsForUnit). Left out, the files are yesterday's.
+  labels = null,
 } = {}) {
   const dowelRefused = dowelExportRefusal([{ result }], profile);
   if (dowelRefused) throw new Error(dowelRefused);
@@ -170,7 +174,7 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
   const safe = exportAnyway || gate.ok
     ? cut
     : { ...cut, panels: (cut.panels || []).filter((p) => !held.has(p.id)) };
-  const files = buildUnitDxfFiles(safe, profile, { userLayers: [LED_GROOVE_LAYER] });
+  const files = buildUnitDxfFiles(safe, profile, { userLayers: [LED_GROOVE_LAYER], labels });
   const referenceFiles = buildOrnateReferenceFiles([{ result }], { level: referenceLevel, profile });
   if (!files.length && !referenceFiles.length) {
     throw new Error(gate.ok
@@ -238,6 +242,8 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
  */
 export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(), {
   exportAnyway = false, project = null, referenceLevel = 'reference',
+  // CHAT FIX 17.10.2026: the cabinet's text layer and numbers; null = yesterday's file.
+  labels = null,
 } = {}) {
   const wanted = new Set(selectedIds);
   const chosen = exportablePanels(result.panels).filter((p) => wanted.has(p.id));
@@ -257,7 +263,7 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
   });
   const presetId = presetOfSelection(result.panels, panels.map((p) => p.id));
   const dxf = sheetDxf({
-    panels, drills: result.drills, layout, unitNum: result.unitNum, profile,
+    panels, drills: result.drills, layout, unitNum: result.unitNum, profile, labels,
   });
   const filename = sheetDxfFileName(result.unitNum, presetId, { project });
   const said = (exported = null) => ({
@@ -308,6 +314,11 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
 export function exportMaterialDxf(entries, {
   key = 'all', design = null, materials = [], profile = getCabinetProfile(), exportAnyway = false,
   project = null, referenceLevel = 'reference',
+  // CHAT FIX 17.10.2026: the project's part number plan (lib/partLabels.js
+  // projectLabelPlan): every cabinet's block takes its own text layer and
+  // numbers, so one nesting file reads cabinet by cabinet in VCarve. Null =
+  // yesterday's file.
+  plan = null,
 } = {}) {
   const dowelRefused = dowelExportRefusal(entries, profile);
   if (dowelRefused) throw new Error(dowelRefused);
@@ -335,7 +346,9 @@ export function exportMaterialDxf(entries, {
       : `Every part on this sheet is held back: ${gate.message}`);
   }
 
-  const blocks = section?.blocks || [];
+  const blocks = (section?.blocks || []).map((block) => (plan
+    ? { ...block, labels: labelsForUnit(plan, block.unit?.id) }
+    : block));
   const label = section?.label || requested?.label || 'Ornate-reference';
   const dxf = blocks.length ? materialSheetDxf({
     blocks, gap: profile.cnc.layoutGap, profile,

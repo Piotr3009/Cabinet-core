@@ -48,6 +48,8 @@ import { useHistoryStore } from '../stores/historyStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { exportBomCsv, exportCuttingListCsv, exportProjectPdf } from '../lib/exporters.js';
+import { labelsForUnit, projectLabelPlan, projectLabelRecords } from '../lib/partLabels.js';
+import { exportLabelsPdf } from '../lib/labelsPdf.js';
 import { exportUnitDxfZip } from '../lib/cncExport.js';
 import { persistProject } from '../lib/persist.js';
 // Turn 39 (CLAUDE.md F7): the warning the CNC export carries when nobody has
@@ -159,6 +161,9 @@ export default function ConfiguratorPage() {
   const allResults = useProjectStore((s) => s.allResults);
   const worktopsOf = useProjectStore((s) => s.worktopsOf);
   const unitResult = useProjectStore((s) => s.unitResult);
+  // CHAT FIX 17.10.2026: the CNC answer (the grooves cut in) for the part
+  // numbers, the same one the sheet and the CNC tree read.
+  const unitCncResult = useProjectStore((s) => s.unitCncResult);
   const markSaved = useProjectStore((s) => s.markSaved);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectedElement = useUiStore((s) => s.selectedElement);
@@ -418,6 +423,25 @@ export default function ConfiguratorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allResults, project, assignments, materials, units.length]);
 
+  // ─── CHAT FIX 17.10.2026: OUTPUT > PART LABELS (PDF) ──────────────────────
+  // The owner, 13:07: *"naklejki 44 na A4 bo takie mam, kolorami ... napis co
+  // to, i strzalka co oklejamy"*; 13:15: every element numbered. One sticker
+  // per carcass board of the whole project, cabinet by cabinet, on the paper
+  // profile.labels names; the numbers are the same plan the CNC sheet and the
+  // DXF text print (lib/partLabels.js).
+  const onExportLabels = useCallback(() => {
+    if (!guard()) return;
+    try {
+      const resultOf = (id) => unitCncResult(id) || unitResult(id);
+      const records = projectLabelRecords({ units, resultOf, profile });
+      const res = exportLabelsPdf({ records, profile, project: project.name });
+      notify(`${res.filename}: ${res.labels} labels on ${res.pages} page${res.pages === 1 ? '' : 's'}.`, 'ok');
+    } catch (e) {
+      notify(e?.message || 'The labels PDF failed.', 'warn');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [units, unitCncResult, unitResult, profile, project.name]);
+
   /** Every cut part of the SELECTED unit, as one ZIP (Output ▸ CNC / DXF). */
   // The menu hands its `run` the click EVENT, so the flag is read out of an
   // options object rather than out of argument one: an event is truthy and
@@ -433,6 +457,9 @@ export default function ConfiguratorPage() {
       const res = await exportUnitDxfZip(unitResult(unit.id), undefined, {
         exportAnyway,
         project: project.name,
+        // CHAT FIX 17.10.2026: the cabinet's coloured text layer and its part
+        // numbers, from the one plan of the whole project.
+        labels: labelsForUnit(projectLabelPlan({ units, resultOf: (id) => unitCncResult(id) || unitResult(id), profile }), unit.id),
         // T45 F9-CNC: the groove under every placed line. Gated — a unit with
         // no LED line exports exactly the bytes it exported yesterday.
         unit,
@@ -576,6 +603,7 @@ export default function ConfiguratorPage() {
       <TopBar
         onExportCsv={onExportCsv}
         onExportPdf={onExportPdf}
+        onExportLabels={onExportLabels}
         onExportDxfZip={onExportDxfZip}
         onRender={(e) => openModal('render', { anchor: anchorOfEvent(e) })}
         onDrawing={onDrawing}

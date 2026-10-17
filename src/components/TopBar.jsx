@@ -30,7 +30,7 @@ import { LAYER_CLASS } from '../lib/modalLayer.js';
 // a drawing, a cut list, a DXF, a PDF — is in one place, in the order a
 // workshop meets them: show the client, draw it, cut it.
 export default function TopBar({
-  onExportCsv, onExportPdf, onExportDxfZip, onRender, onDrawing, onAuth,
+  onExportCsv, onExportPdf, onExportDxfZip, onExportLabels, onRender, onDrawing, onAuth,
 }) {
   const name = useProjectStore((s) => s.project.name);
   const project = useProjectStore((s) => s.project);
@@ -335,6 +335,8 @@ export default function TopBar({
       onOpenBom: () => setBomOpen(true),
       // T78 F21 - Output > Spraying..., the same page the Spraying button opens.
       onOpenSpraying: (e) => openModal('spraying', { anchor: anchorOfEvent(e) }),
+      // CHAT FIX 17.10.2026 - Output > Part labels (PDF): the sticker sheets.
+      onExportLabels,
     }),
   ];
 

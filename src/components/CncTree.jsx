@@ -11,6 +11,7 @@ import { groupByMaterial } from '../engine/cnc/views.js';
 import { hasFrontDecorations, isOrnateReference } from '../engine/cnc/frontOperations.js';
 import { ORNATE_REFERENCE_LEVELS } from '../engine/cnc/ornateExport.js';
 import { exportMaterialDxf, exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
+import { labelsForUnit, projectLabelPlan } from '../lib/partLabels.js';
 import { formatMm } from '../engine/format.js';
 // Turn 39 (CLAUDE.md F7): the warning a cut file carries when nobody has said
 // what a part is made of.
@@ -105,6 +106,17 @@ export default function CncTree() {
     return { unit: u, result, parts: result ? exportablePanels(result.panels) : [] };
   }), [units, unitCncResult]);
 
+  // ─── CHAT FIX 17.10.2026: THE PART NUMBERS AND THE CABINET'S COLOUR ───────
+  // The owner: every carcass board numbered through the project, the label
+  // text of each cabinet on its own coloured DXF layer (*"kolory napisow pod
+  // kolory szafki"*). ONE plan for the whole project, over every unit whether
+  // ticked or not, so hiding a cabinet never renumbers the next one; the three
+  // downloads below hand each cabinet its own slice of it.
+  const labelPlan = useMemo(
+    () => projectLabelPlan({ units, resultOf: unitCncResult, profile }),
+    [units, unitCncResult, profile],
+  );
+
   const shownIds = (unitId, parts) => parts
     .filter((p) => !hiddenParts[unitId]?.[p.id])
     .map((p) => p.id);
@@ -182,6 +194,7 @@ export default function CncTree() {
     try {
       const res = await exportMaterialDxf(entries, {
         key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName, referenceLevel,
+        plan: labelPlan,
       });
       notify(`${res.filename} — ${res.parts} parts off ${res.label}.`, 'ok');
       sayGate(res, () => downloadMaterial(true));
@@ -201,6 +214,7 @@ export default function CncTree() {
       // which lines were placed on it.
       exportUnitDxfZip(sheet.result, profile, {
         exportAnyway, project: projectName, unit: sheet.unit, design: storedDesign, ledSpec, referenceLevel,
+        labels: labelsForUnit(labelPlan, sheet.unit.id),
       })
         .then((res) => {
           notify(`${res.filename} — ${res.files.length} DXF files.`, 'ok');
@@ -211,7 +225,9 @@ export default function CncTree() {
       return;
     }
     try {
-      const res = await exportSheetDxf(sheet.result, ids, profile, { exportAnyway, project: projectName, referenceLevel });
+      const res = await exportSheetDxf(sheet.result, ids, profile, {
+        exportAnyway, project: projectName, referenceLevel, labels: labelsForUnit(labelPlan, sheet.unit.id),
+      });
       notify(`${res.filename} — ${res.parts} parts, laid out as shown.`, 'ok');
       sayGate(res, () => download(sheet, kind, true));
     } catch (e) {

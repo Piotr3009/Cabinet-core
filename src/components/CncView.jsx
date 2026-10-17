@@ -10,6 +10,7 @@ import { CNC_VIEWS, groupByCabinet, groupByMaterial } from '../engine/cnc/views.
 import { labelFit, symbolVisible } from '../engine/cnc/annotation.js';
 import { panelLabelBlock, panelNoteBlock } from '../engine/cnc/dxf.js';
 import { useElementSize, useSheetView } from '../lib/sheetView.js';
+import { projectLabelPlan } from '../lib/partLabels.js';
 import { partRollovers } from '../engine/cnc/rollover.js';
 // Turn 38 (F5/F10): an arc on the sheet is its own chord run — one reading of
 // an arc in this app, and it lives with the objects.
@@ -129,6 +130,16 @@ export default function CncView() {
     }
     return out;
   }, [units, unitCncResult, hiddenUnits, hiddenParts]);
+
+  // ─── CHAT FIX 17.10.2026: THE PART NUMBERS, THE CABINET'S COLOUR ──────────
+  // The owner: *"ponumerujemy wszystkie elementy"*, and the caption of every
+  // part in its cabinet's colour, as the sticker and the DXF text are. The
+  // SAME plan the CNC tree hands the downloads (lib/partLabels.js), over every
+  // unit ticked or not, so the glass, the sticker and the file agree on #07.
+  const labelPlan = useMemo(
+    () => projectLabelPlan({ units, resultOf: unitCncResult, profile }),
+    [units, unitCncResult, profile],
+  );
 
   // Both setups keep the same layout slots. Only the individual part is
   // reflected. Proposed contours match the separate reference DXF.
@@ -452,6 +463,8 @@ export default function CncView() {
                       place={place}
                       face={face}
                       unitNum={b.unit.params.unit_num}
+                      partNo={labelPlan.byUnit.get(b.unit.id)?.byPanel.get(place.panel.id)?.no ?? null}
+                      labelColour={labelPlan.byUnit.get(b.unit.id)?.screenColour || null}
                       drills={b.result.drills}
                       outlineLayer={profile.puzzle.layers.outline}
                       annotation={A}
@@ -611,6 +624,9 @@ function Part({
   place, unitNum, drills, outlineLayer, annotation, profile, mmPerPx, visible,
   face = 'back',
   lit = false, onOpenInTree = null, onRollover = null, rollover = null, handEdits = 0,
+  // CHAT FIX 17.10.2026: the part's number in the project and its cabinet's
+  // colour (lib/partLabels.js); null prints yesterday's caption in grey.
+  partNo = null, labelColour = null,
   // Turn 38 (F3): ONE resolver for "what colour is this layer", built-in and
   // the project's own alike — handed down so this component never has to know
   // which kind it is holding.
@@ -705,7 +721,7 @@ function Part({
   // same words at half the height. The sheet cannot word a label differently
   // from the board any more, because it no longer computes one.
   const label = panelLabelBlock(panel, {
-    unitNum, profile, mmPerPx, minPx: annotation.minLabelPx,
+    unitNum, profile, mmPerPx, minPx: annotation.minLabelPx, no: partNo,
     // ─── TURN 48 (CLAUDE.md F9): NEVER CUT A DIGIT ─────────────────────────
     // The owner's audit: `TOP-1` came out `TOP~` and `260.9x540` came out
     // `260.9x5~`. The second is not an abbreviation, it is a SIZE with a digit
@@ -1033,8 +1049,9 @@ function Part({
             )}
             <text
               x={tx} y={ty} textAnchor={outside ? 'start' : 'middle'}
-              fontSize={label.size} fill="#d6d6d2"
+              fontSize={label.size} fill={labelColour || '#d6d6d2'}
               data-part-label={panel.id}
+              data-part-no={partNo ?? undefined}
               data-part-label-outside={outside ? '1' : '0'}
               transform={!outside && labelTurn ? `rotate(${-labelTurn} ${tx} ${ty})` : undefined}
               style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}

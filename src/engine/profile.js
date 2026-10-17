@@ -1149,9 +1149,18 @@ export const DEFAULT_CABINET_PROFILE = {
   // element NUMBERED instead; the label text on the CNC parts in the
   // cabinet's colour (the DXF layer per cabinet carries the colour to VCarve).
   // Every number of it lives here (engine/partNumbers.js reads them):
-  //   sheet        the owner's label paper: 44 per A4, 4 across x 11 down,
-  //                48.3 x 25.4 mm (the common 44-up layout; his product to
-  //                confirm). A null margin centres the grid on the page.
+  //   sheet        the owner's label paper. 16:40: *"naklejki robimy na
+  //                papierze 21 sztuk, 44 to za male naklejki ... z marginesami,
+  //                3 kolumny"*: Avery L7160 / J8160, 21 per A4, 3 across x 7
+  //                down, 63.5 x 38.1 mm, 2.5 mm between the columns, none
+  //                between the rows; a null margin centres the grid on the
+  //                page (7.25 / 15.15, Avery's own 7.2 / 15.1 within a tenth).
+  //                insetMm: *"zrobimy nadruk mniejszy od naklejek, to nawet
+  //                jak sie przesunie, to nie bedzie koniec swiata"*: the print
+  //                keeps that much off every sticker edge. The 44-up paper of
+  //                13:07 stays in `sheets` as a preset. `preset` names the
+  //                block; a saved sheet with no name is the 44-up of 13:07
+  //                and the migrate replaces it with the paper of 16:40.
   //   unitColours  one per cabinet, in project order, cycled; unitAci the
   //                same palette as DXF colour indices (R12 has no RGB)
   //   kinds        the element pairs and their colour: sides (a divider with
@@ -1160,8 +1169,18 @@ export const DEFAULT_CABINET_PROFILE = {
   //   dxf          the text layer per cabinet: LABEL_<unit>
   labels: {
     sheet: {
-      pageW: 210, pageH: 297, cols: 4, rows: 11, labelW: 48.3, labelH: 25.4,
-      gapX: 0, gapY: 0, marginLeft: null, marginTop: null,
+      preset: 'L7160', pageW: 210, pageH: 297, cols: 3, rows: 7, labelW: 63.5, labelH: 38.1,
+      gapX: 2.5, gapY: 0, marginLeft: null, marginTop: null, insetMm: 2.5,
+    },
+    sheets: {
+      L7160: {
+        preset: 'L7160', pageW: 210, pageH: 297, cols: 3, rows: 7, labelW: 63.5, labelH: 38.1,
+        gapX: 2.5, gapY: 0, marginLeft: null, marginTop: null, insetMm: 2.5,
+      },
+      generic44: {
+        preset: 'generic44', pageW: 210, pageH: 297, cols: 4, rows: 11, labelW: 48.3, labelH: 25.4,
+        gapX: 0, gapY: 0, marginLeft: null, marginTop: null, insetMm: 1.5,
+      },
     },
     // 14:15: *"zamien zolty na inny, malo widoczny na nadrukach, zolty
     // ostatecznie"*: yellow goes LAST; the third cabinet is orange (green and
@@ -5784,7 +5803,11 @@ export function migrateCabinetProfile(profile) {
     labels: {
       ...D.labels,
       ...(profile.labels || {}),
-      sheet: { ...D.labels.sheet, ...(profile.labels?.sheet || {}) },
+      // 16:40: a saved sheet that names its preset is the owner's; one that
+      // does not is the 44-up block of 13:07 (saved that morning, before he
+      // moved to the 21-up paper the same afternoon), and gives way to today's.
+      sheet: profile.labels?.sheet?.preset ? { ...D.labels.sheet, ...profile.labels.sheet } : { ...D.labels.sheet },
+      sheets: { ...D.labels.sheets, ...(profile.labels?.sheets || {}) },
       kinds: { ...D.labels.kinds, ...(profile.labels?.kinds || {}) },
       dxf: { ...D.labels.dxf, ...(profile.labels?.dxf || {}) },
       edgeArrow: { ...D.labels.edgeArrow, ...(profile.labels?.edgeArrow || {}) },

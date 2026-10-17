@@ -39,26 +39,28 @@ const pt = (mm) => (mm / 0.72) * 72 / 25.4;
  * a box `bw x bh` at (bx, by); the banded edges thick in the element colour;
  * one arrow at the banded edge the sticker points to; the word under it.
  */
-function drawEdgeIcon(doc, rec, bx, by, bw, bh) {
-  const maxW = bw - 2;
-  const maxH = bh - 2.6;
+function drawEdgeIcon(doc, rec, bx, by, bw, bh, K = 1) {
+  // K: the design scale of the sticker (16:40; drawLabel), every length of the icon takes it.
+  const S = (mm) => mm * K;
+  const maxW = bw - S(2);
+  const maxH = bh - S(2.6);
   const ratio = rec.drawnH > 0 ? rec.drawnW / rec.drawnH : 1;
   let w = maxW;
   let h = ratio > 0 ? maxW / ratio : maxH;
   if (h > maxH) { h = maxH; w = maxH * ratio; }
-  w = Math.max(3, Math.min(maxW, w));
-  h = Math.max(3, Math.min(maxH, h));
+  w = Math.max(S(3), Math.min(maxW, w));
+  h = Math.max(S(3), Math.min(maxH, h));
   const x0 = bx + (bw - w) / 2;
-  const y0 = by + (maxH - h) / 2 + 0.3;
+  const y0 = by + (maxH - h) / 2 + S(0.3);
   const e = rec.edge;
   // the board (a board with no banded edge in a lighter line: nothing to point at)
   if (e.arrow === 'none') doc.setDrawColor(170, 170, 170); else doc.setDrawColor(110, 110, 110);
-  doc.setLineWidth(0.25);
+  doc.setLineWidth(S(0.25));
   doc.rect(x0, y0, w, h, 'S');
   // the banded edges, thick, in the element colour
   const [kr, kg, kb] = rgb(rec.kindColour);
   doc.setDrawColor(kr, kg, kb);
-  doc.setLineWidth(1.1);
+  doc.setLineWidth(S(1.1));
   if (e.left) doc.line(x0, y0, x0, y0 + h);
   if (e.right) doc.line(x0 + w, y0, x0 + w, y0 + h);
   if (e.top) doc.line(x0, y0, x0 + w, y0);
@@ -66,48 +68,73 @@ function drawEdgeIcon(doc, rec, bx, by, bw, bh) {
   // the arrow: shaft and head, black, pointing AT the banded edge
   doc.setDrawColor(20, 20, 20);
   doc.setFillColor(20, 20, 20);
-  doc.setLineWidth(0.9);
+  doc.setLineWidth(S(0.9));
   const cx = x0 + w / 2;
   const cy = y0 + h / 2;
-  const head = 2.2;
-  const shaft = 4.2;
+  const head = S(2.2);
+  const shaft = S(4.2);
+  const in1 = S(1.2);
   if (e.arrow === 'right') {
-    const tip = x0 + w - 1.2;
+    const tip = x0 + w - in1;
     doc.line(tip - head - shaft, cy, tip - head, cy);
     doc.triangle(tip - head, cy - head * 0.75, tip, cy, tip - head, cy + head * 0.75, 'F');
   } else if (e.arrow === 'left') {
-    const tip = x0 + 1.2;
+    const tip = x0 + in1;
     doc.line(tip + head, cy, tip + head + shaft, cy);
     doc.triangle(tip + head, cy - head * 0.75, tip, cy, tip + head, cy + head * 0.75, 'F');
   } else if (e.arrow === 'up') {
-    const tip = y0 + 1.2;
+    const tip = y0 + in1;
     doc.line(cx, tip + head, cx, tip + head + shaft);
     doc.triangle(cx - head * 0.75, tip + head, cx, tip, cx + head * 0.75, tip + head, 'F');
   } else if (e.arrow === 'down') {
-    const tip = y0 + h - 1.2;
+    const tip = y0 + h - in1;
     doc.line(cx, tip - head - shaft, cx, tip - head);
     doc.triangle(cx - head * 0.75, tip - head, cx, tip, cx + head * 0.75, tip - head, 'F');
   } else if (e.arrow === 'all') {
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(pt(2.4));
+    doc.setFontSize(pt(S(2.4)));
     doc.setTextColor(20, 20, 20);
-    doc.text('ALL', cx, cy + 0.9, { align: 'center' });
+    doc.text('ALL', cx, cy + S(0.9), { align: 'center' });
   }
   // the word under it
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(pt(1.9));
+  doc.setFontSize(pt(S(1.9)));
   doc.setTextColor(20, 20, 20);
-  doc.text(e.arrow === 'none' ? 'NO EDGE' : 'EDGE', bx + bw / 2, by + bh - 0.4, { align: 'center', charSpace: 0.2 });
+  doc.text(e.arrow === 'none' ? 'NO EDGE' : 'EDGE', bx + bw / 2, by + bh - S(0.4), { align: 'center', charSpace: S(0.2) });
 }
 
 /** One sticker at cell (x, y, w, h). */
-function drawLabel(doc, rec, cell) {
-  const { x, y, w, h } = cell;
-  const band = 7;
-  const head = 4.2;
+/**
+ * The sticker was DESIGNED on the 44-up paper of 13:07 (48.3 x 25.4): the
+ * band, the strip, the number, the icon are millimetres of that face. 16:40,
+ * the owner moved to the 21-up paper (*"44 to za male naklejki"*) and asked
+ * for a print smaller than the sticker (*"nadruk mniejszy od naklejek, to
+ * nawet jak sie przesunie, to nie bedzie koniec swiata"*). So the design is
+ * drawn SCALED: the sticker less `insetMm` on every side is the print area,
+ * the design face grows by one factor to fit it (the smaller of the two
+ * ratios) and sits centred; every length and every font size takes that
+ * factor. On L7160 that is 1.21: a 4.8 mm number reads 5.8 mm. Nothing is
+ * drawn on the sticker's own edge any more (the old hairline cut guide went
+ * with the inset: a line that may land off the sticker is no guide).
+ */
+const DESIGN_W = 48.3;
+const DESIGN_H = 25.4;
+
+function drawLabel(doc, rec, cell, insetMm = 0) {
+  const inset = Math.max(0, Number(insetMm) || 0);
+  const pw = cell.w - 2 * inset;
+  const ph = cell.h - 2 * inset;
+  const K = Math.max(0.1, Math.min(pw / DESIGN_W, ph / DESIGN_H));
+  const w = DESIGN_W * K;
+  const h = DESIGN_H * K;
+  const x = cell.x + inset + (pw - w) / 2;
+  const y = cell.y + inset + (ph - h) / 2;
+  const S = (mm) => mm * K;
+  const band = S(7);
+  const head = S(4.2);
   const [ur, ug, ub] = rgb(rec.unitColour);
   const [kr, kg, kb] = rgb(rec.kindColour);
-  // the white body and a hairline cutting guide
+  // the white body
   doc.setFillColor(255, 255, 255);
   doc.rect(x, y, w, h, 'F');
   // the cabinet's band, its name up it
@@ -115,48 +142,44 @@ function drawLabel(doc, rec, cell) {
   doc.rect(x, y, band, h, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(pt(4.4));
+  doc.setFontSize(pt(S(4.4)));
   // Up the band: with angle 90 the baseline runs up the page from (x, y) and
   // the glyphs stand to its left, so the baseline sits right of the band's
   // middle by half a cap height and starts half the text's length below it.
   const unitText = String(rec.unitNum);
-  const unitW = Math.min(doc.getTextWidth(unitText), h - 2);
-  doc.text(unitText, x + band / 2 + 4.4 * 0.5, y + h / 2 + unitW / 2, { angle: 90 });
+  const unitW = Math.min(doc.getTextWidth(unitText), h - S(2));
+  doc.text(unitText, x + band / 2 + S(4.4) * 0.5, y + h / 2 + unitW / 2, { angle: 90 });
   // the element's strip: what it is, and its code
   doc.setFillColor(kr, kg, kb);
   doc.rect(x + band, y, w - band, head, 'F');
-  doc.setFontSize(pt(2.9));
-  doc.text(rec.name, x + band + 1.4, y + head - 1.2);
-  doc.setFontSize(pt(2.5));
-  doc.text(rec.code, x + w - 1.2, y + head - 1.2, { align: 'right' });
+  doc.setFontSize(pt(S(2.9)));
+  doc.text(rec.name, x + band + S(1.4), y + head - S(1.2));
+  doc.setFontSize(pt(S(2.5)));
+  doc.text(rec.code, x + w - S(1.2), y + head - S(1.2), { align: 'right' });
   // the cut size, shrunk to the room beside the icon when it is long
-  const iconW = 18;
-  const textW = w - band - 1.4 - iconW - 0.6;
+  const iconW = S(18);
+  const textW = w - band - S(1.4) - iconW - S(0.6);
   doc.setTextColor(17, 17, 17);
-  let sizeMm = 4.1;
+  let sizeMm = S(4.1);
   doc.setFontSize(pt(sizeMm));
-  while (doc.getTextWidth(rec.size) > textW && sizeMm > 2.4) {
-    sizeMm -= 0.2;
+  while (doc.getTextWidth(rec.size) > textW && sizeMm > S(2.4)) {
+    sizeMm -= S(0.2);
     doc.setFontSize(pt(sizeMm));
   }
-  doc.text(rec.size, x + band + 1.4, y + head + 5.4);
+  doc.text(rec.size, x + band + S(1.4), y + head + S(5.4));
   // the number, large, and the count beside it
-  doc.setFontSize(pt(4.8));
-  doc.text(rec.noText, x + band + 1.4, y + head + 11.6);
+  doc.setFontSize(pt(S(4.8)));
+  doc.text(rec.noText, x + band + S(1.4), y + head + S(11.6));
   const numW = doc.getTextWidth(rec.noText);
-  doc.setFontSize(pt(2.2));
+  doc.setFontSize(pt(S(2.2)));
   doc.setTextColor(90, 90, 90);
-  doc.text(`/ ${rec.total}`, x + band + 1.4 + numW + 1.2, y + head + 11.6);
+  doc.text(`/ ${rec.total}`, x + band + S(1.4) + numW + S(1.2), y + head + S(11.6));
   // the edge icon, bottom right
-  drawEdgeIcon(doc, rec, x + w - iconW - 0.4, y + head + 0.8, iconW, h - head - 1.2);
-  // the hairline round the sticker (cut guide, light)
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.15);
-  doc.rect(x, y, w, h, 'S');
+  drawEdgeIcon(doc, rec, x + w - iconW - S(0.4), y + head + S(0.8), iconW, h - head - S(1.2), K);
 }
 
 /**
- * The document: one page per 44 stickers (or whatever the paper holds), in
+ * The document: one page per 21 stickers (whatever the paper holds), in
  * number order, nothing else on the page (a label sheet has no frame).
  *
  * @returns {{doc:object, pages:number, labels:number, bytes:number}}
@@ -168,7 +191,7 @@ export function labelsDoc({ records, profile }) {
   const doc = new jsPDF({ unit: 'mm', format: [grid.pageW, grid.pageH], orientation: grid.pageW >= grid.pageH ? 'landscape' : 'portrait' });
   pages.forEach((page, i) => {
     if (i > 0) doc.addPage([grid.pageW, grid.pageH], grid.pageW >= grid.pageH ? 'landscape' : 'portrait');
-    page.forEach((rec, k) => drawLabel(doc, rec, grid.cells[k]));
+    page.forEach((rec, k) => drawLabel(doc, rec, grid.cells[k], grid.insetMm));
   });
   const measured = assertPdfBytes(pdfBytes(doc), { pages: doc.getNumberOfPages(), sheets: pages.length, what: 'The labels PDF' });
   return { doc, pages: pages.length, labels: records.length, bytes: measured.bytes };

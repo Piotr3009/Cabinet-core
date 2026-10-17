@@ -50,23 +50,31 @@ const units = [
 
 // ─── THE NUMBERS ARE THE PROFILE'S ──────────────────────────────────────────
 
-test('profile.labels holds the owner\'s paper (44 per A4, 4 x 11, 48.3 x 25.4) and the two palettes; an old profile gets the block back', () => {
-  assert.deepEqual([P.labels.sheet.cols, P.labels.sheet.rows, P.labels.sheet.labelW, P.labels.sheet.labelH], [4, 11, 48.3, 25.4]);
+test('profile.labels holds the owner\'s paper (16:40: 21 per A4, L7160, 3 x 7, 63.5 x 38.1, 2.5 between the columns, the print 2.5 inside) and the two palettes; an old profile gets the block back', () => {
+  assert.deepEqual([P.labels.sheet.preset, P.labels.sheet.cols, P.labels.sheet.rows, P.labels.sheet.labelW, P.labels.sheet.labelH, P.labels.sheet.gapX, P.labels.sheet.gapY, P.labels.sheet.insetMm],
+    ['L7160', 3, 7, 63.5, 38.1, 2.5, 0, 2.5]);
+  // the 44-up paper of 13:07 stays as a preset
+  assert.deepEqual([P.labels.sheets.generic44.cols, P.labels.sheets.generic44.rows, P.labels.sheets.generic44.labelW, P.labels.sheets.generic44.labelH], [4, 11, 48.3, 25.4]);
+  assert.deepEqual(P.labels.sheets.L7160, P.labels.sheet);
   assert.equal(P.labels.unitColours.length, P.labels.unitAci.length);
   assert.deepEqual(Object.keys(P.labels.kinds), LABEL_KIND_ORDER);
   const old = JSON.parse(JSON.stringify(P));
   delete old.labels;
   assert.deepEqual(migrateCabinetProfile(old).labels, P.labels);
-  // a partly saved block keeps the rest
+  // a saved sheet that names its preset keeps what it saved; the rest of the block is filled in
   const partial = JSON.parse(JSON.stringify(P));
-  partial.labels = { sheet: { cols: 3 } };
+  partial.labels = { sheet: { preset: 'mine', cols: 2 } };
   const m = migrateCabinetProfile(partial);
-  assert.equal(m.labels.sheet.cols, 3);
-  assert.equal(m.labels.sheet.rows, 11);
+  assert.equal(m.labels.sheet.cols, 2);
+  assert.equal(m.labels.sheet.rows, 7);
   assert.equal(m.labels.dxf.layerPrefix, 'LABEL_');
+  // a saved sheet with NO preset is the 44-up block of 13:07 and gives way to the paper of 16:40
+  const morning = JSON.parse(JSON.stringify(P));
+  morning.labels = { ...P.labels, sheet: { pageW: 210, pageH: 297, cols: 4, rows: 11, labelW: 48.3, labelH: 25.4, gapX: 0, gapY: 0, marginLeft: null, marginTop: null } };
+  assert.deepEqual(migrateCabinetProfile(morning).labels.sheet, P.labels.sheet);
   // the settings reader never hands back NaN: a profile with no block gets the paper
   const bare = labelSettings({});
-  assert.deepEqual([bare.sheet.cols, bare.sheet.rows, bare.sheet.labelW, bare.sheet.labelH, bare.layerPrefix, bare.numberPad], [4, 11, 48.3, 25.4, 'LABEL_', 2]);
+  assert.deepEqual([bare.sheet.cols, bare.sheet.rows, bare.sheet.labelW, bare.sheet.labelH, bare.sheet.gapX, bare.sheet.insetMm, bare.layerPrefix, bare.numberPad], [3, 7, 63.5, 38.1, 2.5, 2.5, 'LABEL_', 2]);
   assert.equal(labelSettings(P).sheet.marginLeft, null);
 });
 
@@ -266,26 +274,36 @@ test('labelRecords: one per numbered board, in number order, with both colours, 
   assert.equal(w2.filter((r) => r.name === 'DIVIDER').length, r2.panels.filter((p) => p.part === 'DP').length);
 });
 
-test('the sheet grid: 44 cells, 4 x 11, centred on A4 (8.4 left, 8.8 top), and the pages cut to it', () => {
+test('the sheet grid: 21 cells, 3 x 7, centred on A4 (7.25 left, 15.15 top: Avery\'s 7.2 / 15.1), 66 pitch across, 38.1 down, and the pages cut to it', () => {
   const grid = labelSheetGrid(P);
-  assert.equal(grid.perPage, 44);
-  assert.equal(grid.cells.length, 44);
-  assert.deepEqual(grid.cells[0], { x: 8.4, y: 8.8, w: 48.3, h: 25.4 });
-  assert.deepEqual(grid.cells[43], { x: 153.3, y: 262.8, w: 48.3, h: 25.4 });
+  assert.equal(grid.perPage, 21);
+  assert.equal(grid.cells.length, 21);
+  assert.equal(grid.insetMm, 2.5);
+  assert.deepEqual(grid.cells[0], { x: 7.25, y: 15.15, w: 63.5, h: 38.1 });
+  assert.deepEqual(grid.cells[1], { x: 73.25, y: 15.15, w: 63.5, h: 38.1 }, '66 mm pitch: 63.5 + the 2.5 gutter');
+  assert.deepEqual(grid.cells[20], { x: 139.25, y: 243.75, w: 63.5, h: 38.1 });
   const custom = migrateCabinetProfile({ ...P, labels: { ...P.labels, sheet: { ...P.labels.sheet, marginLeft: 10, marginTop: 12, gapX: 2 } } });
-  assert.deepEqual(labelSheetGrid(custom).cells[1], { x: 10 + 48.3 + 2, y: 12, w: 48.3, h: 25.4 });
+  assert.deepEqual(labelSheetGrid(custom).cells[1], { x: 10 + 63.5 + 2, y: 12, w: 63.5, h: 38.1 });
   const fifty = Array.from({ length: 50 }, (_, i) => ({ no: i + 1 }));
-  assert.deepEqual(labelPages(fifty, P).map((pg) => pg.length), [44, 6]);
+  assert.deepEqual(labelPages(fifty, P).map((pg) => pg.length), [21, 21, 8]);
+  // the 44-up preset still lays out as it did on 13:07
+  const forty4 = migrateCabinetProfile({ ...P, labels: { ...P.labels, sheet: P.labels.sheets.generic44 } });
+  const g44 = labelSheetGrid(forty4);
+  assert.equal(g44.perPage, 44);
+  assert.deepEqual(g44.cells[0], { x: 8.4, y: 8.8, w: 48.3, h: 25.4 });
 });
 
-test('the labels PDF: a page per 44 stickers, real PDF bytes, named by the one naming law', () => {
+test('the labels PDF: a page per 21 stickers, real PDF bytes, named by the one naming law', () => {
   const recs = labelRecords(units, P);
   const one = labelsDoc({ records: recs, profile: P });
   assert.equal(one.pages, 1);
   assert.equal(one.labels, recs.length);
   assert.ok(one.bytes > 1000);
   const many = labelsDoc({ records: [...recs, ...recs, ...recs].map((r, i) => ({ ...r, no: i + 1, noText: formatPartNo(i + 1, P), total: recs.length * 3 })), profile: P });
-  assert.equal(many.pages, Math.ceil(recs.length * 3 / 44));
+  assert.equal(many.pages, Math.ceil(recs.length * 3 / 21));
+  // the design scaled into the inset: the 44-up preset draws the same records on its own paper
+  const forty4 = migrateCabinetProfile({ ...P, labels: { ...P.labels, sheet: P.labels.sheets.generic44 } });
+  assert.equal(labelsDoc({ records: recs, profile: forty4 }).pages, Math.ceil(recs.length / 44));
   assert.throws(() => labelsDoc({ records: [], profile: P }), /nothing to label/);
   assert.match(labelsFilename({ project: 'H1180 ST37', now: new Date(2026, 9, 17, 13, 20) }), /^H1180-ST37-labels-1710-1320\.pdf$/);
 });

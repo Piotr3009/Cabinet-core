@@ -69,17 +69,22 @@ export function labelSettings(profile) {
   const L = profile?.labels || {};
   const S = L.sheet || {};
   return {
+    // 16:40: the owner's 21-up paper (Avery L7160, 63.5 x 38.1, 3 x 7, 2.5
+    // between the columns) is the fallback; insetMm keeps the print off the
+    // sticker's edges (*"nadruk mniejszy od naklejek"*).
     sheet: {
+      preset: typeof S.preset === 'string' ? S.preset : 'L7160',
       pageW: num(S.pageW, 210),
       pageH: num(S.pageH, 297),
-      cols: Math.max(1, Math.round(num(S.cols, 4))),
-      rows: Math.max(1, Math.round(num(S.rows, 11))),
-      labelW: num(S.labelW, 48.3),
-      labelH: num(S.labelH, 25.4),
-      gapX: num(S.gapX, 0),
+      cols: Math.max(1, Math.round(num(S.cols, 3))),
+      rows: Math.max(1, Math.round(num(S.rows, 7))),
+      labelW: num(S.labelW, 63.5),
+      labelH: num(S.labelH, 38.1),
+      gapX: num(S.gapX, 2.5),
       gapY: num(S.gapY, 0),
       marginLeft: Number.isFinite(Number(S.marginLeft)) && S.marginLeft !== null ? Number(S.marginLeft) : null,
       marginTop: Number.isFinite(Number(S.marginTop)) && S.marginTop !== null ? Number(S.marginTop) : null,
+      insetMm: Math.max(0, num(S.insetMm, 2.5)),
     },
     unitColours: Array.isArray(L.unitColours) && L.unitColours.length ? L.unitColours : ['#d7263d', '#1f6feb', '#e0a100'],
     unitAci: Array.isArray(L.unitAci) && L.unitAci.length ? L.unitAci.map((v) => num(v, 7)) : [1, 5, 2],
@@ -366,7 +371,7 @@ export function labelSheetGrid(profile) {
       });
     }
   }
-  return { perPage: s.cols * s.rows, cells, pageW: s.pageW, pageH: s.pageH };
+  return { perPage: s.cols * s.rows, cells, pageW: s.pageW, pageH: s.pageH, insetMm: s.insetMm };
 }
 
 /** The records cut into pages of the paper's size. */

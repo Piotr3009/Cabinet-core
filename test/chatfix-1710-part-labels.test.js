@@ -80,7 +80,7 @@ test('profile.labels holds the owner\'s paper (16:40: 21 per A4, L7160, 3 x 7, 6
 
 // ─── THE KINDS, THE PAIRS, THE EDGE ARROW ───────────────────────────────────
 
-test('the kinds: sides with their dividers, top with bottom, the shelves (a fix board with them), the back; fronts and drawers none', () => {
+test('the kinds: sides with their dividers, top with bottom, the shelves (a fix board with them), the back; 17:38 the drawer boxes, the fronts and the rest of the sheet too', () => {
   const kinds = Object.fromEntries(r2.panels.map((p) => [p.id, labelKindOf(p)]));
   assert.equal(kinds.BUL, 'side');
   assert.equal(kinds.BUR, 'side');
@@ -90,7 +90,23 @@ test('the kinds: sides with their dividers, top with bottom, the shelves (a fix 
   assert.equal(kinds.PARTITION, 'shelf', 'the drawer stack\'s board is a shelf\'s kind');
   assert.ok(r2.panels.some((p) => p.part === 'DP'), 'the kit has a drawer panel');
   assert.ok(r2.panels.filter((p) => p.part === 'DP').every((p) => labelKindOf(p) === 'side'));
-  assert.ok(r2.panels.filter((p) => p.role === 'front' || /^DRAWER/.test(p.part)).every((p) => labelKindOf(p) === null), 'no sticker on a front or a drawer');
+  // 17:38, the owner: *"Kazdy element z cnc musi miec naklejke"*: a front and a drawer box have a kind of their own.
+  assert.ok(r2.panels.filter((p) => p.role === 'front').every((p) => labelKindOf(p) === 'front'), 'a front wears the front strip');
+  const rd = computeCabinet({ ...W, width: 1200, unit_num: 'W09', items: [{ kind: 'drawer', pos_mm: 200, height_mm: 180 }, { kind: 'drawer', pos_mm: 400, height_mm: 180 }] }, P);
+  assert.ok(rd.panels.some((p) => p.role === 'drawer_box'), 'the wardrobe has drawer boxes');
+  assert.ok(rd.panels.filter((p) => p.role === 'drawer_box').every((p) => labelKindOf(p) === 'drawer'));
+  assert.ok(rd.panels.filter((p) => p.part === 'DRAWER-FRONT').every((p) => labelKindOf(p) === 'front'));
+  assert.ok(rd.panels.some((p) => p.part === 'FILLER'), 'the drawer stack has fillers');
+  assert.ok(rd.panels.filter((p) => p.part === 'FILLER').every((p) => labelKindOf(p) === 'other'), 'a filler is a board of the sheet: PART');
+  // 1:1 with the sheet: every exportable part has a kind, a part with no outline has none
+  assert.deepEqual(exportablePanels(rd.panels).filter((p) => !labelKindOf(p)), []);
+  assert.equal(labelKindOf({ id: 'x', part: 'WHATEVER', role: 'hardware' }), null);
+  assert.equal(partDisplayName(rd.panels.find((p) => p.part === 'DRAWER-SIDE')), 'DRAWER SIDE');
+  assert.equal(partDisplayName(rd.panels.find((p) => p.part === 'DRAWER-FRONT')), 'DRAWER FRONT');
+  assert.equal(partDisplayName(r2.panels.find((p) => p.part === 'FRONT')), 'DOOR');
+  assert.equal(partDisplayName(r2.panels.find((p) => p.part === 'DRAWER-FRONT')), 'DRAWER FRONT');
+  assert.equal(partDisplayName(rd.panels.find((p) => p.part === 'FILLER')), 'FILLER');
+  assert.deepEqual(LABEL_KIND_ORDER.map((k) => kindStyleOf(k, P).order), [1, 2, 3, 4, 5, 6, 7]);
   assert.equal(labelKindOf(r3.panels.find((p) => p.part === 'VPART')), 'side');
   assert.equal(kindStyleOf('topbottom', P).colour, kindStyleOf('topbottom', P).colour);
   assert.equal(partDisplayName(r1.panels.find((p) => p.id === 'SHELF-1')), 'SHELF ADJ');
@@ -132,13 +148,15 @@ test('the edge arrow on the board (14:10): a line inside the banded edge, the ar
 
 // ─── THE PLAN: ONE NUMBER THROUGH THE PROJECT ───────────────────────────────
 
-test('partNumberPlan numbers the carcass boards through the project, cabinet by cabinet, sides, top/bottom, shelves, back', () => {
+test('partNumberPlan numbers every part of the sheet through the project, cabinet by cabinet: sides, top/bottom, shelves, back, the rest, drawer boxes, fronts', () => {
   const plan = partNumberPlan(units, P);
   const u1 = plan.byUnit.get('u1');
-  assert.deepEqual([...u1.byPanel].map(([id, v]) => `${id}:${v.no}`), ['BUL:1', 'BUR:2', 'BOTTOM:3', 'TOP:4', 'SHELF-1:5', 'SHELF-2:6', 'BACK:7']);
+  // 17:38: the two doors come last in their cabinet, numbered like every other part of the sheet.
+  assert.deepEqual([...u1.byPanel].map(([id, v]) => `${id}:${v.no}`), ['BUL:1', 'BUR:2', 'BOTTOM:3', 'TOP:4', 'SHELF-1:5', 'SHELF-2:6', 'BACK:7', 'W01-FL:8', 'W01-FR:9']);
+  assert.equal(u1.byPanel.size, exportablePanels(r1.panels).length, '1:1 with the sheet');
   const u2 = plan.byUnit.get('u2');
-  assert.equal(Math.min(...[...u2.byPanel.values()].map((v) => v.no)), 8, 'the second cabinet starts where the first stopped');
-  assert.ok([...u2.byPanel.keys()].every((id) => !/^W/.test(id) || !/F/.test(id)), 'no front in the plan');
+  assert.equal(Math.min(...[...u2.byPanel.values()].map((v) => v.no)), 10, 'the second cabinet starts where the first stopped');
+  assert.equal(u2.byPanel.size, exportablePanels(r2.panels).length);
   const u3 = plan.byUnit.get('u3');
   assert.ok(u3.byPanel.has('VPART-1'));
   assert.equal(plan.total, [...plan.units].reduce((n, u) => n + u.byPanel.size, 0));
@@ -164,7 +182,7 @@ test('a cabinet with no result keeps its place and the numbers after it do not m
   assert.deepEqual(pu.map((u) => [u.unitNum, u.panels.length]), [['W01', r1.panels.length], ['W02', 0], ['W03', r3.panels.length]]);
   const plan = projectLabelPlan({ units: storeUnits, resultOf, profile: P });
   assert.equal(plan.byUnit.get('u2').byPanel.size, 0);
-  assert.equal(Math.min(...[...plan.byUnit.get('u3').byPanel.values()].map((v) => v.no)), 8);
+  assert.equal(Math.min(...[...plan.byUnit.get('u3').byPanel.values()].map((v) => v.no)), exportablePanels(r1.panels).length + 1);
   assert.equal(labelsForUnit(plan, 'u3').layer, 'LABEL_W03');
   assert.equal(labelsForUnit(plan, 'nope'), null);
   assert.equal(projectLabelRecords({ units: storeUnits, resultOf, profile: P }).length, plan.total);
@@ -187,7 +205,7 @@ test('a unit\'s files written with its labels put every text on LABEL_<cabinet> 
   const labels = dxfLabelsFor(plan, 'u1');
   assert.deepEqual(labelLayerRow(labels), [{ name: 'LABEL_W01', aci: 1 }]);
   assert.deepEqual(labelFor(labels, 'TOP'), { layer: 'LABEL_W01', no: 4 });
-  assert.deepEqual(labelFor(labels, 'W01-FL'), { layer: 'LABEL_W01', no: null }, 'a front: the layer, no number');
+  assert.deepEqual(labelFor(labels, 'W01-FL'), { layer: 'LABEL_W01', no: 8 }, 'a front: the layer and, since 17:38, its number');
   assert.equal(labelFor(null, 'TOP'), null);
 
   const plain = buildUnitDxfFiles(r1, P);
@@ -217,11 +235,12 @@ test('a unit\'s files written with its labels put every text on LABEL_<cabinet> 
   assert.equal(texts.filter((e) => e.str === 'EDGE').length + top.entities.filter((e) => e.type === 'text' && e.str === 'EDGE').length, 1);
   const word = top.entities.find((e) => e.type === 'text' && e.str === 'EDGE');
   assert.equal(word.halign, 2, 'right-justified before a rightward arrow');
-  // the front: on the cabinet's layer, unnumbered
+  // the front: on the cabinet's layer, numbered since 17:38; banded all round, so no EDGE arrow
   const fl = files.find((f) => f.panelId === 'W01-FL');
   assert.ok(fl.entities.filter((e) => e.type === 'text').every((e) => e.layer === 'LABEL_W01'));
-  assert.ok(!fl.entities.some((e) => e.type === 'text' && /^#/.test(e.str)));
-  assert.ok(!fl.entities.some((e) => e.type === 'poly' && e.layer === 'LABEL_W01'), 'no arrow on a front');
+  assert.ok(fl.entities.some((e) => e.type === 'text' && /^#08 /.test(e.str)), 'the door\'s text leads with its number');
+  assert.equal(fl.entities.filter((e) => e.type === 'text' && e.str === 'EDGE').length, 0);
+  assert.ok(!fl.entities.some((e) => e.type === 'poly' && e.layer === 'LABEL_W01'), 'no arrow on a front (banded all round)');
   // one part, through panelDxf, the same answer
   const one = panelDxf(r1.panels.find((p) => p.id === 'TOP'), r1.drills, { unitNum: 'W01', profile: P, labels });
   assert.equal(one, top.dxf);
@@ -268,7 +287,11 @@ test('labelRecords: one per numbered board, in number order, with both colours, 
   assert.ok(first.drawnW > 0 && first.drawnH > 0);
   const top = recs.find((r) => r.panelId === 'TOP' && r.unitNum === 'W01');
   assert.equal(top.kindColour, recs.find((r) => r.panelId === 'BOTTOM' && r.unitNum === 'W01').kindColour, 'top and bottom one colour');
-  assert.ok(recs.every((r) => !/^W01-F/.test(r.panelId)), 'no front');
+  // 17:38: the doors have stickers too, with the front strip and the ALL edge icon
+  const door = recs.find((r) => r.panelId === 'W01-FL');
+  assert.ok(door, 'the door has a sticker');
+  assert.deepEqual([door.name, door.kind, door.kindLabel, door.edge.arrow], ['DOOR', 'front', 'FRONT', 'all']);
+  assert.equal(recs.length, units.reduce((n, u) => n + exportablePanels(u.panels).length, 0), 'one sticker per part of the sheet');
   const w2 = recs.filter((r) => r.unitId === 'u2');
   assert.ok(w2.every((r) => r.unitColour === unitColourOf(1, P)));
   assert.equal(w2.filter((r) => r.name === 'DIVIDER').length, r2.panels.filter((p) => p.part === 'DP').length);
@@ -296,10 +319,10 @@ test('the sheet grid: 21 cells, 3 x 7, centred on A4 (7.25 left, 15.15 top: Aver
 test('the labels PDF: a page per 21 stickers, real PDF bytes, named by the one naming law', () => {
   const recs = labelRecords(units, P);
   const one = labelsDoc({ records: recs, profile: P });
-  assert.equal(one.pages, 1);
   assert.equal(one.labels, recs.length);
   assert.ok(one.bytes > 1000);
   const many = labelsDoc({ records: [...recs, ...recs, ...recs].map((r, i) => ({ ...r, no: i + 1, noText: formatPartNo(i + 1, P), total: recs.length * 3 })), profile: P });
+  assert.equal(one.pages, Math.ceil(recs.length / 21));
   assert.equal(many.pages, Math.ceil(recs.length * 3 / 21));
   // the design scaled into the inset: the 44-up preset draws the same records on its own paper
   const forty4 = migrateCabinetProfile({ ...P, labels: { ...P.labels, sheet: P.labels.sheets.generic44 } });

@@ -18,35 +18,51 @@
 // top with bottom, the shelves, the back). The DXF puts every cabinet's text on
 // a layer of its own, LABEL_<cabinet>, with the cabinet's colour index, which
 // is how the colour travels to VCarve (an R12 layer has a colour, an entity in
-// VCarve wears its layer's). Fronts, drawers and their boxes take no sticker
-// and no number; their DXF text still moves to the cabinet's layer so a whole
-// cabinet reads in one colour on the nesting.
+// VCarve wears its layer's). 13:07 fronts, drawers and their boxes took no
+// sticker (*"szuflady nie trzeba"*); 17:38, of a wardrobe with 34 parts on
+// the sheet and 10 stickers: *"Kazdy element z cnc musi miec naklejke"*: every
+// part that stands on the CNC sheet (engine/cnc/groups.js exportablePanels,
+// the one predicate the sheet, the tree and the DXF start from) has a number
+// and a sticker, 1:1 with the sheet.
 //
 // Every number is profile.labels (the owner's label paper, the two palettes,
 // the layer prefix). Pure functions, pure data: no React, no store, no PDF.
 
+import { exportablePanels } from './cnc/groups.js';
+
 const num = (v, fallback) => (Number.isFinite(Number(v)) ? Number(v) : fallback);
 
 /** The labelled kinds, in the order they are numbered inside a cabinet. */
-export const LABEL_KIND_ORDER = ['side', 'topbottom', 'shelf', 'back'];
+export const LABEL_KIND_ORDER = ['side', 'topbottom', 'shelf', 'back', 'other', 'drawer', 'front'];
 
 /**
- * Which labelled kind a panel is, or null for a part that takes no sticker
- * (a front, a drawer, a box part, a plinth, an infill).
+ * Which labelled kind a panel is, or null for a part that is not on the CNC
+ * sheet at all (no outline to cut).
  *   side       BUL, BUR and a vertical divider (VPART, the wardrobe kit's own
  *              DP): the boards a shelf stands between
  *   topbottom  TOP and BOTTOM: one pair, one colour
  *   shelf      every SHELF (fix or adjustable), and the horizontal boards of
  *              the same family: a drawer stack's PARTITION, the fridge's FIXED
- *   back       BACK
+ *   back       BACK, the recess's EXT-BACK, the fridge's BACK-RAIL
+ *   drawer     every board of a drawer box (role drawer_box)
+ *   front      what the tree lists under doors, fronts and panels: a door, a
+ *              drawer front, an inner front, a dummy, the blind blank, an end
+ *              panel, the mask, the pelmet
+ *   other      every other board on the sheet (17:38): a filler, a plinth, an
+ *              infill, a corner post, the notch's and the recess's boards, a
+ *              free panel
  */
 export function labelKindOf(panel) {
-  const part = String(panel?.part || '');
+  if (!panel) return null;
+  const part = String(panel.part || '');
+  const role = String(panel.role || '');
   if (part === 'BUL' || part === 'BUR' || part === 'VPART' || part === 'DP') return 'side';
   if (part === 'TOP' || part === 'BOTTOM') return 'topbottom';
   if (part === 'SHELF' || part === 'PARTITION' || part === 'FIXED') return 'shelf';
-  if (part === 'BACK') return 'back';
-  return null;
+  if (part === 'BACK' || part === 'EXT-BACK' || part === 'BACK-RAIL') return 'back';
+  if (role === 'drawer_box') return 'drawer';
+  if (role === 'front' || role === 'false_front' || role === 'blind_blank' || role === 'end_panel' || role === 'mask' || role === 'pelmet') return 'front';
+  return exportablePanels([panel]).length ? 'other' : null;
 }
 
 /** The sticker's name for a part: what it is, in the workshop's words. */
@@ -61,7 +77,16 @@ export function partDisplayName(panel) {
   }
   if (part === 'PARTITION') return 'PARTITION';
   if (part === 'FIXED') return 'FIXED BOARD';
-  return part;
+  // 17:38: the drawer's boards, the fronts and the rest, in the workshop's words.
+  if (part === 'DRAWER-SIDE') return 'DRAWER SIDE';
+  if (part === 'DRAWER-BOX-FRONT') return 'BOX FRONT';
+  if (part === 'DRAWER-BOX-BACK') return 'BOX BACK';
+  if (part === 'DRAWER-BOTTOM') return 'DRAWER BOTTOM';
+  if (part === 'DRAWER-FRONT') return panel?.meta?.inner ? 'INNER FRONT' : 'DRAWER FRONT';
+  if (part === 'FRONT') return 'DOOR';
+  if (part === 'END-PANEL') return 'END PANEL';
+  if (part === 'EXT-BACK') return 'RECESS BACK';
+  return part.replace(/-/g, ' ');
 }
 
 /** The settings, defensively read, so a partial profile cannot produce NaN. */
@@ -162,7 +187,9 @@ export function partNumberPlan(units, profile) {
   const out = [];
   (units || []).forEach((u, index) => {
     const byPanel = new Map();
-    const rows = (u.panels || [])
+    // 17:38: the sheet's own parts, every one of them (exportablePanels is the
+    // sheet's predicate), numbered kind by kind, then by id.
+    const rows = exportablePanels(u.panels || [])
       .map((p) => ({ p, kind: labelKindOf(p) }))
       .filter((x) => x.kind);
     rows.sort((a, b) => (kindStyleOf(a.kind, profile).order - kindStyleOf(b.kind, profile).order)

@@ -43,7 +43,7 @@ function drawEdgeIcon(doc, rec, bx, by, bw, bh, K = 1) {
   // K: the design scale of the sticker (16:40; drawLabel), every length of the icon takes it.
   const S = (mm) => mm * K;
   const maxW = bw - S(2);
-  const maxH = bh - S(2.6);
+  const maxH = bh - S(3.4);   // the word under the icon keeps its own line (a tall door's icon stopped on it)
   const ratio = rec.drawnH > 0 ? rec.drawnW / rec.drawnH : 1;
   let w = maxW;
   let h = ratio > 0 ? maxW / ratio : maxH;
@@ -91,16 +91,19 @@ function drawEdgeIcon(doc, rec, bx, by, bw, bh, K = 1) {
     doc.line(cx, tip - head - shaft, cx, tip - head);
     doc.triangle(cx - head * 0.75, tip - head, cx, tip, cx + head * 0.75, tip - head, 'F');
   } else if (e.arrow === 'all') {
+    // the word inside only where the board is wide enough to hold it (a door
+    // drawn 497 x 2147 is a thin strip); the word under the icon says it anyway
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(pt(S(2.4)));
     doc.setTextColor(20, 20, 20);
-    doc.text('ALL', cx, cy + S(0.9), { align: 'center' });
+    if (doc.getTextWidth('ALL') + S(1.6) <= w && h >= S(3.2)) doc.text('ALL', cx, cy + S(0.9), { align: 'center' });
   }
   // the word under it
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(pt(S(1.9)));
   doc.setTextColor(20, 20, 20);
-  doc.text(e.arrow === 'none' ? 'NO EDGE' : 'EDGE', bx + bw / 2, by + bh - S(0.4), { align: 'center', charSpace: S(0.2) });
+  const word = e.arrow === 'none' ? 'NO EDGE' : (e.arrow === 'all' ? 'ALL EDGES' : 'EDGE');
+  doc.text(word, bx + bw / 2, by + bh - S(0.4), { align: 'center', charSpace: S(0.2) });
 }
 
 /** One sticker at cell (x, y, w, h). */
@@ -149,13 +152,24 @@ function drawLabel(doc, rec, cell, insetMm = 0) {
   const unitText = String(rec.unitNum);
   const unitW = Math.min(doc.getTextWidth(unitText), h - S(2));
   doc.text(unitText, x + band / 2 + S(4.4) * 0.5, y + h / 2 + unitW / 2, { angle: 90 });
-  // the element's strip: what it is, and its code
+  // the element's strip: what it is, and its code. 17:38: the drawer's and
+  // the fronts' names are long, so the name shrinks to the room left of the
+  // code and, past that, is cut (the code is the one that must stay whole).
   doc.setFillColor(kr, kg, kb);
   doc.rect(x + band, y, w - band, head, 'F');
-  doc.setFontSize(pt(S(2.9)));
-  doc.text(rec.name, x + band + S(1.4), y + head - S(1.2));
   doc.setFontSize(pt(S(2.5)));
+  const codeW = doc.getTextWidth(rec.code);
   doc.text(rec.code, x + w - S(1.2), y + head - S(1.2), { align: 'right' });
+  const nameRoom = w - band - S(1.4) - codeW - S(2.2);
+  let nameMm = S(2.9);
+  doc.setFontSize(pt(nameMm));
+  while (doc.getTextWidth(rec.name) > nameRoom && nameMm > S(2.1)) {
+    nameMm -= S(0.1);
+    doc.setFontSize(pt(nameMm));
+  }
+  let name = String(rec.name);
+  while (name.length > 3 && doc.getTextWidth(name) > nameRoom) name = name.slice(0, -1);
+  doc.text(name, x + band + S(1.4), y + head - S(1.2));
   // the cut size, shrunk to the room beside the icon when it is long
   const iconW = S(18);
   const textW = w - band - S(1.4) - iconW - S(0.6);

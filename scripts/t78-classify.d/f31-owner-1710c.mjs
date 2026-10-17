@@ -15,8 +15,10 @@
 
 export const LICENSED = {
   'src/engine/partNumbers.js': {
-    why: 'Owner 17.10.2026 · NEW: the part number plan (16:40: labelSettings falls back to the L7160 paper and reads '
-      + 'insetMm; labelSheetGrid hands the inset on). 14:10 edgeArrowGeometry: the sticker\'s arrow on the board '
+    why: 'Owner 17.10.2026 · NEW: the part number plan (17:38 "Kazdy element z cnc musi miec naklejke": every part '
+      + 'of the sheet, exportablePanels, has a kind and a number: side, top/bottom, shelf, back, other, drawer, front; '
+      + 'partDisplayName names the drawer\'s boards, the door, the filler. 16:40: labelSettings falls back to the L7160 '
+      + 'paper and reads insetMm; labelSheetGrid hands the inset on). 14:10 edgeArrowGeometry: the sticker\'s arrow on the board '
       + 'itself in its drawn frame (the line inside the banded edge, the shaft, the head, the word EDGE), the one '
       + 'geometry the DXF and the sheet draw (*"na projekcie nie ma strzalek ktora strone oklejamy"*). '
       + 'labelKindOf (sides with dividers and the DP, top with bottom, '
@@ -32,7 +34,8 @@ export const LICENSED = {
       + '3 x 7, 63.5 x 38.1, 2.5 between the columns, centred, insetMm 2.5 for "nadruk mniejszy od naklejek"; the 44-up '
       + 'kept in `sheets` as a preset; a saved sheet with no preset name is the 13:07 block and gives way), the cabinet '
       + 'palette and its ACI twin (14:15: yellow last, the third cabinet orange: "zamien zolty na inny, malo widoczny na '
-      + 'nadrukach, zolty ostatecznie"), the four element pairs and their colours, the DXF layer prefix, the number '
+      + 'nadrukach, zolty ostatecznie"), the element kinds and their colours (13:07 four pairs; 17:38 three more: other, '
+      + 'drawer box, front, for "Kazdy element z cnc musi miec naklejke"), the DXF layer prefix, the number '
       + 'padding, the edge arrow\'s numbers (inset 3, head 7, shaft 45, the 60 mm floor, the 0.8 span); migrated block by '
       + 'block. No cut number touched',
     gates: [],
@@ -69,7 +72,9 @@ export const LICENSED = {
       + 'the name and the code, the cut size, the number, the edge icon with the arrow at the banded edge; one page '
       + 'per sheet (21 on L7160 since 16:40, 44 on the 13:07 paper); the design drawn on the 48.3 x 25.4 face and '
       + 'SCALED into the sticker less insetMm on every side, centred ("nadruk mniejszy od naklejek"); the hairline cut '
-      + 'guide on the sticker\'s edge gone with it; measured by assertPdfBytes; named by exportFileName (labels)',
+      + 'guide on the sticker\'s edge gone with it; 17:38 the strip\'s name shrinks and is cut to the room beside the '
+      + 'code, a board banded all round says ALL EDGES under its icon; measured by assertPdfBytes; named by '
+      + 'exportFileName (labels)',
     gates: [],
   },
 };

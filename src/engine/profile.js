@@ -1165,7 +1165,8 @@ export const DEFAULT_CABINET_PROFILE = {
   //                same palette as DXF colour indices (R12 has no RGB)
   //   kinds        the element pairs and their colour: sides (a divider with
   //                them), top + bottom, shelves (a fix board with them), back;
-  //                fronts and drawers take no sticker and no number
+  //                17:38 every other part of the sheet too: other (fillers,
+  //                plinths, infills, the notch's boards), drawer boxes, fronts
   //   dxf          the text layer per cabinet: LABEL_<unit>
   labels: {
     sheet: {
@@ -1192,6 +1193,12 @@ export const DEFAULT_CABINET_PROFILE = {
       topbottom: { label: 'TOP / BOTTOM', colour: '#6a1b9a', order: 2 },
       shelf: { label: 'SHELF', colour: '#0277bd', order: 3 },
       back: { label: 'BACK', colour: '#546e7a', order: 4 },
+      // 17:38: *"Kazdy element z cnc musi miec naklejke"*: the rest of the
+      // sheet, three more strips: the other carcass boards (a filler, a
+      // plinth, an infill, the notch's boards), the drawer boxes, the fronts.
+      other: { label: 'PART', colour: '#37474f', order: 5 },
+      drawer: { label: 'DRAWER BOX', colour: '#8c5e2a', order: 6 },
+      front: { label: 'FRONT', colour: '#111111', order: 7 },
     },
     dxf: { layerPrefix: 'LABEL_' },
     numberPad: 2,

@@ -35,15 +35,18 @@ function withCatalogue(fn) {
   try { fn(); } finally { clearRunnerCatalogue(); }
 }
 
-test('the ladder is ONE profile line: 250–700 every 50 (owner, 16.08)', () => {
-  assert.deepEqual(P.hardware.runner.movento.nominalLadder,
-    [250, 300, 350, 400, 450, 500, 550, 600, 650, 700]);
-  assert.deepEqual(runnerLadder(P),
-    [250, 300, 350, 400, 450, 500, 550, 600, 650, 700]);
-  // …and the BOX ladder — what the saw cuts, what the fixtures stand on —
-  // has not moved a millimetre (T34 iron rule 5).
+test('the ladder is ONE profile line: 250 to 700 every 50 (owner, 16.08), plus the six short Blum lengths (owner, 17.10.2026)', () => {
+  // CHAT FIX 17.10.2026: *"jak sprawdziles ze sa prowadnice 270 mm w Blum to
+  // zostaw, tylko pamietaj ze wszedzie szuflada musi miec 10 mm mniej od
+  // prowadnicy."*  The six short nominals T25 asked for by name are rungs,
+  // and the BOX ladder is every rung less ten (T25 had written the nominals
+  // themselves as box lengths: 250 .. 380).
+  const LADDER = [250, 270, 300, 320, 350, 380, 400, 450, 500, 550, 600, 650, 700];
+  assert.deepEqual(P.hardware.runner.movento.nominalLadder, LADDER);
+  assert.deepEqual(runnerLadder(P), LADDER);
+  assert.deepEqual(P.wardrobe.drawers.depthSteps, LADDER.map((nl) => nl - 10));
   assert.deepEqual(P.wardrobe.drawers.depthSteps,
-    [250, 270, 300, 320, 350, 380, 390, 440, 490, 540, 590, 640, 690]);
+    [240, 260, 290, 310, 340, 370, 390, 440, 490, 540, 590, 640, 690]);
 });
 
 test('the ASK is the box + 10 — the owner\'s standing −10 rule, stated once', () => {
@@ -77,7 +80,7 @@ test('the full −10 pairing sweep: every box step ≥ 240 ASKS for exactly step
 // DOWN to the largest rung not above the ask, name both in the label. Nothing
 // is invented and nothing is rounded up. Both halves are pinned here so the
 // arithmetic cannot quietly change under either reading.
-test('the owner\'s worked examples land ON a rung; the rest snap down and say so', () => {
+test('the owner\'s worked examples land ON a rung; since 17.10.2026 so does every other box step', () => {
   const ladder = runnerLadder(P);
   const onTheNose = [440, 490, 540, 590, 640, 690, 390];
   for (const step of onTheNose) {
@@ -93,16 +96,16 @@ test('the owner\'s worked examples land ON a rung; the rest snap down and say so
   assert.equal(ladderRungFor(runnerAskFor(640, P), P), 650);
   assert.equal(ladderRungFor(runnerAskFor(690, P), P), 700);
 
-  // And the six the ladder has no rung for: the ask still rises by ten, the
-  // rung is the largest not above it, and the two are named apart.
-  for (const step of [250, 270, 300, 320, 350, 380]) {
+  // CHAT FIX 17.10.2026: the divergence T34 named is closed. The six short
+  // box steps are the short nominals less ten, so their asks ARE rungs too:
+  // no box in the app lands a rung short of its runner any more.
+  for (const step of [240, 260, 290, 310, 340, 370]) {
     const ask = runnerAskFor(step, P);
     assert.equal(ask, step + 10);
-    const rung = ladderRungFor(ask, P);
-    assert.ok(ladder.includes(rung), `${rung} is a rung`);
-    assert.ok(rung <= ask, 'never rounded up');
-    assert.ok(!ladder.includes(ask), `${ask} is deliberately NOT a rung`);
+    assert.ok(ladder.includes(ask), `${ask} is a rung now (the owner's "zostaw")`);
+    assert.equal(ladderRungFor(ask, P), ask, `box ${step} → NL ${ask}, not one rung short`);
   }
+  for (const old of [250, 270, 300, 320, 350, 380]) assert.ok(!P.wardrobe.drawers.depthSteps.includes(old), `${old} is a nominal, not a box length`);
 });
 
 test('an ask lands on the largest rung not above it', () => {

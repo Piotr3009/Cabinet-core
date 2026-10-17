@@ -1320,7 +1320,18 @@ export const DEFAULT_CABINET_PROFILE = {
     // (reference/hardware/blum-inner-front.json, owner to confirm); this is
     // the wooden board the owner asked for. T78 proposed, owner to confirm.
     innerFront: { overhangMm: 0, heightMm: 'box side height' },
-    depthSteps: [250, 270, 300, 320, 350, 380, 390, 440, 490, 540, 590, 640, 690],
+    // ─── CHAT FIX 17.10.2026: THE BOX IS THE RUNNER LESS TEN, EVERYWHERE ──
+    // The owner: *"prowadnice mamy co 50, i kazda szuflada o 10 mm
+    // mniejsza"* and, told Blum makes the 270, the 320 and the 380: *"zostaw,
+    // tylko pamietaj ze wszedzie szuflada musi miec 10 mm mniej od
+    // prowadnicy."*  T25 F9 had put the six short NOMINALS (250 .. 380) into
+    // this list as box lengths, so a 380 box asked the ladder for 390 and got
+    // a 350 runner (T34 named the divergence). Now every step is a rung of
+    // hardware.runner.movento.nominalLadder less nominalOverBoxMm (10), the
+    // short ones included, and the ask of every box lands exactly on its rung.
+    // The LISP kits' own six (390 .. 640, KIT_BUDR_FULL / KIT_WARDROBE_FULL)
+    // are unchanged inside it; the short end is the owner's law of this day.
+    depthSteps: [240, 260, 290, 310, 340, 370, 390, 440, 490, 540, 590, 640, 690],
       // usable depth = depth − G − setback − frontThickness − depthAllowance
       depthAllowance: 20,
       partitionClearance: 5,   // partition sits 5 mm above the top drawer front
@@ -4422,7 +4433,14 @@ export const DEFAULT_CABINET_PROFILE = {
         // The owner closed the F9 review with the bounds — "od 250" …
         // "dopisujemy do 700" — so Q1's marked lower bound is answered and
         // the ladder runs 250 to 700 every 50.
-        nominalLadder: [250, 300, 350, 400, 450, 500, 550, 600, 650, 700],
+        // ─── CHAT FIX 17.10.2026: THE SHORT RUNNERS ARE RUNGS TOO ──────────
+        // The owner: *"jak sprawdziles ze sa prowadnice 270 mm w Blum to
+        // zostaw"*: the six short nominals he asked for by name in T25 (250,
+        // 270, 300, 320, 350, 380; every one in his MOVENTO bucket) join the
+        // 50-step ladder, so every box step above (ladder less 10) asks for a
+        // length that IS a rung. The bucket also holds a 420; not asked for,
+        // not here.
+        nominalLadder: [250, 270, 300, 320, 350, 380, 400, 450, 500, 550, 600, 650, 700],
 
         // ─── TURN 34 (CLAUDE.md F3): THE NOMINAL IS THE BOX + 10 ──────────
         // His standing workshop rule, said out loud on 16.08.2026 while
@@ -5730,7 +5748,16 @@ export function migrateCabinetProfile(profile) {
       // floor keeps its own and gets the ceiling from the code, exactly as
       // every other nested block on this profile is merged.
       plinth: { ...D.wardrobe.plinth, ...profile.wardrobe?.plinth },
-      drawers: { ...D.wardrobe.drawers, ...profile.wardrobe?.drawers },
+      drawers: {
+        ...D.wardrobe.drawers,
+        ...profile.wardrobe?.drawers,
+        // CHAT FIX 17.10.2026: the BOX LADDER is the owner's law of this file
+        // ("wszedzie szuflada musi miec 10 mm mniej od prowadnicy"), rebuilt
+        // from code on every migration like sheetOptions, so a profile saved
+        // with T25's six short nominals cannot keep cutting a 380 box for a
+        // 350 runner.
+        depthSteps: D.wardrobe.drawers.depthSteps,
+      },
       drawerPanel: { ...D.wardrobe.drawerPanel, ...profile.wardrobe?.drawerPanel },
       runners: { ...D.wardrobe.runners, ...profile.wardrobe?.runners },
       rail: { ...D.wardrobe.rail, ...profile.wardrobe?.rail },
@@ -6165,6 +6192,11 @@ export function migrateCabinetProfile(profile) {
           // stored profiles. See the hinge block above for why this comes back
           // from the app rather than from the file.
           ...bucketLocation(D.hardware.runner.movento),
+          // CHAT FIX 17.10.2026: the ladder of nominals is the owner's law of
+          // this file (the short Blum lengths are rungs now), rebuilt from
+          // code on every migration so the box ladder above and this one
+          // never drift apart in a stored profile.
+          nominalLadder: D.hardware.runner.movento.nominalLadder,
           variants: mergeById(D.hardware.runner.movento.variants, profile.hardware?.runner?.movento?.variants),
           // Turn 23 (CLAUDE.md F4.3): the finish list and the single neutral
           // metal behind it, merged like every other nested block — a profile

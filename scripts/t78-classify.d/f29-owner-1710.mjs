@@ -37,11 +37,27 @@ export const LICENSED = {
   'src/engine/cabinet.js': {
     why: 'Owner 17.10.2026 ("na wszystkich"): the L corner\'s TOP-L, BOTTOM-L and SHELF-L carry the CORNER_4MM marks '
       + 'from v3 along the two fronts (cornerMarkRecords on shape.nominal) and no relief circle (curves: []); the '
-      + 'puzzle dog bones beside the tabs unchanged. Imports notchProfile, notchP, cornerMarkRecords',
+      + 'puzzle dog bones beside the tabs unchanged. Imports notchProfile, notchP, cornerMarkRecords. '
+      + 'Owner 17.10.2026 (09:56, "ten jeden rzad sleeve usunac ... symetrycznie"): a shelf item\'s sleeves_dropped '
+      + '(sleevesDroppedOf, never the 0 row) is left out of the cluster the machine bores on every bearer, and out of '
+      + 'drillSummary.shelf_cluster_y; a shelf with none is bored exactly as before',
   },
   'src/engine/profile.js': {
     why: 'Owner 17.10.2026: cnc.cornerMark.legMm 40 ("okolo 40 mm w kazda strone") and puzzle.layers.cornerMark '
-      + 'CORNER_4MM ("nazwij to corner 4 mm"). Two names, no other number moves',
+      + 'CORNER_4MM ("nazwij to corner 4 mm"). Owner 17.10.2026 (09:50, "wszedzie szuflada musi miec 10 mm mniej od '
+      + 'prowadnicy", "zostaw" the short Blum lengths): wardrobe.drawers.depthSteps 240 .. 690 (every rung less ten; '
+      + 'T25 had the six short nominals as box lengths) and hardware.runner.movento.nominalLadder gains 270, 320 and '
+      + '380; both rebuilt from code on migration. No golden cuts a box under 440 (BUDR 558: 490, chests 568: 440)',
+  },
+  'src/engine/shelfHingeClash.js': {
+    why: 'Owner 17.10.2026 (09:56): the window is derived from the rows that are BORED (shelf_cluster_y): reach up to '
+      + 'the highest remaining row, down to the lowest, plus the cup and sleeve radii; an untouched cluster is the 71.25 '
+      + 'of T30 to the hundredth. Every record names offendingOffsets and droppableOffset (one edge row alone)',
+  },
+  'src/engine/checks.js': {
+    why: 'Owner 17.10.2026 (09:56): Check #1\'s first button drops the one colliding edge row with one click (the '
+      + 'store\'s dropSleeveRow through the subject.store grammar of Check #34); the seat row refuses in the button\'s '
+      + 'title; the two T30 buttons stay by name',
   },
   'src/engine/cnc/layers.js': {
     why: 'Owner 17.10.2026: CORNER_4MM, ACI 53, kind mark: the corner mark\'s layer, written to the DXF as an open '

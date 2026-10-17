@@ -470,6 +470,17 @@ function innerFrontDrawerSet(params, type, count, items = []) {
 }
 
 /** Largest standard runner length that fits the usable depth, or null. */
+/**
+ * CHAT FIX 17.10.2026: the cluster offsets a shelf item asked the machine NOT
+ * to bore (`item.sleeves_dropped`, mm off the shelf's own row), kept to the
+ * profile's own cluster and never the 0 row the shelf stands on.
+ */
+export function sleevesDroppedOf(item, shelfHoles) {
+  const cluster = (shelfHoles?.clusterOffsets || []).map(Number);
+  const said = Array.isArray(item?.sleeves_dropped) ? item.sleeves_dropped : [];
+  return [...new Set(said.map(Number).filter((dy) => Number.isFinite(dy) && dy !== 0 && cluster.includes(dy)))];
+}
+
 export function snapDrawerDepth(usableDepth, steps) {
   let best = null;
   for (const step of steps) if (step <= usableDepth) best = step;
@@ -8925,7 +8936,17 @@ export function computeCabinet(params, profileOverride) {
         panel: shelfPanel,
       });
     } else {
-      shelfPinRows.push({ y: shelfRows[i], panel: shelfPanel });
+      // ─── CHAT FIX 17.10.2026: ONE ROW OF SLEEVES, DROPPED BY THE OWNER ──
+      // The owner, on the shelf-and-hinge clash: *"zeby po nacisnieciu remove
+      // sleeve ten jeden rzad sleeve usunac ale nie wszystkie 3 rzedy tylko
+      // ten jeden ktory koliduje"*, and *"symetrycznie, przeciez polka nie
+      // moze wisiec na jednej stronie"*. A shelf item may carry
+      // `sleeves_dropped: [50]`: cluster offsets (mm off its own row) the
+      // machine does NOT bore, on every bearer the shelf lands on. The row
+      // the shelf stands on (0) is never dropped: a shelf has to lie on
+      // something, so a 0 in the list is ignored. Nothing in the list = the
+      // whole cluster, which is every shelf before this day.
+      shelfPinRows.push({ y: shelfRows[i], panel: shelfPanel, dropped: sleevesDroppedOf(item, SH) });
     }
   }
   // ─── TURN 36 (CLAUDE.md F6): THE SPLIT DIVIDER IS A FIX SHELF ────────────
@@ -8972,7 +8993,7 @@ export function computeCabinet(params, profileOverride) {
       // shelf can only ever land on that one.
       if (bearer.kind === 'partition' && bearer.side !== partitionFaceOf(bearer.id)) continue;
       const slot = pinWork.get(bearer.id) || { bearer, rows: [] };
-      slot.rows.push(row.y);
+      slot.rows.push({ y: row.y, dropped: row.dropped || [] });
       pinWork.set(bearer.id, slot);
     }
   }
@@ -8988,8 +9009,11 @@ export function computeCabinet(params, profileOverride) {
       // a side cannot be drilled to two different standards.
       columnFromEdge: shelfPinSetback, backColumn: shelfBackColumn,
     });
-    for (const rowY of slot.rows) {
+    for (const { y: rowY, dropped } of slot.rows) {
       for (const dy of SH.clusterOffsets) {
+        // CHAT FIX 17.10.2026: a row the owner dropped at this shelf is not bored
+        // on this bearer, nor on the other one (the same list rides every bearer).
+        if (dropped.includes(dy)) continue;
         // …and the HEIGHT is converted into this bearer's own frame, separately
         // for each one: a partition's origin is its own bottom edge, so a row
         // measured from the cabinet floor would be out by the thickness of the
@@ -11097,7 +11121,11 @@ export function computeCabinet(params, profileOverride) {
     // project has no handle — R9 in the summary as well as in the drilling.
     ...(handlePlacements.length ? { handles: handlePlacements } : {}),
     shelf_row_y: shelfRows.map((v) => roundTo(v, 4)),
-    shelf_cluster_y: shelfPinRows.map((row) => SH.clusterOffsets.map((dy) => roundTo(row.y + dy, 4))),
+    // CHAT FIX 17.10.2026: a dropped row is absent here too, so the clash rule
+    // (engine/shelfHingeClash.js) and the sheet read the cluster the machine bores.
+    shelf_cluster_y: shelfPinRows.map((row) => SH.clusterOffsets
+      .filter((dy) => !(row.dropped || []).includes(dy))
+      .map((dy) => roundTo(row.y + dy, 4))),
     shelf_hole_x: shelfHoleX,
     shelf_hole_x_bur: shelfHoleXBur,
     // Turn 8 (F4): which rows are PINNED and which are SCREWED. `shelf_row_y`

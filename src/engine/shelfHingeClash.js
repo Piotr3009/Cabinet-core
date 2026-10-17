@@ -91,11 +91,23 @@ export function shelfHingeClashWindowMm(profile) {
  *                  hingeIndex:number, doorPanelId:string|null, message:string}>}
  */
 export function shelfHingeClashes({ result, profile }) {
-  const windowMm = shelfHingeClashWindowMm(profile);
+  const { cupDiameter, sleeveDiameter } = settings(profile);
+  // CHAT FIX 17.10.2026: THE WINDOW IS DERIVED FROM THE ROWS THAT ARE BORED.
+  // The owner: *"zeby po nacisnieciu remove sleeve ten jeden rzad sleeve
+  // usunac ale nie wszystkie 3 rzedy tylko ten jeden ktory koliduje"*. A shelf
+  // whose owner dropped one row of its cluster (`sleeves_dropped`, cabinet.js)
+  // publishes a shorter cluster in `shelf_cluster_y`, and the reach is read
+  // off THAT, in the hinge's own direction: up to the highest remaining row
+  // above the shelf, down to the lowest below it. An untouched cluster reaches
+  // 50 both ways and the window is the 71.25 it has been since turn 30, so
+  // every record on every cabinet before this day is byte for byte the same.
+  const cupR = cupDiameter / 2;
+  const sleeveR = sleeveDiameter / 2;
   // TURN 40 (F1): the rows the machine ACTUALLY bores — a split leaf's own two
   // sets where there is one, `hinge_centers` where there is not.
   const centres = drilledHingeRows(result);
   const rows = result?.drillSummary?.shelf_pin_row_y || [];
+  const clusters = result?.drillSummary?.shelf_cluster_y || [];
   if (!centres.length || !rows.length) return [];
 
   const shelves = (result.panels || []).filter((p) => p.part === 'SHELF' && p.box);
@@ -103,13 +115,26 @@ export function shelfHingeClashes({ result, profile }) {
     && !p.meta?.appliance);
 
   const out = [];
-  for (const shelfY of rows) {
+  for (let r = 0; r < rows.length; r += 1) {
+    const shelfY = rows[r];
     // The shelf whose UNDERSIDE is this row — the one the pins carry.
     const shelf = shelves.find((p) => Math.abs(p.box.y - shelfY) < 0.5) || null;
+    // The offsets still bored at this row (the whole profile cluster where the
+    // summary carries none, which is a result older than the key).
+    const bored = Array.isArray(clusters[r]) && clusters[r].length
+      ? clusters[r].map((y) => Math.round((y - shelfY) * 100) / 100)
+      : (profile?.shelfHoles?.clusterOffsets || [-50, 0, 50]).map(Number);
+    const reachUp = Math.max(0, ...bored.filter((dy) => dy > 0));
+    const reachDown = Math.max(0, ...bored.filter((dy) => dy < 0).map((dy) => -dy));
     for (let i = 0; i < centres.length; i += 1) {
       const hingeY = Number(centres[i]);
       const gap = Math.abs(hingeY - shelfY);
+      const windowMm = (hingeY >= shelfY ? reachUp : reachDown) + cupR + sleeveR;
       if (!(gap < windowMm)) continue;
+      // Which bored rows the cup itself reaches (the sleeve's circle and the
+      // cup's touching): the action's business, not the window's. An edge row
+      // alone is a row the owner may drop; the 0 row is the shelf's own seat.
+      const offendingOffsets = bored.filter((dy) => Math.abs(hingeY - (shelfY + dy)) < cupR + sleeveR);
       // WHICH DOOR, AND WHICH OF ITS OWN HINGES. A whole door's rows belong to
       // the cabinet — both leaves are drilled as a set — so the clash is
       // reported against the leaf whose own span contains the row, exactly as
@@ -129,6 +154,13 @@ export function shelfHingeClashes({ result, profile }) {
         shelfItemId: shelf?.meta?.itemId || null,
         hingeIndex: owner ? owner.hingeIndex : i,
         doorPanelId: door?.id || null,
+        // CHAT FIX 17.10.2026: the rows the cup reaches, and the one the owner
+        // may drop with one click (an edge row, alone); null where the seat
+        // row (0) is among them or no single row is: "move the shelf or the
+        // hinge". Two new keys on every record; the gap and the window are
+        // what they were on an untouched shelf.
+        offendingOffsets,
+        droppableOffset: offendingOffsets.length === 1 && offendingOffsets[0] !== 0 ? offendingOffsets[0] : null,
         // Which leaf of a split this is. ABSENT on a whole door, which is the
         // house rule for a key that would otherwise say nothing on every
         // cabinet in the app — and is what keeps a clash record on an

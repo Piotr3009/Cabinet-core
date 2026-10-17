@@ -157,15 +157,23 @@ test('F2.3 → TURN 25 (F9): the two ladders MEET now, and here is where', () =>
   // one of them is in the pack. The assertion is INVERTED rather than deleted:
   // what was "they must not meet" is now "they meet at exactly these six", so
   // the day somebody trims the ladder this test says so too.
+  // ─── CHAT FIX 17.10.2026: THE MEETING POINT IS THE RUNNER LADDER ─────────
+  // The owner: *"wszedzie szuflada musi miec 10 mm mniej od prowadnicy"*. The
+  // six short nominals are rungs of hardware.runner.movento.nominalLadder now
+  // and the box ladder carries their lengths less ten, so the pack is met by
+  // the ladder of NOMINALS (eight of the pack's nine; the 420 was never asked
+  // for) and every box step asks for a nominal the pack or the order list has.
   clearRunnerCatalogue();
   const parsed = setRunnerCatalogue(RUNNER_MANIFEST);
   const packLadder = new Set(parsed.files.map((f) => f.nl));
-  const appLadder = P.wardrobe.drawers.depthSteps;
+  const nominals = P.hardware.runner.movento.nominalLadder;
   assert.deepEqual(
-    appLadder.filter((step) => packLadder.has(step)),
-    [250, 270, 300, 320, 350, 380],
-    'the owner’s six short runners are the ladders’ meeting point',
+    nominals.filter((nl) => packLadder.has(nl)),
+    [250, 270, 300, 320, 350, 380, 400, 450],
+    'the owner’s short runners (and the 400 and 450) are where the pack and the ladder meet',
   );
+  for (const step of P.wardrobe.drawers.depthSteps) assert.ok(nominals.includes(step + 10), `box ${step} asks for a nominal on the ladder`);
+  assert.deepEqual(P.wardrobe.drawers.depthSteps.filter((step) => packLadder.has(step)), [], 'a box length is not a nominal any more');
   clearRunnerCatalogue();
 });
 

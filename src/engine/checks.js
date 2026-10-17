@@ -470,11 +470,34 @@ export function shelfHingeFindings({
     // "Remove sleeves at this shelf" / "Move the hinge". Neither button fixes
     // anything — each opens the window where the decision belongs, on the very
     // row that is in conflict. No silent auto-fix (the house grammar).
+    // CHAT FIX 17.10.2026: ONE CLICK DROPS THE ONE ROW. The owner: *"zeby po
+    // nacisnieciu remove sleeve ten jeden rzad sleeve usunac ale nie wszystkie
+    // 3 rzedy tylko ten jeden ktory koliduje"*, *"symetrycznie"*. Where the cup
+    // reaches ONE edge row of the cluster (+50 or -50, engine/shelfHingeClash.js
+    // droppableOffset), the first button drops that row on every bearer
+    // (the store's dropSleeveRow, run by the panel's flight exactly as Check
+    // #34's raise-hood is) and the shelf keeps its seat and its other notch.
+    // Where the seat row (0) itself is in the cup's circle, no row can go
+    // (a shelf has to lie on something): the old two buttons stay and say so.
+    const seatRow = c.offendingOffsets?.includes(0);
+    const signed = (dy) => `${dy > 0 ? '+' : ''}${dy}`;
     const actions = [
+      c.shelfPanelId && c.shelfItemId && c.droppableOffset != null ? {
+        id: 'drop-sleeve-row',
+        label: `Remove the ${signed(c.droppableOffset)} mm sleeve row`,
+        title: `Drop the ${signed(c.droppableOffset)} mm row of this shelf's cluster on both sides (the owner: "symetrycznie"); `
+          + 'the shelf keeps the row it stands on and its other notch. An explicit click, never silent.',
+        subject: {
+          unitId, panelId: c.shelfPanelId, editor: 'element',
+          store: { action: 'dropSleeveRow', args: [unitId, c.shelfItemId, c.droppableOffset] },
+        },
+      } : null,
       c.shelfPanelId ? {
         id: 'remove-sleeves',
         label: 'Remove sleeves at this shelf',
-        title: 'Open this shelf — a FIX shelf takes no sleeves at all, which is the joint that clears the hinge',
+        title: seatRow
+          ? 'The cup reaches the row the shelf STANDS on, so no single row can be dropped: open the shelf (a FIX shelf takes no sleeves), move it, or move the hinge.'
+          : 'Open this shelf — a FIX shelf takes no sleeves at all, which is the joint that clears the hinge',
         subject: { unitId, panelId: c.shelfPanelId, editor: 'element' },
       } : null,
       c.doorPanelId ? {

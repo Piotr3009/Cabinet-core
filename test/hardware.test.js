@@ -63,7 +63,12 @@ test('one runner PAIR per drawer, at the snapped runner length', () => {
   assert.equal(roleOf(run({ depth: 700, drawers: 1, shelves: 0 }), 'runner_pairs').spec.length_mm, 540);
   // Turn 25 (CLAUDE.md F9): a 460 mm carcass takes a SHORT runner now instead
   // of being told it is too shallow and then cut a box longer than itself.
-  assert.equal(roleOf(run({ depth: 460, drawers: 2, shelves: 0 }), 'runner_pairs').spec.length_mm, 320);
+  // CHAT FIX 17.10.2026 ("wszedzie szuflada musi miec 10 mm mniej od
+  // prowadnicy"): usable 460 - 18 - 50 - 25 - 20 = 347 → the box of the 350
+  // runner, 340 (T25 cut a 320 box and asked for a 330 it could not buy).
+  const short = roleOf(run({ depth: 460, drawers: 2, shelves: 0 }), 'runner_pairs');
+  assert.equal(short.spec.length_mm, 340);
+  assert.equal(short.spec.nl, 350);
   // Below the shortest runner Blum makes there is still nothing to buy.
   assert.equal(roleOf(run({ depth: 300, drawers: 2, shelves: 0 }), 'runner_pairs'), undefined);
 });

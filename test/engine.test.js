@@ -450,8 +450,12 @@ test('fixture rules hold in the engine', async (t) => {
     // cabinet was told "too shallow for drawers" and then cut a 390 mm box
     // anyway, LONGER THAN THE CARCASS. The ladder starts at 250 now and the
     // rule is unchanged: the largest step that fits.
-    assert.equal(snapDrawerDepth(389, steps), 380);
-    assert.equal(snapDrawerDepth(249, steps), null, 'below the shortest runner there is still nothing');
+    // CHAT FIX 17.10.2026: every box step is its runner less ten ("wszedzie
+    // szuflada musi miec 10 mm mniej od prowadnicy"): 389 takes 370 (NL 380),
+    // and the shortest box is 240 (NL 250).
+    assert.equal(snapDrawerDepth(389, steps), 370);
+    assert.equal(snapDrawerDepth(240, steps), 240);
+    assert.equal(snapDrawerDepth(239, steps), null, 'below the shortest runner there is still nothing');
   });
 
   await t.test('too-shallow cabinet drops the drawers with a warning', () => {

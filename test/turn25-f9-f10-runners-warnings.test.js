@@ -17,9 +17,15 @@ const said = (r, code) => r.warnings.filter((w) => w.code === code);
 
 // ─── F9 ─────────────────────────────────────────────────────────────────────
 
-test('F9 — the owner’s six short NLs are on the ladder', () => {
+// CHAT FIX 17.10.2026: the owner's six short NOMINALS stay (hardware.runner
+// .movento.nominalLadder); the BOX steps for them are each ten less. The owner:
+// *"zostaw, tylko pamietaj ze wszedzie szuflada musi miec 10 mm mniej od
+// prowadnicy."*  T25 had put the nominals themselves into the box ladder.
+test('F9: the owner’s six short NLs are on the runner ladder, and their boxes are ten less', () => {
+  const LADDER = P.hardware.runner.movento.nominalLadder;
   for (const nl of [250, 270, 300, 320, 350, 380]) {
-    assert.ok(STEPS.includes(nl), `NL ${nl} is missing from the ladder`);
+    assert.ok(LADDER.includes(nl), `NL ${nl} is missing from the runner ladder`);
+    assert.ok(STEPS.includes(nl - 10), `box ${nl - 10} (NL ${nl} less ten) is missing from the box ladder`);
   }
   // …in order, and with the old ladder still whole behind them.
   assert.deepEqual([...STEPS].sort((a, b) => a - b), STEPS, 'the ladder is not sorted');
@@ -27,10 +33,11 @@ test('F9 — the owner’s six short NLs are on the ladder', () => {
 });
 
 test('F9 — selection is from the SHORTEST upward: the largest step that fits', () => {
-  assert.equal(runnerNominalLength(249, P), null, 'below the shortest, nothing fits');
-  assert.equal(runnerNominalLength(250, P), 250);
-  assert.equal(runnerNominalLength(269, P), 250);
-  assert.equal(runnerNominalLength(389, P), 380);
+  // 17.10.2026: the short steps are 240 .. 370 now (the nominal less ten).
+  assert.equal(runnerNominalLength(239, P), null, 'below the shortest, nothing fits');
+  assert.equal(runnerNominalLength(240, P), 240);
+  assert.equal(runnerNominalLength(259, P), 240);
+  assert.equal(runnerNominalLength(389, P), 370);
   assert.equal(runnerNominalLength(390, P), 390);
   assert.equal(runnerNominalLength(700, P), 690);
 });
@@ -39,7 +46,8 @@ test('F9 — a shallow cabinet gets a SHORT runner, not a box longer than itself
   // The bug in one line: at 350 mm deep the ladder started at 390, so the
   // cabinet was told "too shallow for drawers" and then cut a 390 mm box.
   const shallow = unit({ depth: 350 });
-  assert.equal(shallow.derived.szufDl, 300);
+  // 17.10.2026: usable 350 - 18 - 20 = 312 → box 310 (NL 320 less ten); T25 cut 300.
+  assert.equal(shallow.derived.szufDl, 310);
   assert.ok(shallow.derived.szufDl < shallow.params.depth, 'the box is shorter than the carcass');
   assert.deepEqual(said(shallow, 'DRAWERS_TOO_SHALLOW'), []);
 });

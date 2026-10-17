@@ -2601,6 +2601,46 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return { ...res, raisedTo: to };
   },
 
+  /**
+   * CHAT FIX 17.10.2026: ONE ROW OF A SHELF'S SLEEVE CLUSTER, DROPPED.
+   * The owner, on the shelf-and-hinge clash: *"zeby po nacisnieciu remove
+   * sleeve ten jeden rzad sleeve usunac ale nie wszystkie 3 rzedy tylko ten
+   * jeden ktory koliduje"*; asked whether on both sides: *"symetrycznie,
+   * przeciez polka nie moze wisiec na jednej stronie"*. The list rides the
+   * shelf ITEM (`sleeves_dropped`, mm off its own row) and the engine bores
+   * the cluster without those offsets on every bearer (cabinet.js
+   * sleevesDroppedOf). The 0 row (the seat) is refused in words: a shelf has
+   * to lie on something. An explicit click (Check #1's button), never silent.
+   */
+  dropSleeveRow: (unitId, itemId, offsetMm) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { error: 'No such unit.' };
+    const item = (unit.params?.sections?.[0]?.items || []).find((i) => i.id === itemId);
+    if (!item || item.kind !== 'shelf') return { error: 'No such shelf.' };
+    const dy = Number(offsetMm);
+    const cluster = (getCabinetProfile().shelfHoles?.clusterOffsets || []).map(Number);
+    if (!Number.isFinite(dy) || !cluster.includes(dy)) return { error: `${dy} mm is not a row of the sleeve cluster (${cluster.join(', ')}).` };
+    if (dy === 0) return { error: 'The 0 row is the one the shelf stands on; move the shelf or the hinge instead.' };
+    const had = Array.isArray(item.sleeves_dropped) ? item.sleeves_dropped.map(Number) : [];
+    if (had.includes(dy)) return { dropped: had };
+    const dropped = [...had, dy].sort((a, b) => a - b);
+    get().updateItem(unitId, itemId, { sleeves_dropped: dropped });
+    return { dropped };
+  },
+
+  /** ...and the whole cluster back, for the shelf that changed its mind. */
+  restoreSleeveRows: (unitId, itemId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { error: 'No such unit.' };
+    const item = (unit.params?.sections?.[0]?.items || []).find((i) => i.id === itemId);
+    if (!item || item.kind !== 'shelf') return { error: 'No such shelf.' };
+    if (!Array.isArray(item.sleeves_dropped) || !item.sleeves_dropped.length) return { dropped: [] };
+    get().updateItem(unitId, itemId, { sleeves_dropped: [] });
+    return { dropped: [] };
+  },
+
   refreshAutoParts: (unitId = null) => {
     const s = get();
     const profile = getCabinetProfile();

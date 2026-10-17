@@ -492,7 +492,9 @@ test('F20 · a refused unit is the puzzle unit plus the sentence, and the dowel 
 test('F20 · the puzzle default is untouched: no default kit carries a mark or a biscuit screw', () => {
   for (const id of Object.keys(UNIT_TYPES)) {
     const r = computeCabinet({ ...defaultParamsFor(id, P), unit_num: '01' }, P);
-    for (const p of r.panels) assert.equal(p.cnc?.marks, undefined, `${id} ${p.id} grew a mark`);
+    // CHAT FIX 17.10.2026: the L corner kits carry the owner's CORNER_4MM mark
+    // on their L boards by default (KIT_CORNER_L.lsp section 4); not a biscuit.
+    for (const p of r.panels) assert.deepEqual((p.cnc?.marks || []).filter((m) => m.layer !== 'CORNER_4MM'), [], `${id} ${p.id} grew a biscuit mark`);
     assert.equal(r.drills.some((d) => d.kind === 'biscuit_screw'), false, `${id} grew a biscuit screw`);
     assert.equal(r.derived?.joints, undefined, `${id} grew a joints record`);
   }

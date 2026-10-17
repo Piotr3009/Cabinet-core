@@ -50,6 +50,7 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 // parent's own cut, a pass before the drilling and a pass after it.
 import {
   notchCarcass, notchDrills, notchSummary, notchVerdict, withNotchRefusal,
+  notchProfile, notchP, cornerMarkRecords,
 } from './notch.js';
 // Chat-fix 15.10.2026 (the evening) · the recess extension, KIT_RECESS.lsp's
 // mirror: the notch's reverse (the carcass grows backward over a band), asked
@@ -4147,10 +4148,16 @@ export function computeCabinet(params, profileOverride) {
             outline: (shape.outline || shape.nominal).map(([x, y2]) => [roundTo(x, 4), roundTo(y2, 4)]),
             pockets: (shape.bones || []).map(([x1, y1, x2, y2]) => ({ layer: pz.layers.dogbone, x1, y1, x2, y2 })),
             holes: [],
-            curves: [{
-              kind: 'circle', layer: pz.layers.dogbone,
-              cx: roundTo(shape.relief.cx, 4), cy: roundTo(shape.relief.cy, 4), r: shape.relief.r,
-            }],
+            // CHAT FIX 17.10.2026 (KIT_CORNER_L.lsp section 4, the owner: *"nie,
+            // nie dodawaj wiercenia, dodaj jeden layer w samym cornerze okolo
+            // 40 mm w kazda strone na linii L shape i nazwij to corner 4 mm"*):
+            // the inner corner's relief circle (shape.relief, cornerL.js
+            // clInnerRelief, kept as the record) is no longer drawn; the L
+            // board carries two CORNER_4MM marks along its two fronts from v3,
+            // read off its NOMINAL outline (the tabs are not on it). The puzzle
+            // dog bones beside the tabs (pockets above) do not move.
+            curves: [],
+            marks: cornerMarkRecords(shape.nominal, notchP(notchProfile(P), 'cnc.cornerMarkLeg'), pz),
           },
           meta: {
             lBoard: id.replace(/-\d+$/, ''),

@@ -66,6 +66,9 @@ export function notchProfile(profile = {}) {
     'notch.obstacleClearance': num(profile.notch?.obstacleClearanceMm, 10),
     // 15.10.2026: the owner's "nie mniej niz 100 mm w srodku szafki".
     'notch.minInterior': num(profile.notch?.minInteriorMm, 100),
+    // 17.10.2026 (KIT_NOTCH.lsp D9): the owner's "okolo 40 mm w kazda strone",
+    // each leg of the CORNER_4MM mark at a re-entrant corner.
+    'cnc.cornerMarkLeg': num(profile.cnc?.cornerMark?.legMm, 40),
   };
 }
 
@@ -192,12 +195,86 @@ export function notchRectReentrant(bw, bh, nw, nh, fc) {
   return [[nw, bh - nh], [-1, 1]];
 }
 
-/** notch-dogbone (LISP section 5): [cx, cy, r], or null where there is no corner. */
+/**
+ * notch-dogbone (LISP section 5): [cx, cy, r], or null where there is no corner.
+ * 17.10.2026 (KIT_NOTCH.lsp D9): RETIRED FROM THE CUT. The owner: *"nie, nie
+ * dodawaj wiercenia"*. Nothing drills it any more; the function and its
+ * family stay as the record of where the circle stood, and the tests still
+ * hold them to the LISP's numbers. What a re-entrant corner gets is
+ * `cornerMarkRecords` below.
+ */
 export function notchDogbone(bw, bh, nw, nh, fc, r) {
   const re = notchRectReentrant(bw, bh, nw, nh, fc);
   if (!re || !(r > 0)) return null;
   const k = r / Math.sqrt(2);
   return [re[0][0] + re[1][0] * k, re[0][1] + re[1][1] * k, r];
+}
+
+// ─── THE CORNER MARK (KIT_NOTCH.lsp D9, KIT_RECESS.lsp D18, KIT_CORNER_L.lsp
+// section 4; 17.10.2026) ──────────────────────────────────────────────────
+//
+// The owner: *"nie, nie dodawaj wiercenia, dodaj jeden layer w samym cornerze
+// okolo 40 mm w kazda strone na linii L shape i nazwij to corner 4 mm, wtedy
+// ja wytne ten korner."*
+//
+// Read off a board's NOMINAL outline (the puzzle tabs are not on it, so a tab
+// root is never a corner here), in whatever frame the outline is drawn in. A
+// vertex is RE-ENTRANT when the walk turns the other way there than the
+// polygon turns as a whole (the cross product of the edge in and the edge out
+// against the sign of the signed area). At each such vertex: two open lines
+// on CORNER_4MM, from the vertex back along the edge in and on along the edge
+// out, `leg` long or the edge's own length, whichever is shorter. A rectangle
+// has none; a window is a pocket, not an outline, and has none.
+
+/** notch-signed-area2: twice the signed area of a polygon (positive anticlockwise). */
+export function signedArea2(pts) {
+  let a = 0;
+  const n = (pts || []).length;
+  for (let i = 0; i < n; i += 1) {
+    const [x1, y1] = pts[i];
+    const [x2, y2] = pts[(i + 1) % n];
+    a += x1 * y2 - x2 * y1;
+  }
+  return a;
+}
+
+/** notch-leg-point: `leg` along the edge from v toward w, or w when the edge is shorter. */
+export function legPoint(v, w, leg) {
+  const dx = w[0] - v[0];
+  const dy = w[1] - v[1];
+  const len = Math.hypot(dx, dy);
+  if (!(len > 1e-9)) return [v[0], v[1]];
+  const k = Math.min(leg, len) / len;
+  return [v[0] + dx * k, v[1] + dy * k];
+}
+
+/** notch-corner-marks: [[v, a], [v, b], ...], two per re-entrant vertex, in the outline's frame. */
+export function cornerMarksOf(pts, leg) {
+  const n = (pts || []).length;
+  const orient = signedArea2(pts);
+  const out = [];
+  if (n < 4 || !(leg > 0) || orient === 0) return out;
+  for (let i = 0; i < n; i += 1) {
+    const p = pts[(i + n - 1) % n];
+    const v = pts[i];
+    const q = pts[(i + 1) % n];
+    const cross = (v[0] - p[0]) * (q[1] - v[1]) - (v[1] - p[1]) * (q[0] - v[0]);
+    if (cross * orient < 0) {
+      out.push([v, legPoint(v, p, leg)]);
+      out.push([v, legPoint(v, q, leg)]);
+    }
+  }
+  return out;
+}
+
+/** The marks as `cnc.marks` records (the biscuit mark's own shape: layer, from, to), rounded. */
+export function cornerMarkRecords(pts, leg, pz) {
+  const layer = pz?.layers?.cornerMark || 'CORNER_4MM';
+  return cornerMarksOf(pts, leg).map(([a, b]) => ({
+    layer,
+    from: [roundTo(a[0], 4), roundTo(a[1], 4)],
+    to: [roundTo(b[0], 4), roundTo(b[1], 4)],
+  }));
 }
 
 /** notch-rot90-pts: a plan outline into drawTOP_ROT90's frame (x' from the BACK edge). */
@@ -418,14 +495,18 @@ export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
   const upX = left ? S : cw - S;
   const scr = [];
   for (const y of notchRowsBetweenTabs(0, ch, farTabs, sfe)) scr.push([farX, y]);
+  // 17.10.2026 (KIT_NOTCH.lsp D10): NO screw between the BACK and the box. The
+  // owner: *"nie bedziemy tam wkrecac wkretow, system wkrety dookola plecow w
+  // tym przypadku nie zadziala"*. A full-height back notch's notched edge
+  // meets the RETURN only and gets no row (it was the nearX column over the
+  // whole height); beside a part-height notch the run (notchScrewRow(hh) at
+  // nearX) is gone and the side's own back edge above it keeps its rows.
   if (!back || !boxed) {
     for (const y of notchRowsBetweenTabs(0, ch, farTabs, sfe)) scr.push([upX, y]);
-  } else if (full) {
-    for (const y of notchRowsBetweenTabs(0, ch, farTabs, sfe)) scr.push([nearX, y]);
-  } else {
-    for (const y of notchScrewRow(hh, sfe)) scr.push([nearX, y]);
+  } else if (!full) {
     for (const y of notchRowsBetweenTabs(nh, ch, nearTabs, sfe)) scr.push([upX, y]);
   }
+  void nearX;
   for (const x of notchRowBetween(lo, hi, g, sfe)) scr.push([x, ch - S]);
   for (const x of (back && boxed ? notchRowBetween(blo, bhi, g, sfe) : notchRowBetween(0, cw, g, sfe))) {
     scr.push([x, S]);
@@ -472,11 +553,18 @@ export function notchStep(ch, g, nw, nh, corner) {
 }
 
 /**
- * notch-step-screws: x from the STEP's own left end, y up: a column into the
+ * notch-step-screws: NONE since 17.10.2026 (D10). Until then, as the record below states, x from the STEP's own left end, y up: a column into the
  * side's end and one into the RETURN's end (S and nw + S), the row into the
  * BOTTOM's (and at full height the TOP's) notch edge between them (g .. nw).
  */
 export function notchStepScrews(ch, g, nw, nh, corner, K) {
+  // 17.10.2026 (KIT_NOTCH.lsp D10): none stated; biscuits by hand, "teraz nic".
+  void ch; void g; void nw; void nh; void corner; void K;
+  return null;
+}
+
+/** The record (D10): what notchStepScrews stated until 17.10.2026. */
+export function notchStepScrewsStatedUntil1710(ch, g, nw, nh, corner, K) {
   if (!notchStep(ch, g, nw, nh, corner)) return null;
   const S = notchScrewAxis(g);
   const hh = notchHh(ch, nh);
@@ -497,11 +585,18 @@ export function notchReturn(ch, g, nw, nd, nh, corner = 'BL') {
 }
 
 /**
- * notch-return-screws: x along the depth from the RETURN's FRONT end, y up:
+ * notch-return-screws: NONE since 17.10.2026 (D10). Until then, as the record below states, x along the depth from the RETURN's FRONT end, y up:
  * the row into the BOTTOM's (and at full height the TOP's) notch edge along
  * its own length. The STEP's column holds it at the back corner.
  */
 export function notchReturnScrews(ch, g, nw, nd, nh, corner, K) {
+  // 17.10.2026 (KIT_NOTCH.lsp D10): none stated; biscuits by hand, "teraz nic".
+  void ch; void g; void nw; void nd; void nh; void corner; void K;
+  return null;
+}
+
+/** The record (D10): what notchReturnScrews stated until 17.10.2026. */
+export function notchReturnScrewsStatedUntil1710(ch, g, nw, nd, nh, corner, K) {
   const ret = notchReturn(ch, g, nw, nd, nh, corner);
   if (!ret) return null;
   const S = notchScrewAxis(g);
@@ -522,11 +617,18 @@ export function notchLid(ch, g, nw, nd, nh) {
 }
 
 /**
- * notch-lid-screws: x from the LID's left end, y along the depth from its
+ * notch-lid-screws: NONE since 17.10.2026 (D10). Until then, as the record below states, x from the LID's left end, y along the depth from its
  * FRONT end. 15.10.2026: at a back corner the RETURN lies under the LID from
  * y = g (behind the STEP) and the STEP under its whole front edge (0 .. nw).
  */
 export function notchLidScrews(ch, g, nw, nd, nh, corner, K) {
+  // 17.10.2026 (KIT_NOTCH.lsp D10): none stated; biscuits by hand, "teraz nic".
+  void ch; void g; void nw; void nd; void nh; void corner; void K;
+  return null;
+}
+
+/** The record (D10): what notchLidScrews stated until 17.10.2026. */
+export function notchLidScrewsStatedUntil1710(ch, g, nw, nd, nh, corner, K) {
   if (!notchLid(ch, g, nw, nd, nh)) return null;
   const S = notchScrewAxis(g);
   const sfe = notchP(K, 'puzzle.screwFromEnd');
@@ -993,7 +1095,9 @@ export function notchCarcass({
   if (!n) return null;
   const pz = profile.puzzle;
   const K = notchProfile(profile);
-  const r = notchCutterRadius(notchP(K, 'cnc.toolDiameter'));
+  // 17.10.2026 (D9): the cutter radius no longer sets out a dog bone here; the
+  // re-entrant corners get the CORNER_4MM mark, `leg` long each way.
+  const leg = notchP(K, 'cnc.cornerMarkLeg');
   const { corner } = n;
   const nw = n.w;
   const nd = n.d;
@@ -1056,12 +1160,13 @@ export function notchCarcass({
         ...fromFront(sj['TOP-SCREWS']).map((x) => ({ layer: pz.layers.screw, kind: 'screw', x, y: H - S, d: pz.screwDiameter })),
         ...fromFront(sj['BOTTOM-SCREWS']).map((x) => ({ layer: pz.layers.screw, kind: 'screw', x, y: S, d: pz.screwDiameter })),
       ];
-      const db = notchSideDogbone(D, H, G, nw, nd, nh, corner, r);
+      // 17.10.2026 (D9): the corner mark on the nominal outline, no dog bone.
       side.cnc = {
         ...side.cnc,
         outline: outlineWithTabs(outline, runs, G, pz),
         pockets: [...tabBones(runs, G, pz), ...sockets.pockets],
-        holes: [...sockets.holes, ...screws, ...(db ? [dogboneHole(db, pz)] : [])],
+        holes: [...sockets.holes, ...screws],
+        marks: [...(side.cnc?.marks || []), ...cornerMarkRecords(outline, leg, pz)],
         notch: notchCornerOfOutline(outline, sideW, H),
       };
       side.area_m2 = polygonArea(outline) / 1e6;
@@ -1080,8 +1185,8 @@ export function notchCarcass({
       { edge: 'top', at: tw, centres: tj.RIGHT.map((y) => sideW - y) },
       { edge: 'left', at: 0, centres: tj.BACK },
     ];
-    const pdb = notchTopDogbone(W, D, G, nw, nd, corner, r);
-    const db = pdb ? [sideW - pdb[1], pdb[0], pdb[2]] : null;
+    // 17.10.2026 (D9): the corner mark on the drawn nominal outline, no dog bone
+    // (notchTopDogbone stays the record of where the circle stood).
     for (const id of full ? ['TOP', 'BOTTOM'] : ['BOTTOM']) {
       const p = byId(id);
       if (!p || p.part !== id) continue;
@@ -1090,7 +1195,8 @@ export function notchCarcass({
         ...p.cnc,
         outline: outlineWithTabs(drawn, runs, G, pz),
         pockets: tabBones(runs, G, pz),
-        holes: db ? [dogboneHole(db, pz)] : [],
+        holes: [],
+        marks: cornerMarkRecords(drawn, leg, pz),
         notch: corner6,
       };
       p.area_m2 = polygonArea(drawn) / 1e6;
@@ -1114,7 +1220,6 @@ export function notchCarcass({
     // A full-height notch takes the left (right) edge away: its sockets went
     // with NEAR-SOCKETS = none, so nothing stands on an edge that is not there.
     const fc = notchBackFc(corner);
-    const db = notchBackDogbone(W, H, nw, nh, corner, r);
     // D7: an UNBOXED back keeps the parent's rows, and a row the rebate cuts
     // away is dropped with the corner (it would be drilled into air).
     const holes = sockets.holes.filter((hl) => !(!boxed
@@ -1123,11 +1228,14 @@ export function notchCarcass({
     // are the parent's pockets on the hangers' layer; one the notch reaches
     // steps in by nw, the other stays.
     const hangerCuts = notchHangerCutouts(bk.cnc?.pockets, profile.wallUnit?.hangers?.cutoutLayer, W, H, nw, hh, fc);
+    // 17.10.2026 (D9): a part-height back's corner gets the mark, not the bone
+    // (a full-height one is a shorter rectangle: no corner, no mark).
     bk.cnc = {
       ...bk.cnc,
       outline,
       pockets: [...sockets.pockets, ...hangerCuts],
-      holes: [...holes, ...(db ? [dogboneHole(db, pz)] : [])],
+      holes,
+      marks: [...(bk.cnc?.marks || []), ...cornerMarkRecords(outline, leg, pz)],
       ...(full ? {} : { notch: notchCornerOfOutline(outline, W, H) }),
     };
     if (full) {
@@ -1162,7 +1270,9 @@ export function notchCarcass({
         cnc: { rotated: false, drawn_w: w, drawn_h: h, ...rectGeometry(w, h) },
         meta: {
           // Outline only, no puzzle joint, no machined hole (LISP section 2):
-          // the box's fixing is the joiner's, on THE BACK SCREW ROW.
+          // the box's fixing is the joiner's. 17.10.2026 (D10): on biscuits by
+          // hand, a Lamello one day; no screw is stated or drilled for it
+          // (`screws` below is [] from the three *Screws routines).
           readiness: 'geometry',
           fixing: 'manual',
           notch: {
@@ -1197,7 +1307,6 @@ export function notchCarcass({
     const sc = notchShelfCut(W, D, G, nw, nd, corner, clr, rect);
     if (!sc) continue;
     const plan = notchCutOutline(rect, sc);
-    const pdb = notchCutDogbone(sc, r);
     // The shelf is drawn `depth x width`, x from its FRONT edge: the plan's
     // (x from its left, y from its front) TRANSPOSED, which is a reflection, so
     // the walk is reversed to stay anticlockwise.
@@ -1205,10 +1314,11 @@ export function notchCarcass({
     const dw = rect[3] - rect[1];
     const dh = rect[2] - rect[0];
     const corner6 = notchCornerOfOutline(drawn, dw, dh);
+    // 17.10.2026 (D9): the corner mark on the drawn outline, no dog bone.
     p.cnc = {
       ...p.cnc,
       outline: drawn,
-      holes: [...(p.cnc?.holes || []), ...(pdb ? [dogboneHole([pdb[1], pdb[0], pdb[2]], pz)] : [])],
+      marks: [...(p.cnc?.marks || []), ...cornerMarkRecords(drawn, leg, pz)],
       notch: corner6,
     };
     p.area_m2 = polygonArea(drawn) / 1e6;

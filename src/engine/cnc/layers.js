@@ -99,6 +99,17 @@ export const CNC_LAYERS = [
   // cutter that clears it is matched by name as every other tool here is.
   // ACI 52: beyond the Cabineo's 51, unused by COMMON's table.
   { name: 'RECESS_WINDOW',       aci: 52, screen: '#2bb4a0', label: 'Recess window (through)', kind: 'pocket' },
+  // ─── CHAT FIX 17.10.2026: THE CORNER MARK ───────────────────────────────
+  // The owner, on every L-shaped board: *"nie, nie dodawaj wiercenia, dodaj
+  // jeden layer w samym cornerze okolo 40 mm w kazda strone na linii L shape i
+  // nazwij to corner 4 mm, wtedy ja wytne ten korner."*  A MARK, the biscuit
+  // line's own kind: two open two-point polylines at a re-entrant corner, each
+  // along one of the outline edges that meet there (profile.cnc.cornerMark
+  // legMm 40), on which the owner runs his own 4 mm program to square the
+  // fillet the 8 mm cutter leaves. The dog-bone circle that stood there until
+  // this day is gone (KIT_NOTCH.lsp D9, KIT_RECESS.lsp D18, KIT_CORNER_L.lsp
+  // section 4). ACI 53: the next number after RECESS_WINDOW's 52.
+  { name: 'CORNER_4MM',         aci: 53, screen: '#ff8787', label: 'Corner mark (4 mm cutter)', kind: 'mark' },
   { name: 'SHELVES_7_5MM',      aci: 6,  screen: '#e599f7', label: 'Shelf pins ⌀7.5', kind: 'hole' },
   { name: 'RUNNERS_3MM',        aci: 5,  screen: '#ff922b', label: 'Runners ⌀3',     kind: 'hole' },
   { name: 'FRONT_HINGES_35MM',  aci: 3,  screen: '#38d9a9', label: 'Hinge cups ⌀35', kind: 'hole' },

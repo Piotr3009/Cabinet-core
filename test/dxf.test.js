@@ -341,6 +341,12 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     // its own layer. ACI 52 sits beyond the Cabineo's 51 and is unused by the
     // LISP's own table.
     RECESS_WINDOW: 52,
+    // ─── CHAT FIX 17.10.2026: ONE NEW NAME, THE OWNER'S OWN ─────────────────
+    // *"nazwij to corner 4 mm, wtedy ja wytne ten korner"*: the corner mark at
+    // a re-entrant corner of an L outline, two open lines along the edges, cut
+    // by the owner's 4 mm program (the dog bone that stood there is gone). A
+    // MARK like BISCUIT_4MM; ACI 53, the next free number after 52.
+    CORNER_4MM: 53,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

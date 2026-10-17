@@ -163,6 +163,20 @@
 ;;; which the banding bridges. ONE OUTLINE LAW for every L board: TOP-L,
 ;;; BOTTOM-L and SHELF-L all take it (CL:innerRelief).
 ;;;
+;;; 17.10.2026, THE OWNER (DECIDED, one line to veto): THE CORNER MARK, NOT
+;;; THE DOG BONE. *"nie, nie dodawaj wiercenia, dodaj jeden layer w samym
+;;; cornerze okolo 40 mm w kazda strone na linii L shape i nazwij to corner
+;;; 4 mm, wtedy ja wytne ten korner."*  The circle is NOT drawn any more
+;;; (CL:innerRelief stays as the record of where it stood). At the inner
+;;; corner v3 the board gets TWO open lines on the layer CORNER_4MM (COMMON's
+;;; {FEATURE}_{DIAMETER}MM grammar, the owner's 4 mm cutter), each from v3
+;;; along one of the two fronts, CL:cornerMarkLeg (40) long or the front's
+;;; own length where the front is shorter (CL:cornerMarks, the same law as
+;;; KIT_NOTCH.lsp D9 and KIT_RECESS.lsp D18). The outline keeps its sharp
+;;; corner; the owner's 4 mm program squares what the 8 mm cutter left. The
+;;; puzzle dog bones beside the tabs (CL:walkBones) are another thing and do
+;;; not move ("mamy puzzle i dogbones w systemie i niech tak bedzie").
+;;;
 ;;; THE CUTTER RADIUS is the one cutter number the engine owns:
 ;;; profile.cnc.toolDiameter 8, so r = 4 (engine/cnc/rollover.js toolRadius,
 ;;; the radius every internal corner is filleted at). SKYLON_COMMON states no
@@ -314,13 +328,16 @@
 ;;;               (864 65 882 125) (864 415 882 475) (415 864 475 882)
 ;;;               (65 864 125 882) (-18 739 0 799) (-18 65 0 125)
 ;;;   relief      circle r 4 at (542.8284 542.8284); room (560.8284 560.8284)
+;;;               NOT DRAWN since 17.10.2026; in its place
+;;;   corner mark (540 540)-(580 540) and (540 540)-(540 580) on CORNER_4MM
 ;;;
 ;;; SHELF-L
 ;;;   frame       plan: local (X, Y) = (room x - 18, room y - 18)
 ;;;   outline     (0 0) (862 0) (862 520) (520 520) (520 862) (0 862)
 ;;;   bounding    862 x 862, arm depth 520 (KIT_BUD wysSHELF 558 - 18 - 20)
 ;;;   area        626080 mm2, front edges 342 + 342 = 684
-;;;   relief      circle r 4 at (522.8284 522.8284)
+;;;   relief      circle r 4 at (522.8284 522.8284), NOT DRAWN since 17.10.2026
+;;;   corner mark (520 520)-(560 520) and (520 520)-(520 560) on CORNER_4MM
 ;;;
 ;;; BACK-A   900 x 770, drawBACK. Frame local X = room x (0 at the room corner).
 ;;;   edge sockets (both ends)  Y 95, 385, 675
@@ -578,6 +595,42 @@
   (setq v (nth 3 pts)
         k (/ r (sqrt 2.0)))
   (list (+ (car v) k) (+ (cadr v) k) r))
+
+;;; THE CORNER MARK (17.10.2026, section 4): the leg, the owner's "okolo 40".
+(defun CL:cornerMarkLeg ( / ) 40.0)
+
+;;; A point `leg` along the edge from v toward w, or w itself when the edge
+;;; is shorter than the leg.
+(defun CL:legPoint (v w leg / dx dy len k)
+  (setq dx (- (car w) (car v)) dy (- (cadr w) (cadr v))
+        len (sqrt (+ (* dx dx) (* dy dy))))
+  (if (> len 1e-9)
+    (progn
+      (setq k (/ (min leg len) len))
+      (list (+ (car v) (* dx k)) (+ (cadr v) (* dy k))))
+    v))
+
+;;; The L's one re-entrant vertex is v3 (section 1), and its two edges are
+;;; the fronts v2->v3 and v3->v4. The marks: ((v3 a) (v3 b)), a along the
+;;; front toward v2, b along the front toward v4, each `leg` long or the
+;;; front's own length. In the board's own frame; the ROT90 lay turns them.
+(defun CL:cornerMarks (pts leg / v)
+  (setq v (nth 3 pts))
+  (list (list v (CL:legPoint v (nth 2 pts) leg))
+        (list v (CL:legPoint v (nth 4 pts) leg))))
+
+;;; The CORNER_4MM layer: COMMON's createCNCLayers predates it and is
+;;; untouched, so this file makes it when it is missing (ACI 53, as
+;;; KIT_NOTCH.lsp and engine/cnc/layers.js name it).
+(defun CL:ensureCornerLayer ( / )
+  (if (null (tblsearch "LAYER" "CORNER_4MM"))
+    (command "._LAYER" "_N" "CORNER_4MM" "_C" "53" "CORNER_4MM" "")))
+
+(defun CL:drawCornerMarks (x0 y0 marks / m)
+  (if marks (CL:ensureCornerLayer))
+  (foreach m marks
+    (drawLine "CORNER_4MM" (+ x0 (car (car m))) (+ y0 (cadr (car m)))
+                           (+ x0 (car (cadr m))) (+ y0 (cadr (cadr m))))))
 
 ;;;========================================
 ;;; D. THE KIT_BUD TAB, WALKED ONTO ANY EDGE
@@ -846,14 +899,16 @@
     (mapcar '(lambda (p) (list (+ x0 (car p)) (+ y0 (cadr p)))) pts)))
 
 ;;; An L board: its outline (with tabs when `joints` is given), the tabs' dog
-;;; bones, the inner-corner relief, and its label in the corner square.
+;;; bones, the inner-corner CORNER_4MM marks (17.10.2026; the relief circle
+;;; until then), and its label in the corner square.
 (defun drawCL_LBOARD (x0 y0 nominal joints relief label G / b arm)
   (drawCL_POLY "OUTLINE" x0 y0 (if joints (CL:walkOutline nominal joints G) nominal))
   (if joints
     (foreach b (CL:walkBones joints G)
       (drawRect "PUZZLE_DOG_BONES" (+ x0 (nth 0 b)) (+ y0 (nth 1 b)) (+ x0 (nth 2 b)) (+ y0 (nth 3 b)))))
-  (if relief
-    (drawCircle "PUZZLE_DOG_BONES" (+ x0 (nth 0 relief)) (+ y0 (nth 1 relief)) (nth 2 relief)))
+  ;; 17.10.2026: the relief circle is not drawn (`relief` stays an argument,
+  ;; the record); the inner corner gets its CORNER_4MM marks instead.
+  (CL:drawCornerMarks x0 y0 (CL:cornerMarks nominal (CL:cornerMarkLeg)))
   (setq arm (car (nth 3 nominal)))
   (drawText "UNIT_NUMBER" (+ x0 (/ arm 2.0)) (+ y0 (/ arm 2.0)) 40.0 label))
 
@@ -885,10 +940,10 @@
     (foreach b (CL:walkBones joints G)
       (setq r (CL:rot90Rect b spanY))
       (drawRect "PUZZLE_DOG_BONES" (+ x0 (nth 0 r)) (+ y0 (nth 1 r)) (+ x0 (nth 2 r)) (+ y0 (nth 3 r)))))
-  (if relief
-    (progn
-      (setq r (CL:rot90Pt (list (nth 0 relief) (nth 1 relief)) spanY))
-      (drawCircle "PUZZLE_DOG_BONES" (+ x0 (car r)) (+ y0 (cadr r)) (nth 2 relief))))
+  ;; 17.10.2026: the corner marks through the same turn, no relief circle.
+  (CL:drawCornerMarks x0 y0
+    (mapcar '(lambda (m) (list (CL:rot90Pt (car m) spanY) (CL:rot90Pt (cadr m) spanY)))
+            (CL:cornerMarks nominal (CL:cornerMarkLeg))))
   (setq arm (car (nth 3 nominal)))
   (setq lbl (CL:rot90Pt (list (/ arm 2.0) (/ arm 2.0)) spanY))
   (drawText "UNIT_NUMBER" (+ x0 (car lbl)) (+ y0 (cadr lbl)) 40.0 label))

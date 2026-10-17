@@ -154,6 +154,8 @@ const MAP = {
   'cursor-ew-resize': 'pbi-re-ew',
   // The shell's `width=` prop is a class too, passed rather than written.
   'w-[860px]': 'pbi-re-w860',
+  // CHAT FIX 17.10.2026: the owner's "caly modal poszerz prosze o 50 procent": 860 -> 1290, the token defined in roomeditor.css.
+  'w-[1290px]': 'pbi-re-w1290',
   'w-[820px]': 'pbi-re-w820',
 
   // ─── AND WHAT `DrawRoomModal.jsx` ADDS ──────────────────────────────────

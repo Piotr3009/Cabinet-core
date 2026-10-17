@@ -252,11 +252,16 @@ test('F5 — and neither does the board it lands on', () => {
 
 // ─── …and NOTHING ELSE MOVED ────────────────────────────────────────────────
 
+// CHAT FIX 17.10.2026: a mark on CORNER_4MM is the owner's corner mark on an
+// L outline (the L corner kits carry it by default: KIT_CORNER_L.lsp section
+// 4), not a biscuit mark; this file's identity promise is about BISCUITS.
+const biscuitMarks = (panel) => (panel.cnc?.marks || []).filter((m) => m.layer !== 'CORNER_4MM');
+
 test('THE OTHER HALF OF THE DELTA: no partition, no biscuit — in any kit', () => {
   for (const id of UNIT_TYPE_ORDER) {
     const result = computeCabinet(defaultParamsFor(id, P), P);
     for (const panel of result.panels) {
-      assert.equal(panel.cnc?.marks, undefined, `${id} ${panel.id} grew a mark`);
+      assert.deepEqual(biscuitMarks(panel), [], `${id} ${panel.id} grew a biscuit mark`);
     }
     assert.equal(result.drills.some((d) => d.kind === 'biscuit_screw'), false, `${id} grew a biscuit screw`);
   }
@@ -293,7 +298,7 @@ test('F5 — no cabinet in any kit emits a mark, with a partition or without one
     for (const params of [base, withPartition]) {
       const result = computeCabinet(params, P);
       for (const panel of result.panels) {
-        assert.equal(panel.cnc?.marks, undefined, `${id} ${panel.id} grew a mark`);
+        assert.deepEqual(biscuitMarks(panel), [], `${id} ${panel.id} grew a biscuit mark`);
       }
       assert.equal(result.drills.some((d) => d.kind === 'biscuit_screw'), false, `${id} grew a biscuit screw`);
     }

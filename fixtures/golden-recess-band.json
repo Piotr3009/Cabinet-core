@@ -6,7 +6,8 @@
     "source": "KIT_RECESS.lsp (CASE B of its NUMBERS block) on KIT_BUD_FULL.lsp: a mid band 110..490 x 210..590, 150 deep; the BACK keeps a window on RECESS_WINDOW, two RETURNs, a FLOOR, a LID and the EXT-BACK added, the shelf grows",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "17.10.2026 (the owner's morning): KIT_RECESS.lsp D17 and D18. The twelve hand-fix screws round the window (into RETURN-L, RETURN-R, the FLOOR and the LID) are gone (SCREWS_3MM|BACK 26 -> 14, the parent's own) and the shelf's two bump corners carry CORNER_4MM marks, not dog bones (holes 2 -> 0). The owner: \"system wkrety dookola plecow w tym przypadku nie zadziala\"."
   },
   "params": {
     "type": "BUD",
@@ -143,7 +144,7 @@
           "d": 18
         },
         "outline": 4,
-        "holes": 46,
+        "holes": 34,
         "pockets": 11,
         "readiness": null
       },
@@ -163,7 +164,7 @@
           "d": 670
         },
         "outline": 8,
-        "holes": 2,
+        "holes": 0,
         "pockets": 0,
         "readiness": null
       },
@@ -302,10 +303,6 @@
         6
       ],
       [
-        "PUZZLE_DOG_BONES|SHELF-1",
-        2
-      ],
-      [
         "PUZZLE_HOLES_7_5MM|BACK",
         20
       ],
@@ -319,7 +316,7 @@
       ],
       [
         "SCREWS_3MM|BACK",
-        26
+        14
       ],
       [
         "SCREWS_3MM|BUL",

@@ -210,13 +210,14 @@
 ;;; D9  THE WINDOW is a through pocket on its own layer RECESS_WINDOW (ACI 52,
 ;;;     beyond the Cabineo's 51, unused by COMMON's table): the cutter clears
 ;;;     it and leaves its corners round, no dog bone. A cut that reaches an
-;;;     edge is an OUTLINE cut with a dog bone at each re-entrant corner, as
-;;;     the notch's is.
+;;;     edge is an OUTLINE cut with a CORNER MARK at each re-entrant corner
+;;;     (D18, 17.10.2026; a dog bone until then), as the notch's is.
 ;;; D10 THE SHELVES GROW. DECIDED by the owner ("glebsze"): a shelf whose
 ;;;     height lies within the band's interior takes the bump; one above or
 ;;;     below it is the parent's.
 ;;; D11 THE ADDED BOARDS ARE THE JOINER'S, as the notch box is: outlines only,
-;;;     screws stated, nothing drilled in them.
+;;;     nothing drilled in them. (Screws were STATED on them until 17.10.2026;
+;;;     D17: none now, biscuits by hand.)
 ;;; D12 THE PINS. The back shelf-pin column of a grown side steps back by ed
 ;;;     over the band (the notch's D7 mirrored: the parent's own columnFromEdge
 ;;;     from the NEW back edge); above and below the band it stays.
@@ -228,6 +229,52 @@
 ;;;     on the wall line in front of the recess, refused in words. A wall
 ;;;     unit's hanger cut-out the window reaches is a refusal too: the bracket
 ;;;     cannot hang on air.
+;;;
+;;; 17.10.2026, THE OWNER'S MORNING (four more, each one line to veto):
+;;;
+;;; D15 THE BUMP STOPS AT THE SHELF. BUG, the owner 17.10.2026: *"jak mamy
+;;;     szafe z czesciowa wneka i wstawimy divider to polki sie rozciagaja w
+;;;     ksztalcie trojkata do tylnej sciany ... nie zatrzymuje sie w calosci
+;;;     na dividerze."*  recess-shelf-bump stated b0 and b1 in the shelf's
+;;;     frame and never clamped them to the shelf: a bay shelf beside a
+;;;     divider got a bump point beyond its own end, and recess-bump-outline
+;;;     drew a slant from the shelf's front corner to it (PROBE, WARDROBE
+;;;     1000, divider at 500, band 300..1000: the left shelf 478 wide got
+;;;     (960 0), the right one (-200 0)). Now b0 = max 0 b0, b1 = min bw b1;
+;;;     a shelf the clamped band does not reach (b1 - b0 <= 0) is the
+;;;     parent's. Full-width shelves answer exactly as before.
+;;; D16 THE FIXED SHELF GROWS TOO. The owner 17.10.2026: *"polki tez wycina
+;;;     ale nie wycina polek fix, czego nie rozumiem."*  D10 names A SHELF,
+;;;     any shelf; the engine alone had skipped the fixed one. The exception
+;;;     is gone; the fixed shelf's joint is the parent's, measured on the
+;;;     parent's depth, nothing new in the grown part (D11's spirit: the
+;;;     grown part is the joiner's). Proposed: the joint stays where it was.
+;;; D17 NO SCREW BETWEEN THE BACK AND THE BOX. The owner 17.10.2026: *"to
+;;;     masz wkrety na niej a to nie dobrze bo nie bedziemy tam wkrecac
+;;;     wkretow, system wkrety dookola plecow w tym przypadku nie zadziala
+;;;     ... bedziemy montowac na ciastka (w przyszlosci dodamy lamello)
+;;;     teraz nic."*  So: the BACK's columns and rows along the window (into
+;;;     RETURN-L, RETURN-R, FLOOR and LID) are NOT drilled; the added boards
+;;;     state NO screws (recess-return-screws, recess-lid-screws,
+;;;     recess-ext-back-screws answer nil). Their fixing is the joiner's, on
+;;;     biscuits by hand, a Lamello one day; this file draws nothing for it
+;;;     ("teraz nic"). The BACK's rows into the sides, the TOP and the BOTTOM
+;;;     stay exactly where drawBACK puts them.
+;;; D18 THE CORNER MARK, NOT THE DOG BONE. The owner 17.10.2026 on every L
+;;;     outline: *"nie, nie dodawaj wiercenia, dodaj jeden layer w samym
+;;;     cornerze okolo 40 mm w kazda strone na linii L shape i nazwij to
+;;;     corner 4 mm, wtedy ja wytne ten korner."*  No circle is drawn at a
+;;;     re-entrant corner any more (the TOP's, the BOTTOM's, a side's, a
+;;;     shelf's bump corners; the BACK's bite and corner cuts). In its place
+;;;     TWO open lines on the layer CORNER_4MM (COMMON's grammar, the owner's
+;;;     4 mm cutter), each from the corner along one of the two outline
+;;;     edges that meet there, cnc.cornerMarkLeg (40) long or the edge's own
+;;;     length where the edge is shorter. The outline itself keeps its sharp
+;;;     corner; the owner's 4 mm program squares what the 8 mm cutter left.
+;;;     The window (D9) stays a pocket with round corners: it has no outline
+;;;     corner to mark. COMMON's puzzle dog bones beside the tabs are not
+;;;     this and do not move ("mamy puzzle i dogbones w systemie i niech tak
+;;;     bedzie"). KIT_NOTCH.lsp D9 and KIT_CORNER_L.lsp state the same law.
 ;;;
 ;;;========================================
 ;;; 4. NOT HERE
@@ -243,6 +290,8 @@
 ;;;
 ;;; All of them KIT_NOTCH's own table (notch-profile): the same joint numbers,
 ;;; the same clearance, the same minimum interior. Nothing new is read.
+;;; 17.10.2026: and the corner mark's leg, cnc.cornerMarkLeg (40), from the
+;;; same table (D18); the mark itself is the notch's routine, notch-corner-marks.
 
 (defun recess-p (key)
   (notch-p key))
@@ -332,6 +381,9 @@
 ;;; The dog bones at those corners: (cx cy r) each, the notch's own law (its
 ;;; section 5): the circle's centre r / sqrt 2 into the waste along the
 ;;; corner's diagonal, so the cutter clears the corner square.
+;;; 17.10.2026 (D18): RETIRED FROM THE DRAWING. The routine stays as the
+;;; record of where the circle stood; nothing draws it. What is drawn at a
+;;; re-entrant corner is notch-corner-marks on the board's own outline.
 (defun recess-bump-dogbones (bw bh b0 b1 r / k)
   (setq k (/ r (sqrt 2.0)))
   (mapcar '(lambda (re)
@@ -565,9 +617,12 @@
 ;;; (recess-side-joints "BACK-TABS" for a grown side, the parent's for the
 ;;; other). Only the edges the piece has are jointed:
 ;;;   ("LEFT" ..) ("RIGHT" ..) ("TOP" ..) ("BOTTOM" ..)   sockets
-;;;   ("SCREWS" ((x z) ..))   drawBACK's rows on the jointed edges, and the
-;;;        hand-fix rows G / 2 outside each window edge that has a board's end
-;;;        or edge behind it (section 2), where that row falls in this piece.
+;;;   ("SCREWS" ((x z) ..))   drawBACK's rows on the jointed edges ONLY.
+;;;        Until 17.10.2026 this list also carried the hand-fix rows G / 2
+;;;        outside each window edge that had a board's end or edge behind it
+;;;        (into a RETURN, the FLOOR, the LID). D17, the owner: *"nie bedziemy
+;;;        tam wkrecac wkretow"*: those rows are GONE; the window's edges
+;;;        carry no screw. `window` stays an argument for the record.
 (defun recess-back-joints (piece window cw ch g ex0 ex1 ez0 ez1 topTabs botTabs bulTabs burTabs
                            / e sfe S x0 z0 x1 z1 bw bh inZ inX left right top bottom scr
                              wx0 wz0 wx1 wz1 bz0 bz1 runs ix0 ix1)
@@ -607,20 +662,11 @@
     (foreach run (apply runs (list (recess-floor-p ez0)))
       (foreach x (recess-run-row (max (car run) x0) (min (cadr run) x1) sfe)
         (setq scr (cons (list (- x x0) S) scr)))))
-  ;; the hand-fix rows round the window: into a RETURN's end (a vertical window
-  ;; edge that is not a side), into the FLOOR's and the LID's front edge
-  (if (and (not (recess-left-p ex0)) (> (- wx0 S) (- x0 1e-6)) (< (- wx0 S) (+ x1 1e-6)))
-    (foreach z (notch-shift (notch-screw-row (- bz1 bz0) sfe) bz0)
-      (if (and (>= z z0) (<= z z1)) (setq scr (cons (list (- (- wx0 S) x0) (- z z0)) scr)))))
-  (if (and (not (recess-right-p ex1 cw)) (> (+ wx1 S) (- x0 1e-6)) (< (+ wx1 S) (+ x1 1e-6)))
-    (foreach z (notch-shift (notch-screw-row (- bz1 bz0) sfe) bz0)
-      (if (and (>= z z0) (<= z z1)) (setq scr (cons (list (- (+ wx1 S) x0) (- z z0)) scr)))))
-  (if (and (not (recess-floor-p ez0)) (> (- wz0 S) (- z0 1e-6)) (< (- wz0 S) (+ z1 1e-6)))
-    (foreach x (notch-shift (notch-screw-row (- wx1 wx0) sfe) wx0)
-      (if (and (>= x x0) (<= x x1)) (setq scr (cons (list (- x x0) (- (- wz0 S) z0)) scr)))))
-  (if (and (not (recess-top-p ez1 ch)) (> (+ wz1 S) (- z0 1e-6)) (< (+ wz1 S) (+ z1 1e-6)))
-    (foreach x (notch-shift (notch-screw-row (- wx1 wx0) sfe) wx0)
-      (if (and (>= x x0) (<= x x1)) (setq scr (cons (list (- x x0) (- (+ wz1 S) z0)) scr)))))
+  ;; 17.10.2026 (D17): NO hand-fix rows round the window. The RETURNs' ends
+  ;; and the FLOOR's and LID's front edges behind the window's four edges get
+  ;; no screw through the BACK ("nie bedziemy tam wkrecac wkretow"); the box
+  ;; is the joiner's, on biscuits by hand. wx0 wz0 wx1 wz1 bz0 bz1 ix0 ix1 are
+  ;; bound above for the record of what the rows were measured from.
   (list (list "LEFT" left) (list "RIGHT" right) (list "TOP" top) (list "BOTTOM" bottom)
         (list "SCREWS" (reverse scr))))
 
@@ -650,54 +696,35 @@
 (defun recess-return (ch g ez0 ez1 ed)
   (list (- ed g) (- (recess-bz1 ez1 ch g) (recess-bz0 ez0 g))))
 
-;;; Its screws (x along the depth from its FRONT end, z up from its bottom
-;;; end): into the BOTTOM's bump edge (z = S) when the band reaches the floor,
-;;; into the TOP's (z = h - S) when it reaches the top. Between a FLOOR and a
-;;; LID it carries none of its own: theirs hold it, as the BACK's and the
-;;; EXT-BACK's columns do.
-(defun recess-return-screws (ch g ez0 ez1 ed / S sfe ret out)
-  (setq S (notch-screw-axis g) sfe (recess-p "puzzle.screwFromEnd")
-        ret (recess-return ch g ez0 ez1 ed) out nil)
-  (foreach x (notch-screw-row (car ret) sfe)
-    (if (recess-floor-p ez0) (setq out (cons (list x S) out)))
-    (if (recess-top-p ez1 ch) (setq out (cons (list x (- (cadr ret) S)) out))))
-  (reverse out))
+;;; Its screws: NONE (17.10.2026, D17). Until that morning this stated a row
+;;; into the BOTTOM's bump edge (z = S) when the band reached the floor and
+;;; into the TOP's (z = h - S) when it reached the top, on the back screw
+;;; row's spacing. The owner: *"nie bedziemy tam wkrecac wkretow ... bedziemy
+;;; montowac na ciastka (w przyszlosci dodamy lamello) teraz nic"*. The
+;;; arguments stay so every caller reads as before; the answer is nil.
+(defun recess-return-screws (ch g ez0 ez1 ed)
+  nil)
 
 ;;; The FLOOR and the LID: (ex1 - ex0) x (ed - g).
 (defun recess-lid (g ex0 ex1 ed)
   (list (- ex1 ex0) (- ed g)))
 
-;;; Their screws (x from the left end, y along the depth from the FRONT
-;;; edge): a column into the vertical board's end under (over) each end, a
-;;; RETURN's or a grown side's bump: x = S and w - S.
-(defun recess-lid-screws (g ex0 ex1 ed / S sfe lid out)
-  (setq S (notch-screw-axis g) sfe (recess-p "puzzle.screwFromEnd")
-        lid (recess-lid g ex0 ex1 ed) out nil)
-  (foreach y (notch-screw-row (cadr lid) sfe)
-    (setq out (cons (list S y) out))
-    (setq out (cons (list (- (car lid) S) y) out)))
-  (reverse out))
+;;; Their screws: NONE (17.10.2026, D17; it was a column into the vertical
+;;; board's end under or over each end, x = S and w - S). Biscuits by hand.
+(defun recess-lid-screws (g ex0 ex1 ed)
+  nil)
 
 ;;; THE EXT-BACK: (ex1 - ex0) x (ez1 - ez0).
 (defun recess-ext-back (ex0 ex1 ez0 ez1)
   (list (- ex1 ex0) (- ez1 ez0)))
 
-;;; Its screws (x from its left end, z up from its bottom end): a column into
-;;; each vertical board's back end (a RETURN or a grown side's bump) over the
-;;; band's run bz0 .. bz1, x = S and w - S; a row into each horizontal board's
-;;; back edge (the FLOOR or the BOTTOM's bump, the LID or the TOP's bump),
-;;; z = S and h - S, drawBACK's row between the two vertical boards.
-(defun recess-ext-back-screws (cw ch g ex0 ex1 ez0 ez1 / S sfe eb bz0 bz1 out)
-  (setq S (notch-screw-axis g) sfe (recess-p "puzzle.screwFromEnd")
-        eb (recess-ext-back ex0 ex1 ez0 ez1)
-        bz0 (recess-bz0 ez0 g) bz1 (recess-bz1 ez1 ch g) out nil)
-  (foreach z (notch-shift (notch-screw-row (- bz1 bz0) sfe) (- bz0 ez0))
-    (setq out (cons (list S z) out))
-    (setq out (cons (list (- (car eb) S) z) out)))
-  (foreach x (notch-row-between 0.0 (car eb) g sfe)
-    (setq out (cons (list x S) out))
-    (setq out (cons (list x (- (cadr eb) S)) out)))
-  (reverse out))
+;;; Its screws: NONE (17.10.2026, D17). It was a column into each vertical
+;;; board's back end over bz0 .. bz1 at x = S and w - S, and drawBACK's row
+;;; into each horizontal board's back edge at z = S and h - S. The owner:
+;;; *"system wkrety dookola plecow w tym przypadku nie zadziala"*. Biscuits
+;;; by hand, a Lamello one day, nothing drawn now.
+(defun recess-ext-back-screws (cw ch g ex0 ex1 ez0 ez1)
+  nil)
 
 ;;; -- SHELVES -----------------------------------------------------------------
 
@@ -709,17 +736,31 @@
 ;;; left edge, y from its front edge), `shelf` the parent's plan rectangle
 ;;; (x0 y0 x1 y1), wc / 2 clear of each RETURN or side (the notch's shelf
 ;;; rect's own clearance, D10).
-(defun recess-shelf-bump (cw cd g ex0 ex1 ed shelf / wc)
-  (setq wc (recess-p "carcass.shelfWidthClearance"))
-  (list (- (caddr shelf) (car shelf)) (- (cadddr shelf) (cadr shelf))
-        (- (+ (recess-ix0 ex0 g) (/ wc 2.0)) (car shelf))
-        (- (- (recess-ix1 ex1 g) (/ wc 2.0)) (car shelf))
+;;; 17.10.2026 (D15): b0 and b1 are CLAMPED to the shelf, 0 .. bw. A bay
+;;; shelf beside a divider sees only the part of the band it stands under;
+;;; one the band does not reach answers b1 <= b0 and is left the parent's
+;;; (recess-shelf-grows-p). A full-width shelf answers exactly as before.
+(defun recess-shelf-bump (cw cd g ex0 ex1 ed shelf / wc bw b0 b1)
+  (setq wc (recess-p "carcass.shelfWidthClearance")
+        bw (- (caddr shelf) (car shelf))
+        b0 (- (+ (recess-ix0 ex0 g) (/ wc 2.0)) (car shelf))
+        b1 (- (- (recess-ix1 ex1 g) (/ wc 2.0)) (car shelf)))
+  (list bw (- (cadddr shelf) (cadr shelf))
+        (max 0.0 b0)
+        (min bw b1)
         ed))
+
+;;; Does the clamped band reach this shelf at all? (D15)
+(defun recess-shelf-grows-p (cw cd g ex0 ex1 ed shelf / b)
+  (setq b (recess-shelf-bump cw cd g ex0 ex1 ed shelf))
+  (> (- (cadddr b) (caddr b)) 0.0))
 
 (defun recess-shelf-outline (cw cd g ex0 ex1 ed shelf / b)
   (setq b (recess-shelf-bump cw cd g ex0 ex1 ed shelf))
   (recess-bump-outline (car b) (cadr b) (caddr b) (cadddr b) (nth 4 b)))
 
+;;; 17.10.2026 (D18): retired from the drawing, kept as the record; the shelf's
+;;; corners are marked by notch-corner-marks on recess-shelf-outline.
 (defun recess-shelf-dogbones (cw cd g ex0 ex1 ed shelf r / b)
   (setq b (recess-shelf-bump cw cd g ex0 ex1 ed shelf))
   (recess-bump-dogbones (car b) (cadr b) (caddr b) (cadddr b) r))
@@ -771,8 +812,12 @@
 ;;;     (0 0) (564 0) (564 690) (310 690) (310 540) (0 540)
 ;;;   drawTOP_ROT90 frame (x from the BACK edge, drawn width 690):
 ;;;     (690 0) (690 564) (0 564) (0 310) (150 310) (150 0)
-;;;   DOG BONE: circle r 4 at (307.1716 542.8284) plan, (147.1716 307.1716)
-;;;   ROT90; corner (310 540)
+;;;   CORNER MARK (D18, 17.10.2026; until then a dog bone, circle r 4 at
+;;;   (307.1716 542.8284) plan): the corner (310 540) plan = (150 310) ROT90;
+;;;   two open lines on CORNER_4MM, 40 long, each along one of the two
+;;;   outline edges that meet there:
+;;;     plan  (310 540)-(270 540) and (310 540)-(310 580)
+;;;     ROT90 (150 310)-(110 310) and (150 310)-(150 270)
 ;;;   area 0.305 -> 0.343 m2 (342660 mm2)
 ;;; BACK       600 x 770    328 x 770, carcass x 0..328
 ;;;   (0 0) (328 0) (328 770) (0 770); no dog bone
@@ -782,8 +827,10 @@
 ;;; SHELF-1    560 x 520    560 x 670 less 310 x 150 at the rear-left
 ;;;   shelf frame (x from its left edge, 2 clear of the RETURN as of BUL):
 ;;;     (0 0) (560 0) (560 670) (310 670) (310 520) (0 520)
-;;;   DOG BONE: circle r 4 at (307.1716 522.8284); corner (310 520)
+;;;   CORNER MARK (D18): corner (310 520); (310 520)-(270 520) and
+;;;   (310 520)-(310 560) on CORNER_4MM (was a dog bone at (307.1716 522.8284))
 ;;;   area 0.291 -> 0.329 m2 (328700 mm2)
+;;;   A FIXED shelf at the same height answers the same (D16).
 ;;; PLINTH     600          untouched
 ;;;
 ;;; WHICH JOINTS MOVE:
@@ -804,11 +851,14 @@
 ;;; BACK sockets, right edge         95, 385, 675       NONE (the RETURN's end)
 ;;; BACK top/bottom sockets (x)      113, 487           113, 233
 ;;; BACK left screw row (z)          50, 240, 530, 720  unchanged (x 9)
-;;; BACK right screw row             50, 240, 530, 720  into the RETURN's end:
-;;;                                                     x 319, z 50 385 720
+;;; BACK right screw row             50, 240, 530, 720  NONE (17.10.2026, D17;
+;;;                                                     until then x 319,
+;;;                                                     z 50 385 720 into the
+;;;                                                     RETURN's end)
 ;;; BACK top/bottom rows (x)         68, 300, 532       68, 173, 278 (the run 18..328)
 ;;;
-;;; THE ADDED BOARDS' FIXING (manual, the back screw row, not drilled):
+;;; THE ADDED BOARDS' FIXING: NONE STATED (17.10.2026, D17: biscuits by hand,
+;;; a Lamello one day, nothing drawn). Until that morning the file stated:
 ;;; RETURN-L (x from its front end, z up)  into BOTTOM's bump edge: x 50 66 82, z 9
 ;;;                                        into TOP's bump edge:    x 50 66 82, z 761
 ;;; EXT-BACK (x from its left end, z up)   into RETURN-L's end: x 9,   z 50 385 720
@@ -828,11 +878,13 @@
 ;;; BOTTOM     564 x 540    unchanged (the floor not reached)
 ;;; BACK       600 x 770    600 x 770, the pocket x 128..472, z 228..572, 18 deep;
 ;;;                         every parent socket and row kept (none in the window)
-;;;   the hand-fix rows DRILLED round the window (S = 9 outside each edge):
+;;;   NO hand-fix rows round the window (17.10.2026, D17). Until that morning
+;;;   they were DRILLED, S = 9 outside each edge:
 ;;;     into RETURN-L's end  x 119, z 278 400 522
 ;;;     into RETURN-R's end  x 481, z 278 400 522
 ;;;     into the FLOOR's front edge  x 178 300 422, z 219
 ;;;     into the LID's front edge    x 178 300 422, z 581
+;;;   so the BACK keeps exactly the parent's 14 screws and 20 sockets.
 ;;; RETURN-L   -            132 x 344, carcass x 110..128, y 558..690, z 228..572
 ;;; RETURN-R   -            132 x 344, carcass x 472..490
 ;;; FLOOR      -            380 x 132, carcass x 110..490, y 558..690, z 210..228
@@ -842,9 +894,23 @@
 ;;;                         in the band 228..572)
 ;;;   shelf frame: (0 0) (560 0) (560 520) (450 520) (450 670) (110 670)
 ;;;                (110 520) (0 520)
-;;;   DOG BONES: r 4 at (107.1716 522.8284) and (452.8284 522.8284)
+;;;   CORNER MARKS (D18): corner (110 520): (110 520)-(70 520) and
+;;;   (110 520)-(110 560); corner (450 520): (450 520)-(490 520) and
+;;;   (450 520)-(450 560); all on CORNER_4MM (the dog bones r 4 at
+;;;   (107.1716 522.8284) and (452.8284 522.8284) are gone)
 ;;;
-;;; THE ADDED BOARDS' FIXING:
+;;; CASE C (D15, the PROBE of 17.10.2026, no golden): KIT_WARDROBE 1000 wide,
+;;; a vertical divider at x 500, the band 300..1000 x floor..top, 150 deep, a
+;;; shelf in each bay at the same height. ix0 318. The left bay's shelf, 478
+;;; wide from carcass x 20: b0 = 318 + 2 - 20 = 300, b1 = min 478 (982 - 20)
+;;; = 478 (was 962): (0 0) (478 0) (478 680) (300 680) (300 530) (0 530), a
+;;; bump from 300 to its own end, no slant. The right bay's shelf, 460 wide
+;;; from x 520: b0 = max 0 (320 - 520) = 0 (was -200), b1 = 460: a plain
+;;; 460 x 680 rectangle, the whole shelf deeper. Before D15 the left shelf
+;;; carried the point (960 0) and the right one (-200 0): the owner's
+;;; triangles.
+;;;
+;;; THE ADDED BOARDS' FIXING: NONE STATED (17.10.2026, D17). Until then:
 ;;; RETURN-L, RETURN-R                     none of their own (the FLOOR, the
 ;;;                                        LID, the BACK and the EXT-BACK hold them)
 ;;; FLOOR (x from left, y from front)      into RETURN-L's end: x 9,   y 50 66 82
@@ -862,10 +928,14 @@
 (defun recess-offset-pts (pts dx dy)
   (mapcar '(lambda (p) (list (+ (car p) dx) (+ (cadr p) dy))) pts))
 
+;;; One board: its outline, its CORNER MARKS (D18, 17.10.2026: two open lines
+;;; on CORNER_4MM at every re-entrant corner of the outline, KIT_NOTCH's
+;;; notch-corner-marks; until that morning `dbs`, the dog-bone circles, were
+;;; drawn here on PUZZLE_DOG_BONES; the argument stays, nothing reads it),
+;;; and its name.
 (defun recess-draw-board (x0 y0 pts dbs label / p)
   (makePolyline (recess-offset-pts pts x0 y0) "OUTLINE")
-  (foreach db dbs
-    (drawCircle (list (+ x0 (car db)) (+ y0 (cadr db))) (caddr db) "PUZZLE_DOG_BONES"))
+  (notch-draw-corner-marks x0 y0 (notch-corner-marks pts (recess-p "cnc.cornerMarkLeg")))
   (drawText (list (+ x0 20.0) (+ y0 20.0)) label 20.0 "UNIT_NUMBER"))
 
 (defun recess-draw-marks (x0 y0 pts rad)

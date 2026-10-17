@@ -97,6 +97,12 @@ const CLASSES = [
     reason: 'a MARK is an open path the cutter runs in and out of, not a closed removal — it is drawn as a line on the face by 3d/JointLines.jsx and 3d/PartMachining.jsx, which is what a set-out transfer looks like on the bench.',
   },
   {
+    // CHAT FIX 17.10.2026: the corner mark (engine/cnc/layers.js CORNER_4MM).
+    layer: 'CORNER_4MM',
+    draw: false,
+    reason: 'a MARK, as the biscuit line is: two open two-point paths at a re-entrant corner of an L outline, along the two edges that meet there, on which the owner runs his own 4 mm program to square the fillet the 8 mm cutter leaves (17.10.2026: "nie, nie dodawaj wiercenia ... nazwij to corner 4 mm, wtedy ja wytne ten korner"). Nothing is removed by it, so the solid shows the outline\'s sharp corner and no bore; the line is drawn on the face by the CNC view and the part drawing.',
+  },
+  {
     layer: 'SHAKER_PANEL_POCKET',
     draw: false,
     reason: 'drawn by the TRAY solid (3d/shakerSolid.js), which is the door’s own geometry — boring it again here would stand two coplanar surfaces a hundredth of a millimetre apart, which is z-fighting by construction.',

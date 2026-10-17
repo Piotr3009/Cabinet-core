@@ -198,13 +198,14 @@
 ;;; THE BOX'S FIXING IS THE JOINER'S. The RETURN, the STEP and the LID carry
 ;;; NO puzzle joint and NO machined hole: they are cut as outlines (F22
 ;;; readiness 'geometry': "a box-out board") and FIXED BY HAND (readiness
-;;; 'manual'), screwed on THE BACK SCREW ROW of SKYLON_COMMON: the same
-;;; [screwFromEnd, mid, length - screwFromEnd] spacing, on the same G / 2
-;;; axis, that drawBACK drills along its own edges. The routines below STATE
-;;; where those screws go, so the drawing and the joiner agree; the machine
-;;; does not drill them. The one row that IS drilled is the BACK's own: its
-;;; edge row on the notched edge stays where drawBACK puts it, G / 2 in from
-;;; that edge, and lands in the RETURN's end grain.
+;;; 'manual'). Until 17.10.2026 that hand fixing was screws on THE BACK SCREW
+;;; ROW of SKYLON_COMMON (the same [screwFromEnd, mid, length - screwFromEnd]
+;;; spacing on the G / 2 axis), STATED by the routines below and drilled on
+;;; one row only: the BACK's own edge row on the notched edge, into the
+;;; RETURN's end grain. D10 (the owner, 17.10.2026): NONE of that. The box is
+;;; fixed on biscuits by hand (a Lamello one day), the routines answer nil,
+;;; the BACK's notched edge carries no row, and nothing is drawn for it
+;;; ("teraz nic").
 ;;;
 ;;;========================================
 ;;; 3. DECISIONS TAKEN FOR THE OWNER (each one line to veto)
@@ -261,6 +262,36 @@
 ;;;     against the keep-out (notch-crosses-p) and REFUSED in words when it
 ;;;     crosses it. This file cuts nothing for them.
 ;;;
+;;; 17.10.2026, THE OWNER'S MORNING (each one line to veto):
+;;;
+;;; D9  THE CORNER MARK, NOT THE DOG BONE. The owner: *"nie, nie dodawaj
+;;;     wiercenia, dodaj jeden layer w samym cornerze okolo 40 mm w kazda
+;;;     strone na linii L shape i nazwij to corner 4 mm, wtedy ja wytne ten
+;;;     korner."*  Section 5's circle is no longer drawn at a notch's
+;;;     re-entrant corner (a TOP, a BOTTOM, a SHELF, a part-height SIDE or
+;;;     BACK). In its place TWO open lines on the layer CORNER_4MM (COMMON's
+;;;     {FEATURE}_{DIAMETER}MM grammar; the diameter is the owner's 4 mm
+;;;     cutter), each from the corner along one of the two outline edges
+;;;     that meet there, cnc.cornerMarkLeg (40) long, or the edge's own
+;;;     length where the edge is shorter (notch-corner-marks). The outline
+;;;     keeps its sharp corner; the owner's own 4 mm program squares what
+;;;     the 8 mm cutter left. COMMON's puzzle dog bones beside the tabs are
+;;;     another thing and do not move ("mamy puzzle i dogbones w systemie i
+;;;     niech tak bedzie"). KIT_RECESS.lsp D18 and KIT_CORNER_L.lsp state
+;;;     the same law for their corners.
+;;; D10 NO SCREW BETWEEN THE BACK AND THE BOX. The owner, on the board that
+;;;     faces him when a cabinet is driven onto a chimney: *"masz wkrety na
+;;;     niej a to nie dobrze bo nie bedziemy tam wkrecac wkretow, system
+;;;     wkrety dookola plecow w tym przypadku nie zadziala ... bedziemy
+;;;     montowac na ciastka (w przyszlosci dodamy lamello) teraz nic."*  So:
+;;;     the BACK's row on its notched edge (section 2's "the one row that IS
+;;;     drilled", G / 2 in from that edge, into the RETURN's end grain) is
+;;;     NOT drilled any more; the STEP, the RETURN and the LID state NO
+;;;     screws (notch-step-screws, notch-return-screws, notch-lid-screws
+;;;     answer nil). The box is the joiner's, on biscuits by hand, a Lamello
+;;;     one day; this file draws nothing for it. The BACK's rows into the
+;;;     sides, the TOP and the BOTTOM stay exactly where drawBACK puts them.
+;;;
 ;;;========================================
 ;;; 4. THE JOINTS ON A SHORTENED EDGE
 ;;;========================================
@@ -314,6 +345,15 @@
 ;;; r is the one cutter number the engine owns: profile.cnc.toolDiameter 8,
 ;;; r = 4 (engine/cnc/rollover.js toolRadius). COMMON states no cutter.
 ;;;
+;;; 17.10.2026 (D9): THE CIRCLE IS NOT DRAWN ANY MORE. notch-dogbone and its
+;;; family stay in this file as the record of where it stood (and the engine
+;;; keeps their mirrors for the same reason); what a re-entrant corner gets
+;;; is notch-corner-marks: the corner found on the board's own NOMINAL
+;;; outline (the puzzle tabs are not on it), two open lines on CORNER_4MM
+;;; along the two edges that meet there, cnc.cornerMarkLeg long, clamped to
+;;; each edge's own length. On the TOP of the golden case (section I) the
+;;; corner (200 340) plan gets (200 340)-(160 340) and (200 340)-(200 380).
+;;;
 ;;;========================================
 ;;; 6. A NUMBER COMMON STILL DRAWS OLD
 ;;;========================================
@@ -366,7 +406,8 @@
     ("notch.defaults.depth"         . 200.0)
     ("notch.defaults.height"        . 0.0)
     ("notch.obstacleClearance"      . 10.0)     ;; 15.10.2026: the scribe room round a chimney or a box the notch is cut FOR (the owner: "dobrze")
-    ("notch.minInterior"            . 100.0)))  ;; 15.10.2026: the owner's "nie mniej niz 100 mm w srodku szafki": what a notch must leave of the interior, across and in depth
+    ("notch.minInterior"            . 100.0)    ;; 15.10.2026: the owner's "nie mniej niz 100 mm w srodku szafki": what a notch must leave of the interior, across and in depth
+    ("cnc.cornerMarkLeg"            . 40.0)))   ;; 17.10.2026 (D9): the owner's "okolo 40 mm w kazda strone": each leg of the CORNER_4MM mark at a re-entrant corner (profile.cnc.cornerMark.legMm)
 
 (defun notch-p (key / hit)
   (setq hit (assoc key (notch-profile)))
@@ -538,6 +579,47 @@
             (+ (cadr (car re)) (* (cadr (cadr re)) k))
             r))
     nil))
+
+;;; THE CORNER MARK (D9, 17.10.2026), read off a board's NOMINAL outline in
+;;; whatever frame it is drawn in. A vertex is RE-ENTRANT when the walk turns
+;;; the other way there than the polygon as a whole turns (the sign of the
+;;; cross product of the edge in and the edge out against the sign of the
+;;; signed area). At each such vertex: two open lines, from the vertex along
+;;; the edge in (back toward the previous vertex) and along the edge out
+;;; (toward the next), `leg` long or the edge's own length, whichever is
+;;; shorter. (((x1 y1) (x2 y2)) ...), two per corner, in the outline's frame.
+;;; A rectangle has none; a window (a pocket) is not an outline and has none;
+;;; the puzzle tabs are not on the nominal outline, so their roots get none.
+(defun notch-signed-area2 (pts / n i a p q)
+  (setq n (length pts) i 0 a 0.0)
+  (while (< i n)
+    (setq p (nth i pts) q (nth (rem (1+ i) n) pts))
+    (setq a (+ a (- (* (car p) (cadr q)) (* (car q) (cadr p)))))
+    (setq i (1+ i)))
+  a)
+
+(defun notch-leg-point (v w leg / dx dy len k)
+  (setq dx (- (car w) (car v)) dy (- (cadr w) (cadr v))
+        len (sqrt (+ (* dx dx) (* dy dy))))
+  (if (> len 1e-9)
+    (progn
+      (setq k (/ (min leg len) len))
+      (list (+ (car v) (* dx k)) (+ (cadr v) (* dy k))))
+    v))
+
+(defun notch-corner-marks (pts leg / n i p v q cross orient out)
+  (setq n (length pts) i 0 out nil
+        orient (notch-signed-area2 pts))
+  (if (and (>= n 4) (> leg 0.0) (/= orient 0.0))
+    (while (< i n)
+      (setq p (nth (rem (+ i (1- n)) n) pts) v (nth i pts) q (nth (rem (1+ i) n) pts))
+      (setq cross (- (* (- (car v) (car p)) (- (cadr q) (cadr v)))
+                     (* (- (cadr v) (cadr p)) (- (car q) (car v)))))
+      (if (< (* cross orient) 0.0)
+        (setq out (append out (list (list v (notch-leg-point v p leg))
+                                    (list v (notch-leg-point v q leg))))))
+      (setq i (1+ i))))
+  out)
 
 ;;; A plan outline turned into COMMON's drawTOP_ROT90 frame (the engine's
 ;;; topPanelGeometry drawn frame): x' from the BACK edge, y' from the left
@@ -754,8 +836,14 @@
 ;;;   TOP-SOCKETS     x along the top edge
 ;;;   BOTTOM-SOCKETS  x along the bottom edge
 ;;;   SCREWS          ((x y) ..): drawBACK's rows on the board that is left.
-;;;                   The notch-side row G / 2 in from the notched edge lands
-;;;                   in the RETURN's end grain: it is the joint that holds it.
+;;;                   Until 17.10.2026 the notch-side row G / 2 in from the
+;;;                   notched edge (nearX) landed in the RETURN's end grain
+;;;                   and was "the joint that holds it". D10, the owner: NO
+;;;                   screw between the BACK and the box: that row is gone
+;;;                   (full height: the whole column; part height: the run
+;;;                   beside the notch). The far column, the rows above a
+;;;                   part-height notch (into the side's own back edge) and
+;;;                   the top and bottom rows stay.
 (defun notch-back-joints (cw ch g nw nh corner / e below one three sfe S full hh
                           left back boxed farTabs nearTabs lo hi blo bhi topS botS
                           farX nearX upX scr)
@@ -800,12 +888,12 @@
     ((or (not back) (not boxed))
       (foreach y (notch-rows-between-tabs 0.0 ch farTabs sfe)
         (setq scr (cons (list upX y) scr))))
-    (full
-      (foreach y (notch-rows-between-tabs 0.0 ch farTabs sfe)
-        (setq scr (cons (list nearX y) scr))))
+    ;; D10 (17.10.2026): a full-height back notch's notched edge meets the
+    ;; RETURN only, and gets NO row (it was (nearX y) over the whole height).
+    (full nil)
     (T
-      (foreach y (notch-screw-row hh sfe)
-        (setq scr (cons (list nearX y) scr)))
+      ;; D10: the run beside the notch (it was (notch-screw-row hh) at nearX)
+      ;; gets no row; the side's own back edge above the notch keeps its rows.
       (foreach y (notch-rows-between-tabs nh ch nearTabs sfe)
         (setq scr (cons (list upX y) scr)))))
   (foreach x (notch-row-between lo hi g sfe)
@@ -818,8 +906,11 @@
 
 ;;;----------------------------------------
 ;;; THE BOX: STEP, RETURN, LID (section 2, D1, D2). Plain rectangles: no
-;;; puzzle joint, no machined hole (readiness 'geometry'); the screws below
-;;; are the joiner's (readiness 'manual'), on THE BACK SCREW ROW.
+;;; puzzle joint, no machined hole (readiness 'geometry'); fixed by the
+;;; joiner (readiness 'manual'). Until 17.10.2026 the three *-screws routines
+;;; below STATED screws on THE BACK SCREW ROW; D10 (the owner: "nie bedziemy
+;;; tam wkrecac wkretow ... na ciastka ... teraz nic"): they answer nil. Their
+;;; bodies stay below as the record of what was stated, behind the nil.
 ;;;----------------------------------------
 
 ;;; Where they stand, in plan and height:
@@ -862,7 +953,11 @@
 ;;; (and at full height the TOP's) notch edge over the span between them
 ;;; (g .. nw). A part-height STEP is screwed DOWN INTO by the LID instead of
 ;;; into a TOP.
-(defun notch-step-screws (ch g nw nh corner / S hh sfe full out)
+(defun notch-step-screws (ch g nw nh corner)
+  nil)
+
+;;; The record (D10): what notch-step-screws stated until 17.10.2026.
+(defun notch-step-screws-stated-until-1710 (ch g nw nh corner / S hh sfe full out)
   (if (null (notch-step ch g nw nh corner))
     nil
     (progn
@@ -890,7 +985,11 @@
 ;;; into the BOTTOM's (and at full height the TOP's) notch edge along its
 ;;; own length. It is held to the STEP by the STEP's own column into its
 ;;; end (notch-step-screws), so it carries none of its own there.
-(defun notch-return-screws (ch g nw nd nh corner / S hh sfe full out len)
+(defun notch-return-screws (ch g nw nd nh corner)
+  nil)
+
+;;; The record (D10): what notch-return-screws stated until 17.10.2026.
+(defun notch-return-screws-stated-until-1710 (ch g nw nd nh corner / S hh sfe full out len)
   (if (null (notch-return ch g nw nd nh corner))
     nil
     (progn
@@ -916,7 +1015,11 @@
 ;;; FRONT end. Its edges against the side and the back are the joiner's.
 ;;; 15.10.2026: at a back corner the RETURN lies under the LID from y = g
 ;;; (behind the STEP) and the STEP under its whole front edge (0 .. nw).
-(defun notch-lid-screws (ch g nw nd nh corner / S sfe out retX back)
+(defun notch-lid-screws (ch g nw nd nh corner)
+  nil)
+
+;;; The record (D10): what notch-lid-screws stated until 17.10.2026.
+(defun notch-lid-screws-stated-until-1710 (ch g nw nd nh corner / S sfe out retX back)
   (if (null (notch-lid ch g nw nd nh))
     nil
     (progn
@@ -1091,8 +1194,11 @@
 ;;;     (0 0) (564 0) (564 540) (200 540) (200 340) (0 340)
 ;;;   drawTOP_ROT90 frame (x from the BACK edge, y from the BUL edge):
 ;;;     (540 0) (540 564) (0 564) (0 200) (200 200) (200 0)
-;;;   DOG BONE: circle r 4 at (197.1716 342.8284) plan,
-;;;                           (197.1716 197.1716) ROT90; corner (200 340)
+;;;   CORNER MARK (D9, 17.10.2026; until then a dog bone, circle r 4 at
+;;;   (197.1716 342.8284) plan, (197.1716 197.1716) ROT90): the corner
+;;;   (200 340) plan = (200 200) ROT90, two open lines on CORNER_4MM, 40 long:
+;;;     plan  (200 340)-(160 340) and (200 340)-(200 380)
+;;;     ROT90 (200 200)-(200 160) and (200 200)-(160 200)
 ;;;   area 0.305 -> 0.265 m2 (264560 mm2)
 ;;; BACK       600 x 770    400 x 770, carcass x 200..600
 ;;;   original frame (200 0) (600 0) (600 770) (200 770)
@@ -1105,7 +1211,8 @@
 ;;; SHELF-1    560 x 520    560 x 520 less 200 x 200 at the rear-left
 ;;;   shelf frame (2 clear of the RETURN as of BUL):
 ;;;     (0 0) (560 0) (560 520) (200 520) (200 320) (0 320)
-;;;   DOG BONE: circle r 4 at (197.1716 322.8284); corner (200 320)
+;;;   CORNER MARK (D9): corner (200 320); (200 320)-(160 320) and
+;;;   (200 320)-(200 360) on CORNER_4MM (was a dog bone at (197.1716 322.8284))
 ;;; PLINTH     600          untouched (a back notch is behind its line 50..68)
 ;;;
 ;;; WHICH JOINTS MOVE (the PROBE table F7 asks for):
@@ -1126,13 +1233,14 @@
 ;;; BACK sockets, far edge (y)       95, 385, 675       95, 385, 675
 ;;; BACK top/bottom sockets          113, 487           313, 487  (113 -> 313)
 ;;;   (carcass x; own frame 113, 287)
-;;; BACK side screw rows (y)         50, 240, 530, 720  both edges, unchanged;
-;;;                                  the notch-edge row (carcass x 209) holds
-;;;                                  the RETURN's end
+;;; BACK side screw rows (y)         50, 240, 530, 720  far edge (x 591) unchanged;
+;;;                                  the notch-edge row (carcass x 209, into
+;;;                                  the RETURN's end) is GONE (D10, 17.10.2026)
 ;;; BACK top/bottom screw rows       68, 300, 532       268, 400, 532
 ;;;   (carcass x; own frame 68, 200, 332)
 ;;;
-;;; THE BOX'S FIXING (manual, the back screw row, not drilled):
+;;; THE BOX'S FIXING: NONE STATED (D10, 17.10.2026: biscuits by hand, a
+;;; Lamello one day, nothing drawn). Until that morning the file stated:
 ;;; STEP (x from its left end, y up)    into BUL's end: x 9, y 50 385 720
 ;;;                                     into the RETURN's end: x 209, y 50 385 720
 ;;;                                     into TOP: x 68 109 150, y 761
@@ -1154,13 +1262,30 @@
 (defun notch-offset-pts (pts dx dy)
   (mapcar '(lambda (p) (list (+ dx (car p)) (+ dy (cadr p)))) pts))
 
+;;; THE CORNER_4MM LAYER (D9). COMMON's createCNCLayers predates it and is
+;;; untouched (CLAUDE.md FROZEN 2), so this file makes the layer itself when
+;;; it is missing: ACI 53, the next free number after RECESS_WINDOW's 52
+;;; (engine/cnc/layers.js carries the same name, colour and kind 'mark').
+(defun notch-ensure-corner-layer ( / )
+  (if (null (tblsearch "LAYER" "CORNER_4MM"))
+    (command "._LAYER" "_N" "CORNER_4MM" "_C" "53" "CORNER_4MM" "")))
+
+;;; The corner marks of one board, drawn: open two-point lines on CORNER_4MM,
+;;; the owner's own 4 mm program ("wtedy ja wytne ten korner").
+(defun notch-draw-corner-marks (x0 y0 marks / m)
+  (if marks (notch-ensure-corner-layer))
+  (foreach m marks
+    (drawLine "CORNER_4MM" (+ x0 (car (car m))) (+ y0 (cadr (car m)))
+                           (+ x0 (car (cadr m))) (+ y0 (cadr (cadr m))))))
+
 ;;; One board: the PARENT's rectangle on NOTCH_MANUAL (grey, a note layer the
-;;; machine never reads), the NOTCHED outline on OUTLINE, its dog bone on
-;;; PUZZLE_DOG_BONES, and its name.
+;;; machine never reads), the NOTCHED outline on OUTLINE, its CORNER MARKS on
+;;; CORNER_4MM (D9, 17.10.2026; `db`, the dog bone, is no longer drawn: the
+;;; argument stays so every call reads as before), and its name.
 (defun notch-draw-board (x0 y0 bw bh pts db label)
   (drawRect "NOTCH_MANUAL" x0 y0 (+ x0 bw) (+ y0 bh))
   (if pts (makePolyline "OUTLINE" (notch-offset-pts pts x0 y0)))
-  (if db (drawCircle "PUZZLE_DOG_BONES" (+ x0 (car db)) (+ y0 (cadr db)) (caddr db)))
+  (if pts (notch-draw-corner-marks x0 y0 (notch-corner-marks pts (notch-p "cnc.cornerMarkLeg"))))
   (drawText "UNIT_NUMBER" (+ x0 (/ bw 2.0)) (+ y0 (/ bh 2.0)) 30.0 label))
 
 ;;; Joint centres and screw positions, as marks on NOTCH_MANUAL. The socket

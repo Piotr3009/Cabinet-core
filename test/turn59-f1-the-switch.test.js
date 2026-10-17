@@ -246,7 +246,8 @@ const EXEMPT = {
     + 'IMPORT DXF is struck out (*"to nie przejdzie"*), and APPLY is fixed at the '
     + 'two sites its probe convicted: it sends only the keys this window changed, '
     + 'and it is never drawn dead and silent. *"APPLY does nothing — probe first."*'
-    + ' Owner 14.10.2026 (chat-fix, re-frozen): ADD ISLAND applies the room as drawn and opens the island PLAN over the canvas (3d/IslandPlan.jsx) instead of dropping a core into the draft. *"przy dodaniu wyspy chciałbym żeby był widok z góry i proponowana na podłodze plan wyspy ... dopiero jak się wstawi to wtedy pokaże się cała wyspa."*',
+    + ' Owner 14.10.2026 (chat-fix, re-frozen): ADD ISLAND applies the room as drawn and opens the island PLAN over the canvas (3d/IslandPlan.jsx) instead of dropping a core into the draft. *"przy dodaniu wyspy chciałbym żeby był widok z góry i proponowana na podłodze plan wyspy ... dopiero jak się wstawi to wtedy pokaże się cała wyspa."*'
+    + ' CHAT FIX 17.10.2026 (re-frozen): the window is 1290 px wide, the plan inside it untouched. *"menu setup room (caly modal poszerz prosze o 50 procent)"*; *"modal tylko powieksz"*.',
   'src/components/AddItems.jsx':
     'T75 F19 · two rows, Hooks (a row of the profile count, one BOM line, its qty the count) and Valet rod, added through the same bought-mechanism panel the trouser pull-out uses. *"Two rows in Add items for the wardrobe family: `Hooks` (a row of N, BOM line, placeholder bodies, zero holes) and `Valet rod` (pull-out, BOM line, placeholder, zero holes)."* '
     + 'T75 F16 · the shoe box row says a chest of drawers IS its drawers (the store has always refused a shoe drawer in a ratio stack), and the trouser pull-out and tie rack rows say they go in a wardrobe: a chest stands beside one. *"`WARDROBE_CHEST2 / 3 / 4` copied from `BUDR2 / BUDR / BUDR4`, family wardrobe ... Wardrobes category."* '
@@ -343,7 +344,8 @@ const FROZEN = {
   // T78 PART E, after the walk re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/RightPanel.jsx': 'edf30257599533056599d0f8cf429ee2a05ce888acbccdb04013466ee6a79e82',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RoomModal.jsx': '0f19b25df3ddbef168d3739d6e66faa2b1ec9455cf783bf8482d2e8960ed64d7',
+  // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
+  'src/components/RoomModal.jsx': '04bc0d7b944cac119f44aa1c562ef0a635f6e86ecee9b6ea26784e075b69d2a1',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
   'src/components/SaveSettingsSetModal.jsx': 'e89dc83a41dbadbf472496c5674216171221f7bda5fa240c61dbaab09dd86951',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.

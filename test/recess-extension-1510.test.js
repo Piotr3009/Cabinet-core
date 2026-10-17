@@ -146,11 +146,14 @@ test('CASE A: the BACK is one shorter piece 328 x 770; its sockets and rows; the
   assert.deepEqual(bj.RIGHT, []);
   assert.deepEqual(bj.TOP, [113, 233]);
   assert.deepEqual(bj.BOTTOM, [113, 233]);
+  // 17.10.2026 (KIT_RECESS.lsp D17), the owner: *"nie bedziemy tam wkrecac
+  // wkretow, system wkrety dookola plecow w tym przypadku nie zadziala"*: the
+  // column into the RETURN's end ([319, 50], [319, 385], [319, 720] until that
+  // morning) is gone; the rows into BUL, the TOP and the BOTTOM stay.
   assert.deepEqual(bj.SCREWS, [
     [9, 50], [9, 240], [9, 530], [9, 720],
     [68, 761], [173, 761], [278, 761],
     [68, 9], [173, 9], [278, 9],
-    [319, 50], [319, 385], [319, 720],
   ]);
 });
 
@@ -161,12 +164,14 @@ test('CASE A: the added boards and their stated screws', () => {
     'EXT-BACK': [310, 690, 0, 600, 708, 770],
   });
   assert.deepEqual(recessReturn(770, G, 0, 770, 150), [132, 770]);
-  assert.deepEqual(recessReturnScrews(770, G, 0, 770, 150, K), [[50, 9], [50, 761], [66, 9], [66, 761], [82, 9], [82, 761]]);
+  // 17.10.2026 (D17): the added boards state NO screws any more. The owner:
+  // *"bedziemy montowac na ciastka (w przyszlosci dodamy lamello) teraz nic"*.
+  // Until that morning: the RETURN [[50, 9], [50, 761], [66, 9], [66, 761],
+  // [82, 9], [82, 761]], the EXT-BACK twelve (a column each side, a row top
+  // and bottom). The record is kept in the LISP's NUMBERS block.
+  assert.deepEqual(recessReturnScrews(770, G, 0, 770, 150, K), []);
   assert.deepEqual(recessExtBack(310, 600, 0, 770), [290, 770]);
-  assert.deepEqual(recessExtBackScrews(600, 770, G, 310, 600, 0, 770, K), [
-    [9, 50], [281, 50], [9, 385], [281, 385], [9, 720], [281, 720],
-    [68, 9], [68, 761], [145, 9], [145, 761], [222, 9], [222, 761],
-  ]);
+  assert.deepEqual(recessExtBackScrews(600, 770, G, 310, 600, 0, 770, K), []);
 });
 
 test('CASE A: the shelf in the band grows (D10): 560 x 670 less 310 x 150, its dog bone', () => {
@@ -192,10 +197,11 @@ test('CASE B: one whole BACK with a window, the rows round it; the FLOOR, the LI
   const bj = recessBackJoints(pieces[0], window, 600, 770, G, 110, 490, 210, 590, [113, 487], [113, 487], [95, 385, 675], [95, 385, 675], K);
   assert.deepEqual(bj.LEFT, [95, 385, 675]); assert.deepEqual(bj.RIGHT, [95, 385, 675]);
   assert.deepEqual(bj.TOP, [113, 487]); assert.deepEqual(bj.BOTTOM, [113, 487]);
-  assert.deepEqual(bj.SCREWS.slice(14), [
-    [119, 278], [119, 400], [119, 522], [481, 278], [481, 400], [481, 522],
-    [178, 219], [300, 219], [422, 219], [178, 581], [300, 581], [422, 581],
-  ], 'the hand-fix rows round the window, S outside each edge');
+  // 17.10.2026 (D17): the hand-fix rows round the window (the twelve S outside
+  // each edge, into the RETURNs' ends and the FLOOR's and LID's front edges)
+  // are gone; the BACK keeps exactly drawBACK's fourteen.
+  assert.equal(bj.SCREWS.length, 14, 'the parent\'s fourteen, nothing round the window');
+  assert.deepEqual(bj.SCREWS.slice(14), [], 'no hand-fix row round the window (the owner: "nie bedziemy tam wkrecac wkretow")');
   assert.deepEqual(recessBoxPlaces(600, 558, 770, G, 110, 490, 210, 590, 150), {
     'RETURN-L': [110, 558, 228, 128, 690, 572],
     'RETURN-R': [472, 558, 228, 490, 690, 572],
@@ -206,11 +212,9 @@ test('CASE B: one whole BACK with a window, the rows round it; the FLOOR, the LI
   assert.deepEqual(recessReturn(770, G, 210, 590, 150), [132, 344]);
   assert.deepEqual(recessReturnScrews(770, G, 210, 590, 150, K), [], 'between a FLOOR and a LID it carries none of its own');
   assert.deepEqual(recessLid(G, 110, 490, 150), [380, 132]);
-  assert.deepEqual(recessLidScrews(G, 110, 490, 150, K), [[9, 50], [371, 50], [9, 66], [371, 66], [9, 82], [371, 82]]);
-  assert.deepEqual(recessExtBackScrews(600, 770, G, 110, 490, 210, 590, K), [
-    [9, 68], [371, 68], [9, 190], [371, 190], [9, 312], [371, 312],
-    [68, 9], [68, 371], [190, 9], [190, 371], [312, 9], [312, 371],
-  ]);
+  // 17.10.2026 (D17): none stated on the FLOOR, the LID or the EXT-BACK either.
+  assert.deepEqual(recessLidScrews(G, 110, 490, 150, K), []);
+  assert.deepEqual(recessExtBackScrews(600, 770, G, 110, 490, 210, 590, K), []);
 });
 
 test('the BACK\'s other shapes: a bite, a corner, two pieces (D8, D9)', () => {
@@ -294,33 +298,50 @@ test('CASE A through computeCabinet: every board the LISP names, to its numbers'
   const top = panelOf(r, 'TOP');
   assert.equal(top.h, 690);
   assert.equal(top.cnc.drawn_w, 690);
-  assert.deepEqual(top.cnc.holes, [{ layer: 'PUZZLE_DOG_BONES', kind: 'notch_dogbone', x: 147.1716, y: 307.1716, d: 8 }]);
+  // 17.10.2026 (KIT_RECESS.lsp D18): no dog bone at the corner (it stood at
+  // (147.1716, 307.1716) ROT90 until that morning); the CORNER_4MM mark, two
+  // open lines 40 long from the corner (150, 310) along the two edges that
+  // meet there. The owner: *"nie, nie dodawaj wiercenia, dodaj jeden layer w
+  // samym cornerze okolo 40 mm w kazda strone na linii L shape"*.
+  assert.deepEqual(top.cnc.holes, []);
+  assert.deepEqual(top.cnc.marks, [
+    { layer: 'CORNER_4MM', from: [150, 310], to: [110, 310] },
+    { layer: 'CORNER_4MM', from: [150, 310], to: [150, 270] },
+  ]);
   assert.deepEqual(top.meta.planOutline, [[0, 690], [564, 690], [564, 0], [310, 0], [310, 150], [0, 150]]);
   assert.deepEqual(top.box, { x: 18, y: 752, z: -132, w: 564, h: 18, d: 690 });
   const corners = top.cnc.outline.filter(([x, y]) => (x === 690 || x === 0 || x === 150) && (y === 0 || y === 564 || y === 310));
   assert.deepEqual(corners, [[690, 0], [690, 564], [0, 564], [0, 310], [150, 310], [150, 0]]);
   assert.deepEqual(top.cnc.pockets.length, 6, 'two tabs into BUL, two into BUR, two into the BACK: six dog-bone reliefs');
-  // BACK: 328 x 770, its sockets and rows, the column into the RETURN's end.
+  // BACK: 328 x 770, its sockets and rows. 17.10.2026 (D17): NO column into
+  // the RETURN's end ([319, 50], [319, 385], [319, 720] until that morning).
   const back = panelOf(r, 'BACK');
   assert.deepEqual(back.cnc.outline, [[0, 0], [328, 0], [328, 770], [0, 770]]);
   assert.deepEqual(back.box, { x: 0, y: 0, z: 0, w: 328, h: 770, d: 18 });
   assert.deepEqual(drillsOf(r, 'BACK', 'screw').map((d) => [d.x, d.y]), [
-    [9, 50], [9, 240], [9, 530], [9, 720], [68, 761], [173, 761], [278, 761], [68, 9], [173, 9], [278, 9], [319, 50], [319, 385], [319, 720],
+    [9, 50], [9, 240], [9, 530], [9, 720], [68, 761], [173, 761], [278, 761], [68, 9], [173, 9], [278, 9],
   ]);
   assert.deepEqual(drillsOf(r, 'BACK', 'puzzle').filter((d) => d.y === 762).map((d) => d.x), [88.5, 137.5, 208.5, 257.5]);
   // The shelf: drawn depth x width, its dog bone, its plan for the 3-D.
   const shelf = panelOf(r, 'SHELF-1');
   assert.deepEqual(shelf.cnc.outline, [[520, 0], [520, 310], [670, 310], [670, 560], [0, 560], [0, 0]]);
-  assert.deepEqual(shelf.cnc.holes.map((h) => [h.x, h.y]), [[522.8284, 307.1716]]);
+  // 17.10.2026 (D18): the shelf's corner (520, 310) drawn carries the mark, not the bone at (522.8284, 307.1716).
+  assert.deepEqual((shelf.cnc.holes || []).filter((h) => h.kind === 'notch_dogbone'), []);
+  assert.deepEqual(shelf.cnc.marks, [
+    { layer: 'CORNER_4MM', from: [520, 310], to: [520, 270] },
+    { layer: 'CORNER_4MM', from: [520, 310], to: [560, 310] },
+  ]);
   assert.deepEqual(shelf.meta.planOutline, [[0, 670], [560, 670], [560, 0], [310, 0], [310, 150], [0, 150]]);
-  // The added boards: plain, hand-fixed, their screws stated, standing behind the back.
+  // The added boards: plain, hand-fixed, standing behind the back. 17.10.2026
+  // (D17): NO screws stated on them (the RETURN's six and the EXT-BACK's twelve
+  // until that morning); biscuits by hand, nothing drawn.
   const ret = panelOf(r, 'RETURN-L');
   assert.deepEqual([ret.part, ret.role, ret.meta.readiness, ret.meta.fixing], ['RECESS-RETURN', 'extension', 'geometry', 'manual']);
   assert.deepEqual(ret.box, { x: 310, y: 0, z: -132, w: 18, h: 770, d: 132 });
-  assert.deepEqual(ret.meta.extension.screws, [[50, 9], [50, 761], [66, 9], [66, 761], [82, 9], [82, 761]]);
+  assert.deepEqual(ret.meta.extension.screws, []);
   const eb = panelOf(r, 'EXT-BACK');
   assert.deepEqual(eb.box, { x: 310, y: 0, z: -150, w: 290, h: 770, d: 18 });
-  assert.deepEqual(eb.meta.extension.screws, [[9, 50], [281, 50], [9, 385], [281, 385], [9, 720], [281, 720], [68, 9], [68, 761], [145, 9], [145, 761], [222, 9], [222, 761]]);
+  assert.deepEqual(eb.meta.extension.screws, []);
   assert.equal(panelOf(r, 'BUL').w, 540, 'the other side is the parent\'s');
   assert.equal(drillsOf(r, 'BUL', 'hinge').length, drillsOf(computeCabinet(BUD, P), 'BUL', 'hinge').length);
 });
@@ -333,12 +354,20 @@ test('CASE B through computeCabinet: the window is a through pocket on RECESS_WI
   const back = panelOf(r, 'BACK');
   assert.deepEqual(back.cnc.pockets.filter((k) => k.layer === RECESS_WINDOW_LAYER), [{ layer: 'RECESS_WINDOW', x1: 128, y1: 228, x2: 472, y2: 572, depth: 18 }]);
   assert.equal(back.cnc.outline.length, 4);
-  assert.equal(drillsOf(r, 'BACK', 'screw').length, 14 + 12, 'the parent\'s fourteen and the twelve round the window');
+  // 17.10.2026 (D17): the twelve round the window are gone; the parent's fourteen stay.
+  assert.equal(drillsOf(r, 'BACK', 'screw').length, 14, 'the parent\'s fourteen, nothing round the window');
   assert.equal(r.csvLines.find((l) => l.startsWith('01,BACK')), '01,BACK,600,770,,0,0.344', 'the window comes off the area');
   assert.deepEqual(r.csvLines.slice(7), ['01,RETURN-L,132,344,,0,0.045', '01,RETURN-R,132,344,,0,0.045', '01,FLOOR,380,132,,0,0.050', '01,LID,380,132,,0,0.050', '01,EXT-BACK,380,380,,0,0.144']);
   const shelf = panelOf(r, 'SHELF-1');
   assert.deepEqual(shelf.cnc.outline, [[520, 0], [520, 110], [670, 110], [670, 450], [520, 450], [520, 560], [0, 560], [0, 0]]);
-  assert.deepEqual(shelf.cnc.holes.map((h) => [h.x, h.y]), [[522.8284, 107.1716], [522.8284, 452.8284]]);
+  // 17.10.2026 (D18): two corners, two marks each, no bones ((522.8284, 107.1716) and (522.8284, 452.8284) until then).
+  assert.deepEqual((shelf.cnc.holes || []).filter((h) => h.kind === 'notch_dogbone'), []);
+  assert.deepEqual(shelf.cnc.marks, [
+    { layer: 'CORNER_4MM', from: [520, 110], to: [520, 70] },
+    { layer: 'CORNER_4MM', from: [520, 110], to: [560, 110] },
+    { layer: 'CORNER_4MM', from: [520, 450], to: [560, 450] },
+    { layer: 'CORNER_4MM', from: [520, 450], to: [520, 490] },
+  ]);
   for (const id of ['BUL', 'BUR', 'TOP', 'BOTTOM']) assert.equal(panelOf(r, id).cnc.outline.length, panelOf(computeCabinet(BUD, P), id).cnc.outline.length, `${id} is the parent's`);
   // The layer is a machine contract: ACI 52, a pocket, drawn through.
   assert.equal(cncLayer('RECESS_WINDOW').aci, 52);

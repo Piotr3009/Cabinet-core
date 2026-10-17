@@ -6,7 +6,8 @@
     "source": "KIT_RECESS.lsp (CASE A of its NUMBERS block) on KIT_BUD_FULL.lsp: the band 310..600 x 0..770, 150 deep; BUR, TOP, BOTTOM and the shelf grow, the BACK is 328 wide, RETURN-L and EXT-BACK added",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "17.10.2026 (the owner's morning): KIT_RECESS.lsp D17 and D18. No dog bone at the bump corners (TOP, BOTTOM, SHELF-1: holes 1 -> 0; CORNER_4MM marks instead) and no column through the BACK into RETURN-L's end (SCREWS_3MM|BACK 13 -> 10). The owner: \"nie, nie dodawaj wiercenia\" and \"nie bedziemy tam wkrecac wkretow\". Outlines, boards and the rest unchanged."
   },
   "params": {
     "type": "BUD",
@@ -100,7 +101,7 @@
           "d": 690
         },
         "outline": 66,
-        "holes": 1,
+        "holes": 0,
         "pockets": 6,
         "readiness": null
       },
@@ -120,7 +121,7 @@
           "d": 690
         },
         "outline": 66,
-        "holes": 1,
+        "holes": 0,
         "pockets": 6,
         "readiness": null
       },
@@ -140,7 +141,7 @@
           "d": 18
         },
         "outline": 4,
-        "holes": 27,
+        "holes": 24,
         "pockets": 7,
         "readiness": null
       },
@@ -160,7 +161,7 @@
           "d": 670
         },
         "outline": 6,
-        "holes": 1,
+        "holes": 0,
         "pockets": 0,
         "readiness": null
       },
@@ -239,18 +240,6 @@
         6
       ],
       [
-        "PUZZLE_DOG_BONES|BOTTOM",
-        1
-      ],
-      [
-        "PUZZLE_DOG_BONES|SHELF-1",
-        1
-      ],
-      [
-        "PUZZLE_DOG_BONES|TOP",
-        1
-      ],
-      [
         "PUZZLE_HOLES_7_5MM|BACK",
         14
       ],
@@ -264,7 +253,7 @@
       ],
       [
         "SCREWS_3MM|BACK",
-        13
+        10
       ],
       [
         "SCREWS_3MM|BUL",

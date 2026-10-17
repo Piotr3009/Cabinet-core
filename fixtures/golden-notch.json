@@ -7,7 +7,7 @@
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
-    "repinned": "15.10.2026 (evening): the owner, the mockup \"naroznik, krawedz\": the STEP covers the RETURN's end (STEP 218 x 770, RETURN 182 x 770; the screws follow); the notch in TOP, BOTTOM and the shelf, the dog bone and every drilling unchanged"
+    "repinned": "17.10.2026 (the owner's morning): KIT_NOTCH.lsp D9 and D10. No dog bone is drilled at the notch's re-entrant corner (TOP, BOTTOM, SHELF-1: holes 1 -> 0; the CORNER_4MM marks stand there, not summarised here) and the BACK's row on its notched edge into the RETURN's end is gone (SCREWS_3MM|BACK 14 -> 10). The owner: \"nie, nie dodawaj wiercenia ... nazwij to corner 4 mm\" and \"nie bedziemy tam wkrecac wkretow\". The outlines, the box boards and every other drilling unchanged. Before this: 15.10.2026 (evening), the STEP covers the RETURN's end (STEP 218 x 770, RETURN 182 x 770)."
   },
   "params": {
     "type": "BUD",
@@ -100,7 +100,7 @@
           "d": 540
         },
         "outline": 66,
-        "holes": 1,
+        "holes": 0,
         "pockets": 6,
         "readiness": null
       },
@@ -120,7 +120,7 @@
           "d": 540
         },
         "outline": 66,
-        "holes": 1,
+        "holes": 0,
         "pockets": 6,
         "readiness": null
       },
@@ -140,7 +140,7 @@
           "d": 18
         },
         "outline": 4,
-        "holes": 28,
+        "holes": 24,
         "pockets": 7,
         "readiness": null
       },
@@ -160,7 +160,7 @@
           "d": 520
         },
         "outline": 6,
-        "holes": 1,
+        "holes": 0,
         "pockets": 0,
         "readiness": null
       },
@@ -239,18 +239,6 @@
         6
       ],
       [
-        "PUZZLE_DOG_BONES|BOTTOM",
-        1
-      ],
-      [
-        "PUZZLE_DOG_BONES|SHELF-1",
-        1
-      ],
-      [
-        "PUZZLE_DOG_BONES|TOP",
-        1
-      ],
-      [
         "PUZZLE_HOLES_7_5MM|BACK",
         14
       ],
@@ -264,7 +252,7 @@
       ],
       [
         "SCREWS_3MM|BACK",
-        14
+        10
       ],
       [
         "SCREWS_3MM|BUL",

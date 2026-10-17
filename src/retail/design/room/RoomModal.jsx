@@ -615,7 +615,10 @@ export default function RoomModal({
       anchor={anchor}
       title="Room setup"
       onClose={closeModal}
-      width="pbi-re-w860"
+      // CHAT FIX 17.10.2026: the owner, *"menu setup room (caly modal poszerz
+      // prosze o 50 procent)"* and, asked whether the plan grows with it,
+      // *"modal tylko powieksz"*: 860 x 1.5 = 1290. PLAN_W and PLAN_H stay.
+      width="pbi-re-w1290"
     >
       <style>{DOCK_CSS}</style>
       <div className="pbi-re-stack-3" data-room-door={wizard ? 'wizard' : 'menu'} data-room-one-window="1">

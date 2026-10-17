@@ -927,6 +927,9 @@ export const DEFAULT_CABINET_PROFILE = {
       dogbone: 'PUZZLE_DOG_BONES',
       socketHole: 'PUZZLE_HOLES_7_5MM',
       screw: 'SCREWS_3MM',
+      // CHAT FIX 17.10.2026: the mark at a re-entrant corner of an L outline
+      // (cnc.cornerMark below; the owner's "nazwij to corner 4 mm").
+      cornerMark: 'CORNER_4MM',
     },
   },
 
@@ -4790,6 +4793,23 @@ export const DEFAULT_CABINET_PROFILE = {
     // 8 mm is the standard two-flute compression bit a board is cut with. A
     // workshop on a 6 or a 10 changes this line and the picture follows.
     toolDiameter: 8,
+
+    // ─── CHAT FIX 17.10.2026: THE CORNER MARK, NOT THE DOG BONE ─────────────
+    // The owner, on every L-shaped board (a chimney notch, a recess bump, the
+    // BACK's bite, the L corner's inner corner): *"nie, nie dodawaj wiercenia,
+    // dodaj jeden layer w samym cornerze okolo 40 mm w kazda strone na linii L
+    // shape i nazwij to corner 4 mm, wtedy ja wytne ten korner."*  No relief
+    // hole is drilled at a re-entrant corner any more; the board carries two
+    // open lines on the layer CORNER_4MM (puzzle.layers.cornerMark; the 4 is
+    // the owner's own cutter), each from the corner along one of the two
+    // outline edges that meet there, `legMm` long or the edge's own length
+    // where the edge is shorter. The 8 mm cutter above leaves its fillet in the
+    // corner; the owner's 4 mm program squares it. KIT_NOTCH.lsp D9,
+    // KIT_RECESS.lsp D18, KIT_CORNER_L.lsp section 4 state the law; the
+    // puzzle's own dog bones beside the tabs are not this and do not move.
+    cornerMark: {
+      legMm: 40,                     // the owner, 17.10.2026: "okolo 40 mm w kazda strone"
+    },
 
     // ─── Turn 16 (CLAUDE.md F3): THE SHEET'S OWN LETTERING ─────────────────
     //

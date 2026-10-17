@@ -122,10 +122,17 @@ test('F7 · NUMBERS: the keep-out, the TOP and BOTTOM outline, the dog bone, the
     assert.equal(r2(p.area_m2 * 1e6), 264560, `${id}: 0.305 -> 0.265 m2`);
     assert.deepEqual(p.meta.notch.outline, plan);
     assert.deepEqual(p.cnc.notch, { fc: 'x0y0', nw: 200, nh: 200 });
-    const bone = drillsOf(cut, id, 'notch_dogbone');
-    assert.equal(bone.length, 1);
-    assert.deepEqual([bone[0].x, bone[0].y, bone[0].d], [197.1716, 197.1716, 8]);
-    assert.equal(bone[0].layer, P.puzzle.layers.dogbone);
+    // 17.10.2026 (KIT_NOTCH.lsp D9), the owner: *"nie, nie dodawaj wiercenia,
+    // dodaj jeden layer w samym cornerze okolo 40 mm w kazda strone na linii L
+    // shape i nazwij to corner 4 mm"*: the dog bone (197.1716, 197.1716, d 8 on
+    // PUZZLE_DOG_BONES until that morning) is not drilled; the corner (200, 200)
+    // ROT90 carries two CORNER_4MM marks, 40 long, along the two edges.
+    assert.equal(drillsOf(cut, id, 'notch_dogbone').length, 0, 'no dog bone is drilled at the notch');
+    assert.deepEqual(p.cnc.marks, [
+      { layer: 'CORNER_4MM', from: [200, 200], to: [160, 200] },
+      { layer: 'CORNER_4MM', from: [200, 200], to: [200, 160] },
+    ]);
+    assert.equal(P.puzzle.layers.cornerMark, 'CORNER_4MM');
   }
   assert.ok(cut.csvLines.includes('01,TOP,564,540,>,0.56,0.265'));
 });
@@ -195,10 +202,13 @@ test('F7 · THE PROBE TABLE: the BACK is 400 wide, its notch-edge sockets gone, 
   const bj = N.notchBackJoints(600, 770, 18, 200, 0, 'BL', K);
   assert.deepEqual(bj['TOP-SOCKETS'], [313, 487]);
   assert.deepEqual(bj['NEAR-SOCKETS'], []);
-  // screws: both side rows 50 240 530 720 (the notch-edge row at carcass x 209
-  // holds the RETURN's end), top and bottom 268, 400, 532 (own frame 68, 200, 332)
+  // screws: the far row 50 240 530 720 at x 391; top and bottom 268, 400, 532
+  // (own frame 68, 200, 332). 17.10.2026 (KIT_NOTCH.lsp D10): the notch-edge
+  // row (carcass x 209, own frame 9, into the RETURN's end) is GONE. The owner:
+  // *"nie bedziemy tam wkrecac wkretow, system wkrety dookola plecow w tym
+  // przypadku nie zadziala"*.
   const screws = drillsOf(cut, 'BACK', 'screw');
-  assert.deepEqual(ys(screws.filter((d) => d.x === 9)), [50, 240, 530, 720]);
+  assert.deepEqual(ys(screws.filter((d) => d.x === 9)), [], 'no screw between the BACK and the RETURN');
   assert.deepEqual(ys(screws.filter((d) => d.x === 391)), [50, 240, 530, 720]);
   assert.deepEqual(xs(screws.filter((d) => d.y === 761)), [68, 200, 332]);
   assert.deepEqual(xs(screws.filter((d) => d.y === 9)), [68, 200, 332]);
@@ -231,11 +241,17 @@ test('F7 · NUMBERS: the STEP and the RETURN, outlines, places, the joiner\'s sc
     assert.equal(p.meta.readiness, 'geometry');
     assert.equal(p.meta.fixing, 'manual');
   }
-  // THE BOX'S FIXING (the back screw row, stated, not drilled)
-  // The STEP: a column into BUL's end (x 9) and one into the RETURN's end (x 209), the row into TOP and BOTTOM.
-  assert.deepEqual(step.meta.notch.screws, [[9, 50], [209, 50], [9, 385], [209, 385], [9, 720], [209, 720], [68, 9], [68, 761], [109, 9], [109, 761], [150, 9], [150, 761]]);
-  // The RETURN: its row into TOP and BOTTOM over its own 182; no column of its own into the STEP.
-  assert.deepEqual(ret.meta.notch.screws, [[50, 9], [50, 761], [91, 9], [91, 761], [132, 9], [132, 761]]);
+  // THE BOX'S FIXING: 17.10.2026 (KIT_NOTCH.lsp D10) NONE stated. The owner:
+  // *"bedziemy montowac na ciastka (w przyszlosci dodamy lamello) teraz nic"*.
+  // Until that morning the STEP stated twelve (a column into BUL's end at x 9,
+  // one into the RETURN's end at x 209, the row into TOP and BOTTOM) and the
+  // RETURN six; the record stays in notch.js (*StatedUntil1710) and the LISP.
+  assert.deepEqual(step.meta.notch.screws, []);
+  assert.deepEqual(ret.meta.notch.screws, []);
+  assert.deepEqual(N.notchStepScrewsStatedUntil1710(770, 18, 200, 0, 'BL', K), [[9, 50], [209, 50], [9, 385], [209, 385], [9, 720], [209, 720], [68, 9], [68, 761], [109, 9], [109, 761], [150, 9], [150, 761]], 'the record');
+  assert.deepEqual(N.notchReturnScrewsStatedUntil1710(770, 18, 200, 200, 0, 'BL', K), [[50, 9], [50, 761], [91, 9], [91, 761], [132, 9], [132, 761]], 'the record');
+  assert.equal(N.notchStepScrews(770, 18, 200, 0, 'BL', K), null);
+  assert.equal(N.notchReturnScrews(770, 18, 200, 200, 0, 'BL', K), null);
   assert.ok(cut.csvLines.includes('01,RETURN,182,770,,0,0.140'), 'the cut list shows the RETURN board');
   assert.ok(cut.csvLines.includes('01,STEP,218,770,,0,0.168'));
   // The BOM row is the carcass board's (an unmapped part is a silent drop).
@@ -254,8 +270,13 @@ test('F7 · NUMBERS: SHELF-1 takes the outline, 2 clear of the RETURN, and its d
   // drawn `depth x width`, x from the front: the plan transposed, anticlockwise
   assert.deepEqual(shelf.cnc.outline, [[320, 0], [320, 200], [520, 200], [520, 560], [0, 560], [0, 0]]);
   assert.deepEqual(shelf.cnc.notch, { fc: 'x1y0', nw: 200, nh: 200 });
-  const bone = drillsOf(cut, 'SHELF-1', 'notch_dogbone')[0];
-  assert.deepEqual([bone.x, bone.y], [322.8284, 197.1716]);
+  // 17.10.2026 (D9): the bone at (322.8284, 197.1716) is not drilled; the
+  // drawn corner (320, 200) carries the two CORNER_4MM marks.
+  assert.equal(drillsOf(cut, 'SHELF-1', 'notch_dogbone').length, 0);
+  assert.deepEqual(shelf.cnc.marks, [
+    { layer: 'CORNER_4MM', from: [320, 200], to: [320, 160] },
+    { layer: 'CORNER_4MM', from: [320, 200], to: [360, 200] },
+  ]);
 });
 
 test('F7 · the plinth: untouched by a back notch, nw shorter at a front corner deeper than its setback', () => {
@@ -464,12 +485,18 @@ test('F7 · the T71 drawings: the part detail draws the L, the cut list lists th
   assert.ok(buildUnitCard(cut, { unitNum: '01', frontType: 'S', profile: P }), 'the unit card did not build');
 });
 
-test('F7 · the CNC export: the L outline and the dog-bone circle reach the DXF, the box boards as plain outlines', () => {
+test('F7 · the CNC export: the L outline and the CORNER_4MM marks reach the DXF, the box boards as plain outlines', () => {
   const files = buildUnitDxfFiles(cut, P);
   const topFile = files.find((f) => f.panelId === 'TOP');
   assert.ok(topFile, 'no DXF for the notched TOP');
+  // 17.10.2026 (D9): no dog-bone circle in the DXF any more; two OPEN two-point
+  // polylines on CORNER_4MM at the corner, the owner's own 4 mm program.
   const circles = topFile.entities.filter((e) => e.layer === P.puzzle.layers.dogbone && /circle/i.test(e.type || e.kind || ''));
-  assert.ok(circles.some((c) => Math.abs((c.r ?? c.radius ?? (c.d / 2)) - 4) < 1e-6), 'the notch dog bone is not a circle of the cutter\'s radius');
+  assert.equal(circles.length, 0, 'the notch dog bone is gone from the DXF');
+  const marks = topFile.entities.filter((e) => e.layer === 'CORNER_4MM');
+  assert.equal(marks.length, 2, 'two legs of the corner mark');
+  for (const m of marks) { assert.equal(m.closed, false); assert.equal(m.pts.length, 2); }
+  assert.ok(topFile.dxf.includes('CORNER_4MM'), 'the layer is written');
   for (const id of ['RETURN', 'STEP']) assert.ok(files.some((f) => f.panelId === id), `${id} has no DXF`);
   assert.equal(files.find((f) => f.panelId === 'BUL').dxf.includes('PUZZLE_DOG_BONES'), false, 'BUL kept its back-edge dog bones');
 });

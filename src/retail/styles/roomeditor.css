@@ -258,6 +258,8 @@
 .pbi-re-w640 { width: 640px; }
 .pbi-re-w820 { width: 820px; }
 .pbi-re-w860 { width: 860px; }
+/* CHAT FIX 17.10.2026: Room setup 50 percent wider (PRO w-[1290px]); the owner: "caly modal poszerz prosze o 50 procent". */
+.pbi-re-w1290 { width: 1290px; }
 
 
 /* ─── THE ONE ADDED CONTROL NEVER PUSHES ONE OF PRO'S OFF THE EDGE ────────

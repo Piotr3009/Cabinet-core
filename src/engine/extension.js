@@ -41,9 +41,10 @@ import { sidePanelGeometry, socketPanelGeometry, rectGeometry } from './puzzle.j
 import { roundTo } from './format.js';
 import {
   notchProfile, notchP, notchJointInset, notchReplanSockets, notchReplanTabs, notchShift,
-  notchMinJointEdge, notchScrewAxis, notchScrewRow, notchRowBetween, notchRowsBetweenTabs,
-  notchRectOutline, notchDogbone, notchRot90Pts, notchCutterRadius, notchCornerOfOutline,
-  notchKitRefusal, outlineWithTabs, tabBones, dogboneHole, polygonArea, shiftGeom,
+  notchMinJointEdge, notchScrewAxis, notchScrewRow, notchRowsBetweenTabs,
+  notchRectOutline, notchDogbone, notchRot90Pts, notchCornerOfOutline,
+  notchKitRefusal, outlineWithTabs, tabBones, polygonArea, shiftGeom,
+  cornerMarkRecords,
 } from './notch.js';
 
 const EPS = 1e-6;
@@ -367,18 +368,15 @@ export function recessBackJoints(piece, window, cw, ch, g, ex0, ex1, ez0, ez1, t
       for (const x of recessRunRow(Math.max(a, x0), Math.min(b, x1), sfe)) scr.push([x - x0, S]);
     }
   }
-  const inPieceX = (x) => x > x0 - EPS && x < x1 + EPS;
-  const inPieceZ = (z) => z > z0 - EPS && z < z1 + EPS;
-  const column = (x) => {
-    for (const z of notchShift(notchScrewRow(bz1 - bz0, sfe), bz0)) if (z >= z0 && z <= z1) scr.push([x - x0, z - z0]);
-  };
-  const row = (z) => {
-    for (const x of notchShift(notchScrewRow(wx1 - wx0, sfe), wx0)) if (x >= x0 && x <= x1) scr.push([x - x0, z - z0]);
-  };
-  if (!recessLeftP(ex0) && inPieceX(wx0 - S)) column(wx0 - S);
-  if (!recessRightP(ex1, cw) && inPieceX(wx1 + S)) column(wx1 + S);
-  if (!recessFloorP(ez0) && inPieceZ(wz0 - S)) row(wz0 - S);
-  if (!recessTopP(ez1, ch) && inPieceZ(wz1 + S)) row(wz1 + S);
+  // 17.10.2026 (KIT_RECESS.lsp D17): NO hand-fix rows round the window. The
+  // columns G / 2 outside the window's vertical edges (into RETURN-L's and
+  // RETURN-R's ends) and the rows outside its horizontal edges (into the
+  // FLOOR's and the LID's front edges) are gone. The owner: *"nie bedziemy tam
+  // wkrecac wkretow, system wkrety dookola plecow w tym przypadku nie
+  // zadziala"*. The BACK keeps drawBACK's rows into the sides, the TOP and the
+  // BOTTOM exactly as above. The window and the band's interior stay bound
+  // for the record of what the rows were measured from.
+  void wx0; void wz0; void wx1; void wz1; void bz0; void bz1; void ix0; void ix1;
   return { LEFT, RIGHT, TOP, BOTTOM, SCREWS: scr };
 }
 
@@ -402,46 +400,39 @@ export function recessReturn(ch, g, ez0, ez1, ed) {
   return [ed - g, recessBz1(ez1, ch, g) - recessBz0(ez0, g)];
 }
 
-/** recess-return-screws: x along the depth from its FRONT end, z up. */
+/**
+ * recess-return-screws: NONE since 17.10.2026 (KIT_RECESS.lsp D17). It was a
+ * row into the BOTTOM's bump edge (z = S) when the band reached the floor and
+ * into the TOP's (z = h - S) when it reached the top, x along the depth from
+ * the RETURN's front end. The owner: *"bedziemy montowac na ciastka (w
+ * przyszlosci dodamy lamello) teraz nic"*.
+ */
 export function recessReturnScrews(ch, g, ez0, ez1, ed, K) {
-  const S = notchScrewAxis(g);
-  const sfe = notchP(K, 'puzzle.screwFromEnd');
-  const ret = recessReturn(ch, g, ez0, ez1, ed);
-  const out = [];
-  for (const x of notchScrewRow(ret[0], sfe)) {
-    if (recessFloorP(ez0)) out.push([x, S]);
-    if (recessTopP(ez1, ch)) out.push([x, ret[1] - S]);
-  }
-  return out;
+  void ch; void g; void ez0; void ez1; void ed; void K;
+  return [];
 }
 
 /** recess-lid: the FLOOR and the LID, [ex1 - ex0, ed - g]. */
 export function recessLid(g, ex0, ex1, ed) { return [ex1 - ex0, ed - g]; }
 
-/** recess-lid-screws: x from the left end, y along the depth from the FRONT edge. */
+/** recess-lid-screws: NONE since 17.10.2026 (D17; it was a column into the vertical board's end under or over each end, x = S and w - S). */
 export function recessLidScrews(g, ex0, ex1, ed, K) {
-  const S = notchScrewAxis(g);
-  const sfe = notchP(K, 'puzzle.screwFromEnd');
-  const lid = recessLid(g, ex0, ex1, ed);
-  const out = [];
-  for (const y of notchScrewRow(lid[1], sfe)) { out.push([S, y]); out.push([lid[0] - S, y]); }
-  return out;
+  void g; void ex0; void ex1; void ed; void K;
+  return [];
 }
 
 /** recess-ext-back: [ex1 - ex0, ez1 - ez0]. */
 export function recessExtBack(ex0, ex1, ez0, ez1) { return [ex1 - ex0, ez1 - ez0]; }
 
-/** recess-ext-back-screws: x from its left end, z up from its bottom end. */
+/**
+ * recess-ext-back-screws: NONE since 17.10.2026 (D17). It was a column into
+ * each vertical board's back end over bz0 .. bz1 at x = S and w - S, and
+ * drawBACK's row into each horizontal board's back edge at z = S and h - S.
+ * The owner: *"system wkrety dookola plecow w tym przypadku nie zadziala"*.
+ */
 export function recessExtBackScrews(cw, ch, g, ex0, ex1, ez0, ez1, K) {
-  const S = notchScrewAxis(g);
-  const sfe = notchP(K, 'puzzle.screwFromEnd');
-  const eb = recessExtBack(ex0, ex1, ez0, ez1);
-  const bz0 = recessBz0(ez0, g);
-  const bz1 = recessBz1(ez1, ch, g);
-  const out = [];
-  for (const z of notchShift(notchScrewRow(bz1 - bz0, sfe), bz0 - ez0)) { out.push([S, z]); out.push([eb[0] - S, z]); }
-  for (const x of notchRowBetween(0, eb[0], g, sfe)) { out.push([x, S]); out.push([x, eb[1] - S]); }
-  return out;
+  void cw; void ch; void g; void ex0; void ex1; void ez0; void ez1; void K;
+  return [];
 }
 
 // ── SHELVES ───────────────────────────────────────────────────────────────
@@ -451,15 +442,27 @@ export function recessShelfInP(zs, g, ch, ez0, ez1) {
   return zs >= recessBz0(ez0, g) - EPS && zs + g <= recessBz1(ez1, ch, g) + EPS;
 }
 
-/** recess-shelf-bump: [bw, bh, b0, b1, ext] in the SHELF's plan frame; `shelf` its parent plan rectangle. */
+/**
+ * recess-shelf-bump: [bw, bh, b0, b1, ext] in the SHELF's plan frame; `shelf` its parent plan rectangle.
+ * 17.10.2026 (KIT_RECESS.lsp D15): b0 and b1 are CLAMPED to the shelf, 0 .. bw.
+ * The owner's triangles: *"polki sie rozciagaja w ksztalcie trojkata do tylnej
+ * sciany ... nie zatrzymuje sie w calosci na dividerze"*. A bay shelf beside a
+ * divider sees only the part of the band it stands under (PROBE: WARDROBE 1000,
+ * divider at 500, band 300..1000: the left shelf 478 wide got b1 = 960 and a
+ * slant to (960, 0); the right one b0 = -200). A full-width shelf answers as before.
+ */
 export function recessShelfBump(cw, cd, g, ex0, ex1, ed, shelf, K) {
   const wc = notchP(K, 'carcass.shelfWidthClearance');
-  return [
-    shelf[2] - shelf[0], shelf[3] - shelf[1],
-    recessIx0(ex0, g) + wc / 2 - shelf[0],
-    recessIx1(ex1, g) - wc / 2 - shelf[0],
-    ed,
-  ];
+  const bw = shelf[2] - shelf[0];
+  const b0 = recessIx0(ex0, g) + wc / 2 - shelf[0];
+  const b1 = recessIx1(ex1, g) - wc / 2 - shelf[0];
+  return [bw, shelf[3] - shelf[1], Math.max(0, b0), Math.min(bw, b1), ed];
+}
+
+/** recess-shelf-grows-p (D15): does the clamped band reach this shelf at all? */
+export function recessShelfGrowsP(cw, cd, g, ex0, ex1, ed, shelf, K) {
+  const [, , b0, b1] = recessShelfBump(cw, cd, g, ex0, ex1, ed, shelf, K);
+  return b1 - b0 > 0;
 }
 
 export function recessShelfOutline(cw, cd, g, ex0, ex1, ed, shelf, K) {
@@ -634,7 +637,9 @@ export function extensionCarcass({
   if (!ext) return null;
   const pz = profile.puzzle;
   const K = notchProfile(profile);
-  const r = notchCutterRadius(notchP(K, 'cnc.toolDiameter'));
+  // 17.10.2026 (D18): the cutter radius no longer sets out a dog bone here; the
+  // re-entrant corners get the CORNER_4MM mark, `leg` long each way.
+  const leg = notchP(K, 'cnc.cornerMarkLeg');
   const { x0: ex0, x1: ex1, z0: ez0, z1: ez1, d: ed } = ext;
   const sideW = D - G;
   const tw = W - 2 * G;
@@ -690,17 +695,20 @@ export function extensionCarcass({
         ...fromFront(sj['TOP-SCREWS']).map((x) => ({ layer: pz.layers.screw, kind: 'screw', x, y: H - S, d: pz.screwDiameter })),
         ...fromFront(sj['BOTTOM-SCREWS']).map((x) => ({ layer: pz.layers.screw, kind: 'screw', x, y: S, d: pz.screwDiameter })),
       ];
-      let dbs = recessSideDogbones(D, H, G, ez0, ez1, ed, r, false);
+      // 17.10.2026 (D18): the CORNER_4MM marks on the NOMINAL outline (the tabs
+      // are not on it), no dog bone (recessSideDogbones stays the record).
+      let nominal = outline;
       if (bur) {
         // Into BUR's ORIGINAL frame (x from the old back edge): the bump at negative x.
         pts = pts.map(([x, y]) => [sideW - x, y]).reverse();
         bones = bones.map((k) => ({ ...k, x1: sideW - k.x2, x2: sideW - k.x1 }));
-        dbs = dbs.map(([x, y, rr]) => [sideW - x, y, rr]);
+        nominal = outline.map(([x, y]) => [sideW - x, y]).reverse();
       }
       geom = {
         outline: pts,
         pockets: [...bones, ...sockets.pockets],
-        holes: [...sockets.holes, ...screws, ...dbs.map((db) => dogboneHole(db, pz))],
+        holes: [...sockets.holes, ...screws],
+        marks: [...(side.cnc?.marks || []), ...cornerMarkRecords(nominal, leg, pz)],
       };
     }
     side.cnc = { ...side.cnc, ...geom, notch: sideCorners(H, bz0, bz1, ed, bur) };
@@ -725,7 +733,8 @@ export function extensionCarcass({
       { edge: 'top', at: tw, centres: tj.RIGHT.map((y) => drawnW - y) },
       { edge: 'left', at: ed, centres: tj.BACK },
     ];
-    const dbs = recessTopDogbones(W, D, G, ex0, ex1, ed, r).map(([x, y, rr]) => [drawnW - y, x, rr]);
+    // 17.10.2026 (D18): the CORNER_4MM marks on the drawn nominal outline, no
+    // dog bone (recessTopDogbones stays the record of where the circle stood).
     for (const id of [...(top ? ['TOP'] : []), ...(floor ? ['BOTTOM'] : [])]) {
       const p = byId(id);
       if (!p || p.part !== id) continue;
@@ -734,7 +743,8 @@ export function extensionCarcass({
         drawn_w: roundTo(drawnW, 4),
         outline: outlineWithTabs(drawn, runs, G, pz),
         pockets: tabBones(runs, G, pz),
-        holes: dbs.map((db) => dogboneHole(db, pz)),
+        holes: [],
+        marks: cornerMarkRecords(drawn, leg, pz),
         notch: null,
       };
       p.h = roundTo(drawnW, 4);
@@ -767,7 +777,6 @@ export function extensionCarcass({
       const pc = recessBackCut(piece, window);
       const kind = pc ? recessCutKind(pc, bw, bh) : null;
       const outline = recessBackOutline(piece, pc);
-      const dbs = recessBackDogbones(piece, pc, r);
       const bj = recessBackJoints(piece, window, W, H, G, ex0, ex1, ez0, ez1, topTabs, botTabs, sideTabs(left), sideTabs(right), K);
       const sockets = socketPanelGeometry({
         w: bw, h: bh, G, puzzle: pz,
@@ -787,7 +796,10 @@ export function extensionCarcass({
           ...cuts,
           ...(kind === 'window' ? [{ layer: RECESS_WINDOW_LAYER, x1: roundTo(pc[0], 4), y1: roundTo(pc[1], 4), x2: roundTo(pc[2], 4), y2: roundTo(pc[3], 4), depth: G }] : []),
         ],
-        holes: [...sockets.holes, ...dbs.map((db) => dogboneHole(db, pz))],
+        // 17.10.2026 (D18): a bite's two corners and a corner cut's one get the
+        // mark, not the bone; a window is a pocket with round corners (D9).
+        holes: sockets.holes,
+        marks: [...(parentCnc?.marks || []), ...cornerMarkRecords(outline, leg, pz)],
         notch: kind === 'corner' ? notchCornerOfOutline(outline, bw, bh) : null,
         ...(kind === 'bite' ? { bite: { x0: roundTo(pc[0], 4), y0: roundTo(pc[1], 4), x1: roundTo(pc[2], 4), y1: roundTo(pc[3], 4) } } : {}),
       };
@@ -861,26 +873,30 @@ export function extensionCarcass({
   board('EXT-BACK', 'RECESS-BACK', eb[0], eb[1], places['EXT-BACK'], recessExtBackScrews(W, H, G, ex0, ex1, ez0, ez1, K));
 
   // ── SHELVES IN THE BAND (D10) ──
+  // 17.10.2026 (D16): the FIXED shelf grows like any other (the owner: *"nie
+  // wycina polek fix, czego nie rozumiem"*; D10 names a shelf, any shelf). Its
+  // joint stays the parent's, on the parent's depth; nothing new in the grown part.
+  // 17.10.2026 (D15): a bay shelf takes only the part of the band it stands
+  // under (recessShelfBump clamps); one the band does not reach is the parent's.
   for (const p of panels) {
     if (p.part !== 'SHELF' || !p.box) continue;
-    if (p.meta?.variant === 'fixed') continue;
     if (!recessShelfInP(p.box.y, G, H, ez0, ez1)) continue;
     const { rect } = planOf(p.box, D);
     const shelf = [rect[0], rect[1], rect[2], rect[3]];
     const [bw, bh, b0, b1] = recessShelfBump(W, D, G, ex0, ex1, ed, shelf, K);
     if (!(b1 - b0 > 0)) continue;
     const plan = recessBumpOutline(bw, bh, b0, b1, ed);
-    const dbs = recessShelfDogbones(W, D, G, ex0, ex1, ed, shelf, K, r);
     // Drawn `depth x width`, x from its FRONT edge: the plan transposed (a
     // reflection), the walk reversed to stay anticlockwise (the notch's way).
     const drawn = recessTranspose(plan);
     const drawnW = bh + ed;
+    // 17.10.2026 (D18): the CORNER_4MM marks on the drawn outline, no dog bone.
     p.cnc = {
       ...p.cnc,
       drawn_w: roundTo(drawnW, 4),
       drawn_h: roundTo(bw, 4),
       outline: drawn,
-      holes: [...(p.cnc?.holes || []), ...dbs.map(([x, y, rr]) => dogboneHole([y, x, rr], pz))],
+      marks: [...(p.cnc?.marks || []), ...cornerMarkRecords(drawn, leg, pz)],
       notch: null,
     };
     p.h = roundTo(drawnW, 4);

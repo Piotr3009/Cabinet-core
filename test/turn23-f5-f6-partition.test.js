@@ -249,7 +249,9 @@ test('F5 + F6 — a cabinet with NO partition emits neither class, in any kit', 
     assert.equal(result.drills.some((d) => d.kind === 'partition_back_screw'), false, `${id} grew a back screw`);
     assert.equal(result.drills.some((d) => d.kind === 'biscuit_screw'), false, `${id} grew a biscuit screw`);
     for (const panel of result.panels) {
-      assert.equal(panel.cnc?.marks, undefined, `${id} ${panel.id} grew a mark`);
+      // CHAT FIX 17.10.2026: the L corner kits carry the owner's CORNER_4MM
+      // mark on their L boards by default; it is not a biscuit mark.
+      assert.deepEqual((panel.cnc?.marks || []).filter((m) => m.layer !== 'CORNER_4MM'), [], `${id} ${panel.id} grew a biscuit mark`);
     }
   }
 });

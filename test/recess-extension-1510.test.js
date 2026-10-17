@@ -307,9 +307,10 @@ test('CASE A through computeCabinet: every board the LISP names, to its numbers'
   // 17.10.2026, 14:15 (KIT_RECESS.lsp D19, "lustro bottom i top"): the TOP is
   // drawn from its UNDERSIDE, y from the BUR end: the corner (150, 310) of the
   // BOTTOM's frame is (150, 564 - 310) = (150, 254) on the TOP, its legs with it.
+  // 16:10 (KIT_RECESS.lsp D20, KIT_NOTCH.lsp D12): ONE open L per corner, walked
+  // the outline's way; the TOP's walk is the BOTTOM's mirrored and reversed.
   assert.deepEqual(top.cnc.marks, [
-    { layer: 'CORNER_4MM', from: [150, 254], to: [110, 254] },
-    { layer: 'CORNER_4MM', from: [150, 254], to: [150, 294] },
+    { layer: 'CORNER_4MM', from: [150, 294], to: [110, 254], pts: [[150, 294], [150, 254], [110, 254]] },
   ]);
   assert.deepEqual(top.meta.planOutline, [[0, 690], [564, 690], [564, 0], [310, 0], [310, 150], [0, 150]]);
   assert.deepEqual(top.box, { x: 18, y: 752, z: -132, w: 564, h: 18, d: 690 });
@@ -319,8 +320,7 @@ test('CASE A through computeCabinet: every board the LISP names, to its numbers'
   // ...and the BOTTOM, the same board in plan, keeps the ROT90 frame it always had.
   const bottom = panelOf(r, 'BOTTOM');
   assert.deepEqual(bottom.cnc.marks, [
-    { layer: 'CORNER_4MM', from: [150, 310], to: [110, 310] },
-    { layer: 'CORNER_4MM', from: [150, 310], to: [150, 270] },
+    { layer: 'CORNER_4MM', from: [110, 310], to: [150, 270], pts: [[110, 310], [150, 310], [150, 270]] },
   ]);
   const bCorners = bottom.cnc.outline.filter(([x, y]) => (x === 690 || x === 0 || x === 150) && (y === 0 || y === 564 || y === 310));
   assert.deepEqual(bCorners, [[690, 0], [690, 564], [0, 564], [0, 310], [150, 310], [150, 0]]);
@@ -339,8 +339,7 @@ test('CASE A through computeCabinet: every board the LISP names, to its numbers'
   // 17.10.2026 (D18): the shelf's corner (520, 310) drawn carries the mark, not the bone at (522.8284, 307.1716).
   assert.deepEqual((shelf.cnc.holes || []).filter((h) => h.kind === 'notch_dogbone'), []);
   assert.deepEqual(shelf.cnc.marks, [
-    { layer: 'CORNER_4MM', from: [520, 310], to: [520, 270] },
-    { layer: 'CORNER_4MM', from: [520, 310], to: [560, 310] },
+    { layer: 'CORNER_4MM', from: [520, 270], to: [560, 310], pts: [[520, 270], [520, 310], [560, 310]] },
   ]);
   assert.deepEqual(shelf.meta.planOutline, [[0, 670], [560, 670], [560, 0], [310, 0], [310, 150], [0, 150]]);
   // The added boards: plain, hand-fixed, standing behind the back. 17.10.2026
@@ -371,13 +370,12 @@ test('CASE B through computeCabinet: the window is a through pocket on RECESS_WI
   assert.deepEqual(r.csvLines.slice(7), ['01,RETURN-L,132,344,,0,0.045', '01,RETURN-R,132,344,,0,0.045', '01,FLOOR,380,132,,0,0.050', '01,LID,380,132,,0,0.050', '01,EXT-BACK,380,380,,0,0.144']);
   const shelf = panelOf(r, 'SHELF-1');
   assert.deepEqual(shelf.cnc.outline, [[520, 0], [520, 110], [670, 110], [670, 450], [520, 450], [520, 560], [0, 560], [0, 0]]);
-  // 17.10.2026 (D18): two corners, two marks each, no bones ((522.8284, 107.1716) and (522.8284, 452.8284) until then).
+  // 17.10.2026 (D18): two corners, no bones ((522.8284, 107.1716) and (522.8284, 452.8284) until then);
+  // 16:10 (D20): one open L per corner, walked the outline's way.
   assert.deepEqual((shelf.cnc.holes || []).filter((h) => h.kind === 'notch_dogbone'), []);
   assert.deepEqual(shelf.cnc.marks, [
-    { layer: 'CORNER_4MM', from: [520, 110], to: [520, 70] },
-    { layer: 'CORNER_4MM', from: [520, 110], to: [560, 110] },
-    { layer: 'CORNER_4MM', from: [520, 450], to: [560, 450] },
-    { layer: 'CORNER_4MM', from: [520, 450], to: [520, 490] },
+    { layer: 'CORNER_4MM', from: [520, 70], to: [560, 110], pts: [[520, 70], [520, 110], [560, 110]] },
+    { layer: 'CORNER_4MM', from: [560, 450], to: [520, 490], pts: [[560, 450], [520, 450], [520, 490]] },
   ]);
   for (const id of ['BUL', 'BUR', 'TOP', 'BOTTOM']) assert.equal(panelOf(r, id).cnc.outline.length, panelOf(computeCabinet(BUD, P), id).cnc.outline.length, `${id} is the parent's`);
   // The layer is a machine contract: ACI 52, a pocket, drawn through.

@@ -329,7 +329,8 @@
 ;;;               (65 864 125 882) (-18 739 0 799) (-18 65 0 125)
 ;;;   relief      circle r 4 at (542.8284 542.8284); room (560.8284 560.8284)
 ;;;               NOT DRAWN since 17.10.2026; in its place
-;;;   corner mark (540 540)-(580 540) and (540 540)-(540 580) on CORNER_4MM
+;;;   corner mark one open L (580 540) -> (540 540) -> (540 580) on CORNER_4MM
+;;;               (16:10; until then two legs leaving the corner)
 ;;;
 ;;; SHELF-L
 ;;;   frame       plan: local (X, Y) = (room x - 18, room y - 18)
@@ -337,7 +338,7 @@
 ;;;   bounding    862 x 862, arm depth 520 (KIT_BUD wysSHELF 558 - 18 - 20)
 ;;;   area        626080 mm2, front edges 342 + 342 = 684
 ;;;   relief      circle r 4 at (522.8284 522.8284), NOT DRAWN since 17.10.2026
-;;;   corner mark (520 520)-(560 520) and (520 520)-(520 560) on CORNER_4MM
+;;;   corner mark one open L (560 520) -> (520 520) -> (520 560) on CORNER_4MM
 ;;;
 ;;; BACK-A   900 x 770, drawBACK. Frame local X = room x (0 at the room corner).
 ;;;   edge sockets (both ends)  Y 95, 385, 675
@@ -611,13 +612,17 @@
     v))
 
 ;;; The L's one re-entrant vertex is v3 (section 1), and its two edges are
-;;; the fronts v2->v3 and v3->v4. The marks: ((v3 a) (v3 b)), a along the
-;;; front toward v2, b along the front toward v4, each `leg` long or the
-;;; front's own length. In the board's own frame; the ROT90 lay turns them.
+;;; the fronts v2->v3 and v3->v4. The mark (17.10.2026, 16:10, the owner:
+;;; *"jeden L wektor ... obok linii"*; KIT_NOTCH.lsp D12): ONE open L
+;;; (a v3 b), a along the front toward v2 (the edge the outline arrives by),
+;;; b along the front toward v4 (the edge it leaves by), each `leg` long or
+;;; the front's own length, walked in the outline's own direction so the
+;;; waste is on one side of the whole mark. Until 16:10 two legs ((v3 a)
+;;; (v3 b)), both leaving the corner. In the board's own frame; the ROT90 lay
+;;; turns them.
 (defun CL:cornerMarks (pts leg / v)
   (setq v (nth 3 pts))
-  (list (list v (CL:legPoint v (nth 2 pts) leg))
-        (list v (CL:legPoint v (nth 4 pts) leg))))
+  (list (list (CL:legPoint v (nth 2 pts) leg) v (CL:legPoint v (nth 4 pts) leg))))
 
 ;;; The CORNER_4MM layer: COMMON's createCNCLayers predates it and is
 ;;; untouched, so this file makes it when it is missing (ACI 53, as
@@ -626,11 +631,18 @@
   (if (null (tblsearch "LAYER" "CORNER_4MM"))
     (command "._LAYER" "_N" "CORNER_4MM" "_C" "53" "CORNER_4MM" "")))
 
+;;; An OPEN LWPOLYLINE (COMMON's makePolyline writes a closed one, 70 = 1).
+(defun CL:openPline (layer pts / entData pt)
+  (setq entData (list '(0 . "LWPOLYLINE") '(100 . "AcDbEntity") (cons 8 layer)
+                      '(100 . "AcDbPolyline") (cons 90 (length pts)) '(70 . 0)))
+  (foreach pt pts (setq entData (append entData (list (cons 10 pt)))))
+  (entmake entData))
+
+;;; 16:10: each mark is one open L (a v b), ONE polyline, in its order.
 (defun CL:drawCornerMarks (x0 y0 marks / m)
   (if marks (CL:ensureCornerLayer))
   (foreach m marks
-    (drawLine "CORNER_4MM" (+ x0 (car (car m))) (+ y0 (cadr (car m)))
-                           (+ x0 (car (cadr m))) (+ y0 (cadr (cadr m))))))
+    (CL:openPline "CORNER_4MM" (mapcar '(lambda (p) (list (+ x0 (car p)) (+ y0 (cadr p)))) m))))
 
 ;;;========================================
 ;;; D. THE KIT_BUD TAB, WALKED ONTO ANY EDGE
@@ -942,7 +954,7 @@
       (drawRect "PUZZLE_DOG_BONES" (+ x0 (nth 0 r)) (+ y0 (nth 1 r)) (+ x0 (nth 2 r)) (+ y0 (nth 3 r)))))
   ;; 17.10.2026: the corner marks through the same turn, no relief circle.
   (CL:drawCornerMarks x0 y0
-    (mapcar '(lambda (m) (list (CL:rot90Pt (car m) spanY) (CL:rot90Pt (cadr m) spanY)))
+    (mapcar '(lambda (m) (mapcar '(lambda (p) (CL:rot90Pt p spanY)) m))
             (CL:cornerMarks nominal (CL:cornerMarkLeg))))
   (setq arm (car (nth 3 nominal)))
   (setq lbl (CL:rot90Pt (list (/ arm 2.0) (/ arm 2.0)) spanY))

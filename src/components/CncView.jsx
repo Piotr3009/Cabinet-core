@@ -12,6 +12,7 @@ import { panelLabelBlock, panelNoteBlock } from '../engine/cnc/dxf.js';
 import { useElementSize, useSheetView } from '../lib/sheetView.js';
 import { projectLabelPlan } from '../lib/partLabels.js';
 import { edgeArrowGeometry } from '../engine/partNumbers.js';
+import { markPoints } from '../engine/marks.js';
 import { partRollovers } from '../engine/cnc/rollover.js';
 // Turn 38 (F5/F10): an arc on the sheet is its own chord run — one reading of
 // an arc in this app, and it lives with the objects.
@@ -896,20 +897,21 @@ function Part({
           outline so a 70 mm mark reads at sheet zoom, where it is the only
           thing in a set that has any length. */}
       {(cnc.marks || []).filter((m) => visible(m.layer)).map((m, i) => {
-        const [x1, y1] = toSheet(place, m.from[0], m.from[1]);
-        const [x2, y2] = toSheet(place, m.to[0], m.to[1]);
+        // 17.10.2026 (16:10): a mark is an open walk (engine/marks.js); the
+        // corner mark is one L of three points, drawn point to point.
+        const walk = markPoints(m).map(([mx, my]) => toSheet(place, mx, my).join(',')).join(' ');
         const id = `mark-${(cnc.marks || []).indexOf(m)}`;
         return (
           <g key={`m${i}`}>
-            <line
-              x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke={colourOf(m.layer)} strokeWidth={hovered(id) ? 4 : 2} strokeLinecap="round"
+            <polyline
+              points={walk} fill="none"
+              stroke={colourOf(m.layer)} strokeWidth={hovered(id) ? 4 : 2} strokeLinecap="round" strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
             />
             {/* A line has no area to point at: the grace is its stroke width. */}
-            <line
-              x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke="transparent" strokeWidth={Math.max(graceMm, 2 * mmPerPx)} strokeLinecap="round"
+            <polyline
+              points={walk} fill="none"
+              stroke="transparent" strokeWidth={Math.max(graceMm, 2 * mmPerPx)} strokeLinecap="round" strokeLinejoin="round"
               data-cnc-feature={id}
               {...hoverProps(id)}
             />

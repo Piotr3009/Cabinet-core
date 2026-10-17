@@ -65,66 +65,68 @@ test('the leg is a PROFILE number (40, the owner\'s "okolo 40") and the layer is
 
 // ─── THE CORNER MARK LAW (notch-corner-marks) ───────────────────────────────
 
-test('cornerMarksOf: a rectangle has no re-entrant corner; an L has one, two legs of 40 along its two edges', () => {
+test('cornerMarksOf: a rectangle has no re-entrant corner; an L has one, ONE open L of 40 and 40 walked the outline\'s way', () => {
   assert.deepEqual(cornerMarksOf([[0, 0], [100, 0], [100, 50], [0, 50]], 40), []);
   // KIT_NOTCH.lsp section I: the golden TOP, drawTOP_ROT90 frame.
   const rot = notchRot90Pts(notchTopOutline(600, 558, G, 200, 200, 'BL'), 540);
   assert.deepEqual(rot, [[540, 0], [540, 564], [0, 564], [0, 200], [200, 200], [200, 0]]);
-  assert.deepEqual(cornerMarksOf(rot, 40), [[[200, 200], [160, 200]], [[200, 200], [200, 160]]]);
-  // The walk's direction does not matter: the same corner, the same legs, clockwise.
-  assert.deepEqual(cornerMarksOf([...rot].reverse(), 40).map(([a, b]) => [a, b]).sort(), [[[200, 200], [160, 200]], [[200, 200], [200, 160]]].sort());
+  // 16:10 (KIT_NOTCH.lsp D12, the owner: "jeden L wektor ... obok linii"): in
+  // along the edge the outline arrives by, the corner, out along the edge it
+  // leaves by. Until then two legs, both leaving the corner.
+  assert.deepEqual(cornerMarksOf(rot, 40), [[[160, 200], [200, 200], [200, 160]]]);
+  // Clockwise, the same corner is walked the other way round: the waste stays on the walk's right.
+  assert.deepEqual(cornerMarksOf([...rot].reverse(), 40), [[[200, 160], [200, 200], [160, 200]]]);
   assert.ok(signedArea2(rot) > 0 && signedArea2([...rot].reverse()) < 0);
 });
 
-test('a leg is never longer than its edge: a 30 deep notch gets a 30 leg along that edge, 40 along the other', () => {
+test('a leg is never longer than its edge: a 30 deep notch gets a 30 arm along that edge, 40 along the other', () => {
   const small = [[0, 0], [564, 0], [564, 540], [200, 540], [200, 510], [0, 510]];
-  assert.deepEqual(cornerMarksOf(small, 40), [[[200, 510], [200, 540]], [[200, 510], [160, 510]]]);
+  assert.deepEqual(cornerMarksOf(small, 40), [[[200, 540], [200, 510], [160, 510]]]);
   assert.deepEqual(legPoint([0, 0], [0, 10], 40), [0, 10]);
   assert.deepEqual(legPoint([0, 0], [0, 100], 40), [0, 40]);
   const recs = cornerMarkRecords(small, 40, P.puzzle);
   assert.deepEqual(recs, [
-    { layer: 'CORNER_4MM', from: [200, 510], to: [200, 540] },
-    { layer: 'CORNER_4MM', from: [200, 510], to: [160, 510] },
+    { layer: 'CORNER_4MM', from: [200, 540], to: [160, 510], pts: [[200, 540], [200, 510], [160, 510]] },
   ]);
 });
 
-test('the puzzle tabs are not corners: the mark is read off the NOMINAL outline, so a tabbed TOP carries exactly two legs', () => {
+test('the puzzle tabs are not corners: the mark is read off the NOMINAL outline, so a tabbed TOP carries exactly one L', () => {
   const r = computeCabinet({ ...defaultParamsFor('BUD', P), width: 600, notch: { corner: 'BL', w: 200, d: 200, h: 0 } }, P);
   const top = panelOf(r, 'TOP');
   assert.ok(top.cnc.outline.length > 6, 'the drawn outline carries the tabs');
   // 14:15 ("lustro bottom i top"): the TOP is drawn from its underside, y from
   // the BUR end, so the rear-left corner (200, 200) of the BOTTOM's frame is
   // (200, 564 - 200) = (200, 364) on the TOP (KIT_NOTCH.lsp D11, the NUMBERS).
+  // 16:10 (D12): one open L per corner, walked the outline's way; the TOP's
+  // walk is the BOTTOM's mirrored and reversed, so the waste stays on its right.
   assert.deepEqual(marksOf(top), [
-    { layer: 'CORNER_4MM', from: [200, 364], to: [160, 364] },
-    { layer: 'CORNER_4MM', from: [200, 364], to: [200, 404] },
+    { layer: 'CORNER_4MM', from: [200, 404], to: [160, 364], pts: [[200, 404], [200, 364], [160, 364]] },
   ]);
   assert.deepEqual(marksOf(panelOf(r, 'BOTTOM')), [
-    { layer: 'CORNER_4MM', from: [200, 200], to: [160, 200] },
-    { layer: 'CORNER_4MM', from: [200, 200], to: [200, 160] },
+    { layer: 'CORNER_4MM', from: [160, 200], to: [200, 160], pts: [[160, 200], [200, 200], [200, 160]] },
   ], 'the BOTTOM keeps the frame it always had');
   assert.equal(bonesOf(r, 'TOP').length, 0, 'no dog bone drilled (the owner: "nie dodawaj wiercenia")');
   assert.ok(top.cnc.pockets.length > 0, 'the puzzle dog bones beside the tabs are still there ("niech tak bedzie")');
-  // ...and the DXF carries the two legs as OPEN polylines on CORNER_4MM.
+  // ...and the DXF carries the L as ONE OPEN three-point polyline on CORNER_4MM.
   const file = buildUnitDxfFiles(r, P).find((f) => f.panelId === 'TOP');
   const legs = file.entities.filter((e) => e.layer === 'CORNER_4MM');
-  assert.equal(legs.length, 2);
-  for (const l of legs) { assert.equal(l.closed, false); assert.equal(l.pts.length, 2); }
+  assert.equal(legs.length, 1);
+  assert.deepEqual(legs[0], { type: 'poly', layer: 'CORNER_4MM', closed: false, pts: [[200, 404], [200, 364], [160, 364]] });
 });
 
 test('"na wszystkich": the L corner\'s TOP-L and SHELF-L carry the marks from v3 along the two fronts, no relief circle', () => {
   const r = computeCabinet({ ...defaultParamsFor('CORNER_L_BASE', P), shelves: 1 }, P);
+  // 16:10 (KIT_CORNER_L.lsp, with KIT_NOTCH.lsp D12): one open L, in along
+  // the front toward v2, the inner corner, out along the front toward v4.
   for (const id of ['TOP-L', 'BOTTOM-L']) {
     const p = panelOf(r, id);
     assert.deepEqual(p.cnc.curves, [], 'the relief circle is no longer drawn');
     assert.deepEqual(marksOf(p), [
-      { layer: 'CORNER_4MM', from: [540, 540], to: [580, 540] },
-      { layer: 'CORNER_4MM', from: [540, 540], to: [540, 580] },
+      { layer: 'CORNER_4MM', from: [580, 540], to: [540, 580], pts: [[580, 540], [540, 540], [540, 580]] },
     ]);
   }
   assert.deepEqual(marksOf(panelOf(r, 'SHELF-L-1')), [
-    { layer: 'CORNER_4MM', from: [520, 520], to: [560, 520] },
-    { layer: 'CORNER_4MM', from: [520, 520], to: [520, 560] },
+    { layer: 'CORNER_4MM', from: [560, 520], to: [520, 560], pts: [[560, 520], [520, 520], [520, 560]] },
   ]);
   assert.match(read('reference/lisp/KIT_CORNER_L.lsp'), /\(defun CL:cornerMarks \(pts leg/, 'LISP first');
 });
@@ -172,7 +174,8 @@ test('through computeCabinet: no shelf carries a point beyond its own end any mo
     for (const [x] of p.meta.planOutline) assert.ok(x >= 0 && x <= p.w, `${p.id}: a point at x ${x} on a ${p.w} wide shelf`);
   }
   assert.equal(s1.area_m2, 0.28004, 'the left shelf\'s area is its own: 478 x 530 + 178 x 150, not the triangle\'s 0.444');
-  assert.deepEqual(marksOf(s1).length, 2, 'the left shelf\'s one corner, two legs');
+  assert.deepEqual(marksOf(s1).length, 1, 'the left shelf\'s one corner, one L (16:10)');
+  assert.equal(marksOf(s1)[0].pts.length, 3);
   assert.deepEqual(marksOf(s2), [], 'the right shelf has no corner');
 });
 

@@ -95,7 +95,10 @@ test('mirrorTopCnc: outline, pockets, marks, holes, the notch corner (and its `a
     outline: [[540, 0], [540, 564], [0, 564], [0, 200], [200, 200], [200, 0]],
     pockets: [{ layer: 'PUZZLE_DOG_BONES', x1: 65, y1: -18, x2: 125, y2: 0 }],
     holes: [{ kind: 'screw', layer: 'SCREWS_3MM', x: 50, y: 100, d: 3 }],
-    marks: [{ layer: 'CORNER_4MM', from: [200, 200], to: [160, 200] }],
+    marks: [
+      { layer: 'CORNER_4MM', from: [160, 200], to: [200, 160], pts: [[160, 200], [200, 200], [200, 160]] },
+      { layer: 'BISCUIT_4MM', from: [477, 441], to: [407, 441] },
+    ],
     notch: { fc: 'x0y0', nw: 200, nh: 200, also: { fc: 'x1y0', nw: 50, nh: 60 } },
     bite: { x0: 100, y0: 0, x1: 300, y1: 150 },
   };
@@ -103,7 +106,12 @@ test('mirrorTopCnc: outline, pockets, marks, holes, the notch corner (and its `a
   assert.deepEqual(m.outline, [[200, 564], [200, 364], [0, 364], [0, 0], [540, 0], [540, 564]]);
   assert.deepEqual(m.pockets, [{ layer: 'PUZZLE_DOG_BONES', x1: 65, y1: 564, x2: 125, y2: 582 }]);
   assert.deepEqual(m.holes, [{ kind: 'screw', layer: 'SCREWS_3MM', x: 50, y: 464, d: 3 }]);
-  assert.deepEqual(m.marks, [{ layer: 'CORNER_4MM', from: [200, 364], to: [160, 364] }]);
+  // A mark is an open walk: mirrored AND reversed, as the outline is, so the
+  // corner mark's waste stays on its right (16:10, KIT_NOTCH.lsp D12).
+  assert.deepEqual(m.marks, [
+    { layer: 'CORNER_4MM', from: [200, 404], to: [160, 364], pts: [[200, 404], [200, 364], [160, 364]] },
+    { layer: 'BISCUIT_4MM', from: [407, 123], to: [477, 123] },
+  ]);
   assert.deepEqual(m.notch, { fc: 'x0y1', nw: 200, nh: 200, also: { fc: 'x1y1', nw: 50, nh: 60 } });
   assert.deepEqual(m.bite, { x0: 100, y0: 414, x1: 300, y1: 564 });
   assert.deepEqual([m.rotated, m.drawn_w, m.drawn_h], [true, 540, 564], 'the frame\'s own numbers do not move');
@@ -179,7 +187,9 @@ test('the divider\'s head set on the TOP: y 423 on the underside drawing (NUMBER
   const bottomScrews = r.drills.filter((d) => d.panel === 'BOTTOM' && d.kind === 'divider_screw');
   assert.deepEqual(topScrews.map((d) => [d.x, d.y]), [[488.5, 423], [395.5, 423], [144.5, 423], [51.5, 423]]);
   assert.deepEqual(bottomScrews.map((d) => [d.x, d.y]), [[488.5, 441], [395.5, 441], [144.5, 441], [51.5, 441]]);
-  assert.deepEqual(top.cnc.marks.map((m) => [m.from, m.to]), [[[477, 423], [407, 423]], [[133, 423], [63, 423]]]);
+  // The TOP's marks are mirrored and reversed walks (the BOTTOM reads 477 -> 407).
+  assert.deepEqual(top.cnc.marks.map((m) => [m.from, m.to]), [[[407, 423], [477, 423]], [[63, 423], [133, 423]]]);
+  assert.deepEqual(bottom.cnc.marks.map((m) => [m.from, m.to]), [[[477, 441], [407, 441]], [[133, 441], [63, 441]]]);
   const pt = panelPlacement(top);
   const pb = panelPlacement(bottom);
   for (let i = 0; i < 4; i += 1) {
@@ -197,8 +207,9 @@ test('the notch: the TOP\'s corner "x0y1" at (200, 364), the BOTTOM\'s "x0y0" at
   const bottom = panelOf(r, 'BOTTOM');
   assert.deepEqual(top.cnc.notch, { fc: 'x0y1', nw: 200, nh: 200 });
   assert.deepEqual(bottom.cnc.notch, { fc: 'x0y0', nw: 200, nh: 200 });
-  assert.deepEqual(top.cnc.marks[0].from, [200, 364]);
-  assert.deepEqual(bottom.cnc.marks[0].from, [200, 200]);
+  // 16:10 (D12): the corner mark is one L through the corner, walked the outline's way.
+  assert.deepEqual(top.cnc.marks[0].pts, [[200, 404], [200, 364], [160, 364]]);
+  assert.deepEqual(bottom.cnc.marks[0].pts, [[160, 200], [200, 200], [200, 160]]);
   const a = to3(panelPlacement(top), 200, 364);
   const b = to3(panelPlacement(bottom), 200, 200);
   assert.deepEqual([a[0], a[2]], [b[0], b[2]], 'the re-entrant corner stands over the same plan point');
@@ -206,7 +217,7 @@ test('the notch: the TOP\'s corner "x0y1" at (200, 364), the BOTTOM\'s "x0y0" at
   // The DXF of the TOP carries the mark where the underside frame puts it.
   const file = buildUnitDxfFiles(r, P).find((f) => f.panelId === 'TOP');
   const legs = file.entities.filter((e) => e.layer === 'CORNER_4MM');
-  assert.deepEqual(legs.map((e) => e.pts[0]), [[200, 364], [200, 364]]);
+  assert.deepEqual(legs.map((e) => e.pts), [[[200, 404], [200, 364], [160, 364]]], 'one open L in the TOP\'s file');
 });
 
 test('the Cabineo TOP: OUTSIDE FACE UP as before, the y = 0 end is the BUR joint now, the export frame follows', () => {

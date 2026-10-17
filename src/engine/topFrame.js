@@ -40,6 +40,7 @@
 // TOP and keeps its own frame (KIT_CORNER_L.lsp).
 
 import { panelPlacement } from './joinery.js';
+import { markPoints } from './marks.js';
 
 const EPS = 1e-9;
 const r4 = (v) => Math.round(v * 1e4) / 1e4;
@@ -161,12 +162,19 @@ export function mirrorTopCnc(cnc) {
   const out = { ...cnc };
   if (Array.isArray(cnc.outline)) out.outline = mirrorOutline(cnc.outline, H);
   if (Array.isArray(cnc.pockets)) out.pockets = cnc.pockets.map((p) => mirrorPocket(p, H));
+  // A mark is an OPEN WALK (engine/marks.js; the corner mark of KIT_NOTCH.lsp
+  // D12 walks the outline's way, waste on its right), so the mirror reverses
+  // it as it reverses the outline: the walk keeps its side.
   if (Array.isArray(cnc.marks)) {
-    out.marks = cnc.marks.map((m) => ({
-      ...m,
-      from: [m.from[0], r4(H - m.from[1])],
-      to: [m.to[0], r4(H - m.to[1])],
-    }));
+    out.marks = cnc.marks.map((m) => {
+      const pts = markPoints(m).map(([x, y]) => [x, r4(H - y)]).reverse();
+      return {
+        ...m,
+        from: pts[0],
+        to: pts[pts.length - 1],
+        ...(Array.isArray(m.pts) ? { pts } : {}),
+      };
+    });
   }
   if (Array.isArray(cnc.holes)) out.holes = cnc.holes.map((h) => ({ ...h, y: r4(H - Number(h.y)), ...(h.meta ? { meta: mirrorRecordMeta(h.meta, H) } : {}) }));
   if (Array.isArray(cnc.curves)) out.curves = cnc.curves.map((c) => mirrorArc(c, H));

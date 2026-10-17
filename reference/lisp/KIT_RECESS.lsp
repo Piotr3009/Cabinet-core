@@ -293,6 +293,13 @@
 ;;;     corner mark moves with it. Applied once, at the end, to the whole
 ;;;     drawing (the engine's topFrame.js); every routine of this file keeps
 ;;;     drawing in the ROT90 frame. The NUMBERS carry both boards.
+;;; D20 THE CORNER MARK IS ONE OPEN L (16:10). The owner, cutting the marks
+;;;     in VCarve with the tool beside the line: *"jeden L wektor ... obok
+;;;     linii."*  KIT_NOTCH.lsp D12 states it: notch-corner-marks, the
+;;;     routine every corner of this file is marked by, returns ONE open
+;;;     three-point polyline per re-entrant corner, walked the outline's way
+;;;     (in, corner, out; material on the left), drawn by
+;;;     notch-draw-corner-marks as an open LWPOLYLINE. The NUMBERS below.
 ;;;
 ;;;========================================
 ;;; 4. NOT HERE
@@ -847,11 +854,12 @@
 ;;;     (150 564) (150 254) (0 254) (0 0) (690 0) (690 564)
 ;;;   CORNER MARK (D18, 17.10.2026; until then a dog bone, circle r 4 at
 ;;;   (307.1716 542.8284) plan): the corner (310 540) plan = (150 310) ROT90
-;;;   = (150 254) on the TOP; two open lines on CORNER_4MM, 40 long, each
-;;;   along one of the two outline edges that meet there:
-;;;     plan   (310 540)-(270 540) and (310 540)-(310 580)
-;;;     BOTTOM (150 310)-(110 310) and (150 310)-(150 270)
-;;;     TOP    (150 254)-(110 254) and (150 254)-(150 294)
+;;;   = (150 254) on the TOP; D20 (16:10): ONE open L on CORNER_4MM, 40 each
+;;;   arm, walked the outline's way (in, corner, out):
+;;;     plan   (310 580) -> (310 540) -> (270 540)
+;;;     BOTTOM (110 310) -> (150 310) -> (150 270)
+;;;     TOP    (150 294) -> (150 254) -> (110 254)
+;;;   (until 16:10 two legs each leaving the corner)
 ;;;   area 0.305 -> 0.343 m2 (342660 mm2)
 ;;; BACK       600 x 770    328 x 770, carcass x 0..328
 ;;;   (0 0) (328 0) (328 770) (0 770); no dog bone
@@ -861,8 +869,9 @@
 ;;; SHELF-1    560 x 520    560 x 670 less 310 x 150 at the rear-left
 ;;;   shelf frame (x from its left edge, 2 clear of the RETURN as of BUL):
 ;;;     (0 0) (560 0) (560 670) (310 670) (310 520) (0 520)
-;;;   CORNER MARK (D18): corner (310 520); (310 520)-(270 520) and
-;;;   (310 520)-(310 560) on CORNER_4MM (was a dog bone at (307.1716 522.8284))
+;;;   CORNER MARK (D18, D20): corner (310 520); one open L on CORNER_4MM
+;;;   (310 560) -> (310 520) -> (270 520) (was a dog bone at (307.1716 522.8284);
+;;;   until 16:10 two legs leaving the corner)
 ;;;   area 0.291 -> 0.329 m2 (328700 mm2)
 ;;;   A FIXED shelf at the same height: x from 18 (no clearance), 564 wide,
 ;;;   clr 0: (0 0) (564 0) (564 670) (310 670) (310 520) (0 520), one corner,

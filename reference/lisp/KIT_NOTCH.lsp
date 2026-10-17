@@ -309,6 +309,24 @@
 ;;;     Applied once, at the end, to the whole drawing (the engine's
 ;;;     topFrame.js); every routine of this file keeps drawing in the ROT90
 ;;;     frame. The NUMBERS block carries both boards.
+;;; D12 THE CORNER MARK IS ONE OPEN L, WALKED THE OUTLINE'S WAY (16:10). The
+;;;     owner, cutting the marks in VCarve with the tool BESIDE the line:
+;;;     *"VCarve tnie mi raz z jednej strony, raz z drugiej ... trzeba bedzie
+;;;     to ciac jako jeden L wektor"*; *"jeden, zaczynajacy sie od lewej do
+;;;     srodka i kontynuacja na prawo, jeden L wektor; 2: obok linii."*  D9's
+;;;     two legs both LEFT the corner, so along one the waste lay to the
+;;;     right of the walk and along the other to the left, and one offset
+;;;     setting put the cutter in the board on one leg. The mark is now ONE
+;;;     open polyline of three points, (a v b): in along the edge the outline
+;;;     arrives by, through the re-entrant corner, out along the edge it
+;;;     leaves by, in the OUTLINE's own direction (anticlockwise, material on
+;;;     the left, waste on the right), so the offset that profiles the
+;;;     outline's outside profiles the mark's waste side on both arms, and
+;;;     VCarve has nothing to join and nothing to reverse. notch-corner-marks
+;;;     returns ((a v b) ...), one per corner; notch-draw-corner-marks draws
+;;;     an OPEN LWPOLYLINE (notch-open-pline; COMMON's makePolyline closes).
+;;;     The engine's record: { layer, from: a, to: b, pts: [a, v, b] }, and
+;;;     the TOP's mirror (D11) reverses the walk with the outline.
 ;;;
 ;;;========================================
 ;;; 4. THE JOINTS ON A SHORTENED EDGE
@@ -625,6 +643,11 @@
       (list (+ (car v) (* dx k)) (+ (cadr v) (* dy k))))
     v))
 
+;;; notch-corner-marks (D12, 17.10.2026): ((a v b) ...), ONE open L per
+;;; re-entrant vertex v, in the outline's own direction: a is `leg` back along
+;;; the edge the outline arrives by (p -> v), b `leg` on along the edge it
+;;; leaves by (v -> q). Until 16:10 it returned two legs ((v a) (v b)), both
+;;; leaving the corner.
 (defun notch-corner-marks (pts leg / n i p v q cross orient out)
   (setq n (length pts) i 0 out nil
         orient (notch-signed-area2 pts))
@@ -634,8 +657,7 @@
       (setq cross (- (* (- (car v) (car p)) (- (cadr q) (cadr v)))
                      (* (- (cadr v) (cadr p)) (- (car q) (car v)))))
       (if (< (* cross orient) 0.0)
-        (setq out (append out (list (list v (notch-leg-point v p leg))
-                                    (list v (notch-leg-point v q leg))))))
+        (setq out (append out (list (list (notch-leg-point v p leg) v (notch-leg-point v q leg))))))
       (setq i (1+ i))))
   out)
 
@@ -1231,11 +1253,13 @@
 ;;;     the corner "x0y1"
 ;;;   CORNER MARK (D9, 17.10.2026; until then a dog bone, circle r 4 at
 ;;;   (197.1716 342.8284) plan, (197.1716 197.1716) ROT90): the corner
-;;;   (200 340) plan = (200 200) ROT90 = (200 364) on the TOP, two open lines
-;;;   on CORNER_4MM, 40 long:
-;;;     plan   (200 340)-(160 340) and (200 340)-(200 380)
-;;;     BOTTOM (200 200)-(200 160) and (200 200)-(160 200)
-;;;     TOP    (200 364)-(200 404) and (200 364)-(160 364)
+;;;   (200 340) plan = (200 200) ROT90 = (200 364) on the TOP; D12 (16:10):
+;;;   ONE open L on CORNER_4MM, 40 each arm, walked the outline's way:
+;;;     plan   (200 380) -> (200 340) -> (160 340)
+;;;     BOTTOM (160 200) -> (200 200) -> (200 160)
+;;;     TOP    (200 404) -> (200 364) -> (160 364)
+;;;   (until 16:10 two legs each leaving the corner: (200 200)-(200 160) and
+;;;   (200 200)-(160 200) on the BOTTOM)
 ;;;   area 0.305 -> 0.265 m2 (264560 mm2)
 ;;; BACK       600 x 770    400 x 770, carcass x 200..600
 ;;;   original frame (200 0) (600 0) (600 770) (200 770)
@@ -1248,8 +1272,9 @@
 ;;; SHELF-1    560 x 520    560 x 520 less 200 x 200 at the rear-left
 ;;;   shelf frame (2 clear of the RETURN as of BUL):
 ;;;     (0 0) (560 0) (560 520) (200 520) (200 320) (0 320)
-;;;   CORNER MARK (D9): corner (200 320); (200 320)-(160 320) and
-;;;   (200 320)-(200 360) on CORNER_4MM (was a dog bone at (197.1716 322.8284))
+;;;   CORNER MARK (D9, D12): corner (200 320); one open L on CORNER_4MM
+;;;   (200 360) -> (200 320) -> (160 320) (was a dog bone at (197.1716 322.8284);
+;;;   until 16:10 two legs leaving the corner)
 ;;; PLINTH     600          untouched (a back notch is behind its line 50..68)
 ;;;
 ;;; WHICH JOINTS MOVE (the PROBE table F7 asks for):
@@ -1309,11 +1334,18 @@
 
 ;;; The corner marks of one board, drawn: open two-point lines on CORNER_4MM,
 ;;; the owner's own 4 mm program ("wtedy ja wytne ten korner").
+;;; An OPEN LWPOLYLINE (COMMON's makePolyline writes a closed one, 70 = 1).
+(defun notch-open-pline (layer pts / entData pt)
+  (setq entData (list '(0 . "LWPOLYLINE") '(100 . "AcDbEntity") (cons 8 layer)
+                      '(100 . "AcDbPolyline") (cons 90 (length pts)) '(70 . 0)))
+  (foreach pt pts (setq entData (append entData (list (cons 10 pt)))))
+  (entmake entData))
+
+;;; D12: each mark is one open L (a v b), drawn as ONE polyline, in its order.
 (defun notch-draw-corner-marks (x0 y0 marks / m)
   (if marks (notch-ensure-corner-layer))
   (foreach m marks
-    (drawLine "CORNER_4MM" (+ x0 (car (car m))) (+ y0 (cadr (car m)))
-                           (+ x0 (car (cadr m))) (+ y0 (cadr (cadr m))))))
+    (notch-open-pline "CORNER_4MM" (notch-offset-pts m x0 y0))))
 
 ;;; One board: the PARENT's rectangle on NOTCH_MANUAL (grey, a note layer the
 ;;; machine never reads), the NOTCHED outline on OUTLINE, its CORNER MARKS on

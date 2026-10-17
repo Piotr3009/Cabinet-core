@@ -38,6 +38,7 @@ import {
 // FACE UP by partLabel.js. Only `isOutsideFace` is asked here.
 import { isOutsideFace } from '../cabineo.js';
 import { edgeArrowGeometry } from '../partNumbers.js';
+import { markPoints } from '../marks.js';
 
 // ─── Low-level R12 serialiser (shape from production-core/dxfWriter.js) ───
 
@@ -407,8 +408,11 @@ export function panelEntities(panel, drills, { unitNum, profile, label = null })
   // already (`70 = 0` here against `1` for a pocket), so nothing about the
   // writer changes. A panel with no marks contributes nothing, which is what
   // keeps every existing file byte-identical.
+  // 17.10.2026 (16:10): a mark is an open walk; the corner mark is ONE L
+  // polyline of three points in the outline's direction (KIT_NOTCH.lsp D12),
+  // so VCarve profiles its waste side on both arms with one setting.
   for (const mark of panel.cnc?.marks || []) {
-    entities.push({ type: 'poly', layer: mark.layer, closed: false, pts: [mark.from, mark.to] });
+    entities.push({ type: 'poly', layer: mark.layer, closed: false, pts: markPoints(mark) });
   }
 
   // ─── TURN 38 (CLAUDE.md F10): EVERYTHING DRAWN EXPORTS ────────────────────

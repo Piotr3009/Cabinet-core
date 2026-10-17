@@ -32,6 +32,7 @@ import { resolveLayer } from '../partLayers.js';
 import { arcSweep } from '../partObjects.js';
 import { dimensionEntities } from './frontElevation.js';
 import { formatMm } from '../format.js';
+import { markLength, markPoints } from '../marks.js';
 import { slopeNoteText } from '../cnc/partLabel.js';
 import { frontDecorationLayers } from '../cnc/frontOperations.js';
 import { frontDecorationDetailNote, frontDecorationMachinings } from './frontDecorationDrawing.js';
@@ -85,14 +86,19 @@ export function partMachinings(panel, drills = [], profile = null, userLayers = 
   });
 
   (cnc.marks || []).forEach((m, i) => {
-    const length = Math.hypot(m.to[0] - m.from[0], m.to[1] - m.from[1]);
+    // 17.10.2026 (16:10): a mark is an open walk (engine/marks.js); its
+    // points are drawn, its ends and its length read off the whole walk.
+    const pts = markPoints(m);
+    const length = markLength(m);
+    const mid = pts[Math.floor(pts.length / 2)];
     out.push({
       id: `mark-${i}`,
       kind: 'mark',
       layer: m.layer,
       from: m.from,
       to: m.to,
-      at: [(m.from[0] + m.to[0]) / 2, (m.from[1] + m.to[1]) / 2],
+      ...(pts.length > 2 ? { pts } : {}),
+      at: pts.length > 2 ? [mid[0], mid[1]] : [(m.from[0] + m.to[0]) / 2, (m.from[1] + m.to[1]) / 2],
       ...(m.opId ? { opId: m.opId } : {}),
       note: `${label(m.layer)} · ${formatMm(length)} cutter pass from ${formatMm(m.from[0])}, ${formatMm(m.from[1])}`,
     });

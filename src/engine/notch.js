@@ -30,6 +30,7 @@ import {
   tabPointsLeft, tabPointsUp, tabPointsDown,
 } from './puzzle.js';
 import { areaM2, metres, roundTo } from './format.js';
+import { markPoints, shiftMark } from './marks.js';
 
 const EPS = 1e-6;
 
@@ -248,7 +249,15 @@ export function legPoint(v, w, leg) {
   return [v[0] + dx * k, v[1] + dy * k];
 }
 
-/** notch-corner-marks: [[v, a], [v, b], ...], two per re-entrant vertex, in the outline's frame. */
+/**
+ * notch-corner-marks: [[a, v, b], ...], ONE open L per re-entrant vertex v, in
+ * the outline's frame and the outline's own direction: a is `leg` back along
+ * the edge the outline arrives by (p -> v), b `leg` on along the edge it
+ * leaves by (v -> q). KIT_NOTCH.lsp D12 (17.10.2026, 16:10, the owner:
+ * *"jeden L wektor ... obok linii"*): until then two legs [v, a], [v, b],
+ * both leaving the corner, and an offset that profiled one leg's waste side
+ * profiled the other leg's board side.
+ */
 export function cornerMarksOf(pts, leg) {
   const n = (pts || []).length;
   const orient = signedArea2(pts);
@@ -259,22 +268,22 @@ export function cornerMarksOf(pts, leg) {
     const v = pts[i];
     const q = pts[(i + 1) % n];
     const cross = (v[0] - p[0]) * (q[1] - v[1]) - (v[1] - p[1]) * (q[0] - v[0]);
-    if (cross * orient < 0) {
-      out.push([v, legPoint(v, p, leg)]);
-      out.push([v, legPoint(v, q, leg)]);
-    }
+    if (cross * orient < 0) out.push([legPoint(v, p, leg), v, legPoint(v, q, leg)]);
   }
   return out;
 }
 
-/** The marks as `cnc.marks` records (the biscuit mark's own shape: layer, from, to), rounded. */
+/**
+ * The marks as `cnc.marks` records: the biscuit mark's shape (layer, from,
+ * to) with `pts`, the whole open walk (engine/marks.js markPoints), rounded.
+ */
 export function cornerMarkRecords(pts, leg, pz) {
   const layer = pz?.layers?.cornerMark || 'CORNER_4MM';
-  return cornerMarksOf(pts, leg).map(([a, b]) => ({
-    layer,
-    from: [roundTo(a[0], 4), roundTo(a[1], 4)],
-    to: [roundTo(b[0], 4), roundTo(b[1], 4)],
-  }));
+  const r = ([x, y]) => [roundTo(x, 4), roundTo(y, 4)];
+  return cornerMarksOf(pts, leg).map((walk) => {
+    const rounded = walk.map(r);
+    return { layer, from: rounded[0], to: rounded[rounded.length - 1], pts: rounded };
+  });
 }
 
 /** notch-rot90-pts: a plan outline into drawTOP_ROT90's frame (x' from the BACK edge). */
@@ -1396,7 +1405,7 @@ export function notchDrills({ cut, panels, drills, legs }) {
   for (const p of panels) {
     const rg = regions[p.id];
     if (!rg || !Array.isArray(p.cnc?.marks)) continue;
-    p.cnc.marks = p.cnc.marks.filter((m) => !(inRegion(rg, m.from?.[0], m.from?.[1]) || inRegion(rg, m.to?.[0], m.to?.[1])));
+    p.cnc.marks = p.cnc.marks.filter((m) => !markPoints(m).some((q) => inRegion(rg, q?.[0], q?.[1])));
   }
   // Re-origin the shortened boards.
   for (const [id, ro] of Object.entries(cut.reorigin)) {
@@ -1405,7 +1414,7 @@ export function notchDrills({ cut, panels, drills, legs }) {
     const g = shiftGeom(p.cnc, -ro.dx, 0);
     p.cnc = {
       ...p.cnc, ...g, drawn_w: roundTo(ro.run, 4),
-      ...(Array.isArray(p.cnc.marks) ? { marks: p.cnc.marks.map((m) => ({ ...m, from: [m.from[0] - ro.dx, m.from[1]], to: [m.to[0] - ro.dx, m.to[1]] })) } : {}),
+      ...(Array.isArray(p.cnc.marks) ? { marks: p.cnc.marks.map((m) => shiftMark(m, -ro.dx, 0)) } : {}),
     };
     for (const d of drills) if (d.panel === id) d.x = roundTo(d.x - ro.dx, 4);
     if (ro.kind === 'side') {

@@ -25,6 +25,8 @@
 // Pure functions — no React, no three.js. Coordinates are the unit's own
 // millimetres, the frame every `panel.box` is already in.
 
+import { markPoints } from './marks.js';
+
 /**
  * The layer names of the joint system this project is cut with.
  *
@@ -582,8 +584,9 @@ export function jointLines(panel, layers, { xray = false, lift = 0.4, drills = [
   for (const mark of cnc.marks || []) {
     out.push({
       kind: 'biscuit',
-      points: [place(placement, mark.from[0], mark.from[1], lift),
-        place(placement, mark.to[0], mark.to[1], lift)],
+      // 17.10.2026 (16:10): a mark is an open walk (the corner mark's L), so
+      // every point of it, through the one reader (engine/marks.js).
+      points: markPoints(mark).map(([x, y]) => place(placement, x, y, lift)),
     });
   }
   for (const hole of drills) {
@@ -632,7 +635,7 @@ export function machiningLines(panel, drills = [], { lift = 0.4 } = {}) {
     out.push({
       kind: 'mark',
       layer: m.layer,
-      points: [place(placement, m.from[0], m.from[1], lift), place(placement, m.to[0], m.to[1], lift)],
+      points: markPoints(m).map(([x, y]) => place(placement, x, y, lift)),
     });
   }
   for (const hole of drills) {

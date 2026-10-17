@@ -1545,12 +1545,15 @@ function PartDrawing({
               );
             }
             if (m.kind === 'mark') {
+              // 17.10.2026 (16:10): a mark is an open walk; the corner mark is
+              // one L of three points (engine/marks.js), drawn point to point.
+              const walk = polylinePath(m.pts || [m.from, m.to], false);
               return (
                 <g key={m.id}>
-                  <line x1={m.from[0]} y1={m.from[1]} x2={m.to[0]} y2={m.to[1]} strokeLinecap="round" {...common} />
-                  <line
-                    x1={m.from[0]} y1={m.from[1]} x2={m.to[0]} y2={m.to[1]}
-                    strokeLinecap="round" strokeWidth={grace * 2} {...hit} stroke="transparent"
+                  <path d={walk} fill="none" strokeLinecap="round" strokeLinejoin="round" {...common} />
+                  <path
+                    d={walk} fill="none"
+                    strokeLinecap="round" strokeLinejoin="round" strokeWidth={grace * 2} {...hit} stroke="transparent"
                   />
                 </g>
               );
@@ -1920,11 +1923,15 @@ function featureBox(drawing, id) {
     };
   }
   if (m.kind === 'mark') {
+    // 17.10.2026 (16:10): boxed by every point of the walk (an L has a corner).
+    const pts = m.pts || [m.from, m.to];
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
     return {
-      x: Math.min(m.from[0], m.to[0]),
-      y: Math.min(m.from[1], m.to[1]),
-      w: Math.abs(m.to[0] - m.from[0]),
-      h: Math.abs(m.to[1] - m.from[1]),
+      x: Math.min(...xs),
+      y: Math.min(...ys),
+      w: Math.max(...xs) - Math.min(...xs),
+      h: Math.max(...ys) - Math.min(...ys),
     };
   }
   // Turn 38: a drawn run or curve is boxed by its own points, which is the one

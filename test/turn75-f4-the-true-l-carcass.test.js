@@ -259,20 +259,20 @@ test('ENGINE · the base L cuts the seven boards where the LISP puts them (left 
     // wiercenia, dodaj jeden layer w samym cornerze okolo 40 mm w kazda strone
     // na linii L shape i nazwij to corner 4 mm"*: the inner corner's relief
     // circle (r 4 at (542.8284, 542.8284) until that morning; cornerL.js still
-    // computes it as the record) is not drawn; two CORNER_4MM marks from v3
-    // (540, 540) along the two fronts stand in its place.
+    // computes it as the record) is not drawn; a CORNER_4MM mark at v3
+    // (540, 540) along the two fronts stands in its place. 16:10 (*"jeden L
+    // wektor ... obok linii"*): ONE open L walked the outline's way, in along
+    // the front from v2, the corner, out along the front toward v4.
     assert.deepEqual(p.cnc.curves, []);
     assert.deepEqual(p.cnc.marks, [
-      { layer: 'CORNER_4MM', from: [540, 540], to: [580, 540] },
-      { layer: 'CORNER_4MM', from: [540, 540], to: [540, 580] },
+      { layer: 'CORNER_4MM', from: [580, 540], to: [540, 580], pts: [[580, 540], [540, 540], [540, 580]] },
     ]);
     assert.equal(p.cnc.holes.length, 0, 'the L boards carry no hole (KIT_BUD drills no leg plate)');
   }
   const shelf = panelOf(r, 'SHELF-L-1');
   assert.deepEqual(shelf.cnc.outline, [[0, 0], [862, 0], [862, 520], [520, 520], [520, 862], [0, 862]]);
   assert.deepEqual(shelf.cnc.marks, [
-    { layer: 'CORNER_4MM', from: [520, 520], to: [560, 520] },
-    { layer: 'CORNER_4MM', from: [520, 520], to: [520, 560] },
+    { layer: 'CORNER_4MM', from: [560, 520], to: [520, 560], pts: [[560, 520], [520, 520], [520, 560]] },
   ], 'the shelf\'s inner corner, the same law');
   assert.equal(shelf.area_m2, 0.62608);
   // CARCASS m2 (no shelves): 3.487

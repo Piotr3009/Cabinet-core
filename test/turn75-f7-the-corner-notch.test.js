@@ -135,12 +135,12 @@ test('F7 · NUMBERS: the keep-out, the TOP and BOTTOM outline, the dog bone, the
     // PUZZLE_DOG_BONES until that morning) is not drilled; the corner (200, 200)
     // ROT90 carries two CORNER_4MM marks, 40 long, along the two edges.
     assert.equal(drillsOf(cut, id, 'notch_dogbone').length, 0, 'no dog bone is drilled at the notch');
+    // 16:10 (D12, the owner: "jeden L wektor ... obok linii"): ONE open L per
+    // corner, in, corner, out, the outline's way; the TOP's walk mirrored and reversed.
     assert.deepEqual(p.cnc.marks, topSide ? [
-      { layer: 'CORNER_4MM', from: [200, 364], to: [160, 364] },
-      { layer: 'CORNER_4MM', from: [200, 364], to: [200, 404] },
+      { layer: 'CORNER_4MM', from: [200, 404], to: [160, 364], pts: [[200, 404], [200, 364], [160, 364]] },
     ] : [
-      { layer: 'CORNER_4MM', from: [200, 200], to: [160, 200] },
-      { layer: 'CORNER_4MM', from: [200, 200], to: [200, 160] },
+      { layer: 'CORNER_4MM', from: [160, 200], to: [200, 160], pts: [[160, 200], [200, 200], [200, 160]] },
     ]);
     assert.equal(P.puzzle.layers.cornerMark, 'CORNER_4MM');
   }
@@ -292,8 +292,7 @@ test('F7 · NUMBERS: SHELF-1 takes the outline, 2 clear of the RETURN, and its d
   // drawn corner (320, 200) carries the two CORNER_4MM marks.
   assert.equal(drillsOf(cut, 'SHELF-1', 'notch_dogbone').length, 0);
   assert.deepEqual(shelf.cnc.marks, [
-    { layer: 'CORNER_4MM', from: [320, 200], to: [320, 160] },
-    { layer: 'CORNER_4MM', from: [320, 200], to: [360, 200] },
+    { layer: 'CORNER_4MM', from: [320, 160], to: [360, 200], pts: [[320, 160], [320, 200], [360, 200]] },
   ]);
 });
 
@@ -516,8 +515,9 @@ test('F7 · the CNC export: the L outline and the CORNER_4MM marks reach the DXF
   const circles = topFile.entities.filter((e) => e.layer === P.puzzle.layers.dogbone && /circle/i.test(e.type || e.kind || ''));
   assert.equal(circles.length, 0, 'the notch dog bone is gone from the DXF');
   const marks = topFile.entities.filter((e) => e.layer === 'CORNER_4MM');
-  assert.equal(marks.length, 2, 'two legs of the corner mark');
-  for (const m of marks) { assert.equal(m.closed, false); assert.equal(m.pts.length, 2); }
+  // 16:10 (D12): ONE open three-point polyline, the L walked the outline's way.
+  assert.equal(marks.length, 1, 'one L of the corner mark');
+  assert.deepEqual(marks[0], { type: 'poly', layer: 'CORNER_4MM', closed: false, pts: [[200, 404], [200, 364], [160, 364]] });
   assert.ok(topFile.dxf.includes('CORNER_4MM'), 'the layer is written');
   for (const id of ['RETURN', 'STEP']) assert.ok(files.some((f) => f.panelId === id), `${id} has no DXF`);
   assert.equal(files.find((f) => f.panelId === 'BUL').dxf.includes('PUZZLE_DOG_BONES'), false, 'BUL kept its back-edge dog bones');

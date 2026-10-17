@@ -32,7 +32,7 @@ import {
   notchBackJoints, notchStepScrews, notchReturnScrews, notchLidScrews, notchTopOutline, notchRot90Pts,
 } from '../src/engine/notch.js';
 import {
-  recessShelfBump, recessShelfGrowsP, recessShelfOutline, recessBackJoints, recessWindow, recessBackPieces,
+  recessShelfBump, recessShelfGrowsP, recessShelfOutline, recessShelfClr, recessBackJoints, recessWindow, recessBackPieces,
   recessReturnScrews, recessLidScrews, recessExtBackScrews,
 } from '../src/engine/extension.js';
 import { cncLayer } from '../src/engine/cnc/layers.js';
@@ -176,10 +176,52 @@ test('a FIXED shelf in the band grows like any other (D10 names a shelf, any she
   const fixed = panelOf(r, 'SHELF-3');
   assert.equal(fixed.meta.variant, 'fixed');
   assert.equal(fixed.h, 680, '530 + 150');
-  assert.deepEqual(fixed.meta.planOutline, [[0, 680], [482, 680], [482, 0], [302, 0], [302, 150], [0, 150]]);
+  // The fixed shelf runs from BUL's face (x 18, 482 wide to the divider); its bump
+  // starts at the RETURN's inner face, carcass 318 = 300 in its own frame (clr 0).
+  assert.deepEqual(fixed.meta.planOutline, [[0, 680], [482, 680], [482, 0], [300, 0], [300, 150], [0, 150]]);
   assert.ok(r.derived.extension.grown.includes('SHELF-3'));
   assert.doesNotMatch(read('src/engine/extension.js'), /if \(p\.meta\?\.variant === 'fixed'\) continue;/, 'the engine\'s own exception is gone');
   assert.match(read('reference/lisp/KIT_RECESS.lsp'), /D16 THE FIXED SHELF GROWS TOO/);
+});
+
+// The owner's second look, 10:35: *"dlaczego polka fix ma minimalne zalamanie?
+// ma kat i nawet dodales corner layer? why?"*  A fixed shelf has no clearance,
+// so its bump is cut with clr 0 (the notch's grammar), not the adjustable's 2.
+test('a FIXED shelf in a full-width band is a plain deeper board: no 2 mm step, no corner, no mark (D16, 10:35)', () => {
+  // The band runs the full width and stops at 1800 (a band over the whole
+  // carcass is a deeper carcass at store level, refused here by design).
+  const W = defaultParamsFor('WARDROBE', P);
+  const r = computeCabinet({
+    ...W,
+    width: 700,
+    items: [{ kind: 'shelf', variant: 'fixed', pos_mm: 1000 }, { kind: 'shelf', variant: 'adjustable', pos_mm: 1400 }],
+    extension: { x0: 0, x1: 700, z0: 0, z1: 1800, d: 150 },
+  }, P);
+  assert.deepEqual(r.warnings, []);
+  const fixed = panelOf(r, 'SHELF-1');
+  const adj = panelOf(r, 'SHELF-2');
+  assert.equal(fixed.meta.variant, 'fixed');
+  assert.equal(fixed.w, 664, 'face to face, 700 - 36');
+  assert.equal(fixed.h, 680, '530 + 150');
+  // The PROBE before the fix: (0,680) (664,680) (664,150) (662,150) (662,0) (2,0) (2,150) (0,150) and four marks.
+  assert.deepEqual(fixed.meta.planOutline, [[0, 680], [664, 680], [664, 0], [0, 0]]);
+  assert.deepEqual(fixed.cnc.outline.length, 4, 'four corners, nothing re-entrant');
+  assert.deepEqual(marksOf(fixed), [], 'no corner, no CORNER_4MM mark');
+  assert.ok(r.derived.extension.grown.includes('SHELF-1'));
+  // The adjustable shelf beside it answers as before: 660 wide, 2 clear, a plain rectangle too.
+  assert.equal(adj.w, 660);
+  assert.deepEqual(adj.meta.planOutline, [[0, 680], [660, 680], [660, 0], [0, 0]]);
+  assert.deepEqual(marksOf(adj), []);
+  // The helpers: clr is the shelf's own, 0 fixed, wc / 2 adjustable; the default is the adjustable's.
+  assert.equal(recessShelfClr(true, K), 0);
+  assert.equal(recessShelfClr(false, K), 2);
+  assert.deepEqual(recessShelfBump(700, 568, G, 0, 700, 150, [18, 20, 682, 550], K, 0), [664, 530, 0, 664, 150]);
+  assert.deepEqual(recessShelfBump(700, 568, G, 0, 700, 150, [20, 20, 680, 550], K), [660, 530, 0, 660, 150]);
+  // CASE A of the LISP's NUMBERS, the fixed line: x from 18, 564 wide, bump from 310 to its end, one corner.
+  assert.deepEqual(recessShelfOutline(600, 558, G, 310, 600, 150, [18, 20, 582, 540], K, 0),
+    [[0, 0], [564, 0], [564, 670], [310, 670], [310, 520], [0, 520]]);
+  assert.match(read('reference/lisp/KIT_RECESS.lsp'), /\(defun recess-shelf-clr \(fixed\)/);
+  assert.match(read('reference/lisp/KIT_RECESS.lsp'), /\(defun recess-shelf-bump \(cw cd g ex0 ex1 ed shelf clr /);
 });
 
 // ─── D17 · NO SCREW BETWEEN THE BACK AND THE BOX ────────────────────────────

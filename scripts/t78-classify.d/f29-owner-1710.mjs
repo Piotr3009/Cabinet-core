@@ -24,7 +24,10 @@ export const LICENSED = {
       + 'and the box: recessBackJoints drops the window\'s columns and rows, recessReturnScrews / recessLidScrews / '
       + 'recessExtBackScrews answer []; D18 the CORNER_4MM marks (cornerMarkRecords on the nominal outline) replace the '
       + 'dog-bone holes on the grown sides, TOP, BOTTOM, the BACK\'s bite and corner, and the shelves. The *Dogbones '
-      + 'routines stay as the record',
+      + 'routines stay as the record. 10:35 (D16, the owner\'s second look: "dlaczego polka fix ma minimalne '
+      + 'zalamanie? ma kat i nawet dodales corner layer?"): recessShelfClr, the bump cut with the shelf\'s OWN '
+      + 'clearance (0 fixed, wc / 2 adjustable, the notch\'s grammar); a fixed shelf\'s bump runs end to end, no '
+      + '2 mm step, no mark',
   },
   'src/engine/notch.js': {
     why: 'Owner 17.10.2026: D9 the corner mark: signedArea2, legPoint, cornerMarksOf (re-entrant vertices of a nominal '
@@ -71,7 +74,8 @@ export const LICENSED = {
 
 export const LISP = {
   'reference/lisp/KIT_RECESS.lsp': 'Owner 17.10.2026: D15 (recess-shelf-bump clamped to the shelf, recess-shelf-grows-p), '
-    + 'D16 (the fixed shelf grows: D10 names any shelf), D17 (recess-back-joints without the window rows; '
+    + 'D16 (the fixed shelf grows: D10 names any shelf; 10:35: recess-shelf-clr, the bump takes the shelf\'s own '
+    + 'clearance, 0 fixed, so no 2 mm step on a fixed shelf), D17 (recess-back-joints without the window rows; '
     + 'recess-return-screws, recess-lid-screws, recess-ext-back-screws nil), D18 (notch-corner-marks on CORNER_4MM in '
     + 'recess-draw-board, the dog bones retired from the drawing), D9 and D11 pointed at them, the NUMBERS block (CASE A, '
     + 'CASE B, the new CASE C of the PROBE)',

@@ -443,34 +443,48 @@ export function recessShelfInP(zs, g, ch, ez0, ez1) {
 }
 
 /**
- * recess-shelf-bump: [bw, bh, b0, b1, ext] in the SHELF's plan frame; `shelf` its parent plan rectangle.
+ * recess-shelf-clr (KIT_RECESS.lsp D16): the clearance a shelf is cut with,
+ * the notch's grammar (notchShelfCut's clr): wc / 2 adjustable, 0 FIXED.
+ */
+export function recessShelfClr(fixed, K) {
+  return fixed ? 0 : notchP(K, 'carcass.shelfWidthClearance') / 2;
+}
+
+/**
+ * recess-shelf-bump: [bw, bh, b0, b1, ext] in the SHELF's plan frame; `shelf` its parent plan rectangle,
+ * `clr` the shelf's OWN clearance from each RETURN or side (recessShelfClr).
  * 17.10.2026 (KIT_RECESS.lsp D15): b0 and b1 are CLAMPED to the shelf, 0 .. bw.
  * The owner's triangles: *"polki sie rozciagaja w ksztalcie trojkata do tylnej
  * sciany ... nie zatrzymuje sie w calosci na dividerze"*. A bay shelf beside a
  * divider sees only the part of the band it stands under (PROBE: WARDROBE 1000,
  * divider at 500, band 300..1000: the left shelf 478 wide got b1 = 960 and a
  * slant to (960, 0); the right one b0 = -200). A full-width shelf answers as before.
+ * 17.10.2026 (D16, the owner's second look): until 10:35 the bump took wc / 2
+ * for EVERY shelf, so a FIXED shelf (x from the side's face, no clearance) got a
+ * bump 2 mm short of each end: two 2 mm steps with corner marks on a plain board
+ * (PROBE: WARDROBE 700, band 0..700: SHELF-1 fixed 664 wide, plan (0,680)
+ * (664,680) (664,150) (662,150) (662,0) (2,0) (2,150) (0,150), four marks). With
+ * clr 0 its bump runs end to end: (0,680) (664,680) (664,0) (0,0), no mark.
  */
-export function recessShelfBump(cw, cd, g, ex0, ex1, ed, shelf, K) {
-  const wc = notchP(K, 'carcass.shelfWidthClearance');
+export function recessShelfBump(cw, cd, g, ex0, ex1, ed, shelf, K, clr = recessShelfClr(false, K)) {
   const bw = shelf[2] - shelf[0];
-  const b0 = recessIx0(ex0, g) + wc / 2 - shelf[0];
-  const b1 = recessIx1(ex1, g) - wc / 2 - shelf[0];
+  const b0 = recessIx0(ex0, g) + clr - shelf[0];
+  const b1 = recessIx1(ex1, g) - clr - shelf[0];
   return [bw, shelf[3] - shelf[1], Math.max(0, b0), Math.min(bw, b1), ed];
 }
 
 /** recess-shelf-grows-p (D15): does the clamped band reach this shelf at all? */
-export function recessShelfGrowsP(cw, cd, g, ex0, ex1, ed, shelf, K) {
-  const [, , b0, b1] = recessShelfBump(cw, cd, g, ex0, ex1, ed, shelf, K);
+export function recessShelfGrowsP(cw, cd, g, ex0, ex1, ed, shelf, K, clr) {
+  const [, , b0, b1] = recessShelfBump(cw, cd, g, ex0, ex1, ed, shelf, K, clr);
   return b1 - b0 > 0;
 }
 
-export function recessShelfOutline(cw, cd, g, ex0, ex1, ed, shelf, K) {
-  return recessBumpOutline(...recessShelfBump(cw, cd, g, ex0, ex1, ed, shelf, K));
+export function recessShelfOutline(cw, cd, g, ex0, ex1, ed, shelf, K, clr) {
+  return recessBumpOutline(...recessShelfBump(cw, cd, g, ex0, ex1, ed, shelf, K, clr));
 }
 
-export function recessShelfDogbones(cw, cd, g, ex0, ex1, ed, shelf, K, r) {
-  const [bw, bh, b0, b1] = recessShelfBump(cw, cd, g, ex0, ex1, ed, shelf, K);
+export function recessShelfDogbones(cw, cd, g, ex0, ex1, ed, shelf, K, r, clr) {
+  const [bw, bh, b0, b1] = recessShelfBump(cw, cd, g, ex0, ex1, ed, shelf, K, clr);
   return recessBumpDogbones(bw, bh, b0, b1, r);
 }
 
@@ -878,12 +892,16 @@ export function extensionCarcass({
   // joint stays the parent's, on the parent's depth; nothing new in the grown part.
   // 17.10.2026 (D15): a bay shelf takes only the part of the band it stands
   // under (recessShelfBump clamps); one the band does not reach is the parent's.
+  // 17.10.2026 (D16, 10:35): the bump is cut with the shelf's OWN clearance,
+  // the notch's grammar: 0 for a FIXED shelf (it runs face to face), wc / 2 for
+  // an adjustable one. The owner: *"dlaczego polka fix ma minimalne zalamanie?"*
   for (const p of panels) {
     if (p.part !== 'SHELF' || !p.box) continue;
     if (!recessShelfInP(p.box.y, G, H, ez0, ez1)) continue;
     const { rect } = planOf(p.box, D);
     const shelf = [rect[0], rect[1], rect[2], rect[3]];
-    const [bw, bh, b0, b1] = recessShelfBump(W, D, G, ex0, ex1, ed, shelf, K);
+    const clr = recessShelfClr(p.meta?.variant === 'fixed', K);
+    const [bw, bh, b0, b1] = recessShelfBump(W, D, G, ex0, ex1, ed, shelf, K, clr);
     if (!(b1 - b0 > 0)) continue;
     const plan = recessBumpOutline(bw, bh, b0, b1, ed);
     // Drawn `depth x width`, x from its FRONT edge: the plan transposed (a

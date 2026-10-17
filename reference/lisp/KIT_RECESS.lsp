@@ -249,6 +249,10 @@
 ;;;     is gone; the fixed shelf's joint is the parent's, measured on the
 ;;;     parent's depth, nothing new in the grown part (D11's spirit: the
 ;;;     grown part is the joiner's). Proposed: the joint stays where it was.
+;;;     And its bump runs END TO END (10:35, the owner's second look): a fixed
+;;;     shelf is cut to the interior faces with no clearance, so its bump
+;;;     takes the notch's clr grammar, 0 for fixed, wc / 2 for adjustable
+;;;     (recess-shelf-clr); the 2 mm steps and their corner marks are gone.
 ;;; D17 NO SCREW BETWEEN THE BACK AND THE BOX. The owner 17.10.2026: *"to
 ;;;     masz wkrety na niej a to nie dobrze bo nie bedziemy tam wkrecac
 ;;;     wkretow, system wkrety dookola plecow w tym przypadku nie zadziala
@@ -734,35 +738,45 @@
 
 ;;; The shelf's bump: (bw bh b0 b1 ext) in the SHELF's plan frame (x from its
 ;;; left edge, y from its front edge), `shelf` the parent's plan rectangle
-;;; (x0 y0 x1 y1), wc / 2 clear of each RETURN or side (the notch's shelf
-;;; rect's own clearance, D10).
+;;; (x0 y0 x1 y1), `clr` clear of each RETURN or side: the shelf's OWN
+;;; clearance, the notch's grammar (notch-shelf-cut's clr): wc / 2 for an
+;;; adjustable shelf, 0 for a FIXED one, which is cut to the interior faces.
 ;;; 17.10.2026 (D15): b0 and b1 are CLAMPED to the shelf, 0 .. bw. A bay
 ;;; shelf beside a divider sees only the part of the band it stands under;
 ;;; one the band does not reach answers b1 <= b0 and is left the parent's
 ;;; (recess-shelf-grows-p). A full-width shelf answers exactly as before.
-(defun recess-shelf-bump (cw cd g ex0 ex1 ed shelf / wc bw b0 b1)
-  (setq wc (recess-p "carcass.shelfWidthClearance")
-        bw (- (caddr shelf) (car shelf))
-        b0 (- (+ (recess-ix0 ex0 g) (/ wc 2.0)) (car shelf))
-        b1 (- (- (recess-ix1 ex1 g) (/ wc 2.0)) (car shelf)))
+;;; 17.10.2026 (D16, the owner's second look, 10:35): until this hour the
+;;; routine took wc / 2 for EVERY shelf, so a fixed shelf's bump stopped 2 mm
+;;; short of each of its ends and the board carried two 2 mm steps with
+;;; corner marks on them (*"dlaczego polka fix ma minimalne zalamanie? ma
+;;; kat i nawet dodales corner layer?"*). With clr 0 its bump runs end to
+;;; end: a plain deeper board, no corner, no mark.
+(defun recess-shelf-bump (cw cd g ex0 ex1 ed shelf clr / bw b0 b1)
+  (setq bw (- (caddr shelf) (car shelf))
+        b0 (- (+ (recess-ix0 ex0 g) clr) (car shelf))
+        b1 (- (- (recess-ix1 ex1 g) clr) (car shelf)))
   (list bw (- (cadddr shelf) (cadr shelf))
         (max 0.0 b0)
         (min bw b1)
         ed))
 
+;;; The clearance a shelf is cut with: wc / 2 adjustable, 0 fixed (D16).
+(defun recess-shelf-clr (fixed)
+  (if fixed 0.0 (/ (recess-p "carcass.shelfWidthClearance") 2.0)))
+
 ;;; Does the clamped band reach this shelf at all? (D15)
-(defun recess-shelf-grows-p (cw cd g ex0 ex1 ed shelf / b)
-  (setq b (recess-shelf-bump cw cd g ex0 ex1 ed shelf))
+(defun recess-shelf-grows-p (cw cd g ex0 ex1 ed shelf clr / b)
+  (setq b (recess-shelf-bump cw cd g ex0 ex1 ed shelf clr))
   (> (- (cadddr b) (caddr b)) 0.0))
 
-(defun recess-shelf-outline (cw cd g ex0 ex1 ed shelf / b)
-  (setq b (recess-shelf-bump cw cd g ex0 ex1 ed shelf))
+(defun recess-shelf-outline (cw cd g ex0 ex1 ed shelf clr / b)
+  (setq b (recess-shelf-bump cw cd g ex0 ex1 ed shelf clr))
   (recess-bump-outline (car b) (cadr b) (caddr b) (cadddr b) (nth 4 b)))
 
 ;;; 17.10.2026 (D18): retired from the drawing, kept as the record; the shelf's
 ;;; corners are marked by notch-corner-marks on recess-shelf-outline.
-(defun recess-shelf-dogbones (cw cd g ex0 ex1 ed shelf r / b)
-  (setq b (recess-shelf-bump cw cd g ex0 ex1 ed shelf))
+(defun recess-shelf-dogbones (cw cd g ex0 ex1 ed shelf clr r / b)
+  (setq b (recess-shelf-bump cw cd g ex0 ex1 ed shelf clr))
   (recess-bump-dogbones (car b) (cadr b) (caddr b) (cadddr b) r))
 
 ;;;========================================
@@ -830,7 +844,11 @@
 ;;;   CORNER MARK (D18): corner (310 520); (310 520)-(270 520) and
 ;;;   (310 520)-(310 560) on CORNER_4MM (was a dog bone at (307.1716 522.8284))
 ;;;   area 0.291 -> 0.329 m2 (328700 mm2)
-;;;   A FIXED shelf at the same height answers the same (D16).
+;;;   A FIXED shelf at the same height: x from 18 (no clearance), 564 wide,
+;;;   clr 0: (0 0) (564 0) (564 670) (310 670) (310 520) (0 520), one corner,
+;;;   its mark (310 520)-(270 520) and (310 520)-(310 560) (D16).
+;;;   In a band from the left face (ex0 0) that shelf's bump starts at 0 and
+;;;   ends at 564: a plain deeper board, no corner (10:35, D16).
 ;;; PLINTH     600          untouched
 ;;;
 ;;; WHICH JOINTS MOVE:

@@ -183,10 +183,17 @@ test('R10 — a class with an EMPTY record has an empty picture, and that is par
       // belonged. It is back, so the sentence is corrected rather than
       // widened: a wieniec carries the divider's foot AND NOTHING ELSE, and
       // the picture bores exactly that — which is what R10 is for.
+      // ─── CHAT FIX 17.10.2026: THE OWNER'S SET ON THE DIVIDER'S ENDS ─────
+      // *"na dividerze mamy wiercenie 3 mm w bottom ale nie mamy w top ... i do
+      // tego nie mamy ciastek"*: an interactive divider's foot AND head take the
+      // T13 set (SKYLON_JOINTS_BISCUIT.lsp section I): four divider_screw per
+      // end on the BOTTOM and the TOP. The kit's DP keeps the LISP foot. Still
+      // the divider's joint and nothing else; the picture still bores exactly it.
       const drilled = result.drills.filter((d) => d.panel === panel.id);
-      assert.deepEqual(
-        [...new Set(drilled.map((d) => d.kind))].sort(), drilled.length ? ['partition_foot_screw'] : [],
-        `${job}/${panel.id}: a wieniec takes the divider's foot and nothing else`,
+      const kinds = [...new Set(drilled.map((d) => d.kind))].sort();
+      assert.ok(
+        kinds.every((k) => k === 'partition_foot_screw' || k === 'divider_screw'),
+        `${job}/${panel.id}: a wieniec takes the divider's foot or head and nothing else (${kinds.join(', ')})`,
       );
       assert.equal(
         sceneHoles(result, panel).length, drilled.length,

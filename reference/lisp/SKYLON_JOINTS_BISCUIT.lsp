@@ -519,5 +519,157 @@
 ;;; left on a biscuit BUD. (Before 15.10.2026 the back joint stayed: TOP and
 ;;; BOTTOM 24 points, the sides 34, the BACK whole.)
 
+;;;========================================
+;;; I. THE DIVIDER'S HEAD AND FOOT (the owner, 17.10.2026)
+;;;========================================
+;;; The owner, 17.10.2026, of a full-height divider: *"na dividerze mamy
+;;; wiercenie 3 mm w bottom ale nie mamy w top, a nie ma przeciez fix shelves
+;;; zeby divider sie zatrzymal, i do tego nie mamy ciastek"*; asked whether the
+;;; T13 set goes on the TOP and the BOTTOM in place of the two bare foot
+;;; screws: *"tak"*; of a fix shelf under or over a divider: *"jak mamy polke
+;;; fix to robisz tylko ciastka bez nawiertow"*; whatever the carcass joint
+;;; system (puzzle, dowel, Cabineo, biscuit), as the fix shelf's own joint is:
+;;; *"tak, koduj"*.
+;;;
+;;; THE HISTORY, so nobody rediscovers it. T13 (09.08.2026) set the owner's
+;;; dictated pattern on both ends of a vertical partition and recorded it by
+;;; hand in fixtures/golden-partition-biscuits.json. T23 took it away: no kit
+;;; named BISCUIT_4MM. T30 restored the LISP's own foot, drawWardrobeDPHolesBOTTOM
+;;; (KIT_WARDROBE_FULL.lsp L377-385: two dia 3 screws up through the BOTTOM at
+;;; dpScrewDepth 99 and drawerPanelD - 50 from the front), and named the TOP
+;;; as a gap: no drawWardrobeDPHolesTOP exists, the kit's divider never reaches
+;;; the top. Today the owner closes the gap with his own set. This section IS
+;;; the LISP the T23 subtraction asked for.
+;;;
+;;; THE JOINT. A VERTICAL DIVIDER (the interactive VPART; the wardrobe kit's
+;;; own DP keeps drawWardrobeDPHolesBOTTOM, the fossil's law for its own piece)
+;;; is an EDGE board twice over: its FOOT lands on the face of the board under
+;;; it, its HEAD under the board over it. Each is a butt joint of section C's
+;;; kind, turned upright, and takes section B's set:
+;;;   RECEIVER BOTTOM (the foot on the carcass floor, in the plinth void) and
+;;;   RECEIVER TOP (the head under the worktop or the cornice): CONCEALED
+;;;   (profile concealedReceivers), the through-screw set: two dia 3 screws
+;;;   and the 70 mark per set, on the divider's centre line.
+;;;   RECEIVER FIX SHELF (the divider stands on one, or stops under one; T21 F9
+;;;   splits a divider at a crossing fix shelf into two VPARTs, and each end
+;;;   is its own joint): the shelf's faces are looked at with the doors open,
+;;;   so the MARK-ONLY set, in the same positions, drawn on the shelf's drawn
+;;;   face; a joint on its underside is cut from below at that same set-out
+;;;   (the bed reaches one face; the fixture of T13 drew case B this way).
+;;;   Any other horizontal board a divider meets (a drawer stack's PARTITION):
+;;;   not concealed, the mark alone.
+;;;   THE DIVIDER ITSELF CARRIES NOTHING: its ends are plain (T26 F7.1, the
+;;;   owner's ruling for the fix shelf, the same word here); the screws come
+;;;   through the receiver into its edge, the slot in its end is the bench's.
+;;;
+;;; THE JOINT LINE is the OVERLAP in depth of the divider and its receiver
+;;; (T13: "a fixing set out past the end of the receiving board is a screw
+;;; into air"): a divider flush with the front over a shelf set back 20 shares
+;;; 520 with it, not 540. THE DATUM is the overlap's FRONT end, offsets run
+;;; towards the back (section C's datum, the edge board's front, where the
+;;; two fronts agree; the overlap's front where they do not).
+;;; THE ACROSS is the divider's centre line, x + G / 2 of its board, in the
+;;; receiver's frame (less the receiver's own left end, G).
+;;;
+;;; FRAMES (engine/joinery.js panelPlacement, section C's table):
+;;;   TOP, BOTTOM   drawn ROT90, x from the BACK edge: x = z - zBack
+;;;                 (zBack = G, the back's thickness), y across from BUL's face
+;;;   FIX SHELF     x from its FRONT edge: x = zFront - z, y across from its
+;;;                 left end
+;;; so a point t behind the overlap's front zf stands at x = zf - t - G on the
+;;; TOP or BOTTOM and at x = zFrontShelf - (zf - t) on a shelf.
+;;;
+;;; Receivers for a divider that spans heights y0 .. y1 (its foot and its head)
+;;; in a carcass W D H G with fix shelves ((row shelfT setback) ...):
+;;;   foot: "BOTTOM" when y0 = G; else the shelf whose top row + shelfT = y0
+;;;   head: "TOP" when y1 = H - G; else the shelf whose underside row = y1
+;;; A divider that meets neither (an end in the air) has no joint there.
+(defun biscuit-divider-receiver (yEnd foot W D H G fixShelves / out k sh)
+  (cond
+    ;; (name zBack zFront leftEnd): the TOP and the BOTTOM run from the back's
+    ;; face G to the carcass front D, D - G deep, from BUL's face G.
+    ((and foot (< (abs (- yEnd G)) 0.001)) (list "BOTTOM" G D G))
+    ((and (null foot) (< (abs (- yEnd (- H G))) 0.001)) (list "TOP" G D G))
+    (T
+      (setq k 1)
+      (foreach sh fixShelves
+        (if (null out)
+          (if (< (abs (- yEnd (if foot (+ (car sh) (cadr sh)) (car sh)))) 0.001)
+            ;; (name zBack zFront leftEnd): the shelf is D - G - setback deep,
+            ;; from the back's face G to zFront = D - setback.
+            (setq out (list (strcat "SHELF-" (itoa k)) G (- D (caddr sh)) G))))
+        (setq k (1+ k)))
+      out)))
+
+;;; The cuts of one end of a divider on its receiver: (sets marks screws), the
+;;; records of section D. divider: (x w zBack zFront), receiver: (name zBack
+;;; zFront leftEnd). Screws only where biscuit-takes-screws says so.
+(defun biscuit-divider-end-cuts (divider receiver prof / name zb zf L across sets
+                                   screws rotated lay slay dia marks scr s mk sc xAt)
+  (setq name (car receiver))
+  (setq zb (max (caddr divider) (cadr receiver))
+        zf (min (cadddr divider) (caddr receiver)))
+  (setq L (- zf zb))
+  (if (<= L 0.0)
+    (list nil nil nil)
+    (progn
+      (setq across (- (+ (car divider) (/ (cadr divider) 2.0)) (cadddr receiver)))
+      (setq screws (biscuit-takes-screws name prof))
+      (setq sets (biscuit-sets L screws prof))
+      ;; TOP and BOTTOM count x from the BACK edge; a shelf from its FRONT edge.
+      (setq rotated (or (= name "TOP") (= name "BOTTOM")))
+      (setq lay (biscuit-get prof "layer") slay (biscuit-get prof "screwLayer")
+            dia (biscuit-get prof "screwDiameter"))
+      (foreach s sets
+        (setq mk (nth 3 s))
+        (setq marks (cons (list name "MARK"
+                                (biscuit-divider-x zf (car mk) rotated receiver) across
+                                (biscuit-divider-x zf (cadr mk) rotated receiver) across
+                                lay)
+                          marks))
+        (foreach sc (nth 2 s)
+          (setq scr (cons (list name "SCREW" (biscuit-divider-x zf sc rotated receiver) across dia slay) scr))))
+      (list sets (reverse marks) (reverse scr)))))
+
+;;; The receiver's x of a point t behind the overlap's front zf.
+(defun biscuit-divider-x (zf t rotated receiver)
+  (if rotated
+    (- (- zf t) (cadr receiver))
+    (- (caddr receiver) (- zf t))))
+
+;;; NUMBERS I.1, the fixture's case A (golden-partition-biscuits.json BISCUIT-A):
+;;; BUD 900 x 770 x 558, G 18, one divider at x 450, floor to top, flush with
+;;; the front (z 18 .. 558, 540 deep). TOP and BOTTOM are 540 deep too, so each
+;;; overlap is 540: TWO sets, starts 50 and 394 from the FRONT.
+;;;   across = 450 + 9 - 18 = 441
+;;;   BOTTOM (x from the back): SCREW x 488.5 395.5 144.5 51.5  y 441
+;;;                             MARK  x 477..407 and 133..63   y 441
+;;;   TOP:    the same four screws and two marks at y 441
+;;;   VPART-1: nothing
+;;; The fixture's TOP and BOTTOM, to the decimal (it lists the screws from the
+;;; back edge upward: 51.5 144.5 395.5 488.5, the marks 63..133 and 407..477:
+;;; the same points, the other way round). Its VPART marks at 20 from the ends
+;;; were T13's transfer, ruled out on T26 (F7.1): the divider's ends are plain.
+;;;
+;;; NUMBERS I.2, the fixture's case B (BISCUIT-B): BUD 900 x 1200 x 558, a FIX
+;;; shelf with its underside at 600 (18 thick, 20 behind the front: 864 x 520,
+;;; z 18 .. 538), the divider at 450 from the floor to that shelf (y 18 .. 600).
+;;;   foot on the BOTTOM: as I.1 (overlap 540, y 441)
+;;;   head under SHELF-1: overlap z 18 .. 538 = 520: TWO sets, starts 50 and
+;;;     374 from the front; mark only; across = 450 + 9 - 18 = 441 (the fix
+;;;     shelf starts at the side's face, T24 F6; the fixture's 439 is T13's
+;;;     shelf at x 20)
+;;;     SHELF-1 (x from its front): MARK x 63..133 and 387..457   y 441
+;;;   A second divider standing ON that shelf (y 600 + 18 .. 1182, under the
+;;;   TOP) would set the same two marks on the shelf and the screw set on the
+;;;   TOP at y 441 with x from the back 540 - t.
+;;;   VPART-1: nothing
+;;;
+;;; WHAT THE DIVIDER LOSES: T30's two bare foot screws on the BOTTOM at 99 and
+;;; drawerPanelD - 50 from the front (x 441 and 50 from the back on a 540
+;;; board): the set's four screws stand on that same centre line. The DP of
+;;; KIT_WARDROBE_FULL keeps them. The dia 3 row through the BACK along the
+;;; divider (T23 F6, ends 50, pitch 400) stays: it is the back's joint.
+
 (princ "\nSKYLON_JOINTS_BISCUIT loaded. Type BISCUIT_JOINTS to print the pattern.")
 (princ)

@@ -199,6 +199,12 @@ export function partitionBackSpec(profile) {
 // gap is NAMED rather than filled: an invented hole is a miscut in somebody's
 // workshop, and a full-height divider's head fixing is a question for the owner.
 //
+// CHAT FIX 17.10.2026: the owner answered it. The INTERACTIVE divider's foot
+// and head take his biscuit set (SKYLON_JOINTS_BISCUIT.lsp section I, the
+// engine's dividerJoints.js): the set on the TOP and the BOTTOM, the marks
+// alone on a fix shelf. The foot below is the kit's DP's alone from that day;
+// the gap this note names is closed for the divider a person draws.
+//
 // Pure functions and pure data. No React, no store, no three.js.
 
 /** The numbers, defensively read, so a partial profile cannot produce NaN. */

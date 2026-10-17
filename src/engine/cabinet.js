@@ -202,6 +202,7 @@ import { shelfHingeClashes } from './shelfHingeClash.js';
 // Turn 24 (CLAUDE.md F7): the owner's butt-joint set, given the consumer it
 // was written for — a FIX shelf.
 import { biscuitLayers, biscuitSets, markFromEnd } from './biscuits.js';
+import { dividerJointCuts } from './dividerJoints.js';
 // Turn 24 (CLAUDE.md F3): G is a property of the PART, and this is the door.
 import { partitionSlot, thicknessOf } from './thickness.js';
 // Turn 35 (CLAUDE.md F8): ⌀3 or ⌀5 → the layer that carries the diameter.
@@ -9154,6 +9155,19 @@ export function computeCabinet(params, profileOverride) {
   // writer the fixed shelf's marks go through: one record shape, one
   // `cnc.marks`. The shelf's own set above is untouched ("polka stala to samo").
   if (biscuitPlan) shelfJointMarks.push(...biscuitMarkRecords(biscuitPlan));
+  // ─── CHAT FIX 17.10.2026: THE DIVIDER'S HEAD AND FOOT ──────────────────────
+  // The owner: *"na dividerze mamy wiercenie 3 mm w bottom ale nie mamy w top
+  // ... i do tego nie mamy ciastek"*; *"jak mamy polke fix to robisz tylko
+  // ciastka bez nawiertow"*; whatever the joint system: *"tak, koduj"*. LISP
+  // first: SKYLON_JOINTS_BISCUIT.lsp section I; engine/dividerJoints.js is its
+  // mirror. The same set as the fix shelf's, turned upright: the TOP and the
+  // BOTTOM (concealed) take the screws and the marks on the divider's centre
+  // line, a fix shelf under or over it the marks alone, the divider itself
+  // nothing (T26 F7.1). T30's two bare foot screws on the BOTTOM give way to
+  // the set's four (the wardrobe kit's DP keeps the LISP's own, below).
+  const dividerJoints = dividerJointCuts({ panels, profile: P });
+  for (const d of dividerJoints.drills) addDrill(d.panel, d.kind, d.layer, d.x, d.y, d.d);
+  shelfJointMarks.push(...dividerJoints.marks);
   for (const mark of shelfJointMarks) {
     const target = panels.find((x) => x.id === mark.panelId);
     if (!target) continue;
@@ -9636,13 +9650,17 @@ export function computeCabinet(params, profileOverride) {
   // the wardrobe's divider stops at the partition over the drawers and never
   // reaches the top — so no hole is invented there. The gap is named in the
   // turn's report rather than filled overnight.
+  //
+  // ─── CHAT FIX 17.10.2026: THE GAP IS CLOSED, BY THE OWNER'S OWN SET ──────
+  // The interactive divider (VPART) is no longer in this list: its foot AND
+  // its head take the biscuit set of SKYLON_JOINTS_BISCUIT.lsp section I
+  // (engine/dividerJoints.js, written above beside the fix shelf's joint),
+  // which stands on the same centre line and makes these two screws a second
+  // joint on one line. The DP, the kit's own piece, keeps the LISP's foot.
   const bottomPanel = panels.find((x) => x.part === 'BOTTOM');
   if (bottomPanel) {
     const spec = partitionFootSpec(P);
-    const feet = [
-      ...panels.filter((x) => x.part === 'DP' && x.box),
-      ...verticalPartitions.filter((x) => Math.abs(x.box.y - (bottomPanel.box.y + bottomPanel.box.h)) < 1e-6),
-    ];
+    const feet = panels.filter((x) => x.part === 'DP' && x.box);
     for (const divider of feet) {
       for (const { x, y } of partitionFootScrews({
         divider: divider.box, bottom: bottomPanel.box, profile: P,
@@ -11625,6 +11643,9 @@ export function computeCabinet(params, profileOverride) {
   // T78 F20 · what the biscuit unit is. No gate: the set is the owner's own
   // ("zostaw jak bylo": the numbers of profile.biscuits, confirmed).
   if (biscuitPlan) derived.joints = biscuitSummary(biscuitPlan);
+  // CHAT FIX 17.10.2026 . the divider's head and foot joints, for the tests and
+  // the sheet: which board each end landed on, the overlap and the set count.
+  if (dividerJoints.joints.length) derived.dividerJoints = dividerJoints.joints;
   // T78 F17 . what the canopy is, for the drawing and the tests; BUL's hanger
   // summary follows its drilling, which moved with the frame.
   if (canopy) {

@@ -41,6 +41,18 @@
 // reaches the top, so the LISP was never asked. Nothing is invented there and
 // the gap is NAMED — asserted below, so it is a recorded decision rather than
 // an omission somebody rediscovers.
+//
+// ─── CHAT FIX 17.10.2026: THE OWNER CLOSES THE GAP, FOR THE INTERACTIVE DIVIDER
+//
+// *"na dividerze mamy wiercenie 3 mm w bottom ale nie mamy w top, a nie ma
+// przeciez fix shelves zeby divider sie zatrzymal, i do tego nie mamy ciastek"*;
+// the T13 set on the TOP and the BOTTOM in place of the two bare foot screws:
+// *"tak"*; a fix shelf under or over it: *"jak mamy polke fix to robisz tylko
+// ciastka bez nawiertow"*. LISP first: SKYLON_JOINTS_BISCUIT.lsp section I;
+// engine/dividerJoints.js mirrors it. So the VPART is no longer in this file's
+// foot list: its foot and its head take the owner's set (test/turn13-biscuits
+// holds the numbers to the golden of 09.08.2026). THE DP KEEPS THE LISP'S FOOT:
+// it is the kit's own piece and KIT_WARDROBE_FULL is the fossil's law for it.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -147,18 +159,22 @@ test('F4 the 99 is the SAME 99 the divider’s side holes already use', () => {
 
 // ─── AND THE INTERACTIVE DIVIDER, WHICH IS THE SAME PIECE ──────────────────
 
-test('F4 an interactive divider standing on the bottom takes the same joint', () => {
+test('F4 (17.10.2026) an interactive divider standing on the bottom takes the OWNER\'S SET there, not the LISP foot', () => {
+  // The owner, 17.10.2026: the T13 set on the BOTTOM in place of the two bare
+  // screws (*"tak"*). The two screws stood on the divider's centre line; the
+  // set's four stand on that same line, so the LISP foot would be a second
+  // joint on one line and it goes. The numbers are test/turn13-biscuits'.
   const r = withDivider([{ id: 'p1', kind: 'partition', x_mm: 450 }]);
   const vp = r.panels.find((p) => p.part === 'VPART');
   const bottom = r.panels.find((p) => p.part === 'BOTTOM');
-  const on = feet(r);
-  assert.equal(on.length, 2);
-  assert.deepEqual([...new Set(on.map((d) => d.y))], [vp.box.x + vp.box.w / 2 - bottom.box.x]);
-  const fromFront = on.map((d) => bottom.box.d - d.x).sort((a, b) => a - b);
-  assert.deepEqual(fromFront, [99, vp.box.d - 50]);
+  assert.equal(feet(r).length, 0, 'no LISP foot screw on an interactive divider');
+  const set = r.drills.filter((d) => d.panel === bottom.id && d.kind === 'divider_screw');
+  assert.equal(set.length, 4, 'two sets, four screws');
+  assert.deepEqual([...new Set(set.map((d) => d.y))], [vp.box.x + vp.box.w / 2 - bottom.box.x], 'on the divider\'s own centre line');
+  assert.deepEqual(set.map((d) => bottom.box.d - d.x).sort((a, b) => a - b), [51.5, 144.5, 395.5, 488.5], 'the set, from the front');
 });
 
-test('F4 a divider that does NOT stand on the bottom takes nothing from it', () => {
+test('F4 (17.10.2026) a divider that does NOT stand on the bottom takes nothing from it', () => {
   // Turn 21's F9: a partition may terminate on a FIXED shelf. One that starts
   // above the bottom board has no foot on it, and a screw driven up into thin
   // air is a hole in a finished board.
@@ -168,9 +184,13 @@ test('F4 a divider that does NOT stand on the bottom takes nothing from it', () 
   ], { height: 1200 });
   const vp = r.panels.find((p) => p.part === 'VPART');
   const bottom = r.panels.find((p) => p.part === 'BOTTOM');
-  // This one DOES stand on the bottom (it runs floor → shelf), so it is screwed.
+  // This one DOES stand on the bottom (it runs floor → shelf), so the BOTTOM
+  // takes the set; the shelf over it the marks alone (*"tylko ciastka"*).
   assert.equal(vp.box.y, bottom.box.y + bottom.box.h);
-  assert.equal(feet(r).length, 2);
+  assert.equal(r.drills.filter((d) => d.panel === bottom.id && d.kind === 'divider_screw').length, 4);
+  const shelf = r.panels.find((p) => p.id === 'SHELF-1');
+  assert.equal(r.drills.filter((d) => d.panel === shelf.id && d.kind === 'divider_screw').length, 0, 'no screw through a fix shelf');
+  assert.equal((shelf.cnc?.marks || []).filter((m) => m.layer === BISCUIT_LAYER).length, 2, 'two marks on the shelf');
 
   // The other way round is the case the guard is for, and it is asked of the
   // pure function so the geometry is stated rather than staged.
@@ -212,12 +232,11 @@ test('F4 a hole that would miss the divider’s own footprint is DROPPED', () =>
 
 // ─── THE TOP IS A NAMED GAP, NOT AN OMISSION ───────────────────────────────
 
-test('F4 the TOP takes NOTHING, and that is the LISP rather than an oversight', () => {
-  for (const r of [wardrobe(), withDivider([{ id: 'p1', kind: 'partition', x_mm: 450 }])]) {
-    const top = r.panels.find((p) => p.part === 'TOP');
-    assert.equal(r.drills.filter((d) => d.panel === top.id).length, 0,
-      'no kit in reference/lisp/ drills a TOP for a vertical member');
-  }
+test('F4 the kit\'s DP: the TOP takes NOTHING, and that is the LISP rather than an oversight', () => {
+  const r = wardrobe();
+  const top = r.panels.find((p) => p.part === 'TOP');
+  assert.equal(r.drills.filter((d) => d.panel === top.id).length, 0,
+    'no kit in reference/lisp/ drills a TOP for the wardrobe\'s drawer panel');
   // The reason is written down where somebody will find it, rather than left
   // to be rediscovered as a missing feature.
   const fixings = readFileSync(new URL('../src/engine/partitionFixings.js', import.meta.url), 'utf8');
@@ -225,16 +244,28 @@ test('F4 the TOP takes NOTHING, and that is the LISP rather than an oversight', 
   assert.match(fixings, /drawWardrobeDPHolesTOP/);
 });
 
-// ─── AND THE BISCUITS DID NOT COME BACK ────────────────────────────────────
+test('F4 (17.10.2026) the interactive divider\'s TOP takes the owner\'s set: the gap T30 named is closed', () => {
+  const r = withDivider([{ id: 'p1', kind: 'partition', x_mm: 450 }]);
+  const top = r.panels.find((p) => p.part === 'TOP');
+  const set = r.drills.filter((d) => d.panel === top.id && d.kind === 'divider_screw');
+  assert.equal(set.length, 4);
+  assert.equal((top.cnc?.marks || []).filter((m) => m.layer === BISCUIT_LAYER).length, 2);
+  assert.match(readFileSync(new URL('../reference/lisp/SKYLON_JOINTS_BISCUIT.lsp', import.meta.url), 'utf8'),
+    /I\. THE DIVIDER'S HEAD AND FOOT/);
+});
 
-test('F4 not one biscuit entity returns with it', () => {
-  for (const r of [wardrobe(), withDivider([{ id: 'p1', kind: 'partition', x_mm: 450 }])]) {
-    assert.equal(r.drills.filter((d) => d.layer === BISCUIT_LAYER).length, 0);
-    for (const panel of r.panels) {
-      assert.equal((panel.cnc?.marks || []).filter((m) => m.layer === BISCUIT_LAYER).length, 0,
-        `${panel.id} carries a biscuit mark`);
-    }
+// ─── THE BISCUITS: GONE FROM THE KIT'S DP, BACK ON THE INTERACTIVE DIVIDER ─
+
+test('F4 not one biscuit entity on the kit\'s own drawer panel; the owner\'s set on the interactive divider (17.10.2026)', () => {
+  const dp = wardrobe();
+  assert.equal(dp.drills.filter((d) => d.layer === BISCUIT_LAYER).length, 0);
+  for (const panel of dp.panels) {
+    assert.equal((panel.cnc?.marks || []).filter((m) => m.layer === BISCUIT_LAYER).length, 0,
+      `${panel.id} carries a biscuit mark`);
   }
+  const r = withDivider([{ id: 'p1', kind: 'partition', x_mm: 450 }]);
+  const marked = r.panels.filter((p) => (p.cnc?.marks || []).some((m) => m.layer === BISCUIT_LAYER)).map((p) => p.id).sort();
+  assert.deepEqual(marked, ['BOTTOM', 'TOP'], 'the two receivers, and nothing on the divider itself (T26 F7.1)');
 });
 
 // ─── RULE 1: THE DELTA IS EXACTLY TWO HOLES PER DIVIDER, AND NO MORE ───────
@@ -251,15 +282,18 @@ test('F4 a cabinet with no divider in it does not move at all', () => {
   }
 });
 
-test('F4 two dividers are four screws — the delta scales with the pieces, not with the kit', () => {
+test('F4 (17.10.2026) two dividers are two sets per board: the delta scales with the pieces, not with the kit', () => {
   const r = withDivider([
     { id: 'p1', kind: 'partition', x_mm: 300 },
     { id: 'p2', kind: 'partition', x_mm: 600 },
   ], { width: 1200 });
   assert.equal(r.panels.filter((p) => p.part === 'VPART').length, 2);
-  assert.equal(feet(r).length, 4);
-  // …one pair per divider, each on its own centre line.
-  assert.equal(new Set(feet(r).map((d) => d.y)).size, 2);
+  assert.equal(feet(r).length, 0, 'the LISP foot is the DP\'s alone');
+  const bottom = r.panels.find((p) => p.part === 'BOTTOM');
+  const set = r.drills.filter((d) => d.panel === bottom.id && d.kind === 'divider_screw');
+  assert.equal(set.length, 8, 'four screws per divider on the BOTTOM');
+  // …one ladder per divider, each on its own centre line.
+  assert.equal(new Set(set.map((d) => d.y)).size, 2);
 });
 
 test('F4 the numbers are the workshop’s, not the code’s', () => {

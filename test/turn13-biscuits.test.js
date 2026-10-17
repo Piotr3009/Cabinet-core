@@ -41,6 +41,23 @@
 // driven by the same golden fixture: every entity turn 13 worked out by hand is
 // asserted ABSENT, one by one, on the very cases that used to carry them. A
 // fixture that records what a turn removed is worth more than a deleted one.
+//
+// ─── CHAT FIX 17.10.2026: THE OWNER PUTS THE SET BACK, ON THE RECEIVERS ─────
+//
+// *"na dividerze mamy wiercenie 3 mm w bottom ale nie mamy w top, a nie ma
+// przeciez fix shelves zeby divider sie zatrzymal, i do tego nie mamy ciastek"*;
+// the T13 set on the TOP and the BOTTOM: *"tak"*; a fix shelf: *"jak mamy polke
+// fix to robisz tylko ciastka bez nawiertow"*; whatever the joint system:
+// *"tak, koduj"*. LISP first this time: SKYLON_JOINTS_BISCUIT.lsp section I
+// (the law T23 said was missing), engine/dividerJoints.js its mirror. So the
+// MACHINING half turns round once more: the golden's TOP, BOTTOM and SHELF
+// entities are asserted PRESENT, to the decimal, and the golden's VPART marks
+// stay ABSENT: the divider's ends are plain (T26 F7.1, the owner's ruling for
+// the fix shelf, the same word for the divider). Two readings of the fixture
+// moved with the law since 09.08.2026 and are named here rather than edited
+// into it (the fixture is frozen): a mark is a segment, so 407..477 and
+// 477..407 are one mark; and a FIX shelf starts at the side's face since T24
+// (x 18, not 20), so its across is 441, not the fixture's 439.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -51,6 +68,9 @@ import {
   markFromEnd, receiverTakesScrews,
 } from '../src/engine/biscuits.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
+import {
+  DIVIDER_SCREW_KIND, dividerJointCuts, dividerReceiverAt, canReceiveDivider, isFixedShelfPanel,
+} from '../src/engine/dividerJoints.js';
 import { cncLayer } from '../src/engine/cnc/layers.js';
 import { panelDxf } from '../src/engine/cnc/dxf.js';
 import { defaultParamsFor, UNIT_TYPE_ORDER } from '../src/engine/types.js';
@@ -166,46 +186,80 @@ test('a through-screw exists only where the receiving face is CONCEALED', () => 
 const unitFor = (c) => computeCabinet({ ...defaultParamsFor(c.inputs.type, P), ...c.inputs }, P);
 const marksOf = (panel) => (panel.cnc?.marks || []).map((m) => ({ from: m.from, to: m.to, layer: m.layer }));
 const screwsOf = (result, id) => result.drills
-  .filter((d) => d.panel === id && d.kind === 'biscuit_screw')
+  .filter((d) => d.panel === id && d.kind === DIVIDER_SCREW_KIND)
   .map((d) => ({ x: d.x, y: d.y, d: d.d, layer: d.layer }));
+/** A mark as an unordered segment: the fixture walks some of them the other way. */
+const segment = (m) => [m.layer, Math.min(m.from[0], m.to[0]), Math.max(m.from[0], m.to[0]),
+  Math.min(m.from[1], m.to[1]), Math.max(m.from[1], m.to[1])].join('|');
+const byXY = (a, b) => (a.x - b.x) || (a.y - b.y);
+// The fixture's SHELF frame is T13's, "drawn upright: x along the WIDTH, y
+// along the DEPTH"; since T26 F8 a shelf is drawn depth x width, x from its
+// FRONT edge, so the fixture's shelf points are TRANSPOSED; and a FIX shelf
+// takes the full light from the side's face since T24 F6 (x 18, the fixture's
+// 20), so its across moves by 2. Two readings of one frozen file, named here.
+const shelfToday = (want) => want.map((m) => ({ ...m, from: [m.from[1], m.from[0] + 2], to: [m.to[1], m.to[0] + 2] }));
 
-// ─── TURN 23 · F5 — every entity of it, gone ────────────────────────────────
+// ─── 17.10.2026 · every entity of it, back on the receivers ─────────────────
 for (const c of GOLDEN.cases) {
-  test(`F5 — ${c.id}: the borrowed biscuits are gone (${c.description})`, () => {
+  test(`17.10.2026: ${c.id}: the owner's set is back on the receivers, to the fixture's numbers (${c.description})`, () => {
     const result = unitFor(c);
+    assert.deepEqual(result.warnings, []);
     for (const want of c.expect) {
       const panel = result.panels.find((p) => p.id === want.panel);
-      // The PANEL is still cut, and at the same size: F5 removes machining,
-      // never a piece of furniture.
       assert.ok(panel, `${c.id}: no panel ${want.panel}`);
-      // …and turn 13's own hand-worked answer is the list of what must not be
-      // there. Asserting against it rather than against `[]` is what makes this
-      // a record of the subtraction instead of a blank.
-      assert.ok(want.screws.length + want.marks.length > 0, 'the fixture records something to remove');
-      assert.deepEqual(screwsOf(result, want.panel), [], `${c.id} ${want.panel} still carries biscuit screws`);
-      // ─── TURN 24 (CLAUDE.md F7): AND THE SET COMES BACK, ON ITS OWN JOINT ──
-      //
-      // Turn 23 removed the PARTITION's borrowed biscuits, and every one of the
-      // entities this fixture worked out by hand is still absent. What turn 24
-      // adds is a different joint on a different piece: a FIX SHELF is biscuited
-      // to the boards it lands on, which is the consumer `engine/biscuits.js`
-      // was written for. So the assertion is not "no marks at all" — that would
-      // now be asserting the absence of the owner's own joint — it is "not ONE
-      // of the marks the partition's joint put there", named position by named
-      // position, which is what this file has always been about.
-      const here = marksOf(panel);
-      for (const gone of want.marks) {
-        assert.equal(
-          here.some((m) => m.layer === gone.layer
-            && m.from[0] === gone.from[0] && m.from[1] === gone.from[1]
-            && m.to[0] === gone.to[0] && m.to[1] === gone.to[1]),
-          false,
-          `${c.id} ${want.panel} still carries the partition's mark at ${gone.from}`,
-        );
+      assert.ok(want.screws.length + want.marks.length > 0, 'the fixture records something');
+      if (want.panel === 'VPART-1') {
+        // T26 F7.1: the divider's ends are plain; T13's transfer stays gone.
+        assert.deepEqual(screwsOf(result, want.panel), []);
+        assert.deepEqual(marksOf(panel).filter((m) => m.layer === BISCUIT_LAYER), [], 'nothing on the divider itself');
+        continue;
       }
+      // TOP and BOTTOM: the screws, as the fixture lists them (sorted; the engine
+      // walks each set from the front, the fixture from the back edge).
+      assert.deepEqual(screwsOf(result, want.panel).sort(byXY), [...want.screws].sort(byXY), `${c.id} ${want.panel} screws`);
+      const wantMarks = want.panel.startsWith('SHELF') ? shelfToday(want.marks) : want.marks;
+      assert.deepEqual(
+        marksOf(panel).filter((m) => m.layer === BISCUIT_LAYER).map(segment).sort(),
+        wantMarks.map(segment).sort(),
+        `${c.id} ${want.panel} marks`,
+      );
     }
   });
 }
+
+test('17.10.2026: the receiver finder: BOTTOM under a foot, TOP over a head, a FIX shelf either way, an adjustable shelf never', () => {
+  const panels = [
+    { id: 'BOTTOM', part: 'BOTTOM', box: { x: 18, y: 0, z: 18, w: 864, h: 18, d: 540 } },
+    { id: 'TOP', part: 'TOP', box: { x: 18, y: 752, z: 18, w: 864, h: 18, d: 540 } },
+    { id: 'SHELF-1', part: 'SHELF', meta: { variant: 'fixed' }, box: { x: 18, y: 400, z: 18, w: 864, h: 18, d: 520 } },
+    { id: 'SHELF-2', part: 'SHELF', meta: { variant: 'adjustable' }, box: { x: 20, y: 600, z: 18, w: 860, h: 18, d: 520 } },
+  ];
+  assert.equal(dividerReceiverAt(panels, { y: 18, x: 459, foot: true })?.id, 'BOTTOM');
+  assert.equal(dividerReceiverAt(panels, { y: 752, x: 459, foot: false })?.id, 'TOP');
+  assert.equal(dividerReceiverAt(panels, { y: 418, x: 459, foot: true })?.id, 'SHELF-1', 'a divider standing on the fix shelf');
+  assert.equal(dividerReceiverAt(panels, { y: 400, x: 459, foot: false })?.id, 'SHELF-1', 'a divider stopping under it');
+  assert.equal(dividerReceiverAt(panels, { y: 618, x: 459, foot: true }), null, 'an adjustable shelf receives nothing');
+  assert.equal(dividerReceiverAt(panels, { y: 18, x: 2000, foot: true }), null, 'off the board\'s run');
+  assert.equal(isFixedShelfPanel(panels[2]), true);
+  assert.equal(isFixedShelfPanel(panels[3]), false);
+  assert.equal(canReceiveDivider(panels[3]), false);
+  assert.equal(canReceiveDivider(panels[0]), true);
+  // The cuts of a divider on this list: the foot on the BOTTOM (screws and
+  // marks), the head under SHELF-1 (the marks alone, on the 520 overlap).
+  const vp = { id: 'VPART-1', part: 'VPART', box: { x: 450, y: 18, z: 18, w: 18, h: 382, d: 540 } };
+  const cuts = dividerJointCuts({ panels: [...panels, vp], profile: P });
+  assert.deepEqual(cuts.joints, [
+    { divider: 'VPART-1', end: 'foot', receiver: 'BOTTOM', length: 540, sets: 2, screws: true },
+    { divider: 'VPART-1', end: 'head', receiver: 'SHELF-1', length: 520, sets: 2, screws: false },
+  ]);
+  assert.equal(cuts.drills.length, 4);
+  assert.ok(cuts.drills.every((d) => d.kind === DIVIDER_SCREW_KIND && d.panel === 'BOTTOM' && d.layer === 'SCREWS_3MM' && d.d === 3));
+  assert.deepEqual(cuts.marks.map((m) => m.panelId), ['BOTTOM', 'BOTTOM', 'SHELF-1', 'SHELF-1']);
+  // A divider whose end is in the air (nothing at that height) has no joint there.
+  const lifted = dividerJointCuts({ panels: [...panels, { ...vp, box: { ...vp.box, y: 100, h: 200 } }], profile: P });
+  assert.deepEqual(lifted.joints.map((j) => j.receiver), [null, null]);
+  assert.deepEqual(lifted.drills, []);
+});
 
 test('BISCUIT-A: the geometry the fixture set out from is the geometry the engine builds', () => {
   const c = GOLDEN.cases[0];
@@ -213,41 +267,51 @@ test('BISCUIT-A: the geometry the fixture set out from is the geometry the engin
   assert.deepEqual(vp.box, c.geometry.partition_box);
 });
 
-test('BISCUIT-B: the geometry the fixture set out from is untouched — only the machining went', () => {
+test('BISCUIT-B: the geometry the fixture set out from is untouched, and the shelf joint is the OVERLAP (520, not 540)', () => {
   const c = GOLDEN.cases[1];
   const result = unitFor(c);
   const shelf = result.panels.find((p) => p.id === 'SHELF-1');
   const vp = result.panels.find((p) => p.part === 'VPART');
   assert.deepEqual(shelf.box, c.geometry.shelf_box);
   assert.deepEqual(vp.box, c.geometry.partition_box);
+  assert.deepEqual(result.derived.dividerJoints, [
+    { divider: 'VPART-1', end: 'foot', receiver: 'BOTTOM', length: 540, sets: 2, screws: true },
+    { divider: 'VPART-1', end: 'head', receiver: 'SHELF-1', length: 520, sets: 2, screws: false },
+  ]);
+  // The fix shelf: *"tylko ciastka bez nawiertow"*: not one screw through it.
+  assert.equal(result.drills.filter((d) => d.panel === 'SHELF-1' && d.kind !== 'shelf').length, 0);
 });
 
-// ─── It leaves the DXF (turn 23, F5) ────────────────────────────────────────
+// ─── It reaches the DXF (17.10.2026) ────────────────────────────────────────
 
-test('F5 — the partition\'s own file carries no BISCUIT_4MM entity at all', () => {
+test('F5: the partition\'s own file carries no BISCUIT_4MM entity at all (T26 F7.1 holds for the divider)', () => {
   const c = GOLDEN.cases[0];
   const result = unitFor(c);
   const vp = result.panels.find((p) => p.part === 'VPART');
   const dxf = panelDxf(vp, result.drills, { unitNum: '01', profile: P });
-
-  // The layer TABLE may still declare it — the writer declares every known
-  // layer and the owner's tool mapping matches on the name. What must be gone
-  // is an ENTITY on it.
   const lines = dxf.split('\r\n');
   const at = lines.indexOf('BISCUIT_4MM', lines.indexOf('ENTITIES'));
-  assert.equal(at, -1, 'the partition still cuts a biscuit mark');
+  assert.equal(at, -1, 'the partition cuts a biscuit mark');
 });
 
-test('F5 — and neither does the board it lands on', () => {
+test('17.10.2026: and the boards it lands on DO: the TOP\'s and the BOTTOM\'s files carry the marks and the screws', () => {
   const c = GOLDEN.cases[0];
   const result = unitFor(c);
   for (const part of ['TOP', 'BOTTOM']) {
     const panel = result.panels.find((p) => p.part === part);
     const dxf = panelDxf(panel, result.drills, { unitNum: '01', profile: P });
     const lines = dxf.split('\r\n');
-    assert.equal(lines.indexOf('BISCUIT_4MM', lines.indexOf('ENTITIES')), -1, `${part} still cuts a mark`);
+    const ents = lines.indexOf('ENTITIES');
+    assert.ok(lines.indexOf('BISCUIT_4MM', ents) > ents, `${part} cuts no mark`);
+    // Two marks: two open POLYLINE entities on the layer (R12: POLYLINE,
+    // VERTEX, VERTEX, SEQEND, each stamped with the layer; the POLYLINE counts).
+    let n = 0;
+    for (let i = ents; i < lines.length - 3; i += 1) {
+      if (lines[i] === '0' && lines[i + 1] === 'POLYLINE' && lines[i + 2] === '8' && lines[i + 3] === 'BISCUIT_4MM') n += 1;
+    }
+    assert.equal(n, 2, `${part}: two marks in the file`);
   }
-  assert.equal(result.drills.some((d) => d.kind === 'biscuit_screw'), false);
+  assert.equal(result.drills.filter((d) => d.kind === 'divider_screw').length, 8, 'four per board');
 });
 
 // ─── …and NOTHING ELSE MOVED ────────────────────────────────────────────────
@@ -260,10 +324,11 @@ const biscuitMarks = (panel) => (panel.cnc?.marks || []).filter((m) => m.layer !
 test('THE OTHER HALF OF THE DELTA: no partition, no biscuit — in any kit', () => {
   for (const id of UNIT_TYPE_ORDER) {
     const result = computeCabinet(defaultParamsFor(id, P), P);
+    if (result.panels.some((p) => p.part === 'VPART')) continue; // a kit with a divider of its own is the joint's
     for (const panel of result.panels) {
       assert.deepEqual(biscuitMarks(panel), [], `${id} ${panel.id} grew a biscuit mark`);
     }
-    assert.equal(result.drills.some((d) => d.kind === 'biscuit_screw'), false, `${id} grew a biscuit screw`);
+    assert.equal(result.drills.some((d) => d.kind === 'divider_screw'), false, `${id} grew a divider screw`);
   }
 });
 
@@ -274,7 +339,7 @@ test('a cabinet with a partition changes ONLY the panels the joint touches', () 
   for (const panel of withPartition.panels) {
     if (touched.has(panel.id)) continue;
     assert.equal(panel.cnc?.marks, undefined, `${panel.id} is not part of the joint`);
-    assert.equal(withPartition.drills.some((d) => d.panel === panel.id && d.kind === 'biscuit_screw'), false);
+    assert.equal(withPartition.drills.some((d) => d.panel === panel.id && d.kind === 'divider_screw'), false);
   }
 });
 
@@ -285,9 +350,11 @@ test('the recorded standard is still a standard: markFromEnd is a real number', 
   assert.ok(markFromEnd(P) < P.biscuits.markLength);
 });
 
-test('F5 — no cabinet in any kit emits a mark, with a partition or without one', () => {
+test('17.10.2026: in every kit a partition sets out ONLY on the boards it meets: the receivers carry the marks, nothing else does', () => {
   for (const id of UNIT_TYPE_ORDER) {
     const base = defaultParamsFor(id, P);
+    const bare = computeCabinet(base, P);
+    if (bare.panels.some((p) => p.part === 'VPART')) continue;
     const withPartition = {
       ...base,
       sections: [{
@@ -295,12 +362,19 @@ test('F5 — no cabinet in any kit emits a mark, with a partition or without one
         items: [{ id: 'p1', kind: 'partition', x_mm: Math.round(base.width / 2) }],
       }],
     };
-    for (const params of [base, withPartition]) {
-      const result = computeCabinet(params, P);
-      for (const panel of result.panels) {
-        assert.deepEqual(biscuitMarks(panel), [], `${id} ${panel.id} grew a biscuit mark`);
+    const result = computeCabinet(withPartition, P);
+    const vp = result.panels.find((p) => p.part === 'VPART');
+    if (!vp) continue; // the kit refused the partition: nothing to set out
+    const receivers = new Set((result.derived.dividerJoints || []).map((j) => j.receiver).filter(Boolean));
+    for (const panel of result.panels) {
+      const marks = biscuitMarks(panel).filter((m) => m.layer === BISCUIT_LAYER);
+      if (receivers.has(panel.id)) {
+        assert.ok(marks.length >= 1, `${id} ${panel.id} receives the divider and carries no mark`);
+      } else {
+        assert.deepEqual(marks, [], `${id} ${panel.id} grew a biscuit mark`);
       }
-      assert.equal(result.drills.some((d) => d.kind === 'biscuit_screw'), false, `${id} grew a biscuit screw`);
     }
+    assert.equal(result.drills.some((d) => d.kind === 'divider_screw' && !receivers.has(d.panel)), false, `${id}: a divider screw off the receivers`);
+    assert.equal(result.drills.some((d) => d.kind === 'divider_screw' && !['TOP', 'BOTTOM'].includes(d.panel)), false, `${id}: a through screw where the face is not concealed`);
   }
 });

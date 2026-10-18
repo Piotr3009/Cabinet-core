@@ -1,0 +1,312 @@
+{
+  "meta": {
+    "name": "golden-notch-top.json",
+    "turn": "T78",
+    "F": "F34",
+    "source": "KIT_NOTCH.lsp D21 (the notch from the top, its NUMBERS block I2: BUD 600, BL 200 x 200 x -300) on KIT_BUD_FULL.lsp (the parent, golden-bud.json's BUD-A with 1 shelf): the TOP cut instead of the BOTTOM, BUL and the BACK cut at the top, RETURN, STEP and FLOOR",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "BUD",
+    "width": 600,
+    "height": 770,
+    "depth": 558,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 1,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": null,
+    "unit_num": "01",
+    "notch": {
+      "corner": "BL",
+      "w": 200,
+      "d": 200,
+      "h": -300
+    }
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,540,770,<,0.77,0.356",
+      "01,BUR,540,770,>,0.77,0.416",
+      "01,TOP,564,540,>,0.56,0.265",
+      "01,BOTTOM,564,540,>,0.56,0.305",
+      "01,BACK,600,770,,0,0.402",
+      "01,SHELF-1,560,520,>,0.56,0.291",
+      "01,01-F,597,767,<>^v,2.73,0.458",
+      "01,RETURN,182,300,,0,0.055",
+      "01,STEP,218,300,,0,0.065",
+      "01,FLOOR,200,200,,0,0.040"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 540,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 770,
+          "d": 540
+        },
+        "outline": 26,
+        "holes": 14,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 540,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 770,
+          "d": 540
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 752,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 66,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 600,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 600,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 6,
+        "holes": 31,
+        "pockets": 9,
+        "readiness": null
+      },
+      {
+        "id": "SHELF-1",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 560,
+        "h": 520,
+        "thickness": 18,
+        "box": {
+          "x": 20,
+          "y": 385,
+          "z": 18,
+          "w": 560,
+          "h": 18,
+          "d": 520
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 0,
+          "z": 561,
+          "w": 597,
+          "h": 767,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "RETURN",
+        "part": "NOTCH-RETURN",
+        "role": "notch_box",
+        "w": 182,
+        "h": 300,
+        "thickness": 18,
+        "box": {
+          "x": 200,
+          "y": 470,
+          "z": 18,
+          "w": 18,
+          "h": 300,
+          "d": 182
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "STEP",
+        "part": "NOTCH-STEP",
+        "role": "notch_box",
+        "w": 218,
+        "h": 300,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 470,
+          "z": 200,
+          "w": 218,
+          "h": 300,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "FLOOR",
+        "part": "NOTCH-FLOOR",
+        "role": "notch_box",
+        "w": 200,
+        "h": 200,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 452,
+          "z": 18,
+          "w": 200,
+          "h": 18,
+          "d": 200
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F",
+        6
+      ],
+      [
+        "HINGES_5MM|BUL",
+        6
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        18
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        13
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ],
+      [
+        "SHELVES_7_5MM|BUL",
+        6
+      ],
+      [
+        "SHELVES_7_5MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 3,
+        "label": "Hinges"
+      },
+      {
+        "role": "legs",
+        "qty": 4,
+        "label": "Legs"
+      },
+      {
+        "role": "shelf_pins",
+        "qty": 4,
+        "label": "Shelf pins"
+      }
+    ]
+  }
+}

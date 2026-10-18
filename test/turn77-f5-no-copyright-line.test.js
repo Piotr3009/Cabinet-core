@@ -108,6 +108,9 @@ export const NEW_FILES = [
   // T79 F3 (18.10.2026): drawer columns
   'test/turn79-f03-drawer-columns.test.js',
   'scripts/t78-classify.d/f34-t79-f03.mjs',
+  // T79 F4 (18.10.2026): the notch from the top
+  'test/turn79-f04-notch-top.test.js',
+  'scripts/t78-classify.d/f34-t79-f04.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

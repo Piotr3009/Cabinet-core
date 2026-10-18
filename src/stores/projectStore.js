@@ -10733,7 +10733,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np.
   // 200x200)."*  ONE action, one undo step: the notch is a unit param
   // (`params.notch = { corner, w, d, h }`, h 0 = the full height), so it is
-  // saved and reloaded with the unit and nothing else has to know.
+  // saved and reloaded with the unit and nothing else has to know. T79 F4
+  // (KIT_NOTCH.lsp D21): a negative h hangs it from the top, kept as asked;
+  // the owner: *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry?"*
   //
   // Room refuses first: the engine asks the notch of the parent's own cut
   // (`engine/notch.js notchVerdict`) and a refused notch is NOT kept; its
@@ -10760,7 +10762,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!NOTCH_CORNERS.includes(corner)) return { ok: false, said: 'NOTCH: the corner is BL, BR, FL or FR.' };
     const mm = (v) => Math.round(Number(v) || 0);
     const notch = {
-      corner, w: mm(asked.w), d: mm(asked.d), h: Math.max(0, mm(asked.h)),
+      corner, w: mm(asked.w), d: mm(asked.d), h: mm(asked.h) || 0,
     };
     const trial = computeCabinet(
       paramsForEngine({ ...unit, params: { ...unit.params, notch } }, s.project.design),

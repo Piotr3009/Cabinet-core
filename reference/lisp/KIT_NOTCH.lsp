@@ -83,11 +83,13 @@
   (list (- cw (* 2.0 g) keep) (- cd g keep)))   ;; (maxW maxD): the interior kept across and in depth, 100 since 15.10.2026 (96 held a joint before)
 ;;;
 ;;; A notch hanging from the TOP (a beam over a wall unit) and a WINDOW notch
-;;; (a box crossing the corner at mid height) are NOT in this file yet: the
+;;; (a box crossing the corner at mid height) were NOT in this file: the
 ;;; owner asked for both the same night ("a co jak w poziomie mamy jakas
-;;; przeszkode box naprzyklad powinno byc tak mozliwosc"); they are named
+;;; przeszkode box naprzyklad powinno byc tak mozliwosc"); they were named
 ;;; in the PR as the next step, with their geometry (the TOP cut instead of
-;;; the BOTTOM, a FLOOR board under the box as the LID is over it).
+;;; the BOTTOM, a FLOOR board under the box as the LID is over it). The one
+;;; from the TOP is here since 18.10.2026 (D21, a NEGATIVE nh); the WINDOW
+;;; notch is still not.
 ;;;
 ;;; PAST THE NOTCH (the owner, 15.10.2026, the morning): "przy bardzo waskim
 ;;; wcieciu zatrzymuje sie a ja bym chcial zeby sie wtedy szafka calkowicie
@@ -118,11 +120,14 @@
 ;;;              "FL" front-left   "FR" front-right
 ;;;   nw       the notch's width ALONG THE BACK (along the carcass width)
 ;;;   nd       its depth INTO THE CARCASS (along the carcass depth)
-;;;   nh       its height, UP FROM THE CARCASS UNDERSIDE; 0 = FULL HEIGHT
+;;;   nh       its height, UP FROM THE CARCASS UNDERSIDE; 0 = FULL HEIGHT;
+;;;            NEGATIVE = DOWN FROM THE CARCASS TOP, |nh| long (D21)
 ;;;
 ;;;   The notch RISES FROM THE FLOOR. The owner's cases are a wall return and
 ;;;   a pipe ("L-ka przy scianie, rurze"), and both stand on the floor, so a
 ;;;   part-height notch is the bottom of the corner and its top is closed.
+;;;   Since 18.10.2026 a NEGATIVE nh hangs it from the TOP instead (a beam, a
+;;;   bulkhead): the top of the corner is cut and its bottom is closed (D21).
 ;;;
 ;;; THE PLAN FRAME of the carcass, used by every routine below:
 ;;;   x   from the carcass's LEFT outer face (0) to its right one (cw)
@@ -194,6 +199,14 @@
 ;;;            and its end grain showed from the front).
 ;;;   LID      nw x nd, PART-HEIGHT ONLY. It lies ON the STEP and the RETURN,
 ;;;            between the side and the back, and closes the notch's top.
+;;;   FLOOR    nw x nd, a notch FROM THE TOP only (D21, 18.10.2026): the LID
+;;;            mirrored. It lies UNDER the STEP and the RETURN, between the
+;;;            side and the back, and closes the notch's bottom.
+;;;
+;;; A notch FROM THE TOP (D21) is the same law upside down: the TOP takes
+;;; the nw x nd notch instead of the BOTTOM, the side and the BACK lose their
+;;; corner at the top of the notched edge, the STEP and the RETURN hang from
+;;; the TOP's level down |nh|, and the FLOOR closes them underneath.
 ;;;
 ;;; THE BOX'S FIXING IS THE JOINER'S. The RETURN, the STEP and the LID carry
 ;;; NO puzzle joint and NO machined hole: they are cut as outlines (F22
@@ -327,6 +340,49 @@
 ;;;     an OPEN LWPOLYLINE (notch-open-pline; COMMON's makePolyline closes).
 ;;;     The engine's record: { layer, from: a, to: b, pts: [a, v, b] }, and
 ;;;     the TOP's mirror (D11) reverses the walk with the outline.
+;;;
+;;; 18.10.2026, THE OWNER'S LIST (CLAUDE.md T79 F4):
+;;;
+;;; D21 THE TOP-ANCHORED NOTCH. The owner: *"cut corner ucina nam tylko od
+;;;     dolu a co jesli bedziemy chcieli od gory, nie powinno byc funkcji -500
+;;;     na przyklad i wtedy ucina od gory? i mala informacja o tym."*  So nh
+;;;     carries its anchor in its sign:
+;;;       nh > 0   from the FLOOR, nh high (sections 1 to 9, as before)
+;;;       nh = 0   FULL HEIGHT (as before; so is |nh| at or over ch)
+;;;       nh < 0   from the TOP: the cut starts at the carcass top face and
+;;;                runs DOWN |nh| (notch-from-top-p); notch-hh is |nh|
+;;;     Board by board it is the floor notch upside down, nothing invented:
+;;;       SIDE     its corner is the one at the TOP of the notched edge:
+;;;                x0y1 / x1y1 in its own frame (notch-side-fc's third
+;;;                argument), where the floor notch takes x0y0 / x1y0
+;;;       BACK     at a back corner it loses the TOP part of the notched
+;;;                edge (x0y1 / x1y1, notch-back-fc's second argument)
+;;;       TOP      is cut instead of the BOTTOM (the nw x nd plan notch, the
+;;;                same outline, the same corner mark, D11's underside frame)
+;;;       BOTTOM   is the parent's
+;;;       RETURN   the same board, hanging from the top: z from ch - |nh| to ch
+;;;       STEP     the same board, the same heights as the RETURN
+;;;       FLOOR    nw x nd, the LID's twin UNDER the cut: z from ch - |nh| - g
+;;;                to ch - |nh|, the STEP and the RETURN standing on it
+;;;                (notch-floor); no LID
+;;;       SHELF    a shelf whose top face rises past the FLOOR's underside is
+;;;                cut as a shelf under the LID's top face is today
+;;;       PLINTH   untouched: a notch from the top never reaches the floor
+;;;     The joints mirror the same way (section 4): the TOP edges of the side
+;;;     and of the BACK are re-planned on the shortened run, the BOTTOM edges
+;;;     are the parent's, and the back-edge tabs are planned afresh on the run
+;;;     UNDER the notch, 0 .. ch - |nh| (SKY:tabCentres(ch - |nh|), no shift).
+;;;     The drilling, the hanger holes and cut-outs, the keep-out and the
+;;;     refusals of the hinge, the runner and the rail read the region at the
+;;;     top exactly as they read it at the floor (they read the corner name).
+;;;     THE ROOM UNDER IT: |nh| must leave notch.minInterior (100) of the
+;;;     interior UNDER the cut, from the BOTTOM's top face to the FLOOR's
+;;;     underside (ch - |nh| - 2g; unboxed, no FLOOR, ch - |nh| - g), the
+;;;     owner's own "nie mniej niz 100 mm w srodku szafki" read in height;
+;;;     less is REFUSED in words, naming the number (notch-refusal). Legs stay
+;;;     where the parent put them: nothing stands in their footprint.
+;;;     THE SMALL INFORMATION is the window's help line, not this file's: "a
+;;;     negative HEIGHT cuts from the top (e.g. -500)".
 ;;;
 ;;;========================================
 ;;; 4. THE JOINTS ON A SHORTENED EDGE
@@ -466,13 +522,19 @@
 (defun notch-side-name (corner)
   (if (notch-left-p corner) "BUL" "BUR"))
 
-;;; 0 (or anything at or over the carcass) is FULL HEIGHT.
+;;; 0 (or anything at or over the carcass, either way) is FULL HEIGHT. Until
+;;; 18.10.2026 a negative nh read as full height too (and was refused); D21
+;;; gives it the top.
 (defun notch-full-p (ch nh)
-  (or (<= nh 0.0) (>= nh ch)))
+  (or (= nh 0.0) (>= (abs nh) ch)))
 
-;;; The height the notch actually takes.
+;;; D21: a part-height notch hanging from the TOP (a negative nh).
+(defun notch-from-top-p (ch nh)
+  (and (< nh 0.0) (not (notch-full-p ch nh))))
+
+;;; The height the notch actually takes (D21: |nh| from the top).
 (defun notch-hh (ch nh)
-  (if (notch-full-p ch nh) ch nh))
+  (if (notch-full-p ch nh) ch (abs nh)))
 
 ;;; D3: boxed when the notch is NOT LESS THAN the side's thickness.
 (defun notch-boxed-p (nw g)
@@ -792,36 +854,44 @@
 ;;;   BUR (drawBUR)  x = 0 is the REAR edge (it mirrors drawBUL)
 ;;;----------------------------------------
 
-(defun notch-side-fc (corner burFrame)
-  (if burFrame
-    (if (notch-back-p corner) "x0y0" "x1y0")
-    (if (notch-back-p corner) "x1y0" "x0y0")))
+;;; D21: `top` (a notch from the top) takes the corner at the TOP of the
+;;; edge, y1 for y0.
+(defun notch-side-fc (corner burFrame top / fc)
+  (setq fc (if burFrame
+             (if (notch-back-p corner) "x0y0" "x1y0")
+             (if (notch-back-p corner) "x1y0" "x0y0")))
+  (if top (strcat (substr fc 1 2) "y1") fc))
 
-;;; Boxed: the side cut nd x nh at its rear (front) corner. Unboxed (D3): the
-;;; parent's rectangle, its rebate given by notch-side-rebate.
+;;; Boxed: the side cut nd x nh at its rear (front) corner, at the floor or
+;;; (D21) at the top. Unboxed (D3): the parent's rectangle, its rebate given
+;;; by notch-side-rebate.
 (defun notch-side (cd ch g nw nd nh corner)
   (if (notch-boxed-p nw g)
     (notch-rect-outline (- cd g) ch nd (notch-hh ch nh)
-                        (notch-side-fc corner (not (notch-left-p corner))))
+                        (notch-side-fc corner (not (notch-left-p corner)) (notch-from-top-p ch nh)))
     (notch-plain-rect (- cd g) ch)))
 
 (defun notch-side-dogbone (cd ch g nw nd nh corner r)
   (if (notch-boxed-p nw g)
     (notch-dogbone (- cd g) ch nd (notch-hh ch nh)
-                   (notch-side-fc corner (not (notch-left-p corner))) r)
+                   (notch-side-fc corner (not (notch-left-p corner)) (notch-from-top-p ch nh)) r)
     nil))
 
 ;;; D3: the rebate, a POCKET nw deep in the side's OUTER face:
-;;; (x0 y0 x1 y1 depth) in the side's own frame, or nil when boxed.
-(defun notch-side-rebate (cd ch g nw nd nh corner / bw fc)
+;;; (x0 y0 x1 y1 depth) in the side's own frame, or nil when boxed. D21: from
+;;; the top it stands at ch - |nh| .. ch.
+(defun notch-side-rebate (cd ch g nw nd nh corner / bw fc y0 y1)
   (if (notch-boxed-p nw g)
     nil
     (progn
       (setq bw (- cd g)
-            fc (notch-side-fc corner (not (notch-left-p corner))))
+            fc (notch-side-fc corner (not (notch-left-p corner)) (notch-from-top-p ch nh)))
+      (if (notch-from-top-p ch nh)
+        (setq y0 (- ch (notch-hh ch nh)) y1 ch)
+        (setq y0 0.0 y1 (notch-hh ch nh)))
       (if (notch-fc-x0 fc)
-        (list 0.0 0.0 nd (notch-hh ch nh) nw)
-        (list (- bw nd) 0.0 bw (notch-hh ch nh) nw)))))
+        (list 0.0 y0 nd y1 nw)
+        (list (- bw nd) y0 bw y1 nw)))))
 
 ;;; Its joints, re-planned (D5, D7), ALL MEASURED FROM THE SIDE'S FRONT EDGE
 ;;; (BUR's own frame is cd - g - x of these):
@@ -830,10 +900,14 @@
 ;;;   BACK-TABS                      y up the back edge (nil: none)
 ;;;   PIN-COLUMNS                    the shelf-pin columns for the shelf rows
 ;;;                                  INSIDE the notch's height (the rows above
-;;;                                  a part-height notch keep the parent's)
+;;;                                  a part-height notch keep the parent's;
+;;;                                  D21: below one from the top)
 ;;; Unboxed, every joint is the parent's (a rebate that eats one is refused).
+;;; D21: a notch from the top moves the TOP edge and leaves the BOTTOM edge
+;;; the parent's; its back-edge tabs are planned on the run UNDER it.
 (defun notch-side-joints (cd ch g nw nd nh corner / e below inset one three sfe pin
-                          sideW run off full topS botS topR botR tabs pins)
+                          sideW run off full top hh cutS cutR parS parR
+                          topS botS topR botR tabs pins)
   (setq e (notch-p "puzzle.tabCentresFromEnd")
         below (notch-p "puzzle.singleSocketBelow")
         inset (notch-joint-inset cd e (notch-p "puzzle.singleJointMaxDepth"))
@@ -842,20 +916,29 @@
         sfe (notch-p "puzzle.screwFromEnd")
         pin (notch-p "shelfHoles.columnFromEdge")
         sideW (- cd g)
-        full (notch-full-p ch nh))
+        full (notch-full-p ch nh)
+        top (notch-from-top-p ch nh)
+        hh (notch-hh ch nh))
   (if (notch-boxed-p nw g)
     (setq run (- sideW nd) off (if (notch-back-p corner) 0.0 nd))
     (setq run sideW off 0.0))
-  (setq botS (notch-shift (notch-replan-sockets run inset below) off)
-        botR (notch-shift (notch-screw-row run sfe) off))
-  ;; the top edge moves only when a boxed notch runs the full height
-  (if (and full (notch-boxed-p nw g))
-    (setq topS botS topR botR)
-    (setq topS (notch-replan-sockets sideW inset below)
-          topR (notch-screw-row sideW sfe)))
+  (setq cutS (notch-shift (notch-replan-sockets run inset below) off)
+        cutR (notch-shift (notch-screw-row run sfe) off)
+        parS (notch-replan-sockets sideW inset below)
+        parR (notch-screw-row sideW sfe))
+  ;; the bottom edge moves unless the notch hangs from the top (D21)
+  (if top
+    (setq botS parS botR parR)
+    (setq botS cutS botR cutR))
+  ;; the top edge moves when a boxed notch runs the full height, or hangs
+  ;; from the top (D21)
+  (if (and (or full top) (notch-boxed-p nw g))
+    (setq topS cutS topR cutR)
+    (setq topS parS topR parR))
   (setq tabs (cond ((not (notch-boxed-p nw g)) (notch-replan-tabs ch e one three))
                    ((not (notch-back-p corner)) (notch-replan-tabs ch e one three))
                    (full nil)
+                   (top (notch-replan-tabs (- ch hh) e one three))
                    (T (notch-shift (notch-replan-tabs (- ch nh) e one three) nh))))
   (setq pins (notch-shift (notch-pin-columns run pin) off))
   (list (cons "TOP-SOCKETS" topS) (cons "BOTTOM-SOCKETS" botS)
@@ -867,17 +950,20 @@
 ;;; the front), y up. A FRONT notch never reaches it.
 ;;;----------------------------------------
 
-(defun notch-back-fc (corner)
-  (if (notch-left-p corner) "x0y0" "x1y0"))
+;;; D21: `top` (a notch from the top) takes the corner at the TOP.
+(defun notch-back-fc (corner top)
+  (if (notch-left-p corner)
+    (if top "x0y1" "x0y0")
+    (if top "x1y1" "x1y0")))
 
 (defun notch-back (cw ch nw nh corner)
   (if (notch-back-p corner)
-    (notch-rect-outline cw ch nw (notch-hh ch nh) (notch-back-fc corner))
+    (notch-rect-outline cw ch nw (notch-hh ch nh) (notch-back-fc corner (notch-from-top-p ch nh)))
     (notch-plain-rect cw ch)))
 
 (defun notch-back-dogbone (cw ch nw nh corner r)
   (if (notch-back-p corner)
-    (notch-dogbone cw ch nw (notch-hh ch nh) (notch-back-fc corner) r)
+    (notch-dogbone cw ch nw (notch-hh ch nh) (notch-back-fc corner (notch-from-top-p ch nh)) r)
     nil))
 
 ;;; Its joints in its ORIGINAL frame:
@@ -895,7 +981,10 @@
 ;;;                   beside the notch). The far column, the rows above a
 ;;;                   part-height notch (into the side's own back edge) and
 ;;;                   the top and bottom rows stay.
-(defun notch-back-joints (cw ch g nw nh corner / e below one three sfe S full hh
+;;; D21: a notch from the top shortens the TOP edge and leaves the BOTTOM
+;;; edge the parent's; the notch-side edge is planned on the run UNDER it,
+;;; 0 .. ch - |nh|, and its rows are that run's.
+(defun notch-back-joints (cw ch g nw nh corner / e below one three sfe S full hh top
                           left back boxed farTabs nearTabs lo hi blo bhi topS botS
                           farX nearX upX scr)
   (setq e (notch-p "puzzle.tabCentresFromEnd")
@@ -905,17 +994,21 @@
         sfe (notch-p "puzzle.screwFromEnd")
         S (notch-screw-axis g)
         full (notch-full-p ch nh)
+        top (notch-from-top-p ch nh)
         hh (notch-hh ch nh)
         left (notch-left-p corner)
         back (notch-back-p corner)
         boxed (notch-boxed-p nw g))
   (setq farTabs (notch-replan-tabs ch e one three))
-  ;; the back's own extent: all of it, or what a full-height back notch leaves
-  (if (and back full)
+  ;; the top edge's extent: all of it, or what a full-height back notch (or,
+  ;; D21, a boxed one from the top: an unboxed rebate leaves the top row the
+  ;; parent's, as it leaves the bottom row at the floor) leaves
+  (if (and back (or full (and top boxed)))
     (if left (setq lo nw hi cw) (setq lo 0.0 hi (- cw nw)))
     (setq lo 0.0 hi cw))
-  ;; the bottom edge's extent: a back notch always reaches the bottom
-  (if back
+  ;; the bottom edge's extent: a back notch reaches the bottom unless it
+  ;; hangs from the top (D21)
+  (if (and back (not top))
     (if left (setq blo nw bhi cw) (setq blo 0.0 bhi (- cw nw)))
     (setq blo 0.0 bhi cw))
   ;; the TOP/BOTTOM's back-edge tabs land here: their run starts g past the
@@ -928,6 +1021,7 @@
   (setq nearTabs (cond ((not back) farTabs)
                        ((not boxed) farTabs)
                        (full nil)
+                       (top (notch-replan-tabs (- ch hh) e one three))
                        (T (notch-shift (notch-replan-tabs (- ch nh) e one three) nh))))
   (setq farX (if left (- cw S) S)
         nearX (if left (+ nw S) (- cw nw S))
@@ -942,6 +1036,11 @@
     ;; D10 (17.10.2026): a full-height back notch's notched edge meets the
     ;; RETURN only, and gets NO row (it was (nearX y) over the whole height).
     (full nil)
+    ;; D21: the side's own back edge UNDER a notch from the top keeps its
+    ;; rows; the run beside the notch gets none (D10), as at the floor.
+    (top
+      (foreach y (notch-rows-between-tabs 0.0 (- ch hh) nearTabs sfe)
+        (setq scr (cons (list upX y) scr))))
     (T
       ;; D10: the run beside the notch (it was (notch-screw-row hh) at nearX)
       ;; gets no row; the side's own back edge above the notch keeps its rows.
@@ -966,29 +1065,36 @@
 
 ;;; Where they stand, in plan and height:
 ;;;   (("RETURN" x0 y0 z0 x1 y1 z1) ("STEP" ...) ("LID" ...)), nil unboxed.
-(defun notch-box-places (cw cd ch g nw nd nh corner / hh left back rx0 rx1 ry0 ry1
-                         sx0 sx1 lx0 lx1 out)
+;;; D21: from the top, the RETURN and the STEP hang from the carcass top
+;;; (z0 ch - |nh|, z1 ch) and a ("FLOOR" ...) closes them underneath, at
+;;; ch - |nh| - g .. ch - |nh|, where the LID would lie over them.
+(defun notch-box-places (cw cd ch g nw nd nh corner / hh top left back rx0 rx1 ry0 ry1
+                         sx0 sx1 lx0 lx1 z0 z1 out)
   (if (not (notch-boxed-p nw g))
     nil
     (progn
       (setq hh (notch-hh ch nh)
+            top (notch-from-top-p ch nh)
             left (notch-left-p corner)
             back (notch-back-p corner)
             out '())
+      (if top (setq z0 (- ch hh) z1 ch) (setq z0 0.0 z1 hh))
       (if left (setq rx0 nw rx1 (+ nw g)) (setq rx0 (- cw nw g) rx1 (- cw nw)))
       ;; 15.10.2026: at a back corner the RETURN starts at the STEP's back
       ;; face (cd - nd), a board shorter: the STEP covers its end.
       (if back (setq ry0 (- cd nd) ry1 (- cd g)) (setq ry0 0.0 ry1 nd))
-      (setq out (cons (list "RETURN" rx0 ry0 0.0 rx1 ry1 hh) out))
+      (setq out (cons (list "RETURN" rx0 ry0 z0 rx1 ry1 z1) out))
       (if back
         (progn
           ;; ...and the STEP runs a board past the notch, over the RETURN's end.
           (if left (setq sx0 0.0 sx1 (+ nw g)) (setq sx0 (- cw nw g) sx1 cw))
-          (setq out (cons (list "STEP" sx0 (- cd nd g) 0.0 sx1 (- cd nd) hh) out))))
+          (setq out (cons (list "STEP" sx0 (- cd nd g) z0 sx1 (- cd nd) z1) out))))
       (if (not (notch-full-p ch nh))
         (progn
           (if left (setq lx0 g lx1 (+ nw g)) (setq lx0 (- cw nw g) lx1 (- cw g)))
-          (setq out (cons (list "LID" lx0 (- cd nd g) hh lx1 ry1 (+ hh g)) out))))
+          (if top
+            (setq out (cons (list "FLOOR" lx0 (if back (- cd nd g) 0.0) (- z0 g) lx1 ry1 z0) out))
+            (setq out (cons (list "LID" lx0 (- cd nd g) hh lx1 ry1 (+ hh g)) out)))))
       (reverse out))))
 
 ;;; THE STEP: (nw + g) x hh, back corners only (15.10.2026: a board wider,
@@ -1055,9 +1161,18 @@
         (if full (setq out (cons (list x (- hh S)) out))))
       (reverse out))))
 
-;;; THE LID: nw x nd, part height only, at z = nh .. nh + g.
+;;; THE LID: nw x nd, part height only, at z = nh .. nh + g. D21: never over
+;;; a notch from the top (the FLOOR closes that one).
 (defun notch-lid (ch g nw nd nh)
-  (if (and (notch-boxed-p nw g) (not (notch-full-p ch nh)))
+  (if (and (notch-boxed-p nw g) (not (notch-full-p ch nh)) (not (notch-from-top-p ch nh)))
+    (list nw nd)
+    nil))
+
+;;; THE FLOOR (D21): nw x nd, a notch from the top only, at
+;;; z = ch - |nh| - g .. ch - |nh|, the STEP and the RETURN standing on it.
+;;; No screw is stated for it: the box is the joiner's (D10).
+(defun notch-floor (ch g nw nd nh)
+  (if (and (notch-boxed-p nw g) (notch-from-top-p ch nh))
     (list nw nd)
     nil))
 
@@ -1102,9 +1217,13 @@
 
 ;;; Does a shelf at `zs` cross the notch's height? Full height: always. Part
 ;;; height: anywhere below the LID's top (a shelf level with the LID takes
-;;; the outline too, and the outline already clears the LID).
+;;; the outline too, and the outline already clears the LID). D21, from the
+;;; top: anywhere its top face (zs + g) rises past the FLOOR's underside, the
+;;; same rule upside down.
 (defun notch-shelf-crosses-p (zs g ch nh)
-  (or (notch-full-p ch nh) (< zs (+ nh g))))
+  (cond ((notch-full-p ch nh) T)
+        ((notch-from-top-p ch nh) (> (+ zs g) (- ch (notch-hh ch nh) g)))
+        (T (< zs (+ nh g)))))
 
 (defun notch-shelf-cut (cw cd g nw nd corner clr shelf)
   (notch-plan-cut shelf (notch-keepout cw cd g nw nd corner clr)))
@@ -1121,14 +1240,15 @@
 ;;; Where the notch's own footprint (the obstacle, from the floor) crosses
 ;;; the strip, the plinth loses nw at that end: in practice a FRONT notch
 ;;; deeper than the setback. Returns (x0 x1), its extent across the unit in
-;;; the carcass x; (0 cw) untouched.
+;;; the carcass x; (0 cw) untouched. D21: `top`, a notch from the top, never
+;;; reaches the floor and leaves the plinth whole.
 ;;;----------------------------------------
 
-(defun notch-plinth (cw cd nw nd corner setback pt / ny0 ny1)
+(defun notch-plinth (cw cd nw nd corner setback pt top / ny0 ny1)
   (if (notch-back-p corner)
     (setq ny0 (- cd nd) ny1 cd)
     (setq ny0 0.0 ny1 nd))
-  (if (and (< ny0 (+ setback pt)) (> ny1 setback))
+  (if (and (not top) (< ny0 (+ setback pt)) (> ny1 setback))
     (if (notch-left-p corner) (list nw cw) (list 0.0 (- cw nw)))
     (list 0.0 cw)))
 
@@ -1151,15 +1271,20 @@
           " Move the notch, or hang the " kind " on the other side."))
 
 ;;; Does anything else the parent puts in the carcass, at plan `rect`
-;;; (x0 y0 x1 y1) and from height z0, cross the notch and its box (D8)?
-(defun notch-crosses-p (cw cd ch g nw nd nh corner rect z0)
+;;; (x0 y0 x1 y1) and from height z0 up to z1, cross the notch and its box
+;;; (D8)? D21: from the top, anything whose top z1 rises past the FLOOR's
+;;; underside (the LID's top, upside down).
+(defun notch-crosses-p (cw cd ch g nw nd nh corner rect z0 z1 / lift)
+  (setq lift (if (or (notch-full-p ch nh) (not (notch-boxed-p nw g))) 0.0 g))
   (and (notch-overlap-p rect (notch-keepout cw cd g nw nd corner 0.0))
-       (< z0 (+ (notch-hh ch nh)
-                (if (or (notch-full-p ch nh) (not (notch-boxed-p nw g))) 0.0 g)))))
+       (if (notch-from-top-p ch nh)
+         (> z1 (- ch (notch-hh ch nh) lift))
+         (< z0 (+ (notch-hh ch nh) lift)))))
 
 ;;; D3: does an UNBOXED rebate eat a joint of the side? A back-edge tab
-;;; whose dog bone reaches into the rebate's height at a back corner, or a
-;;; top or bottom socket whose pocket reaches into the rebate's length.
+;;; whose dog bone reaches into the rebate's height at a back corner (D21:
+;;; from the top, down from ch), or a top or bottom socket whose pocket
+;;; reaches into the rebate's length.
 (defun notch-rebate-eats-p (cd ch g nw nd nh corner / e below inset one three bone half
                             sideW hh lo hi hit)
   (if (notch-boxed-p nw g)
@@ -1180,7 +1305,8 @@
         (setq lo 0.0 hi nd))
       (if (notch-back-p corner)
         (foreach c (notch-replan-tabs ch e one three)
-          (if (< (- c bone) hh) (setq hit T))))
+          (if (if (notch-from-top-p ch nh) (> (+ c bone) (- ch hh)) (< (- c bone) hh))
+            (setq hit T))))
       (foreach c (notch-replan-sockets sideW inset below)
         (if (and (> (+ c half) lo) (< (- c half) hi)) (setq hit T)))
       hit)))
@@ -1190,30 +1316,39 @@
 ;;;========================================
 ;;;
 ;;; nil when the notch can be cut, else the sentence the Check prints, naming
-;;; the board.
+;;; the board. D21 (18.10.2026): a negative nh is a notch from the top, no
+;;; longer refused ("the height cannot be below 0" stood here until then);
+;;; it must leave notch.minInterior of the interior UNDER it, and the side's
+;;; back edge under it must hold a tab.
 
-(defun notch-refusal (cw cd ch g nw nd nh corner / bone minEdge sideW tw side)
+(defun notch-refusal (cw cd ch g nw nd nh corner / bone minEdge minInt sideW tw side top hh)
   (setq bone (notch-p "puzzle.dogboneHalfHeight")
         minEdge (notch-min-joint-edge bone g)
+        minInt (notch-p "notch.minInterior")
         sideW (- cd g)
-        tw (- cw (* 2.0 g)))
+        tw (- cw (* 2.0 g))
+        top (notch-from-top-p ch nh)
+        hh (notch-hh ch nh))
   (setq side (if (notch-corner-ok corner) (notch-side-name corner) "the side"))
   (cond
     ((not (notch-corner-ok corner))
       "NOTCH: the corner is BL, BR, FL or FR.")
     ((or (<= nw 0.0) (<= nd 0.0))
       "NOTCH: the width and the depth must both be more than 0.")
-    ((< nh 0.0)
-      "NOTCH: the height cannot be below 0 (0 is the full height).")
-    ((and (not (notch-full-p ch nh)) (> (+ nh g) (- ch g)))
+    ((and (not (notch-full-p ch nh)) (not top) (> (+ nh g) (- ch g)))
       "NOTCH: a part-height notch must leave its LID room under the TOP. Make it full height, or lower it.")
+    ((and top (< (- ch hh g (if (notch-boxed-p nw g) g 0.0)) minInt))
+      (strcat "NOTCH: a notch from the top must leave " (rtos minInt 2 0)
+              " mm of the interior under it. Make it shorter, or make it full height."))
     ((and (notch-boxed-p nw g) (< (- tw nw) minEdge))
       "NOTCH: the notch and its RETURN take the TOP and the BOTTOM across. Make it narrower.")
     ((< (- sideW nd) minEdge)
       (strcat "NOTCH: what is left of " side " cannot hold a joint. Make the notch shallower."))
-    ((and (notch-boxed-p nw g) (notch-back-p corner) (not (notch-full-p ch nh))
+    ((and (notch-boxed-p nw g) (notch-back-p corner) (not (notch-full-p ch nh)) (not top)
           (< (- ch nh) minEdge))
       (strcat "NOTCH: the back edge of " side " above the notch cannot hold a tab. Make it full height, or lower it."))
+    ((and (notch-boxed-p nw g) (notch-back-p corner) top (< (- ch hh) minEdge))
+      (strcat "NOTCH: the back edge of " side " under the notch cannot hold a tab. Make it shorter, or make it full height."))
     ((notch-rebate-eats-p cd ch g nw nd nh corner)
       (strcat "NOTCH: a notch narrower than the board is a rebate in " side
               ", and this one eats a joint. Make it at least as wide as the board (it is then boxed), or smaller."))
@@ -1318,6 +1453,80 @@
 ;;; notch-edge sockets.
 
 ;;;========================================
+;;; I2. NUMBERS - THE NOTCH FROM THE TOP (D21, fixtures/golden-notch-top.json)
+;;;========================================
+;;;
+;;; CLAUDE.md T79 F4: "NUMBERS block for BUD 600, notch BL w 200 d 200
+;;; h -300, board by board." The same parent as section I (KIT_BUD_FULL
+;;; defaults: W 600, D 558, H 770, G 18, front 25, 1 shelf at 385, hinge L).
+;;; Notch BL, nw 200, nd 200, nh -300: FROM THE TOP, 300 down from the
+;;; carcass top face (notch-from-top-p T, notch-hh 300). Joint inset 95.
+;;; Every point list below is anticlockwise, once round.
+;;;
+;;; KEEP-OUT (plan): x 0..218, y 340..558, as section I (the plan is the
+;;; same); in height z 470..770, and the FLOOR under it at 452..470.
+;;;
+;;; BOARD      PARENT       NOTCHED
+;;; BUL        540 x 770    540 x 770 less 200 x 300 at its rear TOP corner,
+;;;                         the corner "x1y1" (BUL frame, x from FRONT):
+;;;                         (0 0) (540 0) (540 470) (340 470) (340 770) (0 770)
+;;;   CORNER MARK (D12): corner (340 470); one open L on CORNER_4MM
+;;;                         (380 470) -> (340 470) -> (340 510)
+;;;   area 0.4158 -> 0.3558 m2 (355800 mm2)
+;;; BUR        540 x 770    unchanged
+;;; TOP        564 x 540    564 x 540 less 200 x 200 at the rear-left, cut
+;;;                         INSTEAD OF the BOTTOM; every number section I gives
+;;;                         the TOP of the full-height notch:
+;;;   plan frame  (0 0) (564 0) (564 540) (200 540) (200 340) (0 340)
+;;;   drawn from its UNDERSIDE (D11): (200 564) (200 364) (0 364) (0 0)
+;;;               (540 0) (540 564), the corner "x0y1"
+;;;   CORNER MARK (200 404) -> (200 364) -> (160 364)
+;;;   area 0.305 -> 0.265 m2 (264560 mm2)
+;;; BOTTOM     564 x 540    unchanged (the parent's)
+;;; BACK       600 x 770    600 x 770 less 200 x 300 at its top-left, the
+;;;                         corner "x0y1":
+;;;                         (0 0) (600 0) (600 770) (200 770) (200 470) (0 470)
+;;;   CORNER MARK (D12): corner (200 470); one open L on CORNER_4MM
+;;;                         (200 510) -> (200 470) -> (160 470)
+;;;   area 0.462 -> 0.402 m2 (402000 mm2)
+;;; STEP       -            218 x 300, carcass x 0..218, y 340..358, z 470..770
+;;; RETURN     -            182 x 300, carcass x 200..218, y 358..540, z 470..770
+;;; FLOOR      -            200 x 200, carcass x 18..218, y 340..540, z 452..470
+;;; LID        -            none (the FLOOR closes a notch from the top)
+;;; SHELF-1    560 x 520    unchanged: its top face (403) is under the FLOOR's
+;;;                         underside (452); a shelf whose top face rises past
+;;;                         452 is cut to section I's SHELF outline
+;;; PLINTH     600          untouched (a notch from the top never reaches it)
+;;;
+;;; WHICH JOINTS MOVE:
+;;;
+;;; BOARD, EDGE                      PARENT             NOTCHED
+;;; BUL top sockets (x from front)   95, 445            95, 245   (445 -> 245)
+;;; BUL bottom sockets               95, 445            95, 445   unchanged
+;;; BUL top screw row                50, 270, 490       50, 170, 290
+;;; BUL bottom screw row             50, 270, 490       50, 270, 490   unchanged
+;;; BUL back-edge tabs (y)           95, 385, 675       95, 375   (planned on 0..470)
+;;; BUL shelf-pin columns            70, 470            70, 270   (the rows in 470..770)
+;;; TOP tabs into BUL (y)            95, 445            95, 245
+;;; TOP tabs into BUR (y)            95, 445            95, 445   unchanged
+;;; TOP tabs into BACK (x)           95, 469            295, 469
+;;; BOTTOM tabs, every edge          the parent's       unchanged
+;;; BACK sockets, notch edge (y)     95, 385, 675       95, 375   (planned on 0..470)
+;;; BACK sockets, far edge (y)       95, 385, 675       95, 385, 675
+;;; BACK top sockets (carcass x)     113, 487           313, 487
+;;; BACK bottom sockets              113, 487           113, 487  unchanged
+;;; BACK side screw rows (y)         50, 240, 530, 720  far edge (x 591) unchanged;
+;;;                                  notch edge (x 9): 50, 235, 420 (the run
+;;;                                  under the notch), none beside it (D10)
+;;; BACK top screw row (y 761)       68, 300, 532       268, 400, 532
+;;; BACK bottom screw row (y 9)      68, 300, 532       68, 300, 532   unchanged
+;;;
+;;; THE ROOM UNDER IT (notch-refusal): ch - |nh| - 2g >= 100, so on this BUD
+;;; |nh| may run to 634 (770 - 634 - 36 = 100); -635 is refused: "NOTCH: a
+;;; notch from the top must leave 100 mm of the interior under it. Make it
+;;; shorter, or make it full height."
+
+;;;========================================
 ;;; J. DRAWING (the command draws what the routines return, nothing more)
 ;;;========================================
 
@@ -1413,7 +1622,7 @@
 ;;;========================================
 
 (defun c:NOTCH_FULL ( / kit g cw cd ch corner nw nd nh tool r pt x0 y0 cx odstep msg rl
-                       sideW tw hh full boxed side bur e below inset one three
+                       sideW tw hh full top hz boxed side bur e below inset one three
                        sj tj bj oldS oldTabs oldTop oldBack shelf sh
                        sumX sumY lineH
                        _oldCmdecho _oldOsmode _oldClayer _olderr)
@@ -1466,7 +1675,8 @@
   (setq nd (getreal "\nNotch DEPTH into the carcass [mm] <200>: "))
   (if (null nd) (setq nd (notch-p "notch.defaults.depth")))
 
-  (setq nh (getreal "\nNotch HEIGHT [mm] (0 = full height) <0>: "))
+  ;; D21 (18.10.2026): a negative HEIGHT hangs the notch from the TOP.
+  (setq nh (getreal "\nNotch HEIGHT [mm] (0 = full height, negative = from the top) <0>: "))
   (if (null nh) (setq nh (notch-p "notch.defaults.height")))
 
   (setq tool (getreal "\nCutter DIAMETER [mm] <8>: "))
@@ -1491,6 +1701,8 @@
                 tw (- cw (* 2.0 g))
                 hh (notch-hh ch nh)
                 full (notch-full-p ch nh)
+                top (notch-from-top-p ch nh)
+                hz (if top "TOP" "BOTTOM")
                 boxed (notch-boxed-p nw g)
                 side (notch-side-name corner)
                 bur (not (notch-left-p corner)))
@@ -1512,18 +1724,21 @@
           (notch-draw-marks cx y0 (notch-side-marks sj sideW ch bur) 4.0)
           (setq cx (+ cx sideW odstep))
 
-          ;; 2. THE TOP (full height) and the BOTTOM, in PLAN
+          ;; 2. THE TOP (full height, or D21 from the top) and the BOTTOM
+          ;;    (unless from the top), in PLAN
           (setq tj (notch-top-joints cw cd g nw nd corner))
-          (if full
+          (if (or full top)
             (progn
               (notch-draw-board cx y0 tw sideW (notch-top-outline cw cd g nw nd corner)
                                 (notch-top-dogbone cw cd g nw nd corner r) "TOP")
               (notch-draw-marks cx y0 (notch-top-marks tj tw sideW) 4.0)
               (setq cx (+ cx tw odstep))))
-          (notch-draw-board cx y0 tw sideW (notch-top-outline cw cd g nw nd corner)
-                            (notch-top-dogbone cw cd g nw nd corner r) "BOTTOM")
-          (notch-draw-marks cx y0 (notch-top-marks tj tw sideW) 4.0)
-          (setq cx (+ cx tw odstep))
+          (if (not top)
+            (progn
+              (notch-draw-board cx y0 tw sideW (notch-top-outline cw cd g nw nd corner)
+                                (notch-top-dogbone cw cd g nw nd corner r) "BOTTOM")
+              (notch-draw-marks cx y0 (notch-top-marks tj tw sideW) 4.0)
+              (setq cx (+ cx tw odstep))))
 
           ;; 3. THE BACK (a back corner)
           (setq bj (notch-back-joints cw ch g nw nh corner))
@@ -1552,6 +1767,11 @@
               (notch-draw-board cx y0 nw nd (notch-plain-rect nw nd) nil "LID")
               (notch-draw-marks cx y0 (notch-lid-screws ch g nw nd nh corner) 1.5)
               (setq cx (+ cx nw odstep))))
+          ;; D21: the FLOOR under a notch from the top; no screw (D10)
+          (if (notch-floor ch g nw nd nh)
+            (progn
+              (notch-draw-board cx y0 nw nd (notch-plain-rect nw nd) nil "FLOOR")
+              (setq cx (+ cx nw odstep))))
 
           ;; 5. A SHELF of the parent, in plan (it crosses at full height, and
           ;;    at part height wherever it stands inside the notch)
@@ -1573,7 +1793,7 @@
                 oldTop (notch-replan-sockets sideW inset below)
                 oldBack (notch-replan-sockets tw e below))
           (notch-say (strcat "NOTCH " corner " " (rtos nw 2 0) " x " (rtos nd 2 0) " x "
-                             (if full "FULL" (rtos nh 2 0))
+                             (cond (full "FULL") (top (strcat (rtos hh 2 0) " FROM THE TOP")) (T (rtos nh 2 0)))
                              " on " (cond ((= kit "W") "KIT_WARDROBE") ((= kit "U") "KIT_WUD") (T "KIT_BUD")) " "
                              (rtos cw 2 0) " x " (rtos ch 2 0) " x " (rtos cd 2 0)
                              ", G=" (rtos g 2 0) ", r=" (rtos r 2 2)))
@@ -1582,25 +1802,27 @@
                              (cond ((not boxed) (strcat "rebate " (rtos nd 2 0) " x " (rtos hh 2 0)
                                                         ", " (rtos nw 2 0) " deep"))
                                    (full (strcat (rtos (- sideW nd) 2 0) " x " (rtos ch 2 0)))
-                                   (T (strcat "less " (rtos nd 2 0) " x " (rtos nh 2 0))))))
-          (notch-say (strcat "TOP: " (if (and full boxed)
+                                   (T (strcat "less " (rtos nd 2 0) " x " (rtos hh 2 0))))))
+          (notch-say (strcat "TOP: " (if (and (or full top) boxed)
                                        (strcat (rtos tw 2 0) " x " (rtos sideW 2 0) " less "
                                                (rtos nw 2 0) " x " (rtos nd 2 0))
                                        "unchanged")))
-          (notch-say (strcat "BOTTOM: " (if boxed
+          (notch-say (strcat "BOTTOM: " (if (and boxed (not top))
                                           (strcat (rtos tw 2 0) " x " (rtos sideW 2 0) " less "
                                                   (rtos nw 2 0) " x " (rtos nd 2 0))
                                           "unchanged")))
           (notch-say (strcat "BACK: " (cond ((not (notch-back-p corner)) "unchanged")
                                             (full (strcat (rtos (- cw nw) 2 0) " x " (rtos ch 2 0)))
                                             (T (strcat (rtos cw 2 0) " x " (rtos ch 2 0) " less "
-                                                       (rtos nw 2 0) " x " (rtos nh 2 0))))))
+                                                       (rtos nw 2 0) " x " (rtos hh 2 0))))))
           (if (notch-step ch g nw nh corner)
             (notch-say (strcat "STEP: " (rtos (+ nw g) 2 0) " x " (rtos hh 2 0) " (fixing manual)")))
           (if (notch-return ch g nw nd nh corner)
             (notch-say (strcat "RETURN: " (rtos (car (notch-return ch g nw nd nh corner)) 2 0) " x " (rtos hh 2 0) " (fixing manual)")))
           (if (notch-lid ch g nw nd nh)
             (notch-say (strcat "LID: " (rtos nw 2 0) " x " (rtos nd 2 0) " (fixing manual)")))
+          (if (notch-floor ch g nw nd nh)
+            (notch-say (strcat "FLOOR: " (rtos nw 2 0) " x " (rtos nd 2 0) " (fixing manual)")))
           (notch-say "---------")
           (notch-say (strcat side " top sockets: " (notch-fmt oldS) " -> "
                              (notch-fmt (cdr (assoc "TOP-SOCKETS" sj)))))
@@ -1611,12 +1833,12 @@
           (notch-say (strcat side " pin columns: "
                              (notch-fmt (notch-pin-columns sideW (notch-p "shelfHoles.columnFromEdge")))
                              " -> " (notch-fmt (cdr (assoc "PIN-COLUMNS" sj)))))
-          (notch-say (strcat "BOTTOM tabs into " side ": " (notch-fmt oldTop) " -> "
+          (notch-say (strcat hz " tabs into " side ": " (notch-fmt oldTop) " -> "
                              (notch-fmt (cdr (assoc (if bur "RIGHT" "LEFT") tj)))))
-          (notch-say (strcat "BOTTOM tabs into BACK: " (notch-fmt oldBack) " -> "
+          (notch-say (strcat hz " tabs into BACK: " (notch-fmt oldBack) " -> "
                              (notch-fmt (cdr (assoc "BACK" tj)))))
-          (notch-say (strcat "BACK bottom sockets: " (notch-fmt (notch-shift oldBack g)) " -> "
-                             (notch-fmt (cdr (assoc "BOTTOM-SOCKETS" bj)))))
+          (notch-say (strcat "BACK " (if top "top" "bottom") " sockets: " (notch-fmt (notch-shift oldBack g)) " -> "
+                             (notch-fmt (cdr (assoc (if top "TOP-SOCKETS" "BOTTOM-SOCKETS") bj)))))
           (notch-say "---------")
           (drawTextLC "SUMMARY" sumX sumY lineH "Property of Skylon Joinery" 6)
           (princ "\nNotched boards drawn.")))))

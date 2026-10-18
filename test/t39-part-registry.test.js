@@ -114,6 +114,9 @@ function paramSets(typeId) {
     // cuts its parent, so the walk asks every kit.
     ['notch', { ...base, doors: true, hinge: 'R', notch: { corner: 'BL', w: 200, d: 200, h: 0 } }],
     ['notch-part', { ...base, doors: true, hinge: 'R', notch: { corner: 'BL', w: 200, d: 200, h: 300 } }],
+    // T79 F4 · the notch from the top (KIT_NOTCH.lsp D21, a negative height) and its FLOOR. The owner,
+    // 18.10.2026: *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry?"*
+    ['notch-top', { ...base, doors: true, hinge: 'R', notch: { corner: 'BL', w: 200, d: 200, h: -300 } }],
     ['run-infill', {
       ...base,
       doors: true,

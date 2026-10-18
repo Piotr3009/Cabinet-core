@@ -607,6 +607,8 @@ export const ELEMENT_TO_PART_ID = {
   'NOTCH-STEP': 'back',
   PELMET: 'pelmet',
   'NOTCH-LID': 'carcase_horizontal',
+  // T79 F4 (KIT_NOTCH.lsp D21) · the FLOOR under a notch from the top, the LID's twin.
+  'NOTCH-FLOOR': 'carcase_horizontal',
   // T74 F13 · the free-standing panel's one board.
   'FREE-PANEL': 'free_panel',
 

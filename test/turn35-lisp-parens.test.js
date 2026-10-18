@@ -152,3 +152,18 @@ for (const kit of T75_KITS) {
   });
 }
 
+// T79 F4 · CLAUDE.md T79 FROZEN 2: *"parens test grows with every file
+// touched."*  KIT_NOTCH.lsp is amended under licence (the owner, 18.10.2026:
+// *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry?"*) with
+// D21 THE TOP-ANCHORED NOTCH and its NUMBERS block I2; it balances by name.
+test('T79 F4 · KIT_NOTCH.lsp balances 0/0 with D21 and its NUMBERS block I2', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_NOTCH.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D21 THE TOP-ANCHORED NOTCH\./);
+  assert.match(text, /;;; I2\. NUMBERS - THE NOTCH FROM THE TOP/);
+  assert.match(text, /\(defun notch-from-top-p \(ch nh\)/);
+  assert.match(text, /\(defun notch-floor \(ch g nw nd nh\)/);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+});

@@ -89,10 +89,20 @@ export function notchBackP(corner) { return corner === 'BL' || corner === 'BR'; 
 export function notchLeftP(corner) { return corner === 'BL' || corner === 'FL'; }
 /** The side the notch cuts: BUL at an L corner, BUR at an R corner. */
 export function notchSideName(corner) { return notchLeftP(corner) ? 'BUL' : 'BUR'; }
-/** 0 (or anything at or over the carcass) is FULL HEIGHT. */
-export function notchFullP(ch, nh) { return nh <= 0 || nh >= ch; }
-/** The height the notch actually takes. */
-export function notchHh(ch, nh) { return notchFullP(ch, nh) ? ch : nh; }
+/**
+ * 0 (or anything at or over the carcass, either way) is FULL HEIGHT. Until
+ * 18.10.2026 a negative nh read as full height too (and was refused);
+ * KIT_NOTCH.lsp D21 gives it the top.
+ */
+export function notchFullP(ch, nh) { return nh === 0 || Math.abs(nh) >= ch; }
+/**
+ * T79 F4 (KIT_NOTCH.lsp D21): a part-height notch hanging from the TOP, a
+ * negative nh. The owner, 18.10.2026: *"nie powinno być funkcji -500 na
+ * przykład i wtedy ucina od góry? i mała informacja o tym."*
+ */
+export function notchFromTopP(ch, nh) { return nh < 0 && !notchFullP(ch, nh); }
+/** The height the notch actually takes (D21: |nh| from the top). */
+export function notchHh(ch, nh) { return notchFullP(ch, nh) ? ch : Math.abs(nh); }
 /** D3: boxed when the notch is NOT LESS THAN the side's thickness. */
 export function notchBoxedP(nw, g) { return nw >= g; }
 /** The cutter's radius (engine/cnc/rollover.js toolRadius). */
@@ -390,29 +400,34 @@ export function notchTopJoints(cw, cd, g, nw, nd, corner, K) {
 
 // ── THE SIDE at the corner: (cd - g) x ch, in ITS OWN LISP FRAME ───────────
 
-export function notchSideFc(corner, burFrame) {
-  if (burFrame) return notchBackP(corner) ? 'x0y0' : 'x1y0';
-  return notchBackP(corner) ? 'x1y0' : 'x0y0';
+/** notch-side-fc: D21, `top` (a notch from the top) takes the corner at the TOP of the edge, y1 for y0. */
+export function notchSideFc(corner, burFrame, top = false) {
+  let fc;
+  if (burFrame) fc = notchBackP(corner) ? 'x0y0' : 'x1y0';
+  else fc = notchBackP(corner) ? 'x1y0' : 'x0y0';
+  return top ? `${fc.slice(0, 2)}y1` : fc;
 }
 
 export function notchSide(cd, ch, g, nw, nd, nh, corner) {
   if (!notchBoxedP(nw, g)) return notchPlainRect(cd - g, ch);
-  return notchRectOutline(cd - g, ch, nd, notchHh(ch, nh), notchSideFc(corner, !notchLeftP(corner)));
+  return notchRectOutline(cd - g, ch, nd, notchHh(ch, nh), notchSideFc(corner, !notchLeftP(corner), notchFromTopP(ch, nh)));
 }
 
 export function notchSideDogbone(cd, ch, g, nw, nd, nh, corner, r) {
   if (!notchBoxedP(nw, g)) return null;
-  return notchDogbone(cd - g, ch, nd, notchHh(ch, nh), notchSideFc(corner, !notchLeftP(corner)), r);
+  return notchDogbone(cd - g, ch, nd, notchHh(ch, nh), notchSideFc(corner, !notchLeftP(corner), notchFromTopP(ch, nh)), r);
 }
 
-/** notch-side-rebate (D3): [x0, y0, x1, y1, depth] in the side's frame, or null. */
+/** notch-side-rebate (D3): [x0, y0, x1, y1, depth] in the side's frame, or null. D21: from the top, ch - |nh| .. ch. */
 export function notchSideRebate(cd, ch, g, nw, nd, nh, corner) {
   if (notchBoxedP(nw, g)) return null;
   const bw = cd - g;
-  const fc = notchSideFc(corner, !notchLeftP(corner));
+  const top = notchFromTopP(ch, nh);
+  const fc = notchSideFc(corner, !notchLeftP(corner), top);
+  const [y0, y1] = top ? [ch - notchHh(ch, nh), ch] : [0, notchHh(ch, nh)];
   return notchFcX0(fc)
-    ? [0, 0, nd, notchHh(ch, nh), nw]
-    : [bw - nd, 0, bw, notchHh(ch, nh), nw];
+    ? [0, y0, nd, y1, nw]
+    : [bw - nd, y0, bw, y1, nw];
 }
 
 /**
@@ -429,18 +444,24 @@ export function notchSideJoints(cd, ch, g, nw, nd, nh, corner, K) {
   const pin = notchP(K, 'shelfHoles.columnFromEdge');
   const sideW = cd - g;
   const full = notchFullP(ch, nh);
+  const top = notchFromTopP(ch, nh);
+  const hh = notchHh(ch, nh);
   const boxed = notchBoxedP(nw, g);
   const run = boxed ? sideW - nd : sideW;
   const off = boxed && !notchBackP(corner) ? nd : 0;
-  const botS = notchShift(notchReplanSockets(run, inset, below), off);
-  const botR = notchShift(notchScrewRow(run, sfe), off);
-  const [topS, topR] = full && boxed
-    ? [botS, botR]
-    : [notchReplanSockets(sideW, inset, below), notchScrewRow(sideW, sfe)];
+  const cutS = notchShift(notchReplanSockets(run, inset, below), off);
+  const cutR = notchShift(notchScrewRow(run, sfe), off);
+  const parS = notchReplanSockets(sideW, inset, below);
+  const parR = notchScrewRow(sideW, sfe);
+  // The bottom edge moves unless the notch hangs from the top (D21); the top
+  // edge moves when a boxed notch runs the full height, or hangs from the top.
+  const [botS, botR] = top ? [parS, parR] : [cutS, cutR];
+  const [topS, topR] = (full || top) && boxed ? [cutS, cutR] : [parS, parR];
   let tabs;
   if (!boxed) tabs = notchReplanTabs(ch, e, one, three);
   else if (!notchBackP(corner)) tabs = notchReplanTabs(ch, e, one, three);
   else if (full) tabs = [];
+  else if (top) tabs = notchReplanTabs(ch - hh, e, one, three);
   else tabs = notchShift(notchReplanTabs(ch - nh, e, one, three), nh);
   const pins = notchShift(notchPinColumns(run, pin), off);
   return {
@@ -455,19 +476,27 @@ export function notchSideJoints(cd, ch, g, nw, nd, nh, corner, K) {
 
 // ── THE BACK: cw x ch, x from the LEFT face, y up ─────────────────────────
 
-export function notchBackFc(corner) { return notchLeftP(corner) ? 'x0y0' : 'x1y0'; }
+/** notch-back-fc: D21, `top` (a notch from the top) takes the corner at the TOP. */
+export function notchBackFc(corner, top = false) {
+  if (notchLeftP(corner)) return top ? 'x0y1' : 'x0y0';
+  return top ? 'x1y1' : 'x1y0';
+}
 
 export function notchBack(cw, ch, nw, nh, corner) {
   if (!notchBackP(corner)) return notchPlainRect(cw, ch);
-  return notchRectOutline(cw, ch, nw, notchHh(ch, nh), notchBackFc(corner));
+  return notchRectOutline(cw, ch, nw, notchHh(ch, nh), notchBackFc(corner, notchFromTopP(ch, nh)));
 }
 
 export function notchBackDogbone(cw, ch, nw, nh, corner, r) {
   if (!notchBackP(corner)) return null;
-  return notchDogbone(cw, ch, nw, notchHh(ch, nh), notchBackFc(corner), r);
+  return notchDogbone(cw, ch, nw, notchHh(ch, nh), notchBackFc(corner, notchFromTopP(ch, nh)), r);
 }
 
-/** notch-back-joints: its joints in its ORIGINAL frame. */
+/**
+ * notch-back-joints: its joints in its ORIGINAL frame. D21: a notch from the
+ * top shortens the TOP edge and leaves the BOTTOM edge the parent's; the
+ * notch-side edge is planned on the run UNDER it, 0 .. ch - |nh|.
+ */
 export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
   const e = notchP(K, 'puzzle.tabCentresFromEnd');
   const below = notchP(K, 'puzzle.singleSocketBelow');
@@ -476,15 +505,19 @@ export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
   const sfe = notchP(K, 'puzzle.screwFromEnd');
   const S = notchScrewAxis(g);
   const full = notchFullP(ch, nh);
+  const top = notchFromTopP(ch, nh);
   const hh = notchHh(ch, nh);
   const left = notchLeftP(corner);
   const back = notchBackP(corner);
   const boxed = notchBoxedP(nw, g);
   const farTabs = notchReplanTabs(ch, e, one, three);
+  // The top edge: all of it, or what a full-height back notch (or, D21, a
+  // boxed one from the top) leaves. The bottom edge: a back notch reaches it
+  // unless it hangs from the top.
   let [lo, hi] = [0, cw];
-  if (back && full) [lo, hi] = left ? [nw, cw] : [0, cw - nw];
+  if (back && (full || (top && boxed))) [lo, hi] = left ? [nw, cw] : [0, cw - nw];
   let [blo, bhi] = [0, cw];
-  if (back) [blo, bhi] = left ? [nw, cw] : [0, cw - nw];
+  if (back && !top) [blo, bhi] = left ? [nw, cw] : [0, cw - nw];
   let topS;
   let botS;
   if (back && boxed) {
@@ -498,6 +531,7 @@ export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
   if (!back) nearTabs = farTabs;
   else if (!boxed) nearTabs = farTabs;
   else if (full) nearTabs = [];
+  else if (top) nearTabs = notchReplanTabs(ch - hh, e, one, three);
   else nearTabs = notchShift(notchReplanTabs(ch - nh, e, one, three), nh);
   const farX = left ? cw - S : S;
   const nearX = left ? nw + S : cw - nw - S;
@@ -510,8 +544,11 @@ export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
   // meets the RETURN only and gets no row (it was the nearX column over the
   // whole height); beside a part-height notch the run (notchScrewRow(hh) at
   // nearX) is gone and the side's own back edge above it keeps its rows.
+  // D21: under a notch from the top the side's own back edge keeps its rows.
   if (!back || !boxed) {
     for (const y of notchRowsBetweenTabs(0, ch, farTabs, sfe)) scr.push([upX, y]);
+  } else if (top) {
+    for (const y of notchRowsBetweenTabs(0, ch - hh, nearTabs, sfe)) scr.push([upX, y]);
   } else if (!full) {
     for (const y of notchRowsBetweenTabs(nh, ch, nearTabs, sfe)) scr.push([upX, y]);
   }
@@ -531,27 +568,34 @@ export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
 
 // ── THE BOX: STEP, RETURN, LID ─────────────────────────────────────────────
 
-/** notch-box-places: { RETURN: [x0 y0 z0 x1 y1 z1], STEP, LID } (plan frame), null unboxed. */
+/**
+ * notch-box-places: { RETURN: [x0 y0 z0 x1 y1 z1], STEP, LID } (plan frame), null unboxed.
+ * D21: from the top the RETURN and the STEP hang from the carcass top (z0
+ * ch - |nh|, z1 ch) and a FLOOR closes them underneath where the LID would lie over them.
+ */
 export function notchBoxPlaces(cw, cd, ch, g, nw, nd, nh, corner) {
   if (!notchBoxedP(nw, g)) return null;
   const hh = notchHh(ch, nh);
+  const top = notchFromTopP(ch, nh);
   const left = notchLeftP(corner);
   const back = notchBackP(corner);
   const out = {};
+  const [z0, z1] = top ? [ch - hh, ch] : [0, hh];
   const [rx0, rx1] = left ? [nw, nw + g] : [cw - nw - g, cw - nw];
   // 15.10.2026 (the owner, the mockup "naroznik, krawedz"): at a back corner
   // the RETURN starts at the STEP's back face (cd - nd), a board shorter, and
   // the STEP runs a board past the notch over the RETURN's end, as the back
   // covers the sides' ends. The open cabinet shows one whole face.
   const [ry0, ry1] = back ? [cd - nd, cd - g] : [0, nd];
-  out.RETURN = [rx0, ry0, 0, rx1, ry1, hh];
+  out.RETURN = [rx0, ry0, z0, rx1, ry1, z1];
   if (back) {
     const [sx0, sx1] = left ? [0, nw + g] : [cw - nw - g, cw];
-    out.STEP = [sx0, cd - nd - g, 0, sx1, cd - nd, hh];
+    out.STEP = [sx0, cd - nd - g, z0, sx1, cd - nd, z1];
   }
   if (!notchFullP(ch, nh)) {
     const [lx0, lx1] = left ? [g, nw + g] : [cw - nw - g, cw - g];
-    out.LID = [lx0, back ? cd - nd - g : 0, hh, lx1, ry1, hh + g];
+    if (top) out.FLOOR = [lx0, back ? cd - nd - g : 0, z0 - g, lx1, ry1, z0];
+    else out.LID = [lx0, back ? cd - nd - g : 0, hh, lx1, ry1, hh + g];
   }
   return out;
 }
@@ -620,9 +664,18 @@ export function notchReturnScrewsStatedUntil1710(ch, g, nw, nd, nh, corner, K) {
   return out;
 }
 
-/** notch-lid: [nw, nd], part height only. */
+/** notch-lid: [nw, nd], part height only; D21: never over a notch from the top. */
 export function notchLid(ch, g, nw, nd, nh) {
-  return notchBoxedP(nw, g) && !notchFullP(ch, nh) ? [nw, nd] : null;
+  return notchBoxedP(nw, g) && !notchFullP(ch, nh) && !notchFromTopP(ch, nh) ? [nw, nd] : null;
+}
+
+/**
+ * notch-floor (D21): [nw, nd], a notch from the top only, at z = ch - |nh| - g
+ * .. ch - |nh|, the STEP and the RETURN standing on it. No screw is stated for
+ * it: the box is the joiner's (D10).
+ */
+export function notchFloor(ch, g, nw, nd, nh) {
+  return notchBoxedP(nw, g) && notchFromTopP(ch, nh) ? [nw, nd] : null;
 }
 
 /**
@@ -658,8 +711,11 @@ export function notchShelfRect(cw, cd, g, K) {
   return [g + wc / 2, dc, cw - g - wc / 2, cd - g];
 }
 
+/** notch-shelf-crosses-p; D21, from the top: its top face (zs + g) rises past the FLOOR's underside. */
 export function notchShelfCrossesP(zs, g, ch, nh) {
-  return notchFullP(ch, nh) || zs < nh + g;
+  if (notchFullP(ch, nh)) return true;
+  if (notchFromTopP(ch, nh)) return zs + g > ch - notchHh(ch, nh) - g;
+  return zs < nh + g;
 }
 
 export function notchShelfCut(cw, cd, g, nw, nd, corner, clr, shelf) {
@@ -676,10 +732,10 @@ export function notchShelfDogbone(cw, cd, g, nw, nd, corner, clr, shelf, r) {
 
 // ── THE PLINTH ────────────────────────────────────────────────────────────
 
-/** notch-plinth: [x0, x1], its extent across the unit; [0, cw] untouched. */
-export function notchPlinth(cw, cd, nw, nd, corner, setback, pt) {
+/** notch-plinth: [x0, x1], its extent across the unit; [0, cw] untouched. D21: `top` never reaches it. */
+export function notchPlinth(cw, cd, nw, nd, corner, setback, pt, top = false) {
   const [ny0, ny1] = notchBackP(corner) ? [cd - nd, cd] : [0, nd];
-  if (ny0 < setback + pt && ny1 > setback) {
+  if (!top && ny0 < setback + pt && ny1 > setback) {
     return notchLeftP(corner) ? [nw, cw] : [0, cw - nw];
   }
   return [0, cw];
@@ -700,10 +756,13 @@ export function notchHoleRefusal(kind, board) {
     + ` Move the notch, or hang the ${kind} on the other side.`;
 }
 
-export function notchCrossesP(cw, cd, ch, g, nw, nd, nh, corner, rect, z0) {
+/** notch-crosses-p: from height z0 up to z1; D21, from the top: z1 past the FLOOR's underside. */
+export function notchCrossesP(cw, cd, ch, g, nw, nd, nh, corner, rect, z0, z1 = z0) {
   const lift = (notchFullP(ch, nh) || !notchBoxedP(nw, g)) ? 0 : g;
-  return notchOverlapP(rect, notchKeepout(cw, cd, g, nw, nd, corner, 0))
-    && z0 < notchHh(ch, nh) + lift;
+  if (!notchOverlapP(rect, notchKeepout(cw, cd, g, nw, nd, corner, 0))) return false;
+  return notchFromTopP(ch, nh)
+    ? z1 > ch - notchHh(ch, nh) - lift
+    : z0 < notchHh(ch, nh) + lift;
 }
 
 export function notchRebateEatsP(cd, ch, g, nw, nd, nh, corner, K) {
@@ -720,7 +779,8 @@ export function notchRebateEatsP(cd, ch, g, nw, nd, nh, corner, K) {
   const [lo, hi] = notchBackP(corner) ? [sideW - nd, sideW] : [0, nd];
   let hit = false;
   if (notchBackP(corner)) {
-    for (const c of notchReplanTabs(ch, e, one, three)) if (c - bone < hh) hit = true;
+    const top = notchFromTopP(ch, nh);
+    for (const c of notchReplanTabs(ch, e, one, three)) if (top ? c + bone > ch - hh : c - bone < hh) hit = true;
   }
   for (const c of notchReplanSockets(sideW, inset, below)) {
     if (c + half > lo && c - half < hi) hit = true;
@@ -746,17 +806,28 @@ export function notchObstacleLimits(cw, cd, g, bone, minInterior = 100) {
   return [cw - 2 * g - keep, cd - g - keep];
 }
 
+/**
+ * notch-refusal. D21 (18.10.2026): a negative nh is a notch from the top, no
+ * longer refused ("the height cannot be below 0" stood here until then); it
+ * must leave `notch.minInterior` of the interior UNDER it, and the side's back
+ * edge under it must hold a tab.
+ */
 export function notchRefusal(cw, cd, ch, g, nw, nd, nh, corner, K) {
   const bone = notchP(K, 'puzzle.dogboneHalfHeight');
   const minEdge = notchMinJointEdge(bone, g);
+  const minInt = notchP(K, 'notch.minInterior');
   const sideW = cd - g;
   const tw = cw - 2 * g;
+  const top = notchFromTopP(ch, nh);
+  const hh = notchHh(ch, nh);
   const side = notchCornerOk(corner) ? notchSideName(corner) : 'the side';
   if (!notchCornerOk(corner)) return 'NOTCH: the corner is BL, BR, FL or FR.';
   if (!(nw > 0) || !(nd > 0)) return 'NOTCH: the width and the depth must both be more than 0.';
-  if (nh < 0) return 'NOTCH: the height cannot be below 0 (0 is the full height).';
-  if (!notchFullP(ch, nh) && nh + g > ch - g) {
+  if (!notchFullP(ch, nh) && !top && nh + g > ch - g) {
     return 'NOTCH: a part-height notch must leave its LID room under the TOP. Make it full height, or lower it.';
+  }
+  if (top && ch - hh - g - (notchBoxedP(nw, g) ? g : 0) < minInt) {
+    return `NOTCH: a notch from the top must leave ${roundTo(minInt, 0)} mm of the interior under it. Make it shorter, or make it full height.`;
   }
   if (notchBoxedP(nw, g) && tw - nw < minEdge) {
     return 'NOTCH: the notch and its RETURN take the TOP and the BOTTOM across. Make it narrower.';
@@ -764,8 +835,11 @@ export function notchRefusal(cw, cd, ch, g, nw, nd, nh, corner, K) {
   if (sideW - nd < minEdge) {
     return `NOTCH: what is left of ${side} cannot hold a joint. Make the notch shallower.`;
   }
-  if (notchBoxedP(nw, g) && notchBackP(corner) && !notchFullP(ch, nh) && ch - nh < minEdge) {
+  if (notchBoxedP(nw, g) && notchBackP(corner) && !notchFullP(ch, nh) && !top && ch - nh < minEdge) {
     return `NOTCH: the back edge of ${side} above the notch cannot hold a tab. Make it full height, or lower it.`;
+  }
+  if (notchBoxedP(nw, g) && notchBackP(corner) && top && ch - hh < minEdge) {
+    return `NOTCH: the back edge of ${side} under the notch cannot hold a tab. Make it shorter, or make it full height.`;
   }
   if (notchRebateEatsP(cd, ch, g, nw, nd, nh, corner, K)) {
     return `NOTCH: a notch narrower than the board is a rebate in ${side}, and this one eats a joint.`
@@ -799,14 +873,16 @@ export const NOTCH_PARENT_KITS = Object.freeze(['KIT_BUD_FULL.lsp', 'KIT_WARDROB
  * hangers' cut-out layer, in a top corner of the BACK) that the notch's region
  * reaches STEPS IN along the width by nw, so the bracket hangs beside the
  * notch on the board that is there. Cut-outs the notch does not reach stay.
- * `fc` is the BACK's corner code; the region is nw wide and hh high from the floor.
+ * `fc` is the BACK's corner code; the region is nw wide and hh high from the
+ * floor, or (D21, a y1 corner) hh down from the top.
  */
 export function notchHangerCutouts(pockets, cutoutLayer, W, H, nw, hh, fc) {
   if (!cutoutLayer) return [];
   const left = notchFcX0(fc);
+  const fromTop = !notchFcY0(fc);
   return (pockets || []).filter((k) => k.layer === cutoutLayer).map((k) => {
     const [rx0, rx1] = left ? [0, nw] : [W - nw, W];
-    const reached = k.x1 < rx1 - EPS && k.x2 > rx0 + EPS && k.y1 < hh - EPS;
+    const reached = k.x1 < rx1 - EPS && k.x2 > rx0 + EPS && (fromTop ? k.y2 > H - hh + EPS : k.y1 < hh - EPS);
     if (!reached) return k;
     const dx = left ? nw : -nw;
     return { ...k, x1: roundTo(k.x1 + dx, 4), x2: roundTo(k.x2 + dx, 4) };
@@ -827,6 +903,8 @@ export function notchOf(params, profile = {}) {
     w: pick(n.w, 'notch.defaults.width'),
     d: pick(n.d, 'notch.defaults.depth'),
     h: pick(n.h, 'notch.defaults.height'),
+    // T79 F4 (KIT_NOTCH.lsp D21): a negative HEIGHT hangs it from the top.
+    ...(Number(n.h) < 0 ? { anchor: 'top' } : {}),
     // 15.10.2026: a notch the ROOM derived (a chimney, a box; projectStore
     // obstacleNotchFor) says so, and what for; the hand's notch has neither.
     ...(n.auto ? { auto: true, for: String(n.for || '') } : {}),
@@ -853,9 +931,9 @@ export function notchKitRefusal(type) {
 /** Does this kit take a notch? The UI asks before it offers CUT CORNER. */
 export function notchApplies(type) { return notchKitRefusal(type) === null; }
 
-/** The interior a panel's box takes, in the plan frame and from height z0. */
+/** The interior a panel's box takes, in the plan frame and from height z0 up to z1. */
 function planOf(box, D) {
-  return { rect: [box.x, D - (box.z + box.d), box.x + box.w, D - box.z], z0: box.y };
+  return { rect: [box.x, D - (box.z + box.d), box.x + box.w, D - box.z], z0: box.y, z1: box.y + box.h };
 }
 
 const insideCarcass = (box, W, H, D) => box
@@ -891,7 +969,7 @@ export function notchVerdict({ parent, params, type, profile }) {
   // D7: a hinge, a runner or a rail bracket the notch reaches is a REFUSAL,
   // never a drop: a door hung on fewer hinges than its ladder is a door that
   // falls. Asked in the side's own frame (BUR's runs from the back).
-  const fc = notchSideFc(n.corner, sideId === 'BUR');
+  const fc = notchSideFc(n.corner, sideId === 'BUR', notchFromTopP(H, n.h));
   for (const d of parent.drills || []) {
     const kind = REFUSED_KINDS[d.kind];
     if (!kind || d.panel !== sideId) continue;
@@ -901,15 +979,15 @@ export function notchVerdict({ parent, params, type, profile }) {
   // D8: anything else the parent puts in the carcass that crosses the keep-out.
   for (const p of parent.panels || []) {
     if (CUT_PARTS.has(p.part) || !insideCarcass(p.box, W, H, D)) continue;
-    const { rect, z0 } = planOf(p.box, D);
-    if (notchCrossesP(W, D, H, G, n.w, n.d, n.h, n.corner, rect, z0)) {
+    const { rect, z0, z1 } = planOf(p.box, D);
+    if (notchCrossesP(W, D, H, G, n.w, n.d, n.h, n.corner, rect, z0, z1)) {
       return say(`NOTCH: ${p.id} stands where the notch and its box go. Move it, or cut another corner.`, p.id);
     }
   }
   const rails = [parent.assemblies?.rail, ...(parent.assemblies?.columnRails || [])].filter(Boolean);
   for (const r of rails) {
     const y = D - Number(r.z);
-    if (notchCrossesP(W, D, H, G, n.w, n.d, n.h, n.corner, [r.x1, y - 1, r.x2, y + 1], Number(r.y) || 0)) {
+    if (notchCrossesP(W, D, H, G, n.w, n.d, n.h, n.corner, [r.x1, y - 1, r.x2, y + 1], Number(r.y) || 0, Number(r.y) || 0)) {
       return say('NOTCH: the hanging rail runs through the notch. Move the rail, or cut another corner.');
     }
   }
@@ -930,7 +1008,7 @@ export function notchVerdict({ parent, params, type, profile }) {
   const pt = (pnl) => Number(pnl.box?.d) || G;
   for (const p of parent.panels || []) {
     if (p.part !== 'PLINTH' || !p.box) continue;
-    const ext = notchPlinth(W, D, n.w, n.d, n.corner, notchP(K, 'autoParts.plinth.setback'), pt(p));
+    const ext = notchPlinth(W, D, n.w, n.d, n.corner, notchP(K, 'autoParts.plinth.setback'), pt(p), notchFromTopP(H, n.h));
     if (ext[0] === 0 && ext[1] === W) continue;
     const runsOn = notchLeftP(n.corner) ? p.box.x < -EPS : p.box.x + p.box.w > W + EPS;
     if (runsOn) {
@@ -1114,12 +1192,14 @@ export function notchCarcass({
   const left = notchLeftP(corner);
   const back = notchBackP(corner);
   const full = notchFullP(H, nh);
+  // T79 F4 (KIT_NOTCH.lsp D21): a notch from the top, a negative HEIGHT.
+  const top = notchFromTopP(H, nh);
   const hh = notchHh(H, nh);
   const boxed = notchBoxedP(nw, G);
   const sideW = D - G;
   const sideId = notchSideName(corner);
   const cut = {
-    notch: n, corner, nw, nd, nh, hh, full, boxed, left, back, sideId, sideW,
+    notch: n, corner, nw, nd, nh, hh, full, top, boxed, left, back, sideId, sideW,
     W, H, D, G,
     regions: {},
     reorigin: {},
@@ -1133,7 +1213,7 @@ export function notchCarcass({
   // ── THE SIDE ──
   const side = byId(sideId);
   if (side) {
-    const fc = notchSideFc(corner, !left);
+    const fc = notchSideFc(corner, !left, top);
     // Unboxed (D3) the side keeps every joint of the parent's and its drilling
     // with it; the rebate is the joiner's, on its outer face.
     if (boxed) cut.regions[sideId] = { fc, nw: nd, nh: hh, bw: sideW, bh: H };
@@ -1183,7 +1263,7 @@ export function notchCarcass({
     }
   }
 
-  // ── THE TOP (full height) AND THE BOTTOM ──
+  // ── THE TOP (full height, or D21 from the top) AND THE BOTTOM (unless from the top) ──
   if (boxed) {
     const plan = notchTopOutline(W, D, G, nw, nd, corner);
     const drawn = notchRot90Pts(plan, sideW);
@@ -1196,7 +1276,7 @@ export function notchCarcass({
     ];
     // 17.10.2026 (D9): the corner mark on the drawn nominal outline, no dog bone
     // (notchTopDogbone stays the record of where the circle stood).
-    for (const id of full ? ['TOP', 'BOTTOM'] : ['BOTTOM']) {
+    for (const id of full ? ['TOP', 'BOTTOM'] : [top ? 'TOP' : 'BOTTOM']) {
       const p = byId(id);
       if (!p || p.part !== id) continue;
       const corner6 = notchCornerOfOutline(drawn, sideW, tw);
@@ -1228,7 +1308,7 @@ export function notchCarcass({
     });
     // A full-height notch takes the left (right) edge away: its sockets went
     // with NEAR-SOCKETS = none, so nothing stands on an edge that is not there.
-    const fc = notchBackFc(corner);
+    const fc = notchBackFc(corner, top);
     // D7: an UNBOXED back keeps the parent's rows, and a row the rebate cuts
     // away is dropped with the corner (it would be drilled into air).
     const holes = sockets.holes.filter((hl) => !(!boxed
@@ -1304,6 +1384,11 @@ export function notchCarcass({
       board('LID', 'NOTCH-LID', lid[0], lid[1], places.LID,
         notchLidScrews(H, G, nw, nd, nh, corner, K), back ? null : { code: codes.right, len: lid[0] });
     }
+    // D21: the FLOOR under a notch from the top, the LID's twin; no screw (D10).
+    const floor = notchFloor(H, G, nw, nd, nh);
+    if (floor && places.FLOOR) {
+      board('FLOOR', 'NOTCH-FLOOR', floor[0], floor[1], places.FLOOR, null, back ? null : { code: codes.right, len: floor[0] });
+    }
   }
 
   // ── SHELVES ──
@@ -1339,7 +1424,7 @@ export function notchCarcass({
   for (const p of panels) {
     if (p.part !== 'PLINTH' || !p.box) continue;
     const pt = Number(p.box.d) || G;
-    const ext = notchPlinth(W, D, nw, nd, corner, notchP(K, 'autoParts.plinth.setback'), pt);
+    const ext = notchPlinth(W, D, nw, nd, corner, notchP(K, 'autoParts.plinth.setback'), pt, top);
     if (ext[0] === 0 && ext[1] === W) continue;
     const from = Math.max(p.box.x, ext[0]);
     const to = Math.min(p.box.x + p.box.w, ext[1]);
@@ -1427,7 +1512,8 @@ export function notchDrills({ cut, panels, drills, legs }) {
     }
   }
   // Legs standing in the obstacle's footprint step out of it, along the depth.
-  if (legs && Array.isArray(legs.positions) && cut.boxed) {
+  // D21: a notch from the top has no footprint on the floor; the legs stay.
+  if (legs && Array.isArray(legs.positions) && cut.boxed && !cut.top) {
     const lw = Number(legs.width) || 0;
     const [fx0, fx1] = cut.left ? [0, cut.nw] : [cut.W - cut.nw, cut.W];
     const [fz0, fz1] = cut.back ? [0, cut.nd] : [cut.D - cut.nd, cut.D];
@@ -1453,6 +1539,7 @@ export function notchSummary(cut) {
     boxed: cut.boxed,
     boards: [...cut.boards],
     dropped: cut.dropped || 0,
+    ...(cut.top ? { anchor: 'top' } : {}),
     ...(cut.notch?.auto ? { auto: true, for: cut.notch.for } : {}),
   };
 }

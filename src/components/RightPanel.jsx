@@ -1942,8 +1942,8 @@ function JointsRow({
   );
 }
 
-/** "full" for 0, the number otherwise. */
-function notchHeightText(h) { return Number(h) > 0 ? String(Math.round(Number(h))) : 'full'; }
+/** "full" for 0, the number otherwise (T79 F4: a negative one, from the top, included). */
+function notchHeightText(h) { return Number(h) ? String(Math.round(Number(h))) : 'full'; }
 
 function NotchModal() {
   const modal = useUiStore((s) => s.modal);
@@ -2014,7 +2014,8 @@ function NotchWindow({ args }) {
           {field('DEPTH', 'depth', d, setD)}
           {field('HEIGHT', 'height', h, setH)}
         </div>
-        <p className="text-[11px] text-ink-400">mm. WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; full runs top to bottom.</p>
+        {/* T79 F4 (KIT_NOTCH.lsp D21), the owner: *"i mała informacja o tym."* */}
+        <p className="text-[11px] text-ink-400" data-testid="notch-help">WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500).</p>
         {said && <p className="text-[11px] text-status-danger" data-testid="notch-said">{said}</p>}
         <div className="flex justify-end">
           <button type="submit" className="cc-btn" data-testid="notch-cut">CUT</button>

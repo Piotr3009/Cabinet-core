@@ -179,6 +179,16 @@ export const T78_RETAIL_EDITS = [
     words: 'the owner, 17.10.2026: *"caly modal poszerz prosze o 50 procent"*.',
     hunks: ['@@ -260,0 +261,2 @@'],
   },
+  {
+    retail: 'src/retail/design/detail/NotchAsk.jsx',
+    by: 'T79 F4',
+    why: 'retail\'s own CUT CORNER window (not a copy: PRO\'s window lives in RightPanel.jsx, which has no retail copy): '
+      + 'HEIGHT shows a negative number (a notch from the top, KIT_NOTCH.lsp D21) as itself, 0 still reads full, and '
+      + 'PRO\'s help line word for word under the three fields (data-testid notch-help). The cut is the adapter\'s as before.',
+    words: 'the owner, 18.10.2026: *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry? i mała informacja o tym."*; '
+      + 'CLAUDE.md T79 F4: *"Retail `NotchAsk.jsx` the same line, through the copy script where it is a copy, by hand where it is not."*',
+    hunks: ['@@ -20 +20,2 @@', '@@ -84,0 +86,2 @@'],
+  },
 ];
 
 /**

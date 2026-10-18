@@ -7362,13 +7362,47 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // Turn 33 (CLAUDE.md F3): `variant` rides in — null is the plain box every
   // drawer has always been; 'shoe' | 'belt_tie' | 'belt_tie_glass' add the
   // BOUGHT insert (and the glass) to the BOM. The box itself cuts unchanged.
-  addDrawers: (unitId, count, mount = 'overlay', heightMm, zone = null, variant = null) => {
+  addDrawers: (unitId, count, mount = 'overlay', heightMm, zone = null, variant = null, { columns = 1 } = {}) => {
     // Turn 24 (CLAUDE.md F3.1): the hard gate. Removing the last drawer is
     // always allowed — a gate that trapped a stack somebody wanted rid of
     // would be a gate on the wrong side of the door.
     if (count > 0) {
       const gate = drawerBoxGate(get().project.design);
       if (gate.blocked) return { ok: false, error: gate.message };
+    }
+    // ─── T79 F3 · 1 OR 2 COLUMNS, LIKE THE BAYS ─────────────────────────────
+    // The owner, 18.10.2026 (14:17): *"jak ustawiamy sobie teraz 3 szuflady
+    // internal to niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."*; the
+    // mockup, 14:45: *"2 - tak."* Two columns on an undivided unit: ONE
+    // divider at W / 2 (its left face at (W - G) / 2), the stack in zone 0 and
+    // the same stack in zone 1, in ONE batch (one undo); the engine closes
+    // both with one FIX board. The divider stands at full depth (the runners'
+    // wall, T32 F4's recessed-partition law) and is an ordinary partition
+    // afterwards. A full-width stack already there is the stack this replaces.
+    if (count > 0 && Math.trunc(Number(columns)) === 2) {
+      const unit = get().units.find((u) => u.id === unitId);
+      if (!unit) return { ok: false, error: 'The drawers were not added.' };
+      if ((unit.params.sections?.[0]?.items || []).some((i) => i.kind === 'partition')) {
+        return { ok: false, error: DRAWER_COLUMNS_DIVIDED };
+      }
+      const type = getUnitType(unit.type);
+      if (!type.supports.partition || type.drawerStyle !== 'wardrobe') {
+        return { ok: false, error: DRAWER_COLUMNS_REFUSED };
+      }
+      const before = get().units;
+      return runBatch(() => {
+        const G = unit.params.board_t ?? getCabinetProfile().board.thickness;
+        const W = Number(unit.params.width) || 0;
+        const partitionId = get().addPartition(unitId, (W - G) / 2);
+        if (!partitionId) return { ok: false, error: DRAWER_COLUMNS_NO_ROOM };
+        get().updateItem(unitId, partitionId, { front_mm: 0 });
+        get().addDrawers(unitId, 0, mount, heightMm, null);
+        for (const k of [0, 1]) {
+          const res = get().addDrawers(unitId, count, mount, heightMm, k, variant);
+          if (!res.ok) { set({ units: before }); return res; }
+        }
+        return { ok: true, error: null, partitionId };
+      });
     }
     // ─── TURN 32 (CLAUDE.md F4): THE RECESSED-PARTITION LAW ────────────────
     // Drawers in a column need that column's walls FULL DEPTH at the runner
@@ -11417,6 +11451,11 @@ function blindSpanOf(state, unit) {
 export const BLIND_DIVIDER_REFUSAL = 'No divider in the blind part of a blind corner: it stands behind the next run, '
   + 'reached through the door, and the rail runs through it. Place the divider in the part the door opens.';
 
+/** T79 F3 · the sentences two drawer columns are refused with. */
+export const DRAWER_COLUMNS_DIVIDED = 'This cabinet is already divided: pick the column the drawers go in.';
+const DRAWER_COLUMNS_REFUSED = 'This cabinet takes no divider, so its drawers stay in one column.';
+const DRAWER_COLUMNS_NO_ROOM = 'No room for a divider in this cabinet, so its drawers stay in one column.';
+
 function wallMarginOf(state, unit = null, wall = null) {
   const profile = getCabinetProfile();
   // ─── T75 F10 · A FACE IS NOT PLASTER ──────────────────────────────────────
@@ -11645,6 +11684,15 @@ function onTheFloor(unit, item, profile = getCabinetProfile()) {
   });
 }
 
+/**
+ * T79 F3 · the underside of the full-width board that closes the drawers: the
+ * full-width stack's PARTITION, or the ONE board over every column. Null when
+ * neither is cut. A full-width shelf stands on it and never below it.
+ */
+function fullWidthStackTop(result) {
+  return result.assemblies.drawerZone?.top ?? result.assemblies.columnCap?.top ?? null;
+}
+
 /** The band this unit's shelves may live in, read off the engine result. */
 function shelfBandFor(unit, profile, zone = null, precomputed = null, at = null) {
   const G = unit.params.board_t ?? profile.board.thickness;
@@ -11654,9 +11702,10 @@ function shelfBandFor(unit, profile, zone = null, precomputed = null, at = null)
   const columnStack = zone != null
     ? (result.assemblies.columnDrawers || []).find((c) => c.zone === Math.trunc(Number(zone)))
     : null;
+  const wideTop = zone == null ? fullWidthStackTop(result) : null;
   const floorY = columnStack
     ? columnStack.top + G
-    : (zone == null && result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : null);
+    : (wideTop != null ? wideTop + G : null);
   const band = shelfBand({
     height: unit.params.height,
     boardT: G,
@@ -11775,7 +11824,10 @@ const MAX_ELEMENT_THICKNESS = 100;
 export function validateUnit(unit, result, context = {}) {
   const issues = [];
   const items = unit.params.sections?.[0]?.items || [];
-  const drawers = items.filter((i) => i.kind === 'drawer').length;
+  // T79 F3 · the full-width stack only: a column's drawers have no drawerZone
+  // (the column pass says in its own words when it drops them).
+  const drawers = items.filter((i) => i.kind === 'drawer'
+    && (i.zone == null || !Number.isFinite(Number(i.zone)))).length;
 
   // Room fit. Position is hard-clamped by the setters, so what is left here is
   // exactly what clamping CANNOT fix: a unit that does not fit the room at all
@@ -11831,7 +11883,8 @@ export function validateUnit(unit, result, context = {}) {
       issues.push({ level: 'error', message: 'A drawer stack must be closed by a shelf (partition) above it.' });
     }
   }
-  const zoneTop = result.assemblies.drawerZone?.top ?? null;
+  // T79 F3 · the one board over the columns closes a drawer zone too.
+  const zoneTop = fullWidthStackTop(result);
   for (const item of items) {
     if (item.kind !== 'shelf' || !Number.isFinite(item.pos_mm)) continue;
     if (zoneTop != null && item.pos_mm < zoneTop) {

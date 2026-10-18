@@ -105,6 +105,9 @@ export const NEW_FILES = [
   'test/turn79-f02-above-divider.test.js',
   // T79 F12 (18.10.2026): Center between
   'test/turn79-f12-centre-between.test.js',
+  // T79 F3 (18.10.2026): drawer columns
+  'test/turn79-f03-drawer-columns.test.js',
+  'scripts/t78-classify.d/f34-t79-f03.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -91,6 +91,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // COLUMN, when the cabinet is divided — same grammar as the shelves.
   const [drawerMount, setDrawerMount] = useState('overlay');
   const [drawerZone, setDrawerZone] = useState(null);
+  // T79 F3 · 1 or 2 columns, asked like the bays while the unit is undivided.
+  const [drawerColumns, setDrawerColumns] = useState(1);
   // T54-F7: the shoe drawer's ONE decision — which bay. The height is the
   // law (side 80, front by the drawer-front law) and offers no field.
   const [shoeBoxZone, setShoeBoxZone] = useState(null);
@@ -138,9 +140,17 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     done();
   };
 
+  // ─── T79 F3 · 1 OR 2 COLUMNS ─────────────────────────────────────────────
+  // The owner, 18.10.2026 (14:17): *"jak ustawiamy sobie teraz 3 szuflady
+  // internal to niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."*;
+  // mockup, 14:45: *"2 - tak."* Asked only while the unit is undivided and can
+  // take a divider; once divided, "Which column" is the question, as before.
+  const askColumns = zones.length <= 1 && type.supports.partition && type.drawerStyle === 'wardrobe';
+
   const onAddDrawers = (count, height) => {
     const before = items.filter((i) => i.kind === 'drawer').length;
     const zone = zones.length > 1 ? drawerZone : null;
+    const columns = askColumns ? drawerColumns : 1;
     // ─── CHAT FIX 15.08.2026: THE CLICK LISTENS ─────────────────────────────
     // This handler used to congratulate BLIND — the store refused (turn 24's
     // gate) and the toast said "added". The gate is open now, but a handler
@@ -150,7 +160,7 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     // The recessed-partition law refuses with the number and ONE button:
     // [Reset the setback], which opens the partition's own editor
     // (F7-pattern). The guard SPEAKS; it fixes nothing by itself.
-    const res = addDrawers(unit.id, count, drawerMount, height, zone, drawerVariant);
+    const res = addDrawers(unit.id, count, drawerMount, height, zone, drawerVariant, { columns });
     if (res && res.ok === false) {
       if (res.guard?.blocked) {
         notify(res.error, 'error', {
@@ -169,7 +179,11 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     // Honest about what the number means: drawers that were already there KEEP
     // the height they were given, so this cannot claim the whole stack is now
     // `height` mm.
-    notify(before
+    // T79 F3 · two columns say what came with them.
+    if (columns === 2) {
+      notify(`${count} × ${height} mm drawer${count === 1 ? '' : 's'} in each of 2 columns: a divider mid-width `
+        + 'and one fixed shelf over both.', 'ok');
+    } else notify(before
       ? `Stack is ${count} drawer${count === 1 ? '' : 's'} — new ones at ${height} mm, the existing heights kept.`
       : `${count} × ${height} mm drawer${count === 1 ? '' : 's'} added — the partition above them is automatic.`, 'ok');
     // BACKLOG #13: internal drawers live behind the doors, so the doors get out
@@ -532,7 +546,7 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                       )}
                     </div>
                   )}
-                  <div className="pbi-re-row pbi-re-bottom pbi-re-gap-2">
+                  <div className="pbi-re-row pbi-re-wrap pbi-re-bottom pbi-re-gap-2">
                     <div className="pbi-re-w16">
                       <span className="pbi-re-fieldlabel">Count</span>
                       <NumberField min={1} max={DR.maxCount} value={drawerCount} onCommit={setDrawerCount} />
@@ -544,6 +558,26 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                         value={drawerHeight} onCommit={setDrawerHeight}
                       />
                     </div>
+                    {/* T79 F3 · COLUMNS, beside the count: 1 or 2, like the bays. */}
+                    {askColumns && (
+                      <div>
+                        <span className="pbi-re-fieldlabel">Columns</span>
+                        <div className="pbi-re-row pbi-re-gap-1">
+                          {[1, 2].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              data-drawer-columns={n}
+                              aria-pressed={drawerColumns === n}
+                              className={`pbi-re-btn pbi-re-px2 ${drawerColumns === n ? 'pbi-re-hair-gold pbi-re-gold' : ''}`}
+                              onClick={() => setDrawerColumns(n)}
+                            >
+                              {n}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <button
                       type="button"
                       className="pbi-re-btn-gold"
@@ -553,6 +587,11 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                       Add
                     </button>
                   </div>
+                  {askColumns && (
+                    <p data-drawer-columns-hint className={`pbi-re-t11 ${drawerColumns === 2 ? 'pbi-re-gold' : 'pbi-re-quiet'}`}>
+                      2 columns: a divider mid-width, a stack in each column, one fixed shelf over both.
+                    </p>
+                  )}
                   {/* ─── TURN 32 (CLAUDE.md F4): OVERLAY OR INTERNAL ───
                       The mechanism T30 F20 built for the pantry, wired to the
                       question at last: an INTERNAL drawer is given no face and

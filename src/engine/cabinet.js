@@ -4785,15 +4785,16 @@ export function computeCabinet(params, profileOverride) {
   // still measured to it); only the BOARD on it is not cut, and neither are
   // the confirmats that would have held it (the `partition_screw` set below).
   const shoeTopsTheStack = hasDrawers && shoeCapsTheStack(cfg.drawerItems);
-  if (hasDrawers && !shoeTopsTheStack) {
-    panels.push(panel({
-      id: 'PARTITION', part: 'PARTITION', role: 'shelf', w: internalWidth, h: partitionDepth, thickness: G,
-      edgeCode: codes.none, edgeLen: 0,
-      box: { x: G, y: partitionY, z: G, w: internalWidth, h: G, d: partitionDepth },
-      cnc: rectGeometry(internalWidth, partitionDepth),
-      meta: { variant: 'fixed', locked: true, front_mm: internalDepth - partitionDepth },
-    }));
-  }
+  // T79 F3 · the full-width board over a stack, at `y`: the full-width stack's
+  // and, since T79, the one board over every column (one board, one law).
+  const stackCapBoard = (y, meta = {}) => panel({
+    id: 'PARTITION', part: 'PARTITION', role: 'shelf', w: internalWidth, h: partitionDepth, thickness: G,
+    edgeCode: codes.none, edgeLen: 0,
+    box: { x: G, y, z: G, w: internalWidth, h: G, d: partitionDepth },
+    cnc: rectGeometry(internalWidth, partitionDepth),
+    meta: { variant: 'fixed', locked: true, front_mm: internalDepth - partitionDepth, ...meta },
+  });
+  if (hasDrawers && !shoeTopsTheStack) panels.push(stackCapBoard(partitionY));
   if (shoeTopsTheStack) {
     warnings.push({
       code: 'SHOE_STACK_UNCAPPED',
@@ -4802,6 +4803,138 @@ export function computeCabinet(params, profileOverride) {
         + ' board — the owner\'s law is that a shoe drawer carries nothing above it.',
     });
   }
+  // ─── TURN 32 (CLAUDE.md F4): COLUMN DRAWERS — THE WARDROBE'S ZONES ────────
+  //
+  // A vertical partition divides the interior into COLUMNS, and a column may
+  // carry its own drawer stack. Everything is computed FROM THE COLUMN'S
+  // WALLS — the carcass side and/or the partition — with the same numbers the
+  // full-width zone has always used (P.wardrobe.drawers): the column's clear
+  // light replaces `internalWidth`, and the bounding boards play the DP
+  // panels' whole part (so no DP is cut and no reduction is taken). The
+  // boxes, the fronts, the runner rows and the column's own closing board
+  // all follow; an `internal` drawer is given no face, exactly as F20 built.
+  //
+  // It arrives on the OVERRIDE CHANNEL (`params.column_drawers`, built by the
+  // store from the drawer items' own `zone`): a bare `computeCabinet()` —
+  // every golden fixture — passes none, this block emits nothing, and the
+  // DEFAULT zone above cuts exactly what the AutoLISP cuts.
+  const columnDrawerSets = [];
+  if (wardrobeDrawers && Array.isArray(cfg.columnDrawers) && cfg.columnDrawers.length
+    && verticalItems.length) {
+    for (const spec of cfg.columnDrawers) {
+      const k = Math.trunc(Number(spec?.zone));
+      const bay = bays[k];
+      const list = Array.isArray(spec?.drawers) ? spec.drawers : [];
+      if (!bay || !list.length) continue;
+      const colMaxDl = D - G - DR.setback - frontT - DR.depthAllowance;
+      const colDl = snapDrawerDepth(colMaxDl, DR.depthSteps);
+      if (colDl == null) {
+        warnings.push({
+          code: 'DRAWERS_TOO_SHALLOW',
+          message: `Column ${k + 1}: cabinet too shallow for drawers (usable ${roundTo(colMaxDl, 1)} mm < ${DR.depthSteps[0]} mm) — the column's drawers were dropped.`,
+        });
+        continue;
+      }
+      const heights = list.map((d) => (Number(d?.height_mm) > 0 ? Number(d.height_mm) : DR.frontHeight));
+      // T74 F6 · the column twin of the full-width stack: a raised drawer
+      // stands at its own mounting height, and nothing else moves.
+      const colStack = stackOffsets(heights, list, DR.gap, G);
+      const totalH = colStack.top ?? heights.reduce((s, h) => s + h, 0) + (heights.length - 1) * DR.gap;
+      if (totalH > H - 2 * G - DR.zoneHeadroom) {
+        warnings.push({
+          code: 'DRAWERS_TOO_TALL',
+          message: `Column ${k + 1}: ${heights.length} drawers do not fit below the column's partition — the column's drawers were dropped.`,
+        });
+        continue;
+      }
+      // ─── TURN 33 (CLAUDE.md F6): THE COLUMN READS THE BEHIND-DOOR LAW ─────
+      //
+      // A column bounded by a PARTITION needs no standoff there — the divider
+      // is the wall the runner mounts on, full stop. A column bounded by the
+      // CARCASS SIDE under a hinged door is the no-divider wardrobe's own
+      // case, and it takes the no-divider wardrobe's own answer: the DP stands
+      // `DP.inset + G` in from that side, the fillers close the 30, and the
+      // column's LIGHT — box, front, bottom — narrows by exactly the standoff
+      // the full-width zone has always taken. Same numbers, same source
+      // (`dpSideLaw`), zero divergence.
+      const dpL = k === 0 && dpSideLaw.left;
+      const dpR = k === bays.length - 1 && dpSideLaw.right;
+      const standoff = DP.inset + G;
+      const lightHere = bay.size - (dpL ? standoff : 0) - (dpR ? standoff : 0);
+      const boxW = lightHere - DR.boxWidthClearance;
+      const colBoxFrontLen = lightHere
+        - Math.max(0, DR.boxFrontBoards - DR.boxFrontCarcassBoards) * GB
+        - DR.boxFrontClearance;
+      const offsets = []; const sideHs = []; const bfHs = [];
+      const partY = G + totalH + DR.partitionClearance;
+      let acc = 0;
+      for (let i = 0; i < heights.length; i += 1) {
+        offsets.push(colStack.offsets[i]);
+        acc = i + 1 < heights.length ? colStack.offsets[i + 1] : colStack.offsets[i] + (heights[i] + DR.gap);
+        const ceilingHere = i + 1 < heights.length ? G + acc : partY;
+        // T54-F7: the shoe drawer's one override, the column twin of the
+        // full-width law above — side height = `drawers.shoeSideMm`.
+        const resolved = resolveBoxSide({
+          wanted: list[i]?.variant === 'shoe'
+            ? (Number(DR.shoeSideMm) || 80)
+            : heights[i] - DR.frontToSideDelta,
+          base: G + offsets[i],
+          ceiling: ceilingHere,
+          boxBoardT: GB,
+        }, P);
+        sideHs.push(resolved.height);
+        bfHs.push(resolved.height - DR.boxFrontHeightDeduction - GB - DR.boxFrontHeightExtra);
+      }
+      columnDrawerSets.push({
+        zone: k,
+        bay,
+        bounds: {
+          left: k === 0 ? 'BUL' : `VPART-${k}`,
+          right: k === bays.length - 1 ? 'BUR' : `VPART-${k + 1}`,
+        },
+        // Turn 33 (F6): which of this column's walls carry the DP standoff.
+        dpL,
+        dpR,
+        mounts: list.map((d) => (d?.mount === 'internal' ? 'internal' : 'overlay')),
+        // Turn 33 (F3): which drawers order an insert (and glass) — the boxes
+        // themselves are cut exactly as every column box is.
+        variants: list.map((d) => (DRAWER_VARIANTS.includes(d?.variant) ? d.variant : null)),
+        // T52 (CLAUDE.md F5, decision 3): the WATCH INSERT is a flag ON a
+        // drawer and not a drawer type, so it rides beside `variants` rather
+        // than inside them — a customer can have it in one drawer of six.
+        watchInserts: list.map((d) => watchInsertOn(d)),
+        heights,
+        offsets,
+        sideHs,
+        bfHs,
+        dl: colDl,
+        boxW,
+        frontW: boxW + DR.frontOversize,
+        boxFrontLen: colBoxFrontLen,
+        bottomW: colBoxFrontLen + DR.bottomOversize,
+        partY,
+      });
+    }
+  }
+
+  // ─── T79 F3 · ONE FIX BOARD OVER THE COLUMNS ─────────────────────────────
+  // The owner, 18.10.2026 (14:17): *"jak ustawiamy sobie teraz 3 szuflady
+  // internal to niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."*; the
+  // mockup (`verify/t79/mockup-03-drawer-columns.png`), 14:45: *"2 - tak."*
+  // The column plan is made HERE, before a divider is cut, because the board
+  // over the columns is where a divider stops; the boards are cut below.
+  // When EVERY bay carries a stack, ONE full-width FIX `PARTITION` closes them
+  // all at the tallest column's line (a shorter stack's headroom stays open),
+  // and each divider between them stands on the base and stops under it. A
+  // lone column keeps its own `Z<k>-PART`; so does a column topped by a shoe
+  // drawer (nothing over it, T70 F1), and a cabinet that also carries a
+  // full-width or an overlay stack keeps the per-column law it had.
+  const columnCap = columnDrawerSets.length > 1 && columnDrawerSets.length === bays.length
+    && !hasDrawers && !overlay
+    && columnDrawerSets.every((set) => !shoeCapsTheStack((set.variants || []).map((v) => ({ variant: v }))))
+    ? { y: Math.max(...columnDrawerSets.map((set) => set.partY)) }
+    : null;
+
   // ─── The VERTICAL partition (turn 11, CLAUDE.md F3.4) ─────────────────────
   //
   // BLOCKERS #50 (turn 9) recorded, correctly, that this engine had no such
@@ -4881,7 +5014,15 @@ export function computeCabinet(params, profileOverride) {
       // `overlay` is null for every cabinet that has not asked for a stack —
       // which is all six standard configs — so this reads `G` exactly as it
       // did before tonight for every one of them.
-      const partitionFloor = overlay ? overlay.shelfY + G : G;
+      // ─── T79 F3 · …AND ON THE INTERNAL STACK'S BOARD ─────────────────────
+      // The owner: *"program nie bierze pod uwagę że to jest diverted"* (the
+      // probe, `verify/t79/f03-probe.md`: VPART-1 from y 18 through six box
+      // boards and the stack's PARTITION). This turn's law: a vertical divider
+      // stands ON the board that crowns a drawer stack and never passes through
+      // the boxes. Over a full-width internal stack that board is `PARTITION`
+      // at `partitionY`, which stays full width; the divider starts on its top.
+      const stackFloor = hasDrawers ? partitionY + G : G;
+      const partitionFloor = Math.max(overlay ? overlay.shelfY + G : G, stackFloor);
       // ─── T74 F9 · THE DIVIDER UNDER A SLOPE IS CUT TO IT ──────────────────
       // The owner, 23.09.2026: *"divider przy skosie nie skraca się i nie ma
       // cięcia pod kątem. Ma pokazywać najdłuższą krawędź plus kąt cięcia."*
@@ -4893,9 +5034,13 @@ export function computeCabinet(params, profileOverride) {
       // angles and the wedge the side carries. Under a flat stretch, and on
       // every cabinet with no slope, the ceiling is `H - G` exactly as before.
       const divCeil = roofList ? Math.min(H - G, sideTopAt(x, x + slotG)) : H - G;
+      // T79 F3 · between the columns the divider stops under the ONE board over
+      // them (`columnCap`). Its depth stays its own: a column's divider is the
+      // runners' wall and needs its full depth at the runner band (T32 F4).
+      const capCeil = columnCap ? Math.min(divCeil, columnCap.y) : divCeil;
       const span = partitionSpan({
         floor: partitionFloor,
-        ceiling: divCeil,
+        ceiling: capCeil,
         shelves: crossing,
         // The board a partition is INTERRUPTED by is the SHELF's, not its own:
         // `partitionSpan` measures the run between two horizontal boards.
@@ -4905,6 +5050,17 @@ export function computeCabinet(params, profileOverride) {
       });
       if (span.height <= 0) break;
       n += 1;
+      // T79 F3 · a stack the shoe drawer tops has no board (T70 F1): the divider
+      // still never enters a box, and standing on nothing it says so in words.
+      if (shoeTopsTheStack && Math.abs(span.from - stackFloor) < 1e-9) {
+        warnings.push({
+          code: 'DIVIDER_ON_NO_BOARD',
+          panel: `VPART-${n}`,
+          message: `VPART-${n} stands on nothing: the drawer stack under it is topped by the shoe drawer, which `
+            + 'carries no board. Take the shoe drawer off the top of the stack, or take the divider out.',
+        });
+      }
+      const onCap = Boolean(columnCap) && span.terminatesOn == null && capCeil < divCeil - 1e-9;
       // T74 F9 · cut by the slope where its ceiling came down, and ONLY there.
       const divCut = roofList && divCeil < H - G - 1e-9 && span.to >= divCeil - 1e-9;
       const divElevation = divCut ? bevelProfile(x, x + slotG, divCeil) : null;
@@ -4973,7 +5129,8 @@ export function computeCabinet(params, profileOverride) {
           // Which shelf carries it, when one does — the panel says so, and the
           // 3D view can draw the two as one joint rather than two pieces that
           // happen to touch.
-          terminatesOn: span.terminatesOn,
+          // T79 F3 · under the columns' one board, that board.
+          terminatesOn: onCap ? 'PARTITION' : span.terminatesOn,
           // ─── T74 F9 · THE SIDE'S SLOPE RECORD, ON THE DIVIDER ────────────
           // `h` is the blank (the longest edge, the cut size above), `low` the
           // short face, both as lengths of the board; `angles` is what every
@@ -5225,119 +5382,7 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
-  // ─── TURN 32 (CLAUDE.md F4): COLUMN DRAWERS — THE WARDROBE'S ZONES ────────
-  //
-  // A vertical partition divides the interior into COLUMNS, and a column may
-  // carry its own drawer stack. Everything is computed FROM THE COLUMN'S
-  // WALLS — the carcass side and/or the partition — with the same numbers the
-  // full-width zone has always used (P.wardrobe.drawers): the column's clear
-  // light replaces `internalWidth`, and the bounding boards play the DP
-  // panels' whole part (so no DP is cut and no reduction is taken). The
-  // boxes, the fronts, the runner rows and the column's own closing board
-  // all follow; an `internal` drawer is given no face, exactly as F20 built.
-  //
-  // It arrives on the OVERRIDE CHANNEL (`params.column_drawers`, built by the
-  // store from the drawer items' own `zone`): a bare `computeCabinet()` —
-  // every golden fixture — passes none, this block emits nothing, and the
-  // DEFAULT zone above cuts exactly what the AutoLISP cuts.
-  const columnDrawerSets = [];
-  if (wardrobeDrawers && Array.isArray(cfg.columnDrawers) && cfg.columnDrawers.length
-    && verticalItems.length) {
-    for (const spec of cfg.columnDrawers) {
-      const k = Math.trunc(Number(spec?.zone));
-      const bay = bays[k];
-      const list = Array.isArray(spec?.drawers) ? spec.drawers : [];
-      if (!bay || !list.length) continue;
-      const colMaxDl = D - G - DR.setback - frontT - DR.depthAllowance;
-      const colDl = snapDrawerDepth(colMaxDl, DR.depthSteps);
-      if (colDl == null) {
-        warnings.push({
-          code: 'DRAWERS_TOO_SHALLOW',
-          message: `Column ${k + 1}: cabinet too shallow for drawers (usable ${roundTo(colMaxDl, 1)} mm < ${DR.depthSteps[0]} mm) — the column's drawers were dropped.`,
-        });
-        continue;
-      }
-      const heights = list.map((d) => (Number(d?.height_mm) > 0 ? Number(d.height_mm) : DR.frontHeight));
-      // T74 F6 · the column twin of the full-width stack: a raised drawer
-      // stands at its own mounting height, and nothing else moves.
-      const colStack = stackOffsets(heights, list, DR.gap, G);
-      const totalH = colStack.top ?? heights.reduce((s, h) => s + h, 0) + (heights.length - 1) * DR.gap;
-      if (totalH > H - 2 * G - DR.zoneHeadroom) {
-        warnings.push({
-          code: 'DRAWERS_TOO_TALL',
-          message: `Column ${k + 1}: ${heights.length} drawers do not fit below the column's partition — the column's drawers were dropped.`,
-        });
-        continue;
-      }
-      // ─── TURN 33 (CLAUDE.md F6): THE COLUMN READS THE BEHIND-DOOR LAW ─────
-      //
-      // A column bounded by a PARTITION needs no standoff there — the divider
-      // is the wall the runner mounts on, full stop. A column bounded by the
-      // CARCASS SIDE under a hinged door is the no-divider wardrobe's own
-      // case, and it takes the no-divider wardrobe's own answer: the DP stands
-      // `DP.inset + G` in from that side, the fillers close the 30, and the
-      // column's LIGHT — box, front, bottom — narrows by exactly the standoff
-      // the full-width zone has always taken. Same numbers, same source
-      // (`dpSideLaw`), zero divergence.
-      const dpL = k === 0 && dpSideLaw.left;
-      const dpR = k === bays.length - 1 && dpSideLaw.right;
-      const standoff = DP.inset + G;
-      const lightHere = bay.size - (dpL ? standoff : 0) - (dpR ? standoff : 0);
-      const boxW = lightHere - DR.boxWidthClearance;
-      const colBoxFrontLen = lightHere
-        - Math.max(0, DR.boxFrontBoards - DR.boxFrontCarcassBoards) * GB
-        - DR.boxFrontClearance;
-      const offsets = []; const sideHs = []; const bfHs = [];
-      const partY = G + totalH + DR.partitionClearance;
-      let acc = 0;
-      for (let i = 0; i < heights.length; i += 1) {
-        offsets.push(colStack.offsets[i]);
-        acc = i + 1 < heights.length ? colStack.offsets[i + 1] : colStack.offsets[i] + (heights[i] + DR.gap);
-        const ceilingHere = i + 1 < heights.length ? G + acc : partY;
-        // T54-F7: the shoe drawer's one override, the column twin of the
-        // full-width law above — side height = `drawers.shoeSideMm`.
-        const resolved = resolveBoxSide({
-          wanted: list[i]?.variant === 'shoe'
-            ? (Number(DR.shoeSideMm) || 80)
-            : heights[i] - DR.frontToSideDelta,
-          base: G + offsets[i],
-          ceiling: ceilingHere,
-          boxBoardT: GB,
-        }, P);
-        sideHs.push(resolved.height);
-        bfHs.push(resolved.height - DR.boxFrontHeightDeduction - GB - DR.boxFrontHeightExtra);
-      }
-      columnDrawerSets.push({
-        zone: k,
-        bay,
-        bounds: {
-          left: k === 0 ? 'BUL' : `VPART-${k}`,
-          right: k === bays.length - 1 ? 'BUR' : `VPART-${k + 1}`,
-        },
-        // Turn 33 (F6): which of this column's walls carry the DP standoff.
-        dpL,
-        dpR,
-        mounts: list.map((d) => (d?.mount === 'internal' ? 'internal' : 'overlay')),
-        // Turn 33 (F3): which drawers order an insert (and glass) — the boxes
-        // themselves are cut exactly as every column box is.
-        variants: list.map((d) => (DRAWER_VARIANTS.includes(d?.variant) ? d.variant : null)),
-        // T52 (CLAUDE.md F5, decision 3): the WATCH INSERT is a flag ON a
-        // drawer and not a drawer type, so it rides beside `variants` rather
-        // than inside them — a customer can have it in one drawer of six.
-        watchInserts: list.map((d) => watchInsertOn(d)),
-        heights,
-        offsets,
-        sideHs,
-        bfHs,
-        dl: colDl,
-        boxW,
-        frontW: boxW + DR.frontOversize,
-        boxFrontLen: colBoxFrontLen,
-        bottomW: colBoxFrontLen + DR.bottomOversize,
-        partY,
-      });
-    }
-
+  if (columnDrawerSets.length) {
     // The pieces, per column — the same five boards a full-width drawer is,
     // with the same two pockets in the sides (it is the same box on the same
     // runner), cut to the column's own light. The pocket helper mirrors the
@@ -5470,7 +5515,7 @@ export function computeCabinet(params, profileOverride) {
           message: `Column ${set.zone + 1}'s top drawer is the shoe drawer, so that column is NOT`
             + ' closed by a board — the owner\'s law is that a shoe drawer carries nothing above it.',
         });
-      } else {
+      } else if (!columnCap) {
         panels.push(panel({
           id: `Z${set.zone + 1}-PART`, part: 'PARTITION', role: 'shelf', w: set.bay.size, h: partitionDepth, thickness: G,
           edgeCode: codes.none, edgeLen: 0,
@@ -5521,6 +5566,9 @@ export function computeCabinet(params, profileOverride) {
         }
       }
     }
+    // T79 F3 · the ONE board over every column (`columnCap`, planned above
+    // the dividers): the full-width stack's own board, at the tallest line.
+    if (columnCap) panels.push(stackCapBoard(columnCap.y, { columns: columnDrawerSets.map((set) => set.zone) }));
   }
 
   // ─── TURN 32 (CLAUDE.md F4): A COLUMN MAY HANG ITS OWN RAIL ───────────────
@@ -9316,6 +9364,19 @@ export function computeCabinet(params, profileOverride) {
   // Runners: on each drawer panel, and on a carcass side only where no drawer panel sits
   const RN = P.wardrobe.runners;
   let runnerCarcassSide = null;
+  // The full-width board's confirmats at its centre line: three into each
+  // carcass side, three along the BACK. T79 F3: the columns' one board takes
+  // the same (one board, one law).
+  const stackCapScrews = (centreY) => {
+    for (const sideId of ['BUL', 'BUR']) {
+      for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
+        addDrill(sideId, 'partition_screw', pz.layers.screw, x, centreY, DP.screwDiameter);
+      }
+    }
+    for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
+      addDrill('BACK', 'partition_screw', pz.layers.screw, x, centreY, DP.screwDiameter);
+    }
+  };
   if (hasDrawers) {
     for (const pnl of panels.filter((x) => x.part === 'DP')) {
       for (const rowY of runnerRowsDp) {
@@ -9342,16 +9403,7 @@ export function computeCabinet(params, profileOverride) {
     // stack there is no board (`shoeTopsTheStack` above), so there is nothing
     // to screw to and the machine does not drill for it. The DP fixings below
     // are the drawer MECHANISM's own and are untouched.
-    if (!shoeTopsTheStack) {
-      for (const sideId of ['BUL', 'BUR']) {
-        for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
-          addDrill(sideId, 'partition_screw', pz.layers.screw, x, partitionCentreY, DP.screwDiameter);
-        }
-      }
-      for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
-        addDrill('BACK', 'partition_screw', pz.layers.screw, x, partitionCentreY, DP.screwDiameter);
-      }
-    }
+    if (!shoeTopsTheStack) stackCapScrews(partitionCentreY);
     if (dpLeft) {
       addDrill('BUL', 'dp_screw', pz.layers.screw, DP.screwDepth, G + pz.screwFromEnd, DP.screwDiameter);
       addDrill('BUL', 'dp_screw', pz.layers.screw, DP.screwDepth, partitionY - pz.screwFromEnd, DP.screwDiameter);
@@ -9375,6 +9427,10 @@ export function computeCabinet(params, profileOverride) {
   // u along its HEIGHT above its floor at G, v along its DEPTH from the
   // front. The closing board's three screws land exactly where the
   // full-width zone lands them, measured across the column's own span.
+  // T79 F3 · under the columns' ONE board (`columnCap`) there is no column
+  // board: the runners drill as ever, the board takes the full-width board's
+  // confirmats, and the divider stopping under it meets it by the biscuit
+  // set of the 1710d law (engine/dividerJoints.js), never a screw through it.
   for (const set of columnDrawerSets) {
     const colBoxSetback = DR.setback + frontT;
     const colPartCentre = set.partY + G / 2;
@@ -9395,6 +9451,7 @@ export function computeCabinet(params, profileOverride) {
           }
         }
       }
+      if (columnCap) continue;
       if (carcass) {
         for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
           addDrill(bound, 'partition_screw', pz.layers.screw, x, colPartCentre, DP.screwDiameter);
@@ -9405,10 +9462,12 @@ export function computeCabinet(params, profileOverride) {
         }
       }
     }
+    if (columnCap) continue;
     for (const x of [set.bay.from + pz.screwFromEnd, set.bay.centre, set.bay.to - pz.screwFromEnd]) {
       addDrill('BACK', 'partition_screw', pz.layers.screw, x, colPartCentre, DP.screwDiameter);
     }
   }
+  if (columnCap) stackCapScrews(columnCap.y + G / 2);
 
   // BUDR: runners on BOTH carcass sides — there is no drawer panel and no door.
   if (budr) {
@@ -11419,13 +11478,17 @@ export function computeCabinet(params, profileOverride) {
     // clamps and the walk's measures.
     columnDrawers: columnDrawerSets.map((set) => ({
       zone: set.zone,
-      top: set.partY,
+      // T79 F3 · a column under the ONE board over the columns is closed by it.
+      top: columnCap ? columnCap.y : set.partY,
       count: set.heights.length,
       heights: [...set.heights],
       mounts: [...set.mounts],
       from: set.bay.from,
       to: set.bay.to,
     })),
+    // T79 F3 · the ONE board over every column, present only where it is cut:
+    // a full-width shelf stands on it as it stands on the full-width stack's.
+    ...(columnCap ? { columnCap: { top: columnCap.y, zones: columnDrawerSets.map((set) => set.zone) } } : {}),
     drawerFronts: budr
       ? budr.heights.map((h, i) => ({
         index: i + 1, y: budr.frontY[i], h, w: budr.frontWidth, ...(i + 1 === budr.dummy ? { fixed: true } : {}),

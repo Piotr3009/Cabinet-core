@@ -106,6 +106,15 @@ export const T78_PRO_EDITS = [
     words: 'the owner, 18.10.2026: *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie '
       + 'półki pomiędzy tymi elementami się centrują."*',
   },
+  {
+    pro: 'src/components/AddItems.jsx',
+    by: 'T79 F3',
+    why: 'the internal drawers block asks COLUMNS 1 or 2 beside the count while the unit is undivided (a wardrobe that '
+      + 'takes a divider); 2 sends addDrawers(..., { columns: 2 }): one divider mid-width, a stack in each column, one '
+      + 'fixed shelf over both, one undo. A divided unit keeps "Which column".',
+    words: 'the owner, 18.10.2026 (14:17): *"jak ustawiamy sobie teraz 3 szuflady internal to niech pyta czy chcesz 1 czy 2 '
+      + 'kolumny, coś jak baye."*; mockup approved 14:45: *"2 - tak."*',
+  },
 ];
 
 /**

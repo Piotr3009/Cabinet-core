@@ -103,26 +103,61 @@ test('F3a — …and a BAY door is a door too (the T40 regression)', () => {
   // T40 derived the strip from `doorCount`, and a cabinet with per-bay doors
   // sets `doors: false` by construction. Measured on T40: DP 2 -> 0, FILLER
   // 4 -> 0, front 1262 -> 1358 mm, into two sides still carrying hinge plates.
+  //
+  // ─── REWRITTEN BY T79 F3 (18.10.2026) ───────────────────────────────────
+  // T79's law: a vertical divider stands ON the board that crowns a drawer
+  // stack and never passes through the boxes (the owner: *"program nie bierze
+  // pod uwagę że to jest diverted"*; *"2 - tak."*). The cabinet this test was
+  // measured on, a divider over a FULL-WIDTH stack, had its divider cut
+  // through the boxes; it now stands on the stack's PARTITION, is not full
+  // height, and carries no bay door (doors.js doorBays, T21 F12.1), so the
+  // face doors stay and the strip is theirs. The T40 regression is held where
+  // bay doors exist: two dividers at full height, a column stack in each
+  // outer bay, the middle bay empty (so no one board over the columns).
+  fresh();
+  const old = store().addUnit('WARDROBE', { params: { width: 1400, height: 2150 } });
+  store().updateUnitParams(old.id, { sections: [{ items: [{ id: 'p1', kind: 'partition', x_mm: 691, front_mm: 0 }] }] });
+  store().addDrawers(old.id, 2, 'overlay', 200);
+  store().addDoors(old.id);
+  const onStack = resultOf(old.id).panels.find((p) => p.id === 'VPART-1');
+  assert.equal(onStack.box.y, resultOf(old.id).panels.find((p) => p.id === 'PARTITION').box.y + P.board.thickness,
+    'the divider stands on the stack\'s board');
+  assert.equal(onStack.meta.fullHeight, false);
+  assert.equal(store().bayDoorsFor(old.id).length, 1, 'a divider that cannot carry a door makes no bay');
+  const dp = (r) => (r.panels || []).filter((p) => p.part === 'DP').length;
+  assert.equal(dp(resultOf(old.id)), 2, 'face doors: two standoffs');
+  assert.equal(Math.round(frontsOf(resultOf(old.id))[0].w), 1262, 'the measured front with face doors');
+
   fresh();
   const u = store().addUnit('WARDROBE', { params: { width: 1400, height: 2150 } });
-  store().updateUnitParams(u.id, { sections: [{ items: [{ id: 'p1', kind: 'partition', x_mm: 691, front_mm: 0 }] }] });
-  store().addDrawers(u.id, 2, 'overlay', 200);
+  store().updateUnitParams(u.id, {
+    sections: [{
+      items: [
+        { id: 'p1', kind: 'partition', x_mm: 457, front_mm: 0 },
+        { id: 'p2', kind: 'partition', x_mm: 925, front_mm: 0 },
+      ],
+    }],
+  });
+  store().addDrawers(u.id, 2, 'overlay', 200, 0);
+  store().addDrawers(u.id, 2, 'overlay', 200, 2);
   store().addDoors(u.id);
+  const outer = (r, zone) => Math.round(frontsOf(r).find((p) => p.meta?.zone === zone).w);
   const face = resultOf(u.id);
-  const faceW = Math.round(frontsOf(face)[0].w);
-  const dp = (r) => (r.panels || []).filter((p) => p.part === 'DP').length;
-  assert.equal(dp(face), 2, 'face doors: two standoffs');
+  assert.equal(dp(face), 2, 'face doors: two standoffs, one per outer column');
+  assert.equal(store().bayDoorsFor(u.id).length, 3, 'full-height dividers make three bays');
 
-  store().setBayDoors(u.id, [{ door: 'one', hinge: 'L' }, { door: 'one', hinge: 'R' }]);
+  store().setBayDoors(u.id, [{ door: 'one', hinge: 'L' }, { door: 'none' }, { door: 'one', hinge: 'R' }]);
   const both = resultOf(u.id);
   assert.equal(dp(both), 2, 'a leaf on each carcass side reserves both bands');
-  assert.equal(Math.round(frontsOf(both)[0].w), faceW, 'and the front is the same width as with face doors');
+  assert.equal(outer(both, 2), outer(face, 2), 'and the front is the same width as with face doors');
 
-  store().setBayDoors(u.id, [{ door: 'one', hinge: 'L' }, { door: 'none' }]);
+  store().setBayDoors(u.id, [{ door: 'one', hinge: 'L' }, { door: 'none' }, { door: 'none' }]);
   const left = resultOf(u.id);
   assert.equal(dp(left), 1, 'one leaf on the left only reserves one band');
-  assert.ok(Math.round(frontsOf(left)[0].w) > faceW, 'so the front is wider than with two');
-  assert.ok(Math.round(frontsOf(left)[0].w) < 1358, 'but NOT as wide as the T40 regression made it');
+  assert.equal(outer(left, 0), outer(face, 0), 'the left column keeps its band');
+  assert.ok(outer(left, 2) > outer(face, 2), 'so the right column\'s front is wider than with two');
+  assert.equal(outer(left, 2) - outer(face, 2), P.wardrobe.drawerPanel.inset + P.board.thickness,
+    'by exactly the one band it no longer reserves, NOT both as the T40 regression made it');
 });
 
 // ═══ 3. THE HEIGHT SLIDER MOVES THE BOARD ═══════════════════════════════════

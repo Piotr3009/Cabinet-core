@@ -1,0 +1,344 @@
+{
+  "meta": {
+    "name": "golden-notch-and-recess.json",
+    "turn": "T78",
+    "F": "F34",
+    "source": "KIT_RECESS.lsp D13 WITH A NOTCH (section H, the NUMBERS block CASE D) on KIT_BUD_FULL.lsp (golden-bud.json's BUD-A with 1 shelf): KIT_NOTCH.lsp's notch BL 200 x 200 x 0 and CASE A's band x 310..600, z 0..770, 150 deep, apart on the BACK: the notch first (BUL shorter, RETURN, STEP), the extension on what it left (BUR, TOP, BOTTOM and SHELF-1 grown, the TOP / BOTTOM / SHELF-1 both cut, the BACK 128 wide between the notch and the window, RETURN-L, EXT-BACK)",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "BUD",
+    "width": 600,
+    "height": 770,
+    "depth": 558,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 1,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": null,
+    "unit_num": "01",
+    "notch": {
+      "corner": "BL",
+      "w": 200,
+      "d": 200,
+      "h": 0
+    },
+    "extension": {
+      "x0": 310,
+      "x1": 600,
+      "z0": 0,
+      "z1": 770,
+      "d": 150
+    }
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,340,770,<,0.77,0.262",
+      "01,BUR,690,770,>,0.77,0.531",
+      "01,TOP,564,690,>,0.56,0.303",
+      "01,BOTTOM,564,690,>,0.56,0.303",
+      "01,BACK,128,770,,0,0.099",
+      "01,SHELF-1,560,670,>,0.56,0.289",
+      "01,01-F,597,767,<>^v,2.73,0.458",
+      "01,RETURN,182,770,,0,0.140",
+      "01,STEP,218,770,,0,0.168",
+      "01,RETURN-L,132,770,,0,0.102",
+      "01,EXT-BACK,290,770,,0,0.223"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 340,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 218,
+          "w": 18,
+          "h": 770,
+          "d": 340
+        },
+        "outline": 4,
+        "holes": 14,
+        "pockets": 4,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 690,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": -132,
+          "w": 18,
+          "h": 770,
+          "d": 690
+        },
+        "outline": 4,
+        "holes": 14,
+        "pockets": 4,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 690,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 752,
+          "z": -132,
+          "w": 564,
+          "h": 18,
+          "d": 690
+        },
+        "outline": 58,
+        "holes": 0,
+        "pockets": 5,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 690,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": -132,
+          "w": 564,
+          "h": 18,
+          "d": 690
+        },
+        "outline": 58,
+        "holes": 0,
+        "pockets": 5,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 128,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 200,
+          "y": 0,
+          "z": 0,
+          "w": 128,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 17,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "SHELF-1",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 560,
+        "h": 670,
+        "thickness": 18,
+        "box": {
+          "x": 20,
+          "y": 385,
+          "z": -132,
+          "w": 560,
+          "h": 18,
+          "d": 670
+        },
+        "outline": 8,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 0,
+          "z": 561,
+          "w": 597,
+          "h": 767,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "RETURN",
+        "part": "NOTCH-RETURN",
+        "role": "notch_box",
+        "w": 182,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 200,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 770,
+          "d": 182
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "STEP",
+        "part": "NOTCH-STEP",
+        "role": "notch_box",
+        "w": 218,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 200,
+          "w": 218,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "RETURN-L",
+        "part": "RECESS-RETURN",
+        "role": "extension",
+        "w": 132,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 310,
+          "y": 0,
+          "z": -132,
+          "w": 18,
+          "h": 770,
+          "d": 132
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "EXT-BACK",
+        "part": "RECESS-BACK",
+        "role": "extension",
+        "w": 290,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 310,
+          "y": 0,
+          "z": -150,
+          "w": 290,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 12,
+        "pockets": 0,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F",
+        6
+      ],
+      [
+        "HINGES_5MM|BUL",
+        6
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        4
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        13
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ],
+      [
+        "SCREWS_3MM|EXT-BACK",
+        12
+      ],
+      [
+        "SHELVES_7_5MM|BUL",
+        6
+      ],
+      [
+        "SHELVES_7_5MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 3,
+        "label": "Hinges"
+      },
+      {
+        "role": "legs",
+        "qty": 4,
+        "label": "Legs"
+      },
+      {
+        "role": "shelf_pins",
+        "qty": 4,
+        "label": "Shelf pins"
+      }
+    ]
+  }
+}

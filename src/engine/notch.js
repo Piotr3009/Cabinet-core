@@ -511,6 +511,50 @@ export function notchBackDogbone(cw, ch, nw, nh, corner, r) {
 }
 
 /**
+ * notch-back-box-rows (D10 amended, 18.10.2026): THE BACK'S ROWS INTO THE
+ * BOX, in the BACK's ORIGINAL frame, { SCREWS: [[x, y], ..], SHORT: [{ board,
+ * run }, ..] }: a full-height notch's whole new edge into the RETURN (nearX,
+ * between the parent's tabs); a part-height one's RETURN run beside it and
+ * its LID's (D21: its FLOOR's) row over (under) it. No SCREWS at a front
+ * corner or for an unboxed rebate. One routine, two callers (T79 F8, the F6
+ * x F8 seam): notchBackJoints on the notched BACK, extension.js
+ * recessBackJoints (KIT_RECESS.lsp D13) on the extension's BACK piece that
+ * holds them.
+ */
+export function notchBackBoxRows(cw, ch, g, nw, nh, corner, K) {
+  const e = notchP(K, 'puzzle.tabCentresFromEnd');
+  const one = notchP(K, 'puzzle.singleTabAtOrBelow');
+  const three = notchP(K, 'puzzle.middleTabBelow');
+  const sfe = notchP(K, 'puzzle.screwFromEnd');
+  const S = notchScrewAxis(g);
+  const hh = notchHh(ch, nh);
+  const left = notchLeftP(corner);
+  const nearX = left ? nw + S : cw - nw - S;
+  const scr = [];
+  const short = [];
+  // One run of the box under the BACK's edge; a run shorter than one hole's
+  // offset carries none and is named.
+  const boxRun = (board, a, b, at) => {
+    const row = notchEdgeRow(a, b, sfe);
+    if (!row.length) short.push({ board, run: b - a });
+    for (const v of row) scr.push(at(v));
+  };
+  // The LID's (the FLOOR's) run under the edge over (under) the notch.
+  const [bx0, bx1] = left ? [g, nw] : [cw - nw, cw - g];
+  if (!notchBackP(corner) || !notchBoxedP(nw, g)) return { SCREWS: scr, SHORT: short };
+  if (notchFullP(ch, nh)) {
+    for (const y of notchRowsBetweenTabs(0, ch, notchReplanTabs(ch, e, one, three), sfe)) scr.push([nearX, y]);
+  } else if (notchFromTopP(ch, nh)) {
+    boxRun('RETURN', ch - hh, ch, (y) => [nearX, y]);
+    boxRun('FLOOR', bx0, bx1, (x) => [x, ch - hh - S]);
+  } else {
+    boxRun('RETURN', 0, hh, (y) => [nearX, y]);
+    boxRun('LID', bx0, bx1, (x) => [x, hh + S]);
+  }
+  return { SCREWS: scr, SHORT: short };
+}
+
+/**
  * notch-back-joints: its joints in its ORIGINAL frame. D21: a notch from the
  * top shortens the TOP edge and leaves the BOTTOM edge the parent's; the
  * notch-side edge is planned on the run UNDER it, 0 .. ch - |nh|. D10
@@ -554,41 +598,24 @@ export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
   else if (top) nearTabs = notchReplanTabs(ch - hh, e, one, three);
   else nearTabs = notchShift(notchReplanTabs(ch - nh, e, one, three), nh);
   const farX = left ? cw - S : S;
-  const nearX = left ? nw + S : cw - nw - S;
   const upX = left ? S : cw - S;
   const scr = [];
-  const short = [];
-  // T79 F6 (KIT_NOTCH.lsp D10 amended): one run of the box under the BACK's
-  // edge; a run shorter than one hole's offset carries none and is named.
-  const boxRun = (board, a, b, at) => {
-    const row = notchEdgeRow(a, b, sfe);
-    if (!row.length) short.push({ board, run: b - a });
-    for (const v of row) scr.push(at(v));
-  };
-  // The LID's (the FLOOR's) run under the edge over (under) the notch.
-  const [bx0, bx1] = left ? [g, nw] : [cw - nw, cw - g];
+  const box = notchBackBoxRows(cw, ch, g, nw, nh, corner, K);
   for (const y of notchRowsBetweenTabs(0, ch, farTabs, sfe)) scr.push([farX, y]);
   // 18.10.2026 (KIT_NOTCH.lsp D10 amended), the owner: *"jak mamy cut the
   // corners lub recess to nie rysujesz mi dziurek na śrubki 3 mm, to trzeba
   // będzie dodać"*; *"ale tylko na plecach."*  The BACK's rows follow every
-  // edge a box board stands behind: a full-height notch's whole new edge into
-  // the RETURN (the side's row moved by nw, as until 17.10.2026); a
-  // part-height one's run beside the notch into the RETURN and its edge over
-  // (D21: under) the notch into the LID (the FLOOR). The side's own back edge
-  // above (under) a part-height notch keeps its rows.
+  // edge a box board stands behind (notchBackBoxRows, after the side's own
+  // rows on the near edge: all of it unboxed, none at full height where the
+  // whole edge is the RETURN's, the run above (D21: under) a part-height notch).
   if (!back || !boxed) {
     for (const y of notchRowsBetweenTabs(0, ch, farTabs, sfe)) scr.push([upX, y]);
-  } else if (full) {
-    for (const y of notchRowsBetweenTabs(0, ch, farTabs, sfe)) scr.push([nearX, y]);
   } else if (top) {
     for (const y of notchRowsBetweenTabs(0, ch - hh, nearTabs, sfe)) scr.push([upX, y]);
-    boxRun('RETURN', ch - hh, ch, (y) => [nearX, y]);
-    boxRun('FLOOR', bx0, bx1, (x) => [x, ch - hh - S]);
-  } else {
+  } else if (!full) {
     for (const y of notchRowsBetweenTabs(nh, ch, nearTabs, sfe)) scr.push([upX, y]);
-    boxRun('RETURN', 0, hh, (y) => [nearX, y]);
-    boxRun('LID', bx0, bx1, (x) => [x, hh + S]);
   }
+  scr.push(...box.SCREWS);
   for (const x of notchRowBetween(lo, hi, g, sfe)) scr.push([x, ch - S]);
   for (const x of (back && boxed ? notchRowBetween(blo, bhi, g, sfe) : notchRowBetween(0, cw, g, sfe))) {
     scr.push([x, S]);
@@ -599,7 +626,7 @@ export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
     'TOP-SOCKETS': topS,
     'BOTTOM-SOCKETS': botS,
     SCREWS: scr,
-    ...(short.length ? { SHORT: short } : {}),
+    ...(box.SHORT.length ? { SHORT: box.SHORT } : {}),
   };
 }
 
@@ -1585,7 +1612,12 @@ export function cutNotchCorner(outline, w, h, notch) {
   const nw = Number(notch.nw) || 0;
   const nh = Number(notch.nh) || 0;
   if (!(nw > 0 && nh > 0)) return outline;
-  const [rx0, rx1] = notchFcX0(fc) ? [0, nw] : [w - nw, w];
+  // T79 F8 (KIT_RECESS.lsp D13): a corner of a board `fw` deep that stands
+  // `ox` into this one (a notched side grown into a recess: the notch's
+  // corner is the old side's, not the grown board's). Absent: this board's own.
+  const fw = Number(notch.fw) > 0 ? Number(notch.fw) : w;
+  const ox = Number(notch.ox) || 0;
+  const [rx0, rx1] = notchFcX0(fc) ? [ox, ox + nw] : [ox + fw - nw, ox + fw];
   const [ry0, ry1] = notchFcY0(fc) ? [0, nh] : [h - nh, h];
   const inside = ([x, y]) => x >= rx0 - EPS && x <= rx1 + EPS && y >= ry0 - EPS && y <= ry1 + EPS;
   const n = outline.length;
@@ -1596,10 +1628,10 @@ export function cutNotchCorner(outline, w, h, notch) {
   const kept = [];
   let spliced = false;
   const corner = {
-    x0y0: [[0, nh], [nw, nh], [nw, 0]],
-    x1y0: [[w - nw, 0], [w - nw, nh], [w, nh]],
-    x1y1: [[w, h - nh], [w - nw, h - nh], [w - nw, h]],
-    x0y1: [[nw, h], [nw, h - nh], [0, h - nh]],
+    x0y0: [[ox, nh], [ox + nw, nh], [ox + nw, 0]],
+    x1y0: [[ox + fw - nw, 0], [ox + fw - nw, nh], [ox + fw, nh]],
+    x1y1: [[ox + fw, h - nh], [ox + fw - nw, h - nh], [ox + fw - nw, h]],
+    x0y1: [[ox + nw, h], [ox + nw, h - nh], [ox, h - nh]],
   }[fc];
   for (const p of walk) {
     if (inside(p)) {
@@ -1609,6 +1641,18 @@ export function cutNotchCorner(outline, w, h, notch) {
     kept.push(p);
   }
   return spliced ? kept : outline;
+}
+
+/**
+ * T79 F8 · the cache key of a `cnc.notch` (3d/panelSolid.js): every corner of
+ * the `also` chain, with the frame a corner of a grown side stands in. A
+ * corner with no frame and at most one `also` keys as it always did.
+ */
+export function notchCornerKey(notch) {
+  if (!notch) return '';
+  const frame = notch.fw != null || notch.ox ? `@${Number(notch.ox) || 0}/${notch.fw}` : '';
+  const own = `${notch.fc}:${notch.nw}:${notch.nh}${frame}`;
+  return notch.also ? `${own}+${notchCornerKey(notch.also)}` : own;
 }
 
 // ── PHASE A: after the carcass and the interior, before the drilling ──────
@@ -1914,7 +1958,10 @@ const OWN_KINDS = new Set(['puzzle', 'screw', 'notch_dogbone']);
 export function notchDrills({ cut, panels, drills, legs }) {
   if (!cut) return;
   const { regions } = cut;
-  const inRegion = (rg, x, y, rad = 0) => rg && notchHoleInP(x, y, rad, rg.bw, rg.bh, rg.nw, rg.nh, rg.fc);
+  // T79 F8: a region may stand `ox`, `oy` into the board (the recess
+  // extension re-states it there when it cuts the same board; KIT_RECESS.lsp D13).
+  const inRegion = (rg, x, y, rad = 0) => rg
+    && notchHoleInP(x - (Number(rg.ox) || 0), y - (Number(rg.oy) || 0), rad, rg.bw, rg.bh, rg.nw, rg.nh, rg.fc);
   const keep = [];
   const dropped = [];
   for (const d of drills) {

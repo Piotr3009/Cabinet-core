@@ -207,3 +207,47 @@ for (const [kit, marks] of [
     assert.ok(/^[\x00-\x7F]*$/.test(text), `${kit} is ASCII`);
   });
 }
+
+// T79 F8 · CLAUDE.md T79 FROZEN 2: the parens test grows with every file
+// touched. KIT_RECESS.lsp is amended under licence (the owner, 18.10.2026:
+// *"dlaczego cut the corner likwiduje nam wcięcie do recess?"*): D13 WITH A
+// NOTCH, section H and the NUMBERS block CASE D; it balances by name.
+test('T79 F8 · KIT_RECESS.lsp balances 0/0 with D13 WITH A NOTCH, section H and CASE D', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_RECESS.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D13 WITH A NOTCH\./);
+  assert.match(text, /;;; H\. WITH A NOTCH \(D13, 18\.10\.2026\)/);
+  assert.match(text, /;;; CASE D \(fixtures\/golden-notch-and-recess\.json/);
+  assert.match(text, /\(defun recess-notch-footprint \(cw ch nw nh corner/);
+  assert.match(text, /\(defun recess-box-name \(name notched\)/);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+  assert.doesNotMatch(text, /[^\x00-\x7f]/, 'the LISP stays ASCII');
+});
+
+// T79 F8 x F6 · the seam: the extension's BACK piece cut from a notched BACK
+// carries the rows into the notch's box exactly as the notched BACK alone
+// (the owner, 18.10.2026: *"jak mamy cut the corners lub recess to nie
+// rysujesz mi dziurek na śrubki 3 mm, to trzeba będzie dodać"*; *"ale tylko na
+// plecach."*): ONE routine, KIT_NOTCH.lsp notch-back-box-rows, called by
+// notch-back-joints and by KIT_RECESS.lsp recess-back-joints through
+// recess-notch-box-rows. Both files balance by name.
+for (const [kit, marks] of [
+  ['KIT_NOTCH.lsp', [/\(defun notch-back-box-rows \(cw ch g nw nh corner /, /box \(notch-back-box-rows cw ch g nw nh corner\)\)/]],
+  ['KIT_RECESS.lsp', [/\(defun recess-notch-box-rows \(nb cw ch g /, /\(foreach p \(recess-notch-box-rows nb cw ch g\)/,
+    /;;; THE NOTCH'S BOX ROWS ON THE PIECE THAT HOLDS THEM/,
+    // the F8 review: the side row on what the notch AND the window leave of the edge, a hole once
+    /\(defun recess-side-row \(bh z0 tabs nb window onSide bandSide sfe /, /\(defun recess-window-zcut \(window z0 onSide\)/,
+    /\(defun recess-put-hole \(pts p \/ found\)/, /;;; THE REVIEW CASES \(the T79 F8 review, 18\.10\.2026/]],
+]) {
+  test(`T79 F8 x F6 · ${kit} balances 0/0 with the rows into the notch's box, one routine`, () => {
+    const text = readFileSync(join(LISP_DIR, kit), 'utf8');
+    const { balance, min } = parenScan(text);
+    assert.equal(balance, 0);
+    assert.equal(min, 0);
+    for (const m of marks) assert.match(text, m);
+    assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+    assert.ok(/^[\x00-\x7F]*$/.test(text), `${kit} is ASCII`);
+  });
+}

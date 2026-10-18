@@ -51,6 +51,9 @@ export const LICENSED = {
       + 'height (the side\'s row moved by nw, between the parent\'s tabs), and beside a part-height notch the run into the '
       + 'RETURN\'s end plus the row over it into the LID\'s back edge (D21: under it, into the FLOOR\'s); SHORT names a run '
       + 'too short for a row; notchCarcass carries it as cut.backRowsShort and notchSummary as derived.notch.backRowsShort. '
+      + 'The rows into the box are ONE routine, notchBackBoxRows (KIT_NOTCH.lsp notch-back-box-rows), which notchBackJoints '
+      + 'draws on the notched BACK and extension.js recessBackJoints (F8, KIT_RECESS.lsp D13) on the extension\'s BACK piece '
+      + 'that holds them: the F6 x F8 seam, every answer of notchBackJoints unchanged by it. '
       + `The box boards' *Screws routines still answer null. ${OWNER}`,
     gates: ['backRowsRoundTheBox'],
   },
@@ -132,7 +135,11 @@ export const LISP = {
     + 'the nearX column at full height again, and beside a part-height notch the RETURN\'s run and the row into the LID\'s '
     + '(D21: the FLOOR\'s) back edge, SHORT naming a run too short for a row; the command says the BACK\'s dia 3 count and '
     + 'every SHORT run; sections 2 and 3 (D10), the NUMBERS block I, I2\'s BACK rows and the new I5 (six notches, board by '
-    + 'board). The box boards\' *-screws still answer nil. (D21, the notch from the top, is F4\'s: f34-t79-f04.mjs)',
+    + 'board). The box boards\' *-screws still answer nil. The F6 x F8 seam: the rows into the box are ONE routine, '
+    + 'notch-back-box-rows (the RETURN\'s column at full height, the RETURN\'s run and the LID\'s, D21 the FLOOR\'s, row at '
+    + 'part height, SHORT), which notch-back-joints draws (every answer as it was) and KIT_RECESS.lsp recess-back-joints draws '
+    + 'on the extension\'s BACK piece that holds them (D13, recess-notch-box-rows); D10\'s text and I5 name it. (D21, the '
+    + 'notch from the top, is F4\'s: f34-t79-f04.mjs)',
   'reference/lisp/KIT_RECESS.lsp': `Owner 18.10.2026 (CLAUDE.md T79 F6): D17 AMENDED. ${OWNER} The 17.10 removal is reversed `
     + 'on the backs only: recess-back-joints draws the rows S outside each window edge a board stands behind again '
     + '(notch-edge-row), recess-ext-back-screws answers the EXT-BACK\'s rows round the band (notch-edge-row on every run, '

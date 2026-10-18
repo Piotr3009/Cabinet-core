@@ -119,6 +119,9 @@ export const NEW_FILES = [
   // T79 F6 (18.10.2026): the dia 3 rows on the back round a notch and a recess
   'test/turn79-f06-back-rows.test.js',
   'scripts/t78-classify.d/f34-t79-f06.mjs',
+  // T79 F8 (18.10.2026): a notch and a recess on the same carcass
+  'test/turn79-f08-notch-and-recess.test.js',
+  'scripts/t78-classify.d/f34-t79-f08.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -39,9 +39,9 @@
 ;;; SKY:tabCentres are COMMON's own; notch-profile, notch-p,
 ;;; notch-replan-sockets, notch-replan-tabs, notch-shift, notch-min-joint-edge,
 ;;; notch-screw-axis, notch-screw-row, notch-row-between,
-;;; notch-rows-between-tabs, notch-edge-row (18.10.2026), notch-joint-inset,
-;;; notch-rect-outline, notch-dogbone and notch-rot90-pts are KIT_NOTCH's
-;;; own. All are CALLED.
+;;; notch-rows-between-tabs, notch-edge-row (18.10.2026), notch-back-box-rows
+;;; (18.10.2026, D13), notch-joint-inset, notch-rect-outline, notch-dogbone
+;;; and notch-rot90-pts are KIT_NOTCH's own. All are CALLED.
 ;;;
 ;;; A NOTE ON NAMES. AutoLISP symbols are CASE-INSENSITIVE. The carcass is
 ;;; cw cd ch g (width, depth, height, board); the extension is ex0 ex1 (its
@@ -55,7 +55,10 @@
 ;;;========================================
 ;;;
 ;;; It runs AFTER the parent kit's carcass and BEFORE the drilling pass, in the
-;;; notch's own place; a unit never carries both (D13).
+;;; notch's own place. A unit carrying a corner notch as well is cut by the
+;;; notch FIRST and by the extension on the boards the notch left, when the
+;;; two do not meet on the BACK; when they meet, the extension is refused in
+;;; words the Check shows (D13, 18.10.2026; section H).
 ;;;
 ;;; WHERE THE NUMBERS COME FROM (the room, never the hand; projectStore
 ;;; paramsForEngine recessExtensionFor, derived every time and stored never,
@@ -229,9 +232,43 @@
 ;;; D12 THE PINS. The back shelf-pin column of a grown side steps back by ed
 ;;;     over the band (the notch's D7 mirrored: the parent's own columnFromEdge
 ;;;     from the NEW back edge); above and below the band it stays.
-;;; D13 NOT WITH A NOTCH. A carcass notched for a chimney cannot grow into a
-;;;     recess as well: the notch stands, the extension is refused in words
-;;;     (the cabinet keeps the wall line over the recess). Proposed.
+;;; D13 WITH A NOTCH. Amended 18.10.2026 under the owner's word: *"dlaczego
+;;;     cut the corner likwiduje nam wciecie do recess?"*  Until that day it
+;;;     read NOT WITH A NOTCH: any notch, wherever it stood, refused the
+;;;     extension, and the refusal reached no screen (the T79 F8 PROBE,
+;;;     verify/t79/f08-probe.md). Now a notch and an extension COEXIST when
+;;;     their FOOTPRINTS ON THE BACK do not overlap: the notch's WIDTH along
+;;;     the back at its corner's end (0 .. nw at an L corner, cw - nw .. cw at
+;;;     an R one; a front corner's width stands over the same x) against the
+;;;     band's ex0 .. ex1, AND its HEIGHT (0 .. hh from the floor, the whole
+;;;     height at h 0, ch - hh .. ch from the top, KIT_NOTCH.lsp D21) against
+;;;     ez0 .. ez1 (recess-notch-footprint, recess-notch-overlap-p). Then BOTH
+;;;     are cut, each by its own routine, the notch first and the extension on
+;;;     the boards the notch left (section H): a board cut by both takes the
+;;;     extension's outline with the notch's corner taken out of it
+;;;     (recess-cut-corner), and every edge cut by both takes its joints run
+;;;     by run on what the two leave of it (recess-runs, D7): the BACK's side
+;;;     row too, on the edge the notch cuts, on what the notch and the window
+;;;     leave of it, a row on its run (recess-side-row); where the footprints
+;;;     touch, the window's column falls on the notch's and the hole is
+;;;     drilled once (recess-put-hole; both the T79 F8 review). The BACK's
+;;;     pieces are cut from the NOTCHED back: a full-height notch takes its
+;;;     strip off the piece it reaches (that edge is the notch's: no joint),
+;;;     a part-height one is a corner of the piece that holds it; and the
+;;;     piece that holds the notch's box carries the rows into it exactly as
+;;;     the notched BACK alone does (KIT_NOTCH.lsp D10 AMENDED, the owner
+;;;     18.10.2026: *"jak mamy cut the corners lub recess to nie rysujesz mi
+;;;     dziurek na srubki 3 mm, to trzeba bedzie dodac"*; *"ale tylko na
+;;;     plecach."*): the whole new edge into the RETURN at full height, the
+;;;     RETURN's run and the LID's (from the top the FLOOR's) row at part
+;;;     height, by KIT_NOTCH's own notch-back-box-rows (recess-notch-box-rows,
+;;;     one routine; written apart until the F6 x F8 seam, the piece lost
+;;;     them). On a notched carcass the extension's FLOOR and LID are
+;;;     EXT-FLOOR and EXT-LID (the notch's box has a LID and, from the top, a
+;;;     FLOOR of its own; recess-box-name). When the footprints overlap, the
+;;;     notch stands and the extension is refused in words the Check shows
+;;;     (EXTENSION_REFUSED): "The recess cannot be cut: the corner cut stands
+;;;     where the recess band is; move one of them."
 ;;; D14 THE PARENTS are the notch's: KIT_BUD, KIT_BUDTALL, KIT_WARDROBE,
 ;;;     KIT_WUD (the same five boards). A kit that is not one of them stands
 ;;;     on the wall line in front of the recess, refused in words. A wall
@@ -688,7 +725,20 @@
 ;;;        owner: *"to trzeba bedzie dodac ... ale tylko na plecach"*) puts
 ;;;        them back: the dia 3 rows follow every edge of the BACK that meets
 ;;;        a board.
-(defun recess-back-joints (piece window cw ch g ex0 ex1 ez0 ez1 topTabs botTabs bulTabs burTabs
+;;; `nb` (18.10.2026, D13): the footprint on the BACK of a BOXED notch at a
+;;; back corner (recess-notch-footprint), or nil. The rows keep off it: a side
+;;; row runs on what the notch leaves of that edge (and, where the band reaches
+;;; that side too, on what the notch AND the window leave of it, D13, a row on
+;;; its run: recess-side-row), a top or bottom row on
+;;; what it leaves of the TOP's or the BOTTOM's back edge (the notch and its
+;;; RETURN, nw + g from that end), drawBACK's spacing on each run; the rows into
+;;; the notch's box are the notch's own, drawn on the piece that holds them
+;;; exactly as on the notched BACK alone (recess-notch-box-rows, KIT_NOTCH.lsp
+;;; notch-back-box-rows, D10 AMENDED), after drawBACK's rows and before the
+;;; window's, and a hole is drilled once (recess-put-hole: where the
+;;; footprints touch, the band's RETURN stands behind the notch's own and the
+;;; two columns share x). With nb nil every row is where it was.
+(defun recess-back-joints (piece window cw ch g ex0 ex1 ez0 ez1 topTabs botTabs bulTabs burTabs nb
                            / e sfe S x0 z0 x1 z1 bw bh inZ inX left right top bottom scr
                              wx0 wz0 wx1 wz1 bz0 bz1 runs ix0 ix1)
   (setq e   (recess-p "puzzle.tabCentresFromEnd")
@@ -709,9 +759,16 @@
         top    (if (>= z1 ch) (apply inX (list topTabs)) nil)
         bottom (if (<= z0 0.0) (apply inX (list botTabs)) nil))
   (setq scr nil)
-  ;; drawBACK's side rows, between the tabs the edge carries
-  (if (<= x0 0.0) (foreach z (notch-rows-between-tabs 0.0 bh left sfe) (setq scr (cons (list S z) scr))))
-  (if (>= x1 cw) (foreach z (notch-rows-between-tabs 0.0 bh right sfe) (setq scr (cons (list (- bw S) z) scr))))
+  ;; drawBACK's side rows, between the tabs the edge carries, on each run the
+  ;; notch leaves of the edge (D13; one run, the whole edge, without one); on
+  ;; the edge the notch cuts, on what the notch AND the window leave of it, a
+  ;; row on its run (recess-side-row)
+  (if (<= x0 0.0)
+    (foreach z (recess-side-row bh z0 left nb window (and nb (<= (car nb) 0.0)) (recess-left-p ex0) sfe)
+      (setq scr (cons (list S z) scr))))
+  (if (>= x1 cw)
+    (foreach z (recess-side-row bh z0 right nb window (and nb (>= (caddr nb) cw)) (recess-right-p ex1 cw) sfe)
+      (setq scr (cons (list (- bw S) z) scr))))
   ;; drawBACK's top and bottom rows, on the straight runs of the TOP's and the
   ;; BOTTOM's back edge within this piece (a grown board's run ends at the bump)
   (setq runs '(lambda (grown)
@@ -721,28 +778,39 @@
                   (list (list g (- cw g))))))
   (if (>= z1 ch)
     (foreach run (apply runs (list (recess-top-p ez1 ch)))
-      (foreach x (recess-run-row (max (car run) x0) (min (cadr run) x1) sfe)
-        (setq scr (cons (list (- x x0) (- bh S)) scr)))))
+      (foreach sub (recess-runs (car run) (cadr run) (recess-notch-xcut nb g cw (and nb (>= (cadddr nb) ch))))
+        (foreach x (recess-run-row (max (car sub) x0) (min (cadr sub) x1) sfe)
+          (setq scr (cons (list (- x x0) (- bh S)) scr))))))
   (if (<= z0 0.0)
     (foreach run (apply runs (list (recess-floor-p ez0)))
-      (foreach x (recess-run-row (max (car run) x0) (min (cadr run) x1) sfe)
-        (setq scr (cons (list (- x x0) S) scr)))))
+      (foreach sub (recess-runs (car run) (cadr run) (recess-notch-xcut nb g cw (and nb (<= (cadr nb) 0.0))))
+        (foreach x (recess-run-row (max (car sub) x0) (min (cadr sub) x1) sfe)
+          (setq scr (cons (list (- x x0) S) scr))))))
+  ;; D13 with KIT_NOTCH.lsp D10 AMENDED (18.10.2026): the rows into the
+  ;; notch's box, exactly as notch-back-joints draws them on the notched BACK
+  ;; (recess-notch-box-rows), on the piece that holds them, in its frame
+  (foreach p (recess-notch-box-rows nb cw ch g)
+    (if (and (> (car p) (- x0 1e-6)) (< (car p) (+ x1 1e-6))
+             (> (cadr p) (- z0 1e-6)) (< (cadr p) (+ z1 1e-6)))
+      (setq scr (recess-put-hole scr (list (- (car p) x0) (- (cadr p) z0))))))
   ;; D17 AMENDED (18.10.2026): the rows round the window, S outside each edge
   ;; a board stands behind: into a RETURN's front end (a vertical window edge
   ;; that is not a side) over bz0 .. bz1, into the FLOOR's and the LID's front
-  ;; edge over wx0 .. wx1; THE BACK SCREW ROW over each run (notch-edge-row)
+  ;; edge over wx0 .. wx1; THE BACK SCREW ROW over each run (notch-edge-row).
+  ;; A hole once (recess-put-hole): where the band's RETURN stands behind the
+  ;; notch's own (the footprints touch, D13) the two columns share x
   (if (and (not (recess-left-p ex0)) (> (- wx0 S) (- x0 1e-6)) (< (- wx0 S) (+ x1 1e-6)))
     (foreach z (notch-edge-row bz0 bz1 sfe)
-      (if (and (>= z z0) (<= z z1)) (setq scr (cons (list (- (- wx0 S) x0) (- z z0)) scr)))))
+      (if (and (>= z z0) (<= z z1)) (setq scr (recess-put-hole scr (list (- (- wx0 S) x0) (- z z0)))))))
   (if (and (not (recess-right-p ex1 cw)) (> (+ wx1 S) (- x0 1e-6)) (< (+ wx1 S) (+ x1 1e-6)))
     (foreach z (notch-edge-row bz0 bz1 sfe)
-      (if (and (>= z z0) (<= z z1)) (setq scr (cons (list (- (+ wx1 S) x0) (- z z0)) scr)))))
+      (if (and (>= z z0) (<= z z1)) (setq scr (recess-put-hole scr (list (- (+ wx1 S) x0) (- z z0)))))))
   (if (and (not (recess-floor-p ez0)) (> (- wz0 S) (- z0 1e-6)) (< (- wz0 S) (+ z1 1e-6)))
     (foreach x (notch-edge-row wx0 wx1 sfe)
-      (if (and (>= x x0) (<= x x1)) (setq scr (cons (list (- x x0) (- (- wz0 S) z0)) scr)))))
+      (if (and (>= x x0) (<= x x1)) (setq scr (recess-put-hole scr (list (- x x0) (- (- wz0 S) z0)))))))
   (if (and (not (recess-top-p ez1 ch)) (> (+ wz1 S) (- z0 1e-6)) (< (+ wz1 S) (+ z1 1e-6)))
     (foreach x (notch-edge-row wx0 wx1 sfe)
-      (if (and (>= x x0) (<= x x1)) (setq scr (cons (list (- x x0) (- (+ wz1 S) z0)) scr)))))
+      (if (and (>= x x0) (<= x x1)) (setq scr (recess-put-hole scr (list (- x x0) (- (+ wz1 S) z0)))))))
   (list (list "LEFT" left) (list "RIGHT" right) (list "TOP" top) (list "BOTTOM" bottom)
         (list "SCREWS" (reverse scr))))
 
@@ -869,10 +937,15 @@
 ;;; E. THE REFUSALS (the room refuses first; nothing is clipped silently)
 ;;;========================================
 
-(defun recess-refusal (cw cd ch g ex0 ex1 ez0 ez1 ed notched / minEdge)
+;;; `fp` (18.10.2026, D13): the footprint on the BACK of the notch the
+;;; carcass carries (recess-notch-footprint), or nil. Until that day the
+;;; argument was `notched`, T for any notch, and the first answer read "RECESS:
+;;; a carcass notched round an obstacle cannot grow into a recess as well; the
+;;; notch stands." Now only a notch whose footprint the band overlaps refuses.
+(defun recess-refusal (cw cd ch g ex0 ex1 ez0 ez1 ed fp / minEdge)
   (setq minEdge (notch-min-joint-edge (recess-p "puzzle.dogboneHalfHeight") g))
-  (cond (notched
-         "RECESS: a carcass notched round an obstacle cannot grow into a recess as well; the notch stands.")
+  (cond ((recess-notch-overlap-p fp ex0 ex1 ez0 ez1)
+         "The recess cannot be cut: the corner cut stands where the recess band is; move one of them.")
         ((or (< ex0 0.0) (> ex1 cw) (< ez0 0.0) (> ez1 ch) (>= ex0 ex1) (>= ez0 ez1))
          "RECESS: the band lies outside the carcass.")
         ((and (not (recess-left-p ex0)) (< ex0 g))
@@ -1055,6 +1128,104 @@
 ;;;   8 dia 3 holes (notch-row-between 0 .. 136 would drill all three of each
 ;;;   row at x 68, one place)
 
+;;; CASE D (fixtures/golden-notch-and-recess.json; D13, 18.10.2026, CLAUDE.md
+;;; T79 F8): CASE A's band and KIT_NOTCH.lsp section I's notch on ONE
+;;; carcass. The owner: *"dlaczego cut the corner likwiduje nam wciecie do
+;;; recess?"*  The notch BL, nw 200, nd 200, nh 0 (the full height, boxed);
+;;; the band ex0 310, ex1 600, ez0 0, ez1 770, ed 150 (CASE A's).
+;;;   FOOTPRINTS ON THE BACK: the notch x 0..200, z 0..770; the band x
+;;;   310..600, z 0..770. Apart (200 < 310): no refusal; both are cut, the
+;;;   notch first (until 18.10.2026 the notch alone, the band refused in words
+;;;   no screen showed). With the band from 100 they overlap: the notch stands,
+;;;   the band is refused: "The recess cannot be cut: the corner cut stands
+;;;   where the recess band is; move one of them."
+;;;
+;;; BOARD      BOTH CUT
+;;; BUL        340 x 770, the notch's alone (KIT_NOTCH.lsp section I)
+;;; BUR        690 x 770, the extension's alone (CASE A)
+;;; TOP        564 x 690: the bump (CASE A) less the notch's corner
+;;; BOTTOM     the same in plan; drawn as CASE A draws it (D19)
+;;;   plan frame: (0 0) (564 0) (564 690) (310 690) (310 540) (200 540) (200 340) (0 340)
+;;;   CORNER MARKS (D18, D20), plan: (310 580) -> (310 540) -> (270 540)
+;;;                                  (200 380) -> (200 340) -> (160 340)
+;;;   BOTTOM drawn (x from the bump's back edge, 690 wide): corners (150 310), (350 200)
+;;;   TOP drawn from its UNDERSIDE: corners (150 254), (350 364)
+;;;   area 0.305 -> 0.30266 m2 (302660 mm2)
+;;; BACK       128 x 770, carcass x 200..328: the notch's strip (0..200) and
+;;;            the window (328..600) both off it, its own frame from x 200:
+;;;            (0 0) (128 0) (128 770) (0 770); area 98560 mm2; no corner, no mark
+;;; SHELF-1    560 x 670, both cut, shelf frame (2 clear of each side):
+;;;   (0 0) (560 0) (560 670) (310 670) (310 520) (200 520) (200 320) (0 320)
+;;;   CORNER MARKS: corners (310 520), (200 320); area 288700 mm2
+;;; STEP       218 x 770, carcass x 0..218, y 340..358 (the notch's)
+;;; RETURN     182 x 770, carcass x 200..218, y 358..540 (the notch's)
+;;; RETURN-L   132 x 770, carcass x 310..328, y 558..690 (the extension's)
+;;; EXT-BACK   290 x 770, carcass x 310..600, y 690..708 (the extension's)
+;;; FLOOR, LID none: neither the notch (full height) nor the band (floor to
+;;;            top) has one; on a notched carcass the extension's would be
+;;;            EXT-FLOOR and EXT-LID (recess-box-name)
+;;;
+;;; WHICH JOINTS MOVE (BOTH CUT against CASE A's EXTENDED column):
+;;;
+;;; BOARD, EDGE                      EXTENSION ALONE    BOTH CUT
+;;; TOP/BOTTOM tabs into BUL (y)     95, 445            95, 245
+;;; TOP/BOTTOM tabs into BUR (y)     95, 595            95, 595
+;;; TOP/BOTTOM tabs into BACK (x)    95, 215            255
+;;; BACK sockets, left edge (z)      95, 385, 675       NONE
+;;; BACK top/bottom sockets (x)      113, 233           273
+;;; BACK left screw row (z)          50, 240, 530, 720  50, 240, 530, 720 at carcass x 209, into the notch's RETURN
+;;; BACK top/bottom rows (x)         68, 173, 278       268, 273, 278
+;;;   The TOP's tabs into the BACK: one run left between the notch and the
+;;;   bump, 200..310 (110: one socket, centred; carcass x 273). The BACK's
+;;;   left edge meets the notch's RETURN: no joint, and the RETURN's column,
+;;;   x 209 (its own x 9), exactly as on the notched BACK alone (KIT_NOTCH.lsp
+;;;   D10 AMENDED, NUMBERS I5: notch-back-box-rows, by recess-notch-box-rows;
+;;;   the owner 18.10.2026: *"jak mamy cut the corners lub recess to nie
+;;;   rysujesz mi dziurek na srubki 3 mm, to trzeba bedzie dodac"*; *"ale
+;;;   tylko na plecach."*). Its right edge is the window's, with RETURN-L's
+;;;   column (D17 AMENDED). Its top and bottom rows run 218..328 (the notch
+;;;   and its RETURN, nw + g, off the TOP's back edge): notch-screw-row on 110
+;;;   gives three, the middle one on the socket's centre line, as the kit's
+;;;   own row does on a run this short.
+;;;
+;;; THE BACK'S DIA 3 HOLES, BOTH CUT (carcass x; its own frame from x 200):
+;;;   top row                     x 268 273 278, z 761
+;;;   bottom row                  x 268 273 278, z 9
+;;;   into the notch's RETURN     x 209, z 50 240 530 720 (notch-back-box-rows)
+;;;   into RETURN-L's end         x 319, z 50 385 720 (the window's column)
+;;;   so the BACK carries 13 dia 3 holes (9 when the merge of T79 F6 and F8
+;;;   left the RETURN's column off the piece, 6 before F6)
+;;;
+;;; THE NOTCH'S BOX ROWS ON THE PIECE THAT HOLDS THEM (no golden; the same
+;;; band, carcass x, z up), each exactly the notched BACK's own (I5):
+;;;   BL 200/200/300    the piece x 0..328 holds the corner: into the RETURN
+;;;                     x 209: 50 150 250; into the LID, z 309: 68 109 150;
+;;;                     18 dia 3 holes on the piece
+;;;   BL 200/200/-300   the same piece: into the RETURN x 209: 520 620 720;
+;;;                     into the FLOOR, z 461: 68 109 150; 18 dia 3 holes
+;;;   BR 200/200/0      with the band x 0..290 (BUL grows): the piece x
+;;;                     272..400, into the RETURN x 391 (its own x 119): 50
+;;;                     240 530 720; 13 dia 3 holes
+;;;
+;;; THE REVIEW CASES (the T79 F8 review, 18.10.2026; no golden; carcass x, z
+;;; up). Each stood as the PROBE column says until recess-put-hole and
+;;; recess-side-row:
+;;;   the footprints touch: BL 200/200/0, the band x 200..600 floor to top
+;;;     the piece x 200..218 (18 wide); the notch's RETURN column and
+;;;     RETURN-L's share x 209: z 50 240 530 720 (the RETURN's), then 385
+;;;     (RETURN-L's own); 5 holes, each once
+;;;     PROBE: 7 holes, z 50 and 720 drilled twice
+;;;   the band and the notch on one side: BL 200/200/300, the band x 0..400,
+;;;     z 300..500 (BUL grows; the window x 0..382, z 318..482): the left
+;;;     edge runs 300..318 (no row: 18 is under one hole's offset) and
+;;;     482..770 (one tab, 626): the side row x 9: z 532 720
+;;;     PROBE: x 9: z 350 720, the 350 in the window
+;;;   a short run under a notch from the top: BR 200/200/-60, the band x 0..600,
+;;;     z 100..700: BACK-2 is z 682..770 (88), its right edge runs 682..710
+;;;     (28, under one hole's offset): no side row there; the box rows x 391:
+;;;     z 725 755, the FLOOR's z 701: x 450 491 532
+;;;     PROBE: x 591: z 732 (in the notch) and 660 (under the board)
+
 ;;;========================================
 ;;; G. DRAWING (the command draws what the routines return, nothing more)
 ;;;========================================
@@ -1124,7 +1295,8 @@
                                      (notch-shift (cadr (assoc "BACK" (recess-top-joints cw cd g ex0 ex1 ed))) g)
                                      (notch-shift (cadr (assoc "BACK" (recess-top-joints cw cd g ex0 ex1 ed))) g)
                                      (cadr (assoc "BACK-TABS" (recess-side-joints cd ch g ez0 ez1 ed)))
-                                     (cadr (assoc "BACK-TABS" (recess-side-joints cd ch g ez0 ez1 ed)))))
+                                     (cadr (assoc "BACK-TABS" (recess-side-joints cd ch g ez0 ez1 ed)))
+                                     nil))
         (recess-draw-marks x y (cadr (assoc "SCREWS" bj)) 1.5)
         (setq x (+ x (- (caddr piece) (car piece)) 100.0)))
       ;; the added boards, outlines and their stated screws
@@ -1149,3 +1321,299 @@
                      ", " (rtos ed 2 0) " deeper; " (itoa (length pieces)) " back piece(s), "
                      (itoa (length places)) " board(s) added."))))
   (princ))
+
+;;;========================================
+;;; H. WITH A NOTCH (D13, 18.10.2026)
+;;;========================================
+;;;
+;;; The owner: *"dlaczego cut the corner likwiduje nam wciecie do recess?"*
+;;; The notch is KIT_NOTCH.lsp's and is cut first, by its own routines; these
+;;; are what the extension asks of a carcass the notch has already cut. The
+;;; notch is ASKED first too, of the parent kit's own carcass, never of the
+;;; grown one (its refusals, D7 and D8, as alone: a grown BUR's frame runs ed
+;;; further from its new back edge, and a hinge the notch takes would be read
+;;; past it and cut away). Refused, the band is cut alone. Every
+;;; routine below CALLS the extension's own (sections B to E) and the notch's
+;;; own (notch-top-cut, notch-top-joints, notch-side-fc, notch-side-joints,
+;;; notch-shelf-cut, notch-hh, notch-from-top-p, notch-back-box-rows); none
+;;; re-states a law.
+;;; Which boards both cut, when the footprints are apart:
+;;;   the SIDE only when a BOXED notch is part-height on the side the band
+;;;        reaches (their heights apart): recess-notched-side-outline /
+;;;        -joints (an unboxed notch is a rebate in the side's face: the side
+;;;        is the extension's, the rebate stays the joiner's);
+;;;   the TOP and the BOTTOM when the notch cuts it (boxed: the BOTTOM from
+;;;        the floor, the TOP from the top, both at full height) and the band
+;;;        reaches it: recess-notched-top-outline / -joints;
+;;;   the BACK when the notch is at a back corner: recess-notched-back-pieces,
+;;;        recess-notched-back-corner, recess-notched-back-outline, and the
+;;;        rows by recess-back-joints with its `nb` (a boxed notch: the rows
+;;;        into the notch's box by recess-notch-box-rows, KIT_NOTCH's own
+;;;        notch-back-box-rows, on the piece that holds them); the
+;;;        sockets on each piece are those of the boards as cut (a side or a
+;;;        TOP / BOTTOM the notch cut gives the notch's, one both cut gives
+;;;        section H's); an UNBOXED notch's rebate drops the rows it cuts away
+;;;        on the piece that holds it (KIT_NOTCH.lsp D7);
+;;;   a SHELF the notch cuts and the band reaches: recess-notched-shelf-outline.
+;;; Every other board is cut by one of the two alone, exactly as alone. The
+;;; NUMBERS of the golden case are CASE D in section F.
+
+;;; THE NOTCH'S FOOTPRINT ON THE BACK: (fx0 fz0 fx1 fz1), carcass x from the
+;;; LEFT face, z up. Its WIDTH along the back at its corner's end, its HEIGHT
+;;; from the floor, the whole height (h 0), or from the top (h < 0, D21).
+(defun recess-notch-footprint (cw ch nw nh corner / hh top)
+  (setq hh (notch-hh ch nh) top (notch-from-top-p ch nh))
+  (list (if (notch-left-p corner) 0.0 (- cw nw))
+        (if top (- ch hh) 0.0)
+        (if (notch-left-p corner) nw cw)
+        (if top ch hh)))
+
+;;; Does the band overlap that footprint (any area at all)? nil for no notch.
+(defun recess-notch-overlap-p (fp ex0 ex1 ez0 ez1)
+  (and fp
+       (< (car fp) ex1) (> (caddr fp) ex0)
+       (< (cadr fp) ez1) (> (cadddr fp) ez0)))
+
+;;; THE STRAIGHT RUNS of an edge lo .. hi less the intervals `cuts` ((a b) ..),
+;;; in order along the edge: ((a b) ..). A run of no length is no run. One
+;;; law for every edge two cuts share: each run takes its own joints (D7).
+(defun recess-runs (lo hi cuts / sorted at out c)
+  (setq sorted (mapcar '(lambda (i) (nth i cuts)) (vl-sort-i cuts '(lambda (p q) (< (car p) (car q)))))
+        at lo out nil)
+  (foreach c sorted
+    (if (> (min (car c) hi) (+ at 1e-6)) (setq out (cons (list at (min (car c) hi)) out)))
+    (if (> (cadr c) at) (setq at (cadr c))))
+  (if (> hi (+ at 1e-6)) (setq out (cons (list at hi) out)))
+  (reverse out))
+
+;;; The tabs (sockets) of a list that stand inside a run (a b).
+(defun recess-in-run (lst run)
+  (vl-remove-if '(lambda (c) (or (<= c (+ (car run) 1e-6)) (>= c (- (cadr run) 1e-6)))) lst))
+
+;;; The notch's height on a piece's side edge, in the piece's frame, as a cut
+;;; list for recess-runs: nil unless `onSide` (the notch stands on that edge).
+(defun recess-notch-zcut (nb z0 onSide)
+  (if (and nb onSide) (list (list (- (cadr nb) z0) (- (cadddr nb) z0))) nil))
+
+;;; The window's height on a piece's side edge, in the piece's frame, as a cut
+;;; list for recess-runs: nil unless `onSide` (the band reaches that side, so
+;;; the window takes that edge over its height).
+(defun recess-window-zcut (window z0 onSide)
+  (if onSide (list (list (- (cadr window) z0) (- (cadddr window) z0))) nil))
+
+;;; drawBACK's side row on a piece's side edge, (z ..) in the piece's frame,
+;;; between the tabs the edge carries. Off the notch's edge (onSide nil) it is
+;;; the one run of the whole edge, as it always was. On the edge the notch
+;;; cuts (onSide), D13: every edge cut by both takes its joints run by run on
+;;; what the two leave of it, so the runs are what the notch AND, when the band
+;;; reaches that side too (bandSide), the window leave of it, and a row stands
+;;; on its run: a hole drawBACK's spacing puts past a run's end would be
+;;; drilled into the notch, into the window or past the board (none on a run
+;;; shorter than one hole's offset). The T79 F8 review, 18.10.2026.
+(defun recess-side-row (bh z0 tabs nb window onSide bandSide sfe / out)
+  (setq out nil)
+  (foreach run (recess-runs 0.0 bh (append (recess-notch-zcut nb z0 onSide)
+                                           (recess-window-zcut window z0 (and onSide bandSide))))
+    (foreach z (notch-rows-between-tabs (car run) (cadr run) (recess-in-run tabs run) sfe)
+      (if (or (not onSide) (and (> z (- (car run) 1e-6)) (< z (+ (cadr run) 1e-6))))
+        (setq out (cons z out)))))
+  (reverse out))
+
+;;; A hole on a piece once: p consed onto the hole list pts unless it holds p
+;;; already (to 1e-6). Where the footprints touch (D13) the band's RETURN
+;;; stands behind the notch's own and the window's column falls on the
+;;; notch's: one hole, one screw.
+(defun recess-put-hole (pts p / found)
+  (foreach q pts (if (equal q p 1e-6) (setq found T)))
+  (if found pts (cons p pts)))
+
+;;; The notch's width on the TOP's (BOTTOM's) back edge, carcass x, as a cut
+;;; list: the notch and its RETURN, nw + g from its end; nil unless `edgeP`
+;;; (the notch reaches that edge of the BACK).
+(defun recess-notch-xcut (nb g cw edgeP)
+  (if (and nb edgeP)
+    (list (if (<= (car nb) 0.0) (list 0.0 (+ (caddr nb) g)) (list (- (car nb) g) cw)))
+    nil))
+
+;;; THE ROWS INTO THE NOTCH'S BOX (18.10.2026, D13 with KIT_NOTCH.lsp D10
+;;; AMENDED): the BACK's rows into a BOXED back-corner notch's box, carcass x
+;;; from the LEFT face and z up, ((x z) ..). The notch is read back off its
+;;; footprint nb (recess-notch-footprint the other way round: its width, the
+;;; L corner when it starts at 0, h 0 when it runs the whole height, a
+;;; negative h when it hangs from the top, D21) and its rows are KIT_NOTCH's
+;;; own notch-back-box-rows: the very rows notch-back-joints draws on the
+;;; notched BACK alone, one routine. nil without nb.
+(defun recess-notch-box-rows (nb cw ch g / hh nh)
+  (if (null nb)
+    nil
+    (progn
+      (setq hh (- (cadddr nb) (cadr nb))
+            nh (cond ((and (<= (cadr nb) 0.0) (>= (cadddr nb) ch)) 0.0)
+                     ((> (cadr nb) 0.0) (- hh))
+                     (T hh)))
+      (cdr (assoc "SCREWS" (notch-back-box-rows cw ch g (- (caddr nb) (car nb)) nh
+                                                (if (<= (car nb) 0.0) "BL" "BR")))))))
+
+;;; A CORNER TAKEN OUT of an outline: the anticlockwise outline `pts` of a
+;;; w x h board less the rectangle nw x nh at its corner fc (x0y0 x1y0 x1y1
+;;; x0y1, the notch's names). The points inside it go, the corner's three
+;;; points stand where the first of them stood, the walk starting at the first
+;;; point outside it: engine/notch.js cutNotchCorner, the 3-D's half, the same
+;;; arithmetic. A bump or a bite elsewhere on the outline is untouched.
+(defun recess-cut-corner (pts w h fc nw nh / rx0 rx1 ry0 ry1 inside n k0 k p kept spliced corner)
+  (if (not (and (> nw 0.0) (> nh 0.0))) pts
+    (progn
+      (setq rx0 (if (notch-fc-x0 fc) 0.0 (- w nw)) rx1 (if (notch-fc-x0 fc) nw w)
+            ry0 (if (notch-fc-y0 fc) 0.0 (- h nh)) ry1 (if (notch-fc-y0 fc) nh h))
+      (setq inside '(lambda (q) (and (>= (car q) (- rx0 1e-6)) (<= (car q) (+ rx1 1e-6))
+                                     (>= (cadr q) (- ry0 1e-6)) (<= (cadr q) (+ ry1 1e-6)))))
+      (setq n (length pts) k0 nil k 0)
+      (while (and (null k0) (< k n))
+        (if (not (apply inside (list (nth k pts)))) (setq k0 k))
+        (setq k (1+ k)))
+      (if (null k0) pts
+        (progn
+          (setq corner (cond ((= fc "x0y0") (list (list 0.0 nh) (list nw nh) (list nw 0.0)))
+                             ((= fc "x1y0") (list (list (- w nw) 0.0) (list (- w nw) nh) (list w nh)))
+                             ((= fc "x1y1") (list (list w (- h nh)) (list (- w nw) (- h nh)) (list (- w nw) h)))
+                             (T (list (list nw h) (list nw (- h nh)) (list 0.0 (- h nh))))))
+          (setq kept nil spliced nil k 0)
+          (while (< k n)
+            (setq p (nth (rem (+ k0 k) n) pts))
+            (if (apply inside (list p))
+              (if (not spliced) (setq kept (append kept corner) spliced T))
+              (setq kept (append kept (list p))))
+            (setq k (1+ k)))
+          (if spliced kept pts))))))
+
+;;; -- THE TOP (BOTTOM) both cut, plan frame ----------------------------------
+
+;;; The bump of recess-top-outline with the notch's corner (notch-top-cut)
+;;; taken out of it.
+(defun recess-notched-top-outline (cw cd g ex0 ex1 ed nw nd corner / cut)
+  (setq cut (notch-top-cut cw cd g nw nd corner))
+  (if cut
+    (recess-cut-corner (recess-top-outline cw cd g ex0 ex1 ed) (nth 3 cut) (nth 4 cut) (car cut) (cadr cut) (caddr cut))
+    (recess-top-outline cw cd g ex0 ex1 ed)))
+
+;;; Its joints: the long edge on the notch's side is the notch's (the band never
+;;; reaches that side: the footprints would meet), the other the extension's;
+;;; the back edge takes a socket plan on every straight run left between the
+;;; notch (a back corner: nw from its end) and the bump (b0 .. b1).
+(defun recess-notched-top-joints (cw cd g ex0 ex1 ed nw nd corner / e below minEdge tw nj rj b cuts bk)
+  (setq e (recess-p "puzzle.tabCentresFromEnd")
+        below (recess-p "puzzle.singleSocketBelow")
+        minEdge (notch-min-joint-edge (recess-p "puzzle.dogboneHalfHeight") g)
+        tw (- cw (* 2.0 g))
+        nj (notch-top-joints cw cd g nw nd corner)
+        rj (recess-top-joints cw cd g ex0 ex1 ed)
+        b (recess-plan-bump cw cd g ex0 ex1 ed))
+  (setq cuts (list (list (caddr b) (cadddr b))))
+  (if (notch-back-p corner)
+    (setq cuts (cons (if (notch-left-p corner) (list 0.0 nw) (list (- tw nw) tw)) cuts)))
+  (setq bk nil)
+  (foreach run (recess-runs 0.0 tw cuts)
+    (setq bk (append bk (recess-run-sockets (- (cadr run) (car run)) (car run) e below minEdge))))
+  (list (list "LEFT" (if (notch-left-p corner) (cdr (assoc "LEFT" nj)) (cadr (assoc "LEFT" rj))))
+        (list "RIGHT" (if (notch-left-p corner) (cadr (assoc "RIGHT" rj)) (cdr (assoc "RIGHT" nj))))
+        (list "BACK" bk)))
+
+;;; -- THE SIDE both cut: BUL's frame, x from the FRONT -------------------------
+
+;;; recess-side-outline less a BOXED notch's corner (notch-side-fc in that
+;;; frame, nd x hh, the side's own depth cd - g as the frame's width: the
+;;; corner is the old side's, the bump stands past it). Unboxed: the bump alone.
+(defun recess-notched-side-outline (cd ch g ez0 ez1 ed nw nd nh corner)
+  (if (notch-boxed-p nw g)
+    (recess-cut-corner (recess-side-outline cd ch g ez0 ez1 ed nil) (- cd g) ch
+                       (notch-side-fc corner nil (notch-from-top-p ch nh)) nd (notch-hh ch nh))
+    (recess-side-outline cd ch g ez0 ez1 ed nil)))
+
+;;; Its joints, from the FRONT edge: the top (bottom) edge is the notch's where
+;;; the notch moves it, else the extension's (the two never move the same
+;;; edge: their heights are apart); the back edge takes a tab plan on every run
+;;; left between the notch (a back corner) and the bump (bz0 .. bz1); the pin
+;;; columns are the notch's.
+(defun recess-notched-side-joints (cd ch g ez0 ez1 ed nw nd nh corner
+                                   / e one three minEdge nj rj top topN botN cuts tabs)
+  (setq e (recess-p "puzzle.tabCentresFromEnd")
+        one (recess-p "puzzle.singleTabAtOrBelow")
+        three (recess-p "puzzle.middleTabBelow")
+        minEdge (notch-min-joint-edge (recess-p "puzzle.dogboneHalfHeight") g)
+        nj (notch-side-joints cd ch g nw nd nh corner)
+        rj (recess-side-joints cd ch g ez0 ez1 ed)
+        top (notch-from-top-p ch nh)
+        topN (and (notch-boxed-p nw g) (or (notch-full-p ch nh) top))
+        botN (and (notch-boxed-p nw g) (not top)))
+  (setq cuts (list (list (recess-bz0 ez0 g) (recess-bz1 ez1 ch g))))
+  (if (and (notch-boxed-p nw g) (notch-back-p corner))
+    (setq cuts (cons (if top (list (- ch (notch-hh ch nh)) ch) (list 0.0 (notch-hh ch nh))) cuts)))
+  (setq tabs nil)
+  (foreach run (recess-runs 0.0 ch cuts)
+    (setq tabs (append tabs (recess-run-tabs (- (cadr run) (car run)) (car run) e one three minEdge))))
+  (list (list "TOP-SOCKETS"    (if topN (cdr (assoc "TOP-SOCKETS" nj)) (cadr (assoc "TOP-SOCKETS" rj))))
+        (list "BOTTOM-SOCKETS" (if botN (cdr (assoc "BOTTOM-SOCKETS" nj)) (cadr (assoc "BOTTOM-SOCKETS" rj))))
+        (list "TOP-SCREWS"     (if topN (cdr (assoc "TOP-SCREWS" nj)) (cadr (assoc "TOP-SCREWS" rj))))
+        (list "BOTTOM-SCREWS"  (if botN (cdr (assoc "BOTTOM-SCREWS" nj)) (cadr (assoc "BOTTOM-SCREWS" rj))))
+        (list "BACK-TABS"      tabs)
+        (list "PIN-COLUMNS"    (cdr (assoc "PIN-COLUMNS" nj)))))
+
+;;; -- THE BACK both cut ----------------------------------------------------------
+
+;;; Its PIECES: the extension's (recess-back-pieces); `fp` is the footprint of a
+;;; notch at a BACK corner (nil for a front one: it never reaches the BACK). A
+;;; FULL-HEIGHT notch takes its strip off every piece it reaches (the piece then
+;;; starts, or ends, at the notch's edge) and a piece it takes whole goes. A
+;;; part-height notch leaves the pieces whole: it is a corner of the piece that
+;;; holds it. With fp nil the pieces are recess-back-pieces' own.
+(defun recess-notched-back-pieces (cw ch g ex0 ex1 ez0 ez1 fp / out x0 x1)
+  (setq out nil)
+  (foreach pc (recess-back-pieces cw ch g ex0 ex1 ez0 ez1)
+    (if (and fp (<= (cadr fp) 0.0) (>= (cadddr fp) ch))
+      (progn
+        (setq x0 (car pc) x1 (caddr pc))
+        (if (<= (car fp) 0.0) (setq x0 (max x0 (caddr fp))) (setq x1 (min x1 (car fp))))
+        (if (> x1 (+ x0 1e-6)) (setq out (append out (list (list x0 (cadr pc) x1 (cadddr pc)))))))
+      (setq out (append out (list pc)))))
+  out)
+
+;;; The notch's corner on a piece, in the piece's frame: (fc nw nh) where a
+;;; part-height notch's footprint falls in the piece, else nil.
+(defun recess-notched-back-corner (piece fp / ix0 iz0 ix1 iz1)
+  (if (null fp) nil
+    (progn
+      (setq ix0 (max (car piece) (car fp)) iz0 (max (cadr piece) (cadr fp))
+            ix1 (min (caddr piece) (caddr fp)) iz1 (min (cadddr piece) (cadddr fp)))
+      (if (and (> ix1 (+ ix0 1e-6)) (> iz1 (+ iz0 1e-6)))
+        (list (strcat (if (<= (car fp) (car piece)) "x0" "x1") (if (<= (cadr fp) (cadr piece)) "y0" "y1"))
+              (- ix1 ix0) (- iz1 iz0))
+        nil))))
+
+;;; The piece's outline: the extension's (its window, bite or corner) with the
+;;; notch's corner `nc` taken out of it.
+(defun recess-notched-back-outline (piece cut nc)
+  (if nc
+    (recess-cut-corner (recess-back-outline piece cut) (- (caddr piece) (car piece)) (- (cadddr piece) (cadr piece))
+                       (car nc) (cadr nc) (caddr nc))
+    (recess-back-outline piece cut)))
+
+;;; -- A SHELF both cut, its plan frame ---------------------------------------------
+
+;;; recess-shelf-outline less the notch's corner (notch-shelf-cut, with the
+;;; shelf's own clearance).
+(defun recess-notched-shelf-outline (cw cd g ex0 ex1 ed shelf clr nw nd corner / cut)
+  (setq cut (notch-shelf-cut cw cd g nw nd corner clr shelf))
+  (if cut
+    (recess-cut-corner (recess-shelf-outline cw cd g ex0 ex1 ed shelf clr) (nth 3 cut) (nth 4 cut) (car cut) (cadr cut) (caddr cut))
+    (recess-shelf-outline cw cd g ex0 ex1 ed shelf clr)))
+
+;;; -- THE NAMES ---------------------------------------------------------------------
+
+;;; On a notched carcass the extension's FLOOR and LID are EXT-FLOOR and
+;;; EXT-LID (the notch's box carries a LID, and from the top a FLOOR, of its
+;;; own); elsewhere every name is as it always was.
+(defun recess-box-name (name notched)
+  (cond ((not notched) name)
+        ((= name "FLOOR") "EXT-FLOOR")
+        ((= name "LID") "EXT-LID")
+        (T name)))

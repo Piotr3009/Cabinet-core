@@ -33,7 +33,7 @@ import {
   recessSideDogbones, recessSideJoints, recessBackPieces, recessBackCut, recessCutEdges, recessCutKind,
   recessBackOutline, recessBackDogbones, recessRunRow, recessBackJoints, recessBoxPlaces, recessReturn,
   recessReturnScrews, recessLid, recessLidScrews, recessExtBack, recessExtBackScrews, recessShelfInP,
-  recessShelfBump, recessShelfOutline, recessShelfDogbones, recessRefusal, EXTENSION_REFUSED, extensionOf,
+  recessShelfBump, recessShelfOutline, recessShelfDogbones, recessRefusal, recessNotchFootprint, EXTENSION_REFUSED, extensionOf,
   extensionVerdict, hangerCutoutStepped, withExtensionRefusal, cutEdgeBite, extensionCarcass, extensionDrills,
   extensionSummary,
 } from '../src/engine/extension.js';
@@ -263,7 +263,15 @@ test('the BACK\'s other shapes: a bite, a corner, two pieces (D8, D9)', () => {
 
 test('the refusals: a notch, a band outside the carcass, a return inside a side, the interior rule', () => {
   assert.equal(recessRefusal(600, 558, 770, G, 310, 600, 0, 770, 150, false, K), null);
-  assert.match(recessRefusal(600, 558, 770, G, 310, 600, 0, 770, 150, true, K), /notched round an obstacle/);
+  // T79 F8, KIT_RECESS.lsp D13 amended (the owner, 18.10.2026: *"dlaczego cut the corner likwiduje nam wcięcie
+  // do recess?"*): the 10th argument is the notch's FOOTPRINT on the BACK, no longer "notched" (until then any
+  // notch refused the band: "RECESS: a carcass notched round an obstacle cannot grow into a recess as well").
+  // Apart (BL 200 wide against 310..600): no refusal; overlapping (the band from 100): the sentence the Check shows.
+  assert.equal(recessRefusal(600, 558, 770, G, 310, 600, 0, 770, 150, recessNotchFootprint(600, 770, 200, 0, 'BL'), K), null);
+  assert.equal(recessRefusal(600, 558, 770, G, 100, 600, 0, 770, 150, recessNotchFootprint(600, 770, 200, 0, 'BL'), K),
+    'The recess cannot be cut: the corner cut stands where the recess band is; move one of them.');
+  // A part-height notch whose height stands apart from the band's coexists across the same x.
+  assert.equal(recessRefusal(600, 558, 770, G, 0, 300, 400, 770, 150, recessNotchFootprint(600, 770, 200, 300, 'BL'), K), null);
   assert.match(recessRefusal(600, 558, 770, G, -10, 600, 0, 770, 150, false, K), /outside the carcass/);
   assert.match(recessRefusal(600, 558, 770, G, 10, 600, 0, 770, 150, false, K), /RETURN cannot stand inside the side/);
   assert.match(recessRefusal(600, 558, 770, G, 0, 595, 0, 770, 150, false, K), /RETURN cannot stand inside the side/);
@@ -441,9 +449,16 @@ test('the verdict: the kit, a notch, a hanger in the window; a refusal cuts the 
   assert.deepEqual(full.warnings.map((w) => w.code), [EXTENSION_REFUSED]);
   assert.match(full.derived.extension.refused, /deeper carcass/);
   assert.equal(full.panels.length, computeCabinet(BUD, P).panels.length, 'the parent is what is cut');
+  // T79 F8 (D13 amended, the owner: *"dlaczego cut the corner likwiduje nam wcięcie do recess?"*): a notch apart
+  // from the band on the BACK no longer refuses it; both are cut (test/turn79-f08-notch-and-recess.test.js board by
+  // board). A band that overlaps the notch's footprint is refused in words and the notch stands.
   const notched = computeCabinet({ ...BUD, notch: { corner: 'BL', w: 200, d: 200, h: 0 }, extension: A }, P);
-  assert.match(notched.warnings.find((w) => w.code === EXTENSION_REFUSED).message, /notched round an obstacle/);
-  assert.ok(notched.derived.notch && !notched.derived.notch.refused, 'the notch stands');
+  assert.deepEqual(notched.warnings, []);
+  assert.ok(notched.derived.notch && notched.derived.extension && !notched.derived.extension.refused, 'both are cut');
+  const overlapping = computeCabinet({ ...BUD, notch: { corner: 'BL', w: 200, d: 200, h: 0 }, extension: { ...A, x0: 100 } }, P);
+  assert.equal(overlapping.warnings.find((w) => w.code === EXTENSION_REFUSED).message,
+    'The recess cannot be cut: the corner cut stands where the recess band is; move one of them.');
+  assert.ok(overlapping.derived.notch && !overlapping.derived.notch.refused, 'the notch stands');
   const budr = computeCabinet({ ...defaultParamsFor('BUDR', P), unit_num: '03', extension: A }, P);
   assert.match(budr.warnings.find((w) => w.code === EXTENSION_REFUSED).message, /RECESS: an extension grows from a base unit/);
   // A wall unit: the hanger cut-out the window reaches steps in beside it (D14); one with nowhere to go refuses.

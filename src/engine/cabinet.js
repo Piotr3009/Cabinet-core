@@ -1781,7 +1781,13 @@ export function computeCabinet(params, profileOverride) {
   // sentence travels with it (Check #28). No `params.notch`, no line here runs.
   if (params?.notch) {
     const parent = computeCabinet({ ...params, notch: null }, profileOverride);
-    const verdict = notchVerdict({ parent, params, type: cfg.type, profile: P });
+    // T79 F8 (KIT_RECESS.lsp D13, the notch FIRST): with a recess band as well
+    // the notch is judged against the kit's own carcass, never the grown one
+    // (a grown BUR runs ed further from its new back edge, and a hinge the
+    // notch takes was read past it and cut away). Refused, the cabinet is the
+    // parent with its extension, as before.
+    const asked = params?.extension ? computeCabinet({ ...params, notch: null, extension: null }, profileOverride) : parent;
+    const verdict = notchVerdict({ parent: asked, params, type: cfg.type, profile: P });
     if (verdict) return withNotchRefusal(parent, verdict, params, P);
   }
   // T79 F5 · THE EDGE NOTCH, ASKED OF THE PARENT THE SAME WAY (KIT_NOTCH.lsp
@@ -1798,7 +1804,9 @@ export function computeCabinet(params, profileOverride) {
   // KIT_RECESS.lsp: the room derives the band (projectStore recessExtensionFor),
   // the unit is cut WITHOUT it and the band is judged against that cut
   // (recess-refusal, D4, D13, D14). Refused, the parent is what is cut and the
-  // sentence travels with it. No `params.extension`, no line here runs.
+  // sentence travels with it. No `params.extension`, no line here runs. T79 F8:
+  // the parent carries its notch, and D13 refuses only a band that overlaps the
+  // notch's footprint on the BACK; the Check says so (#36, EXTENSION_REFUSED).
   if (params?.extension) {
     const parent = computeCabinet({ ...params, extension: null }, profileOverride);
     const verdict = extensionVerdict({ parent, params, type: cfg.type, profile: P });
@@ -8729,10 +8737,13 @@ export function computeCabinet(params, profileOverride) {
     : null;
   // 15.10.2026 · the recess extension, in the notch's own place (KIT_RECESS.lsp
   // section 1: after the parent's carcass, before the drilling). Null on every
-  // unit with no extension.
-  const extensionCut = params?.extension && !notchCut
+  // unit with no extension. T79 F8 (D13 amended, the owner: *"dlaczego cut the
+  // corner likwiduje nam wcięcie do recess?"*): a notched carcass whose notch
+  // stands apart from the band on the BACK (the verdict above refused every
+  // other) is cut by the notch first and by the extension on what it left.
+  const extensionCut = params?.extension
     ? extensionCarcass({
-      params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel,
+      params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel, notchCut,
     })
     : null;
 

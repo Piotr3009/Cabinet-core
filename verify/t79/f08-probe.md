@@ -83,3 +83,34 @@ Two faults, one sentence each. The law (D13) refuses on the mere presence of a
 notch, never asking whether the notch and the band meet; and the refusal it
 writes reaches no screen: not the Check, not the notch window, not the
 retail room.
+
+## 6. THE F8 REVIEW: THE COMBINED BACK (HEAD `4a23c34`, the F6 x F8 seam, node)
+
+The same BUD. Two sweeps compared every BACK hole with its piece's outline
+and with every other hole on the piece: (a) the corners BL and BR, h 0, 300,
+-300, 150, -150, 60, -60, w 200, 60, 30 against 49 bands (x 310..600, 0..290,
+300..500, 250..350, 0..600, 0..400, 200..600 by z 0..770, 400..770, 0..400,
+300..500, 100..700, 0..250, 500..770); (b) BL and BR, w 200, h 0, 300, -300
+against 48 bands that touch the notch (x 200..600, 218..600, 236..600,
+0..400, 0..382, 0..364, 200..400, 218..382 by z 0..770, 300..770, 318..770,
+0..470, 0..452, 300..470; 216 units both cut). Two faults, both of the
+combined cut only (the notch alone and the extension alone answer as before):
+
+| case | piece | dia 3 holes on the edge (piece frame, verbatim) | what is wrong |
+| - | - | - | - |
+| the footprints touch: BL 200/200/0, band x 200..600 floor to top | BACK 18 x 770 at x 200 | `[9,50] [9,240] [9,530] [9,720] [9,50] [9,385] [9,720]` | the notch's RETURN column and RETURN-L's share x 209: z 50 and 720 drilled twice (7 drills for 5 holes) |
+| the band and the notch on one side: BL 200/200/300, band x 0..400 z 300..500 | BACK 600 x 770, window x 0..382 z 318..482 | left column `[9,350] [9,720]` | z 350 stands in the window: the side row ran on what the notch left (300..770), never the window |
+| a short run under a notch from the top: BR 200/200/-60, band x 0..600 z 100..700 | BACK-2 600 x 88 at z 682 | right column `[591,50] [591,-22]` | the run the notch leaves is 0..28: drawBACK's row put z 50 (carcass 732, in the notch) and -22 (under the board) |
+
+Sweep (b): 44 units drilled a hole twice, every one where the band's RETURN
+stands behind the notch's own (none at `88833a7`, before the seam put the
+RETURN's column on the piece). Sweep (a): 84 units put a side-row hole into
+the window, the notch or past the board that the extension alone does not
+(the same 84 at `88833a7`: F8's side row, not the seam's). D13 says the law the code
+missed: "every edge cut by both takes its joints run by run on what the two
+leave of it".
+
+Not T79's and not touched: the extension ALONE drills the side's column
+through the window when the band reaches a side short of the floor or the top
+(20 bands of the sweep, e.g. x 310..600 z 400..770: BACK `[591,720]` in the
+window), since KIT_RECESS.lsp of 15.10.2026; named in the PR.

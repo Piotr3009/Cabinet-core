@@ -148,7 +148,9 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // AMENDED BY T78 (12.10.2026): three rules joined, all yellow: #33 the wide-angle
   // door's swing (F13), #34 the hood's clearance over the hob (F17, a proposal),
   // #35 the lift-up leaf at full opening (F18). Twenty-nine became thirty-two.
-  assert.equal(CHECKS.length, 32);
+  // AMENDED BY T79 F8 (18.10.2026): #36 the recess extension refused, the owner:
+  // *"dlaczego cut the corner likwiduje nam wcięcie do recess?"* Thirty-three.
+  assert.equal(CHECKS.length, 33);
   assert.equal(CHECKS[14].n, 15);
 });
 

@@ -30,6 +30,13 @@
 // the notch's own place. A unit with no `params.extension` never reaches a
 // line of it, so every golden is byte-identical by construction.
 //
+// T79 F8 (18.10.2026, KIT_RECESS.lsp D13 amended, section H): a carcass the
+// corner notch has cut grows into a recess as well when the two footprints on
+// the BACK do not overlap; the notch is cut first and the extension on the
+// boards it left. The owner: *"dlaczego cut the corner likwiduje nam wcięcie
+// do recess?"*  Every line of that is behind a notch AND an extension on one
+// unit: a unit with only one of them reaches exactly the lines it reached.
+//
 // Where the extension comes from: the ROOM, never the hand (projectStore
 // recessExtensionFor, derived every time, stored never). A cabinet WHOLLY in a
 // recess is a deeper cabinet (D2, projectStore settleRecesses) and never
@@ -39,13 +46,20 @@
 
 import { sidePanelGeometry, socketPanelGeometry, rectGeometry } from './puzzle.js';
 import { roundTo } from './format.js';
+// T79 F8 (KIT_RECESS.lsp D13, section H): notchOf to cutNotchCorner are what the extension asks of a carcass
+// the notch has cut; T79 F8 x F6 (D13 with KIT_NOTCH.lsp D10 amended): notchBackBoxRows, the rows into its box.
 import {
   notchProfile, notchP, notchJointInset, notchReplanSockets, notchReplanTabs, notchShift,
   notchMinJointEdge, notchScrewAxis, notchScrewRow, notchRowsBetweenTabs, notchEdgeRow,
   notchRectOutline, notchDogbone, notchRot90Pts, notchCornerOfOutline,
   notchKitRefusal, outlineWithTabs, tabBones, polygonArea, shiftGeom,
   cornerMarkRecords,
+  notchOf, notchHh, notchFromTopP, notchFullP, notchBoxedP, notchLeftP, notchBackP,
+  notchTopCut, notchTopJoints, notchSideFc, notchSideJoints, notchShelfCut, notchHoleInP, cutNotchCorner,
+  notchBackBoxRows,
 } from './notch.js';
+// T79 F8: a grown BUR's marks move with its re-origin (extensionDrills).
+import { shiftMark } from './marks.js';
 
 const EPS = 1e-6;
 
@@ -331,8 +345,16 @@ export function recessRunRow(a, b, e) {
  * recess-back-joints: a piece's sockets and rows in the piece's OWN frame.
  *   { LEFT, RIGHT, TOP, BOTTOM: [..], SCREWS: [[x, z], ..] }
  * `topTabs` / `botTabs` in carcass x, `bulTabs` / `burTabs` in z.
+ * `nb` (T79 F8, KIT_RECESS.lsp D13): the footprint on the BACK of a BOXED
+ * notch at a back corner, or null: the rows keep off it, run by run (a side
+ * row on the edge the notch cuts runs on what the notch AND the window leave
+ * of it, a row on its run: recessSideRow), and the piece that holds the
+ * notch's box carries the rows into it exactly as the notched BACK alone does
+ * (recessNotchBoxRows, KIT_NOTCH's notchBackBoxRows, D10 amended), after
+ * drawBACK's rows and before the window's, a hole once (recessPutHole); with
+ * null every row is where it was.
  */
-export function recessBackJoints(piece, window, cw, ch, g, ex0, ex1, ez0, ez1, topTabs, botTabs, bulTabs, burTabs, K) {
+export function recessBackJoints(piece, window, cw, ch, g, ex0, ex1, ez0, ez1, topTabs, botTabs, bulTabs, burTabs, K, nb = null) {
   const sfe = notchP(K, 'puzzle.screwFromEnd');
   const S = notchScrewAxis(g);
   const [x0, z0, x1, z1] = piece;
@@ -350,8 +372,15 @@ export function recessBackJoints(piece, window, cw, ch, g, ex0, ex1, ez0, ez1, t
   const TOP = z1 >= ch ? inX(topTabs) : [];
   const BOTTOM = z0 <= 0 ? inX(botTabs) : [];
   const scr = [];
-  if (x0 <= 0) for (const z of notchRowsBetweenTabs(0, bh, LEFT, sfe)) scr.push([S, z]);
-  if (x1 >= cw) for (const z of notchRowsBetweenTabs(0, bh, RIGHT, sfe)) scr.push([bw - S, z]);
+  // T79 F8 (D13): drawBACK's side rows on each run the notch leaves of the
+  // edge; on the edge the notch cuts, on what the notch AND the window leave
+  // of it, a row on its run (recessSideRow).
+  if (x0 <= 0) {
+    for (const z of recessSideRow(bh, z0, LEFT, nb, window, Boolean(nb) && nb[0] <= 0, recessLeftP(ex0), sfe)) scr.push([S, z]);
+  }
+  if (x1 >= cw) {
+    for (const z of recessSideRow(bh, z0, RIGHT, nb, window, Boolean(nb) && nb[2] >= cw, recessRightP(ex1, cw), sfe)) scr.push([bw - S, z]);
+  }
   const runs = (grown) => (grown
     ? [
       ...(recessLeftP(ex0) ? [] : [[g, ix0]]),
@@ -359,13 +388,17 @@ export function recessBackJoints(piece, window, cw, ch, g, ex0, ex1, ez0, ez1, t
     ]
     : [[g, cw - g]]);
   if (z1 >= ch) {
-    for (const [a, b] of runs(recessTopP(ez1, ch))) {
-      for (const x of recessRunRow(Math.max(a, x0), Math.min(b, x1), sfe)) scr.push([x - x0, bh - S]);
+    for (const [a0, b0] of runs(recessTopP(ez1, ch))) {
+      for (const [a, b] of recessRuns(a0, b0, recessNotchXcut(nb, g, cw, Boolean(nb) && nb[3] >= ch))) {
+        for (const x of recessRunRow(Math.max(a, x0), Math.min(b, x1), sfe)) scr.push([x - x0, bh - S]);
+      }
     }
   }
   if (z0 <= 0) {
-    for (const [a, b] of runs(recessFloorP(ez0))) {
-      for (const x of recessRunRow(Math.max(a, x0), Math.min(b, x1), sfe)) scr.push([x - x0, S]);
+    for (const [a0, b0] of runs(recessFloorP(ez0))) {
+      for (const [a, b] of recessRuns(a0, b0, recessNotchXcut(nb, g, cw, Boolean(nb) && nb[1] <= 0))) {
+        for (const x of recessRunRow(Math.max(a, x0), Math.min(b, x1), sfe)) scr.push([x - x0, S]);
+      }
     }
   }
   // 18.10.2026 (KIT_RECESS.lsp D17 amended), the owner: *"jak mamy cut the
@@ -378,11 +411,19 @@ export function recessBackJoints(piece, window, cw, ch, g, ex0, ex1, ez0, ez1, t
   // D4, so none is ever short).
   const inPieceX = (x) => x > x0 - EPS && x < x1 + EPS;
   const inPieceZ = (z) => z > z0 - EPS && z < z1 + EPS;
+  // T79 F8 x F6 (D13 with KIT_NOTCH.lsp D10 amended, 18.10.2026): the rows
+  // into the notch's box, exactly as notchBackJoints draws them on the
+  // notched BACK (recessNotchBoxRows), on the piece that holds them.
+  for (const [x, z] of recessNotchBoxRows(nb, cw, ch, g, K)) {
+    if (inPieceX(x) && inPieceZ(z)) recessPutHole(scr, [x - x0, z - z0]);
+  }
+  // A hole once (recessPutHole): where the footprints touch (D13) the band's
+  // RETURN stands behind the notch's own and the two columns share x.
   const column = (x) => {
-    for (const z of notchEdgeRow(bz0, bz1, sfe)) if (z >= z0 && z <= z1) scr.push([x - x0, z - z0]);
+    for (const z of notchEdgeRow(bz0, bz1, sfe)) if (z >= z0 && z <= z1) recessPutHole(scr, [x - x0, z - z0]);
   };
   const row = (z) => {
-    for (const x of notchEdgeRow(wx0, wx1, sfe)) if (x >= x0 && x <= x1) scr.push([x - x0, z - z0]);
+    for (const x of notchEdgeRow(wx0, wx1, sfe)) if (x >= x0 && x <= x1) recessPutHole(scr, [x - x0, z - z0]);
   };
   if (!recessLeftP(ex0) && inPieceX(wx0 - S)) column(wx0 - S);
   if (!recessRightP(ex1, cw) && inPieceX(wx1 + S)) column(wx1 + S);
@@ -517,14 +558,256 @@ export function recessShelfDogbones(cw, cd, g, ex0, ex1, ed, shelf, K, r, clr) {
 // E. THE REFUSALS
 // ═══════════════════════════════════════════════════════════════════════════
 
-export function recessRefusal(cw, cd, ch, g, ex0, ex1, ez0, ez1, ed, notched, K) {
-  if (notched) return 'RECESS: a carcass notched round an obstacle cannot grow into a recess as well; the notch stands.';
+/**
+ * T79 F8 (KIT_RECESS.lsp D13): the sentence for a band that overlaps the
+ * notch's footprint on the BACK. The owner, 18.10.2026: *"dlaczego cut the
+ * corner likwiduje nam wcięcie do recess?"*
+ */
+export const RECESS_NOTCH_OVERLAP = 'The recess cannot be cut: the corner cut stands where the recess band is; move one of them.';
+
+/**
+ * recess-refusal. `fp` (T79 F8, D13): the footprint on the BACK of the notch
+ * the carcass carries (recessNotchFootprint), or null / false. Until
+ * 18.10.2026 it was `notched`, any notch refused the band ("RECESS: a carcass
+ * notched round an obstacle cannot grow into a recess as well; the notch
+ * stands.") and the refusal reached no screen.
+ */
+export function recessRefusal(cw, cd, ch, g, ex0, ex1, ez0, ez1, ed, fp, K) {
+  if (recessNotchOverlapP(fp, ex0, ex1, ez0, ez1)) return RECESS_NOTCH_OVERLAP;
   if (ex0 < 0 || ex1 > cw || ez0 < 0 || ez1 > ch || ex0 >= ex1 || ez0 >= ez1) return 'RECESS: the band lies outside the carcass.';
   if (!recessLeftP(ex0) && ex0 < g) return 'RECESS: a RETURN cannot stand inside the side; the band starts at least a board in.';
   if (!recessRightP(ex1, cw) && ex1 > cw - g) return 'RECESS: a RETURN cannot stand inside the side; the band ends at least a board in.';
   if (!recessFloorP(ez0) && ez0 < g) return 'RECESS: the FLOOR cannot lie inside the BOTTOM; the band starts at least a board up.';
   if (!recessTopP(ez1, ch) && ez1 > ch - g) return 'RECESS: the LID cannot lie inside the TOP; the band ends at least a board down.';
   return recessInteriorRefusal(cw, ch, g, ex0, ex1, ez0, ez1, ed, K);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// H. WITH A NOTCH (KIT_RECESS.lsp D13, 18.10.2026)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner: *"dlaczego cut the corner likwiduje nam wcięcie do recess?"*  The
+// notch is KIT_NOTCH.lsp's and is cut first, by its own routines; these are
+// what the extension asks of a carcass the notch has already cut. Each calls
+// the extension's own (B to E) and the notch's own; none re-states a law.
+
+/** recess-notch-footprint: [fx0, fz0, fx1, fz1], the notch on the BACK (carcass x from the LEFT face, z up). */
+export function recessNotchFootprint(cw, ch, nw, nh, corner) {
+  const hh = notchHh(ch, nh);
+  const top = notchFromTopP(ch, nh);
+  const left = notchLeftP(corner);
+  return [left ? 0 : cw - nw, top ? ch - hh : 0, left ? nw : cw, top ? ch : hh];
+}
+
+/** recess-notch-overlap-p: does the band overlap that footprint (any area at all)? false for no notch. */
+export function recessNotchOverlapP(fp, ex0, ex1, ez0, ez1) {
+  return Boolean(fp) && fp[0] < ex1 && fp[2] > ex0 && fp[1] < ez1 && fp[3] > ez0;
+}
+
+/** recess-runs: the straight runs of an edge lo .. hi less the intervals `cuts`, in order. */
+export function recessRuns(lo, hi, cuts) {
+  const sorted = [...(cuts || [])].sort((p, q) => p[0] - q[0]);
+  const out = [];
+  let at = lo;
+  for (const c of sorted) {
+    if (Math.min(c[0], hi) > at + EPS) out.push([at, Math.min(c[0], hi)]);
+    if (c[1] > at) at = c[1];
+  }
+  if (hi > at + EPS) out.push([at, hi]);
+  return out;
+}
+
+/** recess-in-run: the tabs (sockets) of a list that stand inside a run [a, b]. */
+export function recessInRun(lst, run) {
+  return (lst || []).filter((c) => c > run[0] + EPS && c < run[1] - EPS);
+}
+
+/** recess-notch-zcut: the notch's height on a piece's side edge (piece frame), as a cut list; [] unless `onSide`. */
+export function recessNotchZcut(nb, z0, onSide) {
+  return nb && onSide ? [[nb[1] - z0, nb[3] - z0]] : [];
+}
+
+/** recess-window-zcut: the window's height on a piece's side edge (piece frame), as a cut list; [] unless `onSide` (the band reaches that side). */
+export function recessWindowZcut(window, z0, onSide) {
+  return onSide ? [[window[1] - z0, window[3] - z0]] : [];
+}
+
+/**
+ * recess-side-row: drawBACK's side row on a piece's side edge, [z, ..] in the
+ * piece's frame, between the tabs the edge carries. Off the notch's edge
+ * (onSide false) the one run of the whole edge, as it always was. On the edge
+ * the notch cuts (D13: every edge cut by both takes its joints run by run on
+ * what the two leave of it) the runs are what the notch AND, when the band
+ * reaches that side too (bandSide), the window leave of it, and a row stands
+ * on its run: a hole drawBACK's spacing puts past a run's end would be drilled
+ * into the notch, into the window or past the board (none on a run shorter
+ * than one hole's offset). The T79 F8 review, 18.10.2026.
+ */
+export function recessSideRow(bh, z0, tabs, nb, window, onSide, bandSide, sfe) {
+  const out = [];
+  const cuts = [...recessNotchZcut(nb, z0, onSide), ...recessWindowZcut(window, z0, onSide && bandSide)];
+  for (const run of recessRuns(0, bh, cuts)) {
+    for (const z of notchRowsBetweenTabs(run[0], run[1], recessInRun(tabs, run), sfe)) {
+      if (!onSide || (z > run[0] - EPS && z < run[1] + EPS)) out.push(z);
+    }
+  }
+  return out;
+}
+
+/** recess-put-hole: a hole on a piece once; `p` joins `pts` unless it holds it already (to EPS). Where the footprints touch (D13) the window's column falls on the notch's. */
+export function recessPutHole(pts, p) {
+  if (!pts.some((q) => Math.abs(q[0] - p[0]) < EPS && Math.abs(q[1] - p[1]) < EPS)) pts.push(p);
+  return pts;
+}
+
+/** recess-notch-xcut: the notch and its RETURN on the TOP's (BOTTOM's) back edge, carcass x; [] unless `edgeP`. */
+export function recessNotchXcut(nb, g, cw, edgeP) {
+  if (!nb || !edgeP) return [];
+  return [nb[0] <= 0 ? [0, nb[2] + g] : [nb[0] - g, cw]];
+}
+
+/**
+ * recess-notch-box-rows (T79 F8 x F6, 18.10.2026, D13 with KIT_NOTCH.lsp D10
+ * amended): the BACK's rows into a BOXED back-corner notch's box, [[x, z], ..]
+ * in carcass x from the LEFT face and z up. The notch is read back off its
+ * footprint `nb` (its width, the L corner when it starts at 0, h 0 at the
+ * whole height, a negative h from the top, D21) and its rows are KIT_NOTCH's
+ * own notchBackBoxRows: the very rows notchBackJoints draws on the notched
+ * BACK alone, one routine. [] without nb.
+ */
+export function recessNotchBoxRows(nb, cw, ch, g, K) {
+  if (!nb) return [];
+  const hh = nb[3] - nb[1];
+  let nh = hh;
+  if (nb[1] <= 0 && nb[3] >= ch) nh = 0;
+  else if (nb[1] > 0) nh = -hh;
+  return notchBackBoxRows(cw, ch, g, nb[2] - nb[0], nh, nb[0] <= 0 ? 'BL' : 'BR', K).SCREWS;
+}
+
+/**
+ * recess-cut-corner: an outline of a w x h board less the rectangle nw x nh at
+ * its corner fc. One law, one path: the 3-D's own arithmetic
+ * (engine/notch.js cutNotchCorner), which the LISP restates.
+ */
+export function recessCutCorner(pts, w, h, fc, nw, nh) {
+  return cutNotchCorner(pts, w, h, { fc, nw, nh });
+}
+
+/** recess-notched-top-outline: the TOP's (BOTTOM's) bump with the notch's corner taken out (plan frame). */
+export function recessNotchedTopOutline(cw, cd, g, ex0, ex1, ed, nw, nd, corner) {
+  const plan = recessTopOutline(cw, cd, g, ex0, ex1, ed);
+  const cut = notchTopCut(cw, cd, g, nw, nd, corner);
+  return cut ? recessCutCorner(plan, cut[3], cut[4], cut[0], cut[1], cut[2]) : plan;
+}
+
+/**
+ * recess-notched-top-joints: the long edge on the notch's side is the notch's
+ * (the band never reaches it), the other the extension's; the back edge takes
+ * a socket plan on every straight run left by the notch and the bump.
+ */
+export function recessNotchedTopJoints(cw, cd, g, ex0, ex1, ed, nw, nd, corner, K) {
+  const e = notchP(K, 'puzzle.tabCentresFromEnd');
+  const below = notchP(K, 'puzzle.singleSocketBelow');
+  const minEdge = notchMinJointEdge(notchP(K, 'puzzle.dogboneHalfHeight'), g);
+  const tw = cw - 2 * g;
+  const nj = notchTopJoints(cw, cd, g, nw, nd, corner, K);
+  const rj = recessTopJoints(cw, cd, g, ex0, ex1, ed, K);
+  const [, , b0, b1] = recessPlanBump(cw, cd, g, ex0, ex1, ed);
+  const left = notchLeftP(corner);
+  const cuts = [[b0, b1]];
+  if (notchBackP(corner)) cuts.unshift(left ? [0, nw] : [tw - nw, tw]);
+  const BACK = recessRuns(0, tw, cuts).flatMap(([a, b]) => recessRunSockets(b - a, a, e, below, minEdge));
+  return { LEFT: left ? nj.LEFT : rj.LEFT, RIGHT: left ? rj.RIGHT : nj.RIGHT, BACK };
+}
+
+/** recess-notched-side-outline: BUL's frame (x from the FRONT), the bump less a BOXED notch's corner. */
+export function recessNotchedSideOutline(cd, ch, g, ez0, ez1, ed, nw, nd, nh, corner) {
+  const pts = recessSideOutline(cd, ch, g, ez0, ez1, ed, false);
+  if (!notchBoxedP(nw, g)) return pts;
+  return recessCutCorner(pts, cd - g, ch, notchSideFc(corner, false, notchFromTopP(ch, nh)), nd, notchHh(ch, nh));
+}
+
+/**
+ * recess-notched-side-joints, from the FRONT edge: the top (bottom) edge is the
+ * notch's where the notch moves it, else the extension's; the back edge takes
+ * a tab plan on every run left between the notch and the bump; the pin
+ * columns are the notch's.
+ */
+export function recessNotchedSideJoints(cd, ch, g, ez0, ez1, ed, nw, nd, nh, corner, K) {
+  const e = notchP(K, 'puzzle.tabCentresFromEnd');
+  const one = notchP(K, 'puzzle.singleTabAtOrBelow');
+  const three = notchP(K, 'puzzle.middleTabBelow');
+  const minEdge = notchMinJointEdge(notchP(K, 'puzzle.dogboneHalfHeight'), g);
+  const nj = notchSideJoints(cd, ch, g, nw, nd, nh, corner, K);
+  const rj = recessSideJoints(cd, ch, g, ez0, ez1, ed, K);
+  const top = notchFromTopP(ch, nh);
+  const boxed = notchBoxedP(nw, g);
+  const topN = boxed && (notchFullP(ch, nh) || top);
+  const botN = boxed && !top;
+  const cuts = [[recessBz0(ez0, g), recessBz1(ez1, ch, g)]];
+  if (boxed && notchBackP(corner)) cuts.unshift(top ? [ch - notchHh(ch, nh), ch] : [0, notchHh(ch, nh)]);
+  return {
+    'TOP-SOCKETS': topN ? nj['TOP-SOCKETS'] : rj['TOP-SOCKETS'],
+    'BOTTOM-SOCKETS': botN ? nj['BOTTOM-SOCKETS'] : rj['BOTTOM-SOCKETS'],
+    'TOP-SCREWS': topN ? nj['TOP-SCREWS'] : rj['TOP-SCREWS'],
+    'BOTTOM-SCREWS': botN ? nj['BOTTOM-SCREWS'] : rj['BOTTOM-SCREWS'],
+    'BACK-TABS': recessRuns(0, ch, cuts).flatMap(([a, b]) => recessRunTabs(b - a, a, e, one, three, minEdge)),
+    'PIN-COLUMNS': nj['PIN-COLUMNS'],
+  };
+}
+
+/**
+ * recess-notched-back-pieces: the extension's pieces; the footprint `fp` of a
+ * notch at a BACK corner (null for a front one, it never reaches the BACK)
+ * takes its strip off every piece it reaches when it runs the full height,
+ * and a piece it takes whole goes; a part-height one leaves the pieces whole.
+ */
+export function recessNotchedBackPieces(cw, ch, g, ex0, ex1, ez0, ez1, fp) {
+  const out = [];
+  for (const pc of recessBackPieces(cw, ch, g, ex0, ex1, ez0, ez1)) {
+    if (fp && fp[1] <= 0 && fp[3] >= ch) {
+      let [x0, , x1] = pc;
+      if (fp[0] <= 0) x0 = Math.max(x0, fp[2]);
+      else x1 = Math.min(x1, fp[0]);
+      if (x1 > x0 + EPS) out.push([x0, pc[1], x1, pc[3]]);
+    } else {
+      out.push([...pc]);
+    }
+  }
+  return out;
+}
+
+/** recess-notched-back-corner: [fc, nw, nh] of a part-height notch's corner on a piece (its frame), or null. */
+export function recessNotchedBackCorner(piece, fp) {
+  if (!fp) return null;
+  const ix0 = Math.max(piece[0], fp[0]);
+  const iz0 = Math.max(piece[1], fp[1]);
+  const ix1 = Math.min(piece[2], fp[2]);
+  const iz1 = Math.min(piece[3], fp[3]);
+  if (!(ix1 > ix0 + EPS && iz1 > iz0 + EPS)) return null;
+  return [`${fp[0] <= piece[0] ? 'x0' : 'x1'}${fp[1] <= piece[1] ? 'y0' : 'y1'}`, ix1 - ix0, iz1 - iz0];
+}
+
+/** recess-notched-back-outline: the piece's outline (window, bite or corner) less the notch's corner `nc`. */
+export function recessNotchedBackOutline(piece, cut, nc) {
+  const pts = recessBackOutline(piece, cut);
+  if (!nc) return pts;
+  return recessCutCorner(pts, piece[2] - piece[0], piece[3] - piece[1], nc[0], nc[1], nc[2]);
+}
+
+/** recess-notched-shelf-outline: the shelf's bump less the notch's corner (its own clearance), its plan frame. */
+export function recessNotchedShelfOutline(cw, cd, g, ex0, ex1, ed, shelf, clr, nw, nd, corner, K) {
+  const plan = recessShelfOutline(cw, cd, g, ex0, ex1, ed, shelf, K, clr);
+  const cut = notchShelfCut(cw, cd, g, nw, nd, corner, clr, shelf);
+  return cut ? recessCutCorner(plan, cut[3], cut[4], cut[0], cut[1], cut[2]) : plan;
+}
+
+/** recess-box-name: on a notched carcass the extension's FLOOR and LID are EXT-FLOOR and EXT-LID (the notch's box has its own). */
+export function recessBoxName(name, notched) {
+  if (!notched) return name;
+  if (name === 'FLOOR') return 'EXT-FLOOR';
+  if (name === 'LID') return 'EXT-LID';
+  return name;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -562,17 +845,24 @@ export function extensionVerdict({ parent, params, type, profile }) {
   if (parent?.params?.slope_cut) return say('RECESS: a carcass cut under a slope cannot grow into a recess as well.');
   const K = notchProfile(profile);
   const { width: W, height: H, depth: D, board_t: G } = parent.params;
-  const geo = recessRefusal(W, D, H, G, ext.x0, ext.x1, ext.z0, ext.z1, ext.d, Boolean(params?.notch), K);
+  // T79 F8 (D13): the notch's FOOTPRINT on the BACK, not its mere presence
+  // (until 18.10.2026 `Boolean(params?.notch)` refused every band).
+  const n = notchOf(params, profile);
+  const fp = n ? recessNotchFootprint(W, H, n.w, n.h, n.corner) : null;
+  const geo = recessRefusal(W, D, H, G, ext.x0, ext.x1, ext.z0, ext.z1, ext.d, fp, K);
   if (geo) return say(geo);
   // D14: a wall unit's hanger cut-out the window reaches steps in beside it
   // (as the notch's does); one that has nowhere left to go is a refusal.
   const cutoutLayer = profile.wallUnit?.hangers?.cutoutLayer;
   const bk = (parent.panels || []).find((p) => p.id === 'BACK');
+  // T79 F8: a full-height notch at a back-left corner re-origined the parent's
+  // BACK by its width (notchDrills); its pockets are read back in carcass x.
+  const backDx = n && notchBackP(n.corner) && notchLeftP(n.corner) && notchFullP(H, n.h) ? n.w : 0;
   if (cutoutLayer && bk?.cnc?.pockets) {
     const window = recessWindow(W, H, G, ext.x0, ext.x1, ext.z0, ext.z1);
     for (const k of bk.cnc.pockets) {
       if (k.layer !== cutoutLayer) continue;
-      if (!hangerCutoutStepped(k, window, W)) {
+      if (!hangerCutoutStepped(backDx ? { ...k, x1: k.x1 + backDx, x2: k.x2 + backDx } : k, window, W)) {
         return say('RECESS: a hanger cut-out falls in the window into the recess and has nowhere to step to; the bracket cannot hang on air.', 'BACK');
       }
     }
@@ -660,6 +950,29 @@ function sideCorners(ch, bz0, bz1, ed, bur) {
 
 const r4pts = (pts) => pts.map(([x, y]) => [roundTo(x, 4), roundTo(y, 4)]);
 
+/**
+ * T79 F8 · the corners the 3-D takes out of a board, in order, as ONE
+ * `cnc.notch` chained through `also` (engine/notch.js cutNotchCorner applies
+ * them one after the other); null when there is none.
+ */
+function chainCorners(...corners) {
+  const list = [];
+  for (let c = corners.shift(); c !== undefined; c = corners.shift()) {
+    if (!c) continue;
+    const { also, ...own } = c;
+    list.push(own);
+    if (also) corners.unshift(also);
+  }
+  if (!list.length) return null;
+  return list.reduceRight((tail, c) => (tail ? { ...c, also: tail } : c), null);
+}
+
+/** T79 F8 · a board's marks less its CORNER_4MM ones: the outline both cut gives them again, once. */
+function withoutCornerMarks(marks, pz) {
+  const layer = pz?.layers?.cornerMark || 'CORNER_4MM';
+  return (marks || []).filter((m) => m?.layer !== layer);
+}
+
 // ── PHASE A: after the carcass and the interior, before the drilling ──────
 
 /**
@@ -668,12 +981,22 @@ const r4pts = (pts) => pts.map(([x, y]) => [roundTo(x, 4), roundTo(y, 4)]);
  * board that keeps its frame is cut in it, and BUR (whose frame runs from the
  * BACK) is cut in its ORIGINAL frame with the bump at negative x, so the
  * drilling pass sets out as on the parent; PHASE B then re-origins it.
+ *
+ * T79 F8 (KIT_RECESS.lsp D13): `notchCut` is engine/notch.js notchCarcass's
+ * record when the unit carries a notch as well (its footprint apart from the
+ * band, the verdict made sure). The notch has cut first; a board it cut that
+ * the band reaches too is cut by section H's routines (both outlines, the
+ * joints run by run), the BACK is cut from the notched BACK (the notch's
+ * re-origin of it is taken over here, its region re-stated piece by piece),
+ * and the extension's FLOOR and LID are EXT-FLOOR and EXT-LID. Null: every
+ * line below is what it was.
  */
 export function extensionCarcass({
-  params, profile, panels, W, H, D, G, jointInset, codes, makePanel,
+  params, profile, panels, W, H, D, G, jointInset, codes, makePanel, notchCut = null,
 }) {
   const ext = extensionOf(params);
   if (!ext) return null;
+  const nc = notchCut || null;
   const pz = profile.puzzle;
   const K = notchProfile(profile);
   // 17.10.2026 (D18): the cutter radius no longer sets out a dog bone here; the
@@ -706,12 +1029,23 @@ export function extensionCarcass({
   const planToBox = (pts, box) => pts.map(([x, y]) => [roundTo(x, 4), roundTo(box.d - y, 4)]);
 
   // ── THE SIDES THAT GROW ──
-  const sj = recessSideJoints(D, H, G, ez0, ez1, ed, K);
+  const sjAlone = recessSideJoints(D, H, G, ez0, ez1, ed, K);
+  // T79 F8 (D13): a side a BOXED notch cut as well (a part-height notch, its
+  // height apart from the band's) takes both outlines and its joints run by run.
+  const sideBoth = (id) => Boolean(nc && nc.boxed && nc.sideId === id);
+  const sideJoints = (id) => (sideBoth(id)
+    ? recessNotchedSideJoints(D, H, G, ez0, ez1, ed, nc.nw, nc.nd, nc.nh, nc.corner, K)
+    : sjAlone);
   for (const [id, grows, bur] of [['BUL', left, false], ['BUR', right, true]]) {
     if (!grows) continue;
     const side = byId(id);
     if (!side || side.part !== id) continue;
     const S = notchScrewAxis(G);
+    const both = sideBoth(id);
+    const sj = sideJoints(id);
+    const sideOutline = both
+      ? recessNotchedSideOutline(D, H, G, ez0, ez1, ed, nc.nw, nc.nd, nc.nh, nc.corner)
+      : recessSideOutline(D, H, G, ez0, ez1, ed, false);
     let geom;
     if (floor && top) {
       // A deeper side, the kit's own drawing with no back tabs (it meets the EXT-BACK).
@@ -722,7 +1056,7 @@ export function extensionCarcass({
     } else {
       // The bump between its straight runs, the parent's tabs re-planned on them.
       const fromFront = (xs) => (bur ? xs.map((x) => sideW - x) : xs);
-      const outline = recessSideOutline(D, H, G, ez0, ez1, ed, false);
+      const outline = sideOutline;
       const runs = [{ edge: 'right', at: sideW, centres: sj['BACK-TABS'] }];
       let pts = outlineWithTabs(outline, runs, G, pz);
       let bones = tabBones(runs, G, pz);
@@ -747,12 +1081,20 @@ export function extensionCarcass({
         outline: pts,
         pockets: [...bones, ...sockets.pockets],
         holes: [...sockets.holes, ...screws],
-        marks: [...(side.cnc?.marks || []), ...cornerMarkRecords(nominal, leg, pz)],
+        // T79 F8: on a side both cut the notch's own mark is in `nominal` again.
+        marks: [...(both ? withoutCornerMarks(side.cnc?.marks, pz) : (side.cnc?.marks || [])), ...cornerMarkRecords(nominal, leg, pz)],
       };
     }
-    side.cnc = { ...side.cnc, ...geom, notch: sideCorners(H, bz0, bz1, ed, bur) };
+    // T79 F8: the notch's corner last, in the side's own frame inside the
+    // grown board (fw its depth, ox where it stands: BUR's runs from the new
+    // back edge, the old one ed in), after the bump's corners.
+    const notchCorner = both ? {
+      fc: notchSideFc(nc.corner, bur, nc.top), nw: roundTo(nc.nd, 4), nh: roundTo(nc.hh, 4),
+      fw: roundTo(sideW, 4), ...(bur ? { ox: roundTo(ed, 4) } : {}),
+    } : null;
+    side.cnc = { ...side.cnc, ...geom, notch: both ? chainCorners(sideCorners(H, bz0, bz1, ed, bur), notchCorner) : sideCorners(H, bz0, bz1, ed, bur) };
     side.w = roundTo(sideW + ed, 4);
-    side.area_m2 = polygonArea(recessSideOutline(D, H, G, ez0, ez1, ed, false)) / 1e6;
+    side.area_m2 = polygonArea(sideOutline) / 1e6;
     // The box grows in PHASE B: the drilling pass reads a side's box depth for
     // its pin columns (shelfBearers.js pinColumns), and sets out as on the parent.
     if (bur) cut.reorigin.BUR = { dx: -ed, run: sideW + ed };
@@ -762,21 +1104,32 @@ export function extensionCarcass({
   }
 
   // ── THE TOP AND THE BOTTOM THAT GROW ──
+  // T79 F8 (D13): a board the notch cut too (`nc.regions` names it) takes the
+  // bump less the notch's corner, and its joints run by run.
+  const planBoth = (id) => Boolean(nc && nc.regions?.[id]);
+  const topJoints = (id) => (planBoth(id)
+    ? recessNotchedTopJoints(W, D, G, ex0, ex1, ed, nc.nw, nc.nd, nc.corner, K)
+    : recessTopJoints(W, D, G, ex0, ex1, ed, K));
   if (top || floor) {
-    const plan = recessTopOutline(W, D, G, ex0, ex1, ed);
     const drawnW = sideW + ed;
-    const drawn = notchRot90Pts(plan, drawnW);
-    const tj = recessTopJoints(W, D, G, ex0, ex1, ed, K);
-    const runs = [
-      { edge: 'bottom', at: 0, centres: tj.LEFT.map((y) => drawnW - y) },
-      { edge: 'top', at: tw, centres: tj.RIGHT.map((y) => drawnW - y) },
-      { edge: 'left', at: ed, centres: tj.BACK },
-    ];
     // 17.10.2026 (D18): the CORNER_4MM marks on the drawn nominal outline, no
     // dog bone (recessTopDogbones stays the record of where the circle stood).
     for (const id of [...(top ? ['TOP'] : []), ...(floor ? ['BOTTOM'] : [])]) {
       const p = byId(id);
       if (!p || p.part !== id) continue;
+      const plan = planBoth(id)
+        ? recessNotchedTopOutline(W, D, G, ex0, ex1, ed, nc.nw, nc.nd, nc.corner)
+        : recessTopOutline(W, D, G, ex0, ex1, ed);
+      const drawn = notchRot90Pts(plan, drawnW);
+      const tj = topJoints(id);
+      const runs = [
+        { edge: 'bottom', at: 0, centres: tj.LEFT.map((y) => drawnW - y) },
+        { edge: 'top', at: tw, centres: tj.RIGHT.map((y) => drawnW - y) },
+        { edge: 'left', at: ed, centres: tj.BACK },
+      ];
+      // The notch's region (its drawn frame, x from the old back edge) moves
+      // with the frame: x from the bump's back edge is ed further.
+      if (planBoth(id)) nc.regions[id] = { ...nc.regions[id], ox: roundTo(ed, 4) };
       p.cnc = {
         ...p.cnc,
         drawn_w: roundTo(drawnW, 4),
@@ -798,25 +1151,47 @@ export function extensionCarcass({
   // ── THE BACK: ITS PIECES ──
   const bk = byId('BACK');
   if (bk && bk.part === 'BACK') {
-    const pieces = recessBackPieces(W, H, G, ex0, ex1, ez0, ez1);
-    // A side that grows carries its tabs on its straight runs; the other keeps the parent's.
-    const sideTabs = (grows) => (grows ? sj['BACK-TABS'] : notchReplanTabs(H, notchP(K, 'puzzle.tabCentresFromEnd'), notchP(K, 'puzzle.singleTabAtOrBelow'), notchP(K, 'puzzle.middleTabBelow')));
-    const tj = recessTopJoints(W, D, G, ex0, ex1, ed, K);
+    // T79 F8 (D13): the notch reaches the BACK at a back corner only; its
+    // footprint shortens the pieces (full height) or takes a corner of the
+    // piece that holds it, and a BOXED one keeps the rows off its box.
+    const backFp = nc && nc.back ? recessNotchFootprint(W, H, nc.nw, nc.nh, nc.corner) : null;
+    const nb = backFp && nc.boxed ? backFp : null;
+    const pieces = recessNotchedBackPieces(W, H, G, ex0, ex1, ez0, ez1, backFp);
+    // A side that grows carries its tabs on its straight runs; the other keeps the parent's
+    // (T79 F8: the notch's, on the side the notch cut).
+    const parentTabs = notchReplanTabs(H, notchP(K, 'puzzle.tabCentresFromEnd'), notchP(K, 'puzzle.singleTabAtOrBelow'), notchP(K, 'puzzle.middleTabBelow'));
+    const sideTabs = (id, grows) => {
+      if (grows) return sideJoints(id)['BACK-TABS'];
+      if (nc && nc.sideId === id) return notchSideJoints(D, H, G, nc.nw, nc.nd, nc.nh, nc.corner, K)['BACK-TABS'];
+      return parentTabs;
+    };
     const plainTopTabs = notchShift(notchReplanSockets(tw, notchP(K, 'puzzle.tabCentresFromEnd'), notchP(K, 'puzzle.singleSocketBelow')), G);
-    const topTabs = top ? notchShift(tj.BACK, G) : plainTopTabs;
-    const botTabs = floor ? notchShift(tj.BACK, G) : plainTopTabs;
+    // The TOP's (BOTTOM's) back sockets as that board is cut: grown, notched, both, or the parent's.
+    const planTabs = (id, grows) => {
+      if (grows) return notchShift(topJoints(id).BACK, G);
+      if (planBoth(id)) return notchShift(notchTopJoints(W, D, G, nc.nw, nc.nd, nc.corner, K).BACK, G);
+      return plainTopTabs;
+    };
+    const topTabs = planTabs('TOP', top);
+    const botTabs = planTabs('BOTTOM', floor);
     const cutoutLayer = profile.wallUnit?.hangers?.cutoutLayer;
     const hangerCuts = (bk.cnc?.pockets || []).filter((k) => cutoutLayer && k.layer === cutoutLayer)
       .map((k) => hangerCutoutStepped(k, window, W)).filter(Boolean);
     const parentCnc = bk.cnc;
+    // T79 F8: every piece's box from the PARENT's (the first piece of a
+    // notched BACK starts past the notch, not at 0, and resets bk.box).
+    const parentBox = bk.box;
+    const notchRegion = nc?.regions?.BACK || null;
     pieces.forEach((piece, i) => {
       const [px0, pz0, px1, pz1] = piece;
       const bw = px1 - px0;
       const bh = pz1 - pz0;
       const pc = recessBackCut(piece, window);
       const kind = pc ? recessCutKind(pc, bw, bh) : null;
-      const outline = recessBackOutline(piece, pc);
-      const bj = recessBackJoints(piece, window, W, H, G, ex0, ex1, ez0, ez1, topTabs, botTabs, sideTabs(left), sideTabs(right), K);
+      // T79 F8: a part-height notch's corner on the piece that holds it.
+      const ncn = recessNotchedBackCorner(piece, backFp);
+      const outline = recessNotchedBackOutline(piece, pc, ncn);
+      const bj = recessBackJoints(piece, window, W, H, G, ex0, ex1, ez0, ez1, topTabs, botTabs, sideTabs('BUL', left), sideTabs('BUR', right), K, nb);
       const sockets = socketPanelGeometry({
         w: bw, h: bh, G, puzzle: pz,
         sockets: { left: bj.LEFT, right: bj.RIGHT, top: bj.TOP, bottom: bj.BOTTOM },
@@ -837,13 +1212,23 @@ export function extensionCarcass({
         ],
         // 17.10.2026 (D18): a bite's two corners and a corner cut's one get the
         // mark, not the bone; a window is a pocket with round corners (D9).
-        holes: sockets.holes,
-        marks: [...(parentCnc?.marks || []), ...cornerMarkRecords(outline, leg, pz)],
-        notch: kind === 'corner' ? notchCornerOfOutline(outline, bw, bh) : null,
+        // T79 F8: an UNBOXED notch (a rebate) drops the rows it cuts away, as
+        // on the BACK alone (KIT_NOTCH.lsp D7).
+        holes: nc && !nc.boxed && ncn
+          ? sockets.holes.filter((hl) => !notchHoleInP(hl.x, hl.y, (Number(hl.d) || 0) / 2, bw, bh, ncn[1], ncn[2], ncn[0]))
+          : sockets.holes,
+        marks: [...(nc ? withoutCornerMarks(parentCnc?.marks, pz) : (parentCnc?.marks || [])), ...cornerMarkRecords(outline, leg, pz)],
+        notch: chainCorners(
+          kind === 'corner' ? notchCornerOfOutline(recessBackOutline(piece, pc), bw, bh) : null,
+          ncn ? { fc: ncn[0], nw: roundTo(ncn[1], 4), nh: roundTo(ncn[2], 4) } : null,
+        ),
         ...(kind === 'bite' ? { bite: { x0: roundTo(pc[0], 4), y0: roundTo(pc[1], 4), x1: roundTo(pc[2], 4), y1: roundTo(pc[3], 4) } } : {}),
       };
       if (kind !== 'bite') delete cnc.bite;
-      const box = { ...bk.box, x: roundTo(bk.box.x + px0, 4), y: roundTo(bk.box.y + pz0, 4), w: roundTo(bw, 4), h: roundTo(bh, 4) };
+      // T79 F8: the notch's region on this piece, in the piece's frame (the
+      // BACK's own stood in carcass x), for its drop law in PHASE B.
+      if (notchRegion) nc.regions[i === 0 ? 'BACK' : 'BACK-2'] = { ...notchRegion, ox: roundTo(-px0, 4), oy: roundTo(-pz0, 4) };
+      const box = { ...parentBox, x: roundTo(parentBox.x + px0, 4), y: roundTo(parentBox.y + pz0, 4), w: roundTo(bw, 4), h: roundTo(bh, 4) };
       const area = polygonArea(outline) / 1e6 - (kind === 'window' ? (pc[2] - pc[0]) * (pc[3] - pc[1]) / 1e6 : 0);
       if (i === 0) {
         bk.cnc = cnc;
@@ -866,6 +1251,9 @@ export function extensionCarcass({
     });
     cut.pieces = pieces.length;
     cut.grown.push('BACK');
+    // T79 F8: every piece already stands in its own frame; the notch's
+    // re-origin of the whole BACK (a full-height notch) would move it twice.
+    if (nc?.reorigin?.BACK) delete nc.reorigin.BACK;
   }
 
   // ── THE ADDED BOARDS: RETURN-L, RETURN-R, FLOOR, LID, EXT-BACK ──
@@ -907,8 +1295,10 @@ export function extensionCarcass({
   if (places['RETURN-R']) board('RETURN-R', 'RECESS-RETURN', ret[0], ret[1], places['RETURN-R'], retScrews);
   const lid = recessLid(G, ex0, ex1, ed);
   const lidScrews = recessLidScrews(G, ex0, ex1, ed, K);
-  if (places.FLOOR) board('FLOOR', 'RECESS-FLOOR', lid[0], lid[1], places.FLOOR, lidScrews);
-  if (places.LID) board('LID', 'RECESS-LID', lid[0], lid[1], places.LID, lidScrews);
+  // T79 F8 (D13): on a notched carcass EXT-FLOOR and EXT-LID (recessBoxName),
+  // the notch's box carrying a LID (and from the top a FLOOR) of its own.
+  if (places.FLOOR) board(recessBoxName('FLOOR', Boolean(nc)), 'RECESS-FLOOR', lid[0], lid[1], places.FLOOR, lidScrews);
+  if (places.LID) board(recessBoxName('LID', Boolean(nc)), 'RECESS-LID', lid[0], lid[1], places.LID, lidScrews);
   const eb = recessExtBack(ex0, ex1, ez0, ez1);
   board('EXT-BACK', 'RECESS-BACK', eb[0], eb[1], places['EXT-BACK'], recessExtBackScrews(W, H, G, ex0, ex1, ez0, ez1, K), true);
 
@@ -929,7 +1319,12 @@ export function extensionCarcass({
     const clr = recessShelfClr(p.meta?.variant === 'fixed', K);
     const [bw, bh, b0, b1] = recessShelfBump(W, D, G, ex0, ex1, ed, shelf, K, clr);
     if (!(b1 - b0 > 0)) continue;
-    const plan = recessBumpOutline(bw, bh, b0, b1, ed);
+    // T79 F8 (D13): a shelf the notch cut too (`nc.regions` names it) takes the
+    // bump less the notch's corner; its region (x from the front) stands.
+    const both = Boolean(nc && nc.regions?.[p.id]);
+    const plan = both
+      ? recessNotchedShelfOutline(W, D, G, ex0, ex1, ed, shelf, clr, nc.nw, nc.nd, nc.corner, K)
+      : recessBumpOutline(bw, bh, b0, b1, ed);
     // Drawn `depth x width`, x from its FRONT edge: the plan transposed (a
     // reflection), the walk reversed to stay anticlockwise (the notch's way).
     const drawn = recessTranspose(plan);
@@ -940,7 +1335,7 @@ export function extensionCarcass({
       drawn_w: roundTo(drawnW, 4),
       drawn_h: roundTo(bw, 4),
       outline: drawn,
-      marks: [...(p.cnc?.marks || []), ...cornerMarkRecords(drawn, leg, pz)],
+      marks: [...(both ? withoutCornerMarks(p.cnc?.marks, pz) : (p.cnc?.marks || [])), ...cornerMarkRecords(drawn, leg, pz)],
       notch: null,
     };
     p.h = roundTo(drawnW, 4);
@@ -977,7 +1372,14 @@ export function extensionDrills({ cut, panels, drills, profile }) {
   if (ro) {
     const p = panels.find((x) => x.id === 'BUR');
     if (p) {
-      p.cnc = { ...p.cnc, ...shiftGeom(p.cnc, -ro.dx, 0), drawn_w: roundTo(ro.run, 4) };
+      // T79 F8 · the CORNER_4MM marks move with the board (shiftGeom moves the
+      // outline, the pockets and the holes, never the marks): until then a
+      // grown BUR's marks stood ed off its corners in the DXF, the bump's and,
+      // both cut, the notch's (KIT_RECESS.lsp: BUR's frame from the back).
+      p.cnc = {
+        ...p.cnc, ...shiftGeom(p.cnc, -ro.dx, 0), drawn_w: roundTo(ro.run, 4),
+        ...(Array.isArray(p.cnc.marks) ? { marks: p.cnc.marks.map((m) => shiftMark(m, -ro.dx, 0)) } : {}),
+      };
       for (const d of drills) if (d.panel === 'BUR') d.x = roundTo(d.x - ro.dx, 4);
     }
   }

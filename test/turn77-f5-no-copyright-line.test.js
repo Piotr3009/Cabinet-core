@@ -145,6 +145,8 @@ export const NEW_FILES = [
   // T79 F18 (18.10.2026): 21 or 44 per sheet
   'test/turn79-f18-label-sheets.test.js',
   'scripts/t78-classify.d/f34-t79-f18.mjs',
+  // T79 WALK (18.10.2026): the acceptance walk
+  'scripts/t79-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

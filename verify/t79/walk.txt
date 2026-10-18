@@ -1,0 +1,348 @@
+T79 walk, 2026-10-18, HEAD 59a6be9
+(the app under the mouse: http://127.0.0.1:4173/, its build stamp is the first NOTE of each section)
+
+CLAUDE.md T79 (F1 to F18), walked section by section against npx vite preview
+of this tree (dist/), the hardware served from the silent showroom. Every
+gesture is a REAL mouse or key event at a DOM control's centre or at a pixel
+the scene's own raycaster says the thing is under (and the page says the
+canvas owns); the store is only READ. Line grammar:
+  PASS|FAIL  <section> | <gesture> | expect: <what was expected> | observed: <what was read>
+  NOTE       <section> | <reading> | <value>
+  TODO       <section> | T79 ACTION: <gesture> | proves: <what> [hook]
+  FRAME      <section> | <file>  (the frame is beside this file)
+A FAIL is written down, never patched. A TODO is an action not walked (the
+scaffolding of 18.10 wrote one per F before it landed); with --act every
+section's action runs, so a TODO is left only where a run had no --act.
+
+=== f01 MESSAGES GO TO THE LEFT, AND KEEP A HISTORY (PRO)
+NOTE       f01 | walked at | 2026-10-18 21:55 UTC, HEAD f312b44, --act
+NOTE       f01 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD f312b44; url http://127.0.0.1:4173/
+NOTE       f01 | a new project (the stage for the messages), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f01 | Library, Wardrobes, WARDROBE (the real row) | expect: a wardrobe in the room | observed: WARDROBE W01 on wall 1 at x 1700, 600 x 2150 x 558
+PASS       f01 | the room canvas after the wardrobe is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+NOTE       f01 | Add items, Shelves, 1, Add: what it said | added 1; said []; on the glass []
+PASS       f01 | Add items, Overlay drawers, Add (real clicks): a grey message on the glass | expect: a message box shown (level info/ok), read as it arrives | observed: button true; said ["grey: 3 \u00d7 200 mm overlay drawers added - a fixed shelf above them and the doors shortened to start on it. No 30 mm hinge strip: an overlay front is outside the carcass, so nothing swings past it."]; arrived on the glass [{"id":"m1792360532795_tf6435","level":"grey","column":"left","text":"3 \u00d7 200 mm overlay drawers added - a fixed shelf above them and the doors shortened to start on it. No 30 mm hinge strip: an overlay front i","left":12,"top":758,"right":428,"bottom":856,"vw":1440,"vh":900}]
+NOTE       f01 | where the grey message stands (read as it arrived) | column "left", level grey, box 12,758 .. 428,856 in a 1440 x 900 viewport; greyMs 3000
+FRAME      f01 | f01-stage.png
+NOTE       f01 | Output, Cutting list CSV (real clicks): what stays, framed | said ["yellow: 8 cut parts have no board assigned (Backs, Carcase sides, Carcase top / bottom, Drawer bottoms and 4 more) - the file will be cut, but nobody has said what from.","red: Check: 3 faults before this goes to the machine.","grey: Cutting list exported."]; frame taken in 1591 ms; on the glass after it ["left red 12,712..428,772","left yellow 12,778..428,856"]
+NOTE       f01 | T79 ACTION | add a shelf (the owner's gesture), then Output, Cutting list CSV (red, yellow and grey); read every [data-message] as it arrived, in [data-messages="left"] at the bottom-left; click the Changes bar [data-message-history-toggle]; read [data-message-history-list]; Escape (hook [data-message-history-toggle] on the page)
+PASS       f01 | Add items, Shelves, 1, Add (the owner's gesture, the Check panel shut first): the shelf added, and what it says | expect: one shelf added by the real clicks (F1 moves the messages; it adds none to a shelf) | observed: section open true, typed true, Add pressed true; added 1; shelves at ["1066 adjustable","533 adjustable"]; boards ["SHELF-1 y 533","SHELF-2 y 1066"]; said []
+FRAME      f01 | f01-left.png
+NOTE       f01 | Output, Cutting list CSV again: what it said, and what stands on the glass after the frame | said ["yellow: 8 cut parts have no board assigned (Backs, Carcase sides, Carcase top / bottom, Drawer bottoms and 4 more) - the file will be cut, but nobody has said what from.","grey: Cutting list exported."]; on the glass ["left red 12,668..428,728","left yellow 12,734..428,812","left grey 12,818..183,856"]; the column {"left":12,"top":668,"right":428,"bottom":888,"vw":1440,"vh":900}
+PASS       f01 | every message this page drew (grey, yellow, red) stood in the ONE bottom-left column | expect: each [data-message] inside [data-messages="left"], its left < 0.3 vw; the column at left-3 bottom-3; the three levels seen | observed: 6 box(es), levels ["grey","red","yellow"]; off the column []; the column {"left":12,"top":668,"right":428,"bottom":888,"vw":1440,"vh":900}; the first {"id":"m1792360532795_tf6435","level":"grey","column":"left","text":"3 \u00d7 200 mm overlay drawers added - a fixed shelf above them and the doors shortened to start on it. No 30 mm hinge strip: an overlay front i","left":12,"top":758,"right":428,"bottom":856,"vw":1440,"vh":900}
+PASS       f01 | the message nearest the bar stands at the bottom-left, nothing at the centre | expect: left < 0.3 vw, bottom > 0.75 vh; no box reaching past the middle of the screen | observed: [{"id":"m1792360535620_tnmz5v","level":"red","text":"Check: 3 faults before this goes to the machine. \u00b7 \u00d72click to dismiss","column":"left","left":12,"top":668,"right":428,"bottom":728,"vw":1440,"vh":900},{"id":"m1792360546405_s23lr9","level":"yellow","text":"8 cut parts have no board assigned (Backs, Carcase sides, Carcase top / bottom, Drawer bottoms and 4 more) - the file will be cut, but nobod","column":"left","left":12,"top":734,"right":428,"bottom":812,"vw":1440,"vh":900},{"id":"m1792360546425_at4icx","level":"grey","text":"Cutting list exported.","column":"left","left":12,"top":818,"right":183,"bottom":856,"vw":1440,"vh":900}]
+PASS       f01 | the Changes bar clicked: the list of the changes shown, newest first, HH:MM and the level | expect: "Changes . N" with N = the rows = data-message-history (6), at least the 4 message(s) shown on this page, newest first, each "HH:MM" and its level | observed: bar "Changes \u00b7 6 \u25b4"; open true; 6 rows, newest first true: [{"level":"grey","text":"21:55Cutting list exported."},{"level":"yellow","text":"21:558 cut parts have no board assigned (Backs, Carcase sides, Carcase top / bottom, Drawer bottoms and 4 more"},{"level":"grey","text":"21:55Cutting list exported."},{"level":"red","text":"21:552 \u00d7 Check: 3 faults before this goes to the machine."},{"level":"yellow","text":"21:558 cut parts have no board assigned (Backs, Carcase sides, Carcase top / bottom, Drawer bottoms and 4 more"}]
+FRAME      f01 | f01-history.png
+PASS       f01 | Escape collapses the list | expect: data-message-history-open false, the list gone | observed: open false
+NOTE       f01 | console errors on the page | none
+
+=== f02 A FULL-WIDTH SHELF ABOVE THE DIVIDER, THE THIRD BUTTON (PRO)
+NOTE       f02 | walked at | 2026-10-18 21:30 UTC, HEAD c0af66b, --act
+NOTE       f02 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD c0af66b; url http://127.0.0.1:4173/
+NOTE       f02 | a new project (the stage for the shelf above the divider), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f02 | Library, Wardrobes, WARDROBE (the real row) | expect: a wardrobe in the room | observed: WARDROBE W01 on wall 1 at x 1700, 600 x 2150 x 558
+PASS       f02 | the room canvas after the wardrobe is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f02 | selected (already selected), Carcass, Width typed 1200, Enter | expect: width 1200 | observed: width 1200; x 1700
+PASS       f02 | fronts hidden by the toolbar button; Add items, Shelves, 1, Add; the shelf clicked (by SHELF-1), Height 982 (the interior datum), FIX chip | expect: one FIX shelf, pos_mm 1000 | observed: shelf {"id":"shelf_0juep70","kind":"shelf","zone":null,"pos":1000,"x":null,"variant":"fixed","mount":null,"front":null,"dropped":null}; chip true; typed true
+PASS       f02 | Add items, Vertical partition, Add a vertical partition (real clicks) | expect: a partition item; the divider from the base to the FIX shelf's underside (1000) | observed: items ["shelf@1000","partition x591"]; boards ["VPART-1 x 591 y 18..1000"]; said []
+PASS       f02 | Add items, Shelves on the divided wardrobe: the bay picker | expect: Bay 1 . N and Bay 2 . N | observed: ["0: Bay 1 \u00b7 573","1: Bay 2 \u00b7 573"]
+FRAME      f02 | f02-stage.png
+FRAME      f02 | f02-stage-buttons.png
+NOTE       f02 | T79 ACTION | hover [data-above-divider] (the band lit), click it, Add 2, Add (hook [data-above-divider] on the page)
+PASS       f02 | the right panel's Add items, Shelves: the third button after the bays | expect: Bay 1 . N, Bay 2 . N, Above divider . N | observed: ["Bay 1 \u00b7 573","Bay 2 \u00b7 573","Above divider \u00b7 1164"]
+FRAME      f02 | f02-buttons.png
+PASS       f02 | the inner plus clicked (pixel 781,425), the Add items window, Shelves, the third button pointed at (a real hover): the opening above the divider lit | expect: the window's Bay 1, Bay 2, Above divider; zoneHint 'above'; a full-width slab from 1018 (the FIX shelf's top face) to the top underside | observed: window true; buttons ["Bay 1 \u00b7 573","Bay 2 \u00b7 573","Above divider \u00b7 1164"]; zoneHint "above"; slabs [{"w":1000,"h":1000,"y0":9,"y1":1009},{"w":1000,"h":1000,"y0":1075,"y1":2075},{"w":1164,"h":1114,"y0":1018,"y1":2132}]
+FRAME      f02 | f02-above-lit.png
+PASS       f02 | Above divider pressed (hint "Full width, centred in the opening above the fixed shelf that carries the divider."), Add 2 typed, Add | expect: two zone:null shelves between 1018 and the top underside 2132, equal clear gaps, each board across the full width (x 18..1182, the shelf's side clearance aside), over the divider; the divider still ends at 1000 | observed: new [{"id":"shelf_jbp3skx","zone":null,"pos":1377.5},{"id":"shelf_yw1qydr","zone":null,"pos":1754.5}]; clear gaps [359.5,359,359.5]; boards ["SHELF-2 x 20..1180 y 1377.5","SHELF-3 x 20..1180 y 1754.5"]; divider VPART-1 y 18..1000; said []
+FRAME      f02 | f02-above.png
+NOTE       f02 | console errors on the page | none
+
+=== f03 INTERNAL DRAWERS: 1 OR 2 COLUMNS, THE DIVIDER AND THE CAP COME BY THEMSELVES (PRO)
+NOTE       f03 | walked at | 2026-10-18 21:51 UTC, HEAD f312b44, --act
+NOTE       f03 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD f312b44; url http://127.0.0.1:4173/
+NOTE       f03 | a new project (the stage for the drawer columns), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f03 | Library, Wardrobes, WARDROBE (the real row) | expect: a wardrobe in the room | observed: WARDROBE W01 on wall 1 at x 1700, 600 x 2150 x 558
+PASS       f03 | the room canvas after the wardrobe is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f03 | selected (already selected), Carcass, Width typed 1200, Enter | expect: width 1200 | observed: width 1200; x 1700
+PASS       f03 | the wardrobe selected, Add items, Drawers, Bare boxes, Count 3 (real clicks and keys) | expect: the internal mount lit, 3 in Count, no Which bay picker (zones 0: no partition yet) | observed: {"internal":true,"count":"3","zones":0,"columns":true}
+FRAME      f03 | f03-stage.png
+FRAME      f03 | f03-stage-drawers.png
+NOTE       f03 | T79 ACTION | click [data-drawer-columns="2"], Add; then Ctrl+Z once and Ctrl+Y (hook [data-drawer-columns="2"] on the page)
+PASS       f03 | COLUMNS beside Count (1 and 2), 2 pressed (a real click): its hint | expect: COLUMNS 1 | 2, 2 pressed, the hint "2 columns: a divider mid-width, a stack in each column, one fixed shelf over both." | observed: offered ["1:true","2:false"]; 2 pressed true; hint "2 columns: a divider mid-width, a stack in each column, one fixed shelf over both."
+FRAME      f03 | f03-columns-ask.png
+PASS       f03 | COLUMNS 2, Add (a real click): the divider, two stacks and ONE fixed board over both, by themselves | expect: one partition at x 591 (mid-width), 3 drawers in zone 0 and 3 in zone 1, ONE cap PARTITION x 18..1182, VPART from the base (18) to the cap's underside, no box crossed | observed: partitions [591]; drawers ["z1","z1","z1","z0","z0","z0"]; caps ["PARTITION x 18..1182 y 629"]; divider VPART-1 y 18..629; boxes through the divider []; said ["grey: 3 \u00d7 200 mm drawers in each of 2 columns: a divider mid-width and one fixed shelf over both."]; warnings []
+FRAME      f03 | f03-columns.png
+PASS       f03 | the CNC view (View menu): the cap and the divider on the sheet | expect: PARTITION and VPART-1 among the sheet's parts | observed: 38 parts: BUL, BUR, TOP, BOTTOM, BACK, VPART-1, Z1D1-SL, Z1D1-SR, Z1D1-BF, Z1D1-BB, Z1D1-DNO, Z1D2-SL, Z1D2-SR, Z1D2-BF, Z1D2-BB, Z1D2-DNO, Z1D3-SL, Z1D3-SR, Z1D3-BF, Z1D3-BB, Z1D3-DNO, Z2D1-SL, Z2D1-SR, Z2D1-BF, Z2D1-BB, Z2D1-DNO, Z2D2-SL, Z2D2-SR, Z2D2-BF, Z2D2-BB, Z2D2-DNO, Z2D3-SL, Z2D3-SR, Z2D3-BF, Z2D3-BB, Z2D3-DNO, PARTITION, PLINTH
+FRAME      f03 | f03-cnc.png
+PASS       f03 | Ctrl+Z once (the keyboard): the divider and both stacks go together | expect: 0 partitions, 0 drawers after ONE undo | observed: 0 partition(s), 0 drawer(s)
+PASS       f03 | Ctrl+Y once: all of it back | expect: 1 partition, 6 drawers after ONE redo | observed: 1 partition(s), 6 drawer(s)
+NOTE       f03 | console errors on the page | none
+
+=== f04 THE NOTCH FROM THE TOP, A NEGATIVE HEIGHT (PRO)
+NOTE       f04 | walked at | 2026-10-18 21:31 UTC, HEAD c0af66b, --act
+NOTE       f04 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD c0af66b; url http://127.0.0.1:4173/
+NOTE       f04 | a new project (the stage for the notch (f04)), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f04 | Library, Kitchen, base-units, door-base (the real row) | expect: a bud in the room | observed: BUD 01 on wall 1 at x 1700, 600 x 770 x 558
+PASS       f04 | the room canvas after the bud is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f04 | the BUD selected, Carcass, CUT CORNER (the real button), the lit BL corner clicked (pixel 665,439) | expect: the notch window [data-testid=notch-ask] open, WIDTH 200, DEPTH 200, HEIGHT full | observed: notchPick u_hfoqdrc; BL handles 1; window true; fields ["width=200","depth=200","height=full"]; help "WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500)."
+NOTE       f04 | the help line in the notch window | WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500).
+FRAME      f04 | f04-stage.png
+FRAME      f04 | f04-stage-window.png
+NOTE       f04 | T79 ACTION | the help line names a negative HEIGHT; HEIGHT -300 typed, CUT (--act)
+PASS       f04 | the notch window's help line (the small information) | expect: "WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500)." | observed: WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500).
+PASS       f04 | HEIGHT -300 typed (a real click and keys), Enter: the notch cut from the TOP | expect: params.notch BL 200 x 200 h -300; boards RETURN, STEP, FLOOR (no LID); BUL cnc.notch x1y1 (its rear TOP corner) 200 x 300; the TOP cut (x0y1), the BOTTOM the parent's; the BACK x0y1; FLOOR 200 x 200; BUR untouched | observed: notch {"corner":"BL","w":200,"d":200,"h":-300}; boards ["RETURN","STEP","FLOOR"] (RETURN 182x300, STEP 218x300, FLOOR 200x200); BUL {"fc":"x1y1","nw":200,"nh":300}; TOP {"fc":"x0y1","nw":200,"nh":200}; BOTTOM null; BACK {"fc":"x0y1","nw":200,"nh":300}; BUR null; refusal null; warnings []
+FRAME      f04 | f04-top-3d.png
+FRAME      f04 | f04-top-cnc.png
+FRAME      f04 | f04-top-cnc-bul.png
+NOTE       f04 | console errors on the page | none
+
+=== f05 THE HORIZONTAL NOTCH, ALL FOUR EDGES OF THE SIDE (PRO)
+NOTE       f05 | walked at | 2026-10-18 21:32 UTC, HEAD c0af66b, --act
+NOTE       f05 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD c0af66b; url http://127.0.0.1:4173/
+NOTE       f05 | a new project (the stage for the notch (f05)), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f05 | Library, Kitchen, base-units, door-base (the real row) | expect: a bud in the room | observed: BUD 01 on wall 1 at x 1700, 600 x 770 x 558
+PASS       f05 | the room canvas after the bud is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f05 | the BUD selected, Carcass, CUT CORNER (the real button), the lit BL corner clicked (pixel 665,439) | expect: the notch window [data-testid=notch-ask] open, WIDTH 200, DEPTH 200, HEIGHT full | observed: notchPick u_ei2xafn; BL handles 1; window true; fields ["width=200","depth=200","height=full"]; help "WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500)."
+FRAME      f05 | f05-stage.png
+NOTE       f05 | the notch row | ["cut-corner: CUT CORNER"]
+FRAME      f05 | f05-stage-row.png
+NOTE       f05 | T79 ACTION | CUT EDGE, the BB edge lit and clicked (or picked in EDGE), DEPTH 20, HEIGHT 120, CUT; then TB 50 / 100 (hook [data-testid="cut-edge"] on the page)
+FRAME      f05 | f05-row.png
+PASS       f05 | CUT EDGE (the real button), the lit BB handle clicked (pixel 736,439): the edge window | expect: [data-testid=edge-notch-ask] open on EDGE BB, the four TB BB TF BF, DEPTH, HEIGHT, the help line | observed: edgeNotchPick u_ei2xafn; BB handles 1; window true; form {"edge":"BB","fields":["depth=20","height=120"],"choices":["TB","BB","TF","BF"],"help":"A rebate along the whole edge: skirting at the bottom-back, coving at the top-back."}
+FRAME      f05 | f05-window.png
+PASS       f05 | DEPTH 20, HEIGHT 120 typed, Enter: the BB rebate along the whole width | expect: params.edgeNotch BB 20 / 120; BUL x1y0 and BUR x0y0, 20 x 120, one CORNER_4MM L each; the BACK 120 shorter; the BOTTOM 20 narrower at the back; the TOP the parent's; no closing boards | observed: edgeNotch {"edge":"BB","d":20,"h":120}; derived {"edge":"BB","d":20,"h":120,"cut":["BUL","BUR","BOTTOM","BACK"],"dropped":0}; BUL {"fc":"x1y0","nw":20,"nh":120} marks 1; BUR {"fc":"x0y0","nw":20,"nh":120} marks 1; BACK 600x650 (was 600x770); BOTTOM 564x520 (was 564x540); boards 6 (were 6); refusal null; said []
+FRAME      f05 | f05-bb-3d.png
+FRAME      f05 | f05-bb-cnc.png
+FRAME      f05 | f05-bb-cnc-bul.png
+PASS       f05 | CUT EDGE (the real button), the lit TB handle clicked (pixel 1047,461): the edge window | expect: [data-testid=edge-notch-ask] open on EDGE TB, the four TB BB TF BF, DEPTH, HEIGHT, the help line | observed: edgeNotchPick u_ei2xafn; TB handles 1; window true; form {"edge":"TB","fields":["depth=20","height=120"],"choices":["TB","BB","TF","BF"],"help":"A rebate along the whole edge: skirting at the bottom-back, coving at the top-back."}
+PASS       f05 | the TB handle, DEPTH 50, HEIGHT 100, Enter: the coving rebate replaces the skirting | expect: params.edgeNotch TB 50 / 100; BUL x1y1 and BUR x0y1, 50 x 100, one CORNER_4MM L each; the BACK 100 shorter; the TOP 50 narrower at the back; the BOTTOM the parent's again; no closing boards | observed: edgeNotch {"edge":"TB","d":50,"h":100}; derived {"edge":"TB","d":50,"h":100,"cut":["BUL","BUR","TOP","BACK"],"dropped":0}; BUL {"fc":"x1y1","nw":50,"nh":100} marks 1; BUR {"fc":"x0y1","nw":50,"nh":100} marks 1; BACK 600x670; TOP 564x490 (was 564x540); BOTTOM 564x540; refusal null; said []
+FRAME      f05 | f05-tb-3d.png
+FRAME      f05 | f05-tb-cnc.png
+FRAME      f05 | f05-tb-cnc-bul.png
+NOTE       f05 | the CUT EDGE row | ["cut-edge: CUT EDGE"]
+NOTE       f05 | console errors on the page | none
+
+=== f06 THE DIA 3 ROWS ON THE BACK ARE NOT LOST TO A NOTCH OR A RECESS (PRO)
+NOTE       f06 | walked at | 2026-10-18 21:33 UTC, HEAD c0af66b, --act
+NOTE       f06 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD c0af66b; url http://127.0.0.1:4173/
+NOTE       f06 | a new project (the stage for the notch (f06)), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f06 | Library, Kitchen, base-units, door-base (the real row) | expect: a bud in the room | observed: BUD 01 on wall 1 at x 1700, 600 x 770 x 558
+PASS       f06 | the room canvas after the bud is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f06 | the BUD selected, Carcass, CUT CORNER (the real button), the lit BL corner clicked (pixel 665,439) | expect: the notch window [data-testid=notch-ask] open, WIDTH 200, DEPTH 200, HEIGHT full | observed: notchPick u_27zycza; BL handles 1; window true; fields ["width=200","depth=200","height=full"]; help "WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500)."
+NOTE       f06 | the BACK's dia 3 screws before the cut | 14 (BUL 6, BUR 6)
+FRAME      f06 | f06-stage.png
+NOTE       f06 | T79 ACTION | Enter in the notch window (BL 200 x 200 full); the CNC view, the BACK framed (--act)
+PASS       f06 | Enter cuts BL 200 x 200 full: the BACK keeps its fourteen | expect: BACK 14, BUL 6, BUR 6 | observed: notch {"corner":"BL","w":200,"d":200,"h":0}; screws {"BUL":6,"BUR":6,"BACK":14}; said []
+FRAME      f06 | f06-back-cnc.png
+NOTE       f06 | console errors on the page | none
+
+=== f07 THE CORNER MARK: ONE OPEN L PER INNER CORNER ON CORNER_4MM (PRO, a check)
+NOTE       f07 | walked at | 2026-10-18 21:34 UTC, HEAD c0af66b, --act
+NOTE       f07 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD c0af66b; url http://127.0.0.1:4173/
+NOTE       f07 | a new project (the stage for the notch (f07)), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f07 | Library, Kitchen, base-units, door-base (the real row) | expect: a bud in the room | observed: BUD 01 on wall 1 at x 1700, 600 x 770 x 558
+PASS       f07 | the room canvas after the bud is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f07 | the BUD selected, Carcass, CUT CORNER (the real button), the lit BL corner clicked (pixel 665,439) | expect: the notch window [data-testid=notch-ask] open, WIDTH 200, DEPTH 200, HEIGHT full | observed: notchPick u_s67wb43; BL handles 1; window true; fields ["width=200","depth=200","height=full"]; help "WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500)."
+PASS       f07 | Enter in the notch window: BL 200 x 200 full is cut | expect: params.notch BL 200 x 200, h 0 | observed: notch {"corner":"BL","w":200,"d":200,"h":0}; boards stamped ["BUL","TOP","BOTTOM","BACK","RETURN","STEP"]; refusal null; said []
+FRAME      f07 | f07-stage.png
+NOTE       f07 | full height: the inner corners each notched board must carry, from its nominal outline | {"BUL":0,"TOP":1,"BOTTOM":1,"BACK":0,"RETURN":0,"STEP":0}
+PASS       f07 | full height: Output, CNC / DXF (the menu, real clicks): the browser saves a ZIP | expect: one .zip in the download folder | observed: T74-walk-cnc-01-1810-2134.zip; said ["yellow: 4 cut parts have no board assigned (Backs, Carcase sides, Carcase top / bottom, Plinth) - the file will be cut, but nobody has said what from.","yellow: Check: 1 to look at before this goes to the machine.","grey: 8 DXF files exported as T74-walk-cnc-01-1810-2134.zip.","yellow: 2 parts are not fully machined: 2 outline only (no holes)."]
+NOTE       f07 | full height: the ZIP | 8 DXF files: 01-BUL.dxf, 01-BUR.dxf, 01-TOP.dxf, 01-BOTTOM.dxf, 01-BACK.dxf, 01-PLINTH.dxf, 01-RETURN.dxf, 01-STEP.dxf
+PASS       f07 | full height: 01-TOP.dxf (TOP) on CORNER_4MM | expect: 1 open polyline(s) of 3 vertices, one per inner corner, the middle vertex ON the outline's corner, legs square and <= 40; no closed shape, no LINE | observed: 1 polyline(s) at 1 corner(s): [{"open":true,"vertices":3,"legs":[40,40],"square":true,"onCorner":true,"corner":[200,364],"kind":"POLYLINE"}]; closed 0; LINEs 0
+PASS       f07 | full height: 01-BOTTOM.dxf (BOTTOM) on CORNER_4MM | expect: 1 open polyline(s) of 3 vertices, one per inner corner, the middle vertex ON the outline's corner, legs square and <= 40; no closed shape, no LINE | observed: 1 polyline(s) at 1 corner(s): [{"open":true,"vertices":3,"legs":[40,40],"square":true,"onCorner":true,"corner":[200,200],"kind":"POLYLINE"}]; closed 0; LINEs 0
+PASS       f07 | full height: the layer row and the totals | expect: 2 open L polylines on 2 board(s), none closed, no LINE, every board with an inner corner in the ZIP, layer CORNER_4MM ACI 53 | observed: 2 open L polyline(s) on 2 board(s); closed 0; LINEs 0; boards missing from the ZIP []; ACI 53
+FRAME      f07 | f07-cnc.png
+FRAME      f07 | f07-cnc-part.png
+PASS       f07 | CUT CORNER again, the lit BL corner, HEIGHT 300 typed, Enter: a part-height notch | expect: params.notch BL 200 x 200 x 300 | observed: window true (["width=200","depth=200","height=full"]); notch {"corner":"BL","w":200,"d":200,"h":300}; boards RETURN 182x300, STEP 218x300, LID 200x200
+NOTE       f07 | part height 300: the inner corners each notched board must carry, from its nominal outline | {"BUL":1,"BOTTOM":1,"BACK":1,"RETURN":0,"STEP":0,"LID":0}
+PASS       f07 | part height 300: Output, CNC / DXF (the menu, real clicks): the browser saves a ZIP | expect: one .zip in the download folder | observed: T74-walk-cnc-01-1810-2134.zip; said ["yellow: 4 cut parts have no board assigned (Backs, Carcase sides, Carcase top / bottom, Plinth) - the file will be cut, but nobody has said what from.","yellow: Check: 1 to look at before this goes to the machine.","grey: 9 DXF files exported as T74-walk-cnc-01-1810-2134.zip.","yellow: 3 parts are not fully machined: 3 outline only (no holes)."]
+NOTE       f07 | part height 300: the ZIP | 9 DXF files: 01-BUL.dxf, 01-BUR.dxf, 01-TOP.dxf, 01-BOTTOM.dxf, 01-BACK.dxf, 01-PLINTH.dxf, 01-RETURN.dxf, 01-STEP.dxf, 01-LID.dxf
+PASS       f07 | part height 300: 01-BUL.dxf (BUL) on CORNER_4MM | expect: 1 open polyline(s) of 3 vertices, one per inner corner, the middle vertex ON the outline's corner, legs square and <= 40; no closed shape, no LINE | observed: 1 polyline(s) at 1 corner(s): [{"open":true,"vertices":3,"legs":[40,40],"square":true,"onCorner":true,"corner":[340,300],"kind":"POLYLINE"}]; closed 0; LINEs 0
+PASS       f07 | part height 300: 01-BOTTOM.dxf (BOTTOM) on CORNER_4MM | expect: 1 open polyline(s) of 3 vertices, one per inner corner, the middle vertex ON the outline's corner, legs square and <= 40; no closed shape, no LINE | observed: 1 polyline(s) at 1 corner(s): [{"open":true,"vertices":3,"legs":[40,40],"square":true,"onCorner":true,"corner":[200,200],"kind":"POLYLINE"}]; closed 0; LINEs 0
+PASS       f07 | part height 300: 01-BACK.dxf (BACK) on CORNER_4MM | expect: 1 open polyline(s) of 3 vertices, one per inner corner, the middle vertex ON the outline's corner, legs square and <= 40; no closed shape, no LINE | observed: 1 polyline(s) at 1 corner(s): [{"open":true,"vertices":3,"legs":[40,40],"square":true,"onCorner":true,"corner":[200,300],"kind":"POLYLINE"}]; closed 0; LINEs 0
+PASS       f07 | part height 300: the layer row and the totals | expect: 3 open L polylines on 3 board(s), none closed, no LINE, every board with an inner corner in the ZIP, layer CORNER_4MM ACI 53 | observed: 3 open L polyline(s) on 3 board(s); closed 0; LINEs 0; boards missing from the ZIP []; ACI 53
+FRAME      f07 | f07-cnc-part-height.png
+FRAME      f07 | f07-cnc-bul.png
+PASS       f07 | F7 VERDICT: the 1710h law in the exported DXF | expect: on CORNER_4MM exactly one open polyline of three vertices per inner corner, no closed shape, layer aci 53, for the full-height and the part-height notch | observed: full height: 2 open L(s) for 2 inner corner(s), closed 0, LINEs 0, aci 53; part height 300: 3 open L(s) for 3 inner corner(s) (BUL 1, BOTTOM 1, BACK 1), closed 0, LINEs 0, aci 53; F7 verified, no change
+NOTE       f07 | console errors on the page | none
+
+=== f08 A NOTCH AND A RECESS ON THE SAME CARCASS (PRO)
+NOTE       f08 | walked at | 2026-10-18 21:34 UTC, HEAD c0af66b, --act
+NOTE       f08 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD c0af66b; url http://127.0.0.1:4173/
+NOTE       f08 | a new project (the stage for the notch and the recess), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f08 | Library, Kitchen, base-units, door-base (the real row) | expect: a bud in the room | observed: BUD 01 on wall 1 at x 1700, 600 x 770 x 558
+PASS       f08 | the room canvas after the bud is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f08 | Settings, Room setup..., the elevation's Top, Add recess, its row: Width 600, From the left 2010, Depth 150; Done | expect: a recess on wall 1 over x 2010..2610 (the unit's 310..910), 150 deep | observed: room window true; elevation wall 0; recess {"id":"recess_ajyxlzu","kind":"recess","wall":0,"x_mm":2010,"width":600,"depth":150,"bottom_mm":null,"top_mm":null}; typed {"width":true,"x":true,"depth":true}; unit x 1700..2300, depth 558, recess_mm null; extension {"boards":["RETURN-L","EXT-BACK"],"x0":320,"x1":600,"z0":0,"z1":770,"d":140,"refused":null}; warnings []; said []
+NOTE       f08 | the extension before any notch (the band 310..600 of the unit, KIT_RECESS) | extension {"boards":["RETURN-L","EXT-BACK"],"x0":320,"x1":600,"z0":0,"z1":770,"d":140,"refused":null}; boards RETURN-L 122x770, EXT-BACK 280x770
+PASS       f08 | CUT CORNER, the lit BL corner (real clicks): the notch window | expect: the notch window open | observed: window true; fields ["width=200","depth=200","height=full"]
+FRAME      f08 | f08-stage.png
+NOTE       f08 | T79 ACTION | Enter in the notch window (BL 200 x 200 full) (--act)
+PASS       f08 | Enter in the notch window: the notch AND the recess extension, both cut | expect: params.notch BL; the notch's RETURN and STEP AND the extension's boards (EXT-BACK among them) all cut; BUL notched (a full-height notch: 200 narrower), BUR grown into the band; no refusal, no Check #36 | observed: notch {"corner":"BL","w":200,"d":200,"h":0} (boards ["RETURN","STEP"]); extension {"boards":["RETURN-L","EXT-BACK"],"x0":320,"x1":600,"z0":0,"z1":770,"d":140,"refused":null}; boards RETURN 182x770, STEP 218x770, RETURN-L 122x770, EXT-BACK 280x770; grown ["BUR","TOP","BOTTOM","BACK","RETURN-L","EXT-BACK"]; BUL 340x770 null; BUR 680x770; warnings []; checks ["#30"]
+FRAME      f08 | f08-both.png
+PASS       f08 | Settings, Room setup..., the recess row, From the left 1800 typed (real keys), Done: the band meets the notch, refused in words, VISIBLE in Check | expect: the notch stands (RETURN, STEP), no extension board cut (derived.extension refused); EXTENSION_REFUSED "The recess cannot be cut: the corner cut stands where the recess band is; move one of them."; Check #36 red with that sentence | observed: recess {"id":"recess_ajyxlzu","kind":"recess","wall":0,"x_mm":1800,"width":600,"depth":150,"bottom_mm":null,"top_mm":null}; notch {"corner":"BL","w":200,"d":200,"h":0} (boards ["RETURN","STEP"]); extension {"x0":110,"x1":600,"z0":0,"z1":770,"d":140,"refused":"The recess cannot be cut: the corner cut stands where the recess band is; move one of them."}; boards RETURN 182x770, STEP 218x770; grown []; warnings ["EXTENSION_REFUSED: The recess cannot be cut: the corner cut stands where the recess band is; move one of them."]; Check ["#36 red","#30 yellow"]; #36 "#36 \u00b7 Recess extension refused01: The recess cannot be cut: the corner cut stands where the recess band is; move one of them."; said []
+FRAME      f08 | f08-overlap-check.png
+NOTE       f08 | console errors on the page | none
+
+=== f09 THE END PANEL FOLLOWS ITS SIDE INTO THE RECESS AND INTO THE NOTCH (PRO)
+NOTE       f09 | walked at | 2026-10-18 21:36 UTC, HEAD c0af66b, --act
+NOTE       f09 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD c0af66b; url http://127.0.0.1:4173/
+NOTE       f09 | a new project (the stage for the end panel in the recess), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f09 | Library, Kitchen, base-units, door-base (the real row) | expect: a bud in the room | observed: BUD 01 on wall 1 at x 1700, 600 x 770 x 558
+PASS       f09 | the room canvas after the bud is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f09 | Construction, End panels, + Right (a real click) | expect: end_panels has R | observed: end_panels ["R"]; boards END-R 596x870
+PASS       f09 | Settings, Room setup..., the elevation's Top, Add recess, its row: Width 600, From the left 2010, Depth 150; Done | expect: a recess on wall 1 over x 2010..2610 (the unit's 310..910), 150 deep | observed: room window true; elevation wall 0; recess {"id":"recess_kdegzqq","kind":"recess","wall":0,"x_mm":2010,"width":600,"depth":150,"bottom_mm":null,"top_mm":null}; typed {"width":true,"x":true,"depth":true}; unit x 1700..2300, depth 558, recess_mm null; extension {"boards":["RETURN-L","EXT-BACK"],"x0":320,"x1":600,"z0":0,"z1":770,"d":140,"refused":null}; warnings []; said []
+NOTE       f09 | END-R and BUR in the recess band | END END-R 736 x 870, outline 4 pts, cnc.notch null; BUR 680 x 770, outline 4 pts, cnc.notch null; extension {"boards":["RETURN-L","EXT-BACK"],"x0":320,"x1":600,"z0":0,"z1":770,"d":140,"refused":null}
+FRAME      f09 | f09-stage.png
+NOTE       f09 | T79 ACTION | read END-R against BUR; turn the camera to the recess side (a real drag), frame (--act)
+PASS       f09 | END-R takes BUR's outline (it grows into the recess with the side) | expect: END-R deeper by what BUR gained (140), the same cnc.notch and outline points | observed: END {"w":736,"n":null,"pts":4} (before the recess 596, grew 140); BUR {"w":680,"n":null,"pts":4} (grew 140)
+FRAME      f09 | f09-end-3d.png
+NOTE       f09 | console errors on the page | none
+
+=== f10 THE RECESS GIVES WAY TO THE STAND-OFF (RETAIL)
+NOTE       f10 | walked at | 2026-10-18 21:36 UTC, HEAD c0af66b, --act
+NOTE       f10 | the build under the mouse | no stamp read; the repo's HEAD c0af66b; url http://127.0.0.1:4173/retail.html#/design
+PASS       f10 | retail.html#/design: WHERE, Add a wardrobe (real clicks) | expect: a wardrobe in the room | observed: WARDROBE W01 on wall 1 at x 40, 1200 x 2150 x 568, wall_gap null
+PASS       f10 | the room canvas after the wardrobe is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f10 | WHERE, Edit room, Top, Add recess, its row: Width 1400, From the left 0, Depth 300; Done (real clicks and keys) | expect: the wardrobe wholly inside a 300 recess: recess_mm > 0 and its depth grown | observed: elevation wall 0; recess {"id":"recess_b5upnu1","kind":"recess","wall":0,"x_mm":0,"width":1400,"depth":300,"bottom_mm":null,"top_mm":null}; typed {"width":true,"x":true,"depth":true}; wardrobe x 40, depth 858 (full 568), recess_mm 290, wall_gap null; said []
+PASS       f10 | SIZE (the real tab): the FROM THE WALL field | expect: [data-testid=size-wall-gap] on the glass | observed: field {"value":"10","min":null,"max":null}
+NOTE       f10 | what FROM THE WALL reads in the recess | 10 (adapter wallGapOfUnit, T79 F10: the wall gap with the derived recess_mm taken as 0; recess_mm 290; the store's params.wall_gap null)
+FRAME      f10 | f10-stage.png
+NOTE       f10 | T79 ACTION | FROM THE WALL typed 100, 300, 350 (Enter each) (--act)
+PASS       f10 | at the standard stand-off (nothing typed): the recess less the stand-off | expect: recess_mm 290 (300 - 10), depth = depth_full + 290 | observed: wall_gap null; recess_mm 290; depth 858 (full 568); FROM THE WALL reads 10
+PASS       f10 | SIZE, FROM THE WALL clicked, 100 typed (real keys), Enter | expect: wall_gap 100; recess_mm 200 (300 - 100), depth 568 + 200 | observed: wall_gap 100; recess_mm 200; depth 768 (full 568); extension null; the field reads 100; said []
+FRAME      f10 | f10-standoff-100.png
+PASS       f10 | SIZE, FROM THE WALL clicked, 300 typed (real keys), Enter | expect: wall_gap 300; no recess_mm, no extension, depth 568 (the nominal: the wardrobe stands off the wall in front of the recess) | observed: wall_gap 300; recess_mm null; depth 568 (full null); extension null; the field reads 300; said []
+FRAME      f10 | f10-standoff-300.png
+PASS       f10 | SIZE, FROM THE WALL clicked, 350 typed (real keys), Enter | expect: wall_gap 350; no recess_mm, no extension, depth 568 (the nominal: the wardrobe stands off the wall in front of the recess) | observed: wall_gap 350; recess_mm null; depth 568 (full null); extension null; the field reads 350; said []
+FRAME      f10 | f10-standoff-350.png
+NOTE       f10 | console errors on the page | none
+
+=== f11 THE RAIL IS ALONE, AND IT SNAPS 50 MM UNDER A SHELF (PRO)
+NOTE       f11 | walked at | 2026-10-18 21:37 UTC, HEAD c0af66b, --act
+NOTE       f11 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD c0af66b; url http://127.0.0.1:4173/
+NOTE       f11 | a new project (the stage for the rail), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f11 | Library, Wardrobes, WARDROBE (the real row) | expect: a wardrobe in the room | observed: WARDROBE W01 on wall 1 at x 1700, 600 x 2150 x 558
+PASS       f11 | the room canvas after the wardrobe is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f11 | Add items, Shelves, 1, Add; the shelf clicked, Height typed (pos 1600) | expect: one shelf at pos_mm 1600 | observed: shelf {"id":"shelf_om3ztpp","kind":"shelf","zone":null,"pos":1600,"x":null,"variant":"adjustable","mount":null,"front":null,"dropped":null}
+FRAME      f11 | f11-stage-addrail.png
+PASS       f11 | Add items, Hanger rail, Add hanger rail (real clicks) | expect: a rail item in the wardrobe (no shelf added with it) | observed: rail {"id":"hanger_xs0qoxx","kind":"hanger","zone":null,"pos":1400,"x":null,"variant":null,"mount":"alone","front":null,"dropped":null}; items ["shelf","hanger"]; rail boards []; toggle on the glass false; said ["grey: Rail added. Drag it near a shelf and it settles 50 mm under it; Alt refuses."]
+NOTE       f11 | the magnet numbers | editor.shelfMagnetMm 10; hardware.hanger.belowShelfMm 50 (F11's new number)
+FRAME      f11 | f11-stage.png
+NOTE       f11 | T79 ACTION | the toggle gone; the rail dragged (real press, moves, release) to within 10 of 1550 (--act)
+PASS       f11 | the with-or-without-shelf proposal is gone: no toggle, no hint, the rail added ALONE and it says where the drag settles it | expect: no [data-rail-with-shelf] / [data-rail-alone] / [data-rail-assembly-hint]; no board with the rail; "Rail added. Drag it near a shelf and it settles 50 mm under it; Alt refuses." | observed: toggle false; hint false; rail {"id":"hanger_xs0qoxx","kind":"hanger","zone":null,"pos":1400,"x":null,"variant":null,"mount":"alone","front":null,"dropped":null}; rail boards 0; said "grey: Rail added. Drag it near a shelf and it settles 50 mm under it; Alt refuses."
+FRAME      f11 | f11-magnet.png
+PASS       f11 | the rail dragged (a real press on the tube, moves, release) to 1556, 6 from the catch | expect: the rail's axis caught at 1550 (the shelf's underside 1600 - 50) while held and after the release; the guide (ccRailMagnet) drawn at 1550 while held | observed: {"ok":true,"from":{"x":720,"y":345,"first":true,"data":"{\"ccNoBounds\":true,\"ccRailPanelId\":\"hanger_xs0qoxx\",\"ccRailMount\":\"alone\",\"ccRailItemId\":\"hanger_xs0qoxx\"}"},"to":{"x":720,"y":318},"before":1418,"held":1550,"after":1550,"guide":1550}; item {"id":"hanger_xs0qoxx","kind":"hanger","zone":null,"pos":1532,"x":null,"variant":null,"mount":"alone","front":null,"dropped":null}
+FRAME      f11 | f11-alt.png
+PASS       f11 | the same drag to 1556 with Alt held: the catch refused | expect: the axis near 1556, not 1550; no guide while held | observed: {"ok":true,"from":{"x":720,"y":319,"first":true,"data":"{\"ccNoBounds\":true,\"ccRailPanelId\":\"hanger_xs0qoxx\",\"ccRailMount\":\"alone\",\"ccRailItemId\":\"hanger_xs0qoxx\"}"},"to":{"x":720,"y":318},"before":1550,"held":1555,"after":1555,"guide":null}; item {"id":"hanger_xs0qoxx","kind":"hanger","zone":null,"pos":1537,"x":null,"variant":null,"mount":"alone","front":null,"dropped":null}
+NOTE       f11 | console errors on the page | none
+
+=== f12 CENTRE BETWEEN TWO ELEMENTS (PRO)
+NOTE       f12 | walked at | 2026-10-18 21:38 UTC, HEAD c0af66b, --act
+NOTE       f12 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD c0af66b; url http://127.0.0.1:4173/
+NOTE       f12 | a new project (the stage for centre between), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f12 | Library, Wardrobes, WARDROBE (the real row) | expect: a wardrobe in the room | observed: WARDROBE W01 on wall 1 at x 1700, 600 x 2150 x 558
+PASS       f12 | the room canvas after the wardrobe is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f12 | Add items, Shelves, 1, Add; the shelf clicked, Height (pos 600), FIX chip | expect: a FIX shelf at pos_mm 600 | observed: shelf {"id":"shelf_q08zvm9","kind":"shelf","zone":null,"pos":600,"x":null,"variant":"fixed","mount":null,"front":null,"dropped":null}
+PASS       f12 | Add items, Shelves, 3, Add | expect: three adjustable shelves above the FIX one | observed: added 3; ["shelf_dyt7n7l@1366","shelf_dw56jer@983","shelf_i7sahb7@1749"]; said []
+PASS       f12 | the three clicked in turn, their Height typed 700, 820, 1900 | expect: pos_mm 700, 820, 1900 | observed: [700,820,1900]
+PASS       f12 | a shelf above clicked (by SHELF-2): its menu with Center all | expect: [data-centre-shelves] on the glass | observed: element {"unitId":"u_rcb7wkh","elementRef":"SHELF-2"}; Center all true
+NOTE       f12 | the selected shelf's SET BACK (T79 F13 names no walk; read where it shows) | ["10 mm","Flush"]; the shelf board {"w":560,"h":530,"d":530,"front":10}; the unit depth 558
+FRAME      f12 | f12-stage.png
+FRAME      f12 | f12-stage-menu.png
+NOTE       f12 | T79 ACTION | Center between, a real click on the FIX shelf, a real click on the TOP (hook [data-centre-between] on the page)
+PASS       f12 | Center between stands beside Center all, the same width | expect: one row, equal widths | observed: {"all":132,"between":132,"row":true}
+PASS       f12 | Center between (a real click) arms the two picks; Escape cancels | expect: centreBetween {unitId, lower null, upper null}, "Pick the lower element"; after Escape null, the shelves where they were | observed: armed {"unitId":"u_rcb7wkh","lower":null,"upper":null}; step "lower: Pick the lower element"; after Escape null; shelves [700,820,1900]
+PASS       f12 | Center between, a real click on the BOTTOM, a real click on the TOP (both reached) | expect: refused in words: "A fixed shelf stands between your picks; centring stops at it."; nothing moved | observed: said ["yellow: A fixed shelf stands between your picks; centring stops at it."]; shelves [700,820,1900]; mode null
+PASS       f12 | the first pick, a real click on the FIX shelf SHELF-1 | expect: centreBetween.lower SHELF-1; the panel says "Pick the upper element" | observed: mode {"unitId":"u_rcb7wkh","lower":"SHELF-1","upper":null}; step "upper: Pick the upper element"
+FRAME      f12 | f12-pick-lower.png
+PASS       f12 | the second pick, a real click on the TOP: the shelves between the picks centred | expect: equal clear gaps between 618 (the FIX shelf's top face) and the TOP's underside 2132; the FIX shelf still at 600; the mode ended | observed: positions [983,1366,1749]; clear gaps [365,365,365,365]; FIX 600; mode null; said []
+FRAME      f12 | f12-between.png
+NOTE       f12 | console errors on the page | none
+
+=== f14 THE DRAWER BOX IS ON CABINEO 12 (PRO)
+NOTE       f14 | walked at | 2026-10-18 21:52 UTC, HEAD f312b44, --act
+NOTE       f14 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD f312b44; url http://127.0.0.1:4173/
+NOTE       f14 | a new project (the stage for the box Cabineo), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f14 | Library, Kitchen, base-units, drawer-unit, drawer-3 (the real row) | expect: a budr in the room | observed: BUDR DR01 on wall 1 at x 1700, 600 x 770 x 558
+PASS       f14 | the room canvas after the budr is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+NOTE       f14 | the drawer box boards (cnc pockets / holes per board, Cabineo skims and dia 15 lobes, dia 5 holes) | ["D1-SL DRAWER-SIDE 490x237 pockets 2 holes 0 cabineo 0/0/4 face null","D1-SR DRAWER-SIDE 490x237 pockets 2 holes 0 cabineo 0/0/4 face null","D2-SL DRAWER-SIDE 490x178 pockets 2 holes 0 cabineo 0/0/4 face null","D2-SR DRAWER-SIDE 490x178 pockets 2 holes 0 cabineo 0/0/4 face null","D3-SL DRAWER-SIDE 490x118 pockets 2 holes 0 cabineo 0/0/2 face null","D3-SR DRAWER-SIDE 490x118 pockets 2 holes 0 cabineo 0/0/2 face null","D1-BF DRAWER-BOX-FRONT 518x203 pockets 4 holes 2 cabineo 4/12/0 face outside","D1-BB DRAWER-BOX-BACK 518x203 pockets 4 holes 0 cabineo 4/12/0 face outside","D2-BF DRAWER-BOX-FRONT 518x144 pockets 4 holes 2 cabineo 4/12/0 face outside","D2-BB DRAWER-BOX-BACK 518x144 pockets 4 holes 0 cabineo 4/12/0 face outside","D3-BF DRAWER-BOX-FRONT 518x84 pockets 2 holes 2 cabineo 2/6/0 face outside","D3-BB DRAWER-BOX-BACK 518x84 pockets 2 holes 0 cabineo 2/6/0 face outside"]
+NOTE       f14 | the unit's joint system | params.joints_system null; the system the engine cut (derived.joints) null; the company row (project.design.joints) {"system":null}; F14's gate opens on params.joints_system named or injected by paramsForEngine
+PASS       f14 | the BUDR selected, CNC (View menu, a real click) | expect: the CNC sheet of the unit | observed: viewMode cnc true; 24 parts: BUL, BUR, TOP, BOTTOM, BACK, D1-SL, D1-SR, D2-SL, D2-SR, D3-SL, D3-SR, D1-BF, D1-BB, D2-BF, D2-BB, D3-BF, D3-BB, D1-DNO, D2-DNO, D3-DNO, PLINTH, DR01-F1, DR01-F2, DR01-F3
+FRAME      f14 | f14-stage.png
+NOTE       f14 | T79 ACTION | the CNC sheet read: BOX-FRONT / BOX-BACK pockets and DRAWER-SIDE holes; BOX-BACK part detail opened (--act)
+PASS       f14 | the box walls carry the Cabineo 12 pockets from outside, the sides the dia 5 holes, the bottom none | expect: BOX-FRONT / BOX-BACK: 4 pockets (12 dia 15 lobes) on a wall over 100 high, 2 (6) on one up to 100, machinedFace outside; D1-BF (203 high) at 25 and 178 from its top; each DRAWER-SIDE as many cabineo_hole; the bottoms none | observed: walls ["D1-BF 518x203 pockets 4 lobes 12 at x [25,178] face outside","D1-BB 518x203 pockets 4 lobes 12 at x [25,178] face outside","D2-BF 518x144 pockets 4 lobes 12 at x [25,119] face outside","D2-BB 518x144 pockets 4 lobes 12 at x [25,119] face outside","D3-BF 518x84 pockets 2 lobes 6 at x [42] face outside","D3-BB 518x84 pockets 2 lobes 6 at x [42] face outside"]; sides ["D1-SL 490x237 holes 4","D1-SR 490x237 holes 4","D2-SL 490x178 holes 4","D2-SR 490x178 holes 4","D3-SL 490x118 holes 2","D3-SR 490x118 holes 2"]; bottoms ["D1-DNO 0/0/0","D2-DNO 0/0/0","D3-DNO 0/0/0"]
+PASS       f14 | the unit's summary and BOM: derived.boxCabineo, the cabineo_connector line | expect: boxCabineo {joints 12, pockets 20, holes 20} (8 + 8 + 4); BOM cabineo_connector 20 | observed: boxCabineo {"joints":12,"pockets":20,"holes":20}; BOM ["cabineo_connector 20"]
+NOTE       f14 | the Check on this BUDR (read): what the red count on the toolbar is | ["#18 red : DR01 D1: Runner NL500 (T): no article in catalogue - upload the model or adjust the ladder.","#18 red : DR01 D2: Runner NL500 (T): no article in catalogue - upload the model or adjust the ladder.","#18 red : DR01 D3: Runner NL500 (T): no article in catalogue - upload the model or adjust the ladder."]
+FRAME      f14 | f14-box-cnc.png
+FRAME      f14 | f14-box-back-sheet.png
+PASS       f14 | the BUDR right-clicked (pixel 720,468), Edit cabinet..., Explode, D1-BB double-clicked in the editor (pixel 663,432): its part detail shows the box pockets | expect: the part-detail window of D1-BB; its layer list CABINEO_POCKET_15MM 12 and CABINEO_RECESS 4 (the engine's dia 15 lobes and skims on that board) | observed: menu true; editor true; window true; {"modal":"part-detail","panelId":"D1-BB","title":"DR01 \u00b7 Drawer 1 - back - D1-BB518 \u00d7 203 \u00b7 18 mm\u2190 Back\u2750\u00d7\u2316Select\u2571Line\u27cb\u27cdPolyline\u25efCi"}; layers {"OUTLINE":1,"CABINEO_POCKET_15MM":12,"CABINEO_RECESS":4}
+FRAME      f14 | f14-box-back.png
+NOTE       f14 | console errors on the page | none
+
+=== f16 RESTORE SLEEVE ROWS, THE BUTTON (PRO)
+NOTE       f16 | walked at | 2026-10-18 22:02 UTC, HEAD 59a6be9, --act
+NOTE       f16 | the build under the mouse | #987 \u00b7 2026-10-18 22:00 UTC \u00b7 59a6be9; the repo's HEAD 59a6be9; url http://127.0.0.1:4173/
+NOTE       f16 | a new project (the stage for the sleeve rows), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f16 | Library, Kitchen, base-units, door-base (the real row) | expect: a bud in the room | observed: BUD 01 on wall 1 at x 1700, 600 x 770 x 558
+PASS       f16 | the room canvas after the bud is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f16 | Doors, Add doors; Add items, Shelves, 1, Add; the shelf clicked, Height typed so its seat is 50 under the highest hinge (670) | expect: shelf pos_mm 620 | observed: hinges [100,470,670]; shelf {"id":"shelf_7oi81r1","kind":"shelf","zone":null,"pos":620,"x":null,"variant":"adjustable","mount":null,"front":null,"dropped":null}; pin rows [620]; clusters [[570,620,670]]
+NOTE       f16 | the drop-sleeve-row button and what the page hands its pixel to | {"x":1170,"y":191,"w":185,"h":34}; under the pointer: drop-sleeve-row
+PASS       f16 | Check (the toolbar button): #1 SHELF x HINGE, "Remove the +50 mm sleeve row" clicked | expect: the finding with its drop-sleeve-row button; the shelf item sleeves_dropped [50] | observed: finding {"n":1,"level":"red","text":"#1 \u00b7 Shelf \u00d7 hinge collision01: A shelf at 620 mm and a hinge at 670 mm are 50 mm apart - closer than the 71.25 mm the cup and the shelf\u2019s own sleeves need between them.Remove the +50 mm sleeve rowRemove sleeves at this shelfMove the hinge","actions":["drop-sleeve-row: Remove the +50 mm sleeve row","remove-sleeves: Remove sleeves at this shelf","move-hinge: Move the hinge"]}; button true; dropped [50]
+NOTE       f16 | the Check panel after its x | shut
+PASS       f16 | the shelf clicked again (by SHELF-1): its Type row | expect: [data-shelf-type] in the piece's menu | observed: element {"unitId":"u_n6axj2n","elementRef":"SHELF-1"}; type row true
+FRAME      f16 | f16-stage.png
+FRAME      f16 | f16-stage-menu.png
+NOTE       f16 | T79 ACTION | click [data-restore-sleeve-rows] (hook [data-restore-sleeve-rows] on the page)
+FRAME      f16 | f16-restore.png
+NOTE       f16 | the Restore sleeve rows button(s) and what the page hands the centre pixel to | [{"x":1216,"y":299,"w":132,"h":54,"visible":true,"under":"the Restore button"}]
+PASS       f16 | "Restore sleeve rows" (a real click under the Type chips) | expect: sleeves_dropped empty, the whole sleeve cluster back (as before the drop), the button gone from the menu | observed: dropped []; clusters before [[570,620]], after [[570,620,670]] (the first reading [[570,620,670]]); button gone true; the item after {"id":"shelf_7oi81r1","kind":"shelf","zone":null,"pos":620,"x":null,"variant":"adjustable","mount":null,"front":null,"dropped":[]}; pin rows after {"pins":[620],"screws":12,"kinds":["puzzle","screw","hinge","shelf","cup","cup_screw"]}; selected {"unitId":"u_n6axj2n","elementRef":"SHELF-1"}
+FRAME      f16 | f16-restored.png
+NOTE       f16 | console errors on the page | none
+
+=== f18 21 OR 44 PER SHEET, TWO MENU ENTRIES (PRO)
+NOTE       f18 | walked at | 2026-10-18 21:40 UTC, HEAD c0af66b, --act
+NOTE       f18 | the build under the mouse | #987 \u00b7 2026-10-18 20:48 UTC \u00b7 c0af66b; the repo's HEAD c0af66b; url http://127.0.0.1:4173/
+NOTE       f18 | a new project (the stage for the labels), its room | 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f18 | Library, Kitchen, base-units, door-base (the real row) | expect: a bud in the room | observed: BUD 01 on wall 1 at x 1700, 600 x 770 x 558
+PASS       f18 | the room canvas after the bud is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f18 | the top bar's Output (a real click): the menu open | expect: the Output items, a Part labels entry among them | observed: 9 items; labels entries ["Part labels \u00b7 21 per sheet (Avery L7160)","Part labels \u00b7 44 per sheet"]
+FRAME      f18 | f18-stage.png
+FRAME      f18 | f18-stage-menu.png
+NOTE       f18 | T79 ACTION | Output: the two Part labels entries; each clicked, the PDF saved (--act)
+PASS       f18 | the two Part labels entries | expect: "Part labels . 21 per sheet (Avery L7160)" and "Part labels . 44 per sheet"; no stale "44 per page" | observed: ["Part labels \u00b7 21 per sheet (Avery L7160)","Part labels \u00b7 44 per sheet"]
+FRAME      f18 | f18-menu.png
+PASS       f18 | Output, Part labels . 21 per sheet (real clicks): the PDF | expect: a .pdf saved; 21 per sheet (3 x 7); its page count = ceil(labels / 21) | observed: T74-walk-labels-1810-2140.pdf; 1 page(s) in the file; said ["grey: T74-walk-labels-1810-2140.pdf: 6 labels on 1 page, 21 per sheet."]
+PASS       f18 | Output, Part labels . 44 per sheet (real clicks): the PDF | expect: a .pdf saved; 44 per sheet (4 x 11); its page count = ceil(labels / 44) | observed: T74-walk-labels-1810-2140.pdf; 1 page(s) in the file; said ["grey: T74-walk-labels-1810-2140.pdf: 6 labels on 1 page, 44 per sheet."]
+NOTE       f18 | console errors on the page | none
+
+SECTION f01: 8 pass, 0 fail, 0 todo
+SECTION f02: 9 pass, 0 fail, 0 todo
+SECTION f03: 9 pass, 0 fail, 0 todo
+SECTION f04: 5 pass, 0 fail, 0 todo
+SECTION f05: 7 pass, 0 fail, 0 todo
+SECTION f06: 4 pass, 0 fail, 0 todo
+SECTION f07: 15 pass, 0 fail, 0 todo
+SECTION f08: 6 pass, 0 fail, 0 todo
+SECTION f09: 5 pass, 0 fail, 0 todo
+SECTION f10: 8 pass, 0 fail, 0 todo
+SECTION f11: 7 pass, 0 fail, 0 todo
+SECTION f12: 11 pass, 0 fail, 0 todo
+SECTION f14: 6 pass, 0 fail, 0 todo
+SECTION f16: 6 pass, 0 fail, 0 todo
+SECTION f18: 6 pass, 0 fail, 0 todo
+FRAMES f01 (3): f01-stage.png, f01-left.png, f01-history.png
+FRAMES f02 (5): f02-stage.png, f02-stage-buttons.png, f02-buttons.png, f02-above-lit.png, f02-above.png
+FRAMES f03 (5): f03-stage.png, f03-stage-drawers.png, f03-columns-ask.png, f03-columns.png, f03-cnc.png
+FRAMES f04 (5): f04-stage.png, f04-stage-window.png, f04-top-3d.png, f04-top-cnc.png, f04-top-cnc-bul.png
+FRAMES f05 (10): f05-stage.png, f05-stage-row.png, f05-row.png, f05-window.png, f05-bb-3d.png, f05-bb-cnc.png, f05-bb-cnc-bul.png, f05-tb-3d.png, f05-tb-cnc.png, f05-tb-cnc-bul.png
+FRAMES f06 (2): f06-stage.png, f06-back-cnc.png
+FRAMES f07 (5): f07-stage.png, f07-cnc.png, f07-cnc-part.png, f07-cnc-part-height.png, f07-cnc-bul.png
+FRAMES f08 (3): f08-stage.png, f08-both.png, f08-overlap-check.png
+FRAMES f09 (2): f09-stage.png, f09-end-3d.png
+FRAMES f10 (4): f10-stage.png, f10-standoff-100.png, f10-standoff-300.png, f10-standoff-350.png
+FRAMES f11 (4): f11-stage-addrail.png, f11-stage.png, f11-magnet.png, f11-alt.png
+FRAMES f12 (4): f12-stage.png, f12-stage-menu.png, f12-pick-lower.png, f12-between.png
+FRAMES f14 (4): f14-stage.png, f14-box-cnc.png, f14-box-back-sheet.png, f14-box-back.png
+FRAMES f16 (4): f16-stage.png, f16-stage-menu.png, f16-restore.png, f16-restored.png
+FRAMES f18 (3): f18-stage.png, f18-stage-menu.png, f18-menu.png
+T79: 112 steps, 112 pass, 0 fail, 0 T79 actions still to walk

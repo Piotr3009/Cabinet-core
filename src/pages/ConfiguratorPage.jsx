@@ -429,13 +429,17 @@ export default function ConfiguratorPage() {
   // per carcass board of the whole project, cabinet by cabinet, on the paper
   // profile.labels names; the numbers are the same plan the CNC sheet and the
   // DXF text print (lib/partLabels.js).
-  const onExportLabels = useCallback(() => {
+  // T79 F18: the two Output entries name the paper ({ sheet }, a preset of
+  // profile.labels.sheets); the sheet's numbers stay the profile's. The handover:
+  // *"przełącznik 21/44 naklejek w oknie eksportu"*; the owner 14:55: *"ok daj"*.
+  const onExportLabels = useCallback((opts) => {
     if (!guard()) return;
     try {
       const resultOf = (id) => unitCncResult(id) || unitResult(id);
       const records = projectLabelRecords({ units, resultOf, profile });
-      const res = exportLabelsPdf({ records, profile, project: project.name });
-      notify(`${res.filename}: ${res.labels} labels on ${res.pages} page${res.pages === 1 ? '' : 's'}.`, 'ok');
+      const sheet = typeof opts?.sheet === 'string' ? opts.sheet : null;
+      const res = exportLabelsPdf({ records, profile, sheet, project: project.name });
+      notify(`${res.filename}: ${res.labels} labels on ${res.pages} page${res.pages === 1 ? '' : 's'}, ${res.perPage} per sheet.`, 'ok');
     } catch (e) {
       notify(e?.message || 'The labels PDF failed.', 'warn');
     }

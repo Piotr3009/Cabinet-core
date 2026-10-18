@@ -249,7 +249,8 @@ const EXEMPT = {
     + ' T77 F3 · Output > CNC / DXF writes the Ornate reference files at the level the CNC panel chose. *"The CNC export offers two levels in the existing export options (no new numeric field): `Reference (default)` at `sampleMm` and `Full resolution` at `fullSampleMm`; the manifest records which one was written."*'
     + ' T78 F21 · the Spraying page is mounted beside the other output windows (the modal layer\'s spraying entry). *"cale sprayowanie jako osobne menu Cabinet Core."*'
     + ' Chat fix 17.10.2026 \u00b7 onExportLabels writes the sticker sheets (lib/labelsPdf.js) from the project\'s part number plan; the Output menu\'s DXF ZIP takes the cabinet\'s labels slice. *"naklejki 44 na A4 ... ponumerujemy wszystkie elementy ... ok koduj"*'
-    + ' T79 F1 . the messages and the front-gap rows stand in ONE bottom-left column (components/Messages.jsx, the rows as its top slot through a wrapper, FrontGapWarnings.jsx untouched); the lone Messages mount after the context menu is gone. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*',
+    + ' T79 F1 . the messages and the front-gap rows stand in ONE bottom-left column (components/Messages.jsx, the rows as its top slot through a wrapper, FrontGapWarnings.jsx untouched); the lone Messages mount after the context menu is gone. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
+    + ' T79 F18 · onExportLabels takes { sheet } from the two Output entries (21 per sheet, Avery L7160; 44 per sheet) and hands that preset of profile.labels.sheets to exportLabelsPdf; the default stays L7160. *"przełącznik 21/44 naklejek w oknie eksportu"* (the handover), the owner 14:55: *"ok daj"*',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -414,7 +415,8 @@ const FROZEN = {
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '8a55e58fea1795e830b7f6cc1aba169fd8e12dae898db27393d650a3ea49fc37',
+  // T79 F18 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': '2428d870109acd46ff4051b6a6b2c585f6f0c8dfc015555f5350cb1fd395466f',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────

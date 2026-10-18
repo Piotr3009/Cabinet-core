@@ -334,16 +334,20 @@ test('the labels PDF: a page per 21 stickers, real PDF bytes, named by the one n
 
 // ─── THE MENU, THE SHEET ────────────────────────────────────────────────────
 
-test('Output has Part labels (PDF), once, beside the BOM PDF, and it runs the handler', () => {
-  let ran = 0;
-  const menu = buildOutputMenu({ onExportLabels: () => { ran += 1; } });
+// T79 F18 rewrites this to the two entries (the handover: *"przełącznik 21/44
+// naklejek w oknie eksportu"*; the owner 18.10, 14:55: *"ok daj"*).
+test('Output has the Part labels entries, once each, beside the BOM PDF, and each runs the handler with its paper', () => {
+  const ran = [];
+  const menu = buildOutputMenu({ onExportLabels: (opts) => { ran.push(opts); } });
   const flat = menu.items.filter((i) => i.label);
-  const idx = flat.findIndex((i) => i.label === 'Part labels (PDF)');
+  const idx = flat.findIndex((i) => i.label === 'Part labels · 21 per sheet (Avery L7160)');
   assert.ok(idx > 0, 'the entry is there');
-  assert.equal(flat.filter((i) => i.label === 'Part labels (PDF)').length, 1);
+  assert.equal(flat.filter((i) => i.label.startsWith('Part labels')).length, 2);
   assert.equal(flat[idx - 1].label, 'BOM PDF');
+  assert.equal(flat[idx + 1].label, 'Part labels · 44 per sheet');
   flat[idx].run();
-  assert.equal(ran, 1);
+  flat[idx + 1].run();
+  assert.deepEqual(ran, [{ sheet: 'L7160' }, { sheet: 'generic44' }]);
 });
 
 test('the CNC sheet\'s caption carries the number and wears the cabinet\'s colour; the tree hands the downloads the plan', () => {
@@ -358,6 +362,6 @@ test('the CNC sheet\'s caption carries the number and wears the cabinet\'s colou
   assert.match(tree, /plan: labelPlan,/);
   assert.match(tree, /labels: labelsForUnit\(labelPlan, sheet\.unit\.id\)/);
   const page = read('src/pages/ConfiguratorPage.jsx');
-  assert.match(page, /exportLabelsPdf\(\{ records, profile, project: project\.name \}\)/);
+  assert.match(page, /exportLabelsPdf\(\{ records, profile, sheet, project: project\.name \}\)/);
   assert.match(page, /onExportLabels=\{onExportLabels\}/);
 });

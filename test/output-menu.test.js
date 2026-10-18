@@ -41,8 +41,11 @@ test('Output carries the three groups CLAUDE.md asks for, in that order', () => 
     'Cutting list CSV',
     'BOM PDF',
     // Chat fix 17.10.2026: the sticker sheets, in the machine files' group
-    // (*"naklejki 44 na A4 bo takie mam ... ok koduj"*).
-    'Part labels (PDF)',
+    // (*"naklejki 44 na A4 bo takie mam ... ok koduj"*). T79 F18: two entries,
+    // one per paper (the handover: *"przełącznik 21/44 naklejek w oknie
+    // eksportu"*; the owner 18.10, 14:55: *"ok daj"*).
+    'Part labels · 21 per sheet (Avery L7160)',
+    'Part labels · 44 per sheet',
     'Bill of materials…',
     // T78 F21: the Spraying page, in the BOM's group (a live document, like it).
     'Spraying…',

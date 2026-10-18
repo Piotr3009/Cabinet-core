@@ -81,7 +81,7 @@ export const DRAWING_KINDS = [
  *   onExportPdf   the project PDF
  *   onOpenBom     the live BOM panel
  *   onOpenSpraying  the Spraying page (T78 F21)
- *   onExportLabels  the part labels PDF (chat fix 17.10.2026)
+ *   onExportLabels  ({sheet}) => the part labels PDF on that paper (chat fix 17.10.2026; T79 F18)
  * @returns {{label:string, items:Array}}  a MenuBar menu
  */
 export function buildOutputMenu({
@@ -118,10 +118,19 @@ export function buildOutputMenu({
       // mam, kolorami ... napis co to, i strzalka co oklejamy"*; 13:15: every
       // element numbered. One sticker per carcass board of the whole project,
       // in number order, on the owner's label paper (profile.labels).
+      // T79 F18 (the handover: *"przełącznik 21/44 naklejek w oknie eksportu"*;
+      // the owner 18.10, 14:55: *"ok daj"*): there is no export window, so the
+      // paper is chosen by the entry, each naming a preset of
+      // profile.labels.sheets; the sizes are the profile's, never typed here.
       {
-        label: 'Part labels (PDF)',
-        hint: 'A4 sticker sheets, 44 per page: cabinet colour, element colour, number, size, the edge to band',
-        run: onExportLabels,
+        label: 'Part labels · 21 per sheet (Avery L7160)',
+        hint: 'A4 sticker sheets on the default Avery paper: cabinet colour, element colour, number, size, the edge to band',
+        run: () => onExportLabels?.({ sheet: 'L7160' }),
+      },
+      {
+        label: 'Part labels · 44 per sheet',
+        hint: 'The same stickers, scaled onto the 44-up A4 paper',
+        run: () => onExportLabels?.({ sheet: 'generic44' }),
       },
       { divider: true },
       { label: 'Bill of materials…', hint: 'Live BOM, with the export buttons', run: onOpenBom },

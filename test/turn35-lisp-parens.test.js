@@ -281,3 +281,17 @@ test('T79 F9 · KIT_RECESS.lsp balances 0/0 with D21, recess-end-reach-p, recess
   assert.match(text, /;;; F2\. NUMBERS - THE END PANEL/);
   assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
 });
+
+// ─── T79 F14 · THE DRAWER BOX ON CABINEO 12: SKYLON_JOINTS_CABINEO.lsp D.2c ───
+// CLAUDE.md T79 FROZEN 2: *"parens test grows with every file touched"*. The
+// walk above balances the file; this names it and the section F14 wrote.
+test('T79 F14 · SKYLON_JOINTS_CABINEO.lsp balances 0/0 and carries D.2c and its H.1 NUMBERS', () => {
+  assert.ok(KITS.includes('SKYLON_JOINTS_CABINEO.lsp'), 'SKYLON_JOINTS_CABINEO.lsp is missing');
+  const text = readFileSync(join(LISP_DIR, 'SKYLON_JOINTS_CABINEO.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /D\.2c THE DRAWER BOX/);
+  assert.match(text, /H\.1 THE DRAWER BOX/);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+});

@@ -254,13 +254,15 @@ test('F19 · resolveJointSystem: profile, company row, project, unit; later wins
 
 // ═══ (g) THE STORE ROAD ════════════════════════════════════════════════════
 
-test('F19 · THE ROAD, no row: a fresh BUD\'s engine params carry no joints_system key, the cut is the puzzle, derived.joints is absent', () => {
+// REWRITTEN BY T79 F14: the hand-off names the system on EVERY unit, the profile's own 'puzzle' included. The owner,
+// 18.10.2026: *"jak mamy wybrane jakąkolwiek funkcję łączenia czy dog bones czy inne zawsze projektuj cabineo na szuflady"*.
+test('F19 · THE ROAD, no row: a fresh BUD\'s engine params name the puzzle (T79 F14), the cut is the puzzle, derived.joints is absent', () => {
   clearCompanyDefaults();
   const unit = freshBud();
   assert.equal(S().project.design.joints.system, null, 'the new project inherits nothing');
   assert.equal(unit.params.joints_system, undefined, 'the unit says nothing');
   const engineParams = paramsForEngine(unit, S().project.design);
-  assert.equal('joints_system' in engineParams, false, 'the hand-off writes NO key when the ladder answers the profile\'s own');
+  assert.equal(engineParams.joints_system, 'puzzle', 'T79 F14: the hand-off names the ladder\'s answer on every unit, the profile\'s own too');
   assert.equal(jointSystemOf(engineParams, P), 'puzzle');
   const r = S().unitResult(unit.id);
   assert.equal(r.derived.joints, undefined, 'a puzzle unit runs no line of the joint systems');
@@ -346,7 +348,7 @@ test('F19 · THE ROAD, every id the company may choose reaches the engine as tha
     setCompanyDefaults({ joints_system: 'puzzle' }, P);
     const unit = freshBud();
     assert.equal(S().project.design.joints.system, 'puzzle');
-    assert.equal('joints_system' in paramsForEngine(unit, S().project.design), false, 'the profile\'s own answer travels as no key');
+    assert.equal(paramsForEngine(unit, S().project.design).joints_system, 'puzzle', 'T79 F14: the profile\'s own answer travels named');
     assert.equal(S().unitResult(unit.id).derived.joints, undefined);
   } finally {
     clearCompanyDefaults();
@@ -473,5 +475,6 @@ test('F19 · no em or en dash in anything this F wrote', () => {
   const rp = read('src/components/RightPanel.jsx');
   assert.doesNotMatch(segment(rp, 'T78 F19 / F20 (CLAUDE.md T78 PART E): the owner\'s four systems', '\n}\n', 'RightPanel.jsx'), DASH, 'RightPanel.jsx: the Joints row carries a dash');
   const store = read('src/stores/projectStore.js');
-  assert.doesNotMatch(segment(store, 'T78 F19 (CLAUDE.md T78 PART E): THE JOINT SYSTEM', '})(),', 'projectStore.js'), DASH, 'projectStore.js: the hand-off carries a dash');
+  // T79 F14: the hand-off is one line now (the IIFE that wrote no key went), so the block ends on it.
+  assert.doesNotMatch(segment(store, 'T78 F19 (CLAUDE.md T78 PART E): THE JOINT SYSTEM', 'joints_system: resolveJointSystem({ params: p, design, profile }),', 'projectStore.js'), DASH, 'projectStore.js: the hand-off carries a dash');
 });

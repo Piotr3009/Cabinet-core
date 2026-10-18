@@ -134,6 +134,9 @@ export const NEW_FILES = [
   // T79 F13 (18.10.2026): setbacks 10, drawers untouched
   'test/turn79-f13-setbacks.test.js',
   'scripts/t78-classify.d/f34-t79-f13.mjs',
+  // T79 F14 (18.10.2026): the drawer box on Cabineo 12
+  'test/turn79-f14-box-cabineo.test.js',
+  'scripts/t78-classify.d/f34-t79-f14.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

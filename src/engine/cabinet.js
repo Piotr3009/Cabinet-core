@@ -79,9 +79,13 @@ import {
 // holes added after the copy loop, the connectors and caps counted as order
 // lines, THE GATE while the owner has not confirmed the pattern. Never
 // reached while the system is the puzzle.
+// T79 F14 · and the drawer box on Cabineo 12 (SKYLON_JOINTS_CABINEO.lsp D.2c):
+// the box names on the import's last two lines.
 import {
   cabineoDrills, cabineoGateWarning, cabineoHardwareLines, cabineoPocketsOnto, cabineoShelf, cabineoStrip,
   cabineoSummary, cabineoVerdict, isCabineoSystem, withCabineoRefusal,
+  boxCabineoAsked, cabineoBoxDrills, cabineoBoxGateWarning, cabineoBoxHardwareLines, cabineoBoxPocketsOnto,
+  cabineoBoxRefusalWarnings, cabineoBoxSummary, cabineoBoxVerdict,
 } from './cabineo.js';
 import { screwedBackStrip } from './screwedBack.js';
 // T78 F20 · the third joint system, SKYLON_JOINTS_BISCUIT.lsp's mirror: the
@@ -2445,6 +2449,13 @@ export function computeCabinet(params, profileOverride) {
   // 4 mm is the picture's own thickness, the same convention the glass door
   // draws with; the ORDER line carries only the width and depth.
   const drawerGlassPanes = [];
+  // ─── T79 F14 · THE DRAWER BOX IS ON CABINEO 12 ───────────────────────────
+  // Every box builder below names its box here, by the id prefix of its four
+  // boards (`${tag}-SL` / -SR / -BF / -BB), and ONE verdict joins them all
+  // (engine/cabineo.js Z2, SKYLON_JOINTS_CABINEO.lsp D.2c) before the drilling
+  // pass, on a unit that names a joint system at all.
+  const cabineoBoxTags = [];
+  const joinBoxWithCabineo = (tag) => { cabineoBoxTags.push(tag); };
   // T52 (CLAUDE.md F5): what each watch insert came out as — published so the
   // BOM, the 3D and the acceptance walk read ONE derivation.
   const watchInsertsBuilt = [];
@@ -5343,6 +5354,7 @@ export function computeCabinet(params, profileOverride) {
         box: { x: boxLeftX + GB, y: boxWallY, z: boxZFront - szufDl, w: boxFrontLen, h: bfH, d: GB },
         cnc: rectGeometry(boxFrontLen, bfH), meta: { drawer: i },
       }));
+      joinBoxWithCabineo(`D${i}`);
       panels.push(panel({
         id: `D${i}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: bottomW, h: bottomD, ...common,
         // The bottom is narrower than the box (it sits in grooves in the two
@@ -5475,6 +5487,7 @@ export function computeCabinet(params, profileOverride) {
           box: { x: boxLeftX + GB, y: boxWallY, z: boxZFront - set.dl, w: set.boxFrontLen, h: bfH, d: GB },
           cnc: rectGeometry(set.boxFrontLen, bfH), meta: { drawer: i, zone: set.zone },
         }));
+        joinBoxWithCabineo(tag);
         panels.push(panel({
           id: `${tag}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: set.bottomW, h: set.dl, ...common,
           box: {
@@ -5819,6 +5832,7 @@ export function computeCabinet(params, profileOverride) {
           meta: { drawer: i },
         }));
       }
+      joinBoxWithCabineo(`D${i}`);
     }
     for (let i = 1; i <= budr.count; i += 1) {
       if (i === budr.dummy) continue;
@@ -5880,6 +5894,7 @@ export function computeCabinet(params, profileOverride) {
           meta: { ...metaInner },
         }));
       }
+      joinBoxWithCabineo(`D${i}I`);
       {
         const geom = rectGeometry(budr.bottomW, budr.depth);
         geom.holes = [];
@@ -8742,6 +8757,20 @@ export function computeCabinet(params, profileOverride) {
   // take their place (the owner, the morning of 15.10.2026: "plecy tez na
   // cabineo"); under biscuits the rows are what holds the back.
   if (cabineoPlan || biscuitPlan) screwedBackStrip({ panels, profile: P, screws: !cabineoPlan });
+  // ─── T79 F14 · THE DRAWER BOX IS ON CABINEO 12 ───────────────────────────
+  // The owner, 18.10.2026: *"jak mamy wybrane jakąkolwiek funkcję łączenia
+  // czy dog bones czy inne zawsze projektuj cabineo na szuflady"*. On a unit
+  // that names a joint system at all (the store names one on every unit), the
+  // boxes the builders joined get their pockets on the walls' outside faces
+  // (OUTSIDE FACE UP) and a box that cannot is refused in words (Check #31).
+  // A bare kit names none and runs no line here (SKYLON_JOINTS_CABINEO.lsp D.2c).
+  const boxCabineoPlan = boxCabineoAsked(params) && cabineoBoxTags.length
+    ? cabineoBoxVerdict({ tags: cabineoBoxTags, panels, profile: P })
+    : null;
+  if (boxCabineoPlan) {
+    cabineoBoxPocketsOnto({ panels, plan: boxCabineoPlan });
+    warnings.push(...cabineoBoxRefusalWarnings(boxCabineoPlan));
+  }
 
   // ─── T75 F7 · THE CORNER NOTCH, CUT BEFORE THE DRILLING ──────────────────
   // KIT_NOTCH.lsp: *"It runs AFTER the parent kit's carcass and BEFORE the
@@ -8840,6 +8869,8 @@ export function computeCabinet(params, profileOverride) {
   // dia 15 holes per pocket from the outside face (SKYLON_JOINTS_CABINEO.lsp
   // section D.8 and D.4).
   if (cabineoPlan) drills.push(...cabineoDrills(cabineoPlan));
+  // T79 F14 · the box sides' dia 5 holes and, under drill15, the walls' dia 15.
+  if (boxCabineoPlan) drills.push(...cabineoBoxDrills(boxCabineoPlan));
 
   // ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT, ⌀3 OR ⌀5 ─────────────
   //
@@ -10498,6 +10529,10 @@ export function computeCabinet(params, profileOverride) {
     const cap = cabHw.find((l) => l.role === 'cabineo_cap');
     if (cap) hw('cabineo_cap', cap.label, cap.qty, cap.unit, cap.spec, cap.spec_label);
   }
+  // T79 F14 · the drawer boxes' connectors, 4 or 8 a box, a line of their own.
+  if (boxCabineoPlan) {
+    for (const l of cabineoBoxHardwareLines(boxCabineoPlan)) hw(l.role, l.label, l.qty, l.unit, l.spec, l.spec_label);
+  }
 
   // Turn 32 (CLAUDE.md F4): the columns share the default ladder — the depth
   // is the cabinet's, so a column drawer snaps to the same length.
@@ -11772,9 +11807,24 @@ export function computeCabinet(params, profileOverride) {
   // T78 F20 · what the Cabineo unit is (the variant, the mounting, the
   // option, which boards are OUTSIDE FACE UP), and THE GATE while it is shut.
   if (cabineoPlan) {
-    derived.joints = cabineoSummary(cabineoPlan);
+    derived.joints = cabineoSummary(cabineoPlan, boxCabineoPlan);
     const gate = cabineoGateWarning(derived.joints);
     if (gate) warnings.push(gate);
+  }
+  // T79 F14 · what the drawer boxes' Cabineo is, on every unit that has it;
+  // its gate where the carcass carries none of its own.
+  if (boxCabineoPlan) {
+    derived.boxCabineo = cabineoBoxSummary(boxCabineoPlan);
+    const boxGate = cabineoPlan ? null : cabineoBoxGateWarning(boxCabineoPlan);
+    if (boxGate) warnings.push(boxGate);
+  }
+  // T79 F14 · an L's drawer stack is cut by its two parents (`lCorner.arms`,
+  // each box joined there by the one helper above); the L says what they carry.
+  if (!boxCabineoPlan && lCorner) {
+    const arms = ['A', 'B'].map((arm) => lCorner.arms[arm]?.v?.derived?.boxCabineo).filter(Boolean);
+    if (arms.length) {
+      derived.boxCabineo = Object.fromEntries(['joints', 'pockets', 'holes'].map((k) => [k, arms.reduce((n, s) => n + s[k], 0)]));
+    }
   }
   // T78 F20 · what the biscuit unit is. No gate: the set is the owner's own
   // ("zostaw jak bylo": the numbers of profile.biscuits, confirmed).

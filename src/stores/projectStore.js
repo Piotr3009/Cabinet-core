@@ -177,7 +177,7 @@ import {
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 // T78 F19 · the joint system's four-storey ladder (profile, company row,
 // project, unit) resolved once, here, and handed to the engine as a param.
-import { jointSystemOf, resolveJointSystem } from '../engine/dowels.js';
+import { resolveJointSystem } from '../engine/dowels.js';
 // T48-F5: the LED groove, cut on the way to the sheet as well as to the file.
 // It lives in `lib/` and not in the engine on purpose (T45's own argument):
 // `computeCabinet()` cannot reach it, so a project with no line cannot move.
@@ -1189,13 +1189,14 @@ function paramsForEngine(unit, design = null) {
     // `design.joints.system`), a unit may override (`joints_system`, the T75
     // F23 Joints row). ONE cascade (`engine/dowels.js resolveJointSystem`,
     // the T22 ladder) answers here, and the answer travels as the unit's own
-    // key, so the engine keeps its one reader (`jointSystemOf`). Written only
-    // where the ladder's answer is not the profile's own: a unit nobody has
-    // said anything about carries no key, exactly as every golden fixture.
-    ...(() => {
-      const system = resolveJointSystem({ params: p, design, profile });
-      return system !== jointSystemOf(null, profile) ? { joints_system: system } : {};
-    })(),
+    // key, so the engine keeps its one reader (`jointSystemOf`).
+    // T79 F14 · written on EVERY unit, the profile's own 'puzzle' included:
+    // the owner, 18.10.2026, *"jak mamy wybrane jakąkolwiek funkcję łączenia
+    // czy dog bones czy inne zawsze projektuj cabineo na szuflady"*, so a unit
+    // a person builds always names its system and its drawer boxes go on
+    // Cabineo 12 (engine/cabineo.js `boxCabineoAsked`); a bare kit call, every
+    // golden fixture, still names none and cuts what the AutoLISP cuts.
+    joints_system: resolveJointSystem({ params: p, design, profile }),
     // ─── Turn 18 (CLAUDE.md F6.4) ───
     // The PROJECT's runner variant, travelling exactly as the hinge standard
     // does. It is deliberately NOT `runner_variant` — that name belongs to the

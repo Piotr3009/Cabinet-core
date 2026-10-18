@@ -45,6 +45,10 @@ import { exportablePanels } from '../src/engine/cnc/groups.js';
 import { buildUnitDxfFiles, sheetDxf, materialSheetDxf } from '../src/engine/cnc/dxf.js';
 import { layoutPanels } from '../src/engine/cnc/layout.js';
 import { materialExportSection } from '../src/engine/cnc/views.js';
+// T79 F14 . an OUTSIDE FACE UP part's file is reflected; the audit carries the
+// engine's numbers into that frame through T76's one formula.
+import { isOutsideFace } from '../src/engine/cabineo.js';
+import { mirrorAboutVerticalAxis } from '../src/engine/cnc/frontOperations.js';
 
 // ─── AN INDEPENDENT READER ──────────────────────────────────────────────────
 //
@@ -146,6 +150,22 @@ export function readDxf(text) {
   return out;
 }
 
+/**
+ * T79 F14 . THE FRAME A PART'S FILE IS DRAWN IN. A board marked OUTSIDE FACE
+ * UP (`meta.machinedFace: 'outside'`: a Cabineo top, bottom or fixed shelf
+ * since T78 F20, and every drawer box's front and back wall since T79 F14,
+ * the owner, 18.10.2026: *"jak mamy wybrane jakąkolwiek funkcję łączenia czy
+ * dog bones czy inne zawsze projektuj cabineo na szuflady"*) is written as
+ * seen from that face, x' = W - x on the part's drawn width, through T76's
+ * one formula (`mirrorAboutVerticalAxis`); every other part is drawn in its
+ * own frame. The ENGINE's numbers are carried into the file's frame here,
+ * never the file's back, so the reader above stays the independent one.
+ */
+export function fileFrame(panel) {
+  if (!isOutsideFace(panel)) return ([x, y]) => [x, y];
+  return mirrorAboutVerticalAxis(Number(panel.cnc?.drawn_w ?? panel.w));
+}
+
 /** The bounding box of a part's own CNC geometry, in the part's own frame. */
 export function cncExtents(panel, drills = []) {
   let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
@@ -163,7 +183,11 @@ export function cncExtents(panel, drills = []) {
   for (const d of drills.filter((h) => h.panel === panel.id)) {
     hit(d.x - d.d / 2, d.y - d.d / 2); hit(d.x + d.d / 2, d.y + d.d / 2);
   }
-  return Number.isFinite(minX) ? { min: [minX, minY], max: [maxX, maxY] } : null;
+  if (!Number.isFinite(minX)) return null;
+  // T79 F14 . in the file's frame: a reflected part's box, its two x ends swapped.
+  const [a] = fileFrame(panel)([minX, minY]);
+  const [b] = fileFrame(panel)([maxX, maxY]);
+  return { min: [Math.min(a, b), minY], max: [Math.max(a, b), maxY] };
 }
 
 // ─── THE SEEDED JOB ─────────────────────────────────────────────────────────
@@ -360,9 +384,11 @@ export function auditFiles({ units, files }) {
       }
       // Every hole the ENGINE says is on this part must be a CIRCLE in the file.
       const holes = (f.result.drills || []).filter((d) => d.panel === f.panelId);
+      const frame = panel ? fileFrame(panel) : ([x, y]) => [x, y];
       for (const h of holes) {
-        const hit = read.circles.find((c) => Math.abs(c.x - h.x) <= TOL
-          && Math.abs(c.y - h.y) <= TOL && Math.abs(c.r - h.d / 2) <= TOL);
+        const [hx, hy] = frame([h.x, h.y]);
+        const hit = read.circles.find((c) => Math.abs(c.x - hx) <= TOL
+          && Math.abs(c.y - hy) <= TOL && Math.abs(c.r - h.d / 2) <= TOL);
         if (!hit) {
           faults.push(`${f.name}: the engine drills ⌀${h.d} at ${h.x},${h.y} and the file has no such circle`);
           row.ok = false;

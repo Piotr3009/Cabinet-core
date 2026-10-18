@@ -639,6 +639,19 @@ export const DEFAULT_CABINET_PROFILE = {
         recess: 'CABINEO_RECESS',
         hole: 'CABINEO_HOLE_5MM',
       },
+      // ─── T79 F14 · THE DRAWER BOX IS ON CABINEO 12 (the LISP's D.2c) ──────
+      // The owner, 18.10.2026: *"jak mamy wybrane jakąkolwiek funkcję
+      // łączenia czy dog bones czy inne zawsze projektuj cabineo na szuflady,
+      // na przednich i tylnych ściankach dodawaj cabineo jeden do 100 mm, 2
+      // powyżej 100 mm, minimum odległość to 25 od góry i dołu"*; Cabineo 12:
+      // *"tak"*; the tall boxes: *"przy wysokich nie rozsuwaj"*. The box takes
+      // the company's machining above (mounting, option, skim, the gate) and
+      // these three numbers of its own; measured from the wall's TOP edge.
+      box: {
+        variant: '12',            // Cabineo 12 on every box                          the owner, 18.10.2026 (14:51), DECIDED
+        onePerJointUpToMm: 100,   // one connector a joint to a 100 wall, two above   the owner, 18.10.2026, DECIDED
+        fromEdgeMm: 25,           // the two at 25 from the top and the bottom edge   the owner, 18.10.2026, DECIDED
+      },
     },
   },
 
@@ -6386,6 +6399,8 @@ export function migrateCabinetProfile(profile) {
           ...profile.joints?.cabineo?.layers,
           pocket: { ...D.joints.cabineo.layers.pocket, ...profile.joints?.cabineo?.layers?.pocket },
         },
+        // T79 F14 · the drawer box's three numbers, key by key.
+        box: { ...D.joints.cabineo.box, ...profile.joints?.cabineo?.box },
       },
     },
     room: { ...D.room, ...profile.room },

@@ -709,7 +709,10 @@ test('F20 · a Cabineo 12 BUD: THE OWNER\'S THREE LAYERS and nothing else of the
   assert.match(computeCabinet({ ...BUD, joints_system: 'cabineo' }, P).warnings.find((w) => w.code === 'JOINTS_REFUSED').message, /Cabineo is reserved/);
   assert.match(computeCabinet({ ...defaultParamsFor('SINK', P), unit_num: '01', joints_system: 'cabineo12' }, P).warnings.find((w) => w.code === 'JOINTS_REFUSED').message, /^Cabineo 12 refused: SINK/);
   // The profile carries the block (f20-profile-cabineo.patch).
-  assert.deepEqual({ ...P.joints.cabineo, layers: undefined }, { mounting: 'flush', machining: 'drill15', skimMm: 0.5, holeDepthMm: null, pitchMm: 250, endOffsetMm: 50, minPerJoint: 2, caps: 'all', confirmed: true, layers: undefined });
+  // AMENDED BY T79 F14: the block gained the drawer box's three numbers (`box`, the LISP's D.2c), held here beside it.
+  // The owner, 18.10.2026: *"jeden do 100 mm, 2 powyżej 100 mm, minimum odległość to 25 od góry i dołu"*; Cabineo 12: *"tak"*.
+  assert.deepEqual({ ...P.joints.cabineo, layers: undefined, box: undefined }, { mounting: 'flush', machining: 'drill15', skimMm: 0.5, holeDepthMm: null, pitchMm: 250, endOffsetMm: 50, minPerJoint: 2, caps: 'all', confirmed: true, layers: undefined, box: undefined });
+  assert.deepEqual(P.joints.cabineo.box, { variant: '12', onePerJointUpToMm: 100, fromEdgeMm: 25 });
 });
 
 test('F20 · with a FIX shelf: the shelf is OUTSIDE FACE UP too, its biscuit set and side screws give way, the BACK\'s row stays', (t) => {

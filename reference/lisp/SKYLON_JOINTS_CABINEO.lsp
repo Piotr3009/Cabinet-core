@@ -5,6 +5,8 @@
 ;;;           CABINEO_DRAW   (draws the pattern board by board, in the frame
 ;;;                           each board is EXPORTED in: the horizontal boards
 ;;;                           OUTSIDE FACE UP, the sides inside face up)
+;;;           CABINEO_BOX    (T79 F14: prints one drawer box's Cabineo 12,
+;;;                           section D.2c)
 ;;; Requires: nothing. Pure functions, princ and entmake; SKYLON_COMMON is not
 ;;;           loaded because no drawing helper of it is called here.
 ;;;========================================
@@ -715,6 +717,246 @@
 (defun cabineo-back-board-pt (pk s t)
   (list (+ (nth 2 pk) (* (nth 3 pk) (float s))) (+ (nth 4 pk) (float t))))
 
+;;; D.2c THE DRAWER BOX (T79 F14, the owner, 18.10.2026, all DECIDED): "jak
+;;; mamy wybrane jakakolwiek funkcje laczenia czy dog bones czy inne zawsze
+;;; projektuj cabineo na szuflady, na przednich i tylnych sciankach dodawaj
+;;; cabineo jeden do 100 mm, 2 powyzej 100 mm, minimum odleglosc to 25 od
+;;; gory i dolu"; at 14:45: "cabineo musi byc na frontowej i tylnej sciance,
+;;; czyli nawiercanie w bokach bedzie liczone od gory boxa bo [dol] jest
+;;; inny"; at 14:51, the positions from the top: "tak"; Cabineo 12: "tak";
+;;; the tall boxes: "przy wysokich nie rozsuwaj"; the bottom: "tak, bo jest
+;;; wsuwane wiec nie ma po co dodawac cabineo".
+;;;
+;;; WHICH BOX. Whenever the unit NAMES a joint system at all (puzzle, dowel,
+;;; biscuit or Cabineo; the store names one on every unit a person builds),
+;;; the drawer box is joined with Cabineo 12, whatever joins the carcass: the
+;;; carcass keeps its own system, the box always takes Cabineo 12 (the side is
+;;; the counterpart, 18 >= 13; the wall carries the connector, 18 >= 12; page
+;;; 1, Applications). A kit called with no system named (a bare kit, every
+;;; fossil golden) cuts its box as KIT_BUDR_FULL.lsp and KIT_WARDROBE_FULL.lsp
+;;; do, with no joint at all. A box BOUGHT ready (the wizard's drawer_boxes
+;;; "ready") is not cut, so it is not machined either.
+;;;
+;;; THE BOX, as the kits cut it: two SIDES (SL, SR), sideL long and sideH
+;;; high; two WALLS, the BOX-FRONT (BF) and the BOX-BACK (BB), wallL long
+;;; between the sides' inside faces and hw high; all four GB thick (the box
+;;; board, 18). The BOTTOM slides into the sides' groove and carries nothing of
+;;; this section (the owner: "wsuwane"). The walls stand ON the bottom: a
+;;; wall's lower edge is 15 + GB (the runner strip and the bottom, 33) above
+;;; the side's lower edge, and hw = sideH - 15 - GB - 1, so a wall's TOP edge
+;;; stands dTop = 1 BELOW the side's top edge:
+;;;
+;;;     boxWallY + hw = boxY + sideH - dTop
+;;;
+;;; THE TOPS ARE NOT FLUSH. CLAUDE.md T79 F14 wrote them flush; the kits'
+;;; arithmetic leaves 1 mm of air over the wall (boxFrontHeightExtra), and the
+;;; LISP follows the kits: each board is measured from its OWN top edge and the
+;;; side's holes add dTop, so the screw meets its hole.
+;;;
+;;; THE JOINT. A wall's END stands on a side's inside FACE, as the TOP's end
+;;; stands on a carcass side (section C), so the WALL carries the POCKET and
+;;; the SIDE the dia 5 hole. The pocket is milled into the wall's OUTSIDE face
+;;; at each end, the channel open to the end: the BOX-FRONT's outside face is
+;;; hidden behind the drawer front, the BOX-BACK's faces the carcass back, and
+;;; the carcass is cut from its outside too ("ciecie nie od srodka korpusu
+;;; tylko do zewnatrz"). So BF and BB are "outside" boards, exported OUTSIDE
+;;; FACE UP through the one reflection of section C, W the wall's DRAWN width.
+;;; The screw axis stands ax (cabineo-axis-from-outside: 5.5 under the owner's
+;;; skim) inside the wall's outside face, and that face is flush with the
+;;; side's END (the BOX-FRONT with the side's front end, the BOX-BACK with its
+;;; back end), so the side's holes stand ax from that end, in its inside face,
+;;; X deep (cabineo-hole-depth: 12). FOUR JOINTS PER BOX: SL-BF, SR-BF, SL-BB,
+;;; SR-BB.
+;;;
+;;; THE SET-OUT is the owner's, not section B's: measured FROM THE WALL'S TOP
+;;; EDGE along the joint, whose length is the wall's height hw:
+;;;   hw <= 100 (onePerJointUpToMm)   ONE connector, at hw / 2
+;;;   hw >  100                       TWO, at 25 (fromEdgeMm) from the top and
+;;;                                   at hw - 25 (25 above the wall's bottom
+;;;                                   edge), never spread for a taller wall
+;;; 25 is a minimum and a position both; the sheet's min. 20 holds under it.
+;;; The side's holes stand at the SAME heights, measured from the side's top
+;;; edge: dTop + offset.
+;;;
+;;; REFUSED IN WORDS, the box keeping no Cabineo (cabineo-box-refusal): a wall
+;;; under 2 x 25 (one connector on its middle would stand under the owner's 25
+;;; from its edges); two connectors farther apart than the sheet's max. 300;
+;;; whatever cabineo-refusal says of the two boards, asked with the box's own
+;;; numbers (Cabineo 12, its 25 as the end offset; the carcass's pitch and the
+;;; T78 minimum of two per joint are the carcass's set-out and not the box's).
+;;; A pocket meeting a hole the wall already carries (the BUDR BOX-FRONT's two
+;;; facade pilot holes, 50 above its lower edge and 50 from each end, which
+;;; stay where they are) is refused in the carcass's grammar
+;;; (cabineo-box-pilot-refusal). The engine asks the side's own cuts as well
+;;; (its section Z2, as section Z asks a carcass side's).
+;;;
+;;; THE FRAMES, as the kits draw the boards (engine/joinery.js panelPlacement
+;;; maps them into the cabinet). The pattern is symmetric about each board's
+;;; mid-length, so the direction along a board moves no hole and only decides
+;;; the joints' names.
+;;;   rotated (KIT_BUDR_FULL lays the box out along its height):
+;;;     SL  x UP the side from its lower edge, y from its FRONT end (0) to the back (sideL)
+;;;     SR  x up, y from its BACK end (0) to the front
+;;;     BF  x UP the wall from its lower edge, y from its SL end (0) to its SR end (wallL)
+;;;     BB  x up, y from its SR end (0) to its SL end
+;;;   not rotated (KIT_WARDROBE_FULL lays the box out along its length):
+;;;     SL  x from its BACK end (0) to the front (sideL), y UP
+;;;     SR  x from its FRONT end (0) to the back, y up
+;;;     BF  x from its SR end (0) to its SL end (wallL), y UP
+;;;     BB  x from its SL end (0) to its SR end, y up
+;;; A box joint carries the back joint's fields (D.2b) and one more, "along":
+;;; the holes stand in the SIDE at (hx0 + hdx off, hy0 + hdy off), the side's
+;;; top and dTop already in hx0 or hy0; the pocket runs in the WALL along "y"
+;;; (the rotated wall: D.3's record) or "x" (the other: D.2b's record) from
+;;; endAt in dirIn, at the across coordinate acrossFrom + acrossDir off, which
+;;; is hw - off (the offsets count down from the wall's top edge).
+(defun cabineo-box-rule ( / )
+  (list
+    (cons "variant" "12")            ;; the owner, 18.10.2026 (14:51): Cabineo 12 on the box, "tak"
+    (cons "onePerJointUpToMm" 100.0) ;; the owner: "jeden do 100 mm, 2 powyzej 100 mm"
+    (cons "fromEdgeMm" 25.0)))       ;; the owner: "minimum odleglosc to 25 od gory i dolu"
+
+;;; The box's profile: the company's machining (mounting, option, skim, hole
+;;; depth, the gate) with the box's own variant and its 25 as the end offset;
+;;; the carcass's pitch and minimum of two are set where cabineo-refusal has
+;;; nothing to say of them (the box's own set-out is asked below).
+(defun cabineo-box-profile (prof rule / out kv)
+  (foreach kv prof
+    (setq out (cons
+      (cond
+        ((= (car kv) "variant") (cons "variant" (cabineo-get rule "variant")))
+        ((= (car kv) "endOffsetMm") (cons "endOffsetMm" (cabineo-get rule "fromEdgeMm")))
+        ((= (car kv) "pitchMm") (cons "pitchMm" (cabineo-get prof "maxSpacingMm")))
+        ((= (car kv) "minPerJoint") (cons "minPerJoint" 2))
+        (T kv))
+      out)))
+  (reverse out))
+
+;;; The offsets along one box joint, FROM THE WALL'S TOP EDGE.
+(defun cabineo-box-positions (hw rule / e)
+  (setq hw (float hw) e (cabineo-get rule "fromEdgeMm"))
+  (if (<= hw (cabineo-get rule "onePerJointUpToMm"))
+    (list (/ hw 2.0))
+    (list e (- hw e))))
+
+;;; One box joint: the D.2b fields, the channel's axis named, always "outside".
+(defun cabineo-box-joint (name len side hx0 hy0 hdx hdy board along endAt dirIn aFrom aDir bW bT)
+  (list
+    (cons "name" name) (cons "len" (float len)) (cons "ref" "TOP") (cons "kind" "box")
+    (cons "side" side) (cons "hx0" (float hx0)) (cons "hy0" (float hy0))
+    (cons "hdx" (float hdx)) (cons "hdy" (float hdy))
+    (cons "board" board) (cons "face" "outside") (cons "along" along)
+    (cons "endAt" (float endAt)) (cons "dirIn" (float dirIn))
+    (cons "acrossFrom" (float aFrom)) (cons "acrossDir" (float aDir))
+    (cons "boardW" (float bW)) (cons "boardT" (float bT))))
+
+;;; The four joints of one box. top = sideH - dTop is the side's coordinate of
+;;; the wall's top edge; ax the screw axis inside the wall's outside face;
+;;; rotated T for the box KIT_BUDR_FULL draws, nil for KIT_WARDROBE_FULL's.
+(defun cabineo-box-table (sideL sideH wallL hw dTop GB ax rotated / top)
+  (setq sideL (float sideL) sideH (float sideH) wallL (float wallL) hw (float hw)
+        dTop (float dTop) GB (float GB) ax (float ax))
+  (setq top (- sideH dTop))
+  (if rotated
+    (list
+      ;;                 name    len side hx0          hy0           hdx  hdy  board along endAt dirIn across   W     T
+      (cabineo-box-joint "SL-BF" hw  "SL" top          ax            -1.0 0.0  "BF"  "y"   0.0   1.0   hw -1.0  hw    GB)
+      (cabineo-box-joint "SR-BF" hw  "SR" top          (- sideL ax)  -1.0 0.0  "BF"  "y"   wallL -1.0  hw -1.0  hw    GB)
+      (cabineo-box-joint "SL-BB" hw  "SL" top          (- sideL ax)  -1.0 0.0  "BB"  "y"   wallL -1.0  hw -1.0  hw    GB)
+      (cabineo-box-joint "SR-BB" hw  "SR" top          ax            -1.0 0.0  "BB"  "y"   0.0   1.0   hw -1.0  hw    GB))
+    (list
+      (cabineo-box-joint "SL-BF" hw  "SL" (- sideL ax) top           0.0 -1.0  "BF"  "x"   wallL -1.0  hw -1.0  wallL GB)
+      (cabineo-box-joint "SR-BF" hw  "SR" ax           top           0.0 -1.0  "BF"  "x"   0.0   1.0   hw -1.0  wallL GB)
+      (cabineo-box-joint "SL-BB" hw  "SL" ax           top           0.0 -1.0  "BB"  "x"   0.0   1.0   hw -1.0  wallL GB)
+      (cabineo-box-joint "SR-BB" hw  "SR" (- sideL ax) top           0.0 -1.0  "BB"  "x"   wallL -1.0  hw -1.0  wallL GB))))
+
+;;; A box joint's pockets in the wall's own frame: along "y" D.3's record
+;;; (board x yEnd dirIn W T joint off), along "x" D.2b's record (board "x" xEnd
+;;; dirIn y W T joint off); either way the across coordinate is hw - off.
+(defun cabineo-box-pockets (jt offs / out off a)
+  (foreach off offs
+    (setq a (+ (cabineo-jget jt "acrossFrom") (* (cabineo-jget jt "acrossDir") off)))
+    (setq out (cons
+      (if (= (cabineo-jget jt "along") "y")
+        (list (cabineo-jget jt "board") a (cabineo-jget jt "endAt") (cabineo-jget jt "dirIn")
+              (cabineo-jget jt "boardW") (cabineo-jget jt "boardT") (cabineo-jget jt "name") off)
+        (list (cabineo-jget jt "board") "x" (cabineo-jget jt "endAt") (cabineo-jget jt "dirIn") a
+              (cabineo-jget jt "boardW") (cabineo-jget jt "boardT") (cabineo-jget jt "name") off))
+      out)))
+  (reverse out))
+
+;;; A box joint's holes in the SIDE's inside face: ((side "FACE" x y dia depth) ...).
+(defun cabineo-box-holes (jt offs prof sheet / out off)
+  (foreach off offs
+    (setq out (cons (list (cabineo-jget jt "side") "FACE"
+                          (+ (cabineo-jget jt "hx0") (* (cabineo-jget jt "hdx") off))
+                          (+ (cabineo-jget jt "hy0") (* (cabineo-jget jt "hdy") off))
+                          (cabineo-path sheet (list "counterpartHole" "diaMm"))
+                          (cabineo-hole-depth prof sheet))
+                    out)))
+  (reverse out))
+
+;;; A box pocket's sheet-frame point (s t) in its wall's own frame, either record.
+(defun cabineo-box-board-pt (pk s t)
+  (if (eq (type (nth 1 pk)) 'STR) (cabineo-back-board-pt pk s t) (cabineo-board-pt pk s t)))
+
+;;; A box pocket's joint name, either record.
+(defun cabineo-box-pk-joint (pk)
+  (if (eq (type (nth 1 pk)) 'STR) (nth 7 pk) (nth 6 pk)))
+
+;;; The box refused in words before any pocket, or nil. prof is the company's
+;;; profile, rule (cabineo-box-rule), sideT and wallT the box board, hw the
+;;; wall's height.
+(defun cabineo-box-refusal (prof sheet rule sideT wallT hw / bp out e one gap)
+  (setq bp (cabineo-box-profile prof rule) hw (float hw)
+        e (cabineo-get rule "fromEdgeMm") one (cabineo-get rule "onePerJointUpToMm"))
+  (setq out (cabineo-refusal bp sheet sideT wallT))
+  (if (and (<= hw one) (< (/ hw 2.0) e))
+    (setq out (append out (list (strcat "the box wall is " (rtos hw 2 1) " high: one Cabineo on its middle would stand "
+                                        (rtos (/ hw 2.0) 2 1) " from its top and bottom edges, under the owner's minimum "
+                                        (rtos e 2 0))))))
+  (setq gap (- hw e e))
+  (if (and (> hw one) (> gap (cabineo-get prof "maxSpacingMm")))
+    (setq out (append out (list (strcat "the box wall is " (rtos hw 2 1) " high: its two Cabineo would stand "
+                                        (rtos gap 2 1) " apart, over the sheet's max. " (rtos (cabineo-get prof "maxSpacingMm") 2 0)
+                                        " between connectors (page 1, Assembly panel 1), and the owner does not spread them")))))
+  out)
+
+;;; A box pocket's rectangle in its wall's own frame, (x1 y1 x2 y2): the union
+;;; of the lobes' box (cabineo-outline-box) and the recess's (cabineo-recess-box).
+(defun cabineo-box-pocket-rect (pk prof sheet / bx rc a b)
+  (setq bx (cabineo-outline-box (cabineo-option prof sheet))
+        rc (cabineo-recess-box (cabineo-recess prof sheet)))
+  (if rc
+    (setq bx (list (min (nth 0 bx) (nth 0 rc)) (min (nth 1 bx) (nth 1 rc))
+                   (max (nth 2 bx) (nth 2 rc)) (max (nth 3 bx) (nth 3 rc)))))
+  (setq a (cabineo-box-board-pt pk (nth 0 bx) (nth 1 bx))
+        b (cabineo-box-board-pt pk (nth 2 bx) (nth 3 bx)))
+  (list (min (car a) (car b)) (min (cadr a) (cadr b)) (max (car a) (car b)) (max (cadr a) (cadr b))))
+
+;;; A box pocket meeting a hole its wall already carries: the sentence, or nil.
+;;; holes: ((x y dia) ...) in the wall's own frame; each is asked by its box.
+(defun cabineo-box-pilot-refusal (pk prof sheet holes wall / r out h q)
+  (setq r (cabineo-box-pocket-rect pk prof sheet))
+  (foreach h holes
+    (setq q (/ (caddr h) 2.0))
+    (if (and (null out)
+             (cabineo-footprint-clash r (list (- (car h) q) (- (cadr h) q) (+ (car h) q) (+ (cadr h) q))))
+      (setq out (strcat "the Cabineo pocket of " (cabineo-box-pk-joint pk) " on " wall
+                        " (x " (rtos (nth 0 r) 2 1) " to " (rtos (nth 2 r) 2 1)
+                        ", y " (rtos (nth 1 r) 2 1) " to " (rtos (nth 3 r) 2 1) ") meets the hole at "
+                        (rtos (car h) 2 1) ", " (rtos (cadr h) 2 1)
+                        "; SKYLON_JOINTS_CABINEO.lsp has no answer for it yet, so the box keeps no Cabineo"))))
+  out)
+
+;;; The box's order line (section F's shape): one Cabineo 12 per pocket, 4 a
+;;; box to a 100 wall and 8 above, the screw with it. The owner named the
+;;; connector and nothing else for the box, so no cover cap is ordered for it.
+(defun cabineo-box-bom-lines (prof rule sheet nPockets / v)
+  (setq v (cabineo-variant (cabineo-box-profile prof rule) sheet))
+  (list (list (cabineo-get v "label") (cabineo-get v "article") nPockets
+              "drawer box: one per pocket, 4 a box to a 100 wall, 8 above; article not on the sheet, owner to supply")))
+
 ;;; D.3 THE POCKETS of one joint: one record per offset, on the horizontal
 ;;; board, in ITS OWN (inside) frame:
 ;;;   ((board x yEnd dirIn W T joint off) ...)
@@ -1266,6 +1508,49 @@
         (setq bx (+ bx bw gap)))))
   (princ))
 
+;;; G.3 THE BOX COMMAND (T79 F14). CABINEO_BOX prints one drawer box's
+;;; Cabineo (section D.2c), board by board. Defaults are KIT_BUDR_FULL's
+;;; first box (side 490 x 237, wall 518, board 18, drawn along its height);
+;;; the wall is the kits' own: side - 15 - board - 1, its top 1 under the
+;;; side's.
+(defun c:CABINEO_BOX ( / prof sheet rule bp sideL sideH wallL GB hw dTop rot why offs jt pk h n)
+  (setq prof (cabineo-profile) sheet (cabineo-sheet) rule (cabineo-box-rule))
+  (setq bp (cabineo-box-profile prof rule))
+  (setq sideL (getreal "\nBox SIDE length (the box depth) [mm] <490>: "))
+  (if (or (null sideL) (<= sideL 0.0)) (setq sideL 490.0))
+  (setq sideH (getreal "\nBox SIDE height [mm] <237>: "))
+  (if (or (null sideH) (<= sideH 0.0)) (setq sideH 237.0))
+  (setq wallL (getreal "\nBox WALL length (between the sides) [mm] <518>: "))
+  (if (or (null wallL) (<= wallL 0.0)) (setq wallL 518.0))
+  (setq GB (getreal "\nBox board [mm] <18>: "))
+  (if (or (null GB) (<= GB 0.0)) (setq GB 18.0))
+  (initget "Height Length")
+  (setq rot (/= (getkword "\nDrawn along its [Height (KIT_BUDR_FULL)/Length (KIT_WARDROBE_FULL)] <Height>: ") "Length"))
+  (setq hw (- sideH 15.0 GB 1.0) dTop 1.0)
+  (princ (strcat "\nCABINEO ON THE DRAWER BOX: Cabineo " (cabineo-get rule "variant") "  wall " (rtos hw 2 1)
+                 " high, measured from its top  mounting " (cabineo-get bp "mounting") "  machining " (cabineo-get bp "machining")))
+  (if (cabineo-gate bp) (princ (strcat "\nGATE: " (cabineo-gate bp) ". No machine file may carry these pockets.")))
+  (setq why (cabineo-box-refusal prof sheet rule GB GB hw))
+  (if why
+    (foreach h why (princ (strcat "\nREFUSED: " h)))
+    (progn
+      (setq offs (cabineo-box-positions hw rule) n 0)
+      (princ "\n  offsets from the wall's top:")
+      (foreach h offs (princ (strcat " " (rtos h 2 2))))
+      (foreach jt (cabineo-box-table sideL sideH wallL hw dTop GB (cabineo-axis-from-outside bp sheet) rot)
+        (princ (strcat "\n" (cabineo-jget jt "name") "  pockets in " (cabineo-jget jt "board") " (OUTSIDE FACE UP, W "
+                       (rtos (cabineo-jget jt "boardW") 2 2) "), holes in " (cabineo-jget jt "side")))
+        (foreach pk (cabineo-box-pockets jt offs)
+          (setq n (1+ n))
+          (princ "\n    pocket lobes (own frame):")
+          (foreach h (cabineo-lobe-centres (cabineo-option bp sheet))
+            (princ (strcat " " (cabineo-pt (cabineo-box-board-pt pk h 0.0))))))
+        (foreach h (cabineo-box-holes jt offs bp sheet) (cabineo-print-hole h)))
+      (princ (strcat "\nPOCKETS: " (itoa n) "  HOLES: " (itoa n) "  (the bottom carries none: it slides in)"))
+      (foreach h (cabineo-box-bom-lines prof rule sheet n)
+        (princ (strcat "\nBOM: " (nth 0 h) "  x" (itoa (nth 2 h)) "  (" (nth 3 h) ")")))))
+  (princ))
+
 ;;;========================================
 ;;; H. NUMBERS: a BUD 600 x 770 x 558, G 18, Cabineo 12, flushCap, cutter12
 ;;;========================================
@@ -1435,6 +1720,67 @@
 ;;; a 282 top; S = 182 < 250, n = max(2, 1 + 1) = 2: pockets at 50 and 232,
 ;;; one gap of 182. Under 118.8 (S < 18.8, the recess width) a joint gets one
 ;;; pocket on its centre.
+;;;
+;;; H.1 THE DRAWER BOX (D.2c, T79 F14): the owner's three layers of H.0
+;;; (drill15, flush, the 0.5 skim, ax 5.5, the hole 12 deep), Cabineo 12 on
+;;; every box, GB 18. The box numbers are the kits' own, as the engine cuts
+;;; them; every one below was checked against engine/cabinet.js.
+;;;
+;;; THE BUDR DEFAULT (KIT_BUDR_FULL: 600 x 770 x 558, front 25, 3 drawers;
+;;; the box drawn rotated, x UP every board):
+;;;   D1  side 237 x 490, wall 203 x 518 (hw = 237 - 15 - 18 - 1 = 203);
+;;;       boxY 31.5, the wall's lower edge 64.5 (= 31.5 + 15 + 18), the wall's
+;;;       top 267.5, the side's top 268.5: boxWallY + hw = boxY + sideH - 1,
+;;;       dTop = 1 (NOT flush), top = 237 - 1 = 236
+;;;       hw 203 > 100: TWO per joint, at 25 and 178 from the wall's top
+;;;       BOX-FRONT, own frame (x up from its lower edge, y from its SL end):
+;;;         pocket axes x = 203 - 25 = 178 and 203 - 178 = 25
+;;;         SL end (y = 0, into +y): dia 15 at (178, 3.6) (178, 14.8) (178, 26)
+;;;           and (25, 3.6) (25, 14.8) (25, 26), 11.5 deep from the OUTSIDE face;
+;;;           skims x 169.65 .. 186.35 and 16.65 .. 33.35, y 0 .. 34.35, 0.5 deep
+;;;         SR end (y = 518, into -y): dia 15 at y 514.4, 503.2, 492; skims
+;;;           y 483.65 .. 518
+;;;         EXPORT (OUTSIDE FACE UP), x' = 203 - x: 178 lands at 25, 25 at 178
+;;;         the facade pilots stay at (50, 50) and (50, 468): x 48.5 .. 51.5,
+;;;           clear of every pocket (x 16.65 .. 33.35, y 0 .. 34.35 and
+;;;           483.65 .. 518 at the lower axis): no refusal
+;;;       BOX-BACK: the same set, its y from its SR end
+;;;       holes, dia 5, 12 deep, in the sides' inside faces at the same heights,
+;;;         measured from the side's top: x = 236 - 25 = 211 and 236 - 178 = 58
+;;;         SL (y from its FRONT end): y 5.5 (SL-BF) and 484.5 (SL-BB)
+;;;         SR (y from its BACK end):  y 484.5 (SR-BF) and 5.5 (SR-BB)
+;;;       8 pockets (24 dia 15 holes, 8 skims), 8 holes, 8 connectors
+;;;   D2  side 178, wall 144: 25 and 119 from the top; pocket axes x 119 and
+;;;       25; holes x 177 - 25 = 152 and 177 - 119 = 58; 8 connectors
+;;;   D3  side 118, wall 84 <= 100: ONE per joint at 42; pocket axis x 42
+;;;       (EXPORT x' = 84 - 42 = 42); skim x 33.65 .. 50.35, y 0 .. 34.35,
+;;;       clear of the pilot at (50, 50) by y; holes x 117 - 42 = 75 at y 5.5
+;;;       and 484.5; 4 connectors
+;;;   THE BUDR: 12 joints, 20 pockets (60 dia 15 holes, 20 skims), 20 dia 5
+;;;   holes, 20 x Cabineo 12; no cover cap; the bottoms carry nothing.
+;;;
+;;; A WARDROBE BOX WITH A WALL OF 90 (KIT_WARDROBE_FULL, WARDROBE 1200, three
+;;; internal drawers with a 160 front; the box drawn lying, x ALONG every
+;;; board): side 440 x 124 (124 = 160 - 36), wall 1022 x 90 (90 = 124 - 15
+;;; - 18 - 1); dTop = 1, top = 123
+;;;   hw 90 <= 100: ONE per joint at 45 from the wall's top
+;;;   BOX-FRONT, own frame (x from its SR end, y up): pocket axis y = 90 - 45
+;;;     = 45; SR end (x = 0, into +x): dia 15 at (3.6, 45) (14.8, 45) (26, 45);
+;;;     SL end (x = 1022, into -x): (1018.4, 45) (1007.2, 45) (996, 45);
+;;;     skims y 36.65 .. 53.35, x 0 .. 34.35 and 987.65 .. 1022
+;;;     EXPORT x' = 1022 - x: the SR end's lobes land at 1018.4, 1007.2, 996
+;;;   holes at y = 123 - 45 = 78: SL (x from its BACK end) x 434.5 (SL-BF)
+;;;     and 5.5 (SL-BB); SR (x from its FRONT end) x 5.5 (SR-BF), 434.5 (SR-BB)
+;;;   4 connectors a box, 12 for the three
+;;; The same wardrobe at the default 200 front: side 164, wall 130 > 100,
+;;; TWO at 25 and 105 from the top: pocket axes y 105 and 25, holes y 163 -
+;;; 25 = 138 and 163 - 105 = 58; 8 a box, 24 for the three.
+;;;
+;;; THE THRESHOLDS. A wall of 100 takes one (at 50); 101 takes two (at 25
+;;; and 76). A wall under 50 is refused: the shoe drawer's (side 80, wall 46)
+;;; would stand 23 from its edges, under the owner's 25 (the sheet's 20 would
+;;; hold; the owner's minimum does not), and the box keeps no Cabineo. Two
+;;; connectors stand over the sheet's 300 apart only on a wall over 350.
 
-(princ "\nSKYLON_JOINTS_CABINEO loaded. Type CABINEO_JOINTS to print the pattern, CABINEO_DRAW to draw it.")
+(princ "\nSKYLON_JOINTS_CABINEO loaded. Type CABINEO_JOINTS to print the pattern, CABINEO_DRAW to draw it, CABINEO_BOX for a drawer box.")
 (princ)

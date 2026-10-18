@@ -251,3 +251,33 @@ for (const [kit, marks] of [
     assert.ok(/^[\x00-\x7F]*$/.test(text), `${kit} is ASCII`);
   });
 }
+
+// T79 F9 · CLAUDE.md T79 FROZEN 2, again: KIT_NOTCH.lsp and KIT_RECESS.lsp are
+// amended under licence (the owner, 18.10.2026: *"nie wycina mi panelu
+// bocznego do recess a powinno."*): D23 THE END PANEL FOLLOWS ITS SIDE with
+// section H3 and its NUMBERS block I4; D21 THE END PANEL GROWS WITH ITS SIDE
+// with its two routines and its NUMBERS block F2. Both balance by name.
+test('T79 F9 · KIT_NOTCH.lsp balances 0/0 with D23, section H3 and its NUMBERS block I4', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_NOTCH.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D23 THE END PANEL FOLLOWS ITS SIDE\./);
+  assert.match(text, /;;; H3\. THE END PANEL FOLLOWS ITS SIDE \(D23, 18\.10\.2026\)/);
+  assert.match(text, /;;; I4\. NUMBERS - THE END PANEL/);
+  assert.match(text, /\(defun notch-end-cut \(ch g nw nd nh corner hand sb sf ph pb/);
+  assert.match(text, /\(defun notch-end-outline \(ew ph cuts/);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+});
+
+test('T79 F9 · KIT_RECESS.lsp balances 0/0 with D21, recess-end-reach-p, recess-end-cuts and its NUMBERS block F2', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_RECESS.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D21 THE END PANEL GROWS WITH ITS SIDE\./);
+  assert.match(text, /\(defun recess-end-reach-p \(hand rx0 rx1 cw et\)/);
+  assert.match(text, /\(defun recess-end-cuts \(ch ez0 ez1 ed hand ph pb rz0 rz1/);
+  assert.match(text, /;;; F2\. NUMBERS - THE END PANEL/);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+});

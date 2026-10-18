@@ -47,7 +47,7 @@ import { hoodClearanceMessage, hoodClearanceRows, hoodRaiseTo } from '../engine/
 // That law lives in one place and every path below reads it from there.
 import {
   boxSpansOnWall,
-  clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, footprintPads,
+  clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, endPanelPads, footprintPads,
   backStandoff, clampElementDepth, elementDepthBounds, freeSlotOnWall, insetPads, shelfBand,
   shelfBounds, unitIssues, unitPlanSpan, unitSpan, slotTakes,
   wallClearance,
@@ -81,7 +81,7 @@ import { migrateWallElement, oneSlopePerSide, wallElements } from '../lib/wallEl
 // typed) and the extension's own refusal, asked of a derived band before the
 // engine ever sees it (KIT_RECESS.lsp D3, D4).
 import { recessBand } from '../lib/wallElements.js';
-import { recessRefusal } from '../engine/extension.js';
+import { recessRefusal, recessEndReachP } from '../engine/extension.js';
 // ─── TURN 46 (CLAUDE.md, "The slope, in numbers"): ONE ceilingAt ────────────
 // The store is where a cabinet meets a room, so it is where the ceiling line
 // becomes a number the engine and the clamp can use. Both come out of the same
@@ -990,6 +990,13 @@ function recessExtensionFor(unit, state = useProjectStore.getState(), profile = 
   const cx = Number(unit.position.x_mm) || 0;
   const base = unitBase(unit, profile);
   const roomH = Number(state.project.room?.height) || 2500;
+  // T79 F9 (KIT_RECESS.lsp D21) · an END panel grows with its side only where
+  // the band reaches PAST ITS OUTER FACE: the band tested against -padL ..
+  // W + padR (the pads' own x), not 0 .. W. The hands it reaches travel to the
+  // engine as `ends`; a band ending inside the panel's thickness grows the side
+  // and leaves the panel on the wall line. The owner: *"nie wycina mi panelu
+  // bocznego do recess a powinno."*
+  const pads = endPanelPads(unit, unit.params.front_t);
   let best = null;
   for (const e of mine) {
     const rx0 = Number(e.x_mm) - cx;
@@ -1005,11 +1012,43 @@ function recessExtensionFor(unit, state = useProjectStore.getState(), profile = 
     const d = Number(e.depth) || 0;
     if (recessRefusal(W, D, H, G, x0, x1, z0, z1, d, false, K)) continue;
     const area = (x1 - x0) * (z1 - z0);
+    const ends = [
+      ...(x0 === 0 && pads.left > 0 && recessEndReachP('L', rx0, rx1, W, pads.left) ? ['L'] : []),
+      ...(x1 === W && pads.right > 0 && recessEndReachP('R', rx0, rx1, W, pads.right) ? ['R'] : []),
+    ];
     if (!best || area > best.area) {
-      best = { area, ext: { x0: roundTo(x0, 4), x1: roundTo(x1, 4), z0: roundTo(z0, 4), z1: roundTo(z1, 4), d: roundTo(d, 4), for: 'a recess in this wall' } };
+      best = {
+        area,
+        ext: {
+          x0: roundTo(x0, 4), x1: roundTo(x1, 4), z0: roundTo(z0, 4), z1: roundTo(z1, 4), d: roundTo(d, 4), for: 'a recess in this wall',
+          ...(ends.length ? { ends } : {}),
+          // D21: where the band is clipped to the carcass the recess's own bottom and top go too, so a grown END
+          // stops on them and never runs into the wall under or over the recess.
+          ...(ends.length && z0 === 0 && Number.isFinite(rz0) ? { rz0: roundTo(rz0, 4) } : {}),
+          ...(ends.length && z1 === H && Number.isFinite(rz1) ? { rz1: roundTo(rz1, 4) } : {}),
+        },
+      };
     }
   }
   return best ? best.ext : null;
+}
+
+/**
+ * T79 F9 (KIT_RECESS.lsp D21) · WHOLLY INSIDE, the recess's own bottom and top in the carcass frame (rz0, rz1), the
+ * finite ones only, for a unit with an END panel: its END reaches the recess back with the sides and keeps to the
+ * wall line under or over the recess, never in the wall. Derived here and never stored; null otherwise.
+ */
+function wholeRecessBandFor(unit, state = useProjectStore.getState(), profile = getCabinetProfile()) {
+  if (!unit || !(Number(unit.params?.recess_mm) > 0) || !(unit.params?.end_panels || []).length) return null;
+  const e = wholeRecessOf(unit, state, profile);
+  if (!e) return null;
+  const base = unitBase(unit, profile);
+  const [b, t] = recessBand(e, Number(state.project.room?.height) || 2500);
+  const band = {
+    ...(e.bottom_mm == null ? {} : { rz0: roundTo(b - base, 4) }),
+    ...(e.top_mm == null ? {} : { rz1: roundTo(t - base, 4) }),
+  };
+  return Object.keys(band).length ? band : null;
 }
 
 function paramsForEngine(unit, design = null) {
@@ -1034,6 +1073,7 @@ function paramsForEngine(unit, design = null) {
   // 15.10.2026 (the evening): the extension the room asks for (a recess the
   // cabinet stands partly in), derived here and never stored.
   const recessExtension = recessExtensionFor(unit);
+  const recessBandWhole = wholeRecessBandFor(unit);
   const elements = useProjectStore.getState().runElements?.[unit.id] || null;
   return {
     ...p,
@@ -1041,6 +1081,7 @@ function paramsForEngine(unit, design = null) {
     // and never stored, on the same channel the hand's notch travels on.
     ...(obstacleNotch ? { notch: obstacleNotch } : {}),
     ...(recessExtension ? { extension: recessExtension } : {}),
+    ...(recessBandWhole ? { recess_band: recessBandWhole } : {}),
     ...(elements ? {
       run_top_infill: elements.top_infill,
       run_plinth: elements.plinth,

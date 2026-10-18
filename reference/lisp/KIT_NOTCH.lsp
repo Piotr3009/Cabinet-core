@@ -473,6 +473,49 @@
 ;;;     rebate along the whole edge: skirting at the bottom-back, coving at
 ;;;     the top-back."
 ;;;
+;;; 18.10.2026, THE OWNER'S LIST (CLAUDE.md T79 F9):
+;;;
+;;; D23 THE END PANEL FOLLOWS ITS SIDE. The owner: *"nie wycina mi panelu
+;;;     bocznego do recess a powinno."*  CLAUDE.md T79 F9: "the end panel is
+;;;     cut by the SAME outline as the side it covers"; notched, "the END
+;;;     panel on the notched side takes the side's cnc.notch (and the F5 edge
+;;;     notch)". The END PANEL (END-L, END-R) is the drawing app's masking
+;;;     board on the OUTSIDE of a side, cut from the doors' sheet; no parent
+;;;     kit draws it, and until today it stayed a plain rectangle beside any
+;;;     cut, standing in the obstacle the side was cut round. Now (H3):
+;;;       ITS FRAME  its side's: END-L as drawBUL, x from the FRONT; END-R as
+;;;                  drawBUR, x from the BACK; y up from its own underside.
+;;;                  Its numbers in the carcass's words: ew deep, ph high, sb
+;;;                  behind the carcass back face (the wall gap and the
+;;;                  inset), sf in front of the front face (the door gap and
+;;;                  the door), pb below the underside (its drop to the floor,
+;;;                  0 on a wall unit).
+;;;       THE CORNER its side loses, it loses: the same corner name and the
+;;;                  same anchor (the floor, the top, the whole height), run
+;;;                  on to its own underside or top where the side's cut meets
+;;;                  the carcass's (an END dropped to the floor loses the
+;;;                  corner down to the floor; one run up to the ceiling loses
+;;;                  a corner from the top up to it): notch-end-h.
+;;;       ITS CUT FACE stands where the obstacle's keep-out begins (D2). At a
+;;;                  boxed back corner that is the STEP's back face, nd in
+;;;                  front of the carcass back face, so the END covers the
+;;;                  STEP's end as it covers the BACK's (w = sb + nd). A rebate
+;;;                  (D3) and the edge notch (D22) have no board closing them,
+;;;                  so the END is flush with the side's cut face (sb + g + nd,
+;;;                  sb + g + ed: the BACK's g goes with the cut). At a front
+;;;                  corner or edge, flush with the side's cut face, nd or ed
+;;;                  behind the carcass front (nd + sf, ed + sf).
+;;;       FULL HEIGHT the corner is a strip: the END is that much shallower and
+;;;                  its frame starts at what is left, as the side's does.
+;;;     ONE WALK round every cut it takes (notch-end-outline: a cut is (fc w
+;;;     h) in notch-rect-outline's grammar; each row between two cut heights
+;;;     is as wide as the cuts on either hand leave it). Its inner corners get
+;;;     the CORNER_4MM mark (D9, D12) as every cut board's do; its area and
+;;;     its cut-list line are the outline's (the bounding rectangle, the true
+;;;     area). With the recess's bump on the same END (KIT_RECESS.lsp D21) a
+;;;     back cut is measured from the grown back edge. Proposed (one line to
+;;;     veto): the cut face on the STEP's back face, not flush with the side.
+;;;
 ;;;========================================
 ;;; 4. THE JOINTS ON A SHORTENED EDGE
 ;;;========================================
@@ -1949,6 +1992,94 @@
           " cannot be fixed to air. Make the notch smaller, or cut another edge."))
 
 ;;;========================================
+;;; H3. THE END PANEL FOLLOWS ITS SIDE (D23, 18.10.2026)
+;;;========================================
+;;;
+;;; The END panel in its side's frame (END-L x from the FRONT, END-R x from
+;;; the BACK), ew deep, ph high; sb behind the carcass back face, sf in front
+;;; of its front face, pb below its underside; hand "L" or "R". A cut is
+;;; (fc w h) in notch-rect-outline's grammar; nil is no cut.
+
+;;; How high a cut anchored at the carcass's floor ("floor"), top ("top") or
+;;; whole height ("full") runs on the END panel: on to its own underside or top.
+(defun notch-end-h (ch hh anchor ph pb)
+  (cond ((= anchor "full") ph)
+        ((= anchor "top") (- ph pb (- ch hh)))
+        (T (+ hh pb))))
+
+;;; The corner notch on the END panel of the notched side; nil on the other
+;;; hand. Its cut face where the keep-out begins (D23).
+(defun notch-end-cut (ch g nw nd nh corner hand sb sf ph pb / w)
+  (if (/= hand (if (notch-left-p corner) "L" "R"))
+    nil
+    (progn
+      (setq w (cond ((not (notch-back-p corner)) (+ nd sf))
+                    ((notch-boxed-p nw g) (+ sb nd))
+                    (T (+ sb g nd))))
+      (list (notch-side-fc corner (= hand "R") (notch-from-top-p ch nh))
+            w
+            (notch-end-h ch (notch-hh ch nh)
+                         (cond ((notch-full-p ch nh) "full") ((notch-from-top-p ch nh) "top") (T "floor"))
+                         ph pb)))))
+
+;;; The edge notch on EITHER END panel: nothing closes the rebate, so the cut
+;;; face is flush with the side's (D23).
+(defun edge-notch-end-cut (ch g ed eh edge hand sb sf ph pb)
+  (list (edge-notch-side-fc edge (= hand "R"))
+        (if (edge-notch-back-p edge) (+ sb g ed) (+ ed sf))
+        (notch-end-h ch eh (if (edge-notch-top-p edge) "top" "floor") ph pb)))
+
+;;; Does the cut c cover the height y of a board ph high?
+(defun notch-end-in-p (c y ph)
+  (if (notch-fc-y0 (car c)) (< y (caddr c)) (> y (- ph (caddr c)))))
+
+;;; One edge of the rows ((y0 y1 l r) ...), merged where its x stays the
+;;; same: ((x y0 y1) ...), bottom to top; k is 2 for the x0 edge, 3 for x1.
+(defun notch-end-runs (rows k / out x)
+  (setq out '())
+  (foreach w rows
+    (setq x (nth k w))
+    (if (and out (equal (car (last out)) x 1e-9))
+      (setq out (append (reverse (cdr (reverse out))) (list (list x (cadr (last out)) (cadr w)))))
+      (setq out (append out (list (list x (car w) (cadr w)))))))
+  out)
+
+;;; notch-end-outline: the END panel ew x ph less its cuts, (box pts). box is
+;;; (x0 y0 x1 y1), what it keeps in the uncut frame; pts its outline,
+;;; anticlockwise from its bottom-left corner, re-origined to box: up the x1
+;;; edge, down the x0 edge, each row between two cut heights as wide as the
+;;; cuts on either hand leave it. A plain END is notch-plain-rect; one cut is
+;;; notch-rect-outline's own polygon; nil when the cuts leave nothing.
+(defun notch-end-outline (ew ph cuts / cs ys y0 y1 mid l r rows right left pts box)
+  (setq cs '())
+  (foreach c cuts (if c (setq cs (append cs (list c)))))
+  (setq ys (list 0.0 ph))
+  (foreach c cs
+    (setq ys (cons (if (notch-fc-y0 (car c)) (min ph (caddr c)) (max 0.0 (- ph (caddr c)))) ys)))
+  (setq ys (vl-sort ys '<) rows '())
+  (while (cdr ys)
+    (setq y0 (car ys) y1 (cadr ys) ys (cdr ys))
+    (if (> y1 y0)
+      (progn
+        (setq mid (/ (+ y0 y1) 2.0) l 0.0 r ew)
+        (foreach c cs
+          (if (notch-end-in-p c mid ph)
+            (if (notch-fc-x0 (car c)) (setq l (max l (cadr c))) (setq r (min r (- ew (cadr c)))))))
+        (if (< l r) (setq rows (append rows (list (list y0 y1 l r))))))))
+  (if (null rows)
+    nil
+    (progn
+      (setq right (notch-end-runs rows 3)
+            left (reverse (notch-end-runs rows 2))
+            pts '())
+      (foreach u right (setq pts (append pts (list (list (car u) (cadr u)) (list (car u) (caddr u))))))
+      (foreach u left (setq pts (append pts (list (list (car u) (caddr u)) (list (car u) (cadr u))))))
+      (setq pts (cons (last pts) (reverse (cdr (reverse pts)))))
+      (setq box (list (apply 'min (mapcar 'caddr rows)) (car (car rows))
+                      (apply 'max (mapcar 'cadddr rows)) (cadr (last rows))))
+      (list box (mapcar '(lambda (p) (list (- (car p) (car box)) (- (cadr p) (cadr box)))) pts)))))
+
+;;;========================================
 ;;; I. NUMBERS - THE GOLDEN CASE (fixtures/golden-notch.json)
 ;;;========================================
 ;;;
@@ -2252,6 +2383,71 @@
 ;;; BOTTOM     section I's corner notch (the edge notch does not reach it)
 ;;; BUR        case B's; the corner's STEP, RETURN and LID as section I's with
 ;;;            nh 300 (the LID at 300..318, under the rebate)
+
+;;;========================================
+;;; I4. NUMBERS - THE END PANEL (D23, fixtures/golden-notch-end-panel.json)
+;;;========================================
+;;;
+;;; CLAUDE.md T79 F9: "the END outline equals the side's outline in each case".
+;;; The parent of section I with an END panel 25 thick dropped to the floor:
+;;; pb 100, ph 870; sb 10 (the wall gap), sf 28 (the door gap 3 and the door
+;;; 25); ew = 10 + 558 + 28 = 596; its box z -10..586, y -100..770 (z 0 the
+;;; carcass back face, 558 its front face). END-L is drawn as drawBUL, x from
+;;; the FRONT (carcass z = 586 - x); END-R as drawBUR, x from the BACK
+;;; (carcass z = x - 10). Every point list anticlockwise, once round.
+;;;
+;;; CASE A (fixtures/golden-notch-end-panel.json): BL 200 / 200 / 300, boxed.
+;;; BUL loses 200 x 300 at "x1y0"; the STEP stands at z 200..218, its end at
+;;; x 0 of the carcass, where END-L stands.
+;;; END-L      less 210 x 400 at "x1y0" (w = sb + nd = 10 + 200, h = 300 + 100),
+;;;            its cut face at x 386 = carcass z 200, the STEP's back face:
+;;;            (0 0) (386 0) (386 400) (596 400) (596 870) (0 870)
+;;;   CORNER MARK (D12): (386 360) -> (386 400) -> (426 400)
+;;;   area 0.51852 -> 0.43452 m2 (434520 mm2); the cut list keeps 596 x 870
+;;; END-R      the other hand: unchanged
+;;;
+;;; CASE B: BL 200 / 200 / 0, full height (golden-notch.json's own notch). BUL
+;;; is 340 deep, z 218..558. END-L loses the strip 210 x 870: 386 x 870, its
+;;; box z 200..586: (0 0) (386 0) (386 870) (0 870); area 0.33582 m2 (335820
+;;; mm2).
+;;;
+;;; CASE C: BL 200 / 200 / -300, from the top (D21). END-L less 210 x 300 at
+;;; "x1y1" (h = 870 - 100 - (770 - 300); it does not run above the carcass):
+;;;            (0 0) (596 0) (596 570) (386 570) (386 870) (0 870)
+;;;   CORNER MARK: (426 570) -> (386 570) -> (386 610); area 0.45552 m2 (455520 mm2)
+;;;
+;;; CASE D: FR 200 / 150 / 300, a front corner (BUR loses 150 x 300 at its
+;;; front bottom corner). END-R less 178 x 400 at "x1y0" (w = nd + sf), flush
+;;; with BUR's cut face at x 418 = carcass z 408:
+;;;            (0 0) (418 0) (418 400) (596 400) (596 870) (0 870)
+;;;   CORNER MARK: (418 360) -> (418 400) -> (458 400); area 0.44732 m2 (447320 mm2)
+;;;
+;;; CASE E: BR 10 / 30 / 40, a rebate (D3, unboxed: BUR keeps its outline).
+;;; END-R less 58 x 140 at "x0y0" (w = sb + g + nd), flush with the rebate's
+;;; face at carcass z 48:
+;;;            (58 0) (596 0) (596 870) (0 870) (0 140) (58 140)
+;;;   CORNER MARK: (18 140) -> (58 140) -> (58 100); area 0.5104 m2 (510400 mm2)
+;;;
+;;; CASE F, THE EDGE NOTCH (section I3 case A): BB 20 / 120 on BOTH ENDs (w =
+;;; sb + g + ed = 48, h = 120 + 100 = 220), flush with the sides' cut face at
+;;; carcass z 38, where the BOTTOM's back edge now stands:
+;;; END-L      (0 0) (548 0) (548 220) (596 220) (596 870) (0 870)
+;;;   CORNER MARK: (548 180) -> (548 220) -> (588 220); area 0.50796 m2 (507960 mm2)
+;;; END-R      (48 0) (596 0) (596 870) (0 870) (0 220) (48 220)
+;;;   CORNER MARK: (8 220) -> (48 220) -> (48 180); area 0.50796 m2
+;;;
+;;; CASE G: TB 50 / 100 (section I3 case B) on an END-L run up 200 over the
+;;; carcass (top 200, ph 1070): less 78 x 300 at "x1y1" (h = 100 + 200):
+;;;            (0 0) (596 0) (596 770) (518 770) (518 1070) (0 1070)
+;;;   CORNER MARK: (558 770) -> (518 770) -> (518 810); area 0.61432 m2 (614320 mm2)
+;;;
+;;; CASE H, BOTH (section I3 case C): BL 200 / 200 / 300 with TB 50 / 100.
+;;; END-L      (0 0) (386 0) (386 400) (596 400) (596 770) (518 770) (518 870)
+;;;            (0 870), two marks (386 360) -> (386 400) -> (426 400) and
+;;;            (558 770) -> (518 770) -> (518 810); area 0.42672 m2 (426720 mm2)
+;;;
+;;; A REFUSED notch cuts no END panel: the parent is what is cut (BR 10 / 100
+;;; / 60, a rebate that eats a joint, leaves END-R 596 x 870).
 
 ;;;========================================
 ;;; I5. NUMBERS - THE BACK'S ROWS ROUND THE BOX (D10 AMENDED, 18.10.2026)

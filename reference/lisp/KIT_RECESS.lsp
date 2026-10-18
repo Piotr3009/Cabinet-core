@@ -376,6 +376,46 @@
 ;;;     (in, corner, out; material on the left), drawn by
 ;;;     notch-draw-corner-marks as an open LWPOLYLINE. The NUMBERS below.
 ;;;
+;;; 18.10.2026, THE OWNER'S LIST (CLAUDE.md T79 F9):
+;;;
+;;; D21 THE END PANEL GROWS WITH ITS SIDE. The owner: *"nie wycina mi panelu
+;;;     bocznego do recess a powinno."*  CLAUDE.md T79 F9: "the end panel is
+;;;     cut by the SAME outline as the side it covers"; partly in the band,
+;;;     the END panel on a side that grows "takes the side's grown outline
+;;;     ... with the pad's own x added to the band's test (the band is tested
+;;;     against -padL..W+padR, not 0..W)". The END PANEL (KIT_NOTCH.lsp D23:
+;;;     the masking board on the OUTSIDE of a side, in its side's frame) grows
+;;;     with its side, by the same ed, when the band reaches PAST ITS OUTER
+;;;     FACE (recess-end-reach-p: the recess's own edge at or beyond -t on the
+;;;     left, cw + t on the right, t the END's thickness; the room asks it,
+;;;     projectStore recessExtensionFor, and hands the engine the hands it
+;;;     reaches). A band ending inside the END's thickness grows the side and
+;;;     leaves the END on the wall line: the wall stands behind part of it.
+;;;     It grows over the band's OWN height, ez0 .. ez1, not the side's bz0
+;;;     .. bz1: it covers the FLOOR's, the LID's and the EXT-BACK's ends as it
+;;;     covers the BACK's (D6), and runs on to its own underside or top where
+;;;     the band reaches the carcass's floor or top, but NEVER PAST THE
+;;;     RECESS'S OWN BOTTOM OR TOP: where the band was clipped to the carcass
+;;;     the room hands the engine the recess's own edge there (rz0 under the
+;;;     carcass underside, rz1 over it, in the carcass frame; none where the
+;;;     recess runs to the floor or the ceiling), and the END stops on it. An
+;;;     END dropped to the floor beside a recess that starts 50 over the floor
+;;;     grows from 50 up; one run up past a recess's head grows to the head
+;;;     and no further: the END is never grown into the wall under or over
+;;;     the recess (recess-end-cuts). Its
+;;;     outline is KIT_NOTCH's notch-end-outline of those corners, its marks
+;;;     D18's, its area and cut-list line the outline's. WHOLLY INSIDE (D2)
+;;;     the END panel stands in the recess with the carcass, so its stand-off
+;;;     is measured off the recess's own back wall as the carcass's is (the
+;;;     engine's END law: the wall gap plus recess_mm): it reaches the recess
+;;;     back with the sides and the door face with the doors, and by the same
+;;;     stop never past the recess's own bottom or top: where one of them
+;;;     falls within the END's height (an END dropped to the floor under a
+;;;     recess that starts over it, one run up past its head) the room hands
+;;;     it (rz0, rz1, as above) and the END keeps to the wall line there:
+;;;     recess-end-cuts over the carcass's whole height, ed = recess_mm.
+;;;     Proposed (one line to veto): the band's own height, not the side's.
+;;;
 ;;;========================================
 ;;; 4. NOT HERE
 ;;;========================================
@@ -932,6 +972,32 @@
 (defun recess-shelf-dogbones (cw cd g ex0 ex1 ed shelf clr r / b)
   (setq b (recess-shelf-bump cw cd g ex0 ex1 ed shelf clr))
   (recess-bump-dogbones (car b) (cadr b) (caddr b) (cadddr b) r))
+;;;----------------------------------------
+;;; THE END PANEL (D21, 18.10.2026): in its side's frame (KIT_NOTCH.lsp D23,
+;;; section H3), ph high, pb below the carcass underside; hand "L" or "R".
+;;;----------------------------------------
+
+;;; Does the band reach past the END panel's outer face? rx0 rx1 are the
+;;; recess's own edges in the carcass frame (never clipped), et the END's
+;;; thickness.
+(defun recess-end-reach-p (hand rx0 rx1 cw et)
+  (if (= hand "L") (<= rx0 (- et)) (>= rx1 (+ cw et))))
+
+;;; The corners the band leaves on a grown END panel (ed deeper at its back):
+;;; below the band (none from the floor) and above it (none to the top), ed
+;;; wide, each (fc w h), over the band's own height ez0 .. ez1. rz0 rz1: the
+;;; recess's own bottom and top in the carcass frame where the band was
+;;; clipped to the carcass's floor or top, nil where the recess runs to the
+;;; floor or the ceiling (D21): the END grows no further than the recess.
+(defun recess-end-cuts (ch ez0 ez1 ed hand ph pb rz0 rz1 / fc0 fc1 lo hi out)
+  (setq fc0 (if (= hand "R") "x0y0" "x1y0")
+        fc1 (if (= hand "R") "x0y1" "x1y1")
+        lo (if (recess-floor-p ez0) (if rz0 (max 0.0 (+ rz0 pb)) 0.0) (+ ez0 pb))
+        hi (if (recess-top-p ez1 ch) (if rz1 (min ph (+ rz1 pb)) ph) (+ ez1 pb))
+        out '())
+  (if (> lo 0.0) (setq out (append out (list (list fc0 ed lo)))))
+  (if (< hi ph) (setq out (append out (list (list fc1 ed (- ph hi))))))
+  out)
 
 ;;;========================================
 ;;; E. THE REFUSALS (the room refuses first; nothing is clipped silently)
@@ -1225,6 +1291,76 @@
 ;;;     (28, under one hole's offset): no side row there; the box rows x 391:
 ;;;     z 725 755, the FLOOR's z 701: x 450 491 532
 ;;;     PROBE: x 591: z 732 (in the notch) and 660 (under the board)
+
+;;;========================================
+;;; F2. NUMBERS - THE END PANEL (D21, fixtures/golden-recess-end-panel.json)
+;;;========================================
+;;;
+;;; The parent of section F with an END panel 25 thick dropped to the floor
+;;; (pb 100, ph 870), the wall gap 10 (sb 10), the door gap 3 and the door 25
+;;; (sf 28): ew = 10 + 558 + 28 = 596, its box z -10..586 (z 0 the carcass
+;;; back face). END-R is drawn as drawBUR, x from the BACK; END-L as drawBUL,
+;;; x from the FRONT (KIT_NOTCH.lsp D23).
+;;;
+;;; THE REACH (recess-end-reach-p, t 25), a BUD at x 900 on its wall, END-R at
+;;; 1500..1525: a recess to x 2300 (rx1 1400 >= 625) reaches past it, END-R
+;;; grows; a recess to x 1510 (rx1 610 < 625) does not: BUR grows, END-R stays
+;;; 596 deep on the wall line.
+;;;
+;;; CASE D (fixtures/golden-recess-end-panel.json): the recess from carcass x
+;;; 300 to the right and past END-R, 150 deep, from 200 to 600 over the carcass
+;;; underside, clearance 10: ex0 310 ex1 600 (BUR grows) ez0 210 ez1 590 ed
+;;; 150; bz0 228, bz1 572. The FLOOR at z 210..228 and the LID at 572..590 run
+;;; to x 600, the EXT-BACK at carcass z -150..-132 too: their ends stand where
+;;; END-R stands.
+;;;
+;;; BOARD      PARENT       EXTENDED
+;;; BUR        540 x 770    690 x 770 less 150 x 228 at "x0y0" and 150 x 198 at
+;;;                         "x0y1" (the bump over 228..572)
+;;; END-R      596 x 870    746 x 870, its box z -160..586 (the recess's back
+;;;                         wall at -10 - 150): the bump over the band's own
+;;;                         height, 210 + 100 .. 590 + 100 = 310 .. 690 on the
+;;;                         END, so less 150 x 310 at "x0y0" and 150 x 180 at
+;;;                         "x0y1" (recess-end-cuts):
+;;;                         (150 0) (746 0) (746 870) (150 870) (150 690)
+;;;                         (0 690) (0 310) (150 310)
+;;;   CORNER MARKS (D18, D20): (150 730) -> (150 690) -> (110 690)
+;;;                            (110 310) -> (150 310) -> (150 270)
+;;;   area 0.51852 -> 0.57552 m2 (575520 mm2); cut list 746 x 870, edging
+;;;   2 x (746 + 870) = 3232 mm, every edge banded as before
+;;;
+;;; CASE A WITH END-R (the band of section F's case A, floor to ceiling, past
+;;; END-R): BUR 690 x 770, a rectangle; END-R 746 x 870, a rectangle, its box
+;;; z -160..586: (0 0) (746 0) (746 870) (0 870); area 0.64902 m2.
+;;;
+;;; THE RECESS STOPS SHORT OF THE END'S OWN EDGES (case A's band, clipped to
+;;; the carcass at both ends, but the recess's own bottom 50 over the floor,
+;;; rz0 -50, and its head 1000 over it, rz1 900; END-R run up 200 over the
+;;; carcass, ph 1070): lo = max(0, -50 + 100) = 50, hi = min(1070, 900 +
+;;; 100) = 1000, so less 150 x 50 at "x0y0" and 150 x 70 at "x0y1": 746 x
+;;; 1070, its box z -160..586:
+;;;            (150 0) (746 0) (746 1070) (150 1070) (150 1000) (0 1000)
+;;;            (0 50) (150 50)
+;;;   CORNER MARKS: (150 1040) -> (150 1000) -> (110 1000)
+;;;                 (110 50) -> (150 50) -> (150 10)
+;;;   area 0.78022 m2 (780220 mm2): not one mm of it in the wall under or
+;;;   over the recess.
+;;;
+;;; THE SAME BAND ON THE LEFT (ex0 0, ex1 290, ez0 0, ez1 590, past END-L):
+;;; BUL 690 x 770 less 150 x 198 at "x1y1"; END-L 746 x 870 less 150 x 180 at
+;;; "x1y1": (0 0) (746 0) (746 690) (596 690) (596 870) (0 870); END-R on the
+;;; other hand unchanged.
+;;;
+;;; WHOLLY INSIDE (D2, recess_mm 150, the carcass 708 deep): END-R 746 x 870,
+;;; its box z -10..736: 10 off the recess's back wall like the carcass, its
+;;; face on the doors' (708 + 28). Until today: 596 deep at z 0..596.
+;;; The recess from 50 over the floor (rz0 -50, the carcass on 100):
+;;; (recess-end-cuts 770 0 770 150 "R" 870 100 -50 nil) = (("x0y0" 150 50)),
+;;; so END-R 746 x 870 less 150 x 50 at its back bottom corner, on the wall
+;;; line under the recess:
+;;;            (150 0) (746 0) (746 870) (0 870) (0 50) (150 50)
+;;;   CORNER MARK: (110 50) -> (150 50) -> (150 10); area 0.64152 m2
+;;;   (641520 mm2)
 
 ;;;========================================
 ;;; G. DRAWING (the command draws what the routines return, nothing more)

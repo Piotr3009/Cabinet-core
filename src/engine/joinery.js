@@ -115,6 +115,13 @@ export function panelPlacement(panel) {
         v: [0, 1, 0],
         n: [1, 0, 0],
       };
+    // T79 F9 · THE END PANEL IS DRAWN IN ITS SIDE'S FRAME (KIT_NOTCH.lsp D23):
+    // END-L as BUL (x from the front), END-R as BUR (x from the back), so the
+    // corner its side lost (`cnc.notch`) comes out of the scene's board by the
+    // same arithmetic. It carries no machining; with no placement the scene
+    // drew its box whatever its record said (verify/t79/f09-probe.md row 22).
+    case 'END-PANEL':
+      return panelPlacement({ ...panel, part: panel.meta?.side === 'right' ? 'BUR' : 'BUL' });
     case 'TOP':
       // ─── CHAT FIX 17.10.2026 (14:15): DRAWN FROM ITS UNDERSIDE ─────────────
       // The owner, of the nesting sheet: *"w 01 bottom i top nie powinno byc

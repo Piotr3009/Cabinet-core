@@ -53,7 +53,7 @@ import {
   notchMinJointEdge, notchScrewAxis, notchScrewRow, notchRowsBetweenTabs, notchEdgeRow,
   notchRectOutline, notchDogbone, notchRot90Pts, notchCornerOfOutline,
   notchKitRefusal, outlineWithTabs, tabBones, polygonArea, shiftGeom,
-  cornerMarkRecords,
+  cornerMarkRecords, notchEndCut, edgeNotchEndCut, notchEndOutline, edgeNotchCorners,
   notchOf, notchHh, notchFromTopP, notchFullP, notchBoxedP, notchLeftP, notchBackP,
   notchTopCut, notchTopJoints, notchSideFc, notchSideJoints, notchShelfCut, notchHoleInP, cutNotchCorner,
   notchBackBoxRows,
@@ -554,6 +554,29 @@ export function recessShelfDogbones(cw, cd, g, ex0, ex1, ed, shelf, K, r, clr) {
   return recessBumpDogbones(bw, bh, b0, b1, r);
 }
 
+// ── THE END PANEL (KIT_RECESS.lsp D21, T79 F9): in its side's frame (KIT_NOTCH.lsp D23) ──
+
+/** recess-end-reach-p: does the band reach past the END panel's outer face? rx0, rx1 the recess's own (unclipped) edges. */
+export function recessEndReachP(hand, rx0, rx1, cw, et) {
+  return hand === 'L' ? rx0 <= -et : rx1 >= cw + et;
+}
+
+/**
+ * recess-end-cuts: the corners the band leaves on a grown END panel, ed wide, over the band's own height; rz0, rz1 the
+ * recess's own bottom and top where the band was clipped to the carcass (null: to the floor, to the ceiling), past
+ * which the END never grows (D21).
+ */
+export function recessEndCuts(ch, ez0, ez1, ed, hand, ph, pb, rz0 = null, rz1 = null) {
+  const fc0 = hand === 'R' ? 'x0y0' : 'x1y0';
+  const fc1 = hand === 'R' ? 'x0y1' : 'x1y1';
+  const lo = recessFloorP(ez0) ? (rz0 != null ? Math.max(0, rz0 + pb) : 0) : ez0 + pb;
+  const hi = recessTopP(ez1, ch) ? (rz1 != null ? Math.min(ph, rz1 + pb) : ph) : ez1 + pb;
+  const out = [];
+  if (lo > 0) out.push([fc0, ed, lo]);
+  if (hi < ph) out.push([fc1, ed, ph - hi]);
+  return out;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // E. THE REFUSALS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -824,7 +847,19 @@ export function extensionOf(params) {
   const n = (v) => (Number.isFinite(Number(v)) ? Number(v) : NaN);
   const out = { x0: n(e.x0), x1: n(e.x1), z0: n(e.z0), z1: n(e.z1), d: n(e.d) };
   if (Object.values(out).some((v) => Number.isNaN(v))) return null;
-  return { ...out, for: String(e.for || 'a recess in this wall') };
+  // T79 F9 (D21): the hands whose END panel the band reaches past (the room's answer), and the recess's own bottom
+  // and top where the band was clipped to the carcass, the END's limit there.
+  const ends = Array.isArray(e.ends) ? ['L', 'R'].filter((h) => e.ends.includes(h)) : [];
+  const own = (v) => (ends.length && v != null && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
+  const rz0 = own(e.rz0);
+  const rz1 = own(e.rz1);
+  return {
+    ...out,
+    for: String(e.for || 'a recess in this wall'),
+    ...(ends.length ? { ends } : {}),
+    ...(rz0 != null ? { rz0 } : {}),
+    ...(rz1 != null ? { rz1 } : {}),
+  };
 }
 
 /** The interior a panel's box takes, in the plan frame. */
@@ -1403,5 +1438,120 @@ export function extensionSummary(cut) {
     boards: [...cut.boards],
     pieces: cut.pieces,
     for: cut.ext.for,
+    ...(cut.ext.ends ? { ends: [...cut.ext.ends] } : {}),
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Z2. THE END PANEL FOLLOWS ITS SIDE (KIT_NOTCH.lsp D23, KIT_RECESS.lsp D21)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner, 18.10.2026: *"nie wycina mi panelu bocznego do recess a powinno."*
+// ONE path for the three cuts, called once after notchCarcass, edgeNotchCarcass
+// and extensionCarcass: each END panel takes the cuts its side took (the corner
+// notch's, the edge notch's, the recess's corners with its frame grown by ed
+// where the band reaches past it, a back cut then measured from the grown back
+// edge) and is cut by ONE walk round them (notchEndOutline). Its numbers are
+// read off its own box, built as the parent's END. Wholly inside a recess
+// (recess_mm, its box already reaching the recess back) the same recess cut
+// keeps it to the wall line wherever the recess's own bottom or top falls
+// within its height (`recess_band`, the room's answer). A unit with no END
+// panel, or none of the cuts, reaches no line of it.
+
+const END_SIDES = { L: 'BUL', R: 'BUR' };
+
+/** Is fc the END panel's BACK edge? END-L runs from the front (back = x1), END-R from the back (x0). */
+const endBackFc = (fc, hand) => fc.slice(0, 2) === (hand === 'R' ? 'x0' : 'x1');
+
+/**
+ * The 3-D's record of the cut corners (`cnc.notch`, a chain of `also`), named
+ * on the kept box; null with no corner, or where two cuts share a corner (a
+ * stepped corner: the outline holds it, `cutNotchCorner` cannot).
+ */
+function endCornerRecord(bw, bh, cuts, box) {
+  const corners = edgeNotchCorners(bw, bh, cuts, box);
+  if (!corners.length || new Set(corners.map((c) => c[0])).size !== corners.length) return null;
+  return corners.reduceRight((also, [fc, w, h]) => {
+    const rec = { fc, nw: roundTo(w, 4), nh: roundTo(h, 4) };
+    return also ? { ...rec, also } : rec;
+  }, null);
+}
+
+/** Cut every END panel by its side's cuts. Mutates `panels` in place; the summary of what each took, or null. */
+export function endPanelsFollowSides({
+  params, panels, notchCut, edgeNotchCut, extensionCut, H, D, G, profile,
+}) {
+  // Wholly inside (D21): the recess's own bottom and top the room handed down, where it has them.
+  const own = (v) => (v != null && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
+  const whole = Math.max(0, Number(params?.recess_mm) || 0);
+  const band = whole && params?.recess_band ? { rz0: own(params.recess_band.rz0), rz1: own(params.recess_band.rz1) } : null;
+  const inside = band && (band.rz0 != null || band.rz1 != null) ? band : null;
+  if (!notchCut && !edgeNotchCut && !extensionCut && !inside) return null;
+  const pz = profile.puzzle;
+  const leg = notchP(notchProfile(profile), 'cnc.cornerMarkLeg');
+  const said = {};
+  for (const p of panels) {
+    if (p.part !== 'END-PANEL' || !p.box) continue;
+    const hand = p.meta?.side === 'right' ? 'R' : 'L';
+    const sideId = END_SIDES[hand];
+    // Its numbers in the carcass's words (KIT_NOTCH.lsp D23).
+    const ew = p.box.d;
+    const ph = p.box.h;
+    const sb = -p.box.z;
+    const sf = p.box.z + p.box.d - D;
+    const pb = -p.box.y;
+    const ext = extensionCut?.ext;
+    const grow = extensionCut?.grown.includes(sideId) && ext?.ends?.includes(hand) ? extensionCut.ed : 0;
+    const back = (c) => (grow && endBackFc(c[0], hand) ? [c[0], c[1] + grow, c[2]] : c);
+    const cuts = [];
+    const by = [];
+    if (grow) {
+      cuts.push(...recessEndCuts(H, extensionCut.ez0, extensionCut.ez1, grow, hand, ph, pb, ext.rz0 ?? null, ext.rz1 ?? null));
+      by.push('recess');
+    } else if (inside) {
+      const c = recessEndCuts(H, 0, H, whole, hand, ph, pb, inside.rz0, inside.rz1);
+      if (c.length) { cuts.push(...c); by.push('recess'); }
+    }
+    if (notchCut) {
+      const n = notchCut.notch;
+      const c = notchEndCut(H, G, n.w, n.d, n.h, n.corner, hand, sb, sf, ph, pb);
+      if (c) { cuts.push(back(c)); by.push('notch'); }
+    }
+    if (edgeNotchCut) {
+      cuts.push(back(edgeNotchEndCut(H, G, edgeNotchCut.ed, edgeNotchCut.eh, edgeNotchCut.edge, hand, sb, sf, ph, pb)));
+      by.push('edgeNotch');
+    }
+    if (!by.length) continue;
+    const bw = ew + grow;
+    const cut = notchEndOutline(bw, ph, cuts);
+    if (!cut) continue;
+    const [x0, y0, x1, y1] = cut.box;
+    const w = x1 - x0;
+    const h = y1 - y0;
+    // The kept box in the carcass: END-L's x runs back from its front face, END-R's forward from its (grown) back.
+    const zFront = p.box.z + p.box.d;
+    const zBack = p.box.z - grow;
+    const [z0, z1] = hand === 'L' ? [zFront - x1, zFront - x0] : [zBack + x0, zBack + x1];
+    const pts = r4pts(cut.pts);
+    p.w = roundTo(w, 4);
+    p.h = roundTo(h, 4);
+    p.box = { ...p.box, y: roundTo(p.box.y + y0, 4), z: roundTo(z0, 4), h: roundTo(h, 4), d: roundTo(z1 - z0, 4) };
+    p.cnc = {
+      ...p.cnc,
+      outline: pts,
+      drawn_w: roundTo(w, 4),
+      drawn_h: roundTo(h, 4),
+      marks: [...(p.cnc?.marks || []), ...cornerMarkRecords(pts, leg, pz)],
+      notch: endCornerRecord(bw, ph, cuts, cut.box),
+    };
+    p.area_m2 = roundTo(polygonArea(pts) / 1e6, 6);
+    // A rectangle less its corners has the rectangle's perimeter: every edge is banded (codes.all).
+    p.edging = { ...p.edging, len_m: roundTo((2 * (w + h)) / 1000, 6) };
+    p.meta = {
+      ...(p.meta || {}),
+      followsSide: { side: sideId, by, ...(grow ? { grown: roundTo(grow, 4) } : {}), outline: pts },
+    };
+    said[p.id] = { side: sideId, by };
+  }
+  return Object.keys(said).length ? said : null;
 }

@@ -1320,6 +1320,98 @@ export function edgeNotchHoleRefusal(kind, board) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// H3. THE END PANEL FOLLOWS ITS SIDE (KIT_NOTCH.lsp D23, T79 F9, 18.10.2026)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner: *"nie wycina mi panelu bocznego do recess a powinno."*  The END
+// panel in its side's frame (END-L x from the FRONT, END-R x from the BACK),
+// ew deep, ph high; sb behind the carcass back face, sf in front of its front
+// face, pb below its underside; hand 'L' or 'R'. A cut is [fc, w, h] in
+// notchRectOutline's grammar; null is no cut. Applied once, for the notch,
+// the edge notch and the recess together, by extension.js endPanelsFollowSides.
+
+/** notch-end-h: how high a cut anchored at the carcass's 'floor', 'top' or 'full' height runs on the END panel. */
+export function notchEndH(ch, hh, anchor, ph, pb) {
+  if (anchor === 'full') return ph;
+  if (anchor === 'top') return ph - pb - (ch - hh);
+  return hh + pb;
+}
+
+/** notch-end-cut: the corner notch on the END panel of the notched side; null on the other hand. */
+export function notchEndCut(ch, g, nw, nd, nh, corner, hand, sb, sf, ph, pb) {
+  if (hand !== (notchLeftP(corner) ? 'L' : 'R')) return null;
+  let w;
+  if (!notchBackP(corner)) w = nd + sf;
+  else if (notchBoxedP(nw, g)) w = sb + nd;
+  else w = sb + g + nd;
+  let anchor = 'floor';
+  if (notchFullP(ch, nh)) anchor = 'full';
+  else if (notchFromTopP(ch, nh)) anchor = 'top';
+  return [notchSideFc(corner, hand === 'R', notchFromTopP(ch, nh)), w, notchEndH(ch, notchHh(ch, nh), anchor, ph, pb)];
+}
+
+/** edge-notch-end-cut: the edge notch on EITHER END panel, flush with the side's cut face. */
+export function edgeNotchEndCut(ch, g, ed, eh, edge, hand, sb, sf, ph, pb) {
+  return [
+    edgeNotchSideFc(edge, hand === 'R'),
+    edgeNotchBackP(edge) ? sb + g + ed : ed + sf,
+    notchEndH(ch, eh, edgeNotchTopP(edge) ? 'top' : 'floor', ph, pb),
+  ];
+}
+
+/** notch-end-in-p: does the cut c cover the height y of a board ph high? */
+export function notchEndInP(c, y, ph) {
+  return notchFcY0(c[0]) ? y < c[2] : y > ph - c[2];
+}
+
+/** notch-end-runs: one edge of the rows [[y0, y1, l, r], ...], merged where its x stays: [[x, y0, y1], ...]. */
+export function notchEndRuns(rows, k) {
+  const out = [];
+  for (const w of rows) {
+    const x = w[k];
+    const last = out[out.length - 1];
+    if (last && Math.abs(last[0] - x) <= 1e-9) out[out.length - 1] = [x, last[1], w[1]];
+    else out.push([x, w[0], w[1]]);
+  }
+  return out;
+}
+
+/**
+ * notch-end-outline: the END panel ew x ph less its cuts, { box, pts }. box is
+ * [x0, y0, x1, y1], what it keeps in the uncut frame; pts its outline,
+ * anticlockwise from its bottom-left corner, re-origined to box; null when
+ * the cuts leave nothing.
+ */
+export function notchEndOutline(ew, ph, cuts) {
+  const cs = (cuts || []).filter(Boolean);
+  const ys = [0, ph, ...cs.map((c) => (notchFcY0(c[0]) ? Math.min(ph, c[2]) : Math.max(0, ph - c[2])))].sort((a, b) => a - b);
+  const rows = [];
+  for (let i = 0; i + 1 < ys.length; i += 1) {
+    const [y0, y1] = [ys[i], ys[i + 1]];
+    if (!(y1 > y0)) continue;
+    const mid = (y0 + y1) / 2;
+    let l = 0;
+    let r = ew;
+    for (const c of cs) {
+      if (!notchEndInP(c, mid, ph)) continue;
+      if (notchFcX0(c[0])) l = Math.max(l, c[1]);
+      else r = Math.min(r, ew - c[1]);
+    }
+    if (l < r) rows.push([y0, y1, l, r]);
+  }
+  if (!rows.length) return null;
+  const right = notchEndRuns(rows, 3);
+  const left = notchEndRuns(rows, 2).reverse();
+  const pts = [
+    ...right.flatMap(([x, a, b]) => [[x, a], [x, b]]),
+    ...left.flatMap(([x, a, b]) => [[x, b], [x, a]]),
+  ];
+  pts.unshift(pts.pop());
+  const box = [Math.min(...rows.map((w) => w[2])), rows[0][0], Math.max(...rows.map((w) => w[3])), rows[rows.length - 1][1]];
+  return { box, pts: pts.map(([x, y]) => [x - box[0], y - box[1]]) };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Z. THE ENGINE CUTS WHAT THE ROUTINES DESCRIBE
 // ═══════════════════════════════════════════════════════════════════════════
 //

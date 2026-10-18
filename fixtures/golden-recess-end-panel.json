@@ -1,0 +1,370 @@
+{
+  "meta": {
+    "name": "golden-recess-end-panel.json",
+    "turn": "T78",
+    "F": "F34",
+    "source": "KIT_RECESS.lsp D21 (the END panel grows with its side, its NUMBERS block F2 case D: BUD 600, the band 310..600 x 210..590, 150 deep, to the right edge and past END-R) on KIT_BUD_FULL.lsp: END-R 746 deep, the bump over the band's own height",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "BUD",
+    "width": 600,
+    "height": 770,
+    "depth": 558,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 1,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": null,
+    "unit_num": "01",
+    "extension": {
+      "x0": 310,
+      "x1": 600,
+      "z0": 210,
+      "z1": 590,
+      "d": 150,
+      "ends": [
+        "R"
+      ]
+    },
+    "end_panels": [
+      {
+        "id": "ep-r",
+        "side": "R",
+        "height": "floor",
+        "thickness": 25
+      }
+    ]
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,540,770,<,0.77,0.416",
+      "01,BUR,690,770,>,0.77,0.467",
+      "01,TOP,564,540,>,0.56,0.305",
+      "01,BOTTOM,564,540,>,0.56,0.305",
+      "01,BACK,600,770,,0,0.368",
+      "01,SHELF-1,560,670,>,0.56,0.329",
+      "01,END-R,746,870,<>^v,3.23,0.576",
+      "01,01-F,597,767,<>^v,2.73,0.458",
+      "01,RETURN-L,132,344,,0,0.045",
+      "01,FLOOR,290,132,,0,0.038",
+      "01,LID,290,132,,0,0.038",
+      "01,EXT-BACK,290,380,,0,0.110"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 540,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 770,
+          "d": 540
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 690,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": -132,
+          "w": 18,
+          "h": 770,
+          "d": 690
+        },
+        "outline": 28,
+        "holes": 14,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 752,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 600,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 600,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 8,
+        "holes": 40,
+        "pockets": 9,
+        "readiness": null
+      },
+      {
+        "id": "SHELF-1",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 560,
+        "h": 670,
+        "thickness": 18,
+        "box": {
+          "x": 20,
+          "y": 385,
+          "z": -132,
+          "w": 560,
+          "h": 18,
+          "d": 670
+        },
+        "outline": 6,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "END-R",
+        "part": "END-PANEL",
+        "role": "end_panel",
+        "w": 746,
+        "h": 870,
+        "thickness": 25,
+        "box": {
+          "x": 600,
+          "y": -100,
+          "z": -160,
+          "w": 25,
+          "h": 870,
+          "d": 746
+        },
+        "outline": 8,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 0,
+          "z": 561,
+          "w": 597,
+          "h": 767,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "RETURN-L",
+        "part": "RECESS-RETURN",
+        "role": "extension",
+        "w": 132,
+        "h": 344,
+        "thickness": 18,
+        "box": {
+          "x": 310,
+          "y": 228,
+          "z": -132,
+          "w": 18,
+          "h": 344,
+          "d": 132
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "FLOOR",
+        "part": "RECESS-FLOOR",
+        "role": "extension",
+        "w": 290,
+        "h": 132,
+        "thickness": 18,
+        "box": {
+          "x": 310,
+          "y": 210,
+          "z": -132,
+          "w": 290,
+          "h": 18,
+          "d": 132
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "LID",
+        "part": "RECESS-LID",
+        "role": "extension",
+        "w": 290,
+        "h": 132,
+        "thickness": 18,
+        "box": {
+          "x": 310,
+          "y": 572,
+          "z": -132,
+          "w": 290,
+          "h": 18,
+          "d": 132
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "EXT-BACK",
+        "part": "RECESS-BACK",
+        "role": "extension",
+        "w": 290,
+        "h": 380,
+        "thickness": 18,
+        "box": {
+          "x": 310,
+          "y": 210,
+          "z": -150,
+          "w": 290,
+          "h": 380,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 12,
+        "pockets": 0,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F",
+        6
+      ],
+      [
+        "HINGES_5MM|BUL",
+        6
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        18
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        22
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ],
+      [
+        "SCREWS_3MM|EXT-BACK",
+        12
+      ],
+      [
+        "SHELVES_7_5MM|BUL",
+        6
+      ],
+      [
+        "SHELVES_7_5MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 3,
+        "label": "Hinges"
+      },
+      {
+        "role": "legs",
+        "qty": 4,
+        "label": "Legs"
+      },
+      {
+        "role": "shelf_pins",
+        "qty": 4,
+        "label": "Shelf pins"
+      }
+    ]
+  }
+}

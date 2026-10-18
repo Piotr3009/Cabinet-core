@@ -59,6 +59,7 @@ import {
 // of the parent's own cut, a pass before the drilling and a pass after it.
 import {
   extensionCarcass, extensionDrills, extensionSummary, extensionVerdict, withExtensionRefusal,
+  endPanelsFollowSides,
 } from './extension.js';
 // T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
 // of the parent's own puzzle cut, the puzzle stripped before the drilling and
@@ -7035,7 +7036,14 @@ export function computeCabinet(params, profileOverride) {
   // that is the project's number, so every saved job cuts the same board.
   const wallGap = wallGapOf({ params }, P);
   const insetBack = Math.max(0, Number(params?.inset_back_mm) || 0);
-  const endPanelDepth = wallGap + insetBack + D + P.doors.gap + frontT;
+  // T79 F9 (KIT_RECESS.lsp D21) · WHOLLY INSIDE A RECESS the panel stands in
+  // the recess with the carcass, so its gap is measured off the recess's own
+  // back wall, as the carcass's stand-off is: `wallGapOf` takes recess_mm off
+  // the wall line and the carcass's depth gained it, so the sum adds it back.
+  // The PROBE (verify/t79/f09-probe.md row 12): 596 at z 0..596 beside a
+  // carcass at z 18..858. With no recess_mm (every golden) nothing moves.
+  const endBack = wallGap + Math.max(0, Number(params?.recess_mm) || 0) + insetBack;
+  const endPanelDepth = endBack + D + P.doors.gap + frontT;
   // ─── Turn 13 (CLAUDE.md F4): A WALL UNIT'S PANEL ENDS WITH THE CABINET ───
   //
   // "To the floor" means down to the floor for something STANDING on it: past
@@ -7110,7 +7118,7 @@ export function computeCabinet(params, profileOverride) {
       box: {
         x: side === 'L' ? -t : W,
         y: epY,
-        z: wallGap + insetBack > 0 ? -(wallGap + insetBack) : 0,
+        z: endBack > 0 ? -endBack : 0,
         w: t,
         h: epH,
         d: endPanelDepth,
@@ -8746,6 +8754,13 @@ export function computeCabinet(params, profileOverride) {
       params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel, notchCut,
     })
     : null;
+  // T79 F9 · the END panel follows its side (KIT_NOTCH.lsp D23, KIT_RECESS.lsp
+  // D21): ONE pass after the three cuts, each END panel cut by the cuts its
+  // side took. The owner: *"nie wycina mi panelu bocznego do recess a
+  // powinno."*  No cut, or no END panel: no line of it runs.
+  endPanelsFollowSides({
+    params, panels, notchCut, edgeNotchCut, extensionCut, H, D, G, profile: P,
+  });
 
   // ── Drills ─────────────────────────────────────────────────────────────────
   const drills = [];

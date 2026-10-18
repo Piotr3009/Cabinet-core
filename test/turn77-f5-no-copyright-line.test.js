@@ -137,6 +137,11 @@ export const NEW_FILES = [
   // T79 F14 (18.10.2026): the drawer box on Cabineo 12
   'test/turn79-f14-box-cabineo.test.js',
   'scripts/t78-classify.d/f34-t79-f14.mjs',
+  // T79 F16 (18.10.2026): Restore sleeve rows
+  'test/turn79-f16-restore-sleeves.test.js',
+  // T79 F15 (18.10.2026): label colours on the entity
+  'test/turn79-f15-label-colour.test.js',
+  'scripts/t78-classify.d/f34-t79-f15.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

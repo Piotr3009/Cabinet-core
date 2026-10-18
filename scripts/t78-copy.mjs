@@ -132,6 +132,13 @@ export const T78_PRO_EDITS = [
     words: 'the owner, 18.10.2026: *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: '
       + '*"tylko półki i dividery, szuflady zostaw nie ruszaj."*',
   },
+  {
+    pro: 'src/components/ElementProperties.jsx',
+    by: 'T79 F16',
+    why: 'the shelf\'s Type field gains a `Restore sleeve rows` button (data-restore-sleeve-rows), shown only when the '
+      + 'shelf carries `sleeves_dropped`, calling the store\'s `restoreSleeveRows`; a refusal is said, never silent.',
+    words: 'the handover of 18.10.2026: *"przycisk Restore sleeve rows"*, accepted by the owner 14:55: *"ok daj"*',
+  },
 ];
 
 /**

@@ -202,7 +202,8 @@ const EXEMPT = {
     + 'every `<select>` in the dock; F12 · the divider reaches the same setback row. *"nie '
     + 'choose, tylko te 2 opcje."*'
     + ' T79 F12 · Center between beside Center all, the same width: one click arms the shared uiStore\'s two-pick mode, the panel says which pick is next, Escape cancels. *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie półki pomiędzy tymi elementami się centrują."*'
-    + ' T79 F13 . SET BACK\'s standard chip is the project\'s setback, carcass.shelfSetbackMm for a shelf and carcass.dividerSetbackMm for a divider (10), no longer the LISP\'s 20; Flush and the field unchanged. *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*',
+    + ' T79 F13 . SET BACK\'s standard chip is the project\'s setback, carcass.shelfSetbackMm for a shelf and carcass.dividerSetbackMm for a divider (10), no longer the LISP\'s 20; Flush and the field unchanged. *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*'
+    + ' T79 F16 · the shelf\'s Type field gains a `Restore sleeve rows` button (data-restore-sleeve-rows), shown only when the shelf carries `sleeves_dropped`, calling the store\'s `restoreSleeveRows`. *"przycisk Restore sleeve rows"*, accepted by the owner 14:55: *"ok daj"*',
   // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
   // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
   // client cannot reach. Three of his fourteen points are answered in PRO's own
@@ -350,7 +351,8 @@ const FROZEN = {
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/ElementProperties.jsx': '702ec1685b285364c69aa125680a4da4303a6295319985120a46557f2b893a46',
+  // T79 F16 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/ElementProperties.jsx': '8e4639fd5eacf027cd8fe76dcc577720d5853a8970c21e9d3106aaa909a0d9f5',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',

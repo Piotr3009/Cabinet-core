@@ -58,6 +58,8 @@ export default function ElementProperties({
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
   const setShelfType = useProjectStore((s) => s.setShelfType);
+  // T79 F16 · the sleeve rows a clash finding dropped, back in one click.
+  const restoreSleeveRows = useProjectStore((s) => s.restoreSleeveRows);
   // T72 F3 · CENTER ALL — the ONE store action both applications press.
   const centreShelves = useProjectStore((s) => s.centreShelves);
   // T79 F12 · CENTER BETWEEN: the two-pick mode is the shared uiStore's, so
@@ -379,6 +381,26 @@ export default function ElementProperties({
                 drawer with an 80 mm side, never on pins.
               </p>
             )}
+            {/* T79 F16 · RESTORE SLEEVE ROWS: the store's `restoreSleeveRows`,
+                shown only on a shelf whose cluster lost a row to the clash finding. */}
+            {item?.sleeves_dropped?.length ? (
+              <button
+                type="button"
+                className="cc-btn w-full mt-1"
+                data-restore-sleeve-rows="1"
+                title={`Sleeve rows not bored on this shelf: ${item.sleeves_dropped.map((d) => `${d > 0 ? '+' : ''}${d} mm`).join(', ')}, `
+                  + 'dropped for a hinge. Puts the whole sleeve cluster back.'}
+                onClick={(e) => {
+                  // The button stands in Field's <label> and leaves the page on its own click: without this the
+                  // label would hand the click on to its first control (the Fix chip) and pin the shelf.
+                  e.preventDefault();
+                  const res = restoreSleeveRows(unit.id, item.id);
+                  if (res?.error) notify(res.error, 'warn');
+                }}
+              >
+                Restore sleeve rows
+              </button>
+            ) : null}
           </Field>
         );
       // ─── TURN 21 (CLAUDE.md F10): ONE TRUTH, THE INTERIOR DATUM ───────────

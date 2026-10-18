@@ -58,6 +58,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const railHeightsAboveFloor = useProjectStore((s) => s.railHeightsAboveFloor);
   const unitResult = useProjectStore((s) => s.unitResult);
   const zonesOf = useProjectStore((s) => s.zonesOf);
+  // T79 F2 · the undivided opening over the divider's FIX shelf, or null.
+  const aboveDividerOf = useProjectStore((s) => s.aboveDividerOf);
 
   const type = getUnitType(unit.type);
   // T58-F4: is there a live rake over this cabinet? One reading, the store's.
@@ -66,6 +68,10 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const rail = hangerOf(items);
   const hardware = materials.filter((m) => m.category === 'hardware');
   const zones = useMemo(() => zonesOf(unit.id), [zonesOf, unit.id, items]);
+  const above = useMemo(
+    () => aboveDividerOf(unit.id),
+    [aboveDividerOf, unit.id, items, unit.params.width, unit.params.height],
+  );
 
   const DR = profile.wardrobe.drawers;
   const existingDrawers = items.filter((i) => i.kind === 'drawer').length;
@@ -174,7 +180,9 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   };
 
   const onAddShelves = (count) => {
-    const { added, requested } = addShelves(unit.id, count, zones.length > 1 ? shelfZone : null);
+    const { added, requested, refused } = addShelves(unit.id, count, zones.length > 1 ? shelfZone : null);
+    // T79 F2 · a refusal has already been said, in its own words, by the store.
+    if (refused) { done(); return; }
     if (added === 0) notify('Not enough clear height for another shelf.', 'warn');
     else if (added < requested) notify(`Room for ${added} of ${requested} shelves — the rest would not fit.`, 'warn');
     done();
@@ -786,10 +794,33 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                             Bay {z.index + 1} · {formatMm(z.size)}
                           </button>
                         ))}
+                        {/* T79 F2 · THE THIRD BUTTON. The owner: *"jak dodamy fix
+                            półkę i divider pod spodem to nie mam możliwości dodania
+                            całkowitej półki powyżej"*; mockup approved 14:45, *"1 -
+                            tak."* Shown only while the divider ends below the top. */}
+                        {above && (
+                          <button
+                            type="button"
+                            data-above-divider="1"
+                            className={`pbi-re-btn pbi-re-px2 ${shelfZone === 'above' ? 'pbi-re-hair-gold pbi-re-gold' : ''}`}
+                            title={`${formatMm(above.width)} mm clear, ${formatMm(above.height)} mm high over the divider`}
+                            onPointerEnter={() => onZoneHover?.('above')}
+                            onPointerLeave={() => onZoneHover?.(shelfZone)}
+                            onClick={() => { setShelfZone('above'); onZoneHover?.('above'); }}
+                          >
+                            Above divider · {formatMm(above.width)}
+                          </button>
+                        )}
                       </div>
-                      {shelfZone == null && (
+                      {/* T79 F2 · an opening that went away while picked asks again, never a mute Add. */}
+                      {(shelfZone == null || (shelfZone === 'above' && !above)) && (
                         <p className="pbi-re-t11 pbi-re-gold">
                           This cabinet is divided — pick the bay the shelf goes in.
+                        </p>
+                      )}
+                      {shelfZone === 'above' && above && (
+                        <p className="pbi-re-t11 pbi-re-quiet" data-above-divider-hint="1">
+                          Full width, centred in the opening above the fixed shelf that carries the divider.
                         </p>
                       )}
                     </div>
@@ -802,7 +833,7 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                     <button
                       type="button"
                       className="pbi-re-btn-gold"
-                      disabled={zones.length > 1 && shelfZone == null}
+                      disabled={zones.length > 1 && (shelfZone == null || (shelfZone === 'above' && !above))}
                       onClick={() => onAddShelves(shelfCount)}
                     >
                       Add

@@ -666,8 +666,12 @@ export const useUiStore = create((set, get) => ({
   // "the zones left/right of the partition highlight, the user clicks one".
   // A moment, not a mode: it lives exactly as long as the pointer is over the
   // choice, so it belongs here with the drag and the hover and nowhere else.
-  zoneHint: null,                    // the bay's index, or null
-  setZoneHint: (index) => set({ zoneHint: index == null ? null : Math.trunc(Number(index)) }),
+  // T79 F2 · or 'above': the undivided opening over the divider's FIX shelf
+  // (`projectStore.aboveDividerOf`), lit by `3d/UnitView` as a full-width band.
+  zoneHint: null,                    // the bay's index, 'above', or null
+  setZoneHint: (index) => set({
+    zoneHint: index == null ? null : (index === 'above' ? 'above' : Math.trunc(Number(index))),
+  }),
 
   // ─── T75 F7 · CUT CORNER: THE FOUR CORNERS ARE LIT ───────────────────────
   // *"Klikasz 'wytnij narożnik', program podświetla narożniki, wybierasz."*

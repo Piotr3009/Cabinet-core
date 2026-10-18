@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {
   clampDrawerFrontHeight, computeCabinet, doorCountFor, drawerSplitFor, isShelfLocked,
-  leafCountRefusal,
+  leafCountRefusal, shelfThickness,
   minDrawerFrontHeight, SHELF_VARIANTS, CORNER_KIT_KINDS, BLIND_KIT_KINDS, WARDROBE_KIT_KINDS,
 } from '../engine/cabinet.js';
 import {
@@ -180,13 +180,13 @@ import { jointSystemOf, resolveJointSystem } from '../engine/dowels.js';
 // It lives in `lib/` and not in the engine on purpose (T45's own argument):
 // `computeCabinet()` cannot reach it, so a project with no line cannot move.
 import { grooved } from '../lib/cncExport.js';
-import { widthZones } from '../engine/zones.js';
+import { partitionCollisions, widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
 import { mountHeightAlignedWith, topNeighbourDemand } from '../engine/doors.js';
 import {
   centredShelfPos, drawersInEngineOrder, evenShelfPositions, floorLawedItem,
   isPinnedShelf, nextHangerOffset,
-  shelvesInEngineOrder,
+  shelfOpeningsIn, shelvesInEngineOrder,
 } from '../engine/items.js';
 // T48-F1: the floor a piece may not fall through — the engine's own answer to
 // "where is the top face of the carcass bottom", asked rather than re-derived.
@@ -7605,8 +7605,49 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // shoe shelf (standard pins, front pair set lower; stop rail cut with it).
   addShelves: (unitId, count = 1, zone = null, variant = 'adjustable') => {
     const profile = getCabinetProfile();
+    const requested = Math.max(1, Math.trunc(count));
+    // ─── T79 F2 · THE THIRD BUTTON: ABOVE THE DIVIDER ───────────────────────
+    // The owner: *"nie mam czegoś takiego że jest bay nie dzielony powyżej."*
+    // `zone: 'above'` is the opening over the FIX shelf that carries the
+    // dividers. The shelves are FULL WIDTH (no zone written, as every
+    // full-width shelf) and spaced as the kit spaces a zone
+    // (`evenShelfPositions`), from that shelf's top face to the underside of
+    // the top, never below it; one click, one undo step.
+    if (zone === 'above') {
+      const unit = get().units.find((u) => u.id === unitId);
+      if (!unit) return { added: 0, requested };
+      const result = resultOf(unit, get().project.design);
+      const opening = aboveDividerOpening(unit, profile, result);
+      if (!opening) return { added: 0, requested };
+      const G = unit.params.board_t ?? profile.board.thickness;
+      const inside = (y) => Number.isFinite(y) && y >= opening.from && y < opening.to;
+      // What already stands in the opening (a shelf of any bay, a split
+      // crossbar) is a board the ladder may not land on: the ONE finder hands
+      // back the gaps between them and the ladder goes in the biggest.
+      const gap = shelfOpeningsIn({
+        band: { floor: opening.from, ceiling: opening.to },
+        positions: shelvesInEngineOrder(unit.params.sections?.[0]?.items || [])
+          .map((sh) => Number(sh.pos_mm)).filter(inside),
+        boundaries: splitBoundaryPositions(unit, profile, null, result).filter(inside),
+        boardT: G,
+      }).reduce((best, o) => (!best || o.size > best.size ? o : best), null);
+      const E = profile.editor;
+      const fit = gap
+        ? Math.max(0, Math.min(requested, Math.floor((gap.size - E.minShelfGap) / (G + E.minShelfGap))))
+        : 0;
+      if (!fit) return { added: 0, requested };
+      const ladder = evenShelfPositions({
+        zoneBottom: gap.from, zoneTop: gap.to, count: fit, boardT: G,
+      });
+      runBatch(() => ladder.forEach((pos) => get().addItem(unitId, {
+        kind: 'shelf',
+        variant: SHELF_VARIANTS.includes(variant) ? variant : 'adjustable',
+        pos_mm: snapTo(pos, E.mmStep),
+      })));
+      return { added: fit, requested };
+    }
     let added = 0;
-    for (let i = 0; i < Math.max(1, Math.trunc(count)); i += 1) {
+    for (let i = 0; i < requested; i += 1) {
       const unit = get().units.find((u) => u.id === unitId);
       if (!unit) break;
       const items = unit.params.sections?.[0]?.items || [];
@@ -7636,6 +7677,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         boardT: unit.params.board_t ?? profile.board.thickness,
       }, profile);
       if (pos == null) break;
+      // T79 F2 · a full-width shelf whose opening lies under the divider top
+      // would run through the divider: refused in words, never clipped.
+      if (bay == null && hasPartition(unit) && fullWidthCrossesDivider(
+        unit, profile, { variant }, pos, resultOf(unit, get().project.design),
+      )) {
+        useUiStore.getState().notify(FULL_WIDTH_CROSSES_DIVIDER, 'warn');
+        return { added, requested, refused: FULL_WIDTH_CROSSES_DIVIDER };
+      }
       // ADJUSTABLE (turn 8, F4). A shelf nobody has said anything about is one
       // you can move; `fixed` means screwed now, and a shelf arriving screwed
       // in is a decision nobody made. Turn 33 (F3): a SHOE shelf arrives as
@@ -7648,7 +7697,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       });
       added += 1;
     }
-    return { added, requested: Math.max(1, Math.trunc(count)) };
+    return { added, requested };
   },
 
   /**
@@ -7668,6 +7717,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       boardT: unit.params.board_t ?? profile.board.thickness,
       partitions: items.filter((i) => i.kind === 'partition'),
     });
+  },
+
+  /**
+   * T79 F2 · the undivided opening over the dividers, or null: what the third
+   * button in "which side" offers and what the canvas lights when it is hovered.
+   */
+  aboveDividerOf: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    return aboveDividerOpening(unit, getCabinetProfile(), resultOf(unit, get().project.design));
   },
 
   /**
@@ -10108,6 +10167,23 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         pos: item?.pos_mm ?? band.min, ...bounds, blocked: true, locked: true,
       };
     }
+    // ─── T79 F2 · A FULL-WIDTH SHELF NEVER RUNS THROUGH A DIVIDER ───────────
+    // Asked below the divider top, it is refused in words and stays where it
+    // was, never clipped. One that already stands across a divider (a project
+    // older than the divider) moves as it always did.
+    if (item && hasPartition(unit) && zoneIndexOf(item.zone) == null) {
+      const result = resultOf(unit, get().project.design);
+      const asked = snapTo(posRaw, snapStep || profile.editor.mmStep);
+      if (fullWidthCrossesDivider(unit, profile, item, asked, result)
+        && !fullWidthCrossesDivider(unit, profile, item, item.pos_mm, result)) {
+        useUiStore.getState().notify(FULL_WIDTH_CROSSES_DIVIDER, 'warn');
+        const band = shelfBandFor(unit, profile, null, null, item.pos_mm ?? null);
+        const bounds = shelfBounds({ pos: item.pos_mm ?? band.min, others: otherShelfPositions(unit, itemId), band }, profile);
+        return {
+          pos: item.pos_mm ?? band.min, ...bounds, blocked: true, refused: FULL_WIDTH_CROSSES_DIVIDER,
+        };
+      }
+    }
     const state = clampShelfPos({
       // A stored millimetre is ALWAYS on the workshop grid (BACKLOG #33): the
       // drag's own snap when there is one, half a millimetre when there is not
@@ -11304,6 +11380,74 @@ function otherShelfPositions(unit, itemId) {
       return bay == null || theirs == null || theirs === bay;
     })
     .map((i) => i.pos_mm);
+}
+
+// ─── T79 F2 · THE OPENING ABOVE THE DIVIDER ─────────────────────────────────
+//
+// The owner, 18.10.2026: *"jak dodamy fix półkę i divider pod spodem to nie
+// mam możliwości dodania całkowitej półki powyżej bo kod dzieli mi całą szafę
+// na bay 1 i 2, a nie mam czegoś takiego że jest bay nie dzielony powyżej."*
+// The engine already ends every divider under the lowest FIX shelf that
+// crosses it (`engine/zones.js partitionSpan`); what was missing is the name of
+// the undivided opening over that shelf. It is read off the engine's own VPART
+// panels, so the picker, the canvas and the store hold one answer.
+
+/** The sentence a full-width shelf below the divider top is refused with. */
+export const FULL_WIDTH_CROSSES_DIVIDER = 'A full-width shelf cannot cross the divider; pick a bay or raise it above the divider.';
+
+/** Every divider the engine cut, as its vertical span and the shelf it stands under. */
+function dividerSpansOf(result) {
+  return (result?.panels || [])
+    .filter((p) => p.part === 'VPART' && p.box)
+    .map((p) => ({
+      from: Number(p.box.y) || 0,
+      to: (Number(p.box.y) || 0) + (Number(p.box.h) || 0),
+      terminatesOn: p.meta?.terminatesOn ?? null,
+    }));
+}
+
+/**
+ * The full-width opening over the dividers: from the top face of the FIX shelf
+ * that carries them to the underside of the top. Null when there is no divider,
+ * or when one runs to the top (then nothing above it is undivided).
+ *
+ * @returns {{from:number, to:number, height:number, width:number}|null}
+ */
+export function aboveDividerOpening(unit, profile, result) {
+  const spans = dividerSpansOf(result);
+  if (!unit || !spans.length || spans.some((s) => s.terminatesOn == null)) return null;
+  const G = unit.params.board_t ?? profile.board.thickness;
+  const items = unit.params.sections?.[0]?.items || [];
+  const from = Math.max(...spans.map((s) => s.to
+    + shelfThickness(items.find((i) => i.id === s.terminatesOn), G)));
+  const to = (Number(unit.params.height) || 0) - G;
+  if (!(to > from)) return null;
+  return {
+    from, to, height: to - from, width: (Number(unit.params.width) || 0) - 2 * G,
+  };
+}
+
+/**
+ * Would a FULL-WIDTH shelf at `pos` run through a divider? The engine's own
+ * collision law (`partitionCollisions`) against every divider's span; a bay
+ * shelf never crosses one, and a FIX shelf carries a divider rather than
+ * crossing it, so both answer false. Asked only where the divider has a top
+ * below the carcass top (an opening above it exists); a divider to the top
+ * keeps the law it had before T79.
+ */
+function fullWidthCrossesDivider(unit, profile, shelf, pos, result) {
+  if (zoneIndexOf(shelf?.zone) != null || !Number.isFinite(Number(pos))) return false;
+  if (!aboveDividerOpening(unit, profile, result)) return false;
+  const G = unit.params.board_t ?? profile.board.thickness;
+  const probe = { ...shelf, kind: 'shelf', pos_mm: Number(pos) };
+  return dividerSpansOf(result).some((span) => partitionCollisions({
+    span, shelves: [probe], boardT: shelfThickness(shelf, G),
+  }).length > 0);
+}
+
+/** Does this unit stand divided at all? The guard costs nothing where it is not. */
+function hasPartition(unit) {
+  return (unit?.params?.sections?.[0]?.items || []).some((i) => i.kind === 'partition');
 }
 
 /**

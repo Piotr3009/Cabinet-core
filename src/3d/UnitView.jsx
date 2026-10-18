@@ -161,7 +161,7 @@ import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
 // this house has already paid for once.
 import { ceilingPolyline, slopeInfillMm } from '../lib/slopeLine.js';
 import { wallElements } from '../lib/wallElements.js';
-import { useProjectStore } from '../stores/projectStore.js';
+import { aboveDividerOpening, useProjectStore } from '../stores/projectStore.js';
 import { useStorageBase } from '../lib/storageBase.js';
 import {
   columnOfItem, columnOfShelf, fieldFromPos, interiorFloor, lightBelow, shelfColumns,
@@ -1780,6 +1780,12 @@ export default function UnitView({
     boardT,
     partitions: (unit.params.sections?.[0]?.items || []).filter((i) => i.kind === 'partition'),
   }), [unit.params.width, boardT, unit.params.sections]);
+  // T79 F2 · the opening over the divider's FIX shelf, asked only while the
+  // third button is pointed at: the store's one answer, off this result.
+  const aboveHint = useMemo(
+    () => (zoneHint === 'above' ? aboveDividerOpening(unit, profile, result) : null),
+    [zoneHint, unit, profile, result],
+  );
 
   const W = unit.params.width;
   const H = unit.params.height;
@@ -3675,6 +3681,24 @@ export default function UnitView({
           raycast={null}
         >
           <boxGeometry args={[mm(bays[zoneHint].size), mm(H - 2 * boardT), mm(D * 0.9)]} />
+          <meshBasicMaterial
+            color={profile.appearance.addPlus.inner}
+            transparent
+            opacity={0.22}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+      {/* T79 F2 · …and the opening ABOVE the divider, the same slab across the
+          full width, from the carrying FIX shelf's top face to the top's
+          underside: *"nie mam czegoś takiego że jest bay nie dzielony powyżej."* */}
+      {aboveHint && !contour && (
+        <mesh
+          userData={{ ccHelper: true }}
+          position={[mm(W / 2), mm((aboveHint.from + aboveHint.to) / 2), mm(D / 2)]}
+          raycast={null}
+        >
+          <boxGeometry args={[mm(aboveHint.width), mm(aboveHint.height), mm(D * 0.9)]} />
           <meshBasicMaterial
             color={profile.appearance.addPlus.inner}
             transparent

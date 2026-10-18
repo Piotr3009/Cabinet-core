@@ -86,6 +86,17 @@ export const T78_PRO_EDITS = [
       + 'its hit box is the box of every point of the walk.',
     words: 'the owner, 17.10.2026 (16:10): *"jeden, zaczynajacy sie od lewej do srodka i kontynuacja na prawo, jeden L wektor"*.',
   },
+  {
+    pro: 'src/components/AddItems.jsx',
+    by: 'T79 F2',
+    why: 'the shelves\' WHICH SIDE gains a third button, Above divider, shown only while the divider ends under a FIX '
+      + 'shelf below the top; hovering lights the full-width opening over that shelf, Add puts full-width shelves '
+      + 'centred in it (`addShelves(unit, n, \'above\')`), and a refusal said by the store is not said twice; an '
+      + 'opening that goes away while picked asks for a bay again instead of leaving a mute Add.',
+    words: 'the owner, 18.10.2026: *"jak dodamy fix półkę i divider pod spodem to nie mam możliwości dodania '
+      + 'całkowitej półki powyżej bo kod dzieli mi całą szafę na bay 1 i 2, a nie mam czegoś takiego że jest bay '
+      + 'nie dzielony powyżej."*; mockup approved 14:45: *"1 - tak."*',
+  },
 ];
 
 /**

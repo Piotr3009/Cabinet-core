@@ -152,7 +152,8 @@ const EXEMPT = {
     + ' T77 F7 · a ready Ornate leaf on the front face says "Proposed relief reference" in the colour of its reference contours, apart from the red blocked label (since F4 a relief that built is not a fault). *"The relief is a PROPOSAL and stays one ... The slab is cut; the relief ships as CAD/CAM reference files with the state `geometry`, never as approved machining, until the owner says otherwise."*'
     + ' Chat fix 17.10.2026 \u00b7 every part\'s caption carries its project number and wears its cabinet\'s colour, from the same plan the downloads use. *"ponumerujemy wszystkie elementy ... kolory napisow pod kolory szafki ... ok koduj"*'
     + ' 14:10 \u00b7 the EDGE arrow and the line along the banded edge on every numbered board, the one geometry the DXF writes (edgeArrowGeometry). *"na projekcie nie ma strzalek ktora strone oklejamy, jak mam przykleic naklejki? ... 1 - tak ... prosze - koduj"*'
-    + ' 16:10 \u00b7 a mark is drawn as the open walk it is (markPoints): the corner mark one L through the corner. *"jeden L wektor ... obok linii"*',
+    + ' 16:10 \u00b7 a mark is drawn as the open walk it is (markPoints): the corner mark one L through the corner. *"jeden L wektor ... obok linii"*'
+    + ' T79 F1 . the layer legend stands on the Changes bar (bottom-11, was bottom-3) so the bar of the one bottom-left message column never covers it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej ... powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*',
   'src/components/FrontDecorationControls.jsx': 'ORNATE, Piotr 10.10.2026: rozpisz zakoduj dokaldnei prosze i ja roto dam do clauda, ale daj gotowy kod wlacznei z leyersami prosze do cnc. Adds proposed relief note and mirror choice; no new numeric fields. ' + 'DECOR F1: editable, versioned decorative machining defaults shared with Retail. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T76 F4 · the Arch rise field goes with the ellipse it set; the defaults the controls show are the profile\'s. *"SEMICIRCULAR arch (rise = half the inner width; ... never squashed to an ellipse)"*'
     + ' T76 F6 · one prop, `fields` (PRO passes nothing and keeps every field); retail passes false and shows no number of a recipe. *"a client picks a style and gets the owner\'s recipe with NO numeric fields (lazy client law; the recipe controls are PRO\'s)"*'
@@ -241,7 +242,8 @@ const EXEMPT = {
     + 'same set with the same worktops and render. *"weź zakoduj"*.'
     + ' T77 F3 · Output > CNC / DXF writes the Ornate reference files at the level the CNC panel chose. *"The CNC export offers two levels in the existing export options (no new numeric field): `Reference (default)` at `sampleMm` and `Full resolution` at `fullSampleMm`; the manifest records which one was written."*'
     + ' T78 F21 · the Spraying page is mounted beside the other output windows (the modal layer\'s spraying entry). *"cale sprayowanie jako osobne menu Cabinet Core."*'
-    + ' Chat fix 17.10.2026 \u00b7 onExportLabels writes the sticker sheets (lib/labelsPdf.js) from the project\'s part number plan; the Output menu\'s DXF ZIP takes the cabinet\'s labels slice. *"naklejki 44 na A4 ... ponumerujemy wszystkie elementy ... ok koduj"*',
+    + ' Chat fix 17.10.2026 \u00b7 onExportLabels writes the sticker sheets (lib/labelsPdf.js) from the project\'s part number plan; the Output menu\'s DXF ZIP takes the cabinet\'s labels slice. *"naklejki 44 na A4 ... ponumerujemy wszystkie elementy ... ok koduj"*'
+    + ' T79 F1 . the messages and the front-gap rows stand in ONE bottom-left column (components/Messages.jsx, the rows as its top slot through a wrapper, FrontGapWarnings.jsx untouched); the lone Messages mount after the context menu is gone. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -281,6 +283,11 @@ const EXEMPT = {
   // NEW PRO surface, licensed the night it is born and frozen at its hash.
   'src/components/SprayingPanel.jsx':
     'T78 F21 · Output > Spraying, one page on the Production Core pattern (mockup v2 of 11.10): the SPRAYING INFORMATION card, PART A ELEMENTS by colour, PART B CARDS open, PART C PAINT, Export PDF; every number the engine\'s (engine/spray.js off profile.spray), a typed note per line printed. *"cale sprayowanie jako osobne menu Cabinet Core"*; *"edges in m2 for the paint and in lm beside it; waste 10 percent."*',
+  // CLAUDE.md T79 F1, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
+  // with the owner's words from this file and re-frozen at its final hash in
+  // the same commit."*
+  'src/components/Messages.jsx':
+    'T79 F1 . all three levels stand in ONE bottom-left column (the centre and the bottom-centre blocks deleted), the newest nearest the Changes bar under them; the bar opens the list of the last profile.ui.messages.historyMax messages (newest first, HH:MM, the level\'s dot, the text, Clear), collapsed by default, Escape collapses it, never saved; a folded yellow or grey says its count once (its text), a red beside it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*',
 };
 
 /**
@@ -310,7 +317,8 @@ const FROZEN = {
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
   // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
   'src/components/CncTree.jsx': '68aa1ffd5f8c07525c34b7b242c3adc387bc70157a38ae5bd07d0f257691d8e0',
-  'src/components/CncView.jsx': '8ca82fda8cd30f14060e0392953b97599dbcc1c373a71f91227e28585a2b4bfd',
+  // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CncView.jsx': '519b7e96ca356180dd91830dd8fb3aacc26b4c6e76f53c4888d5ac01ae454fec',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
   // T78 F19 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/CompanyDefaultsModal.jsx': 'e365305d290ab32057544e05f83b068f1ef9414642fe00f429cfbedb84dbc917',
@@ -339,7 +347,8 @@ const FROZEN = {
   'src/components/MaterialChoicePanel.jsx': '16d2ed3171b4756141f21f693123c46bd6b33f772cad58013b2a45ec9a8fcb71',
   'src/components/MaterialPicker.jsx': 'd2b1d49bb1ef08d55652437986d4d40a2cac7c1683b42d16b0523b0e08fca5b7',
   'src/components/MenuBar.jsx': '8259c2d7b81f5f176c8c20d6faf98d6c2943667e2dd6354154a85748da1c4581',
-  'src/components/Messages.jsx': 'fda203e902e53f4bd5ec26d27cd92229cb2967205239973b02616656e67cf55e',
+  // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/Messages.jsx': 'f01a71b01c20512a52e5442e01082fac769b1be2a66869f5955150ef654c672f',
   'src/components/MockModeBadge.jsx': '081294a78610a7fd3baef730ca7a318d8d193e40ef66c5d278e45f9672c82826',
   'src/components/Modal.jsx': '4bee3abfa7d391916931428869da887ea6e56c002ee1980b596413de5fc7ddbe',
   'src/components/MultiUnitPanel.jsx': 'ad7d770b51042f0c2e8d9633df4067c5a7d8d4af6e358fad2e90cf62e631531c',
@@ -382,7 +391,8 @@ const FROZEN = {
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '247f5fa9bc9d5ae3f61f8f32e2825793028d2b1fae9f19dcbbcdbd5d475dc609',
+  // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': '8a55e58fea1795e830b7f6cc1aba169fd8e12dae898db27393d650a3ea49fc37',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -579,6 +589,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/JpullRunModal.jsx',
     // T75 F15 · *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet"*.
     'src/components/LibraryPanel.jsx',
+    // T79 F1 · *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej"*: one bottom-left column and the Changes list.
+    'src/components/Messages.jsx',
     'src/components/PartDetailModal.jsx',
     'src/components/RightPanel.jsx',
     'src/components/RoomModal.jsx',

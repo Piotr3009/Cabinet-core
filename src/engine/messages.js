@@ -16,6 +16,15 @@
 //
 // …and "messages QUEUE; a red is never overwritten by a grey."
 //
+// ─── T79 F1 · ONE PLACE, ON THE LEFT, AND A MEMORY ─────────────────────────
+//
+// The owner, 18.10.2026: *"wszystkie informacje po zmianach które pokazujesz na
+// ekranie proszę zrób po lewej, niech one tam znikają ... teraz wszystkie
+// informacje pokazują się na środku i zasłaniają nam widok pracy."* The three
+// contracts stand (how long each level stays is untouched); where they stand
+// is now ONE bottom-left column for all three, and every message shown is kept
+// as a row of the Changes list (`recordHistory`), the last `historyMax` of them.
+//
 // ─── WHY THE CONTRACT IS A FIELD AND NOT A COLOUR ───────────────────────────
 //
 // `until` is the fact that decides everything the component does: 'click' hangs
@@ -42,7 +51,7 @@ export const LEVELS = Object.freeze({
     // seconds: a refused save, lost work, a panel held out of an export.
     until: 'click',
     rank: 3,
-    place: 'bottom',
+    place: 'left',
     tone: 'red',
   },
   yellow: {
@@ -51,7 +60,7 @@ export const LEVELS = Object.freeze({
     // exactly the gesture a person makes when they have read it and decided.
     until: 'clickAway',
     rank: 2,
-    place: 'bottom',
+    place: 'left',
     tone: 'yellow',
   },
   grey: {
@@ -59,7 +68,7 @@ export const LEVELS = Object.freeze({
     // written, a set saved, an account signed in.
     until: 'time',
     rank: 1,
-    place: 'centre',
+    place: 'left',
     tone: 'grey',
   },
 });
@@ -198,9 +207,57 @@ export function sortForDisplay(list) {
   return [...(list || [])].sort((a, b) => (b.rank - a.rank) || (a.at - b.at));
 }
 
-/** The two places a message can stand — see LEVELS. */
+/** The place a message stands (T79 F1: one, 'left', for every level), see LEVELS. */
 export function messagesAt(list, place) {
   return sortForDisplay(list).filter((m) => m.place === place);
+}
+
+// ─── T79 F1 · THE CHANGES LIST ──────────────────────────────────────────────
+//
+// *"na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian."* A
+// message leaves the screen on its own contract; its row stays here. Newest
+// first, at most `historyMax` rows, never persisted (a list of what this
+// session said, not a record of the project).
+
+/** How many rows the Changes list keeps, a profile number. */
+export function historyMax(profile) {
+  const n = Number(profile?.ui?.messages?.historyMax);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 50;
+}
+
+/**
+ * One row of the list: `{ id, message, level, at }`, read off a shown message.
+ * A yellow or a grey folds into its text (`3 × ...`, the 15.08 chat fix); a red
+ * folds by its count (`pushMessage`), so the row says the same `N × ` for it.
+ */
+export function historyRow(msg) {
+  const text = String(msg.message ?? '');
+  return {
+    id: msg.id,
+    message: msg.count > 1 && msg.baseMessage == null ? `${msg.count} × ${text}` : text,
+    level: msg.level,
+    at: msg.at,
+  };
+}
+
+/**
+ * Keep a row. A message seen for the first time goes on top, and the oldest
+ * past `max` goes; a row whose id is already there is the SAME message folded
+ * (`3 × ...`) and is updated where it stands, never added twice.
+ */
+export function recordHistory(history, row, max = 50) {
+  const list = Array.isArray(history) ? history : [];
+  if (list.some((r) => r.id === row.id)) {
+    return list.map((r) => (r.id === row.id ? { ...r, message: row.message } : r));
+  }
+  return [row, ...list].slice(0, Math.max(1, Math.trunc(max)));
+}
+
+/** A row's time as the list shows it, HH:MM on the local clock. */
+export function historyTime(at) {
+  const d = new Date(Number(at) || 0);
+  const two = (n) => String(n).padStart(2, '0');
+  return `${two(d.getHours())}:${two(d.getMinutes())}`;
 }
 
 // ─── THE LEAVE GUARD (F2's red) ─────────────────────────────────────────────

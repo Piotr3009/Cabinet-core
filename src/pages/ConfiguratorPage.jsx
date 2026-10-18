@@ -632,11 +632,23 @@ export default function ConfiguratorPage() {
             what an empty room looks like. */}
         {units.length === 0 && viewMode === '3d' && <FirstUnitPlus />}
 
-        {/* ─── Turn 30 (CLAUDE.md F12): "…and SHOW THE VALUE" ─────────────
-            The red marks are painted in the room; this is the number beside
-            them. Solid view only — the CNC view is the machine's picture and
-            a warning is not cut. */}
-        {viewMode === '3d' && <FrontGapWarnings />}
+        {/* ─── T79 F1 · ONE COLUMN ON THE LEFT ─────────────────────────────
+            *"wszystkie informacje po zmianach które pokazujesz na ekranie
+            proszę zrób po lewej, niech one tam znikają, można na dole po lewej
+            zrobić jakby listę rozwijaną i tam historia zmian"*. From the
+            bottom up: the Changes bar, the messages, then the front-gap rows
+            (Turn 30 F12, solid view only: the CNC view is the machine's
+            picture and a warning is not cut). The rows keep their own file and
+            their own layer; this wrapper only lets them stand in the column
+            instead of on their own corner, so nothing of the three covers
+            another. */}
+        <Messages>
+          {viewMode === '3d' && (
+            <div className="contents pointer-events-auto [&>*]:!static">
+              <FrontGapWarnings />
+            </div>
+          )}
+        </Messages>
 
         <LibraryPanel />
         {rightPanelOpen && !bomOpen && <RightPanel />}
@@ -726,7 +738,6 @@ export default function ConfiguratorPage() {
             to appear over whatever window the recompute happened in. */}
         <HandEditsModal />
         <ContextMenu />
-        <Messages />
       </div>
     </div>
   );

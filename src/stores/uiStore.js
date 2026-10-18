@@ -13,8 +13,8 @@ import { modalAnchorFault, withModalAnchor } from '../lib/modalLayer.js';
 import { normaliseAudience } from '../lib/wizardTabs.js';
 import { entryAudience } from '../lib/appEntry.js';
 import {
-  dismissedByClickAway, expired, greyMs, leaveWarning, makeMessage, pushMessage, queueMax,
-  trimQueue,
+  dismissedByClickAway, expired, greyMs, historyMax, historyRow, leaveWarning, makeMessage,
+  pushMessage, queueMax, recordHistory, trimQueue,
 } from '../engine/messages.js';
 // TURN 59: the shared brain, running memory-only for the PBI retail mount.
 import { persistenceOn } from './persistence.js';
@@ -1044,16 +1044,31 @@ export const useUiStore = create((set, get) => ({
     );
     if (twin) {
       const count = (twin.count || 1) + 1;
+      const folded = `${count} × ${message}`;
       set((s) => ({
         messages: s.messages.map((m) => (m.id === twin.id
           ? {
-            ...m, count, baseMessage: message, message: `${count} × ${message}`, at: now,
+            ...m, count, baseMessage: message, message: folded, at: now,
           }
           : m)),
+        // T79 F1: the fold is ONE row of the Changes list, updated in place.
+        history: recordHistory(s.history, historyRow({
+          ...twin, count, baseMessage: message, message: folded, at: now,
+        }), historyMax(profile)),
       }));
       return twin.id;
     }
-    set((s) => ({ messages: trimQueue(pushMessage(s.messages, msg), queueMax(profile)) }));
+    set((s) => {
+      const messages = trimQueue(pushMessage(s.messages, msg), queueMax(profile));
+      // T79 F1: kept as a row when first shown. A sentence `pushMessage` folded
+      // into one already standing keeps that one's id, so it stays one row.
+      const shown = messages.find((m) => m.id === msg.id)
+        || messages.find((m) => m.message === msg.message && m.level === msg.level);
+      return {
+        messages,
+        history: shown ? recordHistory(s.history, historyRow(shown), historyMax(profile)) : s.history,
+      };
+    });
     // Only a grey has a clock. A red that expired on its own would be exactly
     // the fault this feature exists to end, so there is no timer for one.
     if (msg.expiresAt != null) {
@@ -1072,6 +1087,18 @@ export const useUiStore = create((set, get) => ({
     return gone.length ? { messages: s.messages.filter((m) => !gone.includes(m.id)) } : {};
   }),
   clearMessages: () => set({ messages: [] }),
+
+  // ─── T79 F1 · THE CHANGES LIST ────────────────────────────────────────────
+  // *"na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian."*
+  // Every message as it was first shown, newest first, the last
+  // `profile.ui.messages.historyMax` of them (engine/messages.js
+  // `recordHistory`). Collapsed by default and never persisted: this
+  // session's notices, not the project's record.
+  history: [],
+  historyOpen: false,
+  toggleHistory: () => set((s) => ({ historyOpen: !s.historyOpen })),
+  closeHistory: () => set((s) => (s.historyOpen ? { historyOpen: false } : {})),
+  clearHistory: () => set({ history: [] }),
 
   /**
    * ─── LEAVING WITH UNSAVED WORK (F2) ──────────────────────────────────────

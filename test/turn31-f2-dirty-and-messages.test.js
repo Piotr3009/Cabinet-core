@@ -154,7 +154,10 @@ test("the owner's three rules are three CONTRACTS, not three colours", () => {
   assert.equal(LEVELS.red.until, 'click', 'RED stays until clicked');
   assert.equal(LEVELS.yellow.until, 'clickAway', 'YELLOW goes when attention moves on');
   assert.equal(LEVELS.grey.until, 'time', 'GREY is a few seconds');
-  assert.equal(LEVELS.grey.place, 'centre', 'GREY is centre');
+  // REWRITTEN BY T79 F1, the owner 18.10.2026: *"wszystkie informacje po
+  // zmianach które pokazujesz na ekranie proszę zrób po lewej"*: the grey
+  // keeps its clock and leaves the centre for the left column.
+  assert.equal(LEVELS.grey.place, 'left', 'GREY stands on the left (T79 F1)');
   // …and a red outranks a yellow outranks a grey.
   assert.ok(LEVELS.red.rank > LEVELS.yellow.rank);
   assert.ok(LEVELS.yellow.rank > LEVELS.grey.rank);
@@ -219,14 +222,19 @@ test('the same sentence twice is one message with a count, not two', () => {
   assert.equal(q[0].at, 2, 'the repeat refreshes it');
 });
 
-test('grey stands in the centre; red and yellow wait at the bottom', () => {
+// REWRITTEN BY T79 F1, the owner 18.10.2026: *"wszystkie informacje po zmianach
+// które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają ...
+// teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok
+// pracy."* The centre and the bottom are gone; all three stand in one column.
+test('all three levels stand in ONE place, on the left, red above yellow above grey (T79 F1)', () => {
   const list = [
     makeMessage('boom', 'error', { at: 1, profile: P }),
     makeMessage('careful', 'warn', { at: 2, profile: P }),
     makeMessage('saved', 'ok', { at: 3, profile: P }),
   ];
-  assert.deepEqual(messagesAt(list, 'centre').map((m) => m.level), ['grey']);
-  assert.deepEqual(messagesAt(list, 'bottom').map((m) => m.level), ['red', 'yellow']);
+  assert.deepEqual(messagesAt(list, 'left').map((m) => m.level), ['red', 'yellow', 'grey']);
+  assert.deepEqual(messagesAt(list, 'centre'), []);
+  assert.deepEqual(messagesAt(list, 'bottom'), []);
 });
 
 test('the two numbers are PROFILE numbers (rule 2)', () => {

@@ -5356,7 +5356,7 @@ export const DEFAULT_CABINET_PROFILE = {
     //
     // The owner, 15.08.2026, on a toast slot of one that erased itself every
     // four seconds: "he has never seen one." His three rules are contracts and
-    // live in engine/messages.js; these are the two NUMBERS in them, here
+    // live in engine/messages.js; these are the NUMBERS in them, here
     // because rule 2 says a number lives in the profile.
     messages: {
       // "GREY — a few seconds." Three is a few: long enough to read a file
@@ -5368,6 +5368,11 @@ export const DEFAULT_CABINET_PROFILE = {
       // OWNER-TUNABLE DEFAULT, 15.08.2026 — the owner has not named it; five
       // is what fits over a 3D view without becoming the view.
       maxOnScreen: 5,
+      // T79 F1, the owner 18.10.2026: *"można na dole po lewej zrobić jakby
+      // listę rozwijaną i tam historia zmian"*. How many rows the Changes list
+      // keeps before the oldest goes (engine/messages.js `recordHistory`).
+      // T79 PROPOSED, owner to confirm: fifty is a working session of notices.
+      historyMax: 50,
     },
 
     // ─── THE MODAL RULE (turn 12, CLAUDE.md rule 15) ───

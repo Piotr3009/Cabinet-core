@@ -98,6 +98,9 @@ export const NEW_FILES = [
   'test/recess-extension-1510.test.js',
   'scripts/t78-classify.d/f28-owner-1510d.mjs',
   'scripts/chatfix-1510-wieczor-walk.mjs',
+  // T79 F1 (18.10.2026): messages on the left, with a history
+  'test/turn79-f01-messages-left.test.js',
+  'scripts/t78-classify.d/f34-t79-f01.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -204,8 +204,9 @@ test('a unit\'s files written with its labels put every text on LABEL_<cabinet> 
   const plan = partNumberPlan(units, P);
   const labels = dxfLabelsFor(plan, 'u1');
   assert.deepEqual(labelLayerRow(labels), [{ name: 'LABEL_W01', aci: 1 }]);
-  assert.deepEqual(labelFor(labels, 'TOP'), { layer: 'LABEL_W01', no: 4 });
-  assert.deepEqual(labelFor(labels, 'W01-FL'), { layer: 'LABEL_W01', no: 8 }, 'a front: the layer and, since 17:38, its number');
+  // T79 F15 (handover 18.10, "kolory warstw LABEL_* w VCarve (wariant b)"): the option carries the layer's colour too.
+  assert.deepEqual(labelFor(labels, 'TOP'), { layer: 'LABEL_W01', no: 4, aci: 1 });
+  assert.deepEqual(labelFor(labels, 'W01-FL'), { layer: 'LABEL_W01', no: 8, aci: 1 }, 'a front: the layer and, since 17:38, its number');
   assert.equal(labelFor(null, 'TOP'), null);
 
   const plain = buildUnitDxfFiles(r1, P);

@@ -117,21 +117,26 @@ export function writeDxf(entities, layers, extents) {
   put(0, 'ENDSEC');
 
   // ── ENTITIES ──
+  // T79 F15 · an entity may carry its OWN colour (`color`, an ACI) beside its
+  // layer's: group 62 right after the layer, on every record the entity
+  // writes. Only the cabinet's text layer asks for it (panelEntities), so a
+  // file without a labels plan is byte for byte what it was.
+  const putLayer = (e) => { put(8, e.layer); if (e.color != null) put(62, e.color); };
   put(0, 'SECTION'); put(2, 'ENTITIES');
   for (const e of entities) {
     if (e.type === 'poly') {
-      put(0, 'POLYLINE'); put(8, e.layer);
+      put(0, 'POLYLINE'); putLayer(e);
       put(66, 1);                                 // vertices follow
       put(70, e.closed ? 1 : 0);
       put(10, 0); put(20, 0); put(30, 0);
       for (const [x, y, b] of e.pts) {
-        put(0, 'VERTEX'); put(8, e.layer);
+        put(0, 'VERTEX'); putLayer(e);
         put(10, fmt(x)); put(20, fmt(y)); put(30, 0);
         if (b) put(42, fmt(b));
       }
-      put(0, 'SEQEND'); put(8, e.layer);
+      put(0, 'SEQEND'); putLayer(e);
     } else if (e.type === 'circle') {
-      put(0, 'CIRCLE'); put(8, e.layer);
+      put(0, 'CIRCLE'); putLayer(e);
       put(10, fmt(e.cx)); put(20, fmt(e.cy)); put(30, 0);
       put(40, fmt(e.r));
     } else if (e.type === 'arc') {
@@ -144,12 +149,12 @@ export function writeDxf(entities, layers, extents) {
       //
       // It is ADDITIVE. No engine-computed geometry in this app emits an arc,
       // so every DXF the app wrote before tonight is byte-for-byte what it was.
-      put(0, 'ARC'); put(8, e.layer);
+      put(0, 'ARC'); putLayer(e);
       put(10, fmt(e.cx)); put(20, fmt(e.cy)); put(30, 0);
       put(40, fmt(e.r));
       put(50, fmt(e.start)); put(51, fmt(e.end));
     } else if (e.type === 'text') {
-      put(0, 'TEXT'); put(8, e.layer);
+      put(0, 'TEXT'); putLayer(e);
       put(10, fmt(e.x)); put(20, fmt(e.y)); put(30, 0);
       put(40, fmt(e.h)); put(1, e.str);
       if (e.rot) put(50, fmt(e.rot));
@@ -368,7 +373,8 @@ export function panelLabel(panel, { unitNum, profile, no = null }) {
  *          project and the cabinet's own text layer (LABEL_<cabinet>, coloured
  *          in the layer table so VCarve shows each cabinet's words in its
  *          colour). Left out, the text goes where it always went, unnumbered,
- *          and the file is byte for byte yesterday's.
+ *          and the file is byte for byte yesterday's. T79 F15: `aci`, the
+ *          same colour on every entity of that layer (group 62).
  */
 export function panelEntities(panel, drills, { unitNum, profile, label = null }) {
   const pz = profile.puzzle;
@@ -547,8 +553,17 @@ export function panelEntities(panel, drills, { unitNum, profile, label = null })
     }
   }
 
+  // ─── T79 F15 · THE CABINET'S COLOUR ON EVERY ENTITY OF ITS TEXT LAYER ─────
+  // The handover of 18.10: *"kolory warstw LABEL_* w VCarve (wariant b, jesli
+  // VCarve ignoruje kolory)"*. The layer row already carries the cabinet's
+  // ACI; now the TEXT, the number and the EDGE arrow carry the same ACI on
+  // the entity itself (group 62), so a reader that ignores layer colours
+  // still shows each cabinet's words in its colour. No plan, no colour.
+  const coloured = label?.layer && label.aci != null
+    ? entities.map((e) => (e.layer === label.layer ? { ...e, color: label.aci } : e))
+    : entities;
   // T78 F20 · the one reflection, applied once to the whole part.
-  return outside ? reflectEntities(entities, Number(w)) : entities;
+  return outside ? reflectEntities(coloured, Number(w)) : coloured;
 }
 
 /**
@@ -616,16 +631,21 @@ export function dxfFileName(unitNum, panelId) {
 // layer, its colour index and the numbers by panel. Every writer below takes
 // it as an option; without it nothing moves.
 
-/** The per-panel `label` option out of a cabinet's `labels` record. */
+/** T79 F15 · the cabinet's colour index, the one number its layer row and its entities both carry. */
+export function labelAciOf(labels) {
+  return Number(labels?.aci) || 7;
+}
+
+/** The per-panel `label` option out of a cabinet's `labels` record (T79 F15: with its colour). */
 export function labelFor(labels, panelId) {
   if (!labels?.layer) return null;
   const no = labels.byPanel instanceof Map ? labels.byPanel.get(panelId) : labels.byPanel?.[panelId];
-  return { layer: labels.layer, no: no ?? null };
+  return { layer: labels.layer, no: no ?? null, aci: labelAciOf(labels) };
 }
 
 /** The layer table row a cabinet's text layer declares itself with. */
 export function labelLayerRow(labels) {
-  return labels?.layer ? [{ name: labels.layer, aci: Number(labels.aci) || 7 }] : [];
+  return labels?.layer ? [{ name: labels.layer, aci: labelAciOf(labels) }] : [];
 }
 
 /** Complete DXF text for one part. */
@@ -890,7 +910,7 @@ export function parseDxfPairs(text) {
 
 /**
  * DXF text → { sections, entities } where every entity is
- * { type, layer, closed?, pts?, cx?, cy?, r?, str? }.
+ * { type, layer, color?, closed?, pts?, cx?, cy?, r?, str? }.
  */
 export function parseDxf(text) {
   const pairs = parseDxfPairs(text);
@@ -941,6 +961,8 @@ export function parseDxf(text) {
 
     if (!current) continue;
     if (code === 8 && current.layer === null) { current.layer = raw; continue; }
+    // T79 F15 · an entity's own colour (group 62), read only when written.
+    if (code === 62) { current.color = Number(raw); continue; }
 
     if (current.type === 'poly') {
       if (code === 70) { current.closed = Number(raw) === 1; continue; }

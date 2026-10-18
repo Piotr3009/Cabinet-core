@@ -77,6 +77,45 @@ export const T78_PRO_EDITS = [
       + '`setCornerKit` (one BOM line, a placeholder body, zero holes; a fixed shelf in its way is refused in words).',
     words: 'the owner, 11.10.2026: *"krecacy sie naroznik na garnki w srodku."*',
   },
+  // Before T79: the chat fix of 17.10.2026 (16:10) moved this PRO surface after T78 closed; named here so the
+  // T79 run can prove its copy (the machine's, byte for byte).
+  {
+    pro: 'src/components/PartDetailModal.jsx',
+    by: 'chat fix 17.10.2026 (16:10), before T79',
+    why: 'a mark is an open walk: the corner mark is drawn as one path through its three points (engine/marks.js) and '
+      + 'its hit box is the box of every point of the walk.',
+    words: 'the owner, 17.10.2026 (16:10): *"jeden, zaczynajacy sie od lewej do srodka i kontynuacja na prawo, jeden L wektor"*.',
+  },
+];
+
+/**
+ * THE T62 HAND COPIES MOVED BEFORE T79. RoomModal and WallElevationModal are
+ * T62's copies (scripts/t63-copies.mjs T62_COPIES), made by their own machine,
+ * not by scripts/t63-copy.mjs, so they cannot be named in T78_PRO_EDITS (the
+ * machine does not make them) nor in T78_RETAIL_EDITS (they are manifest files).
+ * Each entry names the PRO surface and its retail copy, both moved by the chat
+ * fixes of 15.10 and 17.10.2026 after T78 closed; the PRO file still carries its
+ * EXEMPT line and its frozen hash, and the copy's hunks are printed for the PR.
+ */
+export const HAND_COPY_EDITS = [
+  {
+    pro: 'src/components/RoomModal.jsx',
+    retail: 'src/retail/design/room/RoomModal.jsx',
+    by: 'chat fixes 14.10 and 17.10.2026, before T79',
+    why: 'ADD ISLAND opens the island plan over the canvas (3d/IslandPlan.jsx); the window is 1290 px wide, the plan '
+      + 'inside it untouched.',
+    words: 'the owner, 14.10.2026: *"przy dodaniu wyspy chcialbym zeby byl widok z gory"*; 17.10.2026: '
+      + '*"menu setup room (caly modal poszerz prosze o 50 procent)"*.',
+  },
+  {
+    pro: 'src/components/WallElevationModal.jsx',
+    retail: 'src/retail/design/room/WallElevationModal.jsx',
+    by: 'chat fix 15.10.2026, before T79',
+    why: 'the FRONT view draws the recess band and the chimney where they stand, drags them sideways and opens them; '
+      + 'the recess window gains Bottom and Top.',
+    words: 'the owner, 15.10.2026: *"na setup room jak widze sciane od frontu nie top tylko front to nie widze kresek, '
+      + 'gdzie jest komin i gdzie wneka"*.',
+  },
 ];
 
 /**
@@ -99,8 +138,17 @@ export const T78_RETAIL_EDITS = [
     by: 'T78 F12 (the one writer of the central files)',
     why: 'glassKinds(), glassKind(project) and setGlassKind(kind): the profile\'s kinds and default, the project\'s choice '
       + '(design.fronts.glassKind) written through the store\'s setDesign; the engine validates the word.',
-    words: 'the owner, 11.10.2026: *"domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12.',
-    hunks: ['@@ -1918,0 +1919,25 @@'],
+    words: 'the owner, 11.10.2026: *"domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12. Chat fix 15.10.2026, before T79 '
+      + '(the import and doorCountRefusal\'s pair under the minimum leaf, through engine/cabinet.js leafCountRefusal): '
+      + '*"zebym mial mozliwosc podzielenia ich na 2"*.',
+    hunks: ['@@ -39 +39 @@', '@@ -1819,0 +1820,9 @@', '@@ -1918,0 +1928,25 @@'],
+  },
+  {
+    retail: 'src/retail/styles/roomeditor.css',
+    by: 'chat fix 17.10.2026, before T79',
+    why: 'one class, pbi-re-w1290, the retail Room setup at PRO\'s new width (w-[1290px]).',
+    words: 'the owner, 17.10.2026: *"caly modal poszerz prosze o 50 procent"*.',
+    hunks: ['@@ -260,0 +261,2 @@'],
   },
 ];
 
@@ -273,6 +321,8 @@ const ref = BASE_COMMIT;
 const named = T78_PRO_EDITS;
 const wanted = named.map((e) => retailOf(e.pro)).filter(Boolean);
 const ownEdits = T78_RETAIL_EDITS.map((e) => e.retail);
+const handPro = HAND_COPY_EDITS.map((e) => e.pro);
+const handRetail = HAND_COPY_EDITS.map((e) => e.retail);
 
 say('─── T78 · THE COPY: RETAIL ONLY THROUGH THE COPY SCRIPT ───\n\n');
 if (!hasCommit(BASE_COMMIT)) {
@@ -330,8 +380,8 @@ for (const { pro, by, why, words } of named) {
 // ─── EVERY PRO SURFACE WITH A COPY, AGAINST THE BASE ──────────────────────
 const proMoved = movedSince(ref, 'src/components');
 const proWithCopy = ALL_COPIES.filter((c) => proMoved.includes(c.pro)).map((c) => c.pro);
-const notNamed = proWithCopy.filter((pro) => !named.some((n) => n.pro === pro));
-const unspent = named.filter((e) => !proMoved.includes(e.pro)).map((e) => e.pro);
+const notNamed = proWithCopy.filter((pro) => !named.some((n) => n.pro === pro) && !handPro.includes(pro));
+const unspent = [...named.map((e) => e.pro), ...handPro].filter((pro) => !proMoved.includes(pro));
 say('\n─── EVERY PRO SURFACE WITH A COPY, AGAINST THE BASE ───\n');
 say(`  PRO files moved since the base: ${proMoved.join(', ') || 'none'}\n`);
 say(`  of them with a retail copy: ${proWithCopy.join(', ') || 'none'}\n`);
@@ -349,7 +399,7 @@ const exemptBlock = blockOf('const EXEMPT = {');
 const frozenBlock = blockOf('const FROZEN = {');
 if (!exemptBlock) fail(`${SWITCH} has no EXEMPT block this script can read`);
 if (!frozenBlock) fail(`${SWITCH} has no FROZEN block this script can read`);
-for (const pro of named.map((n) => n.pro).filter((p) => proMoved.includes(p))) {
+for (const pro of [...named.map((n) => n.pro), ...handPro].filter((p) => proMoved.includes(p))) {
   const exempt = exemptBlock.includes(`'${pro}':`);
   const frozen = frozenBlock.match(new RegExp(`'${literal(pro)}':\\s*'([0-9a-f]{64})'`))?.[1] || null;
   const now = disk(pro) ? sha256(disk(pro)) : null;
@@ -391,14 +441,15 @@ for (const rel of retailMoved) {
   const isNamedCopy = pro && wanted.includes(rel);
   const isMade = run.made.has(rel) && run.made.get(rel).equals(disk(rel) || Buffer.alloc(0));
   let kind;
-  if (ownEdits.includes(rel)) kind = 'retail edit, named';
+  if (handRetail.includes(rel)) kind = `T62 hand copy of ${pro}, named in HAND_COPY_EDITS`;
+  else if (ownEdits.includes(rel)) kind = 'retail edit, named';
   else if (isNamedCopy && isMade) kind = `copy of ${pro}, byte for byte the machine's`;
   else if (isNamedCopy) kind = `copy of ${pro}, NOT what the machine makes`;
   else if (pro) kind = `copy of ${pro}, whose PRO file is NOT named`;
   else if (rel === SHEET) kind = 'the machine\'s sheet, NOT licensed by any name';
   else kind = 'NEITHER a named copy nor a named retail edit';
   say(`  ${rel.padEnd(56)} ${kind}\n`);
-  if (ownEdits.includes(rel)) continue;
+  if (ownEdits.includes(rel) || handRetail.includes(rel)) continue;
   if (isNamedCopy && !isMade) fail(`${rel} moved and is not byte for byte what the machine makes from ${pro}`);
   if (!isNamedCopy) fail(`${rel} moved and is neither a copy of a named PRO file nor a named retail edit`);
 }
@@ -430,6 +481,17 @@ for (const { retail, by, why, words, hunks: pinned } of T78_RETAIL_EDITS) {
   const same = Array.isArray(pinned) && pinned.length === onDisk.length && pinned.every((p, i) => p === onDisk[i]);
   say(`    pinned hunks: ${same ? 'the same as on disk' : `NOT THE SAME; on disk now: hunks: [${onDisk.map((h) => `'${h}'`).join(', ')}]`}\n`);
   if (!same) fail(`${retail} has hunks its entry does not pin (on disk: ${onDisk.join(', ') || 'none'}; pinned: ${(pinned || []).join(', ') || 'none'})`);
+}
+
+// ─── THE T62 HAND COPIES, BY FILE AND HUNK ─────────────────────────────────
+say('\n─── THE T62 HAND COPIES MOVED BEFORE T79 (HAND_COPY_EDITS), BY FILE AND HUNK ───\n');
+for (const { pro, retail, by, why, words } of HAND_COPY_EDITS) {
+  const hc = hunksOf(ref, retail);
+  const hp = hunksOf(ref, pro);
+  const at = (hs) => hs.map((h) => h.header).join(', ') || 'none';
+  say(`  ${retail}\n    copy of ${pro} (T62's own machine)\n    by: ${by}\n    why: ${why}\n    words: ${words}\n`);
+  say(`    the copy since the base: ${at(hc)}\n    PRO since the base:      ${at(hp)}\n`);
+  if (!movedSince(ref, retail).length && !movedSince(ref, pro).length) fail(`${pro} and ${retail} are named in HAND_COPY_EDITS and neither moved since the base`);
 }
 
 // ─── FOR THE PR: EACH NAMED COPY, ITS HUNKS AND ITS DIVERGENCE FROM PRO ───

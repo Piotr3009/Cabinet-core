@@ -507,8 +507,15 @@ export default function ElementProperties({
       // for just as long. The chips are a SHORTCUT to the field beside them,
       // not a second law: all three press `setElementDepth`, through the same
       // `applyToSelection` that reaches a whole ticked set.
+      //
+      // T79 F13 · the standard chip is the PROJECT's number, the one a shelf
+      // or a divider with nothing said is cut at: *"wszystkie cofnięcia zmień
+      // z 20 na 10 mm"*; *"tylko półki i dividery"* (`carcass.shelfSetbackMm`,
+      // `carcass.dividerSetbackMm`, 10).
       case 'setback': {
-        const standardBack = Number(profile.carcass.shelfDepthClearance) || 0;
+        const standardBack = Number(panel.part === 'VPART'
+          ? profile.carcass.dividerSetbackMm
+          : profile.carcass.shelfSetbackMm) || 0;
         const backNow = Number(panel.meta?.front_mm ?? standardBack);
         const backChips = [
           { id: 'standard', mm: standardBack, label: `${formatMm(standardBack)} mm` },

@@ -592,7 +592,8 @@ function endPanelThicknessOf(unit, design, profile) {
 }
 
 function applyTemplateParams(unit, params) {
-  const saved = JSON.parse(JSON.stringify(params));
+  // T79 F13 · a template saved before the setback schema comes in on it too.
+  const saved = migrateUnitSetbacks({ params: JSON.parse(JSON.stringify(params)) }).params;
   // ─── TURN 41 (F2): AND THE CROSS-REFERENCES COME WITH THEM ────────────────
   //
   // MEASURED FAULT. Every item is given a fresh id here, and T37's rail
@@ -1068,6 +1069,16 @@ function wholeRecessBandFor(unit, state = useProjectStore.getState(), profile = 
   return Object.keys(band).length ? band : null;
 }
 
+// T79 F13 · a project's default setback for one family: the unit's own
+// `interior_setback_mm` when it says one (before T79 it set the dividers AND the
+// drawer cap, and still does: *"szuflady zostaw nie ruszaj"*), else the family's
+// profile number. ONE reader, for the engine's channel and the column guard.
+function unitSetbackOr(params, fallback) {
+  return Number.isFinite(Number(params?.interior_setback_mm))
+    ? Number(params.interior_setback_mm)
+    : fallback;
+}
+
 function paramsForEngine(unit, design = null) {
   // ─── T55 ("tnij"): THE FOSSIL HAS NO ROAD ────────────────────────────────
   // run_* are destructured OUT of the saved params before anything spreads,
@@ -1128,9 +1139,15 @@ function paramsForEngine(unit, design = null) {
     //
     // A unit may still say otherwise for itself; this is only the floor under
     // "nobody has said".
-    interior_setback_mm: Number.isFinite(Number(p.interior_setback_mm))
-      ? Number(p.interior_setback_mm)
-      : profile.carcass.interiorSetback,
+    //
+    // T79 F13 · the owner, 18.10.2026: *"wszystkie cofnięcia zmień z 20 na 10
+    // mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady
+    // zostaw nie ruszaj."*  Three numbers from the profile, one per family:
+    // the dividers (`interior_setback_mm`), the shelves (`shelf_front_mm`) and
+    // the board that caps a drawer stack (`drawer_cap_setback_mm`, the old 20).
+    interior_setback_mm: unitSetbackOr(p, profile.carcass.dividerSetbackMm),
+    shelf_front_mm: profile.carcass.shelfSetbackMm,
+    drawer_cap_setback_mm: unitSetbackOr(p, profile.wardrobe.drawers.capSetbackMm),
     // ─── Turn 11 (CLAUDE.md F3.1) ───
     // What a project has said about ONE piece of this cabinet, keyed by the
     // engine's own panel id. A DESIGN-layer input like the plinth and the top
@@ -1387,6 +1404,43 @@ export function migrateUnitShelves(unit) {
   };
 }
 
+// ─── T79 F13 · THE SETBACK SCHEMA: THE OLD 20 IS NOW 10 ────────────────────
+//
+// The owner, 18.10.2026: *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to
+// stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie
+// ruszaj."*  A shelf or a divider saved with `front_mm` exactly 20 carries the
+// old standard (the "20 mm" chip wrote `carcass.shelfDepthClearance`), so it
+// comes back on the new 10; any other number is somebody's own and stays.
+// Stamped like SHELF_SCHEMA, so it happens once, and stamped ONLY where it
+// changed something or where a setback is written after today (`updateItem`):
+// a unit with nothing to move loads byte for byte (a saved fixture stays a
+// fixed point), and a 20 typed by hand after today is a choice that survives
+// the next reload. The unit's `partition_front_mm` is not an item and also
+// seeds the drawer cap, so it is left alone (*"szuflady zostaw"*).
+const SETBACK_SCHEMA = 1;
+
+export function migrateUnitSetbacks(unit, profile = null) {
+  if (!unit?.params || unit.params.setback_schema === SETBACK_SCHEMA) return unit;
+  const C = (profile || getCabinetProfile()).carcass;
+  const oldStandard = (item) => (item?.kind === 'shelf' || item?.kind === 'partition')
+    && item.front_mm != null && Number(item.front_mm) === Number(C.shelfDepthClearance);
+  const sections = unit.params.sections || [];
+  if (!sections.some((section) => (section.items || []).some(oldStandard))) return unit;
+  return {
+    ...unit,
+    params: {
+      ...unit.params,
+      setback_schema: SETBACK_SCHEMA,
+      sections: sections.map((section) => ({
+        ...section,
+        items: (section.items || []).map((item) => (oldStandard(item)
+          ? { ...item, front_mm: item.kind === 'shelf' ? C.shelfSetbackMm : C.dividerSetbackMm }
+          : item)),
+      })),
+    },
+  };
+}
+
 // ─── FRONT-STYLE SCHEMA (turn 30, CLAUDE.md F10) ───────────────────────────
 //
 // Owner: choosing "flat" in the main menu must set the PROJECT default front
@@ -1576,7 +1630,7 @@ const migrateUnitShoe = (u) => {
 
 const migrateUnits = (units) => (Array.isArray(units)
   ? units.map((u) => migrateUnitShoe(migrateUnitWatch(migrateUnitRidden(
-    migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u))),
+    migrateUnitSetbacks(migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u)))),
   ))))
   : []);
 
@@ -7580,7 +7634,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const k = Math.trunc(Number(zone));
     const unitSeed = Number.isFinite(Number(unit.params.partition_front_mm)) && Number(unit.params.partition_front_mm) >= 0
       ? Number(unit.params.partition_front_mm)
-      : profile.carcass.interiorSetback;
+      : unitSetbackOr(unit.params, profile.carcass.dividerSetbackMm);
     for (const [n, item] of [[k - 1, parts[k - 1]], [k, parts[k]]]) {
       if (!item) continue;
       const own = Number(item.front_mm);
@@ -8754,6 +8808,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // all arrive here, and none of them may put a piece under the floor.
         params: {
           ...u.params,
+          // T79 F13 · a setback written today is a choice, never migrated.
+          ...(patch && Object.hasOwn(patch, 'front_mm') ? { setback_schema: SETBACK_SCHEMA } : {}),
           sections: [{
             ...section,
             items: section.items.map((i) => (i.id === itemId ? onTheFloor(u, { ...i, ...patch }) : i)),

@@ -253,7 +253,16 @@ export const DEFAULT_CABINET_PROFILE = {
     //
     // The TOP and BOTTOM stay full depth and are not in this: they carry the
     // puzzle joint, and shortening them is shortening the carcass.
-    interiorSetback: 20,
+    //
+    // ─── T79 F13 · 10, FOR SHELVES AND DIVIDERS ONLY ─────────────────────
+    // The owner, 18.10.2026: *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to
+    // stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw
+    // nie ruszaj."*  The PROJECT's numbers (paramsForEngine injects them as
+    // `shelf_front_mm` and `interior_setback_mm`); `shelfDepthClearance` above
+    // stays the LISP's 20 for a bare kit call. The drawer cap keeps its own 20
+    // (`wardrobe.drawers.capSetbackMm`). T79 F13 deleted `interiorSetback`.
+    shelfSetbackMm: 10,
+    dividerSetbackMm: 10,
   },
 
   // ─── HANDLES (turn 25, CLAUDE.md F4) ────────────────────────────────────
@@ -1414,6 +1423,10 @@ export const DEFAULT_CABINET_PROFILE = {
       // usable depth = depth − G − setback − frontThickness − depthAllowance
       depthAllowance: 20,
       partitionClearance: 5,   // partition sits 5 mm above the top drawer front
+      // T79 F13 · the board that caps a drawer stack stands back the old 20 in
+      // a project, and the runner drilling read off it with it: *"szuflady
+      // zostaw nie ruszaj"* (paramsForEngine: `drawer_cap_setback_mm`).
+      capSetbackMm: 20,
       zoneHeadroom: 200,       // drawer zone must leave this much above it
     },
 

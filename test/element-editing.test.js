@@ -172,7 +172,9 @@ test('null puts a piece back on the standard setback, and that is not the same a
 
   store().setElementDepth(id, sh.id, null);
   assert.equal(itemsOf(id).find((i) => i.id === sh.id).front_mm, null);
-  assert.equal(panelOf().meta.front_mm, P.carcass.shelfDepthClearance,
+  // T79 F13 · the profile default is the PROJECT's shelf setback now, 10:
+  // *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*
+  assert.equal(panelOf().meta.front_mm, P.carcass.shelfSetbackMm,
     'and back on the profile default, which is what "not set" means');
 });
 

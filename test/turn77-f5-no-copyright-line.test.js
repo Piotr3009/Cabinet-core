@@ -131,6 +131,9 @@ export const NEW_FILES = [
   'test/turn79-f11-rail.test.js',
   'test/rail-assembly-saved.js',
   'scripts/t78-classify.d/f34-t79-f11.mjs',
+  // T79 F13 (18.10.2026): setbacks 10, drawers untouched
+  'test/turn79-f13-setbacks.test.js',
+  'scripts/t78-classify.d/f34-t79-f13.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

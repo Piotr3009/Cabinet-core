@@ -45,9 +45,12 @@ test('a recessed partition REFUSES drawers, with the number and the door', () =>
   // setback — which is exactly the recess the law is about.
   const guard = store().columnDrawerGuard(id, 1);
   assert.equal(guard.blocked, true);
-  assert.equal(guard.setbackMm, P.carcass.interiorSetback);
+  // T79 F13 · the divider's setback is the project's 10 now: *"wszystkie
+  // cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko
+  // półki i dividery, szuflady zostaw nie ruszaj."*
+  assert.equal(guard.setbackMm, P.carcass.dividerSetbackMm);
   assert.equal(guard.panelId, 'VPART-1', 'the door to the partition’s own editor');
-  assert.match(guard.message, /stands 20 mm back/, 'the number is in the sentence');
+  assert.match(guard.message, /stands 10 mm back/, 'the number is in the sentence');
 
   const refused = store().addDrawers(id, 2, 'overlay', 220, 1);
   assert.equal(refused.ok, false);

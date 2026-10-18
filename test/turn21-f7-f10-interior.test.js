@@ -115,12 +115,15 @@ test('F7.3 — PULL-OUT ships visible and DISABLED, with the reason and no inven
 // ─── F8 — the setback is a default, not a law ──────────────────────────────
 
 test('F8.1 — a partition takes its OWN setback, and the unit only seeds it', () => {
+  // T79 F13 · the seed a project hands a divider is 10 now: *"wszystkie
+  // cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko
+  // półki i dividery, szuflady zostaw nie ruszaj."*
   const at = (front) => wardrobe(
     [{ id: 'p1', kind: 'partition', x_mm: 600, ...(front == null ? {} : { front_mm: front }) }],
-    { partition_front_mm: 20 },
+    { partition_front_mm: 10 },
   );
   // Nothing said on the piece: the unit's number.
-  assert.equal(vpartOf(at(null)).meta.front_mm, 20);
+  assert.equal(vpartOf(at(null)).meta.front_mm, 10);
   // Its own number wins, and it is not clamped to the unit's.
   assert.equal(vpartOf(at(60)).meta.front_mm, 60);
   assert.equal(vpartOf(at(0)).meta.front_mm, 0, 'setback 0 is load-bearing — F12’s doors need it');

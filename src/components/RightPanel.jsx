@@ -1000,8 +1000,8 @@ export default function RightPanel() {
                         type="button"
                         className={`cc-btn px-1.5 ${toFace ? 'border-gold text-ink-50' : ''}`}
                         title={toFace
-                          ? `Front edge is out at the face — click for the ${formatMm(profile.carcass.interiorSetback)} mm setback`
-                          : `Front edge is set back ${formatMm(profile.carcass.shelfDepthClearance)} mm — click to stretch it to the face`}
+                          ? `Front edge is out at the face: click for the ${formatMm(profile.carcass.shelfSetbackMm)} mm setback`
+                          : `Front edge is set back ${formatMm(profile.carcass.shelfSetbackMm)} mm: click to stretch it to the face`}
                         onClick={() => setShelfFront(unit.id, sh.id, toFace ? null : 0)}
                       >
                         ⇥
@@ -1029,7 +1029,7 @@ export default function RightPanel() {
                   >
                     {Number(unit.params.partition_front_mm) === 0
                       ? 'at the face'
-                      : `set back ${formatMm(profile.carcass.interiorSetback)}`}
+                      : `set back ${formatMm(profile.wardrobe.drawers.capSetbackMm)}`}
                   </button>
                 </div>
               )}

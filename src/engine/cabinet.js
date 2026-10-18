@@ -2176,7 +2176,6 @@ export function computeCabinet(params, profileOverride) {
   // lose that much depth plus the panel itself (KIT_SINK L425-426).
   const SK = P.sinkUnit;
   const sinkLoss = backStyle === 'inset' ? SK.backSetback + G : 0;
-  const shelfH = D - C.shelfDepthBoards * G - C.shelfDepthClearance - sinkLoss;
 
   // ─── Interior setback (turn 8, CLAUDE.md F4) ───
   //
@@ -2201,8 +2200,25 @@ export function computeCabinet(params, profileOverride) {
     return Number.isFinite(v) && v >= 0 ? v : fallback;
   };
   const interiorSetback = setbackOf(params?.interior_setback_mm, 0);
+  // ─── T79 F13 · SHELVES AND DIVIDERS 10, DRAWERS UNTOUCHED ────────────────
+  // The owner, 18.10.2026: *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to
+  // stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie
+  // ruszaj."*  Three numbers, each the PROJECT's (paramsForEngine), each
+  // falling back to exactly what a bare kit call read before, so the LISP and
+  // every golden hold:
+  //   a shelf         its own `front_mm`, else `shelf_front_mm`, else the
+  //                   LISP's `C.shelfDepthClearance` (20), at every shelf site
+  //                   below, as CLAUDE.md T79 F13 writes it
+  //   dividerSetback  every vertical divider with no `front_mm` of its own
+  //                   (the unit's `partition_front_mm`, else
+  //                   `interior_setback_mm`; bare: 0, the kit's full depth)
+  //   partitionDepth  the board that caps a drawer stack, and the runner and
+  //                   bracket drilling read off it (the unit's
+  //                   `partition_front_mm`, else `drawer_cap_setback_mm`, else
+  //                   `interior_setback_mm`; bare: what it read before)
+  const dividerSetback = setbackOf(params?.partition_front_mm, interiorSetback);
   const partitionDepth = D - C.topDepthBoards * G
-    - setbackOf(params?.partition_front_mm, interiorSetback);
+    - setbackOf(params?.partition_front_mm, setbackOf(params?.drawer_cap_setback_mm, interiorSetback));
 
   // ── Doors ──────────────────────────────────────────────────────────────────
   const doorCount = cfg.doorCount;
@@ -4622,8 +4638,9 @@ export function computeCabinet(params, profileOverride) {
     // Every shelf may be pulled out to the face on its own (turn 8, F4). With
     // nothing said it is the LISP's own 20 mm, which is what a bare kit call —
     // and every golden fixture — gets.
+    // T79 F13: in a project, the project's own number (`shelf_front_mm`).
     const depthHere = D - C.shelfDepthBoards * G
-      - setbackOf(item?.front_mm, C.shelfDepthClearance) - sinkLoss;
+      - setbackOf(item?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance) - sinkLoss;
     // ─── Turn 9 (CLAUDE.md F4): this shelf's own board ───
     // An INPUT, not a formula. The piece is cut, edged, drilled and laid out by
     // exactly the arithmetic every other shelf goes through — the number in it
@@ -4666,7 +4683,7 @@ export function computeCabinet(params, profileOverride) {
       box: {
         x: shelfXHere,
         y,
-        z: D - setbackOf(item?.front_mm, C.shelfDepthClearance) - depthHere,
+        z: D - setbackOf(item?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance) - depthHere,
         w: shelfWHere,
         h: shelfT,
         d: depthHere,
@@ -4742,7 +4759,7 @@ export function computeCabinet(params, profileOverride) {
         // A shelf that is screwed in, or one somebody has locked, does not move
         // and is not drilled for pins.
         locked: isShelfLocked(item),
-        front_mm: setbackOf(item?.front_mm, C.shelfDepthClearance),
+        front_mm: setbackOf(item?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance),
         thickness_mm: shelfT,
         zone: bay ? bay.index : null,
         ...(shelfMaterial(item) || {}),
@@ -4753,7 +4770,7 @@ export function computeCabinet(params, profileOverride) {
         // the board about its back-bottom edge by the profile's 15°.
         ...(shelfVariant(item) === 'shoe' ? {
           tilt_deg: P.wardrobeAccessories.shoeShelf.tiltDeg,
-          tilt_pivot: { y, z: D - setbackOf(item?.front_mm, C.shelfDepthClearance) - depthHere },
+          tilt_pivot: { y, z: D - setbackOf(item?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance) - depthHere },
         } : {}),
       },
     }));
@@ -4765,7 +4782,7 @@ export function computeCabinet(params, profileOverride) {
     // fixing is the workshop's own, exactly as the WINE lattice travels.
     if (shelfVariant(item) === 'shoe') {
       const SR = P.wardrobeAccessories.shoeShelf.stopRail;
-      const shelfFrontZ = D - setbackOf(item?.front_mm, C.shelfDepthClearance);
+      const shelfFrontZ = D - setbackOf(item?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance);
       panels.push(panel({
         id: `SHOE-RAIL-${i}`, part: 'SHOE-RAIL', role: 'shelf', w: shelfWHere, h: SR.height, thickness: SR.thickness,
         edgeCode: codes.right, edgeLen: metres(shelfWHere),
@@ -5000,7 +5017,7 @@ export function computeCabinet(params, profileOverride) {
       // Setback 0 is load-bearing rather than a corner case: it is what lets a
       // partition reach the door plane, and therefore what makes F12's doors
       // on a partition possible at all.
-      const ownFront = setbackOf(item?.front_mm, internalDepth - partitionDepth);
+      const ownFront = setbackOf(item?.front_mm, dividerSetback);
       const ownDepth = Math.max(0, internalDepth - ownFront);
       // ─── TURN 21 (CLAUDE.md F9): ONLY THE SHELF THAT CROSSES IT ──────────
       //
@@ -11558,7 +11575,7 @@ export function computeCabinet(params, profileOverride) {
       // and the readouts take it from here rather than assuming the carcass
       // board, which is how a 25 mm shelf came out drawn 18 mm thick.
       thickness: shelfThickness(cfg.shelfItems[i], G),
-      front_mm: setbackOf(cfg.shelfItems[i]?.front_mm, C.shelfDepthClearance),
+      front_mm: setbackOf(cfg.shelfItems[i]?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance),
     })),
     fridge: fridge ? { fixedPanelY: fridge.fixedPanelY, fridgeH: cfg.fridgeH } : null,
     // ─── Turn 22 (CLAUDE.md F1) ───

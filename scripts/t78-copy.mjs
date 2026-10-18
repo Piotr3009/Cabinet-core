@@ -123,6 +123,15 @@ export const T78_PRO_EDITS = [
     words: 'the owner, 18.10.2026: *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to; przy '
       + 'przesuwaniu zaproponuj 50 mm poniżej półki."*',
   },
+  {
+    pro: 'src/components/ElementProperties.jsx',
+    by: 'T79 F13',
+    why: 'SET BACK\'s standard chip is the PROJECT\'s setback, the one a shelf or a divider with nothing said is cut at '
+      + '(`carcass.shelfSetbackMm` for a shelf, `carcass.dividerSetbackMm` for a divider, 10), no longer the LISP\'s 20; '
+      + 'Flush and the field are what they were.',
+    words: 'the owner, 18.10.2026: *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: '
+      + '*"tylko półki i dividery, szuflady zostaw nie ruszaj."*',
+  },
 ];
 
 /**

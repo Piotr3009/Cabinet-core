@@ -139,7 +139,8 @@ const EXEMPT = {
     + ' T78 F18 · the Doors section\'s "Front opens" select on a wall unit that takes a lift (WUD, WUD_GLASS, WARDROBE_WALL): hinged (the default, no key) | HK top (lift up) | HS (up and over) | HL (lift parallel) | HF (bi-fold up), written as front_system through updateUnitParams, and under it the engine\'s own sentence of the set, the arm, the power unit and the zero holes; no number typed. *"szafki poziome otwierane do gory system blum ... podwojne drzwi pojedyncze etc."*'
     + ' CHAT FIX 15.10.2026 · the Doors section\'s Leaves row: 1 or 2 by choice, the same setDoors({ count }) pin retail\'s HOW MANY writes, each chip disabled in the one law\'s words (engine/cabinet.js leafCountRefusal: a pair under doors.minLeafWidth; a chosen single wide leaf stays the 15.08 decision); not on kits whose count is their identity nor on bay doors. *"jak mamy male drzwi, ale wciaz chce zrobic 2, to zebym mial mozliwosc podzielenia ich na 2."*'
     + ' T79 F4 . the CUT CORNER window\'s HEIGHT takes a negative number (a notch from the top, KIT_NOTCH.lsp D21) and shows it as itself, 0 still reads full; the help line reads "WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500)." (data-testid notch-help); the cut is the store\'s one action as before. *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry? i mała informacja o tym."*'
-    + ' T79 F5 . the CUT CORNER row gains a second button, CUT EDGE (data-testid cut-edge): it lights the four horizontal side edges in the scene (`3d/NotchEdges.jsx`, `uiStore.edgeNotchPick`), a click on one opens EdgeNotchWindow at the click with EDGE (TB, BB, TF, BF), DEPTH and HEIGHT (the profile\'s `notch.edgeDefaults`), the help line "A rebate along the whole edge: skirting at the bottom-back, coving at the top-back." (data-testid edge-notch-help); Enter cuts through the store\'s one action `setUnitEdgeNotch` and a refusal shows in the engine\'s words (KIT_NOTCH.lsp D22); REMOVE takes it off. No retail copy (retail\'s SIZE step carries its own button). *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*',
+    + ' T79 F5 . the CUT CORNER row gains a second button, CUT EDGE (data-testid cut-edge): it lights the four horizontal side edges in the scene (`3d/NotchEdges.jsx`, `uiStore.edgeNotchPick`), a click on one opens EdgeNotchWindow at the click with EDGE (TB, BB, TF, BF), DEPTH and HEIGHT (the profile\'s `notch.edgeDefaults`), the help line "A rebate along the whole edge: skirting at the bottom-back, coving at the top-back." (data-testid edge-notch-help); Enter cuts through the store\'s one action `setUnitEdgeNotch` and a refusal shows in the engine\'s words (KIT_NOTCH.lsp D22); REMOVE takes it off. No retail copy (retail\'s SIZE step carries its own button). *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*'
+    + ' T79 F13 . the shelf row\'s face button and the drawer cap\'s Partition front edge name the project\'s numbers (carcass.shelfSetbackMm 10, wardrobe.drawers.capSetbackMm 20), no longer the deleted interiorSetback nor the LISP\'s 20; its two tooltips lose their dashes. *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -200,7 +201,8 @@ const EXEMPT = {
     + '`data-board-thickness` so the room\'s sheet can name what it hides instead of taking '
     + 'every `<select>` in the dock; F12 · the divider reaches the same setback row. *"nie '
     + 'choose, tylko te 2 opcje."*'
-    + ' T79 F12 · Center between beside Center all, the same width: one click arms the shared uiStore\'s two-pick mode, the panel says which pick is next, Escape cancels. *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie półki pomiędzy tymi elementami się centrują."*',
+    + ' T79 F12 · Center between beside Center all, the same width: one click arms the shared uiStore\'s two-pick mode, the panel says which pick is next, Escape cancels. *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie półki pomiędzy tymi elementami się centrują."*'
+    + ' T79 F13 . SET BACK\'s standard chip is the project\'s setback, carcass.shelfSetbackMm for a shelf and carcass.dividerSetbackMm for a divider (10), no longer the LISP\'s 20; Flush and the field unchanged. *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*',
   // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
   // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
   // client cannot reach. Three of his fourteen points are answered in PRO's own
@@ -347,7 +349,8 @@ const FROZEN = {
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/ElementProperties.jsx': 'bb3aaa178fa989e54344f7763445d15f2f37b9ba7a618a04f79c4c8474ffc489',
+  // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/ElementProperties.jsx': '702ec1685b285364c69aa125680a4da4303a6295319985120a46557f2b893a46',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',
@@ -374,7 +377,8 @@ const FROZEN = {
   // T78 PART E, after the walk re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F4 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F5 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/RightPanel.jsx': '247f44b70352fbfb89cbce779dab5f1c51246ee5f30ef1b302a1d33c32ca2cb9',
+  // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/RightPanel.jsx': '1b7da5a6d5e10b09f5b5f1990e7ef7eb55abcfe77c21282bc4ab396c9dab2968',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
   'src/components/RoomModal.jsx': '04bc0d7b944cac119f44aa1c562ef0a635f6e86ecee9b6ea26784e075b69d2a1',

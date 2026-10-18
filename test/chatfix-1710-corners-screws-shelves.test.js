@@ -234,41 +234,69 @@ test('a FIXED shelf in a full-width band is a plain deeper board: no 2 mm step, 
   assert.match(read('reference/lisp/KIT_RECESS.lsp'), /\(defun recess-shelf-bump \(cw cd g ex0 ex1 ed shelf clr /);
 });
 
-// ─── D17 · NO SCREW BETWEEN THE BACK AND THE BOX ────────────────────────────
+// ─── D17 · NO SCREW STATED ON THE BOX; T79 F6 · THE BACK'S ROWS ARE BACK ─────
+//
+// REWRITTEN 18.10.2026 (CLAUDE.md T79 F6, KIT_NOTCH.lsp D10 and KIT_RECESS.lsp
+// D17 amended). The owner: *"jak mamy cut the corners lub recess to nie
+// rysujesz mi dziurek na śrubki 3 mm, to trzeba będzie dodać"*; 14:17: *"ale
+// tylko na plecach."*  The 17.10 removal of the BACK's rows is REVERSED, on the
+// backs only: the box boards still state nothing (the 17.10 half stands).
 
-test('the notch: the BACK\'s notched edge carries no row; the STEP, the RETURN and the LID state no screws', () => {
+test('the notch: the BACK\'s notched edge carries its row again (T79 F6); the STEP, the RETURN and the LID still state none', () => {
   const full = computeCabinet({ ...defaultParamsFor('BUD', P), width: 600, notch: { corner: 'BL', w: 200, d: 200, h: 0 } }, P);
-  assert.deepEqual(screwsOf(full, 'BACK').filter(([x]) => x === 9), [], 'full height: the whole nearX column is gone');
-  assert.equal(screwsOf(full, 'BACK').length, 10, 'the far column (4) and the top and bottom rows (3 + 3)');
-  for (const id of ['STEP', 'RETURN']) assert.deepEqual(panelOf(full, id).meta.notch.screws, []);
+  // The BACK is re-origined to its own left end (carcass x 200): nearX 209 is own x 9.
+  assert.deepEqual(screwsOf(full, 'BACK').filter(([x]) => x === 9).map(([, y]) => y), [50, 240, 530, 720],
+    'full height: the whole nearX column, into the RETURN\'s end, the side\'s row moved by nw');
+  assert.equal(screwsOf(full, 'BACK').length, 14, 'the far column (4), the RETURN\'s column (4), the top and bottom rows (3 + 3)');
+  for (const id of ['STEP', 'RETURN']) {
+    assert.deepEqual(panelOf(full, id).meta.notch.screws, [], `${id}: "tylko na plecach", the box states nothing`);
+    assert.deepEqual(screwsOf(full, id), []);
+  }
   const part = computeCabinet({ ...defaultParamsFor('BUD', P), width: 600, notch: { corner: 'BL', w: 200, d: 200, h: 300 } }, P);
   const near = screwsOf(part, 'BACK').filter(([x]) => x === 9);
-  assert.ok(near.every(([, y]) => y > 300), `beside the notch (y <= 300) nothing; above it the side's own rows stay (${JSON.stringify(near)})`);
+  assert.ok(near.every(([, y]) => y > 300), `above the notch the side's own rows stay (${JSON.stringify(near)})`);
   assert.ok(near.length > 0, 'the rows above a part-height notch are the side\'s, and stay');
+  assert.deepEqual(screwsOf(part, 'BACK').filter(([x]) => x === 209).map(([, y]) => y), [50, 150, 250], 'beside the notch: into the RETURN\'s end');
+  assert.deepEqual(screwsOf(part, 'BACK').filter(([, y]) => y === 309).map(([x]) => x), [68, 109, 150], 'over the notch: into the LID\'s back edge');
   assert.deepEqual(panelOf(part, 'LID').meta.notch.screws, []);
+  assert.deepEqual(screwsOf(part, 'LID'), []);
   // The pure routines say the same.
   assert.equal(notchStepScrews(770, G, 200, 0, 'BL', K), null);
   assert.equal(notchReturnScrews(770, G, 200, 200, 0, 'BL', K), null);
   assert.equal(notchLidScrews(770, G, 200, 200, 300, 'BL', K), null);
   const bj = notchBackJoints(600, 770, G, 200, 0, 'BL', K);
-  assert.ok(bj.SCREWS.every(([x]) => x !== 209), 'no column at nw + S');
+  assert.deepEqual(bj.SCREWS.filter(([x]) => x === 209).map(([, y]) => y), [50, 240, 530, 720], 'the column at nw + S');
+  assert.equal(bj.SHORT, undefined, 'every run holds a row');
 });
 
-test('the recess: the BACK keeps drawBACK\'s rows only; nothing round the window; the added boards state none', () => {
+test('the recess: the BACK carries its rows round the window again (T79 F6), the EXT-BACK is drilled; the other added boards state none', () => {
   const window = recessWindow(600, 770, G, 110, 490, 210, 590);
   const [piece] = recessBackPieces(600, 770, G, 110, 490, 210, 590);
   const bj = recessBackJoints(piece, window, 600, 770, G, 110, 490, 210, 590, [113, 487], [113, 487], [95, 385, 675], [95, 385, 675], K);
-  assert.equal(bj.SCREWS.length, 14, 'the parent\'s fourteen');
-  assert.ok(bj.SCREWS.every(([x, z]) => !(x > 100 && x < 500 && z > 200 && z < 600)), 'none inside the band');
+  assert.equal(bj.SCREWS.length, 26, 'the parent\'s fourteen and the window\'s twelve');
+  assert.deepEqual(bj.SCREWS.slice(14), [
+    [119, 278], [119, 400], [119, 522],
+    [481, 278], [481, 400], [481, 522],
+    [178, 219], [300, 219], [422, 219],
+    [178, 581], [300, 581], [422, 581],
+  ], 'S outside each window edge: into RETURN-L, RETURN-R, the FLOOR, the LID');
   assert.deepEqual(recessReturnScrews(770, G, 0, 770, 150, K), []);
   assert.deepEqual(recessLidScrews(G, 110, 490, 150, K), []);
-  assert.deepEqual(recessExtBackScrews(600, 770, G, 110, 490, 210, 590, K), []);
+  assert.deepEqual(recessExtBackScrews(600, 770, G, 110, 490, 210, 590, K), [
+    [9, 68], [371, 68], [9, 190], [371, 190], [9, 312], [371, 312],
+    [68, 9], [68, 371], [190, 9], [190, 371], [312, 9], [312, 371],
+  ], 'the EXT-BACK, a back: its rows round the band');
   const r = computeCabinet({ ...defaultParamsFor('BUD', P), width: 600, extension: { x0: 110, x1: 490, z0: 210, z1: 590, d: 150 } }, P);
-  assert.equal(screwsOf(r, 'BACK').length, 14);
-  for (const id of ['RETURN-L', 'RETURN-R', 'FLOOR', 'LID', 'EXT-BACK']) {
-    assert.deepEqual(panelOf(r, id).meta.extension.screws, [], `${id}: "teraz nic"`);
+  assert.equal(screwsOf(r, 'BACK').length, 26);
+  assert.equal(screwsOf(r, 'EXT-BACK').length, 12);
+  for (const id of ['RETURN-L', 'RETURN-R', 'FLOOR', 'LID']) {
+    assert.deepEqual(panelOf(r, id).meta.extension.screws, [], `${id}: "tylko na plecach"`);
+    assert.deepEqual(screwsOf(r, id), []);
     assert.equal(panelOf(r, id).meta.fixing, 'manual', 'by hand, on biscuits');
   }
+  const eb = panelOf(r, 'EXT-BACK');
+  assert.equal(eb.meta.fixing, undefined, 'the EXT-BACK is a back, screwed through its rows');
+  assert.equal(eb.meta.readiness, undefined, 'a cut part: an outline and its holes');
 });
 
 // ─── THE WINDOW: 50 PERCENT WIDER, THE PLAN UNTOUCHED ───────────────────────

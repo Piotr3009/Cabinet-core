@@ -253,7 +253,16 @@ export const DEFAULT_CABINET_PROFILE = {
     //
     // The TOP and BOTTOM stay full depth and are not in this: they carry the
     // puzzle joint, and shortening them is shortening the carcass.
-    interiorSetback: 20,
+    //
+    // ─── T79 F13 · 10, FOR SHELVES AND DIVIDERS ONLY ─────────────────────
+    // The owner, 18.10.2026: *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to
+    // stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw
+    // nie ruszaj."*  The PROJECT's numbers (paramsForEngine injects them as
+    // `shelf_front_mm` and `interior_setback_mm`); `shelfDepthClearance` above
+    // stays the LISP's 20 for a bare kit call. The drawer cap keeps its own 20
+    // (`wardrobe.drawers.capSetbackMm`). T79 F13 deleted `interiorSetback`.
+    shelfSetbackMm: 10,
+    dividerSetbackMm: 10,
   },
 
   // ─── HANDLES (turn 25, CLAUDE.md F4) ────────────────────────────────────
@@ -517,6 +526,10 @@ export const DEFAULT_CABINET_PROFILE = {
   // puzzle's and the cutter's own (KIT_NOTCH.lsp section A).
   notch: {
     defaults: { widthMm: 200, depthMm: 200, heightMm: 0 }, // T75 proposed, owner to confirm
+    // T79 F5 (KIT_NOTCH.lsp D22), the owner: *"możesz zrobić mi też poziome cut?
+    // wszystkich 4 rogów?"*  What the CUT EDGE window opens with: the edge (BB,
+    // a skirting at the bottom-back), DEPTH into the carcass, HEIGHT up the side.
+    edgeDefaults: { edge: 'BB', depthMm: 20, heightMm: 120 }, // T79 proposed, owner to confirm
     // Chat-fix 15.10.2026 (the owner: *"komin nie ma mozliwosci automatycznego
     // wycinania w szafce naroznika jak przesuwamy - patrz skos"*): a cabinet
     // slid into a chimney breast or a box gets its corner notch derived from
@@ -625,6 +638,19 @@ export const DEFAULT_CABINET_PROFILE = {
         pocket: { drill15: 'CABINEO_POCKET_15MM', cutter10: 'CABINEO_POCKET_10MM', cutter12: 'CABINEO_POCKET_12MM' },
         recess: 'CABINEO_RECESS',
         hole: 'CABINEO_HOLE_5MM',
+      },
+      // ─── T79 F14 · THE DRAWER BOX IS ON CABINEO 12 (the LISP's D.2c) ──────
+      // The owner, 18.10.2026: *"jak mamy wybrane jakąkolwiek funkcję
+      // łączenia czy dog bones czy inne zawsze projektuj cabineo na szuflady,
+      // na przednich i tylnych ściankach dodawaj cabineo jeden do 100 mm, 2
+      // powyżej 100 mm, minimum odległość to 25 od góry i dołu"*; Cabineo 12:
+      // *"tak"*; the tall boxes: *"przy wysokich nie rozsuwaj"*. The box takes
+      // the company's machining above (mounting, option, skim, the gate) and
+      // these three numbers of its own; measured from the wall's TOP edge.
+      box: {
+        variant: '12',            // Cabineo 12 on every box                          the owner, 18.10.2026 (14:51), DECIDED
+        onePerJointUpToMm: 100,   // one connector a joint to a 100 wall, two above   the owner, 18.10.2026, DECIDED
+        fromEdgeMm: 25,           // the two at 25 from the top and the bottom edge   the owner, 18.10.2026, DECIDED
       },
     },
   },
@@ -1410,6 +1436,10 @@ export const DEFAULT_CABINET_PROFILE = {
       // usable depth = depth − G − setback − frontThickness − depthAllowance
       depthAllowance: 20,
       partitionClearance: 5,   // partition sits 5 mm above the top drawer front
+      // T79 F13 · the board that caps a drawer stack stands back the old 20 in
+      // a project, and the runner drilling read off it with it: *"szuflady
+      // zostaw nie ruszaj"* (paramsForEngine: `drawer_cap_setback_mm`).
+      capSetbackMm: 20,
       zoneHeadroom: 200,       // drawer zone must leave this much above it
     },
 
@@ -4574,7 +4604,12 @@ export const DEFAULT_CABINET_PROFILE = {
     //
     // A workshop whose bracket drops further changes this one line; the shelf
     // does not move, the rod does.
-    hanger: { dropMm: 40 },
+    //
+    // T79 F11 · `belowShelfMm`: where a dragged rod is PROPOSED, its axis this
+    // far under a shelf's underside (the owner, 18.10.2026: *"przy przesuwaniu
+    // zaproponuj 50 mm poniżej półki"*); the catch is `editor.shelfMagnetMm`.
+    // Read by the store's drag only, never by a cut.
+    hanger: { dropMm: 40, belowShelfMm: 50 },
     // ─── THE SHELF SUPPORT (turn 25, CLAUDE.md F6) ──────────────────────────
     //
     // The owner: he wants to SEE gold or silver sleeves — and they are the
@@ -5356,7 +5391,7 @@ export const DEFAULT_CABINET_PROFILE = {
     //
     // The owner, 15.08.2026, on a toast slot of one that erased itself every
     // four seconds: "he has never seen one." His three rules are contracts and
-    // live in engine/messages.js; these are the two NUMBERS in them, here
+    // live in engine/messages.js; these are the NUMBERS in them, here
     // because rule 2 says a number lives in the profile.
     messages: {
       // "GREY — a few seconds." Three is a few: long enough to read a file
@@ -5368,6 +5403,11 @@ export const DEFAULT_CABINET_PROFILE = {
       // OWNER-TUNABLE DEFAULT, 15.08.2026 — the owner has not named it; five
       // is what fits over a 3D view without becoming the view.
       maxOnScreen: 5,
+      // T79 F1, the owner 18.10.2026: *"można na dole po lewej zrobić jakby
+      // listę rozwijaną i tam historia zmian"*. How many rows the Changes list
+      // keeps before the oldest goes (engine/messages.js `recordHistory`).
+      // T79 PROPOSED, owner to confirm: fifty is a working session of notices.
+      historyMax: 50,
     },
 
     // ─── THE MODAL RULE (turn 12, CLAUDE.md rule 15) ───
@@ -6359,6 +6399,8 @@ export function migrateCabinetProfile(profile) {
           ...profile.joints?.cabineo?.layers,
           pocket: { ...D.joints.cabineo.layers.pocket, ...profile.joints?.cabineo?.layers?.pocket },
         },
+        // T79 F14 · the drawer box's three numbers, key by key.
+        box: { ...D.joints.cabineo.box, ...profile.joints?.cabineo?.box },
       },
     },
     room: { ...D.room, ...profile.room },
@@ -6394,7 +6436,13 @@ export function migrateCabinetProfile(profile) {
       shareOut: { ...D.ui.shareOut, ...profile.ui?.shareOut },
     },
     // T75 F7 · the notch's defaults, key by key.
-    notch: { ...D.notch, ...profile.notch, defaults: { ...D.notch.defaults, ...profile.notch?.defaults } },
+    notch: {
+      ...D.notch,
+      ...profile.notch,
+      defaults: { ...D.notch.defaults, ...profile.notch?.defaults },
+      // T79 F5 · the edge notch's defaults, key by key, the same way.
+      edgeDefaults: { ...D.notch.edgeDefaults, ...profile.notch?.edgeDefaults },
+    },
     // T75 F23 · the joint system and the dowel numbers, key by key, so a
     // profile saved before tonight cuts the puzzle and holds the gate shut.
     //

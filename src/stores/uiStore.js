@@ -13,8 +13,8 @@ import { modalAnchorFault, withModalAnchor } from '../lib/modalLayer.js';
 import { normaliseAudience } from '../lib/wizardTabs.js';
 import { entryAudience } from '../lib/appEntry.js';
 import {
-  dismissedByClickAway, expired, greyMs, leaveWarning, makeMessage, pushMessage, queueMax,
-  trimQueue,
+  dismissedByClickAway, expired, greyMs, historyMax, historyRow, leaveWarning, makeMessage,
+  pushMessage, queueMax, recordHistory, trimQueue,
 } from '../engine/messages.js';
 // TURN 59: the shared brain, running memory-only for the PBI retail mount.
 import { persistenceOn } from './persistence.js';
@@ -666,8 +666,12 @@ export const useUiStore = create((set, get) => ({
   // "the zones left/right of the partition highlight, the user clicks one".
   // A moment, not a mode: it lives exactly as long as the pointer is over the
   // choice, so it belongs here with the drag and the hover and nowhere else.
-  zoneHint: null,                    // the bay's index, or null
-  setZoneHint: (index) => set({ zoneHint: index == null ? null : Math.trunc(Number(index)) }),
+  // T79 F2 · or 'above': the undivided opening over the divider's FIX shelf
+  // (`projectStore.aboveDividerOf`), lit by `3d/UnitView` as a full-width band.
+  zoneHint: null,                    // the bay's index, 'above', or null
+  setZoneHint: (index) => set({
+    zoneHint: index == null ? null : (index === 'above' ? 'above' : Math.trunc(Number(index))),
+  }),
 
   // ─── T75 F7 · CUT CORNER: THE FOUR CORNERS ARE LIT ───────────────────────
   // *"Klikasz 'wytnij narożnik', program podświetla narożniki, wybierasz."*
@@ -675,8 +679,15 @@ export const useUiStore = create((set, get) => ({
   // or null. A moment, like the bay hint above: the click on a corner opens
   // the small window at the click, and a cut or a click elsewhere ends it.
   notchPick: null,
-  startNotchPick: (unitId) => set({ notchPick: unitId || null }),
+  startNotchPick: (unitId) => set({ notchPick: unitId || null, edgeNotchPick: null }),
   stopNotchPick: () => set({ notchPick: null }),
+  // ─── T79 F5 · CUT EDGE: THE FOUR HORIZONTAL EDGES ARE LIT ────────────────
+  // The owner, 18.10.2026: *"możesz zrobić mi też poziome cut? wszystkich 4
+  // rogów?"*  Which unit's four horizontal side edges stand lit in the scene
+  // (`3d/NotchEdges`), or null; the corners' twin, and one or the other is lit.
+  edgeNotchPick: null,
+  startEdgeNotchPick: (unitId) => set({ edgeNotchPick: unitId || null, notchPick: null }),
+  stopEdgeNotchPick: () => set({ edgeNotchPick: null }),
 
   // Which "Add items" type has its settings open. One at a time: they are
   // alternatives, not a form to fill in top to bottom.
@@ -760,7 +771,8 @@ export const useUiStore = create((set, get) => ({
       // never separately — that has been this store's own rule since T36 —
       // and a set left standing after its primary was nulled is a set no
       // panel is looking at and every group edit would still write to.
-      ...(primary === get().selectedUnitId ? {} : { selectedElement: null, selectedElements: [] }),
+      // T79 F12: …and a Center between armed on the old one ends with it.
+      ...(primary === get().selectedUnitId ? {} : { selectedElement: null, selectedElements: [], centreBetween: null }),
     });
   },
   clearSelection: () => set({
@@ -769,6 +781,7 @@ export const useUiStore = create((set, get) => ({
     selectedSection: null,
     selectedElement: null,
     selectedElements: [],
+    centreBetween: null,
   }),
 
   // ─── One ELEMENT inside a unit (turn 9, CLAUDE.md F4.1) ───
@@ -814,9 +827,20 @@ export const useUiStore = create((set, get) => ({
   /**
    * @param {string|null} unitId
    * @param {string|null} elementRef  the ENGINE's own panel id, e.g. `SHELF-2`
-   * @param {object} opts  { additive } — Ctrl (or ⌘) held, F2
+   * @param {object} opts  { additive }: Ctrl (or ⌘) held, F2; { pick }: a
+   *   Center between pick, said only by the 3D press on a board (T79 F12)
    */
-  selectElement: (unitId, elementRef, { additive = false } = {}) => set((s) => {
+  selectElement: (unitId, elementRef, { additive = false, pick = false } = {}) => set((s) => {
+    // ─── T79 (CLAUDE.md F12): WHILE CENTER BETWEEN IS ARMED, A CLICK IS A PICK
+    // On the cabinet that armed it: the lower first, then the upper, and the
+    // selection stays on the shelf whose menu armed it. Only the press on a
+    // board says `pick`: any other selection (another cabinet, a Check row,
+    // the re-selection an Undo makes) is a click elsewhere, ends the mode and
+    // selects as it always has.
+    const armed = s.centreBetween;
+    if (pick && armed && armed.unitId === unitId && elementRef) {
+      return { centreBetween: armed.lower ? { ...armed, upper: elementRef } : { ...armed, lower: elementRef } };
+    }
     // ─── TURN 37 (CLAUDE.md F1): GRABBING A MEMBER KEEPS THE SET ────────────
     //
     // The owner's whole verdict is *"złapać 6 półek z 3 szaf i przesunąć ich
@@ -851,9 +875,21 @@ export const useUiStore = create((set, get) => ({
       rightPanelOpen: true,
       selectedElements: next,
       selectedElement: primary,
+      centreBetween: null,
     };
   }),
-  clearElement: () => set({ selectedElement: null, selectedElements: [] }),
+  clearElement: () => set({ selectedElement: null, selectedElements: [], centreBetween: null }),
+
+  // ─── T79 (CLAUDE.md F12): CENTER BETWEEN, TWO PICKS IN ORDER ─────────────
+  // *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy
+  // wszystkie półki pomiędzy tymi elementami się centrują."* Armed by the
+  // shelf menu's `Center between`; `selectElement` above reads the next two
+  // picks on THAT cabinet into it, and the project store runs the centring
+  // the moment the second lands (this store never reads that one). Escape, or
+  // a click anywhere else, ends it.
+  centreBetween: null,               // { unitId, lower, upper } | null
+  armCentreBetween: (unitId) => set({ centreBetween: unitId ? { unitId, lower: null, upper: null } : null }),
+  cancelCentreBetween: () => set({ centreBetween: null }),
 
   // Shelf being dragged in 3D — drives the live dimension readout
   dragging: null,                    // { unitId, itemId, pos_mm, above, below }
@@ -1044,16 +1080,31 @@ export const useUiStore = create((set, get) => ({
     );
     if (twin) {
       const count = (twin.count || 1) + 1;
+      const folded = `${count} × ${message}`;
       set((s) => ({
         messages: s.messages.map((m) => (m.id === twin.id
           ? {
-            ...m, count, baseMessage: message, message: `${count} × ${message}`, at: now,
+            ...m, count, baseMessage: message, message: folded, at: now,
           }
           : m)),
+        // T79 F1: the fold is ONE row of the Changes list, updated in place.
+        history: recordHistory(s.history, historyRow({
+          ...twin, count, baseMessage: message, message: folded, at: now,
+        }), historyMax(profile)),
       }));
       return twin.id;
     }
-    set((s) => ({ messages: trimQueue(pushMessage(s.messages, msg), queueMax(profile)) }));
+    set((s) => {
+      const messages = trimQueue(pushMessage(s.messages, msg), queueMax(profile));
+      // T79 F1: kept as a row when first shown. A sentence `pushMessage` folded
+      // into one already standing keeps that one's id, so it stays one row.
+      const shown = messages.find((m) => m.id === msg.id)
+        || messages.find((m) => m.message === msg.message && m.level === msg.level);
+      return {
+        messages,
+        history: shown ? recordHistory(s.history, historyRow(shown), historyMax(profile)) : s.history,
+      };
+    });
     // Only a grey has a clock. A red that expired on its own would be exactly
     // the fault this feature exists to end, so there is no timer for one.
     if (msg.expiresAt != null) {
@@ -1072,6 +1123,18 @@ export const useUiStore = create((set, get) => ({
     return gone.length ? { messages: s.messages.filter((m) => !gone.includes(m.id)) } : {};
   }),
   clearMessages: () => set({ messages: [] }),
+
+  // ─── T79 F1 · THE CHANGES LIST ────────────────────────────────────────────
+  // *"na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian."*
+  // Every message as it was first shown, newest first, the last
+  // `profile.ui.messages.historyMax` of them (engine/messages.js
+  // `recordHistory`). Collapsed by default and never persisted: this
+  // session's notices, not the project's record.
+  history: [],
+  historyOpen: false,
+  toggleHistory: () => set((s) => ({ historyOpen: !s.historyOpen })),
+  closeHistory: () => set((s) => (s.historyOpen ? { historyOpen: false } : {})),
+  clearHistory: () => set({ history: [] }),
 
   /**
    * ─── LEAVING WITH UNSAVED WORK (F2) ──────────────────────────────────────

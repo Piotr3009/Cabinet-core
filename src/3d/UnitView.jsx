@@ -161,7 +161,9 @@ import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
 // this house has already paid for once.
 import { ceilingPolyline, slopeInfillMm } from '../lib/slopeLine.js';
 import { wallElements } from '../lib/wallElements.js';
-import { useProjectStore } from '../stores/projectStore.js';
+import { aboveDividerOpening, centreBetweenPick, useProjectStore } from '../stores/projectStore.js';
+// T79 F12 · Center between's two-pick mode, read where the picks are made.
+import { useUiStore } from '../stores/uiStore.js';
 import { useStorageBase } from '../lib/storageBase.js';
 import {
   columnOfItem, columnOfShelf, fieldFromPos, interiorFloor, lightBelow, shelfColumns,
@@ -185,6 +187,8 @@ import { widthZones } from '../engine/zones.js';
 import { panelSolids } from './panelSolid.js';
 // T75 F7 · CUT CORNER: the four plan corners, lit while the store asks.
 import NotchCorners from './NotchCorners.jsx';
+// T79 F5 · CUT EDGE: the four horizontal side edges, lit (KIT_NOTCH.lsp D22).
+import NotchEdges from './NotchEdges.jsx';
 // T58b (CLAUDE.md F3.2): the J is not a mesh — it is slabs merged into the
 // leaf's own geometry — so a click on it is a hit test, and the hit test is a
 // pure function with a unit test behind it.
@@ -608,6 +612,10 @@ function jpullContourSegments(band, box) {
 }
 
 const NO_RAYCAST = () => null;
+
+// T79 F12 · Center between lights its candidates in the bay hint's slab, at
+// the bay hint's own opacity (the 0.22 of the `zoneHint` slab below).
+const BAY_HINT_OPACITY = 0.22;
 
 /**
  * ─── T74 F12 · WHERE THE J GROOVE IS, IN THE PIECE'S OWN FRAME ─────────────
@@ -1780,6 +1788,12 @@ export default function UnitView({
     boardT,
     partitions: (unit.params.sections?.[0]?.items || []).filter((i) => i.kind === 'partition'),
   }), [unit.params.width, boardT, unit.params.sections]);
+  // T79 F2 · the opening over the divider's FIX shelf, asked only while the
+  // third button is pointed at: the store's one answer, off this result.
+  const aboveHint = useMemo(
+    () => (zoneHint === 'above' ? aboveDividerOpening(unit, profile, result) : null),
+    [zoneHint, unit, profile, result],
+  );
 
   const W = unit.params.width;
   const H = unit.params.height;
@@ -1950,6 +1964,21 @@ export default function UnitView({
   const wallSlopeList = useProjectStore((s) => s.project.wallSlopes);
   const roomHeight = useProjectStore((s) => s.project.room?.height);
   const projectDesign = useProjectStore((s) => s.project.design);
+  // ─── T79 (CLAUDE.md F12): CENTER BETWEEN, ARMED ON THIS CABINET ──────────
+  // The mode when it is this cabinet's, else null: what lights the candidates
+  // below. The press itself reads the store fresh (a closure would be a click
+  // late).
+  const centreBetween = useUiStore((s) => (s.centreBetween?.unitId === unit.id ? s.centreBetween : null));
+  const cancelCentreBetween = useUiStore((s) => s.cancelCentreBetween);
+  // Is a board of THIS cabinet that may be picked further along the ray? The
+  // lit slab shows a top through its doors, so a press on the door is a press
+  // aimed at the top, and the event travels on to it.
+  const pickBehind = (e) => (e.intersections || []).some((hit) => {
+    const ref = hit.object?.userData?.ccPanelId;
+    let at = hit.object;
+    while (at && at.userData?.ccUnitId == null) at = at.parent;
+    return at?.userData?.ccUnitId === unit.id && centreBetweenPick(result.panels.find((q) => q.id === ref));
+  });
   const ghost = useMemo(() => {
     if (!dragging) return null;
     const wallIndex = unit.position?.wall ?? 0;
@@ -1993,11 +2022,12 @@ export default function UnitView({
   // The dashed box the PRIMARY piece has worn since turn 9, drawn once per
   // selected piece. One component, one style, one law — a set that showed
   // only its last member would be a set nobody can see.
+  // T79 F12: Center between's lower pick, once made, wears the same mark.
   const selectedElementBoxes = useMemo(
-    () => (selectedElements || [])
+    () => [...(selectedElements || []), ...(centreBetween?.lower ? [centreBetween.lower] : [])]
       .map((id) => result.panels.find((p) => p.id === id && p.box)?.box || null)
       .filter(Boolean),
-    [selectedElements, result.panels],
+    [selectedElements, centreBetween, result.panels],
   );
   const selectedElementBox = useMemo(
     () => (selectedElement
@@ -2361,6 +2391,8 @@ export default function UnitView({
     if (caught.unitId === unit.id && Number.isFinite(caught.ownPos)) return caught.ownPos;
     return null;
   }, [shelfDrag, unit.id]);
+  // T79 F11: the rod's own catch while it is in the hand, `{axis, below}` or null.
+  const [railMagnet, setRailMagnet] = useState(null);
 
   // The two openings the shelf being dragged stands between — the same list,
   // sliced to the board in the hand. Turn 28 (F3): its OWN bay's list.
@@ -2672,7 +2704,9 @@ export default function UnitView({
     onSelect();
     const hit = pointerToPlane(e.clientX, e.clientY);
     if (!hit) return;
-    const support = Number(result.assemblies?.rail?.support) || 0;
+    // T79 F11: THIS rod's support, from the store's one reader of it (a column
+    // rod publishes none on `assemblies.rail`), so the magnet and the hand agree.
+    const support = Number(useProjectStore.getState().railTravelFor(unit.id, itemId)?.support) || 0;
     const grabDelta = currentAxisMm - (hit.y - originY) / MM;
     if (orbitRef?.current) orbitRef.current.enabled = false;
 
@@ -2680,9 +2714,14 @@ export default function UnitView({
       const p = pointerToPlane(ev.clientX, ev.clientY);
       if (!p) return;
       const axisMm = (p.y - originY) / MM + grabDelta;
-      onMoveRail(itemId, axisMm - support);
+      // T79 F11: the drag is offered the place under a shelf; Alt refuses it.
+      const state = onMoveRail(itemId, axisMm - support, { magnet: !ev.altKey });
+      const caught = state?.magnet || null;
+      setRailMagnet((was) => (!caught ? null
+        : (was?.axis === caught.axis ? was : { axis: caught.axis, below: caught.below })));
     };
     const up = () => {
+      setRailMagnet(null);
       if (orbitRef?.current) orbitRef.current.enabled = true;
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
@@ -2691,7 +2730,7 @@ export default function UnitView({
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
-  }, [onMoveRail, onSelect, pointerToPlane, originY, orbitRef, result]);
+  }, [onMoveRail, onSelect, pointerToPlane, originY, orbitRef, unit.id]);
 
   // Which joint system this project is cut with, as its LAYER NAMES — the same
   // indirection engine/joinery.js has used since turn 8, so a second system
@@ -2933,6 +2972,21 @@ export default function UnitView({
               // right button belongs to the menu and to the orbit; the middle
               // one to the pan. Neither is a grab.
               if (((e.nativeEvent || e).button ?? 0) !== 0) return;
+              // ─── T79 (CLAUDE.md F12): CENTER BETWEEN TAKES THE PRESS ──────
+              // While armed on this cabinet a press on a board that may be
+              // picked is a PICK, handed to `selectElement`, which reads it
+              // into the mode (never a drag). A board standing in front of a
+              // pick lets the press through to it; a press with no pick
+              // behind it ends the mode and goes on to do what it always did.
+              if (useUiStore.getState().centreBetween?.unitId === unit.id) {
+                if (centreBetweenPick(p)) {
+                  e.stopPropagation();
+                  onSelectElement?.(p.id, { pick: true });
+                  return;
+                }
+                if (pickBehind(e)) return;
+                cancelCentreBetween();
+              }
               // ─── TURN 54 (CLAUDE.md F4.1): A WATCH TRAY PIECE OPENS ITS OWN ──
               // MODAL. The rails, the dividers, the base — until tonight a
               // click on any of them fell through to "drag the cabinet", and
@@ -3307,6 +3361,14 @@ export default function UnitView({
         <NotchCorners unitId={unit.id} width={W} depth={D} height={H} notch={unit.params?.notch || null} />
       )}
 
+      {/* ─── T79 F5 · CUT EDGE ───────────────────────────────────────────────
+          *"możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*: the four
+          horizontal side edges, lit while `uiStore.edgeNotchPick` names this
+          unit; a click on one's handle opens the small window at the click. */}
+      {!contour && (
+        <NotchEdges unitId={unit.id} width={W} depth={D} height={H} edgeNotch={unit.params?.edgeNotch || null} />
+      )}
+
       {/* ─── T75 F23 · THE DOWEL GATE, SAID ON THE UNIT ──────────────────────
           *"the CNC export REFUSES a dowel job while `joints.dowel.confirmed` is
           false ... the 3D and the cut list show it."*  One caption over a dowel
@@ -3353,6 +3415,18 @@ export default function UnitView({
           <DimLabel
             position={[mm(W / 2), mm(magnetLine) + 0.05, mm(D) + 0.1]}
             text={formatMm(fieldFromPos(magnetLine, G), { unit: true })}
+            tone="gold"
+          />
+        </group>
+      )}
+
+      {/* T79 F11 · the rod caught under a shelf: the same guide, at the rod's axis. */}
+      {railMagnet && !contour && (
+        <group userData={{ ccHelper: true, ccRailMagnet: railMagnet.axis }}>
+          <DashedGuide y={railMagnet.axis} width={W} depth={D} />
+          <DimLabel
+            position={[mm(W / 2), mm(railMagnet.axis) + 0.05, mm(D) + 0.1]}
+            text={`${formatMm(railMagnet.below, { unit: true })} under the shelf · Alt refuses`}
             tone="gold"
           />
         </group>
@@ -3683,6 +3757,24 @@ export default function UnitView({
           />
         </mesh>
       )}
+      {/* T79 F2 · …and the opening ABOVE the divider, the same slab across the
+          full width, from the carrying FIX shelf's top face to the top's
+          underside: *"nie mam czegoś takiego że jest bay nie dzielony powyżej."* */}
+      {aboveHint && !contour && (
+        <mesh
+          userData={{ ccHelper: true }}
+          position={[mm(W / 2), mm((aboveHint.from + aboveHint.to) / 2), mm(D / 2)]}
+          raycast={null}
+        >
+          <boxGeometry args={[mm(aboveHint.width), mm(aboveHint.height), mm(D * 0.9)]} />
+          <meshBasicMaterial
+            color={profile.appearance.addPlus.inner}
+            transparent
+            opacity={0.22}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
 
       {/* wall unit: the bracket line it hangs from, so it does not read as
           floating by accident */}
@@ -3787,6 +3879,33 @@ export default function UnitView({
       {selectedElementBox && !contour && (
         <SelectionOutline box={selectedElementBox} profile={profile} opacity={1} />
       )}
+
+      {/* ─── T79 (CLAUDE.md F12): CENTER BETWEEN, THE PICKS LIT ──────────
+          While the mode is armed on this cabinet every board that may be
+          picked wears the bay hint's own translucent slab (its colour, its
+          opacity), drawn over the doors so a pick can be found; the lower
+          pick, once made, wears the click's own mark (the set's outlines
+          above). Tool marks (`ccHelper`), never in a render. */}
+      {centreBetween && !contour && result.panels
+        .filter((p) => centreBetweenPick(p) && p.id !== centreBetween.lower)
+        .map((p) => (
+          <mesh
+            key={`centre-between-${p.id}`}
+            userData={{ ccHelper: true }}
+            position={[mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]}
+            renderOrder={19}
+            raycast={NO_RAYCAST}
+          >
+            <boxGeometry args={[mm(p.box.w), mm(p.box.h), mm(p.box.d)]} />
+            <meshBasicMaterial
+              color={profile.appearance.addPlus.inner}
+              transparent
+              opacity={BAY_HINT_OPACITY}
+              depthTest={false}
+              depthWrite={false}
+            />
+          </mesh>
+        ))}
 
       {/* The unit's own W / H / D. Written in the project's DIMENSION INK
           (turn 11, CLAUDE.md F1.5) — red by default — because these are

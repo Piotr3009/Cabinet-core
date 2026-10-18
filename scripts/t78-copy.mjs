@@ -77,6 +77,98 @@ export const T78_PRO_EDITS = [
       + '`setCornerKit` (one BOM line, a placeholder body, zero holes; a fixed shelf in its way is refused in words).',
     words: 'the owner, 11.10.2026: *"krecacy sie naroznik na garnki w srodku."*',
   },
+  // Before T79: the chat fix of 17.10.2026 (16:10) moved this PRO surface after T78 closed; named here so the
+  // T79 run can prove its copy (the machine's, byte for byte).
+  {
+    pro: 'src/components/PartDetailModal.jsx',
+    by: 'chat fix 17.10.2026 (16:10), before T79',
+    why: 'a mark is an open walk: the corner mark is drawn as one path through its three points (engine/marks.js) and '
+      + 'its hit box is the box of every point of the walk.',
+    words: 'the owner, 17.10.2026 (16:10): *"jeden, zaczynajacy sie od lewej do srodka i kontynuacja na prawo, jeden L wektor"*.',
+  },
+  {
+    pro: 'src/components/AddItems.jsx',
+    by: 'T79 F2',
+    why: 'the shelves\' WHICH SIDE gains a third button, Above divider, shown only while the divider ends under a FIX '
+      + 'shelf below the top; hovering lights the full-width opening over that shelf, Add puts full-width shelves '
+      + 'centred in it (`addShelves(unit, n, \'above\')`), and a refusal said by the store is not said twice; an '
+      + 'opening that goes away while picked asks for a bay again instead of leaving a mute Add.',
+    words: 'the owner, 18.10.2026: *"jak dodamy fix półkę i divider pod spodem to nie mam możliwości dodania '
+      + 'całkowitej półki powyżej bo kod dzieli mi całą szafę na bay 1 i 2, a nie mam czegoś takiego że jest bay '
+      + 'nie dzielony powyżej."*; mockup approved 14:45: *"1 - tak."*',
+  },
+  {
+    pro: 'src/components/ElementProperties.jsx',
+    by: 'T79 F12',
+    why: 'Center between beside Center all, the same width: one click arms the two-pick mode of the shared uiStore '
+      + '(`centreBetween`), the panel says which pick is next, Escape cancels; the project store centres the shelves '
+      + 'between the two picks (`centreShelvesBetween`) or refuses in words.',
+    words: 'the owner, 18.10.2026: *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie '
+      + 'półki pomiędzy tymi elementami się centrują."*',
+  },
+  {
+    pro: 'src/components/AddItems.jsx',
+    by: 'T79 F3',
+    why: 'the internal drawers block asks COLUMNS 1 or 2 beside the count while the unit is undivided (a wardrobe that '
+      + 'takes a divider); 2 sends addDrawers(..., { columns: 2 }): one divider mid-width, a stack in each column, one '
+      + 'fixed shelf over both, one undo. A divided unit keeps "Which column".',
+    words: 'the owner, 18.10.2026 (14:17): *"jak ustawiamy sobie teraz 3 szuflady internal to niech pyta czy chcesz 1 czy 2 '
+      + 'kolumny, coś jak baye."*; mockup approved 14:45: *"2 - tak."*',
+  },
+  {
+    pro: 'src/components/AddItems.jsx',
+    by: 'T79 F11',
+    why: 'kasacja: the With a shelf / Rail alone toggle, its state and the assembly hint are deleted; Add hanger rail adds '
+      + 'the rod alone (the store takes withShelf no more) and says the drag proposes its place under a shelf.',
+    words: 'the owner, 18.10.2026: *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to; przy '
+      + 'przesuwaniu zaproponuj 50 mm poniżej półki."*',
+  },
+  {
+    pro: 'src/components/ElementProperties.jsx',
+    by: 'T79 F13',
+    why: 'SET BACK\'s standard chip is the PROJECT\'s setback, the one a shelf or a divider with nothing said is cut at '
+      + '(`carcass.shelfSetbackMm` for a shelf, `carcass.dividerSetbackMm` for a divider, 10), no longer the LISP\'s 20; '
+      + 'Flush and the field are what they were.',
+    words: 'the owner, 18.10.2026: *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: '
+      + '*"tylko półki i dividery, szuflady zostaw nie ruszaj."*',
+  },
+  {
+    pro: 'src/components/ElementProperties.jsx',
+    by: 'T79 F16',
+    why: 'the shelf\'s Type field gains a `Restore sleeve rows` button (data-restore-sleeve-rows), shown only when the '
+      + 'shelf carries `sleeves_dropped`, calling the store\'s `restoreSleeveRows`; a refusal is said, never silent.',
+    words: 'the handover of 18.10.2026: *"przycisk Restore sleeve rows"*, accepted by the owner 14:55: *"ok daj"*',
+  },
+];
+
+/**
+ * THE T62 HAND COPIES MOVED BEFORE T79. RoomModal and WallElevationModal are
+ * T62's copies (scripts/t63-copies.mjs T62_COPIES), made by their own machine,
+ * not by scripts/t63-copy.mjs, so they cannot be named in T78_PRO_EDITS (the
+ * machine does not make them) nor in T78_RETAIL_EDITS (they are manifest files).
+ * Each entry names the PRO surface and its retail copy, both moved by the chat
+ * fixes of 15.10 and 17.10.2026 after T78 closed; the PRO file still carries its
+ * EXEMPT line and its frozen hash, and the copy's hunks are printed for the PR.
+ */
+export const HAND_COPY_EDITS = [
+  {
+    pro: 'src/components/RoomModal.jsx',
+    retail: 'src/retail/design/room/RoomModal.jsx',
+    by: 'chat fixes 14.10 and 17.10.2026, before T79',
+    why: 'ADD ISLAND opens the island plan over the canvas (3d/IslandPlan.jsx); the window is 1290 px wide, the plan '
+      + 'inside it untouched.',
+    words: 'the owner, 14.10.2026: *"przy dodaniu wyspy chcialbym zeby byl widok z gory"*; 17.10.2026: '
+      + '*"menu setup room (caly modal poszerz prosze o 50 procent)"*.',
+  },
+  {
+    pro: 'src/components/WallElevationModal.jsx',
+    retail: 'src/retail/design/room/WallElevationModal.jsx',
+    by: 'chat fix 15.10.2026, before T79',
+    why: 'the FRONT view draws the recess band and the chimney where they stand, drags them sideways and opens them; '
+      + 'the recess window gains Bottom and Top.',
+    words: 'the owner, 15.10.2026: *"na setup room jak widze sciane od frontu nie top tylko front to nie widze kresek, '
+      + 'gdzie jest komin i gdzie wneka"*.',
+  },
 ];
 
 /**
@@ -91,16 +183,67 @@ export const T78_RETAIL_EDITS = [
     why: 'the FRONTS step gains a GLASS list under the style list, shown for the GL style only: clear, smoke, reeded, one '
       + 'click writes the project\'s glass kind through the adapter (A.setGlassKind); no number on the page.',
     words: 'the owner, 11.10.2026: *"szyba powinna byc smoke ... domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12: '
-      + '*"Retail: the choice in the FRONTS step for a GL style."*',
-    hunks: ['@@ -783,0 +784,24 @@'],
+      + '*"Retail: the choice in the FRONTS step for a GL style."*'
+      + ' T79 F5: the owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*; '
+      + 'CLAUDE.md T79 F5: *"Retail the same through the copy script or by hand (name it)."*',
+    // T79 F5 (by hand, Options.jsx is retail's own): the SIZE step's CutEdgeRow under CUT CORNER, CUT EDGE lights the four
+    // horizontal side edges (A.toggleCutEdge) and REMOVE takes an edge notch off (A.removeEdgeCut); the hunks at 354 and 396.
+    hunks: ['@@ -353,0 +354,5 @@', '@@ -390,0 +396,24 @@', '@@ -783,0 +813,24 @@'],
   },
   {
     retail: 'src/retail/design/adapter.js',
-    by: 'T78 F12 (the one writer of the central files)',
+    by: 'T78 F12 (the one writer of the central files); T79 F11',
     why: 'glassKinds(), glassKind(project) and setGlassKind(kind): the profile\'s kinds and default, the project\'s choice '
-      + '(design.fronts.glassKind) written through the store\'s setDesign; the engine validates the word.',
-    words: 'the owner, 11.10.2026: *"domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12.',
-    hunks: ['@@ -1918,0 +1919,25 @@'],
+      + '(design.fronts.glassKind) written through the store\'s setDesign; the engine validates the word. '
+      + 'T79 F10: wallGapOfUnit (the SIZE step\'s FROM THE WALL field) reads the unit\'s own wall_gap with the derived '
+      + 'recess_mm taken as 0, so a typed 100 reads back 100 and not 100 less the recess (-100 in a 300 recess). '
+      + 'T79 F11: RAIL_MOUNTS and setRailMount deleted (the mount is never offered: a rod is added alone); setRailOffset, '
+      + 'a slider\'s number, passes moveRail `magnet: false` so it never jumps to the drag\'s proposal.',
+    words: 'the owner, 11.10.2026: *"domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12. Chat fix 15.10.2026, before T79 '
+      + '(the import and doorCountRefusal\'s pair under the minimum leaf, through engine/cabinet.js leafCountRefusal): '
+      + '*"zebym mial mozliwosc podzielenia ich na 2"*. T79 F5 (by hand): canCutEdge, edgeNotchOfUnit, cuttingEdge, '
+      + 'toggleCutEdge, edgeNotchDefaults, cutEdge, dismissCutEdge, removeEdgeCut after removeCornerCut, through the '
+      + 'store\'s one action setUnitEdgeNotch (KIT_NOTCH.lsp D22); the owner, 18.10.2026: *"cut the corner działa '
+      + 'idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*. T79 F10, the owner 18.10.2026: *"jak '
+      + 'odsunie od ściany na grubość większą niż recess to powinien zlikwidować recess w szafie, lub zmniejszać go '
+      + 'odsuwaniem od recesu."*'
+      + ' T79 F11, the owner 18.10.2026: *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to; przy '
+      + 'przesuwaniu zaproponuj 50 mm poniżej półki."*',
+    hunks: ['@@ -39 +39 @@', '@@ -1819,0 +1820,9 @@', '@@ -1918,0 +1928,25 @@', '@@ -2666 +2700,3 @@', '@@ -3562,13 +3598,2 @@', '@@ -3576,9 +3600,0 @@', '@@ -3595 +3611 @@', '@@ -4713,0 +4730,61 @@'],
+  },
+  {
+    retail: 'src/retail/styles/roomeditor.css',
+    by: 'chat fix 17.10.2026, before T79',
+    why: 'one class, pbi-re-w1290, the retail Room setup at PRO\'s new width (w-[1290px]).',
+    words: 'the owner, 17.10.2026: *"caly modal poszerz prosze o 50 procent"*.',
+    hunks: ['@@ -260,0 +261,2 @@'],
+  },
+  {
+    retail: 'src/retail/design/detail/NotchAsk.jsx',
+    by: 'T79 F4',
+    why: 'retail\'s own CUT CORNER window (not a copy: PRO\'s window lives in RightPanel.jsx, which has no retail copy): '
+      + 'HEIGHT shows a negative number (a notch from the top, KIT_NOTCH.lsp D21) as itself, 0 still reads full, and '
+      + 'PRO\'s help line word for word under the three fields (data-testid notch-help). The cut is the adapter\'s as before.',
+    words: 'the owner, 18.10.2026: *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry? i mała informacja o tym."*; '
+      + 'CLAUDE.md T79 F4: *"Retail `NotchAsk.jsx` the same line, through the copy script where it is a copy, by hand where it is not."*',
+    hunks: ['@@ -20 +20,2 @@', '@@ -84,0 +86,2 @@'],
+  },
+  {
+    retail: 'src/retail/design/detail/EdgeNotchAsk.jsx',
+    by: 'T79 F5',
+    why: 'NEW, retail\'s own CUT EDGE window (NotchAsk.jsx\'s twin, not a copy: PRO\'s window lives in RightPanel.jsx, which has no '
+      + 'retail copy): EDGE (TB, BB, TF, BF), DEPTH, HEIGHT on the profile\'s notch.edgeDefaults, PRO\'s help line word for word '
+      + '(data-testid edge-notch-help); the cut is the adapter\'s A.cutEdge, the store\'s one action (KIT_NOTCH.lsp D22).',
+    words: 'the owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*; '
+      + 'CLAUDE.md T79 F5: *"Retail the same through the copy script or by hand (name it)."*',
+    hunks: ['@@ -0,0 +1,115 @@'],
+  },
+  {
+    retail: 'src/retail/design/Editors.jsx',
+    by: 'T79 F5',
+    why: 'the room-level modal slot draws EdgeNotchAsk for the `edge-notch` window, beside NotchAsk (retail\'s own file, not a copy).',
+    words: 'the owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*',
+    hunks: ['@@ -15,0 +16,2 @@', '@@ -104,0 +107,2 @@'],
   },
 ];
 
@@ -273,6 +416,8 @@ const ref = BASE_COMMIT;
 const named = T78_PRO_EDITS;
 const wanted = named.map((e) => retailOf(e.pro)).filter(Boolean);
 const ownEdits = T78_RETAIL_EDITS.map((e) => e.retail);
+const handPro = HAND_COPY_EDITS.map((e) => e.pro);
+const handRetail = HAND_COPY_EDITS.map((e) => e.retail);
 
 say('─── T78 · THE COPY: RETAIL ONLY THROUGH THE COPY SCRIPT ───\n\n');
 if (!hasCommit(BASE_COMMIT)) {
@@ -330,8 +475,8 @@ for (const { pro, by, why, words } of named) {
 // ─── EVERY PRO SURFACE WITH A COPY, AGAINST THE BASE ──────────────────────
 const proMoved = movedSince(ref, 'src/components');
 const proWithCopy = ALL_COPIES.filter((c) => proMoved.includes(c.pro)).map((c) => c.pro);
-const notNamed = proWithCopy.filter((pro) => !named.some((n) => n.pro === pro));
-const unspent = named.filter((e) => !proMoved.includes(e.pro)).map((e) => e.pro);
+const notNamed = proWithCopy.filter((pro) => !named.some((n) => n.pro === pro) && !handPro.includes(pro));
+const unspent = [...named.map((e) => e.pro), ...handPro].filter((pro) => !proMoved.includes(pro));
 say('\n─── EVERY PRO SURFACE WITH A COPY, AGAINST THE BASE ───\n');
 say(`  PRO files moved since the base: ${proMoved.join(', ') || 'none'}\n`);
 say(`  of them with a retail copy: ${proWithCopy.join(', ') || 'none'}\n`);
@@ -349,7 +494,7 @@ const exemptBlock = blockOf('const EXEMPT = {');
 const frozenBlock = blockOf('const FROZEN = {');
 if (!exemptBlock) fail(`${SWITCH} has no EXEMPT block this script can read`);
 if (!frozenBlock) fail(`${SWITCH} has no FROZEN block this script can read`);
-for (const pro of named.map((n) => n.pro).filter((p) => proMoved.includes(p))) {
+for (const pro of [...named.map((n) => n.pro), ...handPro].filter((p) => proMoved.includes(p))) {
   const exempt = exemptBlock.includes(`'${pro}':`);
   const frozen = frozenBlock.match(new RegExp(`'${literal(pro)}':\\s*'([0-9a-f]{64})'`))?.[1] || null;
   const now = disk(pro) ? sha256(disk(pro)) : null;
@@ -391,14 +536,15 @@ for (const rel of retailMoved) {
   const isNamedCopy = pro && wanted.includes(rel);
   const isMade = run.made.has(rel) && run.made.get(rel).equals(disk(rel) || Buffer.alloc(0));
   let kind;
-  if (ownEdits.includes(rel)) kind = 'retail edit, named';
+  if (handRetail.includes(rel)) kind = `T62 hand copy of ${pro}, named in HAND_COPY_EDITS`;
+  else if (ownEdits.includes(rel)) kind = 'retail edit, named';
   else if (isNamedCopy && isMade) kind = `copy of ${pro}, byte for byte the machine's`;
   else if (isNamedCopy) kind = `copy of ${pro}, NOT what the machine makes`;
   else if (pro) kind = `copy of ${pro}, whose PRO file is NOT named`;
   else if (rel === SHEET) kind = 'the machine\'s sheet, NOT licensed by any name';
   else kind = 'NEITHER a named copy nor a named retail edit';
   say(`  ${rel.padEnd(56)} ${kind}\n`);
-  if (ownEdits.includes(rel)) continue;
+  if (ownEdits.includes(rel) || handRetail.includes(rel)) continue;
   if (isNamedCopy && !isMade) fail(`${rel} moved and is not byte for byte what the machine makes from ${pro}`);
   if (!isNamedCopy) fail(`${rel} moved and is neither a copy of a named PRO file nor a named retail edit`);
 }
@@ -430,6 +576,17 @@ for (const { retail, by, why, words, hunks: pinned } of T78_RETAIL_EDITS) {
   const same = Array.isArray(pinned) && pinned.length === onDisk.length && pinned.every((p, i) => p === onDisk[i]);
   say(`    pinned hunks: ${same ? 'the same as on disk' : `NOT THE SAME; on disk now: hunks: [${onDisk.map((h) => `'${h}'`).join(', ')}]`}\n`);
   if (!same) fail(`${retail} has hunks its entry does not pin (on disk: ${onDisk.join(', ') || 'none'}; pinned: ${(pinned || []).join(', ') || 'none'})`);
+}
+
+// ─── THE T62 HAND COPIES, BY FILE AND HUNK ─────────────────────────────────
+say('\n─── THE T62 HAND COPIES MOVED BEFORE T79 (HAND_COPY_EDITS), BY FILE AND HUNK ───\n');
+for (const { pro, retail, by, why, words } of HAND_COPY_EDITS) {
+  const hc = hunksOf(ref, retail);
+  const hp = hunksOf(ref, pro);
+  const at = (hs) => hs.map((h) => h.header).join(', ') || 'none';
+  say(`  ${retail}\n    copy of ${pro} (T62's own machine)\n    by: ${by}\n    why: ${why}\n    words: ${words}\n`);
+  say(`    the copy since the base: ${at(hc)}\n    PRO since the base:      ${at(hp)}\n`);
+  if (!movedSince(ref, retail).length && !movedSince(ref, pro).length) fail(`${pro} and ${retail} are named in HAND_COPY_EDITS and neither moved since the base`);
 }
 
 // ─── FOR THE PR: EACH NAMED COPY, ITS HUNKS AND ITS DIVERGENCE FROM PRO ───

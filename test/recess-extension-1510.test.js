@@ -33,7 +33,7 @@ import {
   recessSideDogbones, recessSideJoints, recessBackPieces, recessBackCut, recessCutEdges, recessCutKind,
   recessBackOutline, recessBackDogbones, recessRunRow, recessBackJoints, recessBoxPlaces, recessReturn,
   recessReturnScrews, recessLid, recessLidScrews, recessExtBack, recessExtBackScrews, recessShelfInP,
-  recessShelfBump, recessShelfOutline, recessShelfDogbones, recessRefusal, EXTENSION_REFUSED, extensionOf,
+  recessShelfBump, recessShelfOutline, recessShelfDogbones, recessRefusal, recessNotchFootprint, EXTENSION_REFUSED, extensionOf,
   extensionVerdict, hangerCutoutStepped, withExtensionRefusal, cutEdgeBite, extensionCarcass, extensionDrills,
   extensionSummary,
 } from '../src/engine/extension.js';
@@ -146,14 +146,16 @@ test('CASE A: the BACK is one shorter piece 328 x 770; its sockets and rows; the
   assert.deepEqual(bj.RIGHT, []);
   assert.deepEqual(bj.TOP, [113, 233]);
   assert.deepEqual(bj.BOTTOM, [113, 233]);
-  // 17.10.2026 (KIT_RECESS.lsp D17), the owner: *"nie bedziemy tam wkrecac
-  // wkretow, system wkrety dookola plecow w tym przypadku nie zadziala"*: the
-  // column into the RETURN's end ([319, 50], [319, 385], [319, 720] until that
-  // morning) is gone; the rows into BUL, the TOP and the BOTTOM stay.
+  // REWRITTEN 18.10.2026 (CLAUDE.md T79 F6, KIT_RECESS.lsp D17 amended), the
+  // owner: *"jak mamy cut the corners lub recess to nie rysujesz mi dziurek na
+  // śrubki 3 mm, to trzeba będzie dodać"*; 14:17: *"ale tylko na plecach."*
+  // The column into the RETURN's end, gone from 17.10 to 18.10, is back; the
+  // rows into BUL, the TOP and the BOTTOM stand as they were.
   assert.deepEqual(bj.SCREWS, [
     [9, 50], [9, 240], [9, 530], [9, 720],
     [68, 761], [173, 761], [278, 761],
     [68, 9], [173, 9], [278, 9],
+    [319, 50], [319, 385], [319, 720],
   ]);
 });
 
@@ -164,14 +166,17 @@ test('CASE A: the added boards and their stated screws', () => {
     'EXT-BACK': [310, 690, 0, 600, 708, 770],
   });
   assert.deepEqual(recessReturn(770, G, 0, 770, 150), [132, 770]);
-  // 17.10.2026 (D17): the added boards state NO screws any more. The owner:
-  // *"bedziemy montowac na ciastka (w przyszlosci dodamy lamello) teraz nic"*.
-  // Until that morning: the RETURN [[50, 9], [50, 761], [66, 9], [66, 761],
-  // [82, 9], [82, 761]], the EXT-BACK twelve (a column each side, a row top
-  // and bottom). The record is kept in the LISP's NUMBERS block.
+  // 17.10.2026 (D17): the RETURN states NO screws. The owner: *"bedziemy
+  // montowac na ciastka (w przyszlosci dodamy lamello) teraz nic"*. Until that
+  // morning: [[50, 9], [50, 761], [66, 9], [66, 761], [82, 9], [82, 761]].
   assert.deepEqual(recessReturnScrews(770, G, 0, 770, 150, K), []);
   assert.deepEqual(recessExtBack(310, 600, 0, 770), [290, 770]);
-  assert.deepEqual(recessExtBackScrews(600, 770, G, 310, 600, 0, 770, K), []);
+  // REWRITTEN 18.10.2026 (T79 F6, D17 amended): the EXT-BACK is a back, *"ale
+  // tylko na plecach"*: its twelve, a column each side, a row top and bottom.
+  assert.deepEqual(recessExtBackScrews(600, 770, G, 310, 600, 0, 770, K), [
+    [9, 50], [281, 50], [9, 385], [281, 385], [9, 720], [281, 720],
+    [68, 9], [68, 761], [145, 9], [145, 761], [222, 9], [222, 761],
+  ]);
 });
 
 test('CASE A: the shelf in the band grows (D10): 560 x 670 less 310 x 150, its dog bone', () => {
@@ -197,11 +202,17 @@ test('CASE B: one whole BACK with a window, the rows round it; the FLOOR, the LI
   const bj = recessBackJoints(pieces[0], window, 600, 770, G, 110, 490, 210, 590, [113, 487], [113, 487], [95, 385, 675], [95, 385, 675], K);
   assert.deepEqual(bj.LEFT, [95, 385, 675]); assert.deepEqual(bj.RIGHT, [95, 385, 675]);
   assert.deepEqual(bj.TOP, [113, 487]); assert.deepEqual(bj.BOTTOM, [113, 487]);
-  // 17.10.2026 (D17): the hand-fix rows round the window (the twelve S outside
-  // each edge, into the RETURNs' ends and the FLOOR's and LID's front edges)
-  // are gone; the BACK keeps exactly drawBACK's fourteen.
-  assert.equal(bj.SCREWS.length, 14, 'the parent\'s fourteen, nothing round the window');
-  assert.deepEqual(bj.SCREWS.slice(14), [], 'no hand-fix row round the window (the owner: "nie bedziemy tam wkrecac wkretow")');
+  // REWRITTEN 18.10.2026 (T79 F6, D17 amended), the owner: *"to trzeba będzie
+  // dodać"*; *"ale tylko na plecach."*  The rows round the window are back (the
+  // twelve S outside each edge, into the RETURNs' ends and the FLOOR's and
+  // LID's front edges), after drawBACK's fourteen.
+  assert.equal(bj.SCREWS.length, 26, 'the parent\'s fourteen and the window\'s twelve');
+  assert.deepEqual(bj.SCREWS.slice(14), [
+    [119, 278], [119, 400], [119, 522],
+    [481, 278], [481, 400], [481, 522],
+    [178, 219], [300, 219], [422, 219],
+    [178, 581], [300, 581], [422, 581],
+  ], 'into RETURN-L, RETURN-R, the FLOOR, the LID');
   assert.deepEqual(recessBoxPlaces(600, 558, 770, G, 110, 490, 210, 590, 150), {
     'RETURN-L': [110, 558, 228, 128, 690, 572],
     'RETURN-R': [472, 558, 228, 490, 690, 572],
@@ -212,9 +223,13 @@ test('CASE B: one whole BACK with a window, the rows round it; the FLOOR, the LI
   assert.deepEqual(recessReturn(770, G, 210, 590, 150), [132, 344]);
   assert.deepEqual(recessReturnScrews(770, G, 210, 590, 150, K), [], 'between a FLOOR and a LID it carries none of its own');
   assert.deepEqual(recessLid(G, 110, 490, 150), [380, 132]);
-  // 17.10.2026 (D17): none stated on the FLOOR, the LID or the EXT-BACK either.
+  // 17.10.2026 (D17): none stated on the FLOOR or the LID.
   assert.deepEqual(recessLidScrews(G, 110, 490, 150, K), []);
-  assert.deepEqual(recessExtBackScrews(600, 770, G, 110, 490, 210, 590, K), []);
+  // REWRITTEN 18.10.2026 (T79 F6, D17 amended): the EXT-BACK, a back, drilled.
+  assert.deepEqual(recessExtBackScrews(600, 770, G, 110, 490, 210, 590, K), [
+    [9, 68], [371, 68], [9, 190], [371, 190], [9, 312], [371, 312],
+    [68, 9], [68, 371], [190, 9], [190, 371], [312, 9], [312, 371],
+  ]);
 });
 
 test('the BACK\'s other shapes: a bite, a corner, two pieces (D8, D9)', () => {
@@ -248,7 +263,15 @@ test('the BACK\'s other shapes: a bite, a corner, two pieces (D8, D9)', () => {
 
 test('the refusals: a notch, a band outside the carcass, a return inside a side, the interior rule', () => {
   assert.equal(recessRefusal(600, 558, 770, G, 310, 600, 0, 770, 150, false, K), null);
-  assert.match(recessRefusal(600, 558, 770, G, 310, 600, 0, 770, 150, true, K), /notched round an obstacle/);
+  // T79 F8, KIT_RECESS.lsp D13 amended (the owner, 18.10.2026: *"dlaczego cut the corner likwiduje nam wcięcie
+  // do recess?"*): the 10th argument is the notch's FOOTPRINT on the BACK, no longer "notched" (until then any
+  // notch refused the band: "RECESS: a carcass notched round an obstacle cannot grow into a recess as well").
+  // Apart (BL 200 wide against 310..600): no refusal; overlapping (the band from 100): the sentence the Check shows.
+  assert.equal(recessRefusal(600, 558, 770, G, 310, 600, 0, 770, 150, recessNotchFootprint(600, 770, 200, 0, 'BL'), K), null);
+  assert.equal(recessRefusal(600, 558, 770, G, 100, 600, 0, 770, 150, recessNotchFootprint(600, 770, 200, 0, 'BL'), K),
+    'The recess cannot be cut: the corner cut stands where the recess band is; move one of them.');
+  // A part-height notch whose height stands apart from the band's coexists across the same x.
+  assert.equal(recessRefusal(600, 558, 770, G, 0, 300, 400, 770, 150, recessNotchFootprint(600, 770, 200, 300, 'BL'), K), null);
   assert.match(recessRefusal(600, 558, 770, G, -10, 600, 0, 770, 150, false, K), /outside the carcass/);
   assert.match(recessRefusal(600, 558, 770, G, 10, 600, 0, 770, 150, false, K), /RETURN cannot stand inside the side/);
   assert.match(recessRefusal(600, 558, 770, G, 0, 595, 0, 770, 150, false, K), /RETURN cannot stand inside the side/);
@@ -324,13 +347,15 @@ test('CASE A through computeCabinet: every board the LISP names, to its numbers'
   ]);
   const bCorners = bottom.cnc.outline.filter(([x, y]) => (x === 690 || x === 0 || x === 150) && (y === 0 || y === 564 || y === 310));
   assert.deepEqual(bCorners, [[690, 0], [690, 564], [0, 564], [0, 310], [150, 310], [150, 0]]);
-  // BACK: 328 x 770, its sockets and rows. 17.10.2026 (D17): NO column into
-  // the RETURN's end ([319, 50], [319, 385], [319, 720] until that morning).
+  // BACK: 328 x 770, its sockets and rows. REWRITTEN 18.10.2026 (T79 F6, D17
+  // amended, the owner: *"to trzeba będzie dodać ... ale tylko na plecach"*):
+  // the column into the RETURN's end is back (gone from 17.10 to 18.10).
   const back = panelOf(r, 'BACK');
   assert.deepEqual(back.cnc.outline, [[0, 0], [328, 0], [328, 770], [0, 770]]);
   assert.deepEqual(back.box, { x: 0, y: 0, z: 0, w: 328, h: 770, d: 18 });
   assert.deepEqual(drillsOf(r, 'BACK', 'screw').map((d) => [d.x, d.y]), [
     [9, 50], [9, 240], [9, 530], [9, 720], [68, 761], [173, 761], [278, 761], [68, 9], [173, 9], [278, 9],
+    [319, 50], [319, 385], [319, 720],
   ]);
   assert.deepEqual(drillsOf(r, 'BACK', 'puzzle').filter((d) => d.y === 762).map((d) => d.x), [88.5, 137.5, 208.5, 257.5]);
   // The shelf: drawn depth x width, its dog bone, its plan for the 3-D.
@@ -342,16 +367,23 @@ test('CASE A through computeCabinet: every board the LISP names, to its numbers'
     { layer: 'CORNER_4MM', from: [520, 270], to: [560, 310], pts: [[520, 270], [520, 310], [560, 310]] },
   ]);
   assert.deepEqual(shelf.meta.planOutline, [[0, 670], [560, 670], [560, 0], [310, 0], [310, 150], [0, 150]]);
-  // The added boards: plain, hand-fixed, standing behind the back. 17.10.2026
-  // (D17): NO screws stated on them (the RETURN's six and the EXT-BACK's twelve
-  // until that morning); biscuits by hand, nothing drawn.
+  // The added boards, standing behind the back. 17.10.2026 (D17): the RETURN
+  // is plain and hand-fixed, NO screws stated on it (its six until that
+  // morning); biscuits by hand, nothing drawn. REWRITTEN 18.10.2026 (T79 F6,
+  // D17 amended): the EXT-BACK is a back, *"ale tylko na plecach"*: its twelve
+  // are DRILLED (dia 3, SCREWS_3MM) and it is a cut part.
   const ret = panelOf(r, 'RETURN-L');
   assert.deepEqual([ret.part, ret.role, ret.meta.readiness, ret.meta.fixing], ['RECESS-RETURN', 'extension', 'geometry', 'manual']);
   assert.deepEqual(ret.box, { x: 310, y: 0, z: -132, w: 18, h: 770, d: 132 });
   assert.deepEqual(ret.meta.extension.screws, []);
+  assert.deepEqual(drillsOf(r, 'RETURN-L'), []);
   const eb = panelOf(r, 'EXT-BACK');
   assert.deepEqual(eb.box, { x: 310, y: 0, z: -150, w: 290, h: 770, d: 18 });
-  assert.deepEqual(eb.meta.extension.screws, []);
+  assert.deepEqual([eb.meta.readiness, eb.meta.fixing], [undefined, undefined]);
+  const ebRows = [[9, 50], [281, 50], [9, 385], [281, 385], [9, 720], [281, 720],
+    [68, 9], [68, 761], [145, 9], [145, 761], [222, 9], [222, 761]];
+  assert.deepEqual(eb.meta.extension.screws, ebRows);
+  assert.deepEqual(drillsOf(r, 'EXT-BACK', 'screw').map((d) => [d.x, d.y, d.d, d.layer]), ebRows.map(([x, y]) => [x, y, 3, 'SCREWS_3MM']));
   assert.equal(panelOf(r, 'BUL').w, 540, 'the other side is the parent\'s');
   assert.equal(drillsOf(r, 'BUL', 'hinge').length, drillsOf(computeCabinet(BUD, P), 'BUL', 'hinge').length);
 });
@@ -364,8 +396,11 @@ test('CASE B through computeCabinet: the window is a through pocket on RECESS_WI
   const back = panelOf(r, 'BACK');
   assert.deepEqual(back.cnc.pockets.filter((k) => k.layer === RECESS_WINDOW_LAYER), [{ layer: 'RECESS_WINDOW', x1: 128, y1: 228, x2: 472, y2: 572, depth: 18 }]);
   assert.equal(back.cnc.outline.length, 4);
-  // 17.10.2026 (D17): the twelve round the window are gone; the parent's fourteen stay.
-  assert.equal(drillsOf(r, 'BACK', 'screw').length, 14, 'the parent\'s fourteen, nothing round the window');
+  // REWRITTEN 18.10.2026 (T79 F6, D17 amended): the twelve round the window
+  // are back beside the parent's fourteen; the EXT-BACK carries its twelve.
+  assert.equal(drillsOf(r, 'BACK', 'screw').length, 26, 'the parent\'s fourteen and the window\'s twelve');
+  assert.equal(drillsOf(r, 'EXT-BACK', 'screw').length, 12, 'the EXT-BACK, a back, drilled round the band');
+  for (const id of ['RETURN-L', 'RETURN-R', 'FLOOR', 'LID']) assert.deepEqual(drillsOf(r, id), [], `${id}: "tylko na plecach"`);
   assert.equal(r.csvLines.find((l) => l.startsWith('01,BACK')), '01,BACK,600,770,,0,0.344', 'the window comes off the area');
   assert.deepEqual(r.csvLines.slice(7), ['01,RETURN-L,132,344,,0,0.045', '01,RETURN-R,132,344,,0,0.045', '01,FLOOR,380,132,,0,0.050', '01,LID,380,132,,0,0.050', '01,EXT-BACK,380,380,,0,0.144']);
   const shelf = panelOf(r, 'SHELF-1');
@@ -414,9 +449,16 @@ test('the verdict: the kit, a notch, a hanger in the window; a refusal cuts the 
   assert.deepEqual(full.warnings.map((w) => w.code), [EXTENSION_REFUSED]);
   assert.match(full.derived.extension.refused, /deeper carcass/);
   assert.equal(full.panels.length, computeCabinet(BUD, P).panels.length, 'the parent is what is cut');
+  // T79 F8 (D13 amended, the owner: *"dlaczego cut the corner likwiduje nam wcięcie do recess?"*): a notch apart
+  // from the band on the BACK no longer refuses it; both are cut (test/turn79-f08-notch-and-recess.test.js board by
+  // board). A band that overlaps the notch's footprint is refused in words and the notch stands.
   const notched = computeCabinet({ ...BUD, notch: { corner: 'BL', w: 200, d: 200, h: 0 }, extension: A }, P);
-  assert.match(notched.warnings.find((w) => w.code === EXTENSION_REFUSED).message, /notched round an obstacle/);
-  assert.ok(notched.derived.notch && !notched.derived.notch.refused, 'the notch stands');
+  assert.deepEqual(notched.warnings, []);
+  assert.ok(notched.derived.notch && notched.derived.extension && !notched.derived.extension.refused, 'both are cut');
+  const overlapping = computeCabinet({ ...BUD, notch: { corner: 'BL', w: 200, d: 200, h: 0 }, extension: { ...A, x0: 100 } }, P);
+  assert.equal(overlapping.warnings.find((w) => w.code === EXTENSION_REFUSED).message,
+    'The recess cannot be cut: the corner cut stands where the recess band is; move one of them.');
+  assert.ok(overlapping.derived.notch && !overlapping.derived.notch.refused, 'the notch stands');
   const budr = computeCabinet({ ...defaultParamsFor('BUDR', P), unit_num: '03', extension: A }, P);
   assert.match(budr.warnings.find((w) => w.code === EXTENSION_REFUSED).message, /RECESS: an extension grows from a base unit/);
   // A wall unit: the hanger cut-out the window reaches steps in beside it (D14); one with nowhere to go refuses.
@@ -443,6 +485,10 @@ test('the verdict: the kit, a notch, a hanger in the window; a refusal cuts the 
 
 const S = () => useProjectStore.getState();
 const unitOf = (id) => S().units.find((u) => u.id === id);
+// T79 F10, the owner 18.10.2026: *"lub zmniejszać go odsuwaniem od recesu."*
+// A recess gives a cabinet its depth less the cabinet's stand-off (the
+// standard ten included): what a 300 recess gives at the standard.
+const IN = 300 - P.room.wallBackClearance;
 
 function kitchenWithRecess(extra = {}) {
   S().newProject();
@@ -456,13 +502,13 @@ test('wholly inside: a DEEPER carcass on the same line of fronts (D2); partly in
   assert.equal(a.error, null, a.error);
   S().moveUnit(a.id, 1100, 1);
   let u = unitOf(a.id);
-  assert.equal(u.params.recess_mm, 300);
-  assert.equal(u.params.depth, 858, 'its depth plus the recess');
+  assert.equal(u.params.recess_mm, IN);
+  assert.equal(u.params.depth, 558 + IN, 'its depth plus the recess less its stand-off (T79 F10)');
   assert.equal(u.params.depth_full, 558);
-  assert.equal(backStandoff(u, P), P.room.wallBackClearance - 300, 'standing against the recess\'s back wall');
+  assert.equal(backStandoff(u, P), P.room.wallBackClearance - IN, 'standing back in the recess by what it takes of it');
   assert.equal(backStandoff(u, P) + u.params.depth, P.room.wallBackClearance + 558, 'THE FRONT HOLDS THE LINE');
   let r = S().unitResult(a.id);
-  assert.equal(panelOf(r, 'BUL').w, 840, 'a deeper side, the kit\'s own depth law');
+  assert.equal(panelOf(r, 'BUL').w, 558 + IN - 18, 'a deeper side, the kit\'s own depth law');
   assert.equal(r.derived.extension, undefined, 'no extension on a deeper carcass');
   assert.deepEqual(r.warnings.filter((w) => /OVERLAP|RECESS|EXTENSION/.test(w.code)), []);
   // Half across the recess's edge: on the wall line, its depth back, an extension behind its back.
@@ -474,8 +520,8 @@ test('wholly inside: a DEEPER carcass on the same line of fronts (D2); partly in
   assert.equal(backStandoff(u, P), P.room.wallBackClearance);
   r = S().unitResult(a.id);
   assert.deepEqual(r.derived.extension.boards, ['RETURN-R', 'EXT-BACK']);
-  assert.deepEqual([r.derived.extension.x0, r.derived.extension.x1, r.derived.extension.z0, r.derived.extension.z1, r.derived.extension.d], [0, 490, 0, 770, 300]);
-  assert.equal(panelOf(r, 'BUL').w, 840, 'BUL grows into the recess');
+  assert.deepEqual([r.derived.extension.x0, r.derived.extension.x1, r.derived.extension.z0, r.derived.extension.z1, r.derived.extension.d], [0, 490, 0, 770, IN]);
+  assert.equal(panelOf(r, 'BUL').w, 558 + IN - 18, 'BUL grows into the recess');
   assert.equal(panelOf(r, 'BUR').w, 540);
   // Out of the recess altogether.
   S().moveUnit(a.id, 200, 1);
@@ -484,7 +530,7 @@ test('wholly inside: a DEEPER carcass on the same line of fronts (D2); partly in
   assert.equal(S().unitResult(a.id).derived.extension, undefined);
   // The recess removed while the cabinet stands in it: back to its own depth.
   S().moveUnit(a.id, 1100, 1);
-  assert.equal(unitOf(a.id).params.depth, 858);
+  assert.equal(unitOf(a.id).params.depth, 558 + IN);
   S().removeWallSlope(S().project.wallSlopes[0].id);
   assert.equal(unitOf(a.id).params.depth, 558);
   assert.equal(unitOf(a.id).params.recess_mm, undefined);
@@ -509,9 +555,10 @@ test('the band (D3): a recess from the floor to 1000 takes the bottom of a tall 
   assert.equal(S().unitResult(w.id).derived.extension, undefined, 'the wall unit hangs above the band');
   // The same recess floor to ceiling: the tall unit is wholly inside and deeper.
   S().updateWallSlope(el.id, { top_mm: null });
-  assert.equal(unitOf(t.id).params.recess_mm, 150);
-  assert.equal(unitOf(t.id).params.depth, 558 + 150);
-  assert.equal(unitOf(w.id).params.recess_mm, 150, 'and so is the wall unit now');
+  const in150 = 150 - P.room.wallBackClearance;
+  assert.equal(unitOf(t.id).params.recess_mm, in150);
+  assert.equal(unitOf(t.id).params.depth, 558 + in150);
+  assert.equal(unitOf(w.id).params.recess_mm, in150, 'and so is the wall unit now');
 });
 
 test('the recess record: bottom_mm and top_mm live on it, null for the floor and the ceiling; a chimney has neither', () => {

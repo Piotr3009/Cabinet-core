@@ -7,6 +7,7 @@ import { defaultParamsFor } from '../src/engine/types.js';
 import { evenShelfPositions, isPinnedShelf, shelfOpeningsIn } from '../src/engine/items.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
+import { hangSavedAssembly } from './rail-assembly-saved.js';
 
 // ─── TURN 58 · F3 — THE SHELVES LEARN THEIR BAY ────────────────────────────
 //
@@ -133,8 +134,9 @@ test('F3 · a fixed shelf carrying a rail is PINNED — the law, asked directly'
 
 test('F3 · Even never moves a pinned shelf, and centres the others around it', () => {
   const id = twoBayUnit({ bay0: 0, bay1: 0 });
-  // A rail assembly in bay 0: a FIXED shelf with the rod hung on it.
-  S().addHangerRail(id, { zone: 0 });
+  // A rail assembly in bay 0: a FIXED shelf with the rod hung on it. T79 F11:
+  // the add path hangs the rod alone (*"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to"*), so it is a SAVED one.
+  hangSavedAssembly(id, { zone: 0 });
   const pinnedBefore = shelvesOf(id).filter((s) => s.variant === 'fixed').map((s) => s.pos_mm);
   assert.equal(pinnedBefore.length, 1, 'the assembly cut its fixed shelf');
   S().addShelves(id, 2, 0);

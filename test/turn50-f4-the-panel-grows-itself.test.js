@@ -150,8 +150,12 @@ test('F4 · the sentence says what was done and how to undo it', () => {
   assert.match(msg, /Remove/);
 });
 
-test('F4 · …in the middle of the screen, which is what a GREY is in this app', () => {
-  assert.equal(LEVELS.grey.place, 'centre', '*"informacja na środku monitora"*');
+// REWRITTEN BY T79 F1: the owner's later word moves every message off the
+// middle, 18.10.2026: *"wszystkie informacje po zmianach które pokazujesz na
+// ekranie proszę zrób po lewej ... teraz wszystkie informacje pokazują się na
+// środku i zasłaniają nam widok pracy."* The sentence is still a GREY.
+test('F4 · …said as a GREY, which stands in the left column since T79 F1', () => {
+  assert.equal(LEVELS.grey.place, 'left', '*"wszystkie informacje ... proszę zrób po lewej"*');
   const store = readFileSync(new URL('../src/stores/projectStore.js', import.meta.url), 'utf8');
   assert.ok(store.includes("notify(grown.message, 'info')"),
     'and `info` resolves to grey — engine/messages.js `levelOf`');

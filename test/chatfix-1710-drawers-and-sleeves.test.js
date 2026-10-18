@@ -80,15 +80,20 @@ test('a stored profile cannot keep T25\'s six nominals as box lengths: both ladd
 // ─── A CABINET WHOLLY IN A RECESS: "zostaw jak jest", and the shelf reaches the back ──
 
 test('wholly in a recess the carcass is deeper and the drawers follow it ("zostaw jak jest"); the shelf above them reaches the new back', () => {
+  // T79 F13 · a project's shelf stands its 10 back, handed in as paramsForEngine
+  // hands it (`shelf_front_mm`): *"wszystkie cofnięcia zmień z 20 na 10 mm, 20
+  // to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie
+  // ruszaj."*  The drawer box below is untouched by it.
+  const project = { shelf_front_mm: P.carcass.shelfSetbackMm };
   const B = defaultParamsFor('BUDR', P);
-  const r = computeCabinet({ ...B, depth: 708, depth_full: 558, recess_mm: 150, items: [{ kind: 'shelf', pos_mm: 650 }] }, P);
+  const r = computeCabinet({ ...B, ...project, depth: 708, depth_full: 558, recess_mm: 150, items: [{ kind: 'shelf', pos_mm: 650 }] }, P);
   assert.equal(r.panels.find((p) => p.id === 'D1-SL').w, 640, '708 - 18 - 20 = 670 → 640, the box of the 650 runner');
   const shelf = r.panels.find((p) => p.part === 'SHELF');
-  if (shelf) assert.equal(shelf.h, 708 - 18 - P.carcass.shelfDepthClearance, 'the shelf is cut to the deeper carcass');
+  if (shelf) assert.equal(shelf.h, 708 - 18 - P.carcass.shelfSetbackMm, 'the shelf is cut to the deeper carcass');
   const W = defaultParamsFor('WARDROBE', P);
-  const w = computeCabinet({ ...W, depth: W.depth + 150, depth_full: W.depth, recess_mm: 150, items: [{ kind: 'drawer', pos_mm: 300 }, { kind: 'shelf', pos_mm: 1200 }] }, P);
+  const w = computeCabinet({ ...W, ...project, depth: W.depth + 150, depth_full: W.depth, recess_mm: 150, items: [{ kind: 'drawer', pos_mm: 300 }, { kind: 'shelf', pos_mm: 1200 }] }, P);
   const ws = w.panels.find((p) => p.part === 'SHELF');
-  assert.equal(ws.h, W.depth + 150 - 18 - P.carcass.shelfDepthClearance, 'the wardrobe shelf over the drawers reaches the end of the deeper bay');
+  assert.equal(ws.h, W.depth + 150 - 18 - P.carcass.shelfSetbackMm, 'the wardrobe shelf over the drawers reaches the end of the deeper bay');
 });
 
 // ─── ONE ROW OF SLEEVES, DROPPED BY THE OWNER ───────────────────────────────

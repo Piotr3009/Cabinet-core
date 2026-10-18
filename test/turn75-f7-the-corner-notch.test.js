@@ -221,12 +221,14 @@ test('F7 · THE PROBE TABLE: the BACK is 400 wide, its notch-edge sockets gone, 
   assert.deepEqual(bj['TOP-SOCKETS'], [313, 487]);
   assert.deepEqual(bj['NEAR-SOCKETS'], []);
   // screws: the far row 50 240 530 720 at x 391; top and bottom 268, 400, 532
-  // (own frame 68, 200, 332). 17.10.2026 (KIT_NOTCH.lsp D10): the notch-edge
-  // row (carcass x 209, own frame 9, into the RETURN's end) is GONE. The owner:
-  // *"nie bedziemy tam wkrecac wkretow, system wkrety dookola plecow w tym
-  // przypadku nie zadziala"*.
+  // (own frame 68, 200, 332). The notch-edge row (carcass x 209, own frame 9,
+  // into the RETURN's end) went on 17.10.2026 (KIT_NOTCH.lsp D10) and is BACK
+  // since 18.10.2026 (REWRITTEN, CLAUDE.md T79 F6, D10 amended). The owner:
+  // *"jak mamy cut the corners lub recess to nie rysujesz mi dziurek na śrubki
+  // 3 mm, to trzeba będzie dodać"*; 14:17: *"ale tylko na plecach."*
   const screws = drillsOf(cut, 'BACK', 'screw');
-  assert.deepEqual(ys(screws.filter((d) => d.x === 9)), [], 'no screw between the BACK and the RETURN');
+  assert.deepEqual(ys(screws.filter((d) => d.x === 9)), [50, 240, 530, 720], 'the row into the RETURN\'s end, between the parent\'s tabs');
+  assert.equal(screws.length, 14, 'fourteen, as the parent');
   assert.deepEqual(ys(screws.filter((d) => d.x === 391)), [50, 240, 530, 720]);
   assert.deepEqual(xs(screws.filter((d) => d.y === 761)), [68, 200, 332]);
   assert.deepEqual(xs(screws.filter((d) => d.y === 9)), [68, 200, 332]);

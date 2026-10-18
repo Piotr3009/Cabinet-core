@@ -279,3 +279,99 @@ test('F20 LISP: the layers, the BOM lines and the refusals name the sheet', () =
   assert.match(text, /\(page 1, Applications\)/);
   assert.match(text, /not a company default: the owner chose 8 and 12/);
 });
+
+// ─── T79 F14 · SECTION D.2c, THE DRAWER BOX, AND ITS H.1 BLOCK ───────────────
+// CLAUDE.md T79 F14: *"LISP first, SKYLON_JOINTS_CABINEO.lsp D.2c THE DRAWER
+// BOX, after D.2b, mirroring back-table / back-pockets / back-holes"*; the
+// owner, 18.10.2026: *"na przednich i tylnych ściankach dodawaj cabineo jeden
+// do 100 mm, 2 powyżej 100 mm, minimum odległość to 25 od góry i dołu"*. Pure,
+// as the rest of this file: the LISP alone, re-computed by its own rule.
+
+/** D.2c's set-out, re-stated: from the wall's TOP edge, one at hw / 2 to 100, else 25 and hw - 25. */
+const boxPositions = (hw) => (hw <= 100 ? [hw / 2] : [25, hw - 25]);
+
+test('T79 F14 LISP: D.2c sits after D.2b and before D.3, with every routine the engine mirrors', () => {
+  const at = (s) => text.indexOf(s);
+  assert.ok(at(';;; D.2b THE BACK JOINTS') < at(';;; D.2c THE DRAWER BOX') && at(';;; D.2c THE DRAWER BOX') < at(';;; D.3 THE POCKETS'));
+  for (const d of ['cabineo-box-rule', 'cabineo-box-profile', 'cabineo-box-positions', 'cabineo-box-joint', 'cabineo-box-table',
+    'cabineo-box-pockets', 'cabineo-box-holes', 'cabineo-box-board-pt', 'cabineo-box-refusal', 'cabineo-box-pocket-rect',
+    'cabineo-box-pilot-refusal', 'cabineo-box-bom-lines', 'c:CABINEO_BOX']) {
+    assert.match(text, new RegExp(`\\(defun ${d.replace(/[:]/g, '\\$&')}\\b`), `defun ${d}`);
+  }
+  assert.match(text, /\(defun cabineo-box-joint \(name len side hx0 hy0 hdx hdy board along endAt dirIn aFrom aDir bW bT\)/);
+  assert.match(text, /\(defun cabineo-box-table \(sideL sideH wallL hw dTop GB ax rotated/);
+  const rule = text.slice(at('(defun cabineo-box-rule'), at('(defun cabineo-box-profile'));
+  assert.match(rule, /\(cons "variant" "12"\)/, 'Cabineo 12 on the box (the owner: tak)');
+  assert.match(rule, /\(cons "onePerJointUpToMm" 100\.0\)/);
+  assert.match(rule, /\(cons "fromEdgeMm" 25\.0\)/);
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+});
+
+test('T79 F14 LISP: the owner\'s words, the four joints, the outside face, the flush that is not, the bottom left alone', () => {
+  assert.match(flat, /jak mamy wybrane jakakolwiek funkcje laczenia czy dog bones czy inne zawsze projektuj cabineo na szuflady/);
+  assert.match(flat, /cabineo musi byc na frontowej i tylnej sciance, czyli nawiercanie w bokach bedzie liczone od gory boxa/);
+  assert.match(flat, /przy wysokich nie rozsuwaj/);
+  assert.match(flat, /tak, bo jest wsuwane wiec nie ma po co dodawac cabineo/);
+  assert.match(flat, /FOUR JOINTS PER BOX: SL-BF, SR-BF, SL-BB, SR-BB/);
+  for (const name of ['SL-BF', 'SR-BF', 'SL-BB', 'SR-BB']) assert.equal((text.match(new RegExp(`\\(cabineo-box-joint "${name}"`, 'g')) || []).length, 2, `${name} in both frames`);
+  assert.match(text, /\(cons "face" "outside"\)/);
+  assert.match(flat, /THE TOPS ARE NOT FLUSH/);
+  assert.match(flat, /boxWallY \+ hw = boxY \+ sideH - dTop/);
+  assert.match(flat, /The BOTTOM slides into the sides' groove and carries nothing of this section/);
+  assert.match(flat, /so the box keeps no Cabineo/);
+  assert.match(text, /under the owner's minimum/);
+  assert.match(text, /and the owner does not spread them/);
+  assert.match(flat, /no cover cap is ordered for it/);
+});
+
+test('T79 F14 LISP: H.1 re-computed by the D.2c rule, to the decimal (the BUDR default and a wardrobe wall of 90)', () => {
+  const s = text.slice(text.indexOf(';;; H.1 THE DRAWER BOX'));
+  const f = s.replace(/\n;;;+\s*/g, ' ').replace(/\s+/g, ' ');
+  // The kits' arithmetic: hw = side - 15 - 18 - 1, the wall's top 1 under the side's.
+  const BUDR = [[237, 203], [178, 144], [118, 84]];
+  for (const [side, hw] of BUDR) assert.equal(side - 15 - 18 - 1, hw);
+  assert.match(f, /boxY 31\.5, the wall's lower edge 64\.5 \(= 31\.5 \+ 15 \+ 18\), the wall's top 267\.5, the side's top 268\.5: boxWallY \+ hw = boxY \+ sideH - 1/);
+  assert.equal(31.5 + 15 + 18 + 203, 267.5);
+  assert.equal(31.5 + 237, 268.5);
+  // D1: two per joint at 25 and 178; the pockets at hw - off, the holes at (side - 1) - off.
+  assert.deepEqual(boxPositions(203), [25, 178]);
+  assert.match(f, /TWO per joint, at 25 and 178 from the wall's top/);
+  assert.deepEqual(boxPositions(203).map((o) => 203 - o), [178, 25]);
+  assert.match(f, /pocket axes x = 203 - 25 = 178 and 203 - 178 = 25/);
+  assert.deepEqual(boxPositions(203).map((o) => 236 - o), [211, 58]);
+  assert.match(f, /x = 236 - 25 = 211 and 236 - 178 = 58/);
+  for (const c of [3.6, 14.8, 26]) assert.ok(f.includes(String(+(518 - c).toFixed(1))), `SR end lobe ${518 - c}`);
+  assert.match(f, /skims x 169\.65 \.\. 186\.35 and 16\.65 \.\. 33\.35, y 0 \.\. 34\.35/);
+  assert.equal(+(178 - 8.35).toFixed(2), 169.65);
+  assert.equal(+(25 + 8.35).toFixed(2), 33.35);
+  assert.equal(+(518 - 34.35).toFixed(2), 483.65);
+  assert.match(f, /y 5\.5 \(SL-BF\) and 484\.5 \(SL-BB\)/);
+  assert.equal(490 - 5.5, 484.5);
+  // D2 and D3: 25 and 119; ONE at 42.
+  assert.deepEqual(boxPositions(144), [25, 119]);
+  assert.match(f, /holes x 177 - 25 = 152 and 177 - 119 = 58/);
+  assert.deepEqual(boxPositions(84), [42]);
+  assert.match(f, /ONE per joint at 42; pocket axis x 42 \(EXPORT x' = 84 - 42 = 42\)/);
+  assert.match(f, /holes x 117 - 42 = 75/);
+  // The counts: 8 + 8 + 4.
+  const n = BUDR.reduce((sum, [, hw]) => sum + 4 * boxPositions(hw).length, 0);
+  assert.equal(n, 20);
+  assert.match(f, /12 joints, 20 pockets \(60 dia 15 holes, 20 skims\), 20 dia 5 holes, 20 x Cabineo 12/);
+  // The wardrobe wall of 90 (a 160 front): one at 45; the holes at 123 - 45 = 78.
+  assert.equal(160 - 36, 124);
+  assert.equal(124 - 15 - 18 - 1, 90);
+  assert.deepEqual(boxPositions(90), [45]);
+  assert.match(f, /hw 90 <= 100: ONE per joint at 45 from the wall's top/);
+  assert.match(f, /holes at y = 123 - 45 = 78/);
+  assert.match(f, /\(1018\.4, 45\) \(1007\.2, 45\) \(996, 45\)/);
+  // The default 200 front: wall 130, 25 and 105, holes 138 and 58.
+  assert.deepEqual(boxPositions(130), [25, 105]);
+  assert.match(f, /holes y 163 - 25 = 138 and 163 - 105 = 58/);
+  // The thresholds.
+  assert.deepEqual(boxPositions(100), [50]);
+  assert.deepEqual(boxPositions(101), [25, 76]);
+  assert.match(f, /A wall of 100 takes one \(at 50\); 101 takes two \(at 25 and 76\)/);
+  assert.match(f, /the shoe drawer's \(side 80, wall 46\) would stand 23 from its edges, under the owner's 25/);
+});

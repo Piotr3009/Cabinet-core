@@ -53,7 +53,7 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { buildUnitDxfFiles } from '../src/engine/cnc/dxf.js';
 import {
-  auditFiles, cncExtents, exportEverything, readDxf, readPairs, slopeNotes,
+  auditFiles, cncExtents, exportEverything, fileFrame, readDxf, readPairs, slopeNotes,
 } from '../scripts/t53-dxf-audit.mjs';
 
 // One export of the seeded job, shared by every test below — it builds four
@@ -99,19 +99,28 @@ test('F2 — every part file’s extents cover that part’s own cnc geometry', 
   }
 });
 
+// AMENDED BY T79 F14: the seeded BUDR's box walls are OUTSIDE FACE UP now (the owner, 18.10.2026: *"jak mamy wybrane
+// jakąkolwiek funkcję łączenia czy dog bones czy inne zawsze projektuj cabineo na szuflady"*), so the engine's hole is
+// looked for in the file's own frame (`fileFrame`, x' = W - x on a reflected part): the facade pilot at 50, 50 is at 153, 50.
 test('F2 — every hole the engine drills is a CIRCLE in the file, to the millimetre', () => {
   let holes = 0;
+  let reflected = 0;
   for (const f of exported.files.filter((x) => x.kind === 'part')) {
     const read = readDxf(f.dxf);
+    const panel = f.result.panels.find((p) => p.id === f.panelId);
+    const frame = fileFrame(panel);
+    if (f.setup === 'outside') reflected += 1;
     for (const h of (f.result.drills || []).filter((d) => d.panel === f.panelId)) {
-      const hit = read.circles.find((c) => Math.abs(c.x - h.x) <= 0.05
-        && Math.abs(c.y - h.y) <= 0.05 && Math.abs(c.r - h.d / 2) <= 0.05);
+      const [hx, hy] = frame([h.x, h.y]);
+      const hit = read.circles.find((c) => Math.abs(c.x - hx) <= 0.05
+        && Math.abs(c.y - hy) <= 0.05 && Math.abs(c.r - h.d / 2) <= 0.05);
       assert.ok(hit, `${f.name}: ⌀${h.d} at ${h.x},${h.y} is in the file`);
       assert.equal(hit.layer, h.layer, `${f.name}: …and on the layer the engine names`);
       holes += 1;
     }
   }
   assert.ok(holes > 300, `${holes} drillings checked against the engine’s own list`);
+  assert.ok(reflected > 0, 'the reflected (OUTSIDE FACE UP) files are among those checked');
 });
 
 // ─── THE FILE IS SELF-CONSISTENT, THE WAY A READER NEEDS IT TO BE ─────────

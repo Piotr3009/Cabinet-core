@@ -19,7 +19,7 @@
 import jsPDFDefault from 'jspdf';
 import { assertPdfBytes, pdfBytes } from './drawingExport.js';
 import { exportFileName } from '../engine/naming.js';
-import { labelPages, labelSheetGrid } from '../engine/partNumbers.js';
+import { labelPages, labelSettings, labelSheetGrid } from '../engine/partNumbers.js';
 
 const jsPDF = jsPDFDefault?.jsPDF || jsPDFDefault;
 
@@ -193,12 +193,28 @@ function drawLabel(doc, rec, cell, insetMm = 0) {
 }
 
 /**
+ * T79 F18 (the handover: *"przełącznik 21/44 naklejek w oknie eksportu"*; the
+ * owner 18.10, 14:55: *"ok daj"*): the profile with `labels.sheet` set to the
+ * preset `sheet` names in profile.labels.sheets, the paper an Output entry
+ * chose. No name: the profile's own sheet (L7160 by default). A name the
+ * profile does not hold is refused in words, never printed on another paper.
+ */
+export function labelsProfileOn(profile, sheet) {
+  if (sheet == null) return profile;
+  const paper = profile?.labels?.sheets?.[sheet];
+  if (!paper) throw new Error(`There is no label paper called ${sheet} in the profile; no labels were made.`);
+  return { ...profile, labels: { ...profile.labels, sheet: paper } };
+}
+
+/**
  * The document: one page per 21 stickers (whatever the paper holds), in
  * number order, nothing else on the page (a label sheet has no frame).
+ * `sheet` names the paper (labelsProfileOn); none is the profile's own.
  *
- * @returns {{doc:object, pages:number, labels:number, bytes:number}}
+ * @returns {{doc:object, pages:number, labels:number, bytes:number, perPage:number, paper:string}}
  */
-export function labelsDoc({ records, profile }) {
+export function labelsDoc({ records, profile: given, sheet = null }) {
+  const profile = labelsProfileOn(given, sheet);
   const grid = labelSheetGrid(profile);
   const pages = labelPages(records, profile);
   if (!pages.length) throw new Error('There is nothing to label yet: no carcass board in the project.');
@@ -208,7 +224,7 @@ export function labelsDoc({ records, profile }) {
     page.forEach((rec, k) => drawLabel(doc, rec, grid.cells[k], grid.insetMm));
   });
   const measured = assertPdfBytes(pdfBytes(doc), { pages: doc.getNumberOfPages(), sheets: pages.length, what: 'The labels PDF' });
-  return { doc, pages: pages.length, labels: records.length, bytes: measured.bytes };
+  return { doc, pages: pages.length, labels: records.length, bytes: measured.bytes, perPage: grid.perPage, paper: labelSettings(profile).sheet.preset };
 }
 
 /** `{ProjectName}-labels-{DDMM-HHMM}.pdf`, by the one naming law (engine/naming.js). */
@@ -216,10 +232,10 @@ export function labelsFilename({ project, ext = 'pdf', now = new Date() } = {}) 
   return exportFileName({ project, kind: 'labels', ext, now });
 }
 
-/** The stickers as a file. */
-export function exportLabelsPdf({ records, profile, project = null, now = new Date() }) {
-  const { doc, pages, labels, bytes } = labelsDoc({ records, profile });
+/** The stickers as a file, on the paper `sheet` names (T79 F18; none: the profile's own). */
+export function exportLabelsPdf({ records, profile, sheet = null, project = null, now = new Date() }) {
+  const { doc, pages, labels, bytes, perPage, paper } = labelsDoc({ records, profile, sheet });
   const filename = labelsFilename({ project, now });
   doc.save(filename);
-  return { filename, pages, labels, bytes };
+  return { filename, pages, labels, bytes, perPage, paper };
 }

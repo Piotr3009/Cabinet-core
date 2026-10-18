@@ -351,6 +351,11 @@ function SizePanel({ unit }) {
       {A.canCutCorner(unit.id) && (
         <CutCornerRow unitId={unit.id} notch={unit.params?.notch || null} />
       )}
+      {/* T79 F5 · CUT EDGE, the corner's twin (KIT_NOTCH.lsp D22): the four
+          horizontal edges lit in the room; a click on one opens its window. */}
+      {A.canCutEdge(unit.id) && (
+        <CutEdgeRow unitId={unit.id} edgeNotch={unit.params?.edgeNotch || null} />
+      )}
 
       <p className="pbi-choice pbi-choice-15 pbi-panel-note">
         Millimetres, floor to top and wall to wall. We survey before we build, so these are the
@@ -382,6 +387,30 @@ function CutCornerRow({ unitId, notch }) {
       {notch ? (
         <Button kind="secondary" size="small" data-testid="remove-corner-cut" onClick={() => A.removeCornerCut(unitId)}>
           {`REMOVE ${notch.corner} CUT`}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+/** T79 F5 · CUT EDGE, and REMOVE once an edge is cut (the owner: *"wszystkich 4 rogów?"*). */
+function CutEdgeRow({ unitId, edgeNotch }) {
+  const lit = useUiStore((st) => st.edgeNotchPick === unitId);
+  useEffect(() => () => { if (A.cuttingEdge(unitId)) A.toggleCutEdge(unitId); }, [unitId]);
+  return (
+    <div className="pbi-duty-actions" data-testid="cut-edge-row">
+      <Button
+        kind={lit ? 'secondary' : 'primary'}
+        size="small"
+        data-testid="cut-edge"
+        title={lit ? 'Click one of the lit edges in the room' : 'Cut a rebate along a whole edge of this wardrobe'}
+        onClick={() => A.toggleCutEdge(unitId)}
+      >
+        {lit ? 'PICK AN EDGE' : 'CUT EDGE'}
+      </Button>
+      {edgeNotch ? (
+        <Button kind="secondary" size="small" data-testid="remove-edge-cut" onClick={() => A.removeEdgeCut(unitId)}>
+          {`REMOVE ${edgeNotch.edge} CUT`}
         </Button>
       ) : null}
     </div>

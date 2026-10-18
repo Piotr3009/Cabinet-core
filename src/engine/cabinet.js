@@ -48,15 +48,18 @@ import {
 import { areaM2, metres, roundTo, rtos } from './format.js';
 // T75 F7 · the corner notch, KIT_NOTCH.lsp's mirror: a refusal asked of the
 // parent's own cut, a pass before the drilling and a pass after it.
+// T79 F5 · ...and the edge notch beside it (KIT_NOTCH.lsp D22), the same three.
 import {
   notchCarcass, notchDrills, notchSummary, notchVerdict, withNotchRefusal,
   notchProfile, notchP, cornerMarkRecords,
+  edgeNotchCarcass, edgeNotchDrills, edgeNotchSummary, edgeNotchVerdict, withEdgeNotchRefusal,
 } from './notch.js';
 // Chat-fix 15.10.2026 (the evening) · the recess extension, KIT_RECESS.lsp's
 // mirror: the notch's reverse (the carcass grows backward over a band), asked
 // of the parent's own cut, a pass before the drilling and a pass after it.
 import {
   extensionCarcass, extensionDrills, extensionSummary, extensionVerdict, withExtensionRefusal,
+  endPanelsFollowSides,
 } from './extension.js';
 // T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
 // of the parent's own puzzle cut, the puzzle stripped before the drilling and
@@ -76,9 +79,13 @@ import {
 // holes added after the copy loop, the connectors and caps counted as order
 // lines, THE GATE while the owner has not confirmed the pattern. Never
 // reached while the system is the puzzle.
+// T79 F14 · and the drawer box on Cabineo 12 (SKYLON_JOINTS_CABINEO.lsp D.2c):
+// the box names on the import's last two lines.
 import {
   cabineoDrills, cabineoGateWarning, cabineoHardwareLines, cabineoPocketsOnto, cabineoShelf, cabineoStrip,
   cabineoSummary, cabineoVerdict, isCabineoSystem, withCabineoRefusal,
+  boxCabineoAsked, cabineoBoxDrills, cabineoBoxGateWarning, cabineoBoxHardwareLines, cabineoBoxPocketsOnto,
+  cabineoBoxRefusalWarnings, cabineoBoxSummary, cabineoBoxVerdict,
 } from './cabineo.js';
 import { screwedBackStrip } from './screwedBack.js';
 // T78 F20 · the third joint system, SKYLON_JOINTS_BISCUIT.lsp's mirror: the
@@ -1779,14 +1786,32 @@ export function computeCabinet(params, profileOverride) {
   // sentence travels with it (Check #28). No `params.notch`, no line here runs.
   if (params?.notch) {
     const parent = computeCabinet({ ...params, notch: null }, profileOverride);
-    const verdict = notchVerdict({ parent, params, type: cfg.type, profile: P });
+    // T79 F8 (KIT_RECESS.lsp D13, the notch FIRST): with a recess band as well
+    // the notch is judged against the kit's own carcass, never the grown one
+    // (a grown BUR runs ed further from its new back edge, and a hinge the
+    // notch takes was read past it and cut away). Refused, the cabinet is the
+    // parent with its extension, as before.
+    const asked = params?.extension ? computeCabinet({ ...params, notch: null, extension: null }, profileOverride) : parent;
+    const verdict = notchVerdict({ parent: asked, params, type: cfg.type, profile: P });
     if (verdict) return withNotchRefusal(parent, verdict, params, P);
+  }
+  // T79 F5 · THE EDGE NOTCH, ASKED OF THE PARENT THE SAME WAY (KIT_NOTCH.lsp
+  // D22). The parent carries the corner notch when there is one, so the two
+  // are judged together (their rectangles, the runs both leave). Refused, the
+  // parent is what is cut, with the sentence (Check #28). No `params.edgeNotch`,
+  // no line here runs.
+  if (params?.edgeNotch) {
+    const parent = computeCabinet({ ...params, edgeNotch: null }, profileOverride);
+    const verdict = edgeNotchVerdict({ parent, params, type: cfg.type, profile: P });
+    if (verdict) return withEdgeNotchRefusal(parent, verdict, params, P);
   }
   // ─── 15.10.2026 · THE RECESS EXTENSION IS ASKED OF THE PARENT FIRST ──────
   // KIT_RECESS.lsp: the room derives the band (projectStore recessExtensionFor),
   // the unit is cut WITHOUT it and the band is judged against that cut
   // (recess-refusal, D4, D13, D14). Refused, the parent is what is cut and the
-  // sentence travels with it. No `params.extension`, no line here runs.
+  // sentence travels with it. No `params.extension`, no line here runs. T79 F8:
+  // the parent carries its notch, and D13 refuses only a band that overlaps the
+  // notch's footprint on the BACK; the Check says so (#36, EXTENSION_REFUSED).
   if (params?.extension) {
     const parent = computeCabinet({ ...params, extension: null }, profileOverride);
     const verdict = extensionVerdict({ parent, params, type: cfg.type, profile: P });
@@ -2155,7 +2180,6 @@ export function computeCabinet(params, profileOverride) {
   // lose that much depth plus the panel itself (KIT_SINK L425-426).
   const SK = P.sinkUnit;
   const sinkLoss = backStyle === 'inset' ? SK.backSetback + G : 0;
-  const shelfH = D - C.shelfDepthBoards * G - C.shelfDepthClearance - sinkLoss;
 
   // ─── Interior setback (turn 8, CLAUDE.md F4) ───
   //
@@ -2180,8 +2204,25 @@ export function computeCabinet(params, profileOverride) {
     return Number.isFinite(v) && v >= 0 ? v : fallback;
   };
   const interiorSetback = setbackOf(params?.interior_setback_mm, 0);
+  // ─── T79 F13 · SHELVES AND DIVIDERS 10, DRAWERS UNTOUCHED ────────────────
+  // The owner, 18.10.2026: *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to
+  // stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie
+  // ruszaj."*  Three numbers, each the PROJECT's (paramsForEngine), each
+  // falling back to exactly what a bare kit call read before, so the LISP and
+  // every golden hold:
+  //   a shelf         its own `front_mm`, else `shelf_front_mm`, else the
+  //                   LISP's `C.shelfDepthClearance` (20), at every shelf site
+  //                   below, as CLAUDE.md T79 F13 writes it
+  //   dividerSetback  every vertical divider with no `front_mm` of its own
+  //                   (the unit's `partition_front_mm`, else
+  //                   `interior_setback_mm`; bare: 0, the kit's full depth)
+  //   partitionDepth  the board that caps a drawer stack, and the runner and
+  //                   bracket drilling read off it (the unit's
+  //                   `partition_front_mm`, else `drawer_cap_setback_mm`, else
+  //                   `interior_setback_mm`; bare: what it read before)
+  const dividerSetback = setbackOf(params?.partition_front_mm, interiorSetback);
   const partitionDepth = D - C.topDepthBoards * G
-    - setbackOf(params?.partition_front_mm, interiorSetback);
+    - setbackOf(params?.partition_front_mm, setbackOf(params?.drawer_cap_setback_mm, interiorSetback));
 
   // ── Doors ──────────────────────────────────────────────────────────────────
   const doorCount = cfg.doorCount;
@@ -2408,6 +2449,13 @@ export function computeCabinet(params, profileOverride) {
   // 4 mm is the picture's own thickness, the same convention the glass door
   // draws with; the ORDER line carries only the width and depth.
   const drawerGlassPanes = [];
+  // ─── T79 F14 · THE DRAWER BOX IS ON CABINEO 12 ───────────────────────────
+  // Every box builder below names its box here, by the id prefix of its four
+  // boards (`${tag}-SL` / -SR / -BF / -BB), and ONE verdict joins them all
+  // (engine/cabineo.js Z2, SKYLON_JOINTS_CABINEO.lsp D.2c) before the drilling
+  // pass, on a unit that names a joint system at all.
+  const cabineoBoxTags = [];
+  const joinBoxWithCabineo = (tag) => { cabineoBoxTags.push(tag); };
   // T52 (CLAUDE.md F5): what each watch insert came out as — published so the
   // BOM, the 3D and the acceptance walk read ONE derivation.
   const watchInsertsBuilt = [];
@@ -4601,8 +4649,9 @@ export function computeCabinet(params, profileOverride) {
     // Every shelf may be pulled out to the face on its own (turn 8, F4). With
     // nothing said it is the LISP's own 20 mm, which is what a bare kit call —
     // and every golden fixture — gets.
+    // T79 F13: in a project, the project's own number (`shelf_front_mm`).
     const depthHere = D - C.shelfDepthBoards * G
-      - setbackOf(item?.front_mm, C.shelfDepthClearance) - sinkLoss;
+      - setbackOf(item?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance) - sinkLoss;
     // ─── Turn 9 (CLAUDE.md F4): this shelf's own board ───
     // An INPUT, not a formula. The piece is cut, edged, drilled and laid out by
     // exactly the arithmetic every other shelf goes through — the number in it
@@ -4645,7 +4694,7 @@ export function computeCabinet(params, profileOverride) {
       box: {
         x: shelfXHere,
         y,
-        z: D - setbackOf(item?.front_mm, C.shelfDepthClearance) - depthHere,
+        z: D - setbackOf(item?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance) - depthHere,
         w: shelfWHere,
         h: shelfT,
         d: depthHere,
@@ -4721,7 +4770,7 @@ export function computeCabinet(params, profileOverride) {
         // A shelf that is screwed in, or one somebody has locked, does not move
         // and is not drilled for pins.
         locked: isShelfLocked(item),
-        front_mm: setbackOf(item?.front_mm, C.shelfDepthClearance),
+        front_mm: setbackOf(item?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance),
         thickness_mm: shelfT,
         zone: bay ? bay.index : null,
         ...(shelfMaterial(item) || {}),
@@ -4732,7 +4781,7 @@ export function computeCabinet(params, profileOverride) {
         // the board about its back-bottom edge by the profile's 15°.
         ...(shelfVariant(item) === 'shoe' ? {
           tilt_deg: P.wardrobeAccessories.shoeShelf.tiltDeg,
-          tilt_pivot: { y, z: D - setbackOf(item?.front_mm, C.shelfDepthClearance) - depthHere },
+          tilt_pivot: { y, z: D - setbackOf(item?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance) - depthHere },
         } : {}),
       },
     }));
@@ -4744,7 +4793,7 @@ export function computeCabinet(params, profileOverride) {
     // fixing is the workshop's own, exactly as the WINE lattice travels.
     if (shelfVariant(item) === 'shoe') {
       const SR = P.wardrobeAccessories.shoeShelf.stopRail;
-      const shelfFrontZ = D - setbackOf(item?.front_mm, C.shelfDepthClearance);
+      const shelfFrontZ = D - setbackOf(item?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance);
       panels.push(panel({
         id: `SHOE-RAIL-${i}`, part: 'SHOE-RAIL', role: 'shelf', w: shelfWHere, h: SR.height, thickness: SR.thickness,
         edgeCode: codes.right, edgeLen: metres(shelfWHere),
@@ -4785,15 +4834,16 @@ export function computeCabinet(params, profileOverride) {
   // still measured to it); only the BOARD on it is not cut, and neither are
   // the confirmats that would have held it (the `partition_screw` set below).
   const shoeTopsTheStack = hasDrawers && shoeCapsTheStack(cfg.drawerItems);
-  if (hasDrawers && !shoeTopsTheStack) {
-    panels.push(panel({
-      id: 'PARTITION', part: 'PARTITION', role: 'shelf', w: internalWidth, h: partitionDepth, thickness: G,
-      edgeCode: codes.none, edgeLen: 0,
-      box: { x: G, y: partitionY, z: G, w: internalWidth, h: G, d: partitionDepth },
-      cnc: rectGeometry(internalWidth, partitionDepth),
-      meta: { variant: 'fixed', locked: true, front_mm: internalDepth - partitionDepth },
-    }));
-  }
+  // T79 F3 · the full-width board over a stack, at `y`: the full-width stack's
+  // and, since T79, the one board over every column (one board, one law).
+  const stackCapBoard = (y, meta = {}) => panel({
+    id: 'PARTITION', part: 'PARTITION', role: 'shelf', w: internalWidth, h: partitionDepth, thickness: G,
+    edgeCode: codes.none, edgeLen: 0,
+    box: { x: G, y, z: G, w: internalWidth, h: G, d: partitionDepth },
+    cnc: rectGeometry(internalWidth, partitionDepth),
+    meta: { variant: 'fixed', locked: true, front_mm: internalDepth - partitionDepth, ...meta },
+  });
+  if (hasDrawers && !shoeTopsTheStack) panels.push(stackCapBoard(partitionY));
   if (shoeTopsTheStack) {
     warnings.push({
       code: 'SHOE_STACK_UNCAPPED',
@@ -4802,6 +4852,138 @@ export function computeCabinet(params, profileOverride) {
         + ' board — the owner\'s law is that a shoe drawer carries nothing above it.',
     });
   }
+  // ─── TURN 32 (CLAUDE.md F4): COLUMN DRAWERS — THE WARDROBE'S ZONES ────────
+  //
+  // A vertical partition divides the interior into COLUMNS, and a column may
+  // carry its own drawer stack. Everything is computed FROM THE COLUMN'S
+  // WALLS — the carcass side and/or the partition — with the same numbers the
+  // full-width zone has always used (P.wardrobe.drawers): the column's clear
+  // light replaces `internalWidth`, and the bounding boards play the DP
+  // panels' whole part (so no DP is cut and no reduction is taken). The
+  // boxes, the fronts, the runner rows and the column's own closing board
+  // all follow; an `internal` drawer is given no face, exactly as F20 built.
+  //
+  // It arrives on the OVERRIDE CHANNEL (`params.column_drawers`, built by the
+  // store from the drawer items' own `zone`): a bare `computeCabinet()` —
+  // every golden fixture — passes none, this block emits nothing, and the
+  // DEFAULT zone above cuts exactly what the AutoLISP cuts.
+  const columnDrawerSets = [];
+  if (wardrobeDrawers && Array.isArray(cfg.columnDrawers) && cfg.columnDrawers.length
+    && verticalItems.length) {
+    for (const spec of cfg.columnDrawers) {
+      const k = Math.trunc(Number(spec?.zone));
+      const bay = bays[k];
+      const list = Array.isArray(spec?.drawers) ? spec.drawers : [];
+      if (!bay || !list.length) continue;
+      const colMaxDl = D - G - DR.setback - frontT - DR.depthAllowance;
+      const colDl = snapDrawerDepth(colMaxDl, DR.depthSteps);
+      if (colDl == null) {
+        warnings.push({
+          code: 'DRAWERS_TOO_SHALLOW',
+          message: `Column ${k + 1}: cabinet too shallow for drawers (usable ${roundTo(colMaxDl, 1)} mm < ${DR.depthSteps[0]} mm) — the column's drawers were dropped.`,
+        });
+        continue;
+      }
+      const heights = list.map((d) => (Number(d?.height_mm) > 0 ? Number(d.height_mm) : DR.frontHeight));
+      // T74 F6 · the column twin of the full-width stack: a raised drawer
+      // stands at its own mounting height, and nothing else moves.
+      const colStack = stackOffsets(heights, list, DR.gap, G);
+      const totalH = colStack.top ?? heights.reduce((s, h) => s + h, 0) + (heights.length - 1) * DR.gap;
+      if (totalH > H - 2 * G - DR.zoneHeadroom) {
+        warnings.push({
+          code: 'DRAWERS_TOO_TALL',
+          message: `Column ${k + 1}: ${heights.length} drawers do not fit below the column's partition — the column's drawers were dropped.`,
+        });
+        continue;
+      }
+      // ─── TURN 33 (CLAUDE.md F6): THE COLUMN READS THE BEHIND-DOOR LAW ─────
+      //
+      // A column bounded by a PARTITION needs no standoff there — the divider
+      // is the wall the runner mounts on, full stop. A column bounded by the
+      // CARCASS SIDE under a hinged door is the no-divider wardrobe's own
+      // case, and it takes the no-divider wardrobe's own answer: the DP stands
+      // `DP.inset + G` in from that side, the fillers close the 30, and the
+      // column's LIGHT — box, front, bottom — narrows by exactly the standoff
+      // the full-width zone has always taken. Same numbers, same source
+      // (`dpSideLaw`), zero divergence.
+      const dpL = k === 0 && dpSideLaw.left;
+      const dpR = k === bays.length - 1 && dpSideLaw.right;
+      const standoff = DP.inset + G;
+      const lightHere = bay.size - (dpL ? standoff : 0) - (dpR ? standoff : 0);
+      const boxW = lightHere - DR.boxWidthClearance;
+      const colBoxFrontLen = lightHere
+        - Math.max(0, DR.boxFrontBoards - DR.boxFrontCarcassBoards) * GB
+        - DR.boxFrontClearance;
+      const offsets = []; const sideHs = []; const bfHs = [];
+      const partY = G + totalH + DR.partitionClearance;
+      let acc = 0;
+      for (let i = 0; i < heights.length; i += 1) {
+        offsets.push(colStack.offsets[i]);
+        acc = i + 1 < heights.length ? colStack.offsets[i + 1] : colStack.offsets[i] + (heights[i] + DR.gap);
+        const ceilingHere = i + 1 < heights.length ? G + acc : partY;
+        // T54-F7: the shoe drawer's one override, the column twin of the
+        // full-width law above — side height = `drawers.shoeSideMm`.
+        const resolved = resolveBoxSide({
+          wanted: list[i]?.variant === 'shoe'
+            ? (Number(DR.shoeSideMm) || 80)
+            : heights[i] - DR.frontToSideDelta,
+          base: G + offsets[i],
+          ceiling: ceilingHere,
+          boxBoardT: GB,
+        }, P);
+        sideHs.push(resolved.height);
+        bfHs.push(resolved.height - DR.boxFrontHeightDeduction - GB - DR.boxFrontHeightExtra);
+      }
+      columnDrawerSets.push({
+        zone: k,
+        bay,
+        bounds: {
+          left: k === 0 ? 'BUL' : `VPART-${k}`,
+          right: k === bays.length - 1 ? 'BUR' : `VPART-${k + 1}`,
+        },
+        // Turn 33 (F6): which of this column's walls carry the DP standoff.
+        dpL,
+        dpR,
+        mounts: list.map((d) => (d?.mount === 'internal' ? 'internal' : 'overlay')),
+        // Turn 33 (F3): which drawers order an insert (and glass) — the boxes
+        // themselves are cut exactly as every column box is.
+        variants: list.map((d) => (DRAWER_VARIANTS.includes(d?.variant) ? d.variant : null)),
+        // T52 (CLAUDE.md F5, decision 3): the WATCH INSERT is a flag ON a
+        // drawer and not a drawer type, so it rides beside `variants` rather
+        // than inside them — a customer can have it in one drawer of six.
+        watchInserts: list.map((d) => watchInsertOn(d)),
+        heights,
+        offsets,
+        sideHs,
+        bfHs,
+        dl: colDl,
+        boxW,
+        frontW: boxW + DR.frontOversize,
+        boxFrontLen: colBoxFrontLen,
+        bottomW: colBoxFrontLen + DR.bottomOversize,
+        partY,
+      });
+    }
+  }
+
+  // ─── T79 F3 · ONE FIX BOARD OVER THE COLUMNS ─────────────────────────────
+  // The owner, 18.10.2026 (14:17): *"jak ustawiamy sobie teraz 3 szuflady
+  // internal to niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."*; the
+  // mockup (`verify/t79/mockup-03-drawer-columns.png`), 14:45: *"2 - tak."*
+  // The column plan is made HERE, before a divider is cut, because the board
+  // over the columns is where a divider stops; the boards are cut below.
+  // When EVERY bay carries a stack, ONE full-width FIX `PARTITION` closes them
+  // all at the tallest column's line (a shorter stack's headroom stays open),
+  // and each divider between them stands on the base and stops under it. A
+  // lone column keeps its own `Z<k>-PART`; so does a column topped by a shoe
+  // drawer (nothing over it, T70 F1), and a cabinet that also carries a
+  // full-width or an overlay stack keeps the per-column law it had.
+  const columnCap = columnDrawerSets.length > 1 && columnDrawerSets.length === bays.length
+    && !hasDrawers && !overlay
+    && columnDrawerSets.every((set) => !shoeCapsTheStack((set.variants || []).map((v) => ({ variant: v }))))
+    ? { y: Math.max(...columnDrawerSets.map((set) => set.partY)) }
+    : null;
+
   // ─── The VERTICAL partition (turn 11, CLAUDE.md F3.4) ─────────────────────
   //
   // BLOCKERS #50 (turn 9) recorded, correctly, that this engine had no such
@@ -4846,7 +5028,7 @@ export function computeCabinet(params, profileOverride) {
       // Setback 0 is load-bearing rather than a corner case: it is what lets a
       // partition reach the door plane, and therefore what makes F12's doors
       // on a partition possible at all.
-      const ownFront = setbackOf(item?.front_mm, internalDepth - partitionDepth);
+      const ownFront = setbackOf(item?.front_mm, dividerSetback);
       const ownDepth = Math.max(0, internalDepth - ownFront);
       // ─── TURN 21 (CLAUDE.md F9): ONLY THE SHELF THAT CROSSES IT ──────────
       //
@@ -4881,7 +5063,15 @@ export function computeCabinet(params, profileOverride) {
       // `overlay` is null for every cabinet that has not asked for a stack —
       // which is all six standard configs — so this reads `G` exactly as it
       // did before tonight for every one of them.
-      const partitionFloor = overlay ? overlay.shelfY + G : G;
+      // ─── T79 F3 · …AND ON THE INTERNAL STACK'S BOARD ─────────────────────
+      // The owner: *"program nie bierze pod uwagę że to jest diverted"* (the
+      // probe, `verify/t79/f03-probe.md`: VPART-1 from y 18 through six box
+      // boards and the stack's PARTITION). This turn's law: a vertical divider
+      // stands ON the board that crowns a drawer stack and never passes through
+      // the boxes. Over a full-width internal stack that board is `PARTITION`
+      // at `partitionY`, which stays full width; the divider starts on its top.
+      const stackFloor = hasDrawers ? partitionY + G : G;
+      const partitionFloor = Math.max(overlay ? overlay.shelfY + G : G, stackFloor);
       // ─── T74 F9 · THE DIVIDER UNDER A SLOPE IS CUT TO IT ──────────────────
       // The owner, 23.09.2026: *"divider przy skosie nie skraca się i nie ma
       // cięcia pod kątem. Ma pokazywać najdłuższą krawędź plus kąt cięcia."*
@@ -4893,9 +5083,13 @@ export function computeCabinet(params, profileOverride) {
       // angles and the wedge the side carries. Under a flat stretch, and on
       // every cabinet with no slope, the ceiling is `H - G` exactly as before.
       const divCeil = roofList ? Math.min(H - G, sideTopAt(x, x + slotG)) : H - G;
+      // T79 F3 · between the columns the divider stops under the ONE board over
+      // them (`columnCap`). Its depth stays its own: a column's divider is the
+      // runners' wall and needs its full depth at the runner band (T32 F4).
+      const capCeil = columnCap ? Math.min(divCeil, columnCap.y) : divCeil;
       const span = partitionSpan({
         floor: partitionFloor,
-        ceiling: divCeil,
+        ceiling: capCeil,
         shelves: crossing,
         // The board a partition is INTERRUPTED by is the SHELF's, not its own:
         // `partitionSpan` measures the run between two horizontal boards.
@@ -4905,6 +5099,17 @@ export function computeCabinet(params, profileOverride) {
       });
       if (span.height <= 0) break;
       n += 1;
+      // T79 F3 · a stack the shoe drawer tops has no board (T70 F1): the divider
+      // still never enters a box, and standing on nothing it says so in words.
+      if (shoeTopsTheStack && Math.abs(span.from - stackFloor) < 1e-9) {
+        warnings.push({
+          code: 'DIVIDER_ON_NO_BOARD',
+          panel: `VPART-${n}`,
+          message: `VPART-${n} stands on nothing: the drawer stack under it is topped by the shoe drawer, which `
+            + 'carries no board. Take the shoe drawer off the top of the stack, or take the divider out.',
+        });
+      }
+      const onCap = Boolean(columnCap) && span.terminatesOn == null && capCeil < divCeil - 1e-9;
       // T74 F9 · cut by the slope where its ceiling came down, and ONLY there.
       const divCut = roofList && divCeil < H - G - 1e-9 && span.to >= divCeil - 1e-9;
       const divElevation = divCut ? bevelProfile(x, x + slotG, divCeil) : null;
@@ -4973,7 +5178,8 @@ export function computeCabinet(params, profileOverride) {
           // Which shelf carries it, when one does — the panel says so, and the
           // 3D view can draw the two as one joint rather than two pieces that
           // happen to touch.
-          terminatesOn: span.terminatesOn,
+          // T79 F3 · under the columns' one board, that board.
+          terminatesOn: onCap ? 'PARTITION' : span.terminatesOn,
           // ─── T74 F9 · THE SIDE'S SLOPE RECORD, ON THE DIVIDER ────────────
           // `h` is the blank (the longest edge, the cut size above), `low` the
           // short face, both as lengths of the board; `angles` is what every
@@ -5148,6 +5354,7 @@ export function computeCabinet(params, profileOverride) {
         box: { x: boxLeftX + GB, y: boxWallY, z: boxZFront - szufDl, w: boxFrontLen, h: bfH, d: GB },
         cnc: rectGeometry(boxFrontLen, bfH), meta: { drawer: i },
       }));
+      joinBoxWithCabineo(`D${i}`);
       panels.push(panel({
         id: `D${i}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: bottomW, h: bottomD, ...common,
         // The bottom is narrower than the box (it sits in grooves in the two
@@ -5225,119 +5432,7 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
-  // ─── TURN 32 (CLAUDE.md F4): COLUMN DRAWERS — THE WARDROBE'S ZONES ────────
-  //
-  // A vertical partition divides the interior into COLUMNS, and a column may
-  // carry its own drawer stack. Everything is computed FROM THE COLUMN'S
-  // WALLS — the carcass side and/or the partition — with the same numbers the
-  // full-width zone has always used (P.wardrobe.drawers): the column's clear
-  // light replaces `internalWidth`, and the bounding boards play the DP
-  // panels' whole part (so no DP is cut and no reduction is taken). The
-  // boxes, the fronts, the runner rows and the column's own closing board
-  // all follow; an `internal` drawer is given no face, exactly as F20 built.
-  //
-  // It arrives on the OVERRIDE CHANNEL (`params.column_drawers`, built by the
-  // store from the drawer items' own `zone`): a bare `computeCabinet()` —
-  // every golden fixture — passes none, this block emits nothing, and the
-  // DEFAULT zone above cuts exactly what the AutoLISP cuts.
-  const columnDrawerSets = [];
-  if (wardrobeDrawers && Array.isArray(cfg.columnDrawers) && cfg.columnDrawers.length
-    && verticalItems.length) {
-    for (const spec of cfg.columnDrawers) {
-      const k = Math.trunc(Number(spec?.zone));
-      const bay = bays[k];
-      const list = Array.isArray(spec?.drawers) ? spec.drawers : [];
-      if (!bay || !list.length) continue;
-      const colMaxDl = D - G - DR.setback - frontT - DR.depthAllowance;
-      const colDl = snapDrawerDepth(colMaxDl, DR.depthSteps);
-      if (colDl == null) {
-        warnings.push({
-          code: 'DRAWERS_TOO_SHALLOW',
-          message: `Column ${k + 1}: cabinet too shallow for drawers (usable ${roundTo(colMaxDl, 1)} mm < ${DR.depthSteps[0]} mm) — the column's drawers were dropped.`,
-        });
-        continue;
-      }
-      const heights = list.map((d) => (Number(d?.height_mm) > 0 ? Number(d.height_mm) : DR.frontHeight));
-      // T74 F6 · the column twin of the full-width stack: a raised drawer
-      // stands at its own mounting height, and nothing else moves.
-      const colStack = stackOffsets(heights, list, DR.gap, G);
-      const totalH = colStack.top ?? heights.reduce((s, h) => s + h, 0) + (heights.length - 1) * DR.gap;
-      if (totalH > H - 2 * G - DR.zoneHeadroom) {
-        warnings.push({
-          code: 'DRAWERS_TOO_TALL',
-          message: `Column ${k + 1}: ${heights.length} drawers do not fit below the column's partition — the column's drawers were dropped.`,
-        });
-        continue;
-      }
-      // ─── TURN 33 (CLAUDE.md F6): THE COLUMN READS THE BEHIND-DOOR LAW ─────
-      //
-      // A column bounded by a PARTITION needs no standoff there — the divider
-      // is the wall the runner mounts on, full stop. A column bounded by the
-      // CARCASS SIDE under a hinged door is the no-divider wardrobe's own
-      // case, and it takes the no-divider wardrobe's own answer: the DP stands
-      // `DP.inset + G` in from that side, the fillers close the 30, and the
-      // column's LIGHT — box, front, bottom — narrows by exactly the standoff
-      // the full-width zone has always taken. Same numbers, same source
-      // (`dpSideLaw`), zero divergence.
-      const dpL = k === 0 && dpSideLaw.left;
-      const dpR = k === bays.length - 1 && dpSideLaw.right;
-      const standoff = DP.inset + G;
-      const lightHere = bay.size - (dpL ? standoff : 0) - (dpR ? standoff : 0);
-      const boxW = lightHere - DR.boxWidthClearance;
-      const colBoxFrontLen = lightHere
-        - Math.max(0, DR.boxFrontBoards - DR.boxFrontCarcassBoards) * GB
-        - DR.boxFrontClearance;
-      const offsets = []; const sideHs = []; const bfHs = [];
-      const partY = G + totalH + DR.partitionClearance;
-      let acc = 0;
-      for (let i = 0; i < heights.length; i += 1) {
-        offsets.push(colStack.offsets[i]);
-        acc = i + 1 < heights.length ? colStack.offsets[i + 1] : colStack.offsets[i] + (heights[i] + DR.gap);
-        const ceilingHere = i + 1 < heights.length ? G + acc : partY;
-        // T54-F7: the shoe drawer's one override, the column twin of the
-        // full-width law above — side height = `drawers.shoeSideMm`.
-        const resolved = resolveBoxSide({
-          wanted: list[i]?.variant === 'shoe'
-            ? (Number(DR.shoeSideMm) || 80)
-            : heights[i] - DR.frontToSideDelta,
-          base: G + offsets[i],
-          ceiling: ceilingHere,
-          boxBoardT: GB,
-        }, P);
-        sideHs.push(resolved.height);
-        bfHs.push(resolved.height - DR.boxFrontHeightDeduction - GB - DR.boxFrontHeightExtra);
-      }
-      columnDrawerSets.push({
-        zone: k,
-        bay,
-        bounds: {
-          left: k === 0 ? 'BUL' : `VPART-${k}`,
-          right: k === bays.length - 1 ? 'BUR' : `VPART-${k + 1}`,
-        },
-        // Turn 33 (F6): which of this column's walls carry the DP standoff.
-        dpL,
-        dpR,
-        mounts: list.map((d) => (d?.mount === 'internal' ? 'internal' : 'overlay')),
-        // Turn 33 (F3): which drawers order an insert (and glass) — the boxes
-        // themselves are cut exactly as every column box is.
-        variants: list.map((d) => (DRAWER_VARIANTS.includes(d?.variant) ? d.variant : null)),
-        // T52 (CLAUDE.md F5, decision 3): the WATCH INSERT is a flag ON a
-        // drawer and not a drawer type, so it rides beside `variants` rather
-        // than inside them — a customer can have it in one drawer of six.
-        watchInserts: list.map((d) => watchInsertOn(d)),
-        heights,
-        offsets,
-        sideHs,
-        bfHs,
-        dl: colDl,
-        boxW,
-        frontW: boxW + DR.frontOversize,
-        boxFrontLen: colBoxFrontLen,
-        bottomW: colBoxFrontLen + DR.bottomOversize,
-        partY,
-      });
-    }
-
+  if (columnDrawerSets.length) {
     // The pieces, per column — the same five boards a full-width drawer is,
     // with the same two pockets in the sides (it is the same box on the same
     // runner), cut to the column's own light. The pocket helper mirrors the
@@ -5392,6 +5487,7 @@ export function computeCabinet(params, profileOverride) {
           box: { x: boxLeftX + GB, y: boxWallY, z: boxZFront - set.dl, w: set.boxFrontLen, h: bfH, d: GB },
           cnc: rectGeometry(set.boxFrontLen, bfH), meta: { drawer: i, zone: set.zone },
         }));
+        joinBoxWithCabineo(tag);
         panels.push(panel({
           id: `${tag}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: set.bottomW, h: set.dl, ...common,
           box: {
@@ -5470,7 +5566,7 @@ export function computeCabinet(params, profileOverride) {
           message: `Column ${set.zone + 1}'s top drawer is the shoe drawer, so that column is NOT`
             + ' closed by a board — the owner\'s law is that a shoe drawer carries nothing above it.',
         });
-      } else {
+      } else if (!columnCap) {
         panels.push(panel({
           id: `Z${set.zone + 1}-PART`, part: 'PARTITION', role: 'shelf', w: set.bay.size, h: partitionDepth, thickness: G,
           edgeCode: codes.none, edgeLen: 0,
@@ -5521,6 +5617,9 @@ export function computeCabinet(params, profileOverride) {
         }
       }
     }
+    // T79 F3 · the ONE board over every column (`columnCap`, planned above
+    // the dividers): the full-width stack's own board, at the tallest line.
+    if (columnCap) panels.push(stackCapBoard(columnCap.y, { columns: columnDrawerSets.map((set) => set.zone) }));
   }
 
   // ─── TURN 32 (CLAUDE.md F4): A COLUMN MAY HANG ITS OWN RAIL ───────────────
@@ -5733,6 +5832,7 @@ export function computeCabinet(params, profileOverride) {
           meta: { drawer: i },
         }));
       }
+      joinBoxWithCabineo(`D${i}`);
     }
     for (let i = 1; i <= budr.count; i += 1) {
       if (i === budr.dummy) continue;
@@ -5794,6 +5894,7 @@ export function computeCabinet(params, profileOverride) {
           meta: { ...metaInner },
         }));
       }
+      joinBoxWithCabineo(`D${i}I`);
       {
         const geom = rectGeometry(budr.bottomW, budr.depth);
         geom.holes = [];
@@ -6967,7 +7068,14 @@ export function computeCabinet(params, profileOverride) {
   // that is the project's number, so every saved job cuts the same board.
   const wallGap = wallGapOf({ params }, P);
   const insetBack = Math.max(0, Number(params?.inset_back_mm) || 0);
-  const endPanelDepth = wallGap + insetBack + D + P.doors.gap + frontT;
+  // T79 F9 (KIT_RECESS.lsp D21) · WHOLLY INSIDE A RECESS the panel stands in
+  // the recess with the carcass, so its gap is measured off the recess's own
+  // back wall, as the carcass's stand-off is: `wallGapOf` takes recess_mm off
+  // the wall line and the carcass's depth gained it, so the sum adds it back.
+  // The PROBE (verify/t79/f09-probe.md row 12): 596 at z 0..596 beside a
+  // carcass at z 18..858. With no recess_mm (every golden) nothing moves.
+  const endBack = wallGap + Math.max(0, Number(params?.recess_mm) || 0) + insetBack;
+  const endPanelDepth = endBack + D + P.doors.gap + frontT;
   // ─── Turn 13 (CLAUDE.md F4): A WALL UNIT'S PANEL ENDS WITH THE CABINET ───
   //
   // "To the floor" means down to the floor for something STANDING on it: past
@@ -7042,7 +7150,7 @@ export function computeCabinet(params, profileOverride) {
       box: {
         x: side === 'L' ? -t : W,
         y: epY,
-        z: wallGap + insetBack > 0 ? -(wallGap + insetBack) : 0,
+        z: endBack > 0 ? -endBack : 0,
         w: t,
         h: epH,
         d: endPanelDepth,
@@ -8649,6 +8757,20 @@ export function computeCabinet(params, profileOverride) {
   // take their place (the owner, the morning of 15.10.2026: "plecy tez na
   // cabineo"); under biscuits the rows are what holds the back.
   if (cabineoPlan || biscuitPlan) screwedBackStrip({ panels, profile: P, screws: !cabineoPlan });
+  // ─── T79 F14 · THE DRAWER BOX IS ON CABINEO 12 ───────────────────────────
+  // The owner, 18.10.2026: *"jak mamy wybrane jakąkolwiek funkcję łączenia
+  // czy dog bones czy inne zawsze projektuj cabineo na szuflady"*. On a unit
+  // that names a joint system at all (the store names one on every unit), the
+  // boxes the builders joined get their pockets on the walls' outside faces
+  // (OUTSIDE FACE UP) and a box that cannot is refused in words (Check #31).
+  // A bare kit names none and runs no line here (SKYLON_JOINTS_CABINEO.lsp D.2c).
+  const boxCabineoPlan = boxCabineoAsked(params) && cabineoBoxTags.length
+    ? cabineoBoxVerdict({ tags: cabineoBoxTags, panels, profile: P })
+    : null;
+  if (boxCabineoPlan) {
+    cabineoBoxPocketsOnto({ panels, plan: boxCabineoPlan });
+    warnings.push(...cabineoBoxRefusalWarnings(boxCabineoPlan));
+  }
 
   // ─── T75 F7 · THE CORNER NOTCH, CUT BEFORE THE DRILLING ──────────────────
   // KIT_NOTCH.lsp: *"It runs AFTER the parent kit's carcass and BEFORE the
@@ -8660,14 +8782,31 @@ export function computeCabinet(params, profileOverride) {
       params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel,
     })
     : null;
-  // 15.10.2026 · the recess extension, in the notch's own place (KIT_RECESS.lsp
-  // section 1: after the parent's carcass, before the drilling). Null on every
-  // unit with no extension.
-  const extensionCut = params?.extension && !notchCut
-    ? extensionCarcass({
-      params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel,
+  // T79 F5 · the edge notch (KIT_NOTCH.lsp D22), after the corner notch, on
+  // what it left: a board both reach is cut by both. Null with no edge notch.
+  const edgeNotchCut = params?.edgeNotch
+    ? edgeNotchCarcass({
+      params, profile: P, panels, W, H, D, G, cornerCut: notchCut,
     })
     : null;
+  // 15.10.2026 · the recess extension, in the notch's own place (KIT_RECESS.lsp
+  // section 1: after the parent's carcass, before the drilling). Null on every
+  // unit with no extension. T79 F8 (D13 amended, the owner: *"dlaczego cut the
+  // corner likwiduje nam wcięcie do recess?"*): a notched carcass whose notch
+  // stands apart from the band on the BACK (the verdict above refused every
+  // other) is cut by the notch first and by the extension on what it left.
+  const extensionCut = params?.extension
+    ? extensionCarcass({
+      params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel, notchCut,
+    })
+    : null;
+  // T79 F9 · the END panel follows its side (KIT_NOTCH.lsp D23, KIT_RECESS.lsp
+  // D21): ONE pass after the three cuts, each END panel cut by the cuts its
+  // side took. The owner: *"nie wycina mi panelu bocznego do recess a
+  // powinno."*  No cut, or no END panel: no line of it runs.
+  endPanelsFollowSides({
+    params, panels, notchCut, edgeNotchCut, extensionCut, H, D, G, profile: P,
+  });
 
   // ── Drills ─────────────────────────────────────────────────────────────────
   const drills = [];
@@ -8730,6 +8869,8 @@ export function computeCabinet(params, profileOverride) {
   // dia 15 holes per pocket from the outside face (SKYLON_JOINTS_CABINEO.lsp
   // section D.8 and D.4).
   if (cabineoPlan) drills.push(...cabineoDrills(cabineoPlan));
+  // T79 F14 · the box sides' dia 5 holes and, under drill15, the walls' dia 15.
+  if (boxCabineoPlan) drills.push(...cabineoBoxDrills(boxCabineoPlan));
 
   // ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT, ⌀3 OR ⌀5 ─────────────
   //
@@ -9316,6 +9457,19 @@ export function computeCabinet(params, profileOverride) {
   // Runners: on each drawer panel, and on a carcass side only where no drawer panel sits
   const RN = P.wardrobe.runners;
   let runnerCarcassSide = null;
+  // The full-width board's confirmats at its centre line: three into each
+  // carcass side, three along the BACK. T79 F3: the columns' one board takes
+  // the same (one board, one law).
+  const stackCapScrews = (centreY) => {
+    for (const sideId of ['BUL', 'BUR']) {
+      for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
+        addDrill(sideId, 'partition_screw', pz.layers.screw, x, centreY, DP.screwDiameter);
+      }
+    }
+    for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
+      addDrill('BACK', 'partition_screw', pz.layers.screw, x, centreY, DP.screwDiameter);
+    }
+  };
   if (hasDrawers) {
     for (const pnl of panels.filter((x) => x.part === 'DP')) {
       for (const rowY of runnerRowsDp) {
@@ -9342,16 +9496,7 @@ export function computeCabinet(params, profileOverride) {
     // stack there is no board (`shoeTopsTheStack` above), so there is nothing
     // to screw to and the machine does not drill for it. The DP fixings below
     // are the drawer MECHANISM's own and are untouched.
-    if (!shoeTopsTheStack) {
-      for (const sideId of ['BUL', 'BUR']) {
-        for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
-          addDrill(sideId, 'partition_screw', pz.layers.screw, x, partitionCentreY, DP.screwDiameter);
-        }
-      }
-      for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
-        addDrill('BACK', 'partition_screw', pz.layers.screw, x, partitionCentreY, DP.screwDiameter);
-      }
-    }
+    if (!shoeTopsTheStack) stackCapScrews(partitionCentreY);
     if (dpLeft) {
       addDrill('BUL', 'dp_screw', pz.layers.screw, DP.screwDepth, G + pz.screwFromEnd, DP.screwDiameter);
       addDrill('BUL', 'dp_screw', pz.layers.screw, DP.screwDepth, partitionY - pz.screwFromEnd, DP.screwDiameter);
@@ -9375,6 +9520,10 @@ export function computeCabinet(params, profileOverride) {
   // u along its HEIGHT above its floor at G, v along its DEPTH from the
   // front. The closing board's three screws land exactly where the
   // full-width zone lands them, measured across the column's own span.
+  // T79 F3 · under the columns' ONE board (`columnCap`) there is no column
+  // board: the runners drill as ever, the board takes the full-width board's
+  // confirmats, and the divider stopping under it meets it by the biscuit
+  // set of the 1710d law (engine/dividerJoints.js), never a screw through it.
   for (const set of columnDrawerSets) {
     const colBoxSetback = DR.setback + frontT;
     const colPartCentre = set.partY + G / 2;
@@ -9395,6 +9544,7 @@ export function computeCabinet(params, profileOverride) {
           }
         }
       }
+      if (columnCap) continue;
       if (carcass) {
         for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
           addDrill(bound, 'partition_screw', pz.layers.screw, x, colPartCentre, DP.screwDiameter);
@@ -9405,10 +9555,12 @@ export function computeCabinet(params, profileOverride) {
         }
       }
     }
+    if (columnCap) continue;
     for (const x of [set.bay.from + pz.screwFromEnd, set.bay.centre, set.bay.to - pz.screwFromEnd]) {
       addDrill('BACK', 'partition_screw', pz.layers.screw, x, colPartCentre, DP.screwDiameter);
     }
   }
+  if (columnCap) stackCapScrews(columnCap.y + G / 2);
 
   // BUDR: runners on BOTH carcass sides — there is no drawer panel and no door.
   if (budr) {
@@ -10376,6 +10528,10 @@ export function computeCabinet(params, profileOverride) {
     if (conn) hw('cabineo_connector', conn.label, conn.qty, conn.unit, conn.spec, conn.spec_label);
     const cap = cabHw.find((l) => l.role === 'cabineo_cap');
     if (cap) hw('cabineo_cap', cap.label, cap.qty, cap.unit, cap.spec, cap.spec_label);
+  }
+  // T79 F14 · the drawer boxes' connectors, 4 or 8 a box, a line of their own.
+  if (boxCabineoPlan) {
+    for (const l of cabineoBoxHardwareLines(boxCabineoPlan)) hw(l.role, l.label, l.qty, l.unit, l.spec, l.spec_label);
   }
 
   // Turn 32 (CLAUDE.md F4): the columns share the default ladder — the depth
@@ -11419,13 +11575,17 @@ export function computeCabinet(params, profileOverride) {
     // clamps and the walk's measures.
     columnDrawers: columnDrawerSets.map((set) => ({
       zone: set.zone,
-      top: set.partY,
+      // T79 F3 · a column under the ONE board over the columns is closed by it.
+      top: columnCap ? columnCap.y : set.partY,
       count: set.heights.length,
       heights: [...set.heights],
       mounts: [...set.mounts],
       from: set.bay.from,
       to: set.bay.to,
     })),
+    // T79 F3 · the ONE board over every column, present only where it is cut:
+    // a full-width shelf stands on it as it stands on the full-width stack's.
+    ...(columnCap ? { columnCap: { top: columnCap.y, zones: columnDrawerSets.map((set) => set.zone) } } : {}),
     drawerFronts: budr
       ? budr.heights.map((h, i) => ({
         index: i + 1, y: budr.frontY[i], h, w: budr.frontWidth, ...(i + 1 === budr.dummy ? { fixed: true } : {}),
@@ -11450,7 +11610,7 @@ export function computeCabinet(params, profileOverride) {
       // and the readouts take it from here rather than assuming the carcass
       // board, which is how a 25 mm shelf came out drawn 18 mm thick.
       thickness: shelfThickness(cfg.shelfItems[i], G),
-      front_mm: setbackOf(cfg.shelfItems[i]?.front_mm, C.shelfDepthClearance),
+      front_mm: setbackOf(cfg.shelfItems[i]?.front_mm, params?.shelf_front_mm ?? C.shelfDepthClearance),
     })),
     fridge: fridge ? { fixedPanelY: fridge.fixedPanelY, fridgeH: cfg.fridgeH } : null,
     // ─── Turn 22 (CLAUDE.md F1) ───
@@ -11622,6 +11782,14 @@ export function computeCabinet(params, profileOverride) {
     });
     derived.notch = notchSummary(notchCut);
   }
+  // T79 F5 · ...and the edge notch's, after the corner notch's (it reads a side
+  // the corner re-origined back into its first frame).
+  if (edgeNotchCut) {
+    edgeNotchDrills({
+      cut: edgeNotchCut, panels, drills, legs,
+    });
+    derived.edgeNotch = edgeNotchSummary(edgeNotchCut);
+  }
   // 15.10.2026 · BUR re-origined from its new back edge, the grown sides' back
   // pin column stepped back over the band (KIT_RECESS.lsp D12).
   if (extensionCut) {
@@ -11639,9 +11807,24 @@ export function computeCabinet(params, profileOverride) {
   // T78 F20 · what the Cabineo unit is (the variant, the mounting, the
   // option, which boards are OUTSIDE FACE UP), and THE GATE while it is shut.
   if (cabineoPlan) {
-    derived.joints = cabineoSummary(cabineoPlan);
+    derived.joints = cabineoSummary(cabineoPlan, boxCabineoPlan);
     const gate = cabineoGateWarning(derived.joints);
     if (gate) warnings.push(gate);
+  }
+  // T79 F14 · what the drawer boxes' Cabineo is, on every unit that has it;
+  // its gate where the carcass carries none of its own.
+  if (boxCabineoPlan) {
+    derived.boxCabineo = cabineoBoxSummary(boxCabineoPlan);
+    const boxGate = cabineoPlan ? null : cabineoBoxGateWarning(boxCabineoPlan);
+    if (boxGate) warnings.push(boxGate);
+  }
+  // T79 F14 · an L's drawer stack is cut by its two parents (`lCorner.arms`,
+  // each box joined there by the one helper above); the L says what they carry.
+  if (!boxCabineoPlan && lCorner) {
+    const arms = ['A', 'B'].map((arm) => lCorner.arms[arm]?.v?.derived?.boxCabineo).filter(Boolean);
+    if (arms.length) {
+      derived.boxCabineo = Object.fromEntries(['joints', 'pockets', 'holes'].map((k) => [k, arms.reduce((n, s) => n + s[k], 0)]));
+    }
   }
   // T78 F20 · what the biscuit unit is. No gate: the set is the owner's own
   // ("zostaw jak bylo": the numbers of profile.biscuits, confirmed).

@@ -50,7 +50,7 @@
 // Pure: numbers in, numbers or records out. No store, no React, no three.js.
 
 import { roundTo } from './format.js';
-import { JOINTS_REFUSED } from './dowels.js';
+import { JOINTS_REFUSED, JOINT_SYSTEMS } from './dowels.js';
 import { bjPlainEnds } from './biscuitJoints.js';
 import { minSkinOf, skinShort } from './frontBoard.js';
 import { machiningFor } from './machining.js';
@@ -1222,6 +1222,11 @@ export function cabineoVerdict({
     return say('a carcass with a corner notch keeps the puzzle: KIT_NOTCH.lsp re-plans the puzzle\'s joints, '
       + 'and SKYLON_JOINTS_CABINEO.lsp has no notch row');
   }
+  // T79 F5 (KIT_NOTCH.lsp D22): the edge notch re-plans them the same way.
+  if (params?.edgeNotch) {
+    return say('a carcass with an edge notch keeps the puzzle: KIT_NOTCH.lsp re-plans the puzzle\'s joints, '
+      + 'and SKYLON_JOINTS_CABINEO.lsp has no notch row');
+  }
   const prof = cabineoProfile(profile, asked);
   const sheet = cabineoSheet();
   const pz = profile?.puzzle || {};
@@ -1513,6 +1518,11 @@ export function cabineoShelf(plan, shelfId) {
   return Boolean(plan?.shelves?.has(shelfId));
 }
 
+/** The mounting's words on an order line (the carcass's lines and the box's, T79 F14). */
+const mountLabelOf = (mounting) => ({
+  surface: 'on the surface', flush: 'flush collar', flushCap: 'flush cover cap', hpl: 'HPL on the surface',
+}[mounting] || mounting);
+
 /**
  * The order lines (`result.hardware` shape): the connectors and the cover
  * caps, articles NOT on the sheet (null, owner to supply). `bom.js` merges
@@ -1521,7 +1531,7 @@ export function cabineoShelf(plan, shelfId) {
 export function cabineoHardwareLines(plan) {
   const m = cabineoMounting(plan.prof, plan.sheet);
   const v = cabineoVariant(plan.prof, plan.sheet);
-  const mountLabel = { surface: 'on the surface', flush: 'flush collar', flushCap: 'flush cover cap', hpl: 'HPL on the surface' }[plan.prof.mounting] || plan.prof.mounting;
+  const mountLabel = mountLabelOf(plan.prof.mounting);
   const out = [];
   for (const line of plan.bom) {
     if (!(line.qty > 0)) continue;
@@ -1548,8 +1558,11 @@ export function cabineoHardwareLines(plan) {
   return out;
 }
 
-/** What `result.derived.joints` says of a Cabineo unit. */
-export function cabineoSummary(plan) {
+/**
+ * What `result.derived.joints` says of a Cabineo unit. T79 F14: with the
+ * unit's drawer boxes on Cabineo too, `box: { joints, pockets, holes }`.
+ */
+export function cabineoSummary(plan, boxPlan = null) {
   return {
     system: plan.system,
     variant: plan.variant,
@@ -1564,6 +1577,7 @@ export function cabineoSummary(plan) {
     back: plan.back,
     confirmed: plan.prof.confirmed,
     gate: cabineoGate(plan.prof),
+    ...(boxPlan ? { box: cabineoBoxSummary(boxPlan) } : {}),
   };
 }
 
@@ -1686,11 +1700,400 @@ export function cabineoOperationsManifest(entries = [], { files = [] } = {}) {
     gate,
     source: 'reference/hardware/cabineo/cabineo.json (Lamello operating instructions, every number owner to confirm); reference/lisp/SKYLON_JOINTS_CABINEO.lsp',
     setups: {
-      outside: `A board marked ${OUTSIDE_FACE_LABEL} is machined from the carcass's OUTSIDE face (the top from above, the bottom from below, a fixed shelf from its underside). Its DXF is drawn as seen from that face.`,
+      outside: `A board marked ${OUTSIDE_FACE_LABEL} is machined from the carcass's OUTSIDE face (the top from above, the bottom from below, a fixed shelf from its underside; a drawer box's front and back walls from the face away from the box, T79 F14). Its DXF is drawn as seen from that face.`,
       flip: 'Flip each individual part about its local vertical axis: frontX = partWidth - backX, frontY = backY (T76\'s one reflection, cnc/frontOperations.js). Do not flip a whole sheet using this layout.',
       inside: 'A side keeps its inside-face machining and gains the dia 5 counterpart holes on the joint line.',
       depths: 'Pocket and recess depths are positive millimetres below the OUTSIDE face. The dia 5 hole\'s depth is not on the sheet and is left to the owner.',
     },
     parts,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Z2. THE DRAWER BOX (T79 F14): SKYLON_JOINTS_CABINEO.lsp D.2c mirrored
+//     routine for routine (cabineo-box-rule, cabineo-box-profile,
+//     cabineo-box-positions, cabineo-box-joint, cabineo-box-table,
+//     cabineo-box-pockets, cabineo-box-holes, cabineo-box-refusal,
+//     cabineo-box-pocket-rect, cabineo-box-pilot-refusal,
+//     cabineo-box-bom-lines), and its engine half
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner, 18.10.2026: *"jak mamy wybrane jakąkolwiek funkcję łączenia czy
+// dog bones czy inne zawsze projektuj cabineo na szuflady, na przednich i
+// tylnych ściankach dodawaj cabineo jeden do 100 mm, 2 powyżej 100 mm,
+// minimum odległość to 25 od góry i dołu"*; *"nawiercanie w bokach będzie
+// liczone od góry boxa"*; Cabineo 12: *"tak"*; *"przy wysokich nie
+// rozsuwaj"*; the bottom: *"wsuwane"*. The WALL's end stands on the SIDE's
+// face, so the wall (BOX-FRONT, BOX-BACK) carries the pocket in its OUTSIDE
+// face (machinedFace 'outside', OUTSIDE FACE UP) and the side the dia 5 hole
+// in its inside face; four joints a box; one connector a joint to a 100 wall,
+// two above at 25 from the wall's top and bottom edges, measured from the
+// TOP, the side's holes at the same heights (the kits leave the wall 1 mm
+// under the side's top, `dTop`, and the holes add it).
+//
+// THE GATE is the unit NAMING a joint system (`boxCabineoAsked`): every unit
+// a person builds names one (`projectStore.js paramsForEngine` hands the
+// ladder's answer down on every unit, 'puzzle' included); a bare
+// `computeCabinet()` names none and runs no line of this section, so every
+// golden is byte-identical by construction. The carcass keeps its own system;
+// the box always takes Cabineo 12 and shares the carcass profile's machining
+// and its `confirmed` flag. The carcass table (D.2, D.2b) is not read here.
+
+/** cabineo-box-rule: the box's three numbers (profile.joints.cabineo.box), the LISP's own as fallbacks. */
+export function cabineoBoxRule(profile = {}) {
+  const b = profile?.joints?.cabineo?.box || {};
+  const num = (v, fallback) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Number(v) : fallback);
+  return {
+    // Cabineo 12 on the box (the owner: "tak"); the only id read, Cabineo 8 on the box is not this turn.
+    variant: ['12'].includes(String(b.variant)) ? String(b.variant) : '12',
+    onePerJointUpToMm: num(b.onePerJointUpToMm, 100),
+    fromEdgeMm: num(b.fromEdgeMm, 25),
+  };
+}
+
+/**
+ * cabineo-box-profile: the company's machining (mounting, option, skim, hole
+ * depth, the gate) with the box's own variant and its 25 as the end offset;
+ * the carcass's pitch and minimum of two set where `cabineoRefusal` has
+ * nothing to say of them (the box's own set-out is asked by
+ * `cabineoBoxRefusal`).
+ */
+export function cabineoBoxProfile(prof, rule) {
+  return {
+    ...prof, variant: rule.variant, endOffsetMm: rule.fromEdgeMm, pitchMm: prof.maxSpacingMm, minPerJoint: 2,
+  };
+}
+
+/** cabineo-box-positions: the offsets along one box joint, FROM THE WALL'S TOP EDGE. */
+export function cabineoBoxPositions(hw, rule) {
+  const h = Number(hw);
+  const e = rule.fromEdgeMm;
+  return h <= rule.onePerJointUpToMm ? [h / 2] : [e, h - e];
+}
+
+/** cabineo-box-joint: one box joint, the D.2b fields and the channel's axis (`along`), always 'outside'. */
+export function cabineoBoxJoint(name, len, side, hx0, hy0, hdx, hdy, board, along, endAt, dirIn, aFrom, aDir, bW, bT) {
+  return {
+    name, len: Number(len), ref: 'TOP', kind: 'box',
+    side, hx0: Number(hx0), hy0: Number(hy0), hdx: Number(hdx), hdy: Number(hdy),
+    board, face: 'outside', along, endAt: Number(endAt), dirIn: Number(dirIn),
+    acrossFrom: Number(aFrom), acrossDir: Number(aDir), boardW: Number(bW), boardT: Number(bT),
+  };
+}
+
+/** Is this joint a drawer box's (D.2c)? */
+export function isBoxJoint(jt) {
+  return jt?.kind === 'box';
+}
+
+/**
+ * cabineo-box-table: the four joints of one box (SL-BF, SR-BF, SL-BB, SR-BB),
+ * in the frames the kits draw the boards in: `rotated` (KIT_BUDR_FULL: x up
+ * every board) or not (KIT_WARDROBE_FULL: x along every board). `dTop` is the
+ * side's top above the wall's top, `ax` the screw axis inside the wall's
+ * outside face; the side's holes stand ax from its end.
+ */
+export function cabineoBoxJointTable(sideL, sideH, wallL, hw, dTop, GB, ax, rotated) {
+  const L = Number(sideL); const H = Number(sideH); const WL = Number(wallL); const h = Number(hw);
+  const g = Number(GB); const a = Number(ax);
+  const top = H - Number(dTop);
+  if (rotated) {
+    return [
+      cabineoBoxJoint('SL-BF', h, 'SL', top, a, -1.0, 0.0, 'BF', 'y', 0.0, 1.0, h, -1.0, h, g),
+      cabineoBoxJoint('SR-BF', h, 'SR', top, L - a, -1.0, 0.0, 'BF', 'y', WL, -1.0, h, -1.0, h, g),
+      cabineoBoxJoint('SL-BB', h, 'SL', top, L - a, -1.0, 0.0, 'BB', 'y', WL, -1.0, h, -1.0, h, g),
+      cabineoBoxJoint('SR-BB', h, 'SR', top, a, -1.0, 0.0, 'BB', 'y', 0.0, 1.0, h, -1.0, h, g),
+    ];
+  }
+  return [
+    cabineoBoxJoint('SL-BF', h, 'SL', L - a, top, 0.0, -1.0, 'BF', 'x', WL, -1.0, h, -1.0, WL, g),
+    cabineoBoxJoint('SR-BF', h, 'SR', a, top, 0.0, -1.0, 'BF', 'x', 0.0, 1.0, h, -1.0, WL, g),
+    cabineoBoxJoint('SL-BB', h, 'SL', a, top, 0.0, -1.0, 'BB', 'x', 0.0, 1.0, h, -1.0, WL, g),
+    cabineoBoxJoint('SR-BB', h, 'SR', L - a, top, 0.0, -1.0, 'BB', 'x', WL, -1.0, h, -1.0, WL, g),
+  ];
+}
+
+/**
+ * cabineo-box-pockets: one record per offset in the wall's own frame, in the
+ * two shapes `cabineoPocketGeometry` reads: along 'y' D.3's (`x`, `yEnd`),
+ * along 'x' D.2b's (`along: 'x'`, `xEnd`, `y`); the across coordinate is hw - off.
+ */
+export function cabineoBoxPockets(jt, offs) {
+  return offs.map((off) => {
+    const a = jt.acrossFrom + jt.acrossDir * off;
+    return jt.along === 'y'
+      ? {
+        board: jt.board, x: a, yEnd: jt.endAt, dirIn: jt.dirIn, W: jt.boardW, T: jt.boardT, joint: jt.name, off, face: 'outside',
+      }
+      : {
+        board: jt.board, along: 'x', xEnd: jt.endAt, dirIn: jt.dirIn, y: a, W: jt.boardW, T: jt.boardT, joint: jt.name, off, face: 'outside',
+      };
+  });
+}
+
+/** cabineo-box-holes: the dia 5 holes in the SIDE's inside face, X deep: [{ side, x, y, dia, depth, joint, off }]. */
+export function cabineoBoxHoles(jt, offs, prof, sheet = cabineoSheet()) {
+  const dia = cabineoPath(sheet, ['counterpartHole', 'diaMm']);
+  const depth = cabineoHoleDepth(prof, sheet);
+  return offs.map((off) => ({
+    side: jt.side, x: jt.hx0 + jt.hdx * off, y: jt.hy0 + jt.hdy * off, dia, depth, joint: jt.name, off,
+  }));
+}
+
+/** The LISP's (rtos v 2 n). */
+const rtosN = (v, n) => Number(v).toFixed(n);
+
+/**
+ * cabineo-box-refusal: the box refused in words before any pocket ([] when it
+ * can be joined): `cabineoRefusal` of the two boards asked with the box's own
+ * numbers, a wall under 2 x 25, two connectors over the sheet's 300 apart.
+ * `prof` is the company's profile, `rule` the box's numbers.
+ */
+export function cabineoBoxRefusal(prof, sheet, rule, sideT, wallT, hw) {
+  const bp = cabineoBoxProfile(prof, rule);
+  const h = Number(hw);
+  const e = rule.fromEdgeMm;
+  const one = rule.onePerJointUpToMm;
+  const out = cabineoRefusal(bp, sheet, sideT, wallT);
+  if (h <= one && h / 2 < e) {
+    out.push(`the box wall is ${rtosN(h, 1)} high: one Cabineo on its middle would stand ${rtosN(h / 2, 1)} from its top and `
+      + `bottom edges, under the owner's minimum ${rtosN(e, 0)}`);
+  }
+  const gap = h - e - e;
+  if (h > one && gap > prof.maxSpacingMm) {
+    out.push(`the box wall is ${rtosN(h, 1)} high: its two Cabineo would stand ${rtosN(gap, 1)} apart, over the sheet's max. `
+      + `${rtosN(prof.maxSpacingMm, 0)} between connectors (page 1, Assembly panel 1), and the owner does not spread them`);
+  }
+  return out;
+}
+
+/** cabineo-box-pocket-rect: a box pocket's rectangle in its wall's frame, the lobes' box and the recess's together. */
+export function cabineoBoxPocketRect(pk, prof, sheet = cabineoSheet()) {
+  let bx = cabineoOutlineBox(cabineoOption(prof, sheet));
+  const rc = cabineoRecessBox(cabineoRecess(prof, sheet));
+  if (rc) bx = [Math.min(bx[0], rc[0]), Math.min(bx[1], rc[1]), Math.max(bx[2], rc[2]), Math.max(bx[3], rc[3])];
+  const a = cabineoBoardPt(pk, bx[0], bx[1]);
+  const b = cabineoBoardPt(pk, bx[2], bx[3]);
+  return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])].map(r4);
+}
+
+/**
+ * cabineo-box-pilot-refusal: a box pocket meeting a hole its wall already
+ * carries (the BUDR BOX-FRONT's facade pilots), the sentence in the carcass's
+ * grammar, or null. `holes`: [[x, y, dia], ...] in the wall's own frame, each
+ * asked by its box.
+ */
+export function cabineoBoxPilotRefusal(pk, prof, sheet, holes, wall) {
+  const r = cabineoBoxPocketRect(pk, prof, sheet);
+  for (const [x, y, dia] of holes || []) {
+    const q = Number(dia) / 2;
+    if (cabineoFootprintClash(r, [x - q, y - q, x + q, y + q])) {
+      return `the Cabineo pocket of ${pk.joint} on ${wall} (x ${rtosN(r[0], 1)} to ${rtosN(r[2], 1)}, y ${rtosN(r[1], 1)} to `
+        + `${rtosN(r[3], 1)}) meets the hole at ${rtosN(x, 1)}, ${rtosN(y, 1)}; SKYLON_JOINTS_CABINEO.lsp has no answer for it yet, `
+        + 'so the box keeps no Cabineo';
+    }
+  }
+  return null;
+}
+
+/** cabineo-box-bom-lines: one Cabineo 12 per pocket (4 a box to a 100 wall, 8 above), no cover cap. */
+export function cabineoBoxBomLines(prof, rule, sheet, nPockets) {
+  const v = cabineoVariant(cabineoBoxProfile(prof, rule), sheet);
+  return [{
+    label: v?.label || `Cabineo ${rule.variant}`, article: v?.article ?? null, qty: nPockets,
+    note: 'drawer box: one per pocket, 4 a box to a 100 wall, 8 above; article not on the sheet, owner to supply',
+  }];
+}
+
+// ─── Z2, the engine's half ─────────────────────────────────────────────────
+
+/**
+ * THE GATE: does this unit name a joint system at all (any id the engine
+ * knows, 'puzzle' included)? A box bought ready (`drawer_boxes: 'ready'`, the
+ * wizard's question) is not cut, so it is not machined either.
+ */
+export function boxCabineoAsked(params) {
+  return JOINT_SYSTEMS.includes(params?.joints_system) && params?.drawer_boxes !== 'ready';
+}
+
+/**
+ * The verdict for every box a builder joined (`tags`: the id prefix of its
+ * four boards, `${tag}-SL` / `-SR` / `-BF` / `-BB`), asked of the boards as
+ * built, before the drilling pass: the plan of the boxes that are joined and,
+ * in words, every box that is not (it keeps no Cabineo, as the kit cuts it).
+ */
+export function cabineoBoxVerdict({ tags = [], panels = [], profile = {} } = {}) {
+  const rule = cabineoBoxRule(profile);
+  const company = cabineoProfile(profile, `cabineo${rule.variant}`);
+  const prof = cabineoBoxProfile(company, rule);
+  const sheet = cabineoSheet();
+  const ax = cabineoAxisFromOutside(prof, sheet);
+  const byId = new Map(panels.map((p) => [p.id, p]));
+  const boxes = [];
+  const refused = [];
+  for (const tag of tags) {
+    const [SL, SR, BF, BB] = ['SL', 'SR', 'BF', 'BB'].map((k) => byId.get(`${tag}-${k}`));
+    if (!SL?.box || !SR?.box || !BF?.box || !BB?.box) continue;
+    const ids = { SL: SL.id, SR: SR.id, BF: BF.id, BB: BB.id };
+    const hw = Number(BF.box.h);
+    const said = cabineoBoxRefusal(company, sheet, rule,
+      Math.min(Number(SL.thickness), Number(SR.thickness)), Math.min(Number(BF.thickness), Number(BB.thickness)), hw);
+    if (said.length) {
+      refused.push({ tag, panel: BF.id, message: `${said.join('; ')}; the box keeps no Cabineo` });
+      continue;
+    }
+    const dTop = r4((SL.box.y + SL.box.h) - (BF.box.y + BF.box.h));
+    const offs = cabineoBoxPositions(hw, rule);
+    const table = cabineoBoxJointTable(SL.box.d, SL.box.h, BF.box.w, hw, dTop, BF.thickness, ax, Boolean(BF.cnc?.rotated))
+      .map((jt) => ({ ...jt, name: `${tag} ${jt.name}`, side: ids[jt.side], board: ids[jt.board] }));
+    const joints = table.map((jt) => {
+      const pockets = cabineoBoxPockets(jt, offs);
+      return {
+        joint: jt, offs, pockets, holes: cabineoBoxHoles(jt, offs, prof, sheet),
+        geometry: pockets.map((pk) => cabineoPocketGeometry(pk, prof, sheet)),
+      };
+    });
+    // Nothing is clipped silently: a pocket meeting a hole its wall carries
+    // (D.2c, the BUDR's facade pilots), and a side's hole meeting a cut its
+    // side carries (the runner strip, the bottom groove), as section Z asks a
+    // carcass side's.
+    let why = null;
+    for (const j of joints) {
+      const wall = byId.get(j.joint.board);
+      const holes = (wall.cnc?.holes || []).map((d) => [Number(d.x), Number(d.y), Number(d.d) || 0]);
+      for (const pk of j.pockets) why = why || cabineoBoxPilotRefusal(pk, prof, sheet, holes, wall.id);
+      const side = byId.get(j.joint.side);
+      for (const h of j.holes) {
+        for (const k of side.cnc?.pockets || []) {
+          if (!why && circleMeetsRect(h.x, h.y, h.dia / 2, k.x1, k.y1, k.x2, k.y2)) {
+            why = `the Cabineo hole of ${j.joint.name} at ${rtosN(h.x, 1)}, ${rtosN(h.y, 1)} on ${side.id} meets the ${k.layer} pocket; `
+              + 'SKYLON_JOINTS_CABINEO.lsp has no answer for it yet, so the box keeps no Cabineo';
+          }
+        }
+        for (const d of side.cnc?.holes || []) {
+          if (!why && Math.hypot(h.x - Number(d.x), h.y - Number(d.y)) < h.dia / 2 + (Number(d.d) || 0) / 2 - EPS) {
+            why = `the Cabineo hole of ${j.joint.name} at ${rtosN(h.x, 1)}, ${rtosN(h.y, 1)} on ${side.id} meets the ${d.kind} hole at `
+              + `${rtosN(d.x, 1)}, ${rtosN(d.y, 1)}; SKYLON_JOINTS_CABINEO.lsp has no answer for it yet, so the box keeps no Cabineo`;
+          }
+        }
+      }
+    }
+    if (why) {
+      refused.push({ tag, panel: BF.id, message: why });
+      continue;
+    }
+    boxes.push({ tag, ids, rotated: Boolean(BF.cnc?.rotated), hw, dTop, offs, joints });
+  }
+  const nPockets = boxes.reduce((n, b) => n + b.joints.reduce((m, j) => m + j.offs.length, 0), 0);
+  return {
+    variant: rule.variant,
+    rule,
+    prof,
+    sheet,
+    layers: { pocket: cabineoPocketLayer(prof), recess: cabineoRecessLayer(prof), hole: cabineoHoleLayer(prof) },
+    boxes,
+    refused,
+    counts: { joints: boxes.reduce((n, b) => n + b.joints.length, 0), pockets: nPockets, holes: nPockets },
+    bom: cabineoBoxBomLines(company, rule, sheet, nPockets),
+  };
+}
+
+/** Each box the verdict refused, as the warning Check #31 reads (JOINTS_REFUSED, the dowel's and the carcass Cabineo's code). */
+export function cabineoBoxRefusalWarnings(plan) {
+  return (plan?.refused || []).map((r) => ({
+    code: JOINTS_REFUSED,
+    panel: r.panel,
+    message: `Cabineo ${plan.variant} refused on the drawer box ${r.tag}: ${r.message}`,
+  }));
+}
+
+/**
+ * The POCKETS and the RECESSES onto the box walls, in each wall's own frame,
+ * and the wall marked `meta.machinedFace: 'outside'` with its label, so the
+ * DXF writer reflects it and the part label prints OUTSIDE FACE UP, as the
+ * carcass's outside boards are (`cabineoPocketsOnto`). The sides keep their
+ * frame: their holes are drills. Run BEFORE the drilling pass.
+ */
+export function cabineoBoxPocketsOnto({ panels, plan }) {
+  const byId = new Map(panels.map((p) => [p.id, p]));
+  for (const b of plan.boxes) {
+    for (const id of [b.ids.BF, b.ids.BB]) {
+      const p = byId.get(id);
+      if (!p?.cnc) continue;
+      const mine = b.joints.filter((j) => j.joint.board === id).flatMap((j) => j.geometry);
+      p.cnc = {
+        ...p.cnc,
+        pockets: [...(p.cnc.pockets || []), ...mine.map((g) => g.pocket).filter(Boolean), ...mine.map((g) => g.recess).filter(Boolean)],
+      };
+      p.meta = {
+        ...(p.meta || {}),
+        machinedFace: 'outside',
+        machinedFaceLabel: OUTSIDE_FACE_LABEL,
+        cabineo: { pockets: mine.length, face: 'outside', box: b.tag },
+      };
+    }
+  }
+}
+
+/**
+ * The drill records: the sides' dia 5 holes (X deep) and, under drill15, the
+ * walls' three dia 15 holes per pocket from the OUTSIDE face. Box by box,
+ * joint by joint, holes first, as `cabineoDrills`.
+ */
+export function cabineoBoxDrills(plan) {
+  const out = [];
+  for (const b of plan.boxes) {
+    for (const j of b.joints) {
+      for (const h of j.holes) {
+        out.push({
+          panel: h.side, kind: CABINEO_HOLE_KIND, layer: plan.layers.hole, x: r4(h.x), y: r4(h.y), d: h.dia,
+          ...(h.depth != null ? { depth: r4(h.depth) } : {}),
+          meta: { joint: j.joint.name, offset: r4(h.off), depthNote: HOLE_DEPTH_NOTE, box: b.tag },
+        });
+      }
+      for (const g of j.geometry) {
+        for (const d of g.holes) out.push({ ...d, x: r4(d.x), y: r4(d.y) });
+      }
+    }
+  }
+  return out;
+}
+
+/** The box's order line (`result.hardware` shape, the carcass connector's spec): one Cabineo 12 per pocket. */
+export function cabineoBoxHardwareLines(plan) {
+  const v = cabineoVariant(plan.prof, plan.sheet);
+  const mountLabel = mountLabelOf(plan.prof.mounting);
+  return plan.bom.filter((line) => line.qty > 0).map((line) => ({
+    role: 'cabineo_connector',
+    label: line.label,
+    qty: line.qty,
+    unit: 'pcs',
+    spec: {
+      article: line.article ?? null,
+      variant: plan.variant,
+      mounting: plan.prof.mounting,
+      machining: plan.prof.machining,
+      screwReachXMm: v?.screwReachXMm ?? null,
+      note: line.note,
+      confirmed: plan.prof.confirmed,
+    },
+    spec_label: `Cabineo ${plan.variant}, ${mountLabel}, ${plan.prof.machining}, drawer boxes, article owner to supply`,
+  }));
+}
+
+/** What the box plan says (`derived.boxCabineo`, and `box` in `cabineoSummary`): { joints, pockets, holes }. */
+export function cabineoBoxSummary(plan) {
+  return { joints: plan.counts.joints, pockets: plan.counts.pockets, holes: plan.counts.holes };
+}
+
+/** The gate's warning for the boxes of a unit whose carcass carries none (Check #31), while the pattern is unconfirmed. */
+export function cabineoBoxGateWarning(plan) {
+  if (!plan?.boxes?.length) return null;
+  const gate = cabineoGate(plan.prof);
+  if (!gate) return null;
+  return {
+    code: CABINEO_GATE_CODE,
+    message: `Cabineo ${plan.variant} on the drawer boxes: ${gate}. The CNC export refuses this unit until the owner confirms the pattern `
+      + '(profile joints.cabineo.confirmed).',
   };
 }

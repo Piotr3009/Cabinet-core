@@ -17,7 +17,8 @@ import * as A from '../adapter.js';
 // through the store's one action, and a refusal shows HERE in the engine's
 // own words. Retail's own file, drawn by `Editors` at the room's level.
 
-const heightText = (h) => (Number(h) > 0 ? String(Math.round(Number(h))) : 'full');
+// T79 F4 (KIT_NOTCH.lsp D21): a negative HEIGHT, from the top, shows as itself.
+const heightText = (h) => (Number(h) ? String(Math.round(Number(h))) : 'full');
 
 /** The window, for one lit corner. `args` is the modal's own: unitId, corner, anchor. */
 export default function NotchAsk({ args }) {
@@ -82,6 +83,8 @@ export default function NotchAsk({ args }) {
         {field('WIDTH', 'width', w, setW, true)}
         {field('DEPTH', 'depth', d, setD)}
         {field('HEIGHT', 'height', h, setH)}
+        {/* T79 F4, the owner: *"i mała informacja o tym."* PRO's help line, word for word. */}
+        <p className="pbi-choice pbi-field-note" data-testid="notch-help">WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500).</p>
         <div className="pbi-duty-actions">
           <Button kind="primary" size="small" type="submit" data-testid="notch-cut">CUT</Button>
         </div>

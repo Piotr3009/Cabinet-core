@@ -98,6 +98,55 @@ export const NEW_FILES = [
   'test/recess-extension-1510.test.js',
   'scripts/t78-classify.d/f28-owner-1510d.mjs',
   'scripts/chatfix-1510-wieczor-walk.mjs',
+  // T79 F1 (18.10.2026): messages on the left, with a history
+  'test/turn79-f01-messages-left.test.js',
+  'scripts/t78-classify.d/f34-t79-f01.mjs',
+  // T79 F2 (18.10.2026): a full-width shelf above the divider
+  'test/turn79-f02-above-divider.test.js',
+  // T79 F12 (18.10.2026): Center between
+  'test/turn79-f12-centre-between.test.js',
+  // T79 F3 (18.10.2026): drawer columns
+  'test/turn79-f03-drawer-columns.test.js',
+  'scripts/t78-classify.d/f34-t79-f03.mjs',
+  // T79 F4 (18.10.2026): the notch from the top
+  'test/turn79-f04-notch-top.test.js',
+  'scripts/t78-classify.d/f34-t79-f04.mjs',
+  // T79 F5 (18.10.2026): the edge notch
+  'test/turn79-f05-edge-notch.test.js',
+  'scripts/t78-classify.d/f34-t79-f05.mjs',
+  'src/3d/NotchEdges.jsx',
+  'src/retail/design/detail/EdgeNotchAsk.jsx',
+  // T79 F6 (18.10.2026): the dia 3 rows on the back round a notch and a recess
+  'test/turn79-f06-back-rows.test.js',
+  'scripts/t78-classify.d/f34-t79-f06.mjs',
+  // T79 F8 (18.10.2026): a notch and a recess on the same carcass
+  'test/turn79-f08-notch-and-recess.test.js',
+  'scripts/t78-classify.d/f34-t79-f08.mjs',
+  // T79 F9 (18.10.2026): the end panel follows its side into the recess and the notch
+  'test/turn79-f09-end-panel.test.js',
+  'scripts/t78-classify.d/f34-t79-f09.mjs',
+  // T79 F10 (18.10.2026): the recess gives way to the stand-off
+  'test/turn79-f10-recess-standoff.test.js',
+  // T79 F11 (18.10.2026): the rail is alone, and it snaps under a shelf
+  'test/turn79-f11-rail.test.js',
+  'test/rail-assembly-saved.js',
+  'scripts/t78-classify.d/f34-t79-f11.mjs',
+  // T79 F13 (18.10.2026): setbacks 10, drawers untouched
+  'test/turn79-f13-setbacks.test.js',
+  'scripts/t78-classify.d/f34-t79-f13.mjs',
+  // T79 F14 (18.10.2026): the drawer box on Cabineo 12
+  'test/turn79-f14-box-cabineo.test.js',
+  'scripts/t78-classify.d/f34-t79-f14.mjs',
+  // T79 F16 (18.10.2026): Restore sleeve rows
+  'test/turn79-f16-restore-sleeves.test.js',
+  // T79 F15 (18.10.2026): label colours on the entity
+  'test/turn79-f15-label-colour.test.js',
+  'scripts/t78-classify.d/f34-t79-f15.mjs',
+  // T79 F18 (18.10.2026): 21 or 44 per sheet
+  'test/turn79-f18-label-sheets.test.js',
+  'scripts/t78-classify.d/f34-t79-f18.mjs',
+  // T79 WALK (18.10.2026): the acceptance walk
+  'scripts/t79-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

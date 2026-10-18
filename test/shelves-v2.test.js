@@ -32,10 +32,15 @@ import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import { shelfGapLadder } from '../src/engine/items.js';
 // Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
 import { confirmDrawerBox } from './drawer-box-gate.js';
+import { hangSavedAssembly } from './rail-assembly-saved.js';
 
 const store = () => useProjectStore.getState();
 const G = P.board.thickness;
-const SETBACK = P.carcass.interiorSetback;
+// T79 F13 · the board over a drawer stack keeps its own 20 (*"szuflady zostaw
+// nie ruszaj"*); the shelves and the dividers go to 10 (*"wszystkie cofnięcia
+// zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; *"tylko półki i dividery"*).
+const SETBACK = P.wardrobe.drawers.capSetbackMm;
+const SHELF_SETBACK = P.carcass.shelfSetbackMm;
 
 function project() {
   store().loadProject({
@@ -130,7 +135,9 @@ test('a unit in a PROJECT sets its partition back with the shelves', () => {
   const { id } = store().addUnit('WARDROBE');
   confirmDrawerBox();
   store().addDrawers(id, 2);
-  store().addHangerRail(id);
+  // T79 F11: *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to"*: the
+  // add path hangs the rod alone, so the rail's own shelf is a SAVED assembly's.
+  hangSavedAssembly(id);
   const r = resultOf(id);
   const depth = unitOf(id).params.depth;
   const internalDepth = depth - G;
@@ -154,8 +161,8 @@ test('a unit in a PROJECT sets its partition back with the shelves', () => {
   // board a joiner would reach past — not the partitioner's setback, which is
   // what this piece used to be cut to. (The two numbers happen to be equal in
   // the default profile, so the assertion names the one that applies.)
-  assert.equal(railShelf.h, internalDepth - P.carcass.shelfDepthClearance,
-    'cut like every other shelf');
+  assert.equal(railShelf.h, internalDepth - SHELF_SETBACK,
+    'cut like every other shelf (T79 F13: the project\'s 10)');
   // …and both start at the BACK, so what moved is the front edge.
   for (const pnl of [r.panels.find((p) => p.id === 'PARTITION'), railShelf]) {
     assert.equal(pnl.box.z, G);
@@ -178,7 +185,8 @@ test('a partition can be stretched out to the face on its own', () => {
 test('one shelf can be stretched to the face without moving the others', () => {
   const id = withShelves('BUD', 2);
   const depth = unitOf(id).params.depth;
-  const standard = depth - G - P.carcass.shelfDepthClearance;
+  // T79 F13: a shelf in a project stands the project's 10 back.
+  const standard = depth - G - SHELF_SETBACK;
   assert.ok(shelvesOf(id).every((p) => p.h === standard));
 
   store().setShelfFront(id, itemsOf(id)[0].id, 0);

@@ -152,14 +152,17 @@ test('F2 · SET BACK is two chips PLUS the field, in retail and in PRO', () => {
     const block = text.slice(at, text.indexOf("case 'setback-unit':", at));
     assert.match(block, /data-setback-chip=\{c\.id\}/, `${rel} has no chips`);
     assert.match(block, /<NumberField/, `${rel} lost the field beside them`);
-    // Both numbers are the profile's, never a literal in a component.
-    assert.match(block, /profile\.carcass\.shelfDepthClearance/, `${rel} typed the 20`);
+    // Both numbers are the profile's, never a literal in a component. T79 F13:
+    // the standard chip is the PROJECT's setback, *"wszystkie cofnięcia zmień z
+    // 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery,
+    // szuflady zostaw nie ruszaj."*
+    assert.match(block, /profile\.carcass\.shelfSetbackMm/, `${rel} typed the 10`);
     assert.match(block, /\{ id: 'flush', mm: 0, label: 'Flush' \}/, `${rel} lost FLUSH`);
     // Chips and field press the same setter, through the same group path.
     const presses = [...block.matchAll(/applyToSelection\(\(row\) => setElementDepth\(row\.unitId, row\.id, /g)];
     assert.equal(presses.length, 2, `${rel}: the chips and the field must press one setter`);
   }
-  assert.equal(Number(P.carcass.shelfDepthClearance), 20, "the owner's *\"back 20 mm\"*");
+  assert.equal(Number(P.carcass.shelfSetbackMm), 10, "T79 F13, the owner: *\"z 20 na 10 mm\"*");
 });
 
 test('F2 · `setback` leaves WORKSHOP_FIELDS for the shelf and the partition ONLY', () => {
@@ -184,18 +187,20 @@ test('F2 · the setback the chips write is the setback the engine cuts', () => {
   const item = S().units.find((u) => u.id === unitId).params.sections[0].items
     .find((i) => i.kind === 'shelf');
   const depthOf = () => shelfPanels(unitId)[0].w; // a shelf is cut w × depth…
-  const backOf = () => Number(shelfPanels(unitId)[0].meta?.front_mm ?? P.carcass.shelfDepthClearance);
+  const backOf = () => Number(shelfPanels(unitId)[0].meta?.front_mm ?? P.carcass.shelfSetbackMm);
 
-  assert.equal(backOf(), 20, 'a shelf with nothing said is cut at the LISP\'s own 20');
-  const at20 = shelfPanels(unitId)[0].h;
+  // T79 F13 · in a project a shelf with nothing said is cut at the project's 10:
+  // *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*.
+  assert.equal(backOf(), 10, 'a shelf with nothing said is cut at the project\'s 10');
+  const at10 = shelfPanels(unitId)[0].h;
 
   S().setElementDepth(unitId, item.id, 0);
   assert.equal(backOf(), 0, 'FLUSH did not reach the item');
-  assert.ok(shelfPanels(unitId)[0].h > at20, 'a flush shelf is no deeper than a set-back one');
+  assert.ok(shelfPanels(unitId)[0].h > at10, 'a flush shelf is no deeper than a set-back one');
 
-  S().setElementDepth(unitId, item.id, 20);
-  assert.equal(backOf(), 20);
-  assert.equal(shelfPanels(unitId)[0].h, at20, '20 mm did not put the board back');
+  S().setElementDepth(unitId, item.id, 10);
+  assert.equal(backOf(), 10);
+  assert.equal(shelfPanels(unitId)[0].h, at10, '10 mm did not put the board back');
   assert.ok(depthOf() > 0);
 });
 

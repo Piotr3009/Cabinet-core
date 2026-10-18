@@ -44,6 +44,18 @@ export function joineryLayers(profile, systemId = null) {
 }
 
 /**
+ * T79 F14 · Is this drawer box wall drawn LYING (x along its length, the
+ * wardrobe's drawing) rather than up its height (the BUDR's)? Read off the
+ * rectangle the engine drew, as the drawer side's frame is; a wall with no
+ * outline keeps the upright answer.
+ */
+function wallLies(panel) {
+  const drawnW = (panel.cnc?.outline || []).reduce((m, q) => Math.max(m, q[0]), 0);
+  if (!(drawnW > 0)) return false;
+  return Math.abs(drawnW - panel.box.w) < Math.abs(drawnW - panel.box.h);
+}
+
+/**
  * How a panel's CNC drawing sits in the cabinet: where its (0,0) is, and which
  * way its two axes run.
  *
@@ -115,6 +127,13 @@ export function panelPlacement(panel) {
         v: [0, 1, 0],
         n: [1, 0, 0],
       };
+    // T79 F9 · THE END PANEL IS DRAWN IN ITS SIDE'S FRAME (KIT_NOTCH.lsp D23):
+    // END-L as BUL (x from the front), END-R as BUR (x from the back), so the
+    // corner its side lost (`cnc.notch`) comes out of the scene's board by the
+    // same arithmetic. It carries no machining; with no placement the scene
+    // drew its box whatever its record said (verify/t79/f09-probe.md row 22).
+    case 'END-PANEL':
+      return panelPlacement({ ...panel, part: panel.meta?.side === 'right' ? 'BUR' : 'BUL' });
     case 'TOP':
       // ─── CHAT FIX 17.10.2026 (14:15): DRAWN FROM ITS UNDERSIDE ─────────────
       // The owner, of the nesting sheet: *"w 01 bottom i top nie powinno byc
@@ -224,6 +243,9 @@ export function panelPlacement(panel) {
         v: [0, 1, 0],
         n: [-1, 0, 0],
       };
+    // T79 F6 (18.10.2026, KIT_RECESS.lsp D17 amended): the recess's EXT-BACK is
+    // a back drilled with its dia 3 rows, drawn upright: the BACK's own frame.
+    case 'RECESS-BACK':
     case 'BACK':
       // ─── Turn 12 (CLAUDE.md F10): A BACK MAY BE DRAWN ROTATED ───
       //
@@ -411,20 +433,40 @@ export function panelPlacement(panel) {
     // The box front and back, also drawn rotated (`drawn_w` is the box height).
     // The front carries two ⌀3 screws at 50 mm in from its own bottom corner
     // on each side, which is what fixes the frame: x up, y across.
+    // ─── T79 F14 · AND THE WARDROBE'S, DRAWN LYING ─────────────────────────
+    // The wardrobe's walls are drawn `length × height` (x along, y up), the
+    // side's own lesson above; they carried nothing, so nothing showed it.
+    // With Cabineo pockets on them (SKYLON_JOINTS_CABINEO.lsp D.2c) the frame
+    // is read off the rectangle the engine drew, as the side's is: the same
+    // face (n), the same handedness (u x v = -n), turned a quarter.
     case 'DRAWER-BOX-FRONT':
-      return {
-        origin: [box.x, box.y, box.z + box.d],
-        u: [0, 1, 0],
-        v: [1, 0, 0],
-        n: [0, 0, 1],
-      };
+      return !wallLies(panel)
+        ? {
+          origin: [box.x, box.y, box.z + box.d],
+          u: [0, 1, 0],
+          v: [1, 0, 0],
+          n: [0, 0, 1],
+        }
+        : {
+          origin: [box.x + box.w, box.y, box.z + box.d],
+          u: [-1, 0, 0],
+          v: [0, 1, 0],
+          n: [0, 0, 1],
+        };
     case 'DRAWER-BOX-BACK':
-      return {
-        origin: [box.x + box.w, box.y, box.z],
-        u: [0, 1, 0],
-        v: [-1, 0, 0],
-        n: [0, 0, -1],
-      };
+      return !wallLies(panel)
+        ? {
+          origin: [box.x + box.w, box.y, box.z],
+          u: [0, 1, 0],
+          v: [-1, 0, 0],
+          n: [0, 0, -1],
+        }
+        : {
+          origin: [box.x, box.y, box.z],
+          u: [1, 0, 0],
+          v: [0, 1, 0],
+          n: [0, 0, -1],
+        };
 
     // The drawer bottom is a plain horizontal board, drawn upright: x across
     // the box, y along its depth. Its four screws go down through it into the

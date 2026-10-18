@@ -193,6 +193,11 @@ export const MODAL_KINDS = Object.freeze({
   // window, about ONE lit corner of one carcass and opened at the click on
   // it: an OBJECT window, held to an anchor.
   notch: { about: 'object', label: 'Cut corner' },
+  // ─── T79 F5 ────────────────────────────────────────────────────────────
+  // *"możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*: the CUT EDGE
+  // window, about ONE lit horizontal edge of one carcass and opened at the
+  // click on it: an OBJECT window, held to an anchor, as the corner's is.
+  'edge-notch': { about: 'object', label: 'Cut edge' },
 });
 
 /** Every modal name the app knows, as a list. */

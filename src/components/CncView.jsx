@@ -561,8 +561,9 @@ export default function CncView() {
         <button type="button" className="cc-btn-ghost" title="Fit the whole sheet" onClick={sheetView.fit}>Fit</button>
       </div>
 
-      {/* layer legend — click a row to hide that layer */}
-      <div className="absolute bottom-3 left-3 bg-shell-800/95 border border-shell-600 rounded p-2 max-w-[230px]">
+      {/* layer legend: click a row to hide that layer. T79 F1: it stands on
+          the Changes bar (components/Messages.jsx) instead of under it. */}
+      <div className="absolute bottom-11 left-3 bg-shell-800/95 border border-shell-600 rounded p-2 max-w-[230px]">
         <div className="text-[11px] uppercase tracking-wide text-ink-400 mb-1.5">Layers</div>
         <ul className="space-y-0.5">
           {legend.map((l) => (

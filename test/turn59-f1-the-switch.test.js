@@ -137,7 +137,10 @@ const EXEMPT = {
     + ' T78 F19 / F20 · the Construction section\'s Joints row offers the owner\'s four systems, Cabineo in its two variants (Puzzle, Dowel, Biscuit, Cabineo 8, Cabineo 12), each disabled only by its kit refusal, the status read off the engine\'s own derived.joints (biscuit sets and screws, Cabineo pockets from the outside face and the gate); the company row chooses the default, this row is the unit\'s override, the reserved id of T75 stays a refusal in words, not one number typed. *"trzeba zrobic wybor laczenia i mamy 4: puzzle, dowels, Cabineo, ciastka"*; Cabineo *"8 AND 12, chosen in the company\'s default settings."*'
     + ' T78 F17 · the Hob select on a hob unit (T75 F14\'s flag or the oven base): induction (the default, unwritten) or gas, written as hob_kind through updateUnitParams; the hood\'s clearance Check (#34) and the store\'s one-click proposal read it, the numbers stay in profile.hood.clearance. *"zeby bylo 650 do 750 minimum nad blatem, nad hobem"*; *"pozostaw to dla klienta, tylko proponuj."*'
     + ' T78 F18 · the Doors section\'s "Front opens" select on a wall unit that takes a lift (WUD, WUD_GLASS, WARDROBE_WALL): hinged (the default, no key) | HK top (lift up) | HS (up and over) | HL (lift parallel) | HF (bi-fold up), written as front_system through updateUnitParams, and under it the engine\'s own sentence of the set, the arm, the power unit and the zero holes; no number typed. *"szafki poziome otwierane do gory system blum ... podwojne drzwi pojedyncze etc."*'
-    + ' CHAT FIX 15.10.2026 · the Doors section\'s Leaves row: 1 or 2 by choice, the same setDoors({ count }) pin retail\'s HOW MANY writes, each chip disabled in the one law\'s words (engine/cabinet.js leafCountRefusal: a pair under doors.minLeafWidth; a chosen single wide leaf stays the 15.08 decision); not on kits whose count is their identity nor on bay doors. *"jak mamy male drzwi, ale wciaz chce zrobic 2, to zebym mial mozliwosc podzielenia ich na 2."*',
+    + ' CHAT FIX 15.10.2026 · the Doors section\'s Leaves row: 1 or 2 by choice, the same setDoors({ count }) pin retail\'s HOW MANY writes, each chip disabled in the one law\'s words (engine/cabinet.js leafCountRefusal: a pair under doors.minLeafWidth; a chosen single wide leaf stays the 15.08 decision); not on kits whose count is their identity nor on bay doors. *"jak mamy male drzwi, ale wciaz chce zrobic 2, to zebym mial mozliwosc podzielenia ich na 2."*'
+    + ' T79 F4 . the CUT CORNER window\'s HEIGHT takes a negative number (a notch from the top, KIT_NOTCH.lsp D21) and shows it as itself, 0 still reads full; the help line reads "WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500)." (data-testid notch-help); the cut is the store\'s one action as before. *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry? i mała informacja o tym."*'
+    + ' T79 F5 . the CUT CORNER row gains a second button, CUT EDGE (data-testid cut-edge): it lights the four horizontal side edges in the scene (`3d/NotchEdges.jsx`, `uiStore.edgeNotchPick`), a click on one opens EdgeNotchWindow at the click with EDGE (TB, BB, TF, BF), DEPTH and HEIGHT (the profile\'s `notch.edgeDefaults`), the help line "A rebate along the whole edge: skirting at the bottom-back, coving at the top-back." (data-testid edge-notch-help); Enter cuts through the store\'s one action `setUnitEdgeNotch` and a refusal shows in the engine\'s words (KIT_NOTCH.lsp D22); REMOVE takes it off. No retail copy (retail\'s SIZE step carries its own button). *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*'
+    + ' T79 F13 . the shelf row\'s face button and the drawer cap\'s Partition front edge name the project\'s numbers (carcass.shelfSetbackMm 10, wardrobe.drawers.capSetbackMm 20), no longer the deleted interiorSetback nor the LISP\'s 20; its two tooltips lose their dashes. *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -152,7 +155,8 @@ const EXEMPT = {
     + ' T77 F7 · a ready Ornate leaf on the front face says "Proposed relief reference" in the colour of its reference contours, apart from the red blocked label (since F4 a relief that built is not a fault). *"The relief is a PROPOSAL and stays one ... The slab is cut; the relief ships as CAD/CAM reference files with the state `geometry`, never as approved machining, until the owner says otherwise."*'
     + ' Chat fix 17.10.2026 \u00b7 every part\'s caption carries its project number and wears its cabinet\'s colour, from the same plan the downloads use. *"ponumerujemy wszystkie elementy ... kolory napisow pod kolory szafki ... ok koduj"*'
     + ' 14:10 \u00b7 the EDGE arrow and the line along the banded edge on every numbered board, the one geometry the DXF writes (edgeArrowGeometry). *"na projekcie nie ma strzalek ktora strone oklejamy, jak mam przykleic naklejki? ... 1 - tak ... prosze - koduj"*'
-    + ' 16:10 \u00b7 a mark is drawn as the open walk it is (markPoints): the corner mark one L through the corner. *"jeden L wektor ... obok linii"*',
+    + ' 16:10 \u00b7 a mark is drawn as the open walk it is (markPoints): the corner mark one L through the corner. *"jeden L wektor ... obok linii"*'
+    + ' T79 F1 . the layer legend stands on the Changes bar (bottom-11, was bottom-3) so the bar of the one bottom-left message column never covers it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej ... powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*',
   'src/components/FrontDecorationControls.jsx': 'ORNATE, Piotr 10.10.2026: rozpisz zakoduj dokaldnei prosze i ja roto dam do clauda, ale daj gotowy kod wlacznei z leyersami prosze do cnc. Adds proposed relief note and mirror choice; no new numeric fields. ' + 'DECOR F1: editable, versioned decorative machining defaults shared with Retail. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T76 F4 · the Arch rise field goes with the ellipse it set; the defaults the controls show are the profile\'s. *"SEMICIRCULAR arch (rise = half the inner width; ... never squashed to an ellipse)"*'
     + ' T76 F6 · one prop, `fields` (PRO passes nothing and keeps every field); retail passes false and shows no number of a recipe. *"a client picks a style and gets the owner\'s recipe with NO numeric fields (lazy client law; the recipe controls are PRO\'s)"*'
@@ -196,7 +200,10 @@ const EXEMPT = {
     + 'CENTER ALL at the bottom of the shelf menu; F6 · the board picker carries '
     + '`data-board-thickness` so the room\'s sheet can name what it hides instead of taking '
     + 'every `<select>` in the dock; F12 · the divider reaches the same setback row. *"nie '
-    + 'choose, tylko te 2 opcje."*',
+    + 'choose, tylko te 2 opcje."*'
+    + ' T79 F12 · Center between beside Center all, the same width: one click arms the shared uiStore\'s two-pick mode, the panel says which pick is next, Escape cancels. *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie półki pomiędzy tymi elementami się centrują."*'
+    + ' T79 F13 . SET BACK\'s standard chip is the project\'s setback, carcass.shelfSetbackMm for a shelf and carcass.dividerSetbackMm for a divider (10), no longer the LISP\'s 20; Flush and the field unchanged. *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*'
+    + ' T79 F16 · the shelf\'s Type field gains a `Restore sleeve rows` button (data-restore-sleeve-rows), shown only when the shelf carries `sleeves_dropped`, calling the store\'s `restoreSleeveRows`. *"przycisk Restore sleeve rows"*, accepted by the owner 14:55: *"ok daj"*',
   // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
   // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
   // client cannot reach. Three of his fourteen points are answered in PRO's own
@@ -241,7 +248,9 @@ const EXEMPT = {
     + 'same set with the same worktops and render. *"weź zakoduj"*.'
     + ' T77 F3 · Output > CNC / DXF writes the Ornate reference files at the level the CNC panel chose. *"The CNC export offers two levels in the existing export options (no new numeric field): `Reference (default)` at `sampleMm` and `Full resolution` at `fullSampleMm`; the manifest records which one was written."*'
     + ' T78 F21 · the Spraying page is mounted beside the other output windows (the modal layer\'s spraying entry). *"cale sprayowanie jako osobne menu Cabinet Core."*'
-    + ' Chat fix 17.10.2026 \u00b7 onExportLabels writes the sticker sheets (lib/labelsPdf.js) from the project\'s part number plan; the Output menu\'s DXF ZIP takes the cabinet\'s labels slice. *"naklejki 44 na A4 ... ponumerujemy wszystkie elementy ... ok koduj"*',
+    + ' Chat fix 17.10.2026 \u00b7 onExportLabels writes the sticker sheets (lib/labelsPdf.js) from the project\'s part number plan; the Output menu\'s DXF ZIP takes the cabinet\'s labels slice. *"naklejki 44 na A4 ... ponumerujemy wszystkie elementy ... ok koduj"*'
+    + ' T79 F1 . the messages and the front-gap rows stand in ONE bottom-left column (components/Messages.jsx, the rows as its top slot through a wrapper, FrontGapWarnings.jsx untouched); the lone Messages mount after the context menu is gone. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
+    + ' T79 F18 · onExportLabels takes { sheet } from the two Output entries (21 per sheet, Avery L7160; 44 per sheet) and hands that preset of profile.labels.sheets to exportLabelsPdf; the default stays L7160. *"przełącznik 21/44 naklejek w oknie eksportu"* (the handover), the owner 14:55: *"ok daj"*',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -261,7 +270,10 @@ const EXEMPT = {
     + 'T67 F9 · the label "Watch drawer" becomes "Accessories drawer" on the row, the '
     + 'button and the two notices. *"zmień w PRO też tę nazwę."*'
     + ' T78 F9 · a Carousel row on the L only: one click fits or takes out the bought mechanism through the store\'s `setCornerKit` (one BOM line, a placeholder body, zero holes; a fixed shelf in its way is refused in words). *"krecacy sie naroznik na garnki w srodku."*'
-    + ' T78 F11 · a Blind corner pull-out row on the blind kits only (Hafele), through the same setCornerKit: one BOM line, a placeholder body behind the blank, zero holes; a fixed shelf in its way is refused in words. *"hafele naroznik slepy czyli wysuwane."*',
+    + ' T78 F11 · a Blind corner pull-out row on the blind kits only (Hafele), through the same setCornerKit: one BOM line, a placeholder body behind the blank, zero holes; a fixed shelf in its way is refused in words. *"hafele naroznik slepy czyli wysuwane."*'
+    + ' T79 F2 . the shelves\' WHICH SIDE gains a third button, Above divider, shown only while the divider ends under a FIX shelf below the top; hovering lights the full-width opening over it and Add centres full-width shelves there; an opening that goes away while picked asks for a bay again, never a mute Add. *"jak dodamy fix półkę i divider pod spodem to nie mam możliwości dodania całkowitej półki powyżej bo kod dzieli mi całą szafę na bay 1 i 2, a nie mam czegoś takiego że jest bay nie dzielony powyżej."* Mockup approved 14:45: *"1 - tak."*'
+    + ' T79 F3 · the internal drawers block asks COLUMNS 1 or 2 beside the count while the unit is undivided; 2 adds one divider mid-width, a stack in each column and one fixed shelf over both in one undo; a divided unit keeps "Which column". *"jak ustawiamy sobie teraz 3 szuflady internal to niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."*; mockup approved: *"2 - tak."*'
+    + ' T79 F11 . the With a shelf / Rail alone toggle, its state and the assembly hint are deleted (kasacja); Add hanger rail adds the rod alone and says the drag proposes its place under a shelf. *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to; przy przesuwaniu zaproponuj 50 mm poniżej półki."*',
   // ─── RENEWED BY TURN 72 · THE SAME FILE, A THIRD LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission, so tonight's
   // edit is argued again with tonight's quote and tonight's hash. The map does
@@ -281,6 +293,15 @@ const EXEMPT = {
   // NEW PRO surface, licensed the night it is born and frozen at its hash.
   'src/components/SprayingPanel.jsx':
     'T78 F21 · Output > Spraying, one page on the Production Core pattern (mockup v2 of 11.10): the SPRAYING INFORMATION card, PART A ELEMENTS by colour, PART B CARDS open, PART C PAINT, Export PDF; every number the engine\'s (engine/spray.js off profile.spray), a typed note per line printed. *"cale sprayowanie jako osobne menu Cabinet Core"*; *"edges in m2 for the paint and in lm beside it; waste 10 percent."*',
+  // CLAUDE.md T79 F1, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
+  // with the owner's words from this file and re-frozen at its final hash in
+  // the same commit."*
+  'src/components/Messages.jsx':
+    'T79 F1 . all three levels stand in ONE bottom-left column (the centre and the bottom-centre blocks deleted), the newest nearest the Changes bar under them; the bar opens the list of the last profile.ui.messages.historyMax messages (newest first, HH:MM, the level\'s dot, the text, Clear), collapsed by default, Escape collapses it, never saved; a folded yellow or grey says its count once (its text), a red beside it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*',
+  // CLAUDE.md T79 F12: the shelf menu's Center between stands in this window
+  // too, so a click in its own canvas must be able to be the pick.
+  'src/components/CabinetEditorModal.jsx':
+    'T79 F12 · Center between armed from the shelf menu in this window: a click on a shelf, the drawer cap, the bottom or the top in its canvas is handed to the uiStore\'s selectElement as a pick (as the room hands it), any other click ends the mode, and Escape ends the picking while the piece stays in hand. *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie półki pomiędzy tymi elementami się centrują."*',
 };
 
 /**
@@ -297,20 +318,24 @@ const FROZEN = {
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
   // T78 F11 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/AddItems.jsx': '9b041a2a65b2da27d66e9d1880683f31355b69c3aac023eb07ccda9201f3763f',
+  // T79 F2, F3 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T79 F11 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/AddItems.jsx': 'ce9ced6e4ec2542a0bee8d1e5612c611ad208bc6ebcf309943b96dd0690d7161',
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/AssignMaterialsModal.jsx': '1f9d71d9af9b57ba7e8f77b38c99fda7368a657a3289b69be87ac166337cc82e',
   'src/components/AuthModal.jsx': 'b51d7a14910e89553528fe2e36f787502e4b4a77b6c408ebb24323510c164ddc',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/BomPanel.jsx': 'ee8cf839b68c547c36a3f76de1edb89a5d44becddc4e04744c9f3242ca0af074',
-  'src/components/CabinetEditorModal.jsx': '3d21bba5af9dc42fecbb620b6594b5a4be79be2e9ce5446cf4b53dc4b09b3ca4',
+  // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CabinetEditorModal.jsx': '2dcdc4452665fffbfe991235c0a2e2cf4af1d0ede439a0adce0df81339da3b4e',
   'src/components/CanvasToolbar.jsx': 'ee85f7f7d4b3a64021f56cbea5fe36ff504136ace340216fdef71fcb316e2bd9',
   'src/components/CheckPanel.jsx': '65a991cbc4aed29b3c9a49ed613e715dd3d033106f8e5e9ded45e8125a8dc014',
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
   // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
   'src/components/CncTree.jsx': '68aa1ffd5f8c07525c34b7b242c3adc387bc70157a38ae5bd07d0f257691d8e0',
-  'src/components/CncView.jsx': '8ca82fda8cd30f14060e0392953b97599dbcc1c373a71f91227e28585a2b4bfd',
+  // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CncView.jsx': '519b7e96ca356180dd91830dd8fb3aacc26b4c6e76f53c4888d5ac01ae454fec',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
   // T78 F19 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/CompanyDefaultsModal.jsx': 'e365305d290ab32057544e05f83b068f1ef9414642fe00f429cfbedb84dbc917',
@@ -325,7 +350,10 @@ const FROZEN = {
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/ElementProperties.jsx': '12cbeb62e1dc609f8b1a6013e891ec8abea4a2302bae5fed0094371afe68cee3',
+  // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T79 F16 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/ElementProperties.jsx': '8e4639fd5eacf027cd8fe76dcc577720d5853a8970c21e9d3106aaa909a0d9f5',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',
@@ -339,7 +367,8 @@ const FROZEN = {
   'src/components/MaterialChoicePanel.jsx': '16d2ed3171b4756141f21f693123c46bd6b33f772cad58013b2a45ec9a8fcb71',
   'src/components/MaterialPicker.jsx': 'd2b1d49bb1ef08d55652437986d4d40a2cac7c1683b42d16b0523b0e08fca5b7',
   'src/components/MenuBar.jsx': '8259c2d7b81f5f176c8c20d6faf98d6c2943667e2dd6354154a85748da1c4581',
-  'src/components/Messages.jsx': 'fda203e902e53f4bd5ec26d27cd92229cb2967205239973b02616656e67cf55e',
+  // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/Messages.jsx': 'f01a71b01c20512a52e5442e01082fac769b1be2a66869f5955150ef654c672f',
   'src/components/MockModeBadge.jsx': '081294a78610a7fd3baef730ca7a318d8d193e40ef66c5d278e45f9672c82826',
   'src/components/Modal.jsx': '4bee3abfa7d391916931428869da887ea6e56c002ee1980b596413de5fc7ddbe',
   'src/components/MultiUnitPanel.jsx': 'ad7d770b51042f0c2e8d9633df4067c5a7d8d4af6e358fad2e90cf62e631531c',
@@ -349,7 +378,10 @@ const FROZEN = {
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
   // T78 PART E, after the walk re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RightPanel.jsx': 'edf30257599533056599d0f8cf429ee2a05ce888acbccdb04013466ee6a79e82',
+  // T79 F4 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T79 F5 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/RightPanel.jsx': '1b7da5a6d5e10b09f5b5f1990e7ef7eb55abcfe77c21282bc4ab396c9dab2968',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
   'src/components/RoomModal.jsx': '04bc0d7b944cac119f44aa1c562ef0a635f6e86ecee9b6ea26784e075b69d2a1',
@@ -382,7 +414,9 @@ const FROZEN = {
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '247f5fa9bc9d5ae3f61f8f32e2825793028d2b1fae9f19dcbbcdbd5d475dc609',
+  // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T79 F18 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': '2428d870109acd46ff4051b6a6b2c585f6f0c8dfc015555f5350cb1fd395466f',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -566,6 +600,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/AddItems.jsx',
     'src/components/AssignMaterialsModal.jsx',
     'src/components/BomPanel.jsx',
+    // T79 F12 · *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element"*: a click in the editor's canvas is the pick.
+    'src/components/CabinetEditorModal.jsx',
     // T75 F22 · *"the CNC export carries a banner counting the lines that are not 'cut'"*.
     'src/components/CncTree.jsx',
     'src/components/CncView.jsx',
@@ -579,6 +615,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/JpullRunModal.jsx',
     // T75 F15 · *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet"*.
     'src/components/LibraryPanel.jsx',
+    // T79 F1 · *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej"*: one bottom-left column and the Changes list.
+    'src/components/Messages.jsx',
     'src/components/PartDetailModal.jsx',
     'src/components/RightPanel.jsx',
     'src/components/RoomModal.jsx',

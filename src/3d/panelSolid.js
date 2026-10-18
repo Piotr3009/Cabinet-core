@@ -8,6 +8,8 @@ import { panelPlacement } from '../engine/joinery.js';
 // T75 F7 · the corner notch: the engine states which corner a board lost, and
 // the solid is cut by the same arithmetic (`engine/notch.js cutNotchCorner`).
 import { cutNotchCorner } from '../engine/notch.js';
+// T79 F8 · ...and its cache key names the whole chain (a notched side grown into a recess).
+import { notchCornerKey } from '../engine/notch.js';
 // 15.10.2026 · the recess extension (KIT_RECESS.lsp): a BACK may lose a BITE
 // from one edge (the window reaching it), cut by the same arithmetic.
 import { cutEdgeBite } from '../engine/extension.js';
@@ -319,7 +321,8 @@ export function panelSolids(panel, layers, profile, drills = []) {
     // Two leaves that differ only in where their J runs are two boards.
     jpullKey(jpull),
     // Two boards that differ only in the corner a notch took are two boards.
-    notch ? `notch:${notch.fc}:${notch.nw}:${notch.nh}${notch.also ? `+${notch.also.fc}:${notch.also.nw}:${notch.also.nh}` : ''}` : '',
+    // T79 F8: the whole `also` chain and a grown side's corner frame (engine/notch.js notchCornerKey).
+    notch ? `notch:${notchCornerKey(notch)}` : '',
     bite ? `bite:${bite.x0}:${bite.y0}:${bite.x1}:${bite.y1}` : '',
     recessKey(recesses),
   ].join('|');

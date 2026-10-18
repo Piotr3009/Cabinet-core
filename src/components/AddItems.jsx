@@ -58,6 +58,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const railHeightsAboveFloor = useProjectStore((s) => s.railHeightsAboveFloor);
   const unitResult = useProjectStore((s) => s.unitResult);
   const zonesOf = useProjectStore((s) => s.zonesOf);
+  // T79 F2 · the undivided opening over the divider's FIX shelf, or null.
+  const aboveDividerOf = useProjectStore((s) => s.aboveDividerOf);
 
   const type = getUnitType(unit.type);
   // T58-F4: is there a live rake over this cabinet? One reading, the store's.
@@ -66,6 +68,10 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const rail = hangerOf(items);
   const hardware = materials.filter((m) => m.category === 'hardware');
   const zones = useMemo(() => zonesOf(unit.id), [zonesOf, unit.id, items]);
+  const above = useMemo(
+    () => aboveDividerOf(unit.id),
+    [aboveDividerOf, unit.id, items, unit.params.width, unit.params.height],
+  );
 
   const DR = profile.wardrobe.drawers;
   const existingDrawers = items.filter((i) => i.kind === 'drawer').length;
@@ -85,6 +91,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // COLUMN, when the cabinet is divided — same grammar as the shelves.
   const [drawerMount, setDrawerMount] = useState('overlay');
   const [drawerZone, setDrawerZone] = useState(null);
+  // T79 F3 · 1 or 2 columns, asked like the bays while the unit is undivided.
+  const [drawerColumns, setDrawerColumns] = useState(1);
   // T54-F7: the shoe drawer's ONE decision — which bay. The height is the
   // law (side 80, front by the drawer-front law) and offers no field.
   const [shoeBoxZone, setShoeBoxZone] = useState(null);
@@ -92,10 +100,6 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // the box is cut unchanged. null = the plain drawer, as ever.
   const [drawerVariant, setDrawerVariant] = useState(null);
   const [railZone, setRailZone] = useState(null);
-  // TURN 40 (CLAUDE.md F6): with a shelf, or on its own. The DEFAULT is the
-  // assembly — that was the owner's own verdict in T37 and nothing here
-  // overturns it; this is the alternative he asked for on 18.08.
-  const [railWithShelf, setRailWithShelf] = useState(true);
   const [shelfCount, setShelfCount] = useState(1);
   const [shelfZone, setShelfZone] = useState(null);
   // Turn 33 (F3): which column a bought mechanism goes in.
@@ -132,9 +136,17 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     done();
   };
 
+  // ─── T79 F3 · 1 OR 2 COLUMNS ─────────────────────────────────────────────
+  // The owner, 18.10.2026 (14:17): *"jak ustawiamy sobie teraz 3 szuflady
+  // internal to niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."*;
+  // mockup, 14:45: *"2 - tak."* Asked only while the unit is undivided and can
+  // take a divider; once divided, "Which column" is the question, as before.
+  const askColumns = zones.length <= 1 && type.supports.partition && type.drawerStyle === 'wardrobe';
+
   const onAddDrawers = (count, height) => {
     const before = items.filter((i) => i.kind === 'drawer').length;
     const zone = zones.length > 1 ? drawerZone : null;
+    const columns = askColumns ? drawerColumns : 1;
     // ─── CHAT FIX 15.08.2026: THE CLICK LISTENS ─────────────────────────────
     // This handler used to congratulate BLIND — the store refused (turn 24's
     // gate) and the toast said "added". The gate is open now, but a handler
@@ -144,7 +156,7 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     // The recessed-partition law refuses with the number and ONE button:
     // [Reset the setback], which opens the partition's own editor
     // (F7-pattern). The guard SPEAKS; it fixes nothing by itself.
-    const res = addDrawers(unit.id, count, drawerMount, height, zone, drawerVariant);
+    const res = addDrawers(unit.id, count, drawerMount, height, zone, drawerVariant, { columns });
     if (res && res.ok === false) {
       if (res.guard?.blocked) {
         notify(res.error, 'error', {
@@ -163,7 +175,11 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     // Honest about what the number means: drawers that were already there KEEP
     // the height they were given, so this cannot claim the whole stack is now
     // `height` mm.
-    notify(before
+    // T79 F3 · two columns say what came with them.
+    if (columns === 2) {
+      notify(`${count} × ${height} mm drawer${count === 1 ? '' : 's'} in each of 2 columns: a divider mid-width `
+        + 'and one fixed shelf over both.', 'ok');
+    } else notify(before
       ? `Stack is ${count} drawer${count === 1 ? '' : 's'} — new ones at ${height} mm, the existing heights kept.`
       : `${count} × ${height} mm drawer${count === 1 ? '' : 's'} added — the partition above them is automatic.`, 'ok');
     // BACKLOG #13: internal drawers live behind the doors, so the doors get out
@@ -174,7 +190,9 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   };
 
   const onAddShelves = (count) => {
-    const { added, requested } = addShelves(unit.id, count, zones.length > 1 ? shelfZone : null);
+    const { added, requested, refused } = addShelves(unit.id, count, zones.length > 1 ? shelfZone : null);
+    // T79 F2 · a refusal has already been said, in its own words, by the store.
+    if (refused) { done(); return; }
     if (added === 0) notify('Not enough clear height for another shelf.', 'warn');
     else if (added < requested) notify(`Room for ${added} of ${requested} shelves — the rest would not fit.`, 'warn');
     done();
@@ -192,8 +210,6 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       materialId: material?.id || null,
       materialLabel: material?.name || null,
       zone,
-      // TURN 40 (F6): the choice the joiner just made, and the default is T37's.
-      withShelf: railWithShelf,
     });
     if (!id) {
       notify(zones.length > 1
@@ -201,15 +217,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
         : 'This unit already has a hanging rail.', 'warn');
       return;
     }
-    // TURN 40 (F6): say which of the two was made, because the difference is
-    // a board — and a joiner who gets a shelf he did not ask for, or does not
-    // get one he did, has been surprised by his own tool.
-    notify(railWithShelf
-      ? 'Rail added WITH a fix shelf — drag the shelf and the rod rides with it.'
-      // T42-F1: the sentence used to promise "its own partitioner above it",
-      // which is the board the owner had already refused twice by the time it
-      // was written — and the engine really did cut it. There is no board now.
-      : 'Rail added ON ITS OWN — no shelf and no board above it. Drag it, or type its height.', 'ok');
+    // T79 F11: the rail is added alone, and the drag proposes its place under a shelf.
+    notify(`Rail added. Drag it near a shelf and it settles ${formatMm(profile.hardware.hanger.belowShelfMm, { unit: true })} under it; Alt refuses.`, 'ok');
     // ─── TURN 33 (CLAUDE.md F3): THE PULL-DOWN SUGGESTION ───────────────────
     // The owner's rule: a rail above 2000 mm FROM THE FLOOR gets a grey HINT
     // suggesting the pull-down — never a block. Measured off the computed
@@ -524,7 +533,7 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                       )}
                     </div>
                   )}
-                  <div className="flex items-end gap-2">
+                  <div className="flex flex-wrap items-end gap-2">
                     <div className="w-16">
                       <span className="cc-label">Count</span>
                       <NumberField min={1} max={DR.maxCount} value={drawerCount} onCommit={setDrawerCount} />
@@ -536,6 +545,26 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                         value={drawerHeight} onCommit={setDrawerHeight}
                       />
                     </div>
+                    {/* T79 F3 · COLUMNS, beside the count: 1 or 2, like the bays. */}
+                    {askColumns && (
+                      <div>
+                        <span className="cc-label">Columns</span>
+                        <div className="flex gap-1">
+                          {[1, 2].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              data-drawer-columns={n}
+                              aria-pressed={drawerColumns === n}
+                              className={`cc-btn px-2 ${drawerColumns === n ? 'border-gold text-gold' : ''}`}
+                              onClick={() => setDrawerColumns(n)}
+                            >
+                              {n}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <button
                       type="button"
                       className="cc-btn-gold"
@@ -545,6 +574,11 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                       Add
                     </button>
                   </div>
+                  {askColumns && (
+                    <p data-drawer-columns-hint className={`text-[11px] ${drawerColumns === 2 ? 'text-gold' : 'text-ink-400'}`}>
+                      2 columns: a divider mid-width, a stack in each column, one fixed shelf over both.
+                    </p>
+                  )}
                   {/* ─── TURN 32 (CLAUDE.md F4): OVERLAY OR INTERNAL ───
                       The mechanism T30 F20 built for the pantry, wired to the
                       question at last: an INTERNAL drawer is given no face and
@@ -786,10 +820,33 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                             Bay {z.index + 1} · {formatMm(z.size)}
                           </button>
                         ))}
+                        {/* T79 F2 · THE THIRD BUTTON. The owner: *"jak dodamy fix
+                            półkę i divider pod spodem to nie mam możliwości dodania
+                            całkowitej półki powyżej"*; mockup approved 14:45, *"1 -
+                            tak."* Shown only while the divider ends below the top. */}
+                        {above && (
+                          <button
+                            type="button"
+                            data-above-divider="1"
+                            className={`cc-btn px-2 ${shelfZone === 'above' ? 'border-gold text-gold' : ''}`}
+                            title={`${formatMm(above.width)} mm clear, ${formatMm(above.height)} mm high over the divider`}
+                            onPointerEnter={() => onZoneHover?.('above')}
+                            onPointerLeave={() => onZoneHover?.(shelfZone)}
+                            onClick={() => { setShelfZone('above'); onZoneHover?.('above'); }}
+                          >
+                            Above divider · {formatMm(above.width)}
+                          </button>
+                        )}
                       </div>
-                      {shelfZone == null && (
+                      {/* T79 F2 · an opening that went away while picked asks again, never a mute Add. */}
+                      {(shelfZone == null || (shelfZone === 'above' && !above)) && (
                         <p className="text-[11px] text-gold">
                           This cabinet is divided — pick the bay the shelf goes in.
+                        </p>
+                      )}
+                      {shelfZone === 'above' && above && (
+                        <p className="text-[11px] text-ink-400" data-above-divider-hint="1">
+                          Full width, centred in the opening above the fixed shelf that carries the divider.
                         </p>
                       )}
                     </div>
@@ -802,7 +859,7 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                     <button
                       type="button"
                       className="cc-btn-gold"
-                      disabled={zones.length > 1 && shelfZone == null}
+                      disabled={zones.length > 1 && (shelfZone == null || (shelfZone === 'above' && !above))}
                       onClick={() => onAddShelves(shelfCount)}
                     >
                       Add
@@ -865,54 +922,12 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                       <option value="" disabled>— Connect JoineryCore for live stock (soon) —</option>
                     </select>
                   </div>
-                  {/* ─── TURN 40 (CLAUDE.md F6): THE CHOICE ────────────────
-                      *"następnie dodawanie drążka raz i z półką proszę —
-                      wybór w drążek modal, to ważne."* Two buttons, the
-                      assembly pre-selected, so the joiner who wants what T37
-                      gave him presses Add and gets it. */}
-                  <div className="flex gap-1" data-rail-mode={railWithShelf ? 'with-shelf' : 'alone'}>
-                    <button
-                      type="button"
-                      data-rail-with-shelf="1"
-                      aria-pressed={railWithShelf}
-                      className={`cc-btn flex-1 ${railWithShelf ? 'border-gold text-gold' : ''}`}
-                      title="A FIX shelf with the rod hung under it — drag the shelf and the rod rides with it"
-                      onClick={() => setRailWithShelf(true)}
-                    >
-                      With a shelf
-                    </button>
-                    <button
-                      type="button"
-                      data-rail-alone="1"
-                      aria-pressed={!railWithShelf}
-                      className={`cc-btn flex-1 ${railWithShelf ? '' : 'border-gold text-gold'}`}
-                      title="The rod on its own, with its own partitioner above it — the way this app hung one before T37"
-                      onClick={() => setRailWithShelf(false)}
-                    >
-                      Rail alone
-                    </button>
-                  </div>
                   <button
                     type="button" className="cc-btn-gold w-full"
                     onClick={() => onAddRail(hardware.find((m) => m.id === railMaterial) || null)}
                   >
                     Add hanger rail
                   </button>
-                  {/* ─── TURN 37 (CLAUDE.md F2) ────────────────────────────
-                      *"Zrób półkę nad drążkiem — półka, a drążek dołącz do
-                      półki i tyle."* The button makes an ASSEMBLY now, and the
-                      copy says so, because a joiner who presses it and gets a
-                      shelf he did not ask for has been surprised by his own
-                      tool. The rod still lands where it always landed. */}
-                  <p className="text-[11px] text-ink-400" data-rail-assembly-hint="1">
-                    {railWithShelf
-                      ? 'Adds a FIX SHELF with the rail hung under it. The shelf is an ordinary shelf — drag it '
-                        + 'and the rod rides with it. Hung as high as it can go under the lowest shelf, above the '
-                        + 'drawer partition. The rail you pick is the line that appears in the BOM hardware.'
-                      : 'Adds the ROD ON ITS OWN, with its own partitioner above it — the way this app hung one '
-                        + 'before the shelf assembly. Its height is a number you type, measured from the nearest '
-                        + 'thing below it. The rail you pick is the line that appears in the BOM hardware.'}
-                  </p>
                 </>
               )}
 

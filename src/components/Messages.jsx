@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
-import { messagesAt } from '../engine/messages.js';
+import { historyTime, messagesAt } from '../engine/messages.js';
 
 // ─── THE THREE LEVELS, ON THE SCREEN (turn 31, CLAUDE.md F2) ────────────────
 //
@@ -22,9 +22,19 @@ import { messagesAt } from '../engine/messages.js';
 //   YELLOW  not a button. "Dismissed by clicking anywhere else" is a window
 //           listener, below, and a yellow that could also be clicked directly
 //           would be a yellow a mis-aimed click clears.
-//   GREY    centre of the screen, on its own clock, and it never takes the
-//           pointer: a confirmation that a file was written must not be able
-//           to swallow the click that follows it.
+//   GREY    on its own clock, and it never takes the pointer: a confirmation
+//           that a file was written must not be able to swallow the click
+//           that follows it.
+//
+// ─── T79 F1 · ALL THREE ON THE LEFT, AND A HISTORY UNDER THEM ───────────────
+//
+// The owner, 18.10.2026: *"wszystkie informacje po zmianach które pokazujesz na
+// ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej
+// zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie
+// informacje pokazują się na środku i zasłaniają nam widok pracy."* ONE
+// bottom-left column, from the bottom up: the Changes bar, the messages (red
+// above yellow above grey, newest nearest the bar), then whatever the page
+// hands in as `children` (the front-gap rows), so none of them covers another.
 
 const TONE = {
   red: 'border-status-danger bg-status-danger/20 text-status-danger',
@@ -32,8 +42,17 @@ const TONE = {
   grey: 'border-shell-600 bg-shell-800/95 text-ink-100',
 };
 
+/** The level's colour dot on a row of the Changes list. */
+const DOT = {
+  red: 'bg-status-danger',
+  yellow: 'bg-status-warn',
+  grey: 'bg-ink-200',
+};
+
 function Line({ msg, onDismiss }) {
-  const body = msg.count > 1 ? `${msg.message} · ×${msg.count}` : msg.message;
+  // T79 F1: a yellow or grey fold already says `N × ` in its text (15.08); only
+  // a red, folded by its count, gets the count beside it, never both.
+  const body = msg.count > 1 && msg.baseMessage == null ? `${msg.message} · ×${msg.count}` : msg.message;
   const cls = `px-4 py-2 rounded border text-sm shadow-panel text-left ${TONE[msg.level] || TONE.grey}`;
   if (msg.level === 'red') {
     // A DIV with a button inside it, not a button: the body dismisses, and the
@@ -43,7 +62,7 @@ function Line({ msg, onDismiss }) {
       <div
         data-message={msg.id}
         data-message-level="red"
-        className={`${cls} flex items-center gap-3`}
+        className={`${cls} flex items-center gap-3 pointer-events-auto`}
       >
         <button
           type="button"
@@ -72,7 +91,7 @@ function Line({ msg, onDismiss }) {
     <div
       data-message={msg.id}
       data-message-level={msg.level}
-      className={`${cls} ${msg.level === 'grey' ? 'pointer-events-none' : 'flex items-center gap-3'}`}
+      className={`${cls} ${msg.level === 'grey' ? 'pointer-events-none' : 'flex items-center gap-3 pointer-events-auto'}`}
     >
       <span className={msg.level === 'grey' ? '' : 'flex-1'}>{body}</span>
       {msg.action && (
@@ -89,7 +108,80 @@ function Line({ msg, onDismiss }) {
   );
 }
 
-export default function Messages() {
+// ─── T79 F1 · THE CHANGES BAR ───────────────────────────────────────────────
+//
+// One line at the very bottom-left, `Changes · 12`, and a click opens the list
+// above it: newest first, the time, the level's dot, the text, and Clear.
+// Collapsed by default, Escape collapses it, nothing of it is saved.
+function HistoryBar() {
+  const history = useUiStore((s) => s.history);
+  const open = useUiStore((s) => s.historyOpen);
+  const toggleHistory = useUiStore((s) => s.toggleHistory);
+  const closeHistory = useUiStore((s) => s.closeHistory);
+  const clearHistory = useUiStore((s) => s.clearHistory);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') closeHistory(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, closeHistory]);
+
+  return (
+    <div
+      data-message-history={history.length}
+      data-message-history-open={open ? 'true' : 'false'}
+      className={`${LAYER_CLASS.message} pointer-events-auto flex flex-col items-start gap-1.5`}
+    >
+      {open && (
+        <div data-message-history-list className="cc-panel w-[26rem] max-w-full p-2 text-[11px]">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="cc-label mb-0">Changes</span>
+            <button
+              type="button"
+              className="cc-btn px-2 py-0.5 text-[11px]"
+              data-message-history-clear
+              disabled={!history.length}
+              onClick={clearHistory}
+            >
+              Clear
+            </button>
+          </div>
+          {history.length ? (
+            <ul className="cc-scroll max-h-[40vh] space-y-1 pr-1">
+              {history.map((row) => (
+                <li
+                  key={row.id}
+                  data-message-history-row={row.id}
+                  data-message-history-level={row.level}
+                  className="flex items-start gap-2 leading-snug text-ink-100"
+                >
+                  <span className="shrink-0 font-mono text-ink-400">{historyTime(row.at)}</span>
+                  <span aria-hidden className={`mt-1 h-2 w-2 shrink-0 rounded-full ${DOT[row.level] || DOT.grey}`} />
+                  <span className="min-w-0 break-words">{row.message}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-ink-400">No changes yet.</div>
+          )}
+        </div>
+      )}
+      <button
+        type="button"
+        data-message-history-toggle
+        aria-expanded={open}
+        title={open ? 'Hide the changes' : 'Show the changes'}
+        className="cc-panel px-2.5 py-1 text-[11px] text-ink-100 hover:text-ink-50"
+        onClick={toggleHistory}
+      >
+        {`Changes · ${history.length} ${open ? '▾' : '▴'}`}
+      </button>
+    </div>
+  );
+}
+
+export default function Messages({ children = null }) {
   const messages = useUiStore((s) => s.messages);
   const dismissMessage = useUiStore((s) => s.dismissMessage);
   const dismissOnClickAway = useUiStore((s) => s.dismissOnClickAway);
@@ -109,35 +201,28 @@ export default function Messages() {
     return () => window.removeEventListener('pointerdown', onDown, true);
   }, [dismissOnClickAway]);
 
-  const bottom = messagesAt(messages, 'bottom');
-  const centre = messagesAt(messages, 'centre');
-  if (!bottom.length && !centre.length) return null;
+  const left = messagesAt(messages, 'left');
 
   return (
-    <>
-      {/* GREY — "a few seconds, centre". */}
-      {centre.length > 0 && (
+    // The column takes no pointer of its own: only what is in it does, so
+    // the canvas beside a short message is still the canvas.
+    <div
+      data-messages="left"
+      className="absolute left-3 bottom-3 max-w-[26rem] flex flex-col items-start gap-1.5 pointer-events-none"
+    >
+      {children}
+      {/* Reds first, then yellows, then greys, the oldest of each first
+          (engine/messages.js `sortForDisplay`): the newest stands nearest the
+          bar and a red is never buried under a yellow. */}
+      {left.length > 0 && (
         <div
-          data-messages="centre"
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${LAYER_CLASS.message}
-            flex flex-col items-center gap-1.5 pointer-events-none`}
+          data-messages-list={left.length}
+          className={`${LAYER_CLASS.message} flex flex-col items-start gap-1.5`}
         >
-          {centre.map((m) => <Line key={m.id} msg={m} onDismiss={dismissMessage} />)}
+          {left.map((m) => <Line key={m.id} msg={m} onDismiss={dismissMessage} />)}
         </div>
       )}
-      {/* RED and YELLOW — the ones that WAIT for a person. They stand at the
-          bottom, out of the way of the cabinet being looked at, reds first
-          (engine/messages.js `sortForDisplay`): a red is never buried under a
-          yellow, any more than it is overwritten by a grey. */}
-      {bottom.length > 0 && (
-        <div
-          data-messages="bottom"
-          className={`absolute bottom-6 left-1/2 -translate-x-1/2 ${LAYER_CLASS.message}
-            flex flex-col items-stretch gap-1.5 max-w-[46rem]`}
-        >
-          {bottom.map((m) => <Line key={m.id} msg={m} onDismiss={dismissMessage} />)}
-        </div>
-      )}
-    </>
+      <HistoryBar />
+    </div>
   );
 }

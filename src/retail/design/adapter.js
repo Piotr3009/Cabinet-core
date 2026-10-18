@@ -2697,7 +2697,9 @@ export const unitBounds = (unitId) => S().unitSizeBoundsFor?.(unitId) || null;
  */
 export function wallGapOfUnit(unitId) {
   const unit = S().units.find((u) => u.id === unitId) || null;
-  return unit ? wallGapOf(unit, getCabinetProfile()) : 0;
+  // T79 F10: the field writes `wall_gap`, so it shows it, never that number less the
+  // recess the store derived from it (a typed 100 read back as -100 in a 300 recess).
+  return unit ? wallGapOf({ ...unit, params: { ...unit.params, recess_mm: 0 } }, getCabinetProfile()) : 0;
 }
 
 /**
@@ -3593,29 +3595,9 @@ export const setStackFronts = (unitId, mm) => S().setAllDrawerHeights(unitId, mm
 
 // ─── 5 · THE HANGING RAIL ──────────────────────────────────────────────────
 
-/**
- * The engine has TWO rail mounts and they are not "single / double": T35's rod
- * hangs under its own SHELF, T40's hangs ALONE off the carcass sides
- * (`engine/railAssembly.js RAIL_MOUNT`). There is no double-rail law in this
- * engine, and offering one would be retail inventing a product. The brief's
- * "single / double" is answered with the engine's own pair, and the difference
- * is named in the morning report.
- */
-export const RAIL_MOUNTS = Object.freeze([
-  { id: RAIL_MOUNT.SHELF, label: 'WITH A SHELF', hint: 'A board over the rod, and the rod hangs from it.' },
-  { id: RAIL_MOUNT.ALONE, label: 'ON ITS OWN', hint: 'No shelf and no board above it — it mounts to the sides.' },
-]);
-
+// T79 F11: a rod is added alone and its mount is never offered: *"zlikwiduj propozycję
+// install rail with or without shelf, bez sensu, usuń to"*.
 export const railTravel = (unitId, itemId) => S().railTravelFor?.(unitId, itemId) || null;
-/**
- * The mount is a re-placement, not a field: `updateItem({ mount })` writes a
- * word and leaves either a rod with no shelf behind it or a fix shelf carrying
- * nothing. The store's own `setRailMount` runs its add-time law again.
- */
-export const setRailMount = (unitId, itemId, mount) => S().setRailMount(
-  unitId, itemId, mount === RAIL_MOUNT.ALONE ? RAIL_MOUNT.ALONE : RAIL_MOUNT.SHELF,
-);
-
 /**
  * …and the height is clamped to the ends the engine gave, because `moveRail`
  * clamps only at zero and `setRailHeight` does not clamp at all: a rod written
@@ -3626,7 +3608,7 @@ export function setRailOffset(unitId, itemId, mm) {
   const travel = railTravel(unitId, itemId);
   if (!travel || travel.blocked) return null;
   const at = Math.max(travel.min, Math.min(travel.max, Math.round(Number(mm) || 0)));
-  return S().moveRail(unitId, itemId, at);
+  return S().moveRail(unitId, itemId, at, { magnet: false });
 }
 
 /** Why the rod's own slider is not offered: its height is its SHELF's (T41). */
@@ -4743,5 +4725,66 @@ export function dismissCutCorner() {
 export function removeCornerCut(unitId) {
   const res = S().setUnitNotch(unitId, null);
   U().stopNotchPick();
+  return { ok: Boolean(res?.ok), said: res?.said || '' };
+}
+
+// ─── T79 F5 · CUT EDGE, ON THE CLIENT'S SIZE STEP (KIT_NOTCH.lsp D22) ──────
+//
+// The owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz zrobić mi
+// też poziome cut? wszystkich 4 rogów?"*  CUT CORNER's twin, and not one new
+// law either: the four horizontal side edges are lit by the shared scene's
+// `3d/NotchEdges.jsx` off the shared ui store's `edgeNotchPick`, the click
+// opens the `edge-notch` window at the click (retail's `detail/EdgeNotchAsk.jsx`),
+// and the cut is the store's ONE action (`setUnitEdgeNotch`), which asks the
+// engine first and hands back its refusal as a whole sentence.
+
+/** Does this wardrobe take an edge notch (the corner notch's own kits)? */
+export function canCutEdge(unitId) { return canCutCorner(unitId); }
+
+/** The edge notch a unit carries, or null. */
+export function edgeNotchOfUnit(unitId) {
+  return unitOf(unitId)?.params?.edgeNotch || null;
+}
+
+/** Are this unit's four edges lit? */
+export function cuttingEdge(unitId) {
+  return Boolean(unitId) && U().edgeNotchPick === unitId;
+}
+
+/** CUT EDGE: light the four edges (or put them out again). */
+export function toggleCutEdge(unitId) {
+  if (cuttingEdge(unitId)) { U().stopEdgeNotchPick(); return false; }
+  if (!canCutEdge(unitId)) return false;
+  U().startEdgeNotchPick(unitId);
+  return true;
+}
+
+/** What the window opens with: the profile's own defaults. */
+export function edgeNotchDefaults() {
+  const d = getCabinetProfile().notch?.edgeDefaults || {};
+  return { edge: String(d.edge || 'BB'), d: Number(d.depthMm) || 0, h: Number(d.heightMm) || 0 };
+}
+
+/** ENTER in the window: the cut, or the engine's refusal in its own words. */
+export function cutEdge(unitId, edge, { d, h } = {}) {
+  const res = S().setUnitEdgeNotch(unitId, { edge, d, h });
+  if (res?.ok) {
+    closeEditor();
+    U().stopEdgeNotchPick();
+  }
+  return { ok: Boolean(res?.ok), said: res?.said || '' };
+}
+
+/** A click elsewhere: the window closes and nothing is cut. */
+export function dismissCutEdge() {
+  closeEditor();
+  U().stopEdgeNotchPick();
+  return { ok: true, said: '' };
+}
+
+/** REMOVE EDGE CUT: the same one action, with nothing. */
+export function removeEdgeCut(unitId) {
+  const res = S().setUnitEdgeNotch(unitId, null);
+  U().stopEdgeNotchPick();
   return { ok: Boolean(res?.ok), said: res?.said || '' };
 }

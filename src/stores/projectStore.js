@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {
   clampDrawerFrontHeight, computeCabinet, doorCountFor, drawerSplitFor, isShelfLocked,
-  leafCountRefusal,
+  leafCountRefusal, shelfThickness,
   minDrawerFrontHeight, SHELF_VARIANTS, CORNER_KIT_KINDS, BLIND_KIT_KINDS, WARDROBE_KIT_KINDS,
 } from '../engine/cabinet.js';
 import {
@@ -33,8 +33,10 @@ import {
 import { freePanelFit, freePanelPatch, freePanelSnap } from '../engine/freePanel.js';
 // T75 F7 · the corner notch: whether a kit takes one, and the engine's own
 // refusal (KIT_NOTCH.lsp, asked of the parent's cut) read before it is kept.
+// T79 F5 · ...and the edge notch's edges (KIT_NOTCH.lsp D22).
 import {
   NOTCH_CORNERS, NOTCH_REFUSED, notchApplies, notchKitRefusal, notchObstacleLimits, notchP, notchProfile,
+  EDGE_NOTCH_EDGES,
 } from '../engine/notch.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, roundTo, snap as snapTo } from '../engine/format.js';
@@ -45,7 +47,7 @@ import { hoodClearanceMessage, hoodClearanceRows, hoodRaiseTo } from '../engine/
 // That law lives in one place and every path below reads it from there.
 import {
   boxSpansOnWall,
-  clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, footprintPads,
+  clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, endPanelPads, footprintPads,
   backStandoff, clampElementDepth, elementDepthBounds, freeSlotOnWall, insetPads, shelfBand,
   shelfBounds, unitIssues, unitPlanSpan, unitSpan, slotTakes,
   wallClearance,
@@ -79,7 +81,7 @@ import { migrateWallElement, oneSlopePerSide, wallElements } from '../lib/wallEl
 // typed) and the extension's own refusal, asked of a derived band before the
 // engine ever sees it (KIT_RECESS.lsp D3, D4).
 import { recessBand } from '../lib/wallElements.js';
-import { recessRefusal } from '../engine/extension.js';
+import { recessRefusal, recessEndReachP } from '../engine/extension.js';
 // ─── TURN 46 (CLAUDE.md, "The slope, in numbers"): ONE ceilingAt ────────────
 // The store is where a cabinet meets a room, so it is where the ceiling line
 // becomes a number the engine and the clamp can use. Both come out of the same
@@ -175,18 +177,18 @@ import {
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 // T78 F19 · the joint system's four-storey ladder (profile, company row,
 // project, unit) resolved once, here, and handed to the engine as a param.
-import { jointSystemOf, resolveJointSystem } from '../engine/dowels.js';
+import { resolveJointSystem } from '../engine/dowels.js';
 // T48-F5: the LED groove, cut on the way to the sheet as well as to the file.
 // It lives in `lib/` and not in the engine on purpose (T45's own argument):
 // `computeCabinet()` cannot reach it, so a project with no line cannot move.
 import { grooved } from '../lib/cncExport.js';
-import { widthZones } from '../engine/zones.js';
+import { partitionCollisions, widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
 import { mountHeightAlignedWith, topNeighbourDemand } from '../engine/doors.js';
 import {
   centredShelfPos, drawersInEngineOrder, evenShelfPositions, floorLawedItem,
   isPinnedShelf, nextHangerOffset,
-  shelvesInEngineOrder,
+  shelfOpeningsIn, shelvesInEngineOrder,
 } from '../engine/items.js';
 // T48-F1: the floor a piece may not fall through — the engine's own answer to
 // "where is the top face of the carcass bottom", asked rather than re-derived.
@@ -195,10 +197,10 @@ import { interiorFloor } from '../engine/shelfHeights.js';
 import { railDatumFor, railSupportTops } from '../engine/railDatum.js';
 // T37-F1: a piece selection spans cabinets — each member carries its own unit.
 import { membersOf, parseMember } from '../lib/selection.js';
-// T37-F2: the rail is a FIX SHELF with a rod hung under it. The link, the drop
-// and where the assembly's shelf stands — `engine/railAssembly.js`.
+// T37-F2: a saved rail may ride a FIX SHELF; the link and the drop,
+// `engine/railAssembly.js` (T79 F11: a new rod is added alone).
 import {
-  assemblyShelfPos, hangerDropMm, RAIL_MOUNT, railMountOf, railShelfIdOf,
+  hangerDropMm, RAIL_MOUNT, railMountOf, railShelfIdOf,
 } from '../engine/railAssembly.js';
 import { endPanelHeightDefault } from '../engine/autoparts.js';
 // Turn 24 (CLAUDE.md F3): the caliper's six numbers, and the drawer gate.
@@ -590,7 +592,8 @@ function endPanelThicknessOf(unit, design, profile) {
 }
 
 function applyTemplateParams(unit, params) {
-  const saved = JSON.parse(JSON.stringify(params));
+  // T79 F13 · a template saved before the setback schema comes in on it too.
+  const saved = migrateUnitSetbacks({ params: JSON.parse(JSON.stringify(params)) }).params;
   // ─── TURN 41 (F2): AND THE CROSS-REFERENCES COME WITH THEM ────────────────
   //
   // MEASURED FAULT. Every item is given a fresh id here, and T37's rail
@@ -949,6 +952,23 @@ function obstacleNotchFor(unit, state = useProjectStore.getState(), profile = ge
 //                  inside a side) is no extension: the cabinet stands as it is.
 //                  The kit's own refusals (a drawer unit, a hand notch, a hanger
 //                  in the window) are the engine's, in words.
+//
+// T79 F10 · THE RECESS GIVES WAY TO THE STAND-OFF. The owner, 18.10.2026:
+// *"jak odsunie od ściany na grubość większą niż recess to powinien
+// zlikwidować recess w szafie, lub zmniejszać go odsuwaniem od recesu,
+// logika."*  Both halves read the recess's depth through ONE helper,
+// `effectiveRecessDepth`: the recess less the unit's stand-off.
+
+/**
+ * How deep this recess is FOR THIS UNIT: the recess's depth less the unit's
+ * own stand-off off the wall (`collision.backStandoff`, its own `recess_mm`
+ * taken as 0 so the number never reads itself back). At or under 0 the unit
+ * has no recess: it stands off the wall in front of it as any unit does.
+ */
+function effectiveRecessDepth(unit, element, profile = getCabinetProfile()) {
+  const standoff = backStandoff({ ...unit, params: { ...unit.params, recess_mm: 0 } }, profile);
+  return roundTo((Number(element?.depth) || 0) - standoff, 4);
+}
 
 /** The recesses a cabinet standing back to its wall reads: none on an island, none rotated. */
 function recessesFor(unit, state = useProjectStore.getState()) {
@@ -988,6 +1008,13 @@ function recessExtensionFor(unit, state = useProjectStore.getState(), profile = 
   const cx = Number(unit.position.x_mm) || 0;
   const base = unitBase(unit, profile);
   const roomH = Number(state.project.room?.height) || 2500;
+  // T79 F9 (KIT_RECESS.lsp D21) · an END panel grows with its side only where
+  // the band reaches PAST ITS OUTER FACE: the band tested against -padL ..
+  // W + padR (the pads' own x), not 0 .. W. The hands it reaches travel to the
+  // engine as `ends`; a band ending inside the panel's thickness grows the side
+  // and leaves the panel on the wall line. The owner: *"nie wycina mi panelu
+  // bocznego do recess a powinno."*
+  const pads = endPanelPads(unit, unit.params.front_t);
   let best = null;
   for (const e of mine) {
     const rx0 = Number(e.x_mm) - cx;
@@ -1000,14 +1027,56 @@ function recessExtensionFor(unit, state = useProjectStore.getState(), profile = 
     const x1 = rx1 >= W ? W : Math.min(W - G, rx1 - clr);
     const z0 = rz0 <= 0 ? 0 : Math.max(G, rz0 + clr);
     const z1 = rz1 >= H ? H : Math.min(H - G, rz1 - clr);
-    const d = Number(e.depth) || 0;
-    if (recessRefusal(W, D, H, G, x0, x1, z0, z1, d, false, K)) continue;
+    const d = effectiveRecessDepth(unit, e, profile);
+    if (!(d > 0) || recessRefusal(W, D, H, G, x0, x1, z0, z1, d, false, K)) continue;
     const area = (x1 - x0) * (z1 - z0);
+    const ends = [
+      ...(x0 === 0 && pads.left > 0 && recessEndReachP('L', rx0, rx1, W, pads.left) ? ['L'] : []),
+      ...(x1 === W && pads.right > 0 && recessEndReachP('R', rx0, rx1, W, pads.right) ? ['R'] : []),
+    ];
     if (!best || area > best.area) {
-      best = { area, ext: { x0: roundTo(x0, 4), x1: roundTo(x1, 4), z0: roundTo(z0, 4), z1: roundTo(z1, 4), d: roundTo(d, 4), for: 'a recess in this wall' } };
+      best = {
+        area,
+        ext: {
+          x0: roundTo(x0, 4), x1: roundTo(x1, 4), z0: roundTo(z0, 4), z1: roundTo(z1, 4), d: roundTo(d, 4), for: 'a recess in this wall',
+          ...(ends.length ? { ends } : {}),
+          // D21: where the band is clipped to the carcass the recess's own bottom and top go too, so a grown END
+          // stops on them and never runs into the wall under or over the recess.
+          ...(ends.length && z0 === 0 && Number.isFinite(rz0) ? { rz0: roundTo(rz0, 4) } : {}),
+          ...(ends.length && z1 === H && Number.isFinite(rz1) ? { rz1: roundTo(rz1, 4) } : {}),
+        },
+      };
     }
   }
   return best ? best.ext : null;
+}
+
+/**
+ * T79 F9 (KIT_RECESS.lsp D21) · WHOLLY INSIDE, the recess's own bottom and top in the carcass frame (rz0, rz1), the
+ * finite ones only, for a unit with an END panel: its END reaches the recess back with the sides and keeps to the
+ * wall line under or over the recess, never in the wall. Derived here and never stored; null otherwise.
+ */
+function wholeRecessBandFor(unit, state = useProjectStore.getState(), profile = getCabinetProfile()) {
+  if (!unit || !(Number(unit.params?.recess_mm) > 0) || !(unit.params?.end_panels || []).length) return null;
+  const e = wholeRecessOf(unit, state, profile);
+  if (!e) return null;
+  const base = unitBase(unit, profile);
+  const [b, t] = recessBand(e, Number(state.project.room?.height) || 2500);
+  const band = {
+    ...(e.bottom_mm == null ? {} : { rz0: roundTo(b - base, 4) }),
+    ...(e.top_mm == null ? {} : { rz1: roundTo(t - base, 4) }),
+  };
+  return Object.keys(band).length ? band : null;
+}
+
+// T79 F13 · a project's default setback for one family: the unit's own
+// `interior_setback_mm` when it says one (before T79 it set the dividers AND the
+// drawer cap, and still does: *"szuflady zostaw nie ruszaj"*), else the family's
+// profile number. ONE reader, for the engine's channel and the column guard.
+function unitSetbackOr(params, fallback) {
+  return Number.isFinite(Number(params?.interior_setback_mm))
+    ? Number(params.interior_setback_mm)
+    : fallback;
 }
 
 function paramsForEngine(unit, design = null) {
@@ -1032,6 +1101,7 @@ function paramsForEngine(unit, design = null) {
   // 15.10.2026 (the evening): the extension the room asks for (a recess the
   // cabinet stands partly in), derived here and never stored.
   const recessExtension = recessExtensionFor(unit);
+  const recessBandWhole = wholeRecessBandFor(unit);
   const elements = useProjectStore.getState().runElements?.[unit.id] || null;
   return {
     ...p,
@@ -1039,6 +1109,7 @@ function paramsForEngine(unit, design = null) {
     // and never stored, on the same channel the hand's notch travels on.
     ...(obstacleNotch ? { notch: obstacleNotch } : {}),
     ...(recessExtension ? { extension: recessExtension } : {}),
+    ...(recessBandWhole ? { recess_band: recessBandWhole } : {}),
     ...(elements ? {
       run_top_infill: elements.top_infill,
       run_plinth: elements.plinth,
@@ -1068,9 +1139,15 @@ function paramsForEngine(unit, design = null) {
     //
     // A unit may still say otherwise for itself; this is only the floor under
     // "nobody has said".
-    interior_setback_mm: Number.isFinite(Number(p.interior_setback_mm))
-      ? Number(p.interior_setback_mm)
-      : profile.carcass.interiorSetback,
+    //
+    // T79 F13 · the owner, 18.10.2026: *"wszystkie cofnięcia zmień z 20 na 10
+    // mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady
+    // zostaw nie ruszaj."*  Three numbers from the profile, one per family:
+    // the dividers (`interior_setback_mm`), the shelves (`shelf_front_mm`) and
+    // the board that caps a drawer stack (`drawer_cap_setback_mm`, the old 20).
+    interior_setback_mm: unitSetbackOr(p, profile.carcass.dividerSetbackMm),
+    shelf_front_mm: profile.carcass.shelfSetbackMm,
+    drawer_cap_setback_mm: unitSetbackOr(p, profile.wardrobe.drawers.capSetbackMm),
     // ─── Turn 11 (CLAUDE.md F3.1) ───
     // What a project has said about ONE piece of this cabinet, keyed by the
     // engine's own panel id. A DESIGN-layer input like the plinth and the top
@@ -1112,13 +1189,14 @@ function paramsForEngine(unit, design = null) {
     // `design.joints.system`), a unit may override (`joints_system`, the T75
     // F23 Joints row). ONE cascade (`engine/dowels.js resolveJointSystem`,
     // the T22 ladder) answers here, and the answer travels as the unit's own
-    // key, so the engine keeps its one reader (`jointSystemOf`). Written only
-    // where the ladder's answer is not the profile's own: a unit nobody has
-    // said anything about carries no key, exactly as every golden fixture.
-    ...(() => {
-      const system = resolveJointSystem({ params: p, design, profile });
-      return system !== jointSystemOf(null, profile) ? { joints_system: system } : {};
-    })(),
+    // key, so the engine keeps its one reader (`jointSystemOf`).
+    // T79 F14 · written on EVERY unit, the profile's own 'puzzle' included:
+    // the owner, 18.10.2026, *"jak mamy wybrane jakąkolwiek funkcję łączenia
+    // czy dog bones czy inne zawsze projektuj cabineo na szuflady"*, so a unit
+    // a person builds always names its system and its drawer boxes go on
+    // Cabineo 12 (engine/cabineo.js `boxCabineoAsked`); a bare kit call, every
+    // golden fixture, still names none and cuts what the AutoLISP cuts.
+    joints_system: resolveJointSystem({ params: p, design, profile }),
     // ─── Turn 18 (CLAUDE.md F6.4) ───
     // The PROJECT's runner variant, travelling exactly as the hinge standard
     // does. It is deliberately NOT `runner_variant` — that name belongs to the
@@ -1327,6 +1405,43 @@ export function migrateUnitShelves(unit) {
   };
 }
 
+// ─── T79 F13 · THE SETBACK SCHEMA: THE OLD 20 IS NOW 10 ────────────────────
+//
+// The owner, 18.10.2026: *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to
+// stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie
+// ruszaj."*  A shelf or a divider saved with `front_mm` exactly 20 carries the
+// old standard (the "20 mm" chip wrote `carcass.shelfDepthClearance`), so it
+// comes back on the new 10; any other number is somebody's own and stays.
+// Stamped like SHELF_SCHEMA, so it happens once, and stamped ONLY where it
+// changed something or where a setback is written after today (`updateItem`):
+// a unit with nothing to move loads byte for byte (a saved fixture stays a
+// fixed point), and a 20 typed by hand after today is a choice that survives
+// the next reload. The unit's `partition_front_mm` is not an item and also
+// seeds the drawer cap, so it is left alone (*"szuflady zostaw"*).
+const SETBACK_SCHEMA = 1;
+
+export function migrateUnitSetbacks(unit, profile = null) {
+  if (!unit?.params || unit.params.setback_schema === SETBACK_SCHEMA) return unit;
+  const C = (profile || getCabinetProfile()).carcass;
+  const oldStandard = (item) => (item?.kind === 'shelf' || item?.kind === 'partition')
+    && item.front_mm != null && Number(item.front_mm) === Number(C.shelfDepthClearance);
+  const sections = unit.params.sections || [];
+  if (!sections.some((section) => (section.items || []).some(oldStandard))) return unit;
+  return {
+    ...unit,
+    params: {
+      ...unit.params,
+      setback_schema: SETBACK_SCHEMA,
+      sections: sections.map((section) => ({
+        ...section,
+        items: (section.items || []).map((item) => (oldStandard(item)
+          ? { ...item, front_mm: item.kind === 'shelf' ? C.shelfSetbackMm : C.dividerSetbackMm }
+          : item)),
+      })),
+    },
+  };
+}
+
 // ─── FRONT-STYLE SCHEMA (turn 30, CLAUDE.md F10) ───────────────────────────
 //
 // Owner: choosing "flat" in the main menu must set the PROJECT default front
@@ -1516,7 +1631,7 @@ const migrateUnitShoe = (u) => {
 
 const migrateUnits = (units) => (Array.isArray(units)
   ? units.map((u) => migrateUnitShoe(migrateUnitWatch(migrateUnitRidden(
-    migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u))),
+    migrateUnitSetbacks(migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u)))),
   ))))
   : []);
 
@@ -3238,6 +3353,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * recessExtensionFor). Out of the recess the numbers are taken back. Derived
    * at this one choke point, as the slope's settlers are, written only on
    * change, so a settled scene passes through untouched.
+   *
+   * T79 F10: "that recess's depth" is `effectiveRecessDepth`, the recess less
+   * the unit's stand-off, so a unit moved off the wall (`wall_gap`) loses its
+   * recess as it goes and has none once the stand-off reaches the depth.
    */
   settleRecesses: () => {
     const s = get();
@@ -3246,7 +3365,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const next = s.units.map((u) => {
       const has = Number(u.params?.recess_mm) > 0;
       const whole = wholeRecessOf(u, s, profile);
-      const depth = whole ? Math.max(0, Number(whole.depth) || 0) : 0;
+      // T79 F10: the recess less this unit's stand-off; at or under 0, no recess.
+      const depth = whole ? Math.max(0, effectiveRecessDepth(u, whole, profile)) : 0;
       if (depth > 0) {
         const full = Number(u.params.depth_full ?? u.params.depth) || 0;
         const want = roundTo(full + depth, 4);
@@ -5999,8 +6119,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // re-resolved here, because `resolveRailAxis` is what decided which board
     // is the support and this must not be allowed a second opinion.
     const G = unit.params.board_t ?? profile.board.thickness;
+    // T79 F11: a column rod publishes no support, so it is read back as this
+    // docstring says: the engine stood the axis at support + offset.
     const support = rail && Number.isFinite(Number(rail.support))
-      ? Math.max(0, Number(rail.support)) : G;
+      ? Math.max(0, Number(rail.support))
+      : (rail && offset > 0 && Number.isFinite(Number(rail.y)) ? Math.max(0, Number(rail.y) - offset) : G);
     const radius = profile.hardware.rail.diameter / 2;
     const ceiling = rail && Number.isFinite(Number(rail.ceiling))
       ? Number(rail.ceiling) : ((Number(unit.params.height) || 0) - G);
@@ -6015,6 +6138,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       step: profile.editor.mmStep,
       support,
       axis: rail ? Number(rail.y) : support + offset,
+      // T79 F11: the rod's run along the width, so the magnet knows its bay.
+      x1: rail ? Number(rail.x1) : G,
+      x2: rail ? Number(rail.x2) : (Number(unit.params.width) || 0) - G,
       mounted: railMountOf(item),
       blocked: max <= min || railMountOf(item) === RAIL_MOUNT.SHELF,
     };
@@ -6034,52 +6160,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *            depth:{min:number,max:number,by:string|null},
    *            height:{min:number,max:number,by:string|null},step:number}|null}
    */
-  /**
-   * ─── TURN 60 (CLAUDE.md F3.5) · WITH A SHELF, OR ON ITS OWN ──────────────
-   *
-   * ADDITIVE, and PRO calls it nowhere: PRO chooses a rod's mount when the rod
-   * is ADDED (`addHangerRail({ withShelf })`, T40 F6) and never again, so there
-   * has never been a way to change one's mind.
-   *
-   * Retail's menu needs exactly that, and it must not be `updateItem({ mount })`
-   * — which is what the word alone would suggest and which is wrong twice: on a
-   * rod born alone it writes a mount with no shelf behind it and nothing moves,
-   * and on an assembly it ORPHANS the fix shelf the rod was hanging from, which
-   * stays in the cut list carrying nothing.
-   *
-   * So this is the store's own add-time law, run again: take the rod out (which
-   * takes its shelf with it, T37-F2) and put one back with the other answer, at
-   * the height it was at. One action, two writes, and not a line of new
-   * arithmetic anywhere.
-   *
-   * @returns {string|null} the new rail item's id, or null if it could not be
-   *          re-placed (in which case nothing was removed)
-   */
-  setRailMount: (unitId, itemId, mount) => runBatch(() => {
-    const unit = get().units.find((u) => u.id === unitId);
-    if (!unit) return null;
-    const item = (unit.params.sections?.[0]?.items || [])
-      .find((i) => i.id === itemId && i.kind === 'hanger');
-    if (!item) return null;
-    const want = String(mount) === RAIL_MOUNT.ALONE ? RAIL_MOUNT.ALONE : RAIL_MOUNT.SHELF;
-    if (railMountOf(item) === want) return itemId;
-    const zone = item.zone == null || !Number.isFinite(Number(item.zone))
-      ? null : Math.trunc(Number(item.zone));
-    const keep = {
-      materialId: item.material_id || null,
-      materialLabel: item.material_label || null,
-      zone,
-      withShelf: want === RAIL_MOUNT.SHELF,
-    };
-    // …and the SHELF goes with it. `removeItem` takes a rod out when its shelf
-    // is removed (T37-F2) but not the other way round, so taking the rod alone
-    // would leave a fix shelf standing in the cut list carrying nothing.
-    const shelfId = railShelfIdOf(item);
-    get().removeItem(unitId, itemId);
-    if (shelfId && railMountOf(item) === RAIL_MOUNT.SHELF) get().removeItem(unitId, shelfId);
-    return get().addHangerRail(unitId, keep);
-  }),
-
   /**
    * ─── TURN 60 (CLAUDE.md F3.4) · WHAT GOES IN AN EXISTING DRAWER ──────────
    *
@@ -7362,13 +7442,47 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // Turn 33 (CLAUDE.md F3): `variant` rides in — null is the plain box every
   // drawer has always been; 'shoe' | 'belt_tie' | 'belt_tie_glass' add the
   // BOUGHT insert (and the glass) to the BOM. The box itself cuts unchanged.
-  addDrawers: (unitId, count, mount = 'overlay', heightMm, zone = null, variant = null) => {
+  addDrawers: (unitId, count, mount = 'overlay', heightMm, zone = null, variant = null, { columns = 1 } = {}) => {
     // Turn 24 (CLAUDE.md F3.1): the hard gate. Removing the last drawer is
     // always allowed — a gate that trapped a stack somebody wanted rid of
     // would be a gate on the wrong side of the door.
     if (count > 0) {
       const gate = drawerBoxGate(get().project.design);
       if (gate.blocked) return { ok: false, error: gate.message };
+    }
+    // ─── T79 F3 · 1 OR 2 COLUMNS, LIKE THE BAYS ─────────────────────────────
+    // The owner, 18.10.2026 (14:17): *"jak ustawiamy sobie teraz 3 szuflady
+    // internal to niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."*; the
+    // mockup, 14:45: *"2 - tak."* Two columns on an undivided unit: ONE
+    // divider at W / 2 (its left face at (W - G) / 2), the stack in zone 0 and
+    // the same stack in zone 1, in ONE batch (one undo); the engine closes
+    // both with one FIX board. The divider stands at full depth (the runners'
+    // wall, T32 F4's recessed-partition law) and is an ordinary partition
+    // afterwards. A full-width stack already there is the stack this replaces.
+    if (count > 0 && Math.trunc(Number(columns)) === 2) {
+      const unit = get().units.find((u) => u.id === unitId);
+      if (!unit) return { ok: false, error: 'The drawers were not added.' };
+      if ((unit.params.sections?.[0]?.items || []).some((i) => i.kind === 'partition')) {
+        return { ok: false, error: DRAWER_COLUMNS_DIVIDED };
+      }
+      const type = getUnitType(unit.type);
+      if (!type.supports.partition || type.drawerStyle !== 'wardrobe') {
+        return { ok: false, error: DRAWER_COLUMNS_REFUSED };
+      }
+      const before = get().units;
+      return runBatch(() => {
+        const G = unit.params.board_t ?? getCabinetProfile().board.thickness;
+        const W = Number(unit.params.width) || 0;
+        const partitionId = get().addPartition(unitId, (W - G) / 2);
+        if (!partitionId) return { ok: false, error: DRAWER_COLUMNS_NO_ROOM };
+        get().updateItem(unitId, partitionId, { front_mm: 0 });
+        get().addDrawers(unitId, 0, mount, heightMm, null);
+        for (const k of [0, 1]) {
+          const res = get().addDrawers(unitId, count, mount, heightMm, k, variant);
+          if (!res.ok) { set({ units: before }); return res; }
+        }
+        return { ok: true, error: null, partitionId };
+      });
     }
     // ─── TURN 32 (CLAUDE.md F4): THE RECESSED-PARTITION LAW ────────────────
     // Drawers in a column need that column's walls FULL DEPTH at the runner
@@ -7521,7 +7635,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const k = Math.trunc(Number(zone));
     const unitSeed = Number.isFinite(Number(unit.params.partition_front_mm)) && Number(unit.params.partition_front_mm) >= 0
       ? Number(unit.params.partition_front_mm)
-      : profile.carcass.interiorSetback;
+      : unitSetbackOr(unit.params, profile.carcass.dividerSetbackMm);
     for (const [n, item] of [[k - 1, parts[k - 1]], [k, parts[k]]]) {
       if (!item) continue;
       const own = Number(item.front_mm);
@@ -7605,8 +7719,49 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // shoe shelf (standard pins, front pair set lower; stop rail cut with it).
   addShelves: (unitId, count = 1, zone = null, variant = 'adjustable') => {
     const profile = getCabinetProfile();
+    const requested = Math.max(1, Math.trunc(count));
+    // ─── T79 F2 · THE THIRD BUTTON: ABOVE THE DIVIDER ───────────────────────
+    // The owner: *"nie mam czegoś takiego że jest bay nie dzielony powyżej."*
+    // `zone: 'above'` is the opening over the FIX shelf that carries the
+    // dividers. The shelves are FULL WIDTH (no zone written, as every
+    // full-width shelf) and spaced as the kit spaces a zone
+    // (`evenShelfPositions`), from that shelf's top face to the underside of
+    // the top, never below it; one click, one undo step.
+    if (zone === 'above') {
+      const unit = get().units.find((u) => u.id === unitId);
+      if (!unit) return { added: 0, requested };
+      const result = resultOf(unit, get().project.design);
+      const opening = aboveDividerOpening(unit, profile, result);
+      if (!opening) return { added: 0, requested };
+      const G = unit.params.board_t ?? profile.board.thickness;
+      const inside = (y) => Number.isFinite(y) && y >= opening.from && y < opening.to;
+      // What already stands in the opening (a shelf of any bay, a split
+      // crossbar) is a board the ladder may not land on: the ONE finder hands
+      // back the gaps between them and the ladder goes in the biggest.
+      const gap = shelfOpeningsIn({
+        band: { floor: opening.from, ceiling: opening.to },
+        positions: shelvesInEngineOrder(unit.params.sections?.[0]?.items || [])
+          .map((sh) => Number(sh.pos_mm)).filter(inside),
+        boundaries: splitBoundaryPositions(unit, profile, null, result).filter(inside),
+        boardT: G,
+      }).reduce((best, o) => (!best || o.size > best.size ? o : best), null);
+      const E = profile.editor;
+      const fit = gap
+        ? Math.max(0, Math.min(requested, Math.floor((gap.size - E.minShelfGap) / (G + E.minShelfGap))))
+        : 0;
+      if (!fit) return { added: 0, requested };
+      const ladder = evenShelfPositions({
+        zoneBottom: gap.from, zoneTop: gap.to, count: fit, boardT: G,
+      });
+      runBatch(() => ladder.forEach((pos) => get().addItem(unitId, {
+        kind: 'shelf',
+        variant: SHELF_VARIANTS.includes(variant) ? variant : 'adjustable',
+        pos_mm: snapTo(pos, E.mmStep),
+      })));
+      return { added: fit, requested };
+    }
     let added = 0;
-    for (let i = 0; i < Math.max(1, Math.trunc(count)); i += 1) {
+    for (let i = 0; i < requested; i += 1) {
       const unit = get().units.find((u) => u.id === unitId);
       if (!unit) break;
       const items = unit.params.sections?.[0]?.items || [];
@@ -7636,6 +7791,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         boardT: unit.params.board_t ?? profile.board.thickness,
       }, profile);
       if (pos == null) break;
+      // T79 F2 · a full-width shelf whose opening lies under the divider top
+      // would run through the divider: refused in words, never clipped.
+      if (bay == null && hasPartition(unit) && fullWidthCrossesDivider(
+        unit, profile, { variant }, pos, resultOf(unit, get().project.design),
+      )) {
+        useUiStore.getState().notify(FULL_WIDTH_CROSSES_DIVIDER, 'warn');
+        return { added, requested, refused: FULL_WIDTH_CROSSES_DIVIDER };
+      }
       // ADJUSTABLE (turn 8, F4). A shelf nobody has said anything about is one
       // you can move; `fixed` means screwed now, and a shelf arriving screwed
       // in is a decision nobody made. Turn 33 (F3): a SHOE shelf arrives as
@@ -7648,7 +7811,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       });
       added += 1;
     }
-    return { added, requested: Math.max(1, Math.trunc(count)) };
+    return { added, requested };
   },
 
   /**
@@ -7668,6 +7831,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       boardT: unit.params.board_t ?? profile.board.thickness,
       partitions: items.filter((i) => i.kind === 'partition'),
     });
+  },
+
+  /**
+   * T79 F2 · the undivided opening over the dividers, or null: what the third
+   * button in "which side" offers and what the canvas lights when it is hovered.
+   */
+  aboveDividerOf: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    return aboveDividerOpening(unit, getCabinetProfile(), resultOf(unit, get().project.design));
   },
 
   /**
@@ -7708,37 +7881,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * of the drawer stack below it (BACKLOG #12: "hangers in between"). The chosen
    * hardware travels with the item, so the BOM names the product.
    *
-   * ─── TURN 37 (CLAUDE.md F2): IT IS AN ASSEMBLY NOW ────────────────────────
+   * T79 F11: the rail is added ALONE, always: *"zlikwiduj propozycję install rail with or
+   * without shelf, bez sensu, usuń to"*. A saved T37 assembly still loads and rides its shelf.
    *
-   * The owner, 17.08.2026: *"dlaczego drążek nie może być z półką powyżej, i ta
-   * półka być traktowana jak półka, tylko że fix? Zrób półkę nad drążkiem —
-   * półka, a drążek dołącz do półki i tyle."*
-   *
-   * So this makes TWO items, in one undo step: a FIX SHELF, and a rail that
-   * names it. The shelf is an ordinary fix shelf from that moment on — it is
-   * dragged by hand, it clamps against its neighbours, it is listed and
-   * dimensioned and cut like every other shelf — and the rod rides it, because
-   * `engine/railAssembly.js` resolves the rod's height FROM the shelf at
-   * compute time. There is nothing left to type.
-   *
-   * WHERE THE SHELF GOES is not a new placement rule. The old law is run
-   * exactly as it was (`nextHangerOffset` → the automatic rod height), and the
-   * shelf is stood where that rod's PARTITIONER would have stood — `axis +
-   * drop`, with `drop` defaulting to the partitioner's own 40. So the rod comes
-   * out on the same millimetre it came out on yesterday; what is new is the
-   * board above it, and that the joiner can drag it.
-   *
-   * @returns {string|null} the RAIL's item id, as it always has — the shelf is
-   *   reachable from it through `shelf_id`, and `railAssemblyOf` reads the pair.
+   * @returns {string|null} the rail's item id
    */
   addHangerRail: (unitId, {
     materialId = null, materialLabel = null, zone = null,
-    // ─── TURN 40 (CLAUDE.md F6): WITH A SHELF, OR ON ITS OWN ───────────────
-    // The owner: *"następnie dodawanie drążka raz i z półką proszę — wybór w
-    // drążek modal, to ważne."* T37's assembly stays the DEFAULT — that was
-    // his own verdict and nothing here overturns it — and this is the
-    // alternative, chosen when the rod is added.
-    withShelf = true,
   } = {}) => {
     const profile = getCabinetProfile();
     const unit = get().units.find((u) => u.id === unitId);
@@ -7780,64 +7929,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }),
       axis: (Number(zoneBase) || 0) + bornAt,
     });
-    // One undo step for two items: a joiner who presses Ctrl+Z after "Add
-    // hanger rail" expects the rail to be gone, not half of it.
-    const drop = hangerDropMm(profile);
-    const railAxis = (Number(zoneBase) || 0) + bornAt;
-    let railId = null;
-
-    // ─── TURN 40 (F6): A ROD ON ITS OWN ──────────────────────────────────────
-    //
-    // And it is not a new construction. The LEGACY law — `engine/railDatum.js`,
-    // untouched since T35 — is the complete, tested answer for a rail with no
-    // shelf: it hangs the rod above the nearest thing below it and cuts its own
-    // RAIL-PART partitioner over it. So this writes exactly the item the app
-    // wrote before T37, plus one field that records WHY it has no shelf —
-    // because "somebody asked for it alone" and "it is from an old job" look
-    // identical to the geometry and are not the same thing to a person.
-    if (!withShelf) {
-      return get().addItem(unitId, {
-        kind: 'hanger',
-        mount: RAIL_MOUNT.ALONE,
-        pos_mm: snapTo(born.offset, profile.editor.mmStep),
-        datum: born.datum,
-        ...(wantZone == null ? {} : { zone: wantZone }),
-        material_id: materialId,
-        material_label: materialLabel,
-      });
-    }
-
-    // ─── T37-F2: THE ASSEMBLY ────────────────────────────────────────────────
-    runBatch(() => {
-      const shelfId = get().addItem(unitId, {
-        kind: 'shelf',
-        // FIX, and that is the owner's own word: *"traktowana jak półka, tylko
-        // że fix"*. It carries a rod; a pin shelf would drop it.
-        variant: 'fixed',
-        pos_mm: snapTo(assemblyShelfPos({ railAxis, drop }), profile.editor.mmStep),
-        ...(wantZone == null ? {} : { zone: wantZone }),
-      });
-      if (!shelfId) return;
-      railId = get().addItem(unitId, {
-        kind: 'hanger',
-        // THE LINK. `mount: 'shelf'` plus a shelf id is what makes the engine
-        // read the new law; a rail without both is a legacy rail and is read
-        // by T35's, untouched.
-        mount: 'shelf',
-        shelf_id: shelfId,
-        // The T35 pair is still written, and it is DEAD WEIGHT on purpose
-        // (CLAUDE.md F2: *"the engine law may remain as dead weight for legacy
-        // only"*). It records where the rod hung at birth, so a reader that
-        // has never heard of `mount` — an old export, an old fixture — puts it
-        // on the same millimetre rather than at zero.
-        pos_mm: snapTo(born.offset, profile.editor.mmStep),
-        datum: born.datum,
-        ...(wantZone == null ? {} : { zone: wantZone }),
-        material_id: materialId,
-        material_label: materialLabel,
-      });
+    // The LEGACY law (`engine/railDatum.js`, untouched since T35) is the whole
+    // answer for a rod with no shelf: it hangs above the nearest thing below it.
+    return get().addItem(unitId, {
+      kind: 'hanger',
+      mount: RAIL_MOUNT.ALONE,
+      pos_mm: snapTo(born.offset, profile.editor.mmStep),
+      datum: born.datum,
+      ...(wantZone == null ? {} : { zone: wantZone }),
+      material_id: materialId,
+      material_label: materialLabel,
     });
-    return railId;
   },
 
   /**
@@ -8621,7 +8723,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * `pos_mm` has meant on a hanger item since T35. The view subtracts the
    * support the engine published; nothing here has to resolve a datum again.
    */
-  moveRail: (unitId, itemId, offsetMm) => {
+  moveRail: (unitId, itemId, offsetMm, { magnet: offered = true } = {}) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
     const item = (unit.params.sections?.[0]?.items || [])
@@ -8632,10 +8734,51 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // view is the belt to the braces: one rod, one owner of its height.
     if (railMountOf(item) === RAIL_MOUNT.SHELF) return null;
     const profile = getCabinetProfile();
-    const pos = snapTo(Math.max(0, Number(offsetMm) || 0), profile.editor.mmStep);
-    if (pos === item.pos_mm) return { pos };
+    const want = snapTo(Math.max(0, Number(offsetMm) || 0), profile.editor.mmStep);
+    // T79 F11: *"przy przesuwaniu zaproponuj 50 mm poniżej półki"*. The shelf
+    // magnet's catch (`applyMagnet`, `editor.shelfMagnetMm`); the drag with Alt
+    // held, and a slider's number, pass `magnet: false` and refuse it.
+    const pull = offered
+      ? applyMagnet(want, get().railMagnetCandidates(unitId, itemId), profile.editor.shelfMagnetMm)
+      : { pos: want, caught: null };
+    const pos = pull.pos;
+    const magnet = pull.caught || null;
+    if (pos === item.pos_mm) return { pos, magnet };
     get().updateItem(unitId, itemId, { pos_mm: pos });
-    return { pos };
+    return { pos, magnet };
+  },
+
+  /**
+   * T79 F11 · where a dragged ALONE rod is proposed: `hardware.hanger
+   * .belowShelfMm` under every shelf (adjustable or FIX) and every drawer cap
+   * PARTITION over the rod's own run, in the frame `moveRail` writes (an
+   * offset above the rod's support, `railTravelFor`), inside its travel.
+   *
+   * @returns {Array<{pos:number, axis:number, below:number, panelId:string, itemId:string|null}>}
+   */
+  railMagnetCandidates: (unitId, itemId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const item = (unit?.params.sections?.[0]?.items || [])
+      .find((i) => i.id === itemId && i.kind === 'hanger');
+    if (!item || railMountOf(item) === RAIL_MOUNT.SHELF) return [];
+    const travel = get().railTravelFor(unitId, itemId);
+    if (!travel) return [];
+    const profile = getCabinetProfile();
+    const below = Number(profile.hardware.hanger.belowShelfMm) || 0;
+    return (get().unitResult(unitId)?.panels || [])
+      .filter((p) => (p.part === 'SHELF' || p.part === 'PARTITION') && p.box
+        && Math.min(p.box.x + p.box.w, travel.x2) - Math.max(p.box.x, travel.x1) > 1)
+      .map((p) => {
+        const axis = Number(p.box.y) - below;
+        return {
+          pos: snapTo(axis - travel.support, profile.editor.mmStep),
+          axis,
+          below,
+          panelId: p.id,
+          itemId: p.meta?.itemId ?? null,
+        };
+      })
+      .filter((c) => c.pos >= travel.min && c.pos <= travel.max);
   },
 
   setRailHeight: (unitId, itemId, mmRaw) => {
@@ -8666,6 +8809,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // all arrive here, and none of them may put a piece under the floor.
         params: {
           ...u.params,
+          // T79 F13 · a setback written today is a choice, never migrated.
+          ...(patch && Object.hasOwn(patch, 'front_mm') ? { setback_schema: SETBACK_SCHEMA } : {}),
           sections: [{
             ...section,
             items: section.items.map((i) => (i.id === itemId ? onTheFloor(u, { ...i, ...patch }) : i)),
@@ -8783,6 +8928,90 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return get().units.find((u) => u.id === unitId)?.params?.sections?.[0]?.items
       ?.filter((i) => i.kind === 'shelf').length || 0;
   },
+
+  /**
+   * ─── TURN 79 (CLAUDE.md F12): CENTER BETWEEN TWO ELEMENTS ────────────────
+   *
+   * The owner, 18.10.2026: *"naciskasz wycentruj pomiędzy, wybierasz dolny i
+   * górny element i wtedy wszystkie półki pomiędzy tymi elementami się
+   * centrują."*
+   *
+   * Center all's own arithmetic, between two faces the hand picked instead of
+   * the bay's floor and top: the LOWER board's top face and the UPPER board's
+   * underside, read off the engine's own panel boxes. The adjustable shelves of
+   * that bay standing between them go on `evenShelfPositions` (equal clear
+   * gaps), the `mmStep` snap, then the clamp, as `centreShelves` does. Both
+   * picks in one bay; a bottom, a top or a full-width board serves any bay, and
+   * two of those centre every bay on its own ladder (Center all's null). A
+   * fixed shelf is never moved and never jumped: standing in the span, it
+   * refuses the act in words, as two bays and an empty span do.
+   *
+   * @param {string} unitId
+   * @param {string} lowerRef  the engine's panel id of the first pick
+   * @param {string} upperRef  and of the second (the two are read by height)
+   * @returns {{ok: true, count: number} | {ok: false, error: string}}
+   */
+  centreShelvesBetween: (unitId, lowerRef, upperRef) => runBatch(() => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const panels = unit ? get().unitResult(unitId)?.panels || [] : [];
+    const picks = [lowerRef, upperRef].map((ref) => panels.find((p) => p.id === ref) || null);
+    if (picks.some((p) => !centreBetweenPick(p))) return { ok: false, error: CENTRE_BETWEEN_SAY.kind };
+    if (lowerRef === upperRef) return { ok: false, error: CENTRE_BETWEEN_SAY.same };
+    const profile = getCabinetProfile();
+    const boardT = unit.params.board_t ?? profile.board.thickness;
+    const items = unit.params.sections[0].items;
+    // The bays by their lights, the reading `splitBoundariesFor` makes: a
+    // board in ONE light is that bay's, a board across several (a bottom, a
+    // top, a full-width shelf or cap) is every bay's.
+    const lights = widthZones({
+      width: Number(unit.params.width) || 0, boardT, partitions: items.filter((i) => i.kind === 'partition'),
+    });
+    const overlaps = (box, light) => box.x < light.to && box.x + box.w > light.from;
+    const bayOf = (box) => {
+      const hit = lights.flatMap((light, i) => (overlaps(box, light) ? [i] : []));
+      return hit.length === 1 ? hit[0] : null;
+    };
+    const [lower, upper] = [...picks].sort((a, b) => a.box.y - b.box.y);
+    const [lowerBay, upperBay] = [bayOf(lower.box), bayOf(upper.box)];
+    if (lowerBay != null && upperBay != null && lowerBay !== upperBay) {
+      return { ok: false, error: CENTRE_BETWEEN_SAY.bays };
+    }
+    const bay = lowerBay ?? upperBay;
+    const from = lower.box.y + lower.box.h;
+    const to = upper.box.y;
+    // Every horizontal board standing between the two faces in that bay's
+    // light: a fixed one (a FIX shelf, a rail's shelf, a drawer cap, a split
+    // divider) is a boundary the act may not jump; the rest is the ladder.
+    const inSpan = panels.filter((p) => centreBetweenPick(p) && HORIZONTAL_BOARDS.has(p.part)
+      && p !== lower && p !== upper && p.box.y >= from && p.box.y < to
+      && (bay == null || overlaps(p.box, lights[bay])));
+    const itemOf = (p) => items.find((i) => i.kind === 'shelf' && i.id === p.meta?.itemId) || null;
+    const isFixed = (p) => !itemOf(p) || Boolean(p.meta?.locked) || p.meta?.variant === 'fixed'
+      || itemOf(p).variant === 'fixed' || isPinnedShelf(itemOf(p), items);
+    if (inSpan.some(isFixed)) return { ok: false, error: CENTRE_BETWEEN_SAY.fixed };
+    if (!inSpan.length) return { ok: false, error: CENTRE_BETWEEN_SAY.none };
+    // One ladder for the bay picked; with no bay named, one per bay, never one
+    // ladder through a partition (Center all's own law, T58 F3.2).
+    const ladders = new Map();
+    for (const p of [...inSpan].sort((a, b) => a.box.y - b.box.y)) {
+      const key = bay ?? bayOf(p.box);
+      ladders.set(key, [...(ladders.get(key) || []), itemOf(p)]);
+    }
+    const at = new Map();
+    for (const here of ladders.values()) {
+      const positions = evenShelfPositions({
+        zoneBottom: from, zoneTop: to, count: here.length, boardT,
+      });
+      here.forEach((sh, i) => at.set(sh.id, snapTo(positions[i], profile.editor.mmStep)));
+    }
+    const next = items.map((i) => (at.has(i.id) ? { ...i, pos_mm: at.get(i.id) } : i));
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, sections: [{ ...u.params.sections[0], items: next }] } } : u)),
+    }));
+    // The clamp has the final word, as it does after Center all.
+    get().reclampShelves(unitId);
+    return { ok: true, count: inSpan.length };
+  }),
 
   /** ONE bay's own ladder. The loop above is the only caller that matters. */
   redistributeShelvesInBay: (unitId, bay = null) => {
@@ -10108,6 +10337,23 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         pos: item?.pos_mm ?? band.min, ...bounds, blocked: true, locked: true,
       };
     }
+    // ─── T79 F2 · A FULL-WIDTH SHELF NEVER RUNS THROUGH A DIVIDER ───────────
+    // Asked below the divider top, it is refused in words and stays where it
+    // was, never clipped. One that already stands across a divider (a project
+    // older than the divider) moves as it always did.
+    if (item && hasPartition(unit) && zoneIndexOf(item.zone) == null) {
+      const result = resultOf(unit, get().project.design);
+      const asked = snapTo(posRaw, snapStep || profile.editor.mmStep);
+      if (fullWidthCrossesDivider(unit, profile, item, asked, result)
+        && !fullWidthCrossesDivider(unit, profile, item, item.pos_mm, result)) {
+        useUiStore.getState().notify(FULL_WIDTH_CROSSES_DIVIDER, 'warn');
+        const band = shelfBandFor(unit, profile, null, null, item.pos_mm ?? null);
+        const bounds = shelfBounds({ pos: item.pos_mm ?? band.min, others: otherShelfPositions(unit, itemId), band }, profile);
+        return {
+          pos: item.pos_mm ?? band.min, ...bounds, blocked: true, refused: FULL_WIDTH_CROSSES_DIVIDER,
+        };
+      }
+    }
     const state = clampShelfPos({
       // A stored millimetre is ALWAYS on the workshop grid (BACKLOG #33): the
       // drag's own snap when there is one, half a millimetre when there is not
@@ -10539,7 +10785,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np.
   // 200x200)."*  ONE action, one undo step: the notch is a unit param
   // (`params.notch = { corner, w, d, h }`, h 0 = the full height), so it is
-  // saved and reloaded with the unit and nothing else has to know.
+  // saved and reloaded with the unit and nothing else has to know. T79 F4
+  // (KIT_NOTCH.lsp D21): a negative h hangs it from the top, kept as asked;
+  // the owner: *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry?"*
   //
   // Room refuses first: the engine asks the notch of the parent's own cut
   // (`engine/notch.js notchVerdict`) and a refused notch is NOT kept; its
@@ -10566,7 +10814,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!NOTCH_CORNERS.includes(corner)) return { ok: false, said: 'NOTCH: the corner is BL, BR, FL or FR.' };
     const mm = (v) => Math.round(Number(v) || 0);
     const notch = {
-      corner, w: mm(asked.w), d: mm(asked.d), h: Math.max(0, mm(asked.h)),
+      corner, w: mm(asked.w), d: mm(asked.d), h: mm(asked.h) || 0,
     };
     const trial = computeCabinet(
       paramsForEngine({ ...unit, params: { ...unit.params, notch } }, s.project.design),
@@ -10578,6 +10826,49 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, notch } } : u)),
     }));
     return { ok: true, said: '', notch };
+  }),
+
+  // ─── T79 F5 · CUT EDGE (KIT_NOTCH.lsp D22) ───────────────────────────────
+  //
+  // The owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz zrobić
+  // mi też poziome cut? wszystkich 4 rogów?"*  setUnitNotch's twin, ONE action
+  // and one undo step: the edge notch is a unit param (`params.edgeNotch =
+  // { edge, d, h }`: TB, BB, TF or BF, DEPTH into the carcass, HEIGHT up the
+  // side), saved and reloaded with the unit. Room refuses first: the engine
+  // asks it of the parent's own cut (`engine/notch.js edgeNotchVerdict`, the
+  // corner notch included) and a refused edge notch is NOT kept; its sentence
+  // comes back here in the engine's own words. `null` takes it off again.
+  setUnitEdgeNotch: (unitId, asked) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, said: 'There is no such unit.' };
+    if (asked == null) {
+      if (!unit.params?.edgeNotch) return { ok: true, said: '' };
+      set((st) => ({
+        units: st.units.map((u) => {
+          if (u.id !== unitId) return u;
+          const { edgeNotch: _gone, ...params } = u.params;
+          return { ...u, params };
+        }),
+      }));
+      return { ok: true, said: '' };
+    }
+    const kit = notchKitRefusal(getUnitType(unit.type), 'an edge');
+    if (kit) return { ok: false, said: kit };
+    const edge = String(asked.edge || '').toUpperCase();
+    if (!EDGE_NOTCH_EDGES.includes(edge)) return { ok: false, said: 'NOTCH: the edge is TB, BB, TF or BF.' };
+    const mm = (v) => Math.round(Number(v) || 0);
+    const edgeNotch = { edge, d: mm(asked.d), h: mm(asked.h) };
+    const trial = computeCabinet(
+      paramsForEngine({ ...unit, params: { ...unit.params, edgeNotch } }, s.project.design),
+      getCabinetProfile(),
+    );
+    const refused = trial.derived?.edgeNotch?.refused || null;
+    if (refused) return { ok: false, said: refused };
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, edgeNotch } } : u)),
+    }));
+    return { ok: true, said: '', edgeNotch };
   }),
 
   // Chat-fix 12.10.2026: both read through `resultOf`, which remembers each
@@ -10820,6 +11111,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
 
 // Cache to localStorage on every change (fallback only — the DB stays primary)
 useProjectStore.subscribe((state) => saveCache(state));
+
+// ─── T79 F12 · CENTER BETWEEN: THE SECOND PICK RUNS IT ──────────────────────
+// `uiStore.selectElement` reads the two picks into `centreBetween` and never
+// reads this store (the one direction), so the run is here: the moment the
+// second pick lands the mode ends and the centring runs, or says why not.
+useUiStore.subscribe((ui) => {
+  const between = ui.centreBetween;
+  if (!between?.lower || !between?.upper) return;
+  useUiStore.getState().cancelCentreBetween();
+  const said = useProjectStore.getState().centreShelvesBetween(between.unitId, between.lower, between.upper);
+  if (said?.error) useUiStore.getState().notify(said.error, 'warn');
+});
 
 /**
  * The units a given unit can actually collide with: same wall, same mounting
@@ -11245,6 +11548,11 @@ function blindSpanOf(state, unit) {
 export const BLIND_DIVIDER_REFUSAL = 'No divider in the blind part of a blind corner: it stands behind the next run, '
   + 'reached through the door, and the rail runs through it. Place the divider in the part the door opens.';
 
+/** T79 F3 · the sentences two drawer columns are refused with. */
+export const DRAWER_COLUMNS_DIVIDED = 'This cabinet is already divided: pick the column the drawers go in.';
+const DRAWER_COLUMNS_REFUSED = 'This cabinet takes no divider, so its drawers stay in one column.';
+const DRAWER_COLUMNS_NO_ROOM = 'No room for a divider in this cabinet, so its drawers stay in one column.';
+
 function wallMarginOf(state, unit = null, wall = null) {
   const profile = getCabinetProfile();
   // ─── T75 F10 · A FACE IS NOT PLASTER ──────────────────────────────────────
@@ -11304,6 +11612,74 @@ function otherShelfPositions(unit, itemId) {
       return bay == null || theirs == null || theirs === bay;
     })
     .map((i) => i.pos_mm);
+}
+
+// ─── T79 F2 · THE OPENING ABOVE THE DIVIDER ─────────────────────────────────
+//
+// The owner, 18.10.2026: *"jak dodamy fix półkę i divider pod spodem to nie
+// mam możliwości dodania całkowitej półki powyżej bo kod dzieli mi całą szafę
+// na bay 1 i 2, a nie mam czegoś takiego że jest bay nie dzielony powyżej."*
+// The engine already ends every divider under the lowest FIX shelf that
+// crosses it (`engine/zones.js partitionSpan`); what was missing is the name of
+// the undivided opening over that shelf. It is read off the engine's own VPART
+// panels, so the picker, the canvas and the store hold one answer.
+
+/** The sentence a full-width shelf below the divider top is refused with. */
+export const FULL_WIDTH_CROSSES_DIVIDER = 'A full-width shelf cannot cross the divider; pick a bay or raise it above the divider.';
+
+/** Every divider the engine cut, as its vertical span and the shelf it stands under. */
+function dividerSpansOf(result) {
+  return (result?.panels || [])
+    .filter((p) => p.part === 'VPART' && p.box)
+    .map((p) => ({
+      from: Number(p.box.y) || 0,
+      to: (Number(p.box.y) || 0) + (Number(p.box.h) || 0),
+      terminatesOn: p.meta?.terminatesOn ?? null,
+    }));
+}
+
+/**
+ * The full-width opening over the dividers: from the top face of the FIX shelf
+ * that carries them to the underside of the top. Null when there is no divider,
+ * or when one runs to the top (then nothing above it is undivided).
+ *
+ * @returns {{from:number, to:number, height:number, width:number}|null}
+ */
+export function aboveDividerOpening(unit, profile, result) {
+  const spans = dividerSpansOf(result);
+  if (!unit || !spans.length || spans.some((s) => s.terminatesOn == null)) return null;
+  const G = unit.params.board_t ?? profile.board.thickness;
+  const items = unit.params.sections?.[0]?.items || [];
+  const from = Math.max(...spans.map((s) => s.to
+    + shelfThickness(items.find((i) => i.id === s.terminatesOn), G)));
+  const to = (Number(unit.params.height) || 0) - G;
+  if (!(to > from)) return null;
+  return {
+    from, to, height: to - from, width: (Number(unit.params.width) || 0) - 2 * G,
+  };
+}
+
+/**
+ * Would a FULL-WIDTH shelf at `pos` run through a divider? The engine's own
+ * collision law (`partitionCollisions`) against every divider's span; a bay
+ * shelf never crosses one, and a FIX shelf carries a divider rather than
+ * crossing it, so both answer false. Asked only where the divider has a top
+ * below the carcass top (an opening above it exists); a divider to the top
+ * keeps the law it had before T79.
+ */
+function fullWidthCrossesDivider(unit, profile, shelf, pos, result) {
+  if (zoneIndexOf(shelf?.zone) != null || !Number.isFinite(Number(pos))) return false;
+  if (!aboveDividerOpening(unit, profile, result)) return false;
+  const G = unit.params.board_t ?? profile.board.thickness;
+  const probe = { ...shelf, kind: 'shelf', pos_mm: Number(pos) };
+  return dividerSpansOf(result).some((span) => partitionCollisions({
+    span, shelves: [probe], boardT: shelfThickness(shelf, G),
+  }).length > 0);
+}
+
+/** Does this unit stand divided at all? The guard costs nothing where it is not. */
+function hasPartition(unit) {
+  return (unit?.params?.sections?.[0]?.items || []).some((i) => i.kind === 'partition');
 }
 
 /**
@@ -11405,6 +11781,15 @@ function onTheFloor(unit, item, profile = getCabinetProfile()) {
   });
 }
 
+/**
+ * T79 F3 · the underside of the full-width board that closes the drawers: the
+ * full-width stack's PARTITION, or the ONE board over every column. Null when
+ * neither is cut. A full-width shelf stands on it and never below it.
+ */
+function fullWidthStackTop(result) {
+  return result.assemblies.drawerZone?.top ?? result.assemblies.columnCap?.top ?? null;
+}
+
 /** The band this unit's shelves may live in, read off the engine result. */
 function shelfBandFor(unit, profile, zone = null, precomputed = null, at = null) {
   const G = unit.params.board_t ?? profile.board.thickness;
@@ -11414,9 +11799,10 @@ function shelfBandFor(unit, profile, zone = null, precomputed = null, at = null)
   const columnStack = zone != null
     ? (result.assemblies.columnDrawers || []).find((c) => c.zone === Math.trunc(Number(zone)))
     : null;
+  const wideTop = zone == null ? fullWidthStackTop(result) : null;
   const floorY = columnStack
     ? columnStack.top + G
-    : (zone == null && result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : null);
+    : (wideTop != null ? wideTop + G : null);
   const band = shelfBand({
     height: unit.params.height,
     boardT: G,
@@ -11461,6 +11847,28 @@ function shelfBandSegmentsFor(unit, profile, zone = null, precomputed = null, pi
     ],
   }, profile);
 }
+
+// ─── T79 F12 · CENTER BETWEEN: WHAT MAY BE PICKED, AND THE WORDS ────────────
+// *"wybierasz dolny i górny element"*: a shelf (any, the rail's own fix shelf
+// and a split divider among them), the drawer cap (`PARTITION`, a column's
+// `Z<n>-PART`), the BOTTOM or the TOP. One reading, asked by the store that
+// centres and by the view that lights the candidates.
+const HORIZONTAL_BOARDS = new Set(['SHELF', 'PARTITION']);
+const CENTRE_BETWEEN_PARTS = new Set([...HORIZONTAL_BOARDS, 'BOTTOM', 'TOP']);
+
+/** May this engine panel be one of Center between's two picks? */
+export function centreBetweenPick(panel) {
+  return Boolean(panel?.box) && CENTRE_BETWEEN_PARTS.has(panel.part);
+}
+
+/** Center between refuses in words, never silently. */
+export const CENTRE_BETWEEN_SAY = {
+  fixed: 'A fixed shelf stands between your picks; centring stops at it.',
+  bays: 'Your picks stand in two different bays; centring works inside one bay.',
+  none: 'No shelf stands between your picks; there is nothing to centre.',
+  same: 'You picked the same element twice; pick the lower one, then the upper one.',
+  kind: 'Pick a shelf, the drawer cap, the bottom or the top of this cabinet.',
+};
 
 /** The vertical band a shelf may live in: above the drawer stack, below the top. */
 export function shelfLimits(unit, profile, zone = null, at = null) {
@@ -11513,7 +11921,10 @@ const MAX_ELEMENT_THICKNESS = 100;
 export function validateUnit(unit, result, context = {}) {
   const issues = [];
   const items = unit.params.sections?.[0]?.items || [];
-  const drawers = items.filter((i) => i.kind === 'drawer').length;
+  // T79 F3 · the full-width stack only: a column's drawers have no drawerZone
+  // (the column pass says in its own words when it drops them).
+  const drawers = items.filter((i) => i.kind === 'drawer'
+    && (i.zone == null || !Number.isFinite(Number(i.zone)))).length;
 
   // Room fit. Position is hard-clamped by the setters, so what is left here is
   // exactly what clamping CANNOT fix: a unit that does not fit the room at all
@@ -11569,7 +11980,8 @@ export function validateUnit(unit, result, context = {}) {
       issues.push({ level: 'error', message: 'A drawer stack must be closed by a shelf (partition) above it.' });
     }
   }
-  const zoneTop = result.assemblies.drawerZone?.top ?? null;
+  // T79 F3 · the one board over the columns closes a drawer zone too.
+  const zoneTop = fullWidthStackTop(result);
   for (const item of items) {
     if (item.kind !== 'shelf' || !Number.isFinite(item.pos_mm)) continue;
     if (zoneTop != null && item.pos_mm < zoneTop) {

@@ -152,3 +152,146 @@ for (const kit of T75_KITS) {
   });
 }
 
+// T79 F4 · CLAUDE.md T79 FROZEN 2: *"parens test grows with every file
+// touched."*  KIT_NOTCH.lsp is amended under licence (the owner, 18.10.2026:
+// *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry?"*) with
+// D21 THE TOP-ANCHORED NOTCH and its NUMBERS block I2; it balances by name.
+test('T79 F4 · KIT_NOTCH.lsp balances 0/0 with D21 and its NUMBERS block I2', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_NOTCH.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D21 THE TOP-ANCHORED NOTCH\./);
+  assert.match(text, /;;; I2\. NUMBERS - THE NOTCH FROM THE TOP/);
+  assert.match(text, /\(defun notch-from-top-p \(ch nh\)/);
+  assert.match(text, /\(defun notch-floor \(ch g nw nd nh\)/);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+});
+
+// T79 F5 · CLAUDE.md T79 FROZEN 2, again: KIT_NOTCH.lsp is amended under
+// licence (the owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz
+// zrobić mi też poziome cut? wszystkich 4 rogów?"*) with D22 THE EDGE NOTCH,
+// its section H2, its NUMBERS block I3 and its command K2; it balances by name.
+test('T79 F5 · KIT_NOTCH.lsp balances 0/0 with D22, section H2, its NUMBERS block I3 and EDGENOTCH_FULL', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_NOTCH.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D22 THE EDGE NOTCH\./);
+  assert.match(text, /;;; H2\. THE EDGE NOTCH \(D22, 18\.10\.2026\)/);
+  assert.match(text, /;;; I3\. NUMBERS - THE EDGE NOTCH/);
+  assert.match(text, /\(defun edge-notch-side-joints \(cd ch g ed eh edge\)/);
+  assert.match(text, /\(defun edge-notch-meets-refusal \(cw cd ch g ed eh edge nw nd nh corner/);
+  assert.match(text, /\(defun c:EDGENOTCH_FULL /);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+});
+
+// T79 F6 \u00b7 the parens test grows again: KIT_NOTCH.lsp D10 and KIT_RECESS.lsp
+// D17 are amended under licence (the owner, 18.10.2026: *"jak mamy cut the
+// corners lub recess to nie rysujesz mi dziurek na \u015brubki 3 mm, to trzeba
+// b\u0119dzie doda\u0107"*; *"ale tylko na plecach."*): the BACK's dia 3 rows follow
+// every edge of a back that meets a board. Both balance by name.
+for (const [kit, marks] of [
+  ['KIT_NOTCH.lsp', [/AMENDED 18\.10\.2026 \(CLAUDE\.md T79 F6\)/, /\(defun notch-edge-row \(a b e\)/,
+    /;;; I5\. NUMBERS - THE BACK'S ROWS ROUND THE BOX/, /\(cons "SHORT" \(reverse short\)\)/]],
+  ['KIT_RECESS.lsp', [/AMENDED 18\.10\.2026 \(CLAUDE\.md T79 F6\)/, /\(foreach z \(notch-edge-row bz0 bz1 sfe\)/,
+    /\(defun recess-ext-back-screws \(cw ch g ex0 ex1 ez0 ez1 \/ S sfe eb bz0 bz1 out\)/,
+    /\(foreach x \(notch-edge-row g \(- \(car eb\) g\) sfe\)/, /;;; THE NARROWEST BAND \(D4, no golden; D17 AMENDED 18\.10\.2026\)/]],
+]) {
+  test(`T79 F6 \u00b7 ${kit} balances 0/0 with the BACK's rows round the box`, () => {
+    const text = readFileSync(join(LISP_DIR, kit), 'utf8');
+    const { balance, min } = parenScan(text);
+    assert.equal(balance, 0);
+    assert.equal(min, 0);
+    for (const m of marks) assert.match(text, m);
+    assert.ok(/^[\x00-\x7F]*$/.test(text), `${kit} is ASCII`);
+  });
+}
+
+// T79 F8 · CLAUDE.md T79 FROZEN 2: the parens test grows with every file
+// touched. KIT_RECESS.lsp is amended under licence (the owner, 18.10.2026:
+// *"dlaczego cut the corner likwiduje nam wcięcie do recess?"*): D13 WITH A
+// NOTCH, section H and the NUMBERS block CASE D; it balances by name.
+test('T79 F8 · KIT_RECESS.lsp balances 0/0 with D13 WITH A NOTCH, section H and CASE D', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_RECESS.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D13 WITH A NOTCH\./);
+  assert.match(text, /;;; H\. WITH A NOTCH \(D13, 18\.10\.2026\)/);
+  assert.match(text, /;;; CASE D \(fixtures\/golden-notch-and-recess\.json/);
+  assert.match(text, /\(defun recess-notch-footprint \(cw ch nw nh corner/);
+  assert.match(text, /\(defun recess-box-name \(name notched\)/);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+  assert.doesNotMatch(text, /[^\x00-\x7f]/, 'the LISP stays ASCII');
+});
+
+// T79 F8 x F6 · the seam: the extension's BACK piece cut from a notched BACK
+// carries the rows into the notch's box exactly as the notched BACK alone
+// (the owner, 18.10.2026: *"jak mamy cut the corners lub recess to nie
+// rysujesz mi dziurek na śrubki 3 mm, to trzeba będzie dodać"*; *"ale tylko na
+// plecach."*): ONE routine, KIT_NOTCH.lsp notch-back-box-rows, called by
+// notch-back-joints and by KIT_RECESS.lsp recess-back-joints through
+// recess-notch-box-rows. Both files balance by name.
+for (const [kit, marks] of [
+  ['KIT_NOTCH.lsp', [/\(defun notch-back-box-rows \(cw ch g nw nh corner /, /box \(notch-back-box-rows cw ch g nw nh corner\)\)/]],
+  ['KIT_RECESS.lsp', [/\(defun recess-notch-box-rows \(nb cw ch g /, /\(foreach p \(recess-notch-box-rows nb cw ch g\)/,
+    /;;; THE NOTCH'S BOX ROWS ON THE PIECE THAT HOLDS THEM/,
+    // the F8 review: the side row on what the notch AND the window leave of the edge, a hole once
+    /\(defun recess-side-row \(bh z0 tabs nb window onSide bandSide sfe /, /\(defun recess-window-zcut \(window z0 onSide\)/,
+    /\(defun recess-put-hole \(pts p \/ found\)/, /;;; THE REVIEW CASES \(the T79 F8 review, 18\.10\.2026/]],
+]) {
+  test(`T79 F8 x F6 · ${kit} balances 0/0 with the rows into the notch's box, one routine`, () => {
+    const text = readFileSync(join(LISP_DIR, kit), 'utf8');
+    const { balance, min } = parenScan(text);
+    assert.equal(balance, 0);
+    assert.equal(min, 0);
+    for (const m of marks) assert.match(text, m);
+    assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+    assert.ok(/^[\x00-\x7F]*$/.test(text), `${kit} is ASCII`);
+  });
+}
+
+// T79 F9 · CLAUDE.md T79 FROZEN 2, again: KIT_NOTCH.lsp and KIT_RECESS.lsp are
+// amended under licence (the owner, 18.10.2026: *"nie wycina mi panelu
+// bocznego do recess a powinno."*): D23 THE END PANEL FOLLOWS ITS SIDE with
+// section H3 and its NUMBERS block I4; D21 THE END PANEL GROWS WITH ITS SIDE
+// with its two routines and its NUMBERS block F2. Both balance by name.
+test('T79 F9 · KIT_NOTCH.lsp balances 0/0 with D23, section H3 and its NUMBERS block I4', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_NOTCH.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D23 THE END PANEL FOLLOWS ITS SIDE\./);
+  assert.match(text, /;;; H3\. THE END PANEL FOLLOWS ITS SIDE \(D23, 18\.10\.2026\)/);
+  assert.match(text, /;;; I4\. NUMBERS - THE END PANEL/);
+  assert.match(text, /\(defun notch-end-cut \(ch g nw nd nh corner hand sb sf ph pb/);
+  assert.match(text, /\(defun notch-end-outline \(ew ph cuts/);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+});
+
+test('T79 F9 · KIT_RECESS.lsp balances 0/0 with D21, recess-end-reach-p, recess-end-cuts and its NUMBERS block F2', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_RECESS.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D21 THE END PANEL GROWS WITH ITS SIDE\./);
+  assert.match(text, /\(defun recess-end-reach-p \(hand rx0 rx1 cw et\)/);
+  assert.match(text, /\(defun recess-end-cuts \(ch ez0 ez1 ed hand ph pb rz0 rz1/);
+  assert.match(text, /;;; F2\. NUMBERS - THE END PANEL/);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+});
+
+// ─── T79 F14 · THE DRAWER BOX ON CABINEO 12: SKYLON_JOINTS_CABINEO.lsp D.2c ───
+// CLAUDE.md T79 FROZEN 2: *"parens test grows with every file touched"*. The
+// walk above balances the file; this names it and the section F14 wrote.
+test('T79 F14 · SKYLON_JOINTS_CABINEO.lsp balances 0/0 and carries D.2c and its H.1 NUMBERS', () => {
+  assert.ok(KITS.includes('SKYLON_JOINTS_CABINEO.lsp'), 'SKYLON_JOINTS_CABINEO.lsp is missing');
+  const text = readFileSync(join(LISP_DIR, 'SKYLON_JOINTS_CABINEO.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /D\.2c THE DRAWER BOX/);
+  assert.match(text, /H\.1 THE DRAWER BOX/);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+});

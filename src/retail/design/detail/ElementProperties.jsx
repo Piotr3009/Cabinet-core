@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useProjectStore, elementDepthBoundsFor } from '../../../stores/projectStore.js';
 import { useCabinetProfileStore } from '../../../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../../../stores/materialAssignmentStore.js';
@@ -58,8 +58,27 @@ export default function ElementProperties({
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
   const setShelfType = useProjectStore((s) => s.setShelfType);
+  // T79 F16 · the sleeve rows a clash finding dropped, back in one click.
+  const restoreSleeveRows = useProjectStore((s) => s.restoreSleeveRows);
   // T72 F3 · CENTER ALL — the ONE store action both applications press.
   const centreShelves = useProjectStore((s) => s.centreShelves);
+  // T79 F12 · CENTER BETWEEN: the two-pick mode is the shared uiStore's, so
+  // PRO and retail arm the one mode and the project store runs the one act.
+  const centreBetween = useUiStore((s) => (s.centreBetween?.unitId === unit.id ? s.centreBetween : null));
+  const armCentreBetween = useUiStore((s) => s.armCentreBetween);
+  const cancelCentreBetween = useUiStore((s) => s.cancelCentreBetween);
+  // Escape ends the picking and nothing more: caught on its way DOWN, before
+  // the page's own Escape lets go of the shelf this menu is about.
+  useEffect(() => {
+    if (!centreBetween) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      cancelCentreBetween();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [centreBetween, cancelCentreBetween]);
   const setRailHeight = useProjectStore((s) => s.setRailHeight);
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
   // Turn 24 (CLAUDE.md F3.3): which carcass board this partition is cut from.
@@ -362,6 +381,26 @@ export default function ElementProperties({
                 drawer with an 80 mm side, never on pins.
               </p>
             )}
+            {/* T79 F16 · RESTORE SLEEVE ROWS: the store's `restoreSleeveRows`,
+                shown only on a shelf whose cluster lost a row to the clash finding. */}
+            {item?.sleeves_dropped?.length ? (
+              <button
+                type="button"
+                className="pbi-re-btn pbi-re-wfull pbi-re-mt1"
+                data-restore-sleeve-rows="1"
+                title={`Sleeve rows not bored on this shelf: ${item.sleeves_dropped.map((d) => `${d > 0 ? '+' : ''}${d} mm`).join(', ')}, `
+                  + 'dropped for a hinge. Puts the whole sleeve cluster back.'}
+                onClick={(e) => {
+                  // The button stands in Field's <label> and leaves the page on its own click: without this the
+                  // label would hand the click on to its first control (the Fix chip) and pin the shelf.
+                  e.preventDefault();
+                  const res = restoreSleeveRows(unit.id, item.id);
+                  if (res?.error) notify(res.error, 'warn');
+                }}
+              >
+                Restore sleeve rows
+              </button>
+            ) : null}
           </Field>
         );
       // ─── TURN 21 (CLAUDE.md F10): ONE TRUTH, THE INTERIOR DATUM ───────────
@@ -490,8 +529,15 @@ export default function ElementProperties({
       // for just as long. The chips are a SHORTCUT to the field beside them,
       // not a second law: all three press `setElementDepth`, through the same
       // `applyToSelection` that reaches a whole ticked set.
+      //
+      // T79 F13 · the standard chip is the PROJECT's number, the one a shelf
+      // or a divider with nothing said is cut at: *"wszystkie cofnięcia zmień
+      // z 20 na 10 mm"*; *"tylko półki i dividery"* (`carcass.shelfSetbackMm`,
+      // `carcass.dividerSetbackMm`, 10).
       case 'setback': {
-        const standardBack = Number(profile.carcass.shelfDepthClearance) || 0;
+        const standardBack = Number(panel.part === 'VPART'
+          ? profile.carcass.dividerSetbackMm
+          : profile.carcass.shelfSetbackMm) || 0;
         const backNow = Number(panel.meta?.front_mm ?? standardBack);
         const backChips = [
           { id: 'standard', mm: standardBack, label: `${formatMm(standardBack)} mm` },
@@ -1240,16 +1286,41 @@ export default function ElementProperties({
 
           It is the LAST thing in the menu because it is the act that undoes
           every height above it, and because that is where he drew it. */}
+      {/* ─── TURN 79 (CLAUDE.md F12): CENTER BETWEEN, BESIDE IT, THE SAME
+          WIDTH. The owner: *"naciskasz wycentruj pomiędzy, wybierasz dolny i
+          górny element i wtedy wszystkie półki pomiędzy tymi elementami się
+          centrują."* One click arms the two picks (the shared uiStore's
+          mode); the panel says which pick is next; the store centres the
+          shelves between them or says why it will not. */}
       {fields.includes('position-y') && item ? (
-        <button
-          type="button"
-          className="pbi-re-btn pbi-re-wfull"
-          data-centre-shelves="1"
-          title="Spread the shelves of this bay evenly between the floor and the top — equal clear gaps, and the same clamp every other move obeys."
-          onClick={() => centreShelves(unit.id, item.zone ?? null)}
-        >
-          Center all
-        </button>
+        <div className="pbi-re-stack-1">
+          <div className="pbi-re-grid pbi-re-grid-2 pbi-re-gap-2">
+            <button
+              type="button"
+              className="pbi-re-btn pbi-re-wfull"
+              data-centre-shelves="1"
+              title="Spread the shelves of this bay evenly between the floor and the top: equal clear gaps, and the same clamp every other move obeys."
+              onClick={() => centreShelves(unit.id, item.zone ?? null)}
+            >
+              Center all
+            </button>
+            <button
+              type="button"
+              className={`pbi-re-btn pbi-re-wfull ${centreBetween ? 'pbi-re-hair-gold pbi-re-gold' : ''}`}
+              data-centre-between="1"
+              aria-pressed={Boolean(centreBetween)}
+              title="Pick the lower element, then the upper one (a shelf, the drawer cap, the bottom or the top): the shelves of this bay between them are spread evenly. Escape cancels."
+              onClick={() => (centreBetween ? cancelCentreBetween() : armCentreBetween(unit.id))}
+            >
+              Center between
+            </button>
+          </div>
+          {centreBetween ? (
+            <p className="pbi-re-t11 pbi-re-gold" data-centre-between-step={centreBetween.lower ? 'upper' : 'lower'}>
+              {centreBetween.lower ? 'Pick the upper element' : 'Pick the lower element'}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {actions && <ElementActions unit={unit} panel={panel} onRemove={removeElement} onMove={moveElement} />}

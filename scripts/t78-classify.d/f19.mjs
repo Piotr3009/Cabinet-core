@@ -118,10 +118,12 @@ export const LIVENESS = {
     const sixCarryNone = THE_SIX.every((id) => defaultParamsFor(id, P).joints_system === undefined
       && jointSystemOf(defaultParamsFor(id, P), P) === 'puzzle');
     return {
-      live: !('joints_system' in bareParams) && bareCut.derived.joints === undefined
+      // T79 F14: the hand-off names the system on every unit ('puzzle' with no row), the owner's 18.10.2026
+      // "jakąkolwiek funkcję łączenia"; the carcass is still cut with the puzzle and runs no joint-system line.
+      live: bareParams.joints_system === 'puzzle' && bareCut.derived.joints === undefined
         && rowParams.joints_system === 'dowel' && rowUnit.params.joints_system === undefined
         && rowCut.derived.joints?.system === 'dowel' && ladder === 'biscuit' && sixCarryNone,
-      said: `no row: a fresh BUD's engine params ${('joints_system' in bareParams) ? 'CARRY' : 'carry no'} joints_system and derived.joints is `
+      said: `no row: a fresh BUD's engine params name joints_system ${bareParams.joints_system} and derived.joints is `
         + `${bareCut.derived.joints === undefined ? 'absent' : 'present'}; row dowel: the project says ${S().project.design.joints?.system ?? 'null'} `
         + `after reset, the BUD was cut ${rowCut.derived.joints?.system} with the unit's own key ${rowUnit.params.joints_system}; `
         + `a stale unit id falls to the project (${ladder}); the six kits' defaults ${sixCarryNone ? 'carry no' : 'CARRY a'} joint system`,

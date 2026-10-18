@@ -280,6 +280,15 @@ export const CHECKS = Object.freeze([
   // same span the Check says so, in words (engine/liftChecks.js). Never
   // clipped: the leaf is cut as asked.
   { n: 35, level: 'yellow', label: 'Lift-up leaf reaches the ceiling, a cornice or the unit above' },
+  // ─── T79 F8 · A RECESS THE CARCASS CANNOT GROW INTO ───────────────────────
+  // The owner, 18.10.2026: *"dlaczego cut the corner likwiduje nam wcięcie do
+  // recess?"*  The engine asks the band of the parent's own cut
+  // (`engine/extension.js extensionVerdict`, KIT_RECESS.lsp D13: a corner notch
+  // whose footprint on the BACK the band overlaps; D4, D14) and, refused,
+  // cuts the parent and says why (`EXTENSION_REFUSED`), which until T79
+  // reached no screen. #28's twin, RED: a person decides. CLAUDE.md names it
+  // #32, which T76 F4 holds (the front's decoration board); it is the next free.
+  { n: 36, level: 'red', label: 'Recess extension refused' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -661,11 +670,13 @@ export function runChecks({
       // T75 F7 · #28: the notch the engine refused, in its own words.
       // T75 F23 · #31: the dowel gate, and a joint system refused, likewise.
       // T76 F4 · #32: the board the decoration was drawn for, yellow.
+      // T79 F8 · #36: the recess extension the engine refused, in its own words.
       const n = {
         SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21, NOTCH_REFUSED: 28, DOWEL_GATE: 31, JOINTS_REFUSED: 31,
         // T78 F20 · #31 again: the Cabineo gate (engine/cabineo.js CABINEO_GATE_CODE), the same law as the dowel's.
         CABINEO_GATE: 31,
         FRONT_DECORATION_BOARD: 32,
+        EXTENSION_REFUSED: 36,
       }[wn.code];
       if (!n) continue;
       if (n === 32) {

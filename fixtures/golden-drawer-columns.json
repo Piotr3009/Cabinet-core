@@ -1,0 +1,1132 @@
+{
+  "meta": {
+    "name": "golden-drawer-columns.json",
+    "turn": "T78",
+    "F": "F34",
+    "source": "T79 F3 (no new LISP: the board and the divider are existing parts, KIT_WARDROBE_FULL.lsp's PARTITION and the T11 divider): WARDROBE 1200, columns 2 as the store builds it (one divider at (W - G) / 2 = 591, full depth, three internal drawers in zone 0 and three in zone 1), the kit defaults only: ONE full-width FIX PARTITION over both stacks at the tallest line, the divider from the base to its underside",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "WARDROBE",
+    "width": 1200,
+    "height": 2150,
+    "depth": 568,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": 1400,
+    "hinge": "L",
+    "doors": null,
+    "unit_num": "01",
+    "sections": [
+      {
+        "width_mm": 1200,
+        "items": [
+          {
+            "id": "p1",
+            "kind": "partition",
+            "x_mm": 591,
+            "front_mm": 0
+          },
+          {
+            "id": "z0d1",
+            "kind": "drawer",
+            "index": 1,
+            "mount": "internal",
+            "zone": 0,
+            "height_mm": 200
+          },
+          {
+            "id": "z0d2",
+            "kind": "drawer",
+            "index": 2,
+            "mount": "internal",
+            "zone": 0,
+            "height_mm": 200
+          },
+          {
+            "id": "z0d3",
+            "kind": "drawer",
+            "index": 3,
+            "mount": "internal",
+            "zone": 0,
+            "height_mm": 200
+          },
+          {
+            "id": "z1d1",
+            "kind": "drawer",
+            "index": 1,
+            "mount": "internal",
+            "zone": 1,
+            "height_mm": 200
+          },
+          {
+            "id": "z1d2",
+            "kind": "drawer",
+            "index": 2,
+            "mount": "internal",
+            "zone": 1,
+            "height_mm": 200
+          },
+          {
+            "id": "z1d3",
+            "kind": "drawer",
+            "index": 3,
+            "mount": "internal",
+            "zone": 1,
+            "height_mm": 200
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,550,2150,<,2.15,1.183",
+      "01,BUR,550,2150,>,2.15,1.183",
+      "01,TOP,1164,550,>,1.16,0.640",
+      "01,BOTTOM,1164,550,>,1.16,0.640",
+      "01,BACK,1200,2150,,0,2.580",
+      "01,VPART-1,611,550,>,0.61,0.336",
+      "01,Z1D1-SL,440,164,,0,0.072",
+      "01,Z1D1-SR,440,164,,0,0.072",
+      "01,Z1D1-BF,479,130,,0,0.062",
+      "01,Z1D1-BB,479,130,,0,0.062",
+      "01,Z1D1-DNO,492,440,,0,0.216",
+      "01,Z1D2-SL,440,164,,0,0.072",
+      "01,Z1D2-SR,440,164,,0,0.072",
+      "01,Z1D2-BF,479,130,,0,0.062",
+      "01,Z1D2-BB,479,130,,0,0.062",
+      "01,Z1D2-DNO,492,440,,0,0.216",
+      "01,Z1D3-SL,440,164,,0,0.072",
+      "01,Z1D3-SR,440,164,,0,0.072",
+      "01,Z1D3-BF,479,130,,0,0.062",
+      "01,Z1D3-BB,479,130,,0,0.062",
+      "01,Z1D3-DNO,492,440,,0,0.216",
+      "01,Z1-DP-L,500,611,,0,0.306",
+      "01,Z1-FILLER-L1,30,611,,0,0.018",
+      "01,Z1-FILLER-L2,30,611,,0,0.018",
+      "01,Z2D1-SL,440,164,,0,0.072",
+      "01,Z2D1-SR,440,164,,0,0.072",
+      "01,Z2D1-BF,479,130,,0,0.062",
+      "01,Z2D1-BB,479,130,,0,0.062",
+      "01,Z2D1-DNO,492,440,,0,0.216",
+      "01,Z2D2-SL,440,164,,0,0.072",
+      "01,Z2D2-SR,440,164,,0,0.072",
+      "01,Z2D2-BF,479,130,,0,0.062",
+      "01,Z2D2-BB,479,130,,0,0.062",
+      "01,Z2D2-DNO,492,440,,0,0.216",
+      "01,Z2D3-SL,440,164,,0,0.072",
+      "01,Z2D3-SR,440,164,,0,0.072",
+      "01,Z2D3-BF,479,130,,0,0.062",
+      "01,Z2D3-BB,479,130,,0,0.062",
+      "01,Z2D3-DNO,492,440,,0,0.216",
+      "01,Z2-DP-R,500,611,,0,0.306",
+      "01,Z2-FILLER-R1,30,611,,0,0.018",
+      "01,Z2-FILLER-R2,30,611,,0,0.018",
+      "01,PARTITION,1164,550,,0,0.640",
+      "01,01-FL,597,2147,<>^v,5.49,1.282",
+      "01,01-FR,597,2147,<>^v,5.49,1.282"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 550,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 2150,
+          "d": 550
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 550,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 1182,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 2150,
+          "d": 550
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 1164,
+        "h": 550,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 2132,
+          "z": 18,
+          "w": 1164,
+          "h": 18,
+          "d": 550
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 1164,
+        "h": 550,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 1164,
+          "h": 18,
+          "d": 550
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 1200,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1200,
+          "h": 2150,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 34,
+        "pockets": 10,
+        "readiness": null
+      },
+      {
+        "id": "VPART-1",
+        "part": "VPART",
+        "role": "shelf",
+        "w": 611,
+        "h": 550,
+        "thickness": 18,
+        "box": {
+          "x": 591,
+          "y": 18,
+          "z": 18,
+          "w": 18,
+          "h": 611,
+          "d": 550
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1D1-SL",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 71,
+          "y": 31.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z1D1-SR",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 568,
+          "y": 31.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z1D1-BF",
+        "part": "DRAWER-BOX-FRONT",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 89,
+          "y": 64.5,
+          "z": 475,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1D1-BB",
+        "part": "DRAWER-BOX-BACK",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 89,
+          "y": 64.5,
+          "z": 53,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1D1-DNO",
+        "part": "DRAWER-BOTTOM",
+        "role": "drawer_box",
+        "w": 492,
+        "h": 440,
+        "thickness": 18,
+        "box": {
+          "x": 82.5,
+          "y": 46.5,
+          "z": 53,
+          "w": 492,
+          "h": 18,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1D2-SL",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 71,
+          "y": 234.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z1D2-SR",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 568,
+          "y": 234.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z1D2-BF",
+        "part": "DRAWER-BOX-FRONT",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 89,
+          "y": 267.5,
+          "z": 475,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1D2-BB",
+        "part": "DRAWER-BOX-BACK",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 89,
+          "y": 267.5,
+          "z": 53,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1D2-DNO",
+        "part": "DRAWER-BOTTOM",
+        "role": "drawer_box",
+        "w": 492,
+        "h": 440,
+        "thickness": 18,
+        "box": {
+          "x": 82.5,
+          "y": 249.5,
+          "z": 53,
+          "w": 492,
+          "h": 18,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1D3-SL",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 71,
+          "y": 437.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z1D3-SR",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 568,
+          "y": 437.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z1D3-BF",
+        "part": "DRAWER-BOX-FRONT",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 89,
+          "y": 470.5,
+          "z": 475,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1D3-BB",
+        "part": "DRAWER-BOX-BACK",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 89,
+          "y": 470.5,
+          "z": 53,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1D3-DNO",
+        "part": "DRAWER-BOTTOM",
+        "role": "drawer_box",
+        "w": 492,
+        "h": 440,
+        "thickness": 18,
+        "box": {
+          "x": 82.5,
+          "y": 452.5,
+          "z": 53,
+          "w": 492,
+          "h": 18,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1-DP-L",
+        "part": "DP",
+        "role": "side",
+        "w": 500,
+        "h": 611,
+        "thickness": 18,
+        "box": {
+          "x": 48,
+          "y": 18,
+          "z": 18,
+          "w": 18,
+          "h": 611,
+          "d": 500
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1-FILLER-L1",
+        "part": "FILLER",
+        "role": "side",
+        "w": 30,
+        "h": 611,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 18,
+          "z": 460,
+          "w": 30,
+          "h": 611,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z1-FILLER-L2",
+        "part": "FILLER",
+        "role": "side",
+        "w": 30,
+        "h": 611,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 18,
+          "z": 18,
+          "w": 30,
+          "h": 611,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2D1-SL",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 614,
+          "y": 31.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z2D1-SR",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 1111,
+          "y": 31.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z2D1-BF",
+        "part": "DRAWER-BOX-FRONT",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 632,
+          "y": 64.5,
+          "z": 475,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2D1-BB",
+        "part": "DRAWER-BOX-BACK",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 632,
+          "y": 64.5,
+          "z": 53,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2D1-DNO",
+        "part": "DRAWER-BOTTOM",
+        "role": "drawer_box",
+        "w": 492,
+        "h": 440,
+        "thickness": 18,
+        "box": {
+          "x": 625.5,
+          "y": 46.5,
+          "z": 53,
+          "w": 492,
+          "h": 18,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2D2-SL",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 614,
+          "y": 234.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z2D2-SR",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 1111,
+          "y": 234.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z2D2-BF",
+        "part": "DRAWER-BOX-FRONT",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 632,
+          "y": 267.5,
+          "z": 475,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2D2-BB",
+        "part": "DRAWER-BOX-BACK",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 632,
+          "y": 267.5,
+          "z": 53,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2D2-DNO",
+        "part": "DRAWER-BOTTOM",
+        "role": "drawer_box",
+        "w": 492,
+        "h": 440,
+        "thickness": 18,
+        "box": {
+          "x": 625.5,
+          "y": 249.5,
+          "z": 53,
+          "w": 492,
+          "h": 18,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2D3-SL",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 614,
+          "y": 437.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z2D3-SR",
+        "part": "DRAWER-SIDE",
+        "role": "drawer_box",
+        "w": 440,
+        "h": 164,
+        "thickness": 18,
+        "box": {
+          "x": 1111,
+          "y": 437.5,
+          "z": 53,
+          "w": 18,
+          "h": 164,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "Z2D3-BF",
+        "part": "DRAWER-BOX-FRONT",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 632,
+          "y": 470.5,
+          "z": 475,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2D3-BB",
+        "part": "DRAWER-BOX-BACK",
+        "role": "drawer_box",
+        "w": 479,
+        "h": 130,
+        "thickness": 18,
+        "box": {
+          "x": 632,
+          "y": 470.5,
+          "z": 53,
+          "w": 479,
+          "h": 130,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2D3-DNO",
+        "part": "DRAWER-BOTTOM",
+        "role": "drawer_box",
+        "w": 492,
+        "h": 440,
+        "thickness": 18,
+        "box": {
+          "x": 625.5,
+          "y": 452.5,
+          "z": 53,
+          "w": 492,
+          "h": 18,
+          "d": 440
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2-DP-R",
+        "part": "DP",
+        "role": "side",
+        "w": 500,
+        "h": 611,
+        "thickness": 18,
+        "box": {
+          "x": 1134,
+          "y": 18,
+          "z": 18,
+          "w": 18,
+          "h": 611,
+          "d": 500
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2-FILLER-R1",
+        "part": "FILLER",
+        "role": "side",
+        "w": 30,
+        "h": 611,
+        "thickness": 18,
+        "box": {
+          "x": 1152,
+          "y": 18,
+          "z": 460,
+          "w": 30,
+          "h": 611,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "Z2-FILLER-R2",
+        "part": "FILLER",
+        "role": "side",
+        "w": 30,
+        "h": 611,
+        "thickness": 18,
+        "box": {
+          "x": 1152,
+          "y": 18,
+          "z": 18,
+          "w": 30,
+          "h": 611,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "PARTITION",
+        "part": "PARTITION",
+        "role": "shelf",
+        "w": 1164,
+        "h": 550,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 629,
+          "z": 18,
+          "w": 1164,
+          "h": 18,
+          "d": 550
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-FL",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 2147,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 0,
+          "z": 571,
+          "w": 597,
+          "h": 2147,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "01-FR",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 2147,
+        "thickness": 25,
+        "box": {
+          "x": 601.5,
+          "y": 0,
+          "z": 571,
+          "w": 597,
+          "h": 2147,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-FL",
+        6
+      ],
+      [
+        "FRONT_HINGES_35MM|01-FR",
+        6
+      ],
+      [
+        "FRONT_HINGES_3MM|01-FL",
+        12
+      ],
+      [
+        "FRONT_HINGES_3MM|01-FR",
+        12
+      ],
+      [
+        "HINGES_5MM|BUL",
+        12
+      ],
+      [
+        "HINGES_5MM|BUR",
+        12
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        20
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "RUNNERS_3MM|BUL",
+        9
+      ],
+      [
+        "RUNNERS_3MM|BUR",
+        9
+      ],
+      [
+        "RUNNERS_3MM|VPART-1",
+        18
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        20
+      ],
+      [
+        "SCREWS_3MM|BOTTOM",
+        8
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        9
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        9
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 12,
+        "label": "Hinges"
+      },
+      {
+        "role": "runner_pairs",
+        "qty": 6,
+        "label": "Drawer runners"
+      },
+      {
+        "role": "runner_sync_rods",
+        "qty": 3,
+        "label": "Runner synchronisation rods"
+      },
+      {
+        "role": "runner_sync_rods",
+        "qty": 3,
+        "label": "Runner synchronisation rods"
+      },
+      {
+        "role": "legs",
+        "qty": 5,
+        "label": "Legs"
+      }
+    ]
+  }
+}

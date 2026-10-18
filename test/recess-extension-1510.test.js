@@ -485,6 +485,10 @@ test('the verdict: the kit, a notch, a hanger in the window; a refusal cuts the 
 
 const S = () => useProjectStore.getState();
 const unitOf = (id) => S().units.find((u) => u.id === id);
+// T79 F10, the owner 18.10.2026: *"lub zmniejszać go odsuwaniem od recesu."*
+// A recess gives a cabinet its depth less the cabinet's stand-off (the
+// standard ten included): what a 300 recess gives at the standard.
+const IN = 300 - P.room.wallBackClearance;
 
 function kitchenWithRecess(extra = {}) {
   S().newProject();
@@ -498,13 +502,13 @@ test('wholly inside: a DEEPER carcass on the same line of fronts (D2); partly in
   assert.equal(a.error, null, a.error);
   S().moveUnit(a.id, 1100, 1);
   let u = unitOf(a.id);
-  assert.equal(u.params.recess_mm, 300);
-  assert.equal(u.params.depth, 858, 'its depth plus the recess');
+  assert.equal(u.params.recess_mm, IN);
+  assert.equal(u.params.depth, 558 + IN, 'its depth plus the recess less its stand-off (T79 F10)');
   assert.equal(u.params.depth_full, 558);
-  assert.equal(backStandoff(u, P), P.room.wallBackClearance - 300, 'standing against the recess\'s back wall');
+  assert.equal(backStandoff(u, P), P.room.wallBackClearance - IN, 'standing back in the recess by what it takes of it');
   assert.equal(backStandoff(u, P) + u.params.depth, P.room.wallBackClearance + 558, 'THE FRONT HOLDS THE LINE');
   let r = S().unitResult(a.id);
-  assert.equal(panelOf(r, 'BUL').w, 840, 'a deeper side, the kit\'s own depth law');
+  assert.equal(panelOf(r, 'BUL').w, 558 + IN - 18, 'a deeper side, the kit\'s own depth law');
   assert.equal(r.derived.extension, undefined, 'no extension on a deeper carcass');
   assert.deepEqual(r.warnings.filter((w) => /OVERLAP|RECESS|EXTENSION/.test(w.code)), []);
   // Half across the recess's edge: on the wall line, its depth back, an extension behind its back.
@@ -516,8 +520,8 @@ test('wholly inside: a DEEPER carcass on the same line of fronts (D2); partly in
   assert.equal(backStandoff(u, P), P.room.wallBackClearance);
   r = S().unitResult(a.id);
   assert.deepEqual(r.derived.extension.boards, ['RETURN-R', 'EXT-BACK']);
-  assert.deepEqual([r.derived.extension.x0, r.derived.extension.x1, r.derived.extension.z0, r.derived.extension.z1, r.derived.extension.d], [0, 490, 0, 770, 300]);
-  assert.equal(panelOf(r, 'BUL').w, 840, 'BUL grows into the recess');
+  assert.deepEqual([r.derived.extension.x0, r.derived.extension.x1, r.derived.extension.z0, r.derived.extension.z1, r.derived.extension.d], [0, 490, 0, 770, IN]);
+  assert.equal(panelOf(r, 'BUL').w, 558 + IN - 18, 'BUL grows into the recess');
   assert.equal(panelOf(r, 'BUR').w, 540);
   // Out of the recess altogether.
   S().moveUnit(a.id, 200, 1);
@@ -526,7 +530,7 @@ test('wholly inside: a DEEPER carcass on the same line of fronts (D2); partly in
   assert.equal(S().unitResult(a.id).derived.extension, undefined);
   // The recess removed while the cabinet stands in it: back to its own depth.
   S().moveUnit(a.id, 1100, 1);
-  assert.equal(unitOf(a.id).params.depth, 858);
+  assert.equal(unitOf(a.id).params.depth, 558 + IN);
   S().removeWallSlope(S().project.wallSlopes[0].id);
   assert.equal(unitOf(a.id).params.depth, 558);
   assert.equal(unitOf(a.id).params.recess_mm, undefined);
@@ -551,9 +555,10 @@ test('the band (D3): a recess from the floor to 1000 takes the bottom of a tall 
   assert.equal(S().unitResult(w.id).derived.extension, undefined, 'the wall unit hangs above the band');
   // The same recess floor to ceiling: the tall unit is wholly inside and deeper.
   S().updateWallSlope(el.id, { top_mm: null });
-  assert.equal(unitOf(t.id).params.recess_mm, 150);
-  assert.equal(unitOf(t.id).params.depth, 558 + 150);
-  assert.equal(unitOf(w.id).params.recess_mm, 150, 'and so is the wall unit now');
+  const in150 = 150 - P.room.wallBackClearance;
+  assert.equal(unitOf(t.id).params.recess_mm, in150);
+  assert.equal(unitOf(t.id).params.depth, 558 + in150);
+  assert.equal(unitOf(w.id).params.recess_mm, in150, 'and so is the wall unit now');
 });
 
 test('the recess record: bottom_mm and top_mm live on it, null for the floor and the ceiling; a chimney has neither', () => {

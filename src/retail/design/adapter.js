@@ -2697,7 +2697,9 @@ export const unitBounds = (unitId) => S().unitSizeBoundsFor?.(unitId) || null;
  */
 export function wallGapOfUnit(unitId) {
   const unit = S().units.find((u) => u.id === unitId) || null;
-  return unit ? wallGapOf(unit, getCabinetProfile()) : 0;
+  // T79 F10: the field writes `wall_gap`, so it shows it, never that number less the
+  // recess the store derived from it (a typed 100 read back as -100 in a 300 recess).
+  return unit ? wallGapOf({ ...unit, params: { ...unit.params, recess_mm: 0 } }, getCabinetProfile()) : 0;
 }
 
 /**

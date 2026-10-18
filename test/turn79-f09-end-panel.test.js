@@ -20,6 +20,14 @@
 // the LISP, the NUMBERS blocks read off the engine's cut, the END's outline
 // against its side's in each case, the wholly-inside depth, the BOM, the
 // drawing and the export, the 3-D, save and reload, the goldens and the gate.
+//
+// T79 F10, merged after F9. The owner, 18.10.2026: *"jak odsunie od ściany na
+// grubość większą niż recess to powinien zlikwidować recess w szafie, lub
+// zmniejszać go odsuwaniem od recesu, logika."*  A unit reads the recess less
+// its own stand-off (10 at the standard), so the store-built cases below read a
+// 300 recess as 290: BUR grows by 290, END-R by the same 290, and wholly inside
+// the carcass is 558 + 290. The END stays its stand-off behind the back plane
+// the carcass reaches, as on the wall line (one law, partly in and wholly in).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -38,6 +46,7 @@ import { partDetailDrawing } from '../src/engine/drawings/partDetail.js';
 import { cutRows } from '../src/engine/drawings/setPaper.js';
 import { panelSolids } from '../src/3d/panelSolid.js';
 import { rectCorners } from '../src/engine/room.js';
+import { wallGapOf } from '../src/engine/runs.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
 import { goldenOf } from '../scripts/t75-golden.mjs';
 import { dump } from '../scripts/t64-classify.mjs';
@@ -71,27 +80,32 @@ function roomWith(recess) {
 }
 
 test('F9 · probe rows 1 to 9: partly in the band, END-R grows with BUR where the band reaches past it, and only there', () => {
-  // Row 4: a recess x 1300..2300, 300 deep, floor to ceiling: END-R reaches the recess back (z -310).
+  // Row 4: a recess x 1300..2300, 300 deep, floor to ceiling: END-R grows with BUR into the recess.
+  // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): 300 less the stand-off 10 is 290: BUR z 18 -> -272, END-R 596 -> 886 at z -10 -> -300.
   let id = roomWith({ x_mm: 1300, width: 1000, depth: 300 });
   assert.equal(S().addEndPanel(id, { side: 'R' }).error, null);
   let r = S().unitResult(id);
   assert.deepEqual(r.derived.extension.ends, ['R'], 'row 9: the room tells the engine the band reaches past END-R');
-  assert.deepEqual(panelOf(r, 'BUR').box.z, -282);
-  assert.deepEqual([panelOf(r, 'END-R').w, panelOf(r, 'END-R').box.z, panelOf(r, 'END-R').box.z + panelOf(r, 'END-R').box.d], [896, -310, 586]);
-  assert.ok(r.csvLines.includes('01,END-R,896,870,<>^v,3.53,0.780'), 'the cut list follows');
+  assert.equal(r.derived.extension.d, 290);
+  assert.deepEqual(panelOf(r, 'BUR').box.z, -272);
+  assert.deepEqual([panelOf(r, 'END-R').w, panelOf(r, 'END-R').box.z, panelOf(r, 'END-R').box.z + panelOf(r, 'END-R').box.d], [886, -300, 586]);
+  assert.equal(panelOf(r, 'END-R').w - 596, panelOf(r, 'BUR').w - 540, 'grown by the same ed');
+  assert.ok(r.csvLines.includes('01,END-R,886,870,<>^v,3.51,0.771'), 'the cut list follows');
   // Row 7: the band bottom 0, top 600: z 0..490 in the carcass; END-R covers the LID's end (490), BUR stops at 472.
+  // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): both corners 290 wide, not 300.
   id = roomWith({ x_mm: 1300, width: 1000, depth: 300, bottom_mm: 0, top_mm: 600 });
   S().addEndPanel(id, { side: 'R' });
   r = S().unitResult(id);
-  assert.deepEqual(panelOf(r, 'BUR').cnc.notch, { fc: 'x0y1', nw: 300, nh: 298 });
+  assert.deepEqual(panelOf(r, 'BUR').cnc.notch, { fc: 'x0y1', nw: 290, nh: 298 });
   assert.deepEqual(panelOf(r, 'LID').box.y + panelOf(r, 'LID').box.h, 490);
-  assert.deepEqual(panelOf(r, 'END-R').cnc.notch, { fc: 'x0y1', nw: 300, nh: 280 });
+  assert.deepEqual(panelOf(r, 'END-R').cnc.notch, { fc: 'x0y1', nw: 290, nh: 280 });
   // Row 8: the recess ends at 1510, inside END-R's 25 (1500..1525): BUR grows, END-R stays on the wall line.
   id = roomWith({ x_mm: 1300, width: 210, depth: 300 });
   S().addEndPanel(id, { side: 'R' });
   r = S().unitResult(id);
   assert.equal(r.derived.extension.ends, undefined, 'the band does not reach past END-R');
-  assert.equal(panelOf(r, 'BUR').w, 840, 'BUR grows all the same');
+  // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): BUR 540 + 290.
+  assert.equal(panelOf(r, 'BUR').w, 830, 'BUR grows all the same');
   assert.deepEqual([panelOf(r, 'END-R').w, panelOf(r, 'END-R').box.z], [596, -10]);
   assert.equal(panelOf(r, 'END-R').meta.followsSide, undefined);
   // A unit with no end panel: the extension the room asks for is the one it always was.
@@ -103,14 +117,15 @@ test('F9 · probe rows 1 to 9: partly in the band, END-R grows with BUR where th
 test('F9 · a grown END stops on the recess\'s own bottom and head: never into the wall under or over it (D21)', () => {
   // The recess starts 50 over the floor, the BUD stands on 100 legs: the band is clipped to the carcass underside,
   // END-R runs to the floor and grows from 50 up only (the room hands the engine rz0 -50).
+  // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): the recess less the stand-off, 290: END-R 886 at z -300, its corners 290 wide.
   let id = roomWith({ x_mm: 1300, width: 1000, depth: 300, bottom_mm: 50 });
   S().addEndPanel(id, { side: 'R' });
   let u = S().units.find((x) => x.id === id);
   let r = S().unitResult(id);
   assert.deepEqual([r.derived.extension.z0, r.derived.extension.ends], [0, ['R']]);
   let ep = panelOf(r, 'END-R');
-  assert.deepEqual([ep.w, ep.box.y, ep.box.z], [896, -100, -310]);
-  assert.deepEqual(ep.cnc.notch, { fc: 'x0y0', nw: 300, nh: 50 }, 'the 50 under the recess stays on the wall line');
+  assert.deepEqual([ep.w, ep.box.y, ep.box.z], [886, -100, -300]);
+  assert.deepEqual(ep.cnc.notch, { fc: 'x0y0', nw: 290, nh: 50 }, 'the 50 under the recess stays on the wall line');
   // END-R run up 300 over the carcass, the recess's head 1000 over the floor (900 over the carcass underside).
   id = roomWith({ x_mm: 1300, width: 1000, depth: 300, top_mm: 1000 });
   S().addEndPanel(id, { side: 'R' });
@@ -118,28 +133,29 @@ test('F9 · a grown END stops on the recess\'s own bottom and head: never into t
   S().setEndPanelTop(id, u.params.end_panels[0].id, 300);
   r = S().unitResult(id);
   ep = panelOf(r, 'END-R');
-  assert.deepEqual([ep.w, ep.h, ep.box.z], [896, 1170, -310]);
-  assert.deepEqual(ep.cnc.notch, { fc: 'x0y1', nw: 300, nh: 170 }, 'the 170 over the head stays on the wall line');
+  assert.deepEqual([ep.w, ep.h, ep.box.z], [886, 1170, -300]);
+  assert.deepEqual(ep.cnc.notch, { fc: 'x0y1', nw: 290, nh: 170 }, 'the 170 over the head stays on the wall line');
   // A recess from the floor to the ceiling: the END grows over its whole height, as before.
   id = roomWith({ x_mm: 1300, width: 1000, depth: 300, bottom_mm: 0 });
   S().addEndPanel(id, { side: 'R' });
   ep = panelOf(S().unitResult(id), 'END-R');
-  assert.deepEqual([ep.w, ep.cnc.notch], [896, null]);
+  assert.deepEqual([ep.w, ep.cnc.notch], [886, null]);
 });
 
 test('F9 · probe rows 10 to 13: wholly inside, the END panel reaches the recess back with the sides and the door face with the doors', () => {
   const id = roomWith({ x_mm: 800, width: 1300, depth: 300 });
   assert.equal(S().addEndPanel(id, { side: 'R' }).error, null);
   const u = S().units.find((x) => x.id === id);
-  assert.deepEqual([u.params.depth, u.params.depth_full, u.params.recess_mm], [858, 558, 300]);
+  // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): recess_mm is 300 less the stand-off 10, the carcass 558 + 290.
+  assert.deepEqual([u.params.depth, u.params.depth_full, u.params.recess_mm], [848, 558, 290]);
   const r = S().unitResult(id);
   const bur = panelOf(r, 'BUR');
   const ep = panelOf(r, 'END-R');
-  // Row 12 was 596 at z 0..596. Now: 10 off the recess's back wall like the carcass, its face on the doors'.
-  assert.deepEqual([ep.w, ep.box.z, ep.box.z + ep.box.d], [896, -10, 886]);
+  // Row 12 was 596 at z 0..596. Now: its stand-off behind the carcass's back plane, as on the wall line, its face on the doors'.
+  assert.deepEqual([ep.w, ep.box.z, ep.box.z + ep.box.d], [886, -10, 876]);
   assert.equal(ep.box.d, u.params.depth + P.room.wallBackClearance + P.doors.gap + u.params.front_t, 'the carcass depth, the wall gap and the door');
-  assert.equal(bur.box.z + bur.box.d, 858);
-  assert.ok(r.csvLines.includes('01,END-R,896,870,<>^v,3.53,0.780'));
+  assert.equal(bur.box.z + bur.box.d, 848);
+  assert.ok(r.csvLines.includes('01,END-R,886,870,<>^v,3.51,0.771'));
   // Row 13, the reference: out of the recess it is the 596 it always was.
   S().moveUnit(id, 2600, 1);
   assert.deepEqual([panelOf(S().unitResult(id), 'END-R').w, panelOf(S().unitResult(id), 'END-R').box.z], [596, -10]);
@@ -150,24 +166,72 @@ test('F9 · wholly inside, the END keeps to the wall line under or over the rece
   let id = roomWith({ x_mm: 800, width: 1300, depth: 300, bottom_mm: 50 });
   S().addEndPanel(id, { side: 'R' });
   let u = S().units.find((x) => x.id === id);
-  assert.equal(u.params.recess_mm, 300);
+  // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): 300 less the stand-off 10 is 290, the END 886 deep, its corners 290 wide.
+  assert.equal(u.params.recess_mm, 290);
   assert.equal(u.params.recess_band, undefined, 'derived, never stored');
   let ep = panelOf(S().unitResult(id), 'END-R');
-  assert.deepEqual([ep.w, ep.box.y, ep.box.z, ep.box.z + ep.box.d], [896, -100, -10, 886]);
-  assert.deepEqual(ep.cnc.notch, { fc: 'x0y0', nw: 300, nh: 50 }, 'its back edge on the wall line under the recess');
+  assert.deepEqual([ep.w, ep.box.y, ep.box.z, ep.box.z + ep.box.d], [886, -100, -10, 876]);
+  assert.deepEqual(ep.cnc.notch, { fc: 'x0y0', nw: 290, nh: 50 }, 'its back edge on the wall line under the recess');
   // Its head 1000 over the floor and END-R run up 300 over the carcass (to 1170): 170 over the head on the wall line.
   id = roomWith({ x_mm: 800, width: 1300, depth: 300, top_mm: 1000 });
   S().addEndPanel(id, { side: 'R' });
   u = S().units.find((x) => x.id === id);
   S().setEndPanelTop(id, u.params.end_panels[0].id, 300);
   ep = panelOf(S().unitResult(id), 'END-R');
-  assert.deepEqual([ep.w, ep.h, ep.box.z], [896, 1170, -10]);
-  assert.deepEqual(ep.cnc.notch, { fc: 'x0y1', nw: 300, nh: 170 });
+  assert.deepEqual([ep.w, ep.h, ep.box.z], [886, 1170, -10]);
+  assert.deepEqual(ep.cnc.notch, { fc: 'x0y1', nw: 290, nh: 170 });
   // Floor to ceiling: nothing to keep off, a plain deeper board (the probe's row 12 turned round).
   id = roomWith({ x_mm: 800, width: 1300, depth: 300 });
   S().addEndPanel(id, { side: 'R' });
   ep = panelOf(S().unitResult(id), 'END-R');
-  assert.deepEqual([ep.w, ep.cnc.notch, ep.meta.followsSide], [896, undefined, undefined]);
+  assert.deepEqual([ep.w, ep.cnc.notch, ep.meta.followsSide], [886, undefined, undefined]);
+});
+
+test('F9 x F10 · the END reads the recess the stand-off leaves: partly in and wholly inside it stops at the same room depth', () => {
+  // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): the recess a unit reads is 300 less its stand-off;
+  // the END is its stand-off behind the back plane the carcass reaches, so in the room its back is that recess behind
+  // the wall face (z 0 there), on the wall line, partly in and wholly inside alike.
+  const roomBack = (id) => {
+    const u = S().units.find((x) => x.id === id);
+    return wallGapOf(u, P) + panelOf(S().unitResult(id), 'END-R').box.z;
+  };
+  for (const [gap, recess] of [[null, 290], [100, 200], [300, 0], [350, 0]]) {
+    const part = roomWith({ x_mm: 1300, width: 1000, depth: 300 });
+    if (gap != null) S().updateUnitParams(part, { wall_gap: gap });
+    S().addEndPanel(part, { side: 'R' });
+    const pr = S().unitResult(part);
+    assert.equal(pr.derived.extension?.d, recess > 0 ? recess : undefined, `partly in, stand-off ${gap ?? 10}`);
+    if (recess > 0) assert.equal(panelOf(pr, 'END-R').w - 596 - ((gap ?? 10) - 10), panelOf(pr, 'BUR').w - 540, 'END-R grows by BUR\'s ed');
+    assert.equal(roomBack(part), 0 - recess, `partly in, stand-off ${gap ?? 10}: the END's back in the room`);
+    const whole = roomWith({ x_mm: 800, width: 1300, depth: 300 });
+    if (gap != null) S().updateUnitParams(whole, { wall_gap: gap });
+    S().addEndPanel(whole, { side: 'R' });
+    const u = S().units.find((x) => x.id === whole);
+    assert.equal(u.params.recess_mm, recess > 0 ? recess : undefined, `wholly inside, stand-off ${gap ?? 10}`);
+    assert.equal(roomBack(whole), 0 - recess, `wholly inside, stand-off ${gap ?? 10}: the END's back in the room`);
+    const wr = S().unitResult(whole);
+    const ep = panelOf(wr, 'END-R');
+    assert.equal(ep.box.z + ep.box.d, u.params.depth + P.doors.gap + u.params.front_t, 'its face on the doors\'');
+    assert.equal(ep.w - 596 - ((gap ?? 10) - 10), panelOf(wr, 'BUR').w - 540, 'wholly inside, END-R deepens by what BUR gained');
+  }
+  // Save and reload at a stand-off of 100: the cut comes back the same, and a job saved before F10 (recess_mm 300 and
+  // depth 858 stored) is re-derived on load to 200 / 758, its END with it (886 at z -100, 886 x 870 on the cut list).
+  const id = roomWith({ x_mm: 800, width: 1300, depth: 300 });
+  S().updateUnitParams(id, { wall_gap: 100 });
+  S().addEndPanel(id, { side: 'R' });
+  const lines = S().unitResult(id).csvLines;
+  assert.ok(lines.includes('01,END-R,886,870,<>^v,3.51,0.771'));
+  const saved = JSON.parse(JSON.stringify({ project: S().project, units: S().units }));
+  for (const old of [false, true]) {
+    const units = JSON.parse(JSON.stringify(saved.units));
+    if (old) Object.assign(units[0].params, { recess_mm: 300, depth: 858 });
+    S().newProject();
+    S().loadProject(saved.project, units);
+    const u = S().units.find((x) => x.id === id);
+    assert.deepEqual([u.params.recess_mm, u.params.depth], [200, 758], old ? 'the old save re-derived' : 'saved as derived');
+    assert.deepEqual([panelOf(S().unitResult(id), 'END-R').w, panelOf(S().unitResult(id), 'END-R').box.z], [886, -100]);
+    assert.deepEqual(S().unitResult(id).csvLines, lines, 'the same cut after the reload');
+  }
 });
 
 test('F9 · probe rows 14 to 21: the END panel on a notched side is cut, the other hand is not', () => {
@@ -467,7 +531,8 @@ test('F9 · save and reload: the end panels and the notch are unit params, the b
   S().newProject();
   S().loadProject(saved.project, saved.units);
   assert.deepEqual(S().unitResult(id).csvLines, before);
-  assert.ok(before.includes('01,END-R,896,870,<>^v,3.53,0.696'));
+  // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): 886 x 870 less 290 x 280, edging 2 x (886 + 870).
+  assert.ok(before.includes('01,END-R,886,870,<>^v,3.51,0.690'));
   id = roomWith(null);
   S().addEndPanel(id, { side: 'L' });
   assert.equal(S().setUnitNotch(id, NOTCH).ok, true);

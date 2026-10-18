@@ -951,6 +951,23 @@ function obstacleNotchFor(unit, state = useProjectStore.getState(), profile = ge
 //                  inside a side) is no extension: the cabinet stands as it is.
 //                  The kit's own refusals (a drawer unit, a hand notch, a hanger
 //                  in the window) are the engine's, in words.
+//
+// T79 F10 · THE RECESS GIVES WAY TO THE STAND-OFF. The owner, 18.10.2026:
+// *"jak odsunie od ściany na grubość większą niż recess to powinien
+// zlikwidować recess w szafie, lub zmniejszać go odsuwaniem od recesu,
+// logika."*  Both halves read the recess's depth through ONE helper,
+// `effectiveRecessDepth`: the recess less the unit's stand-off.
+
+/**
+ * How deep this recess is FOR THIS UNIT: the recess's depth less the unit's
+ * own stand-off off the wall (`collision.backStandoff`, its own `recess_mm`
+ * taken as 0 so the number never reads itself back). At or under 0 the unit
+ * has no recess: it stands off the wall in front of it as any unit does.
+ */
+function effectiveRecessDepth(unit, element, profile = getCabinetProfile()) {
+  const standoff = backStandoff({ ...unit, params: { ...unit.params, recess_mm: 0 } }, profile);
+  return roundTo((Number(element?.depth) || 0) - standoff, 4);
+}
 
 /** The recesses a cabinet standing back to its wall reads: none on an island, none rotated. */
 function recessesFor(unit, state = useProjectStore.getState()) {
@@ -1009,8 +1026,8 @@ function recessExtensionFor(unit, state = useProjectStore.getState(), profile = 
     const x1 = rx1 >= W ? W : Math.min(W - G, rx1 - clr);
     const z0 = rz0 <= 0 ? 0 : Math.max(G, rz0 + clr);
     const z1 = rz1 >= H ? H : Math.min(H - G, rz1 - clr);
-    const d = Number(e.depth) || 0;
-    if (recessRefusal(W, D, H, G, x0, x1, z0, z1, d, false, K)) continue;
+    const d = effectiveRecessDepth(unit, e, profile);
+    if (!(d > 0) || recessRefusal(W, D, H, G, x0, x1, z0, z1, d, false, K)) continue;
     const area = (x1 - x0) * (z1 - z0);
     const ends = [
       ...(x0 === 0 && pads.left > 0 && recessEndReachP('L', rx0, rx1, W, pads.left) ? ['L'] : []),
@@ -3281,6 +3298,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * recessExtensionFor). Out of the recess the numbers are taken back. Derived
    * at this one choke point, as the slope's settlers are, written only on
    * change, so a settled scene passes through untouched.
+   *
+   * T79 F10: "that recess's depth" is `effectiveRecessDepth`, the recess less
+   * the unit's stand-off, so a unit moved off the wall (`wall_gap`) loses its
+   * recess as it goes and has none once the stand-off reaches the depth.
    */
   settleRecesses: () => {
     const s = get();
@@ -3289,7 +3310,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const next = s.units.map((u) => {
       const has = Number(u.params?.recess_mm) > 0;
       const whole = wholeRecessOf(u, s, profile);
-      const depth = whole ? Math.max(0, Number(whole.depth) || 0) : 0;
+      // T79 F10: the recess less this unit's stand-off; at or under 0, no recess.
+      const depth = whole ? Math.max(0, effectiveRecessDepth(u, whole, profile)) : 0;
       if (depth > 0) {
         const full = Number(u.params.depth_full ?? u.params.depth) || 0;
         const want = roundTo(full + depth, 4);

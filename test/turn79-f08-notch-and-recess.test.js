@@ -744,7 +744,9 @@ function kitchenWithRecess() {
 test('F8 · THE PROBE table 4, turned round: the notch at the far end from the band no longer takes the extension away', () => {
   const id = kitchenWithRecess();
   const before = S().unitResult(id).derived.extension;
-  assert.deepEqual([before.x0, before.x1, before.z0, before.z1, before.d], [0, 490, 0, 770, 300]);
+  // T79 F10 (the owner, 18.10.2026: *"lub zmniejszać go odsuwaniem od recesu, logika."*): the extension is the recess
+  // less the unit's stand-off (300 - 10 at the standard clearance).
+  assert.deepEqual([before.x0, before.x1, before.z0, before.z1, before.d], [0, 490, 0, 770, 290]);
   const res = S().setUnitNotch(id, { corner: 'BR', w: 80, d: 200, h: 0 });
   assert.deepEqual(res, { ok: true, said: '', notch: { corner: 'BR', w: 80, d: 200, h: 0 } });
   const r = S().unitResult(id);
@@ -752,7 +754,7 @@ test('F8 · THE PROBE table 4, turned round: the notch at the far end from the b
   assert.deepEqual(r.derived.extension.boards, ['RETURN-R', 'EXT-BACK']);
   assert.deepEqual(r.derived.extension.grown, ['BUL', 'TOP', 'BOTTOM', 'BACK']);
   assert.ok(r.derived.notch && !r.derived.notch.refused);
-  assert.equal(panelOf(r, 'BUL').w, 840, 'BUL grows into the recess');
+  assert.equal(panelOf(r, 'BUL').w, 830, 'BUL grows into the recess (540 + 290, T79 F10)');
   assert.equal(panelOf(r, 'BUR').w, 340, 'BUR loses the notch');
   assert.deepEqual(S().runChecks().filter((f) => f.check === 36), [], 'nothing to say');
   // Save and reload: the same cut.

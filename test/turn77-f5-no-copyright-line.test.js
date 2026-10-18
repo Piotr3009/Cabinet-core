@@ -125,6 +125,8 @@ export const NEW_FILES = [
   // T79 F9 (18.10.2026): the end panel follows its side into the recess and the notch
   'test/turn79-f09-end-panel.test.js',
   'scripts/t78-classify.d/f34-t79-f09.mjs',
+  // T79 F10 (18.10.2026): the recess gives way to the stand-off
+  'test/turn79-f10-recess-standoff.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

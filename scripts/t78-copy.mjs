@@ -170,14 +170,18 @@ export const T78_RETAIL_EDITS = [
     retail: 'src/retail/design/adapter.js',
     by: 'T78 F12 (the one writer of the central files)',
     why: 'glassKinds(), glassKind(project) and setGlassKind(kind): the profile\'s kinds and default, the project\'s choice '
-      + '(design.fronts.glassKind) written through the store\'s setDesign; the engine validates the word.',
+      + '(design.fronts.glassKind) written through the store\'s setDesign; the engine validates the word. '
+      + 'T79 F10: wallGapOfUnit (the SIZE step\'s FROM THE WALL field) reads the unit\'s own wall_gap with the derived '
+      + 'recess_mm taken as 0, so a typed 100 reads back 100 and not 100 less the recess (-100 in a 300 recess).',
     words: 'the owner, 11.10.2026: *"domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12. Chat fix 15.10.2026, before T79 '
       + '(the import and doorCountRefusal\'s pair under the minimum leaf, through engine/cabinet.js leafCountRefusal): '
       + '*"zebym mial mozliwosc podzielenia ich na 2"*. T79 F5 (by hand): canCutEdge, edgeNotchOfUnit, cuttingEdge, '
       + 'toggleCutEdge, edgeNotchDefaults, cutEdge, dismissCutEdge, removeEdgeCut after removeCornerCut, through the '
       + 'store\'s one action setUnitEdgeNotch (KIT_NOTCH.lsp D22); the owner, 18.10.2026: *"cut the corner działa '
-      + 'idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*',
-    hunks: ['@@ -39 +39 @@', '@@ -1819,0 +1820,9 @@', '@@ -1918,0 +1928,25 @@', '@@ -4713,0 +4748,61 @@'],
+      + 'idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*. T79 F10, the owner 18.10.2026: *"jak '
+      + 'odsunie od ściany na grubość większą niż recess to powinien zlikwidować recess w szafie, lub zmniejszać go '
+      + 'odsuwaniem od recesu."*',
+    hunks: ['@@ -39 +39 @@', '@@ -1819,0 +1820,9 @@', '@@ -1918,0 +1928,25 @@', '@@ -2666 +2700,3 @@', '@@ -4713,0 +4750,61 @@'],
   },
   {
     retail: 'src/retail/styles/roomeditor.css',

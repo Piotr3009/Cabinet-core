@@ -48,9 +48,11 @@ import {
 import { areaM2, metres, roundTo, rtos } from './format.js';
 // T75 F7 · the corner notch, KIT_NOTCH.lsp's mirror: a refusal asked of the
 // parent's own cut, a pass before the drilling and a pass after it.
+// T79 F5 · ...and the edge notch beside it (KIT_NOTCH.lsp D22), the same three.
 import {
   notchCarcass, notchDrills, notchSummary, notchVerdict, withNotchRefusal,
   notchProfile, notchP, cornerMarkRecords,
+  edgeNotchCarcass, edgeNotchDrills, edgeNotchSummary, edgeNotchVerdict, withEdgeNotchRefusal,
 } from './notch.js';
 // Chat-fix 15.10.2026 (the evening) · the recess extension, KIT_RECESS.lsp's
 // mirror: the notch's reverse (the carcass grows backward over a band), asked
@@ -1781,6 +1783,16 @@ export function computeCabinet(params, profileOverride) {
     const parent = computeCabinet({ ...params, notch: null }, profileOverride);
     const verdict = notchVerdict({ parent, params, type: cfg.type, profile: P });
     if (verdict) return withNotchRefusal(parent, verdict, params, P);
+  }
+  // T79 F5 · THE EDGE NOTCH, ASKED OF THE PARENT THE SAME WAY (KIT_NOTCH.lsp
+  // D22). The parent carries the corner notch when there is one, so the two
+  // are judged together (their rectangles, the runs both leave). Refused, the
+  // parent is what is cut, with the sentence (Check #28). No `params.edgeNotch`,
+  // no line here runs.
+  if (params?.edgeNotch) {
+    const parent = computeCabinet({ ...params, edgeNotch: null }, profileOverride);
+    const verdict = edgeNotchVerdict({ parent, params, type: cfg.type, profile: P });
+    if (verdict) return withEdgeNotchRefusal(parent, verdict, params, P);
   }
   // ─── 15.10.2026 · THE RECESS EXTENSION IS ASKED OF THE PARENT FIRST ──────
   // KIT_RECESS.lsp: the room derives the band (projectStore recessExtensionFor),
@@ -8708,6 +8720,13 @@ export function computeCabinet(params, profileOverride) {
       params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel,
     })
     : null;
+  // T79 F5 · the edge notch (KIT_NOTCH.lsp D22), after the corner notch, on
+  // what it left: a board both reach is cut by both. Null with no edge notch.
+  const edgeNotchCut = params?.edgeNotch
+    ? edgeNotchCarcass({
+      params, profile: P, panels, W, H, D, G, cornerCut: notchCut,
+    })
+    : null;
   // 15.10.2026 · the recess extension, in the notch's own place (KIT_RECESS.lsp
   // section 1: after the parent's carcass, before the drilling). Null on every
   // unit with no extension.
@@ -11684,6 +11703,14 @@ export function computeCabinet(params, profileOverride) {
       cut: notchCut, panels, drills, legs,
     });
     derived.notch = notchSummary(notchCut);
+  }
+  // T79 F5 · ...and the edge notch's, after the corner notch's (it reads a side
+  // the corner re-origined back into its first frame).
+  if (edgeNotchCut) {
+    edgeNotchDrills({
+      cut: edgeNotchCut, panels, drills, legs,
+    });
+    derived.edgeNotch = edgeNotchSummary(edgeNotchCut);
   }
   // 15.10.2026 · BUR re-origined from its new back edge, the grown sides' back
   // pin column stepped back over the band (KIT_RECESS.lsp D12).

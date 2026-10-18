@@ -33,8 +33,10 @@ import {
 import { freePanelFit, freePanelPatch, freePanelSnap } from '../engine/freePanel.js';
 // T75 F7 · the corner notch: whether a kit takes one, and the engine's own
 // refusal (KIT_NOTCH.lsp, asked of the parent's cut) read before it is kept.
+// T79 F5 · ...and the edge notch's edges (KIT_NOTCH.lsp D22).
 import {
   NOTCH_CORNERS, NOTCH_REFUSED, notchApplies, notchKitRefusal, notchObstacleLimits, notchP, notchProfile,
+  EDGE_NOTCH_EDGES,
 } from '../engine/notch.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, roundTo, snap as snapTo } from '../engine/format.js';
@@ -10774,6 +10776,49 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, notch } } : u)),
     }));
     return { ok: true, said: '', notch };
+  }),
+
+  // ─── T79 F5 · CUT EDGE (KIT_NOTCH.lsp D22) ───────────────────────────────
+  //
+  // The owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz zrobić
+  // mi też poziome cut? wszystkich 4 rogów?"*  setUnitNotch's twin, ONE action
+  // and one undo step: the edge notch is a unit param (`params.edgeNotch =
+  // { edge, d, h }`: TB, BB, TF or BF, DEPTH into the carcass, HEIGHT up the
+  // side), saved and reloaded with the unit. Room refuses first: the engine
+  // asks it of the parent's own cut (`engine/notch.js edgeNotchVerdict`, the
+  // corner notch included) and a refused edge notch is NOT kept; its sentence
+  // comes back here in the engine's own words. `null` takes it off again.
+  setUnitEdgeNotch: (unitId, asked) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, said: 'There is no such unit.' };
+    if (asked == null) {
+      if (!unit.params?.edgeNotch) return { ok: true, said: '' };
+      set((st) => ({
+        units: st.units.map((u) => {
+          if (u.id !== unitId) return u;
+          const { edgeNotch: _gone, ...params } = u.params;
+          return { ...u, params };
+        }),
+      }));
+      return { ok: true, said: '' };
+    }
+    const kit = notchKitRefusal(getUnitType(unit.type), 'an edge');
+    if (kit) return { ok: false, said: kit };
+    const edge = String(asked.edge || '').toUpperCase();
+    if (!EDGE_NOTCH_EDGES.includes(edge)) return { ok: false, said: 'NOTCH: the edge is TB, BB, TF or BF.' };
+    const mm = (v) => Math.round(Number(v) || 0);
+    const edgeNotch = { edge, d: mm(asked.d), h: mm(asked.h) };
+    const trial = computeCabinet(
+      paramsForEngine({ ...unit, params: { ...unit.params, edgeNotch } }, s.project.design),
+      getCabinetProfile(),
+    );
+    const refused = trial.derived?.edgeNotch?.refused || null;
+    if (refused) return { ok: false, said: refused };
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, edgeNotch } } : u)),
+    }));
+    return { ok: true, said: '', edgeNotch };
   }),
 
   // Chat-fix 12.10.2026: both read through `resultOf`, which remembers each

@@ -167,3 +167,21 @@ test('T79 F4 · KIT_NOTCH.lsp balances 0/0 with D21 and its NUMBERS block I2', (
   assert.match(text, /\(defun notch-floor \(ch g nw nd nh\)/);
   assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
 });
+
+// T79 F5 · CLAUDE.md T79 FROZEN 2, again: KIT_NOTCH.lsp is amended under
+// licence (the owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz
+// zrobić mi też poziome cut? wszystkich 4 rogów?"*) with D22 THE EDGE NOTCH,
+// its section H2, its NUMBERS block I3 and its command K2; it balances by name.
+test('T79 F5 · KIT_NOTCH.lsp balances 0/0 with D22, section H2, its NUMBERS block I3 and EDGENOTCH_FULL', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_NOTCH.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D22 THE EDGE NOTCH\./);
+  assert.match(text, /;;; H2\. THE EDGE NOTCH \(D22, 18\.10\.2026\)/);
+  assert.match(text, /;;; I3\. NUMBERS - THE EDGE NOTCH/);
+  assert.match(text, /\(defun edge-notch-side-joints \(cd ch g ed eh edge\)/);
+  assert.match(text, /\(defun edge-notch-meets-refusal \(cw cd ch g ed eh edge nw nd nh corner/);
+  assert.match(text, /\(defun c:EDGENOTCH_FULL /);
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+});

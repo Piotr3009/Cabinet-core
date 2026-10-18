@@ -13,6 +13,8 @@ import DrawRoomModal from './room/DrawRoomModal.jsx';
 import AddPanelAsk from './detail/AddPanelAsk.jsx';
 // T75 F7 · CUT CORNER: the small window at the click on a lit corner.
 import NotchAsk from './detail/NotchAsk.jsx';
+// T79 F5 · CUT EDGE: the small window at the click on a lit edge.
+import EdgeNotchAsk from './detail/EdgeNotchAsk.jsx';
 // T74 F13 · PRO's piece editor, copied by the machine (`T74_COPIES`).
 import PartDetailModal from './detail/PartDetailModal.jsx';
 import { DOCK_MODALS } from './detail/docked.jsx';
@@ -102,6 +104,8 @@ export default function Editors({ where = 'room' }) {
           *"program podświetla narożniki, wybierasz, podajesz wysokość,
           głębokość, szerokość"*: the room-level slot, as the side ask's. */}
       {is('notch') && <NotchAsk args={modalArgs} />}
+      {/* T79 F5 · CUT EDGE, beside the click, the same slot (KIT_NOTCH.lsp D22). */}
+      {is('edge-notch') && <EdgeNotchAsk args={modalArgs} />}
       {/* ─── T74 F13 · THE FREE PANEL'S 2KLIK ──────────────────────────────
           *"Dwuklik = wejście w edycję jak w PRO (wycięcie łuku itp.)."*  The
           room-level slot, beside the board, as PRO opens it. */}

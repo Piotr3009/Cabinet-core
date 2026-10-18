@@ -679,8 +679,15 @@ export const useUiStore = create((set, get) => ({
   // or null. A moment, like the bay hint above: the click on a corner opens
   // the small window at the click, and a cut or a click elsewhere ends it.
   notchPick: null,
-  startNotchPick: (unitId) => set({ notchPick: unitId || null }),
+  startNotchPick: (unitId) => set({ notchPick: unitId || null, edgeNotchPick: null }),
   stopNotchPick: () => set({ notchPick: null }),
+  // ─── T79 F5 · CUT EDGE: THE FOUR HORIZONTAL EDGES ARE LIT ────────────────
+  // The owner, 18.10.2026: *"możesz zrobić mi też poziome cut? wszystkich 4
+  // rogów?"*  Which unit's four horizontal side edges stand lit in the scene
+  // (`3d/NotchEdges`), or null; the corners' twin, and one or the other is lit.
+  edgeNotchPick: null,
+  startEdgeNotchPick: (unitId) => set({ edgeNotchPick: unitId || null, notchPick: null }),
+  stopEdgeNotchPick: () => set({ edgeNotchPick: null }),
 
   // Which "Add items" type has its settings open. One at a time: they are
   // alternatives, not a form to fill in top to bottom.

@@ -159,8 +159,12 @@ export const T78_RETAIL_EDITS = [
     why: 'the FRONTS step gains a GLASS list under the style list, shown for the GL style only: clear, smoke, reeded, one '
       + 'click writes the project\'s glass kind through the adapter (A.setGlassKind); no number on the page.',
     words: 'the owner, 11.10.2026: *"szyba powinna byc smoke ... domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12: '
-      + '*"Retail: the choice in the FRONTS step for a GL style."*',
-    hunks: ['@@ -783,0 +784,24 @@'],
+      + '*"Retail: the choice in the FRONTS step for a GL style."*'
+      + ' T79 F5: the owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*; '
+      + 'CLAUDE.md T79 F5: *"Retail the same through the copy script or by hand (name it)."*',
+    // T79 F5 (by hand, Options.jsx is retail's own): the SIZE step's CutEdgeRow under CUT CORNER, CUT EDGE lights the four
+    // horizontal side edges (A.toggleCutEdge) and REMOVE takes an edge notch off (A.removeEdgeCut); the hunks at 354 and 396.
+    hunks: ['@@ -353,0 +354,5 @@', '@@ -390,0 +396,24 @@', '@@ -783,0 +813,24 @@'],
   },
   {
     retail: 'src/retail/design/adapter.js',
@@ -169,8 +173,11 @@ export const T78_RETAIL_EDITS = [
       + '(design.fronts.glassKind) written through the store\'s setDesign; the engine validates the word.',
     words: 'the owner, 11.10.2026: *"domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12. Chat fix 15.10.2026, before T79 '
       + '(the import and doorCountRefusal\'s pair under the minimum leaf, through engine/cabinet.js leafCountRefusal): '
-      + '*"zebym mial mozliwosc podzielenia ich na 2"*.',
-    hunks: ['@@ -39 +39 @@', '@@ -1819,0 +1820,9 @@', '@@ -1918,0 +1928,25 @@'],
+      + '*"zebym mial mozliwosc podzielenia ich na 2"*. T79 F5 (by hand): canCutEdge, edgeNotchOfUnit, cuttingEdge, '
+      + 'toggleCutEdge, edgeNotchDefaults, cutEdge, dismissCutEdge, removeEdgeCut after removeCornerCut, through the '
+      + 'store\'s one action setUnitEdgeNotch (KIT_NOTCH.lsp D22); the owner, 18.10.2026: *"cut the corner działa '
+      + 'idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*',
+    hunks: ['@@ -39 +39 @@', '@@ -1819,0 +1820,9 @@', '@@ -1918,0 +1928,25 @@', '@@ -4713,0 +4748,61 @@'],
   },
   {
     retail: 'src/retail/styles/roomeditor.css',
@@ -188,6 +195,23 @@ export const T78_RETAIL_EDITS = [
     words: 'the owner, 18.10.2026: *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry? i mała informacja o tym."*; '
       + 'CLAUDE.md T79 F4: *"Retail `NotchAsk.jsx` the same line, through the copy script where it is a copy, by hand where it is not."*',
     hunks: ['@@ -20 +20,2 @@', '@@ -84,0 +86,2 @@'],
+  },
+  {
+    retail: 'src/retail/design/detail/EdgeNotchAsk.jsx',
+    by: 'T79 F5',
+    why: 'NEW, retail\'s own CUT EDGE window (NotchAsk.jsx\'s twin, not a copy: PRO\'s window lives in RightPanel.jsx, which has no '
+      + 'retail copy): EDGE (TB, BB, TF, BF), DEPTH, HEIGHT on the profile\'s notch.edgeDefaults, PRO\'s help line word for word '
+      + '(data-testid edge-notch-help); the cut is the adapter\'s A.cutEdge, the store\'s one action (KIT_NOTCH.lsp D22).',
+    words: 'the owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*; '
+      + 'CLAUDE.md T79 F5: *"Retail the same through the copy script or by hand (name it)."*',
+    hunks: ['@@ -0,0 +1,115 @@'],
+  },
+  {
+    retail: 'src/retail/design/Editors.jsx',
+    by: 'T79 F5',
+    why: 'the room-level modal slot draws EdgeNotchAsk for the `edge-notch` window, beside NotchAsk (retail\'s own file, not a copy).',
+    words: 'the owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*',
+    hunks: ['@@ -15,0 +16,2 @@', '@@ -104,0 +107,2 @@'],
   },
 ];
 

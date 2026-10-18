@@ -187,6 +187,8 @@ import { widthZones } from '../engine/zones.js';
 import { panelSolids } from './panelSolid.js';
 // T75 F7 · CUT CORNER: the four plan corners, lit while the store asks.
 import NotchCorners from './NotchCorners.jsx';
+// T79 F5 · CUT EDGE: the four horizontal side edges, lit (KIT_NOTCH.lsp D22).
+import NotchEdges from './NotchEdges.jsx';
 // T58b (CLAUDE.md F3.2): the J is not a mesh — it is slabs merged into the
 // leaf's own geometry — so a click on it is a hit test, and the hit test is a
 // pure function with a unit test behind it.
@@ -3348,6 +3350,14 @@ export default function UnitView({
           the small window at the click. Draws nothing otherwise. */}
       {!contour && (
         <NotchCorners unitId={unit.id} width={W} depth={D} height={H} notch={unit.params?.notch || null} />
+      )}
+
+      {/* ─── T79 F5 · CUT EDGE ───────────────────────────────────────────────
+          *"możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*: the four
+          horizontal side edges, lit while `uiStore.edgeNotchPick` names this
+          unit; a click on one's handle opens the small window at the click. */}
+      {!contour && (
+        <NotchEdges unitId={unit.id} width={W} depth={D} height={H} edgeNotch={unit.params?.edgeNotch || null} />
       )}
 
       {/* ─── T75 F23 · THE DOWEL GATE, SAID ON THE UNIT ──────────────────────

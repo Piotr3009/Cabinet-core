@@ -1222,6 +1222,11 @@ export function cabineoVerdict({
     return say('a carcass with a corner notch keeps the puzzle: KIT_NOTCH.lsp re-plans the puzzle\'s joints, '
       + 'and SKYLON_JOINTS_CABINEO.lsp has no notch row');
   }
+  // T79 F5 (KIT_NOTCH.lsp D22): the edge notch re-plans them the same way.
+  if (params?.edgeNotch) {
+    return say('a carcass with an edge notch keeps the puzzle: KIT_NOTCH.lsp re-plans the puzzle\'s joints, '
+      + 'and SKYLON_JOINTS_CABINEO.lsp has no notch row');
+  }
   const prof = cabineoProfile(profile, asked);
   const sheet = cabineoSheet();
   const pz = profile?.puzzle || {};

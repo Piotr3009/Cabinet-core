@@ -2,7 +2,7 @@
 ;;; KIT_NOTCH.lsp
 ;;; The CORNER NOTCH - a MODIFIER on the KIT_BUD, KIT_WARDROBE and (since
 ;;; 15.10.2026) KIT_WUD and KIT_BUDTALL boards
-;;; Command: NOTCH_FULL
+;;; Commands: NOTCH_FULL (the corner notch), EDGENOTCH_FULL (the edge notch, D22)
 ;;; Turn 75 (CLAUDE.md PART A, F7) - LISP FIRST ("lisp najpierw")
 ;;; Derived from: KIT_BUD_FULL.lsp + KIT_WARDROBE_FULL.lsp + SKYLON_COMMON.lsp
 ;;; Requires: SKYLON_COMMON.lsp loaded first
@@ -90,6 +90,9 @@
 ;;; the BOTTOM, a FLOOR board under the box as the LID is over it). The one
 ;;; from the TOP is here since 18.10.2026 (D21, a NEGATIVE nh); the WINDOW
 ;;; notch is still not.
+;;; A rebate along a whole horizontal EDGE of the side elevation (a
+;;; skirting, a coving, a bulkhead, a plinth return) is here since the same
+;;; day as a notch of its own beside the corner one (D22, section H2).
 ;;;
 ;;; PAST THE NOTCH (the owner, 15.10.2026, the morning): "przy bardzo waskim
 ;;; wcieciu zatrzymuje sie a ja bym chcial zeby sie wtedy szafka calkowicie
@@ -384,6 +387,62 @@
 ;;;     THE SMALL INFORMATION is the window's help line, not this file's: "a
 ;;;     negative HEIGHT cuts from the top (e.g. -500)".
 ;;;
+;;; 18.10.2026, THE OWNER'S LIST (CLAUDE.md T79 F5):
+;;;
+;;; D22 THE EDGE NOTCH. The owner: *"cut the corner dziala idealnie, ale
+;;;     mozesz zrobic mi tez poziome cut? wszystkich 4 rogow?"*  The four
+;;;     corners of the SIDE elevation, each a rebate running the WHOLE WIDTH
+;;;     of the carcass along that edge: "TB" top-back (a coving), "BB"
+;;;     bottom-back (a skirting board), "TF" top-front (a bulkhead), "BF"
+;;;     bottom-front (a plinth return). Its own parameter beside the corner
+;;;     notch's, params.edgeNotch = (edge d h): ed into the depth, eh into the
+;;;     height (the JS mirror's d and h). Board by board (section H2):
+;;;       BUL, BUR  BOTH take the L corner ed x eh at that edge (edge-notch-
+;;;                 side: the corner notch's own outline law and corner name)
+;;;                 and the one open CORNER_4MM L at its inner corner (D9,
+;;;                 D12), one per inner corner
+;;;       BACK      a back edge: shorter by eh, from the bottom (BB) or from
+;;;                 the top (TB); a front edge never reaches it
+;;;       BOTTOM    BB / BF: narrower by ed at the back / at the front
+;;;       TOP       TB / TF: narrower by ed at the back / at the front
+;;;       FRONTS    untouched (the owner said nothing of doors; D4)
+;;;       PLINTH    untouched at BF: it keeps its own law
+;;;     NO CLOSING BOARDS: the rebate is open to the wall or the floor, so
+;;;     there is no RETURN, STEP, LID or FLOOR. ed is cut off every board the
+;;;     edge reaches, as nd is; at a back edge the BACK's own g goes with the
+;;;     cut, so the wall gets ed + g of room behind the boards there.
+;;;     THE JOINTS follow the shortened edges (D5 read as RUNS, section H2's
+;;;     run law): the sides' sockets and dia 3 screws along the cut edge, the
+;;;     sides' back tabs and the BACK's matching sockets on the back edge the
+;;;     cut leaves, the TOP's / BOTTOM's tabs into the sides on its shortened
+;;;     run; at a back edge the cut board's BACK edge and the BACK's edge
+;;;     beside it meet nothing and carry neither a joint nor a row, and
+;;;     drawBACK's rows run on what is left of its edges (D10: an edge a cut
+;;;     MADE carries none).
+;;;     notch.minInterior (100) applies to what is left: the interior beside
+;;;     the rebate in depth (cd - g - ed) and in height (ch - g - eh), never
+;;;     less than a joint needs (D6); less is REFUSED in words.
+;;;     D7 and D8 hold, asked of the parent's cut: a hinge, a runner, a rail
+;;;     bracket or a wall unit's hanger the cut reaches on EITHER side, or a
+;;;     hanger cut-out of the BACK, is refused in words (a hanger cannot be
+;;;     fixed to air either); a shelf-pin hole it reaches steps away by ed;
+;;;     anything else the parent puts inside the carcass that crosses the
+;;;     keep-out (a shelf too: the rebate would take a whole strip of it, so
+;;;     it is refused, not cut) is refused, naming it. Legs standing in a
+;;;     bottom edge's footprint step out of it, as the corner notch's do.
+;;;     WITH THE CORNER NOTCH on the same carcass: they coexist when their
+;;;     rectangles on the corner notch's side do not overlap; otherwise the
+;;;     edge notch is refused in words (edge-notch-meets-refusal). Both are
+;;;     cut, the corner notch first; a board both reach is its rectangle less
+;;;     both (edge-notch-less-two), its joints planned on the MEET of the two
+;;;     runs, and a met run that cannot hold a joint is refused, naming the
+;;;     board and the edge. A carcass cut under a slope, or grown into a
+;;;     recess, takes no edge notch (refused in words, as the corner notch is
+;;;     under a slope).
+;;;     THE SMALL INFORMATION is the window's help line, not this file's: "A
+;;;     rebate along the whole edge: skirting at the bottom-back, coving at
+;;;     the top-back."
+;;;
 ;;;========================================
 ;;; 4. THE JOINTS ON A SHORTENED EDGE
 ;;;========================================
@@ -499,7 +558,9 @@
     ("notch.defaults.height"        . 0.0)
     ("notch.obstacleClearance"      . 10.0)     ;; 15.10.2026: the scribe room round a chimney or a box the notch is cut FOR (the owner: "dobrze")
     ("notch.minInterior"            . 100.0)    ;; 15.10.2026: the owner's "nie mniej niz 100 mm w srodku szafki": what a notch must leave of the interior, across and in depth
-    ("cnc.cornerMarkLeg"            . 40.0)))   ;; 17.10.2026 (D9): the owner's "okolo 40 mm w kazda strone": each leg of the CORNER_4MM mark at a re-entrant corner (profile.cnc.cornerMark.legMm)
+    ("cnc.cornerMarkLeg"            . 40.0)   ;; 17.10.2026 (D9): the owner's "okolo 40 mm w kazda strone": each leg of the CORNER_4MM mark at a re-entrant corner (profile.cnc.cornerMark.legMm)
+    ("notch.edgeDefaults.depth"     . 20.0)     ;; 18.10.2026 (D22): what the CUT EDGE window opens with, ed (a skirting board; T79 proposed, owner to confirm)
+    ("notch.edgeDefaults.height"    . 120.0)))  ;; 18.10.2026 (D22): ... and eh (profile.notch.edgeDefaults)
 
 (defun notch-p (key / hit)
   (setq hit (assoc key (notch-profile)))
@@ -1355,6 +1416,430 @@
     (T nil)))
 
 ;;;========================================
+;;; H2. THE EDGE NOTCH (D22, 18.10.2026)
+;;;========================================
+;;;
+;;; A rebate along ONE horizontal edge of the side elevation, the whole width
+;;; of the carcass: "TB" top-back, "BB" bottom-back, "TF" top-front, "BF"
+;;; bottom-front; ed into the depth, eh into the height. Every routine below
+;;; states it in the words sections D to H state the corner notch in, and
+;;; calls theirs wherever the answer is theirs.
+
+(defun edge-notch-ok (edge)
+  (if (member edge '("TB" "BB" "TF" "BF")) T nil))
+
+(defun edge-notch-back-p (edge)
+  (or (= edge "TB") (= edge "BB")))
+
+(defun edge-notch-top-p (edge)
+  (or (= edge "TB") (= edge "TF")))
+
+;;; The corner notch's corner with the same back-ness, so the side's corner
+;;; name is notch-side-fc's own (one law for both).
+(defun edge-notch-as-corner (edge)
+  (if (edge-notch-back-p edge) "BL" "FL"))
+
+;;; The board the edge cuts across: the TOP for a top edge, else the BOTTOM.
+(defun edge-notch-board (edge)
+  (if (edge-notch-top-p edge) "TOP" "BOTTOM"))
+
+;;;----------------------------------------
+;;; THE SIDES, BUL AND BUR BOTH: the corner at the notched edge, in the
+;;; side's own frame (drawBUL x from the FRONT, drawBUR x from the BACK).
+;;;----------------------------------------
+
+(defun edge-notch-side-fc (edge burFrame)
+  (notch-side-fc (edge-notch-as-corner edge) burFrame (edge-notch-top-p edge)))
+
+(defun edge-notch-side (cd ch g ed eh edge burFrame)
+  (notch-rect-outline (- cd g) ch ed eh (edge-notch-side-fc edge burFrame)))
+
+;;;----------------------------------------
+;;; THE RUN LAW (D22: section 4's D5, read as runs). A jointed edge of a
+;;; board is planned on the RUN the cuts leave it, (lo hi), by the call that
+;;; planned the whole edge; nil where a cut took the edge away. With the
+;;; corner notch on the same board, each run is the MEET of the two.
+;;;----------------------------------------
+
+(defun edge-notch-run (lo hi)
+  (if (> hi lo) (list lo hi) nil))
+
+(defun edge-notch-run-meet (a b)
+  (if (and a b) (edge-notch-run (max (car a) (car b)) (min (cadr a) (cadr b))) nil))
+
+(defun edge-notch-run-len (r)
+  (if r (- (cadr r) (car r)) 0.0))
+
+(defun edge-notch-run-of (runs key)
+  (cdr (assoc key runs)))
+
+;;; Two boards' worth of runs, met key by key.
+(defun edge-notch-runs-meet (a b)
+  (mapcar '(lambda (k) (cons (car k) (edge-notch-run-meet (cdr k) (edge-notch-run-of b (car k))))) a))
+
+;;; The side's runs: BOTTOM and TOP measured from its FRONT edge (BUR's own
+;;; frame is cd - g - x of these), BACK up its back edge.
+(defun edge-notch-side-runs (cd ch g ed eh edge / sideW whole cut)
+  (setq sideW (- cd g)
+        whole (list 0.0 sideW)
+        cut (if (edge-notch-back-p edge) (edge-notch-run 0.0 (- sideW ed)) (edge-notch-run ed sideW)))
+  (list (cons "BOTTOM" (if (edge-notch-top-p edge) whole cut))
+        (cons "TOP" (if (edge-notch-top-p edge) cut whole))
+        (cons "BACK" (cond ((not (edge-notch-back-p edge)) (list 0.0 ch))
+                           ((edge-notch-top-p edge) (edge-notch-run 0.0 (- ch eh)))
+                           (T (edge-notch-run eh ch))))))
+
+;;; The corner notch's runs on ITS side (notch-side-joints plans exactly
+;;; these); a rebate (unboxed) leaves every run whole.
+(defun notch-side-runs (cd ch g nw nd nh corner / sideW whole cut full top hh)
+  (setq sideW (- cd g)
+        whole (list 0.0 sideW)
+        full (notch-full-p ch nh)
+        top (notch-from-top-p ch nh)
+        hh (notch-hh ch nh))
+  (if (not (notch-boxed-p nw g))
+    (list (cons "BOTTOM" whole) (cons "TOP" whole) (cons "BACK" (list 0.0 ch)))
+    (progn
+      (setq cut (if (notch-back-p corner) (edge-notch-run 0.0 (- sideW nd)) (edge-notch-run nd sideW)))
+      (list (cons "BOTTOM" (if top whole cut))
+            (cons "TOP" (if (or full top) cut whole))
+            (cons "BACK" (cond ((not (notch-back-p corner)) (list 0.0 ch))
+                               (full nil)
+                               (top (edge-notch-run 0.0 (- ch hh)))
+                               (T (edge-notch-run nh ch))))))))
+
+;;; The side's joints planned on its runs (section 4's calls), every one
+;;; measured from the FRONT edge, keyed as notch-side-joints keys them.
+(defun edge-notch-plan-side (runs cd / e below inset one three sfe b tp k)
+  (setq e (notch-p "puzzle.tabCentresFromEnd")
+        below (notch-p "puzzle.singleSocketBelow")
+        inset (notch-joint-inset cd e (notch-p "puzzle.singleJointMaxDepth"))
+        one (notch-p "puzzle.singleTabAtOrBelow")
+        three (notch-p "puzzle.middleTabBelow")
+        sfe (notch-p "puzzle.screwFromEnd")
+        b (edge-notch-run-of runs "BOTTOM")
+        tp (edge-notch-run-of runs "TOP")
+        k (edge-notch-run-of runs "BACK"))
+  (list (cons "TOP-SOCKETS" (if tp (notch-shift (notch-replan-sockets (edge-notch-run-len tp) inset below) (car tp)) nil))
+        (cons "BOTTOM-SOCKETS" (if b (notch-shift (notch-replan-sockets (edge-notch-run-len b) inset below) (car b)) nil))
+        (cons "TOP-SCREWS" (if tp (notch-shift (notch-screw-row (edge-notch-run-len tp) sfe) (car tp)) nil))
+        (cons "BOTTOM-SCREWS" (if b (notch-shift (notch-screw-row (edge-notch-run-len b) sfe) (car b)) nil))
+        (cons "BACK-TABS" (if k (notch-shift (notch-replan-tabs (edge-notch-run-len k) e one three) (car k)) nil))))
+
+(defun edge-notch-side-joints (cd ch g ed eh edge)
+  (edge-notch-plan-side (edge-notch-side-runs cd ch g ed eh edge) cd))
+
+;;;----------------------------------------
+;;; THE TOP (a top edge) or THE BOTTOM (a bottom edge): narrower by ed at
+;;; the back or at the front, in its PLAN frame (x from BUL's inner face, y
+;;; from the front edge); notch-rect-outline takes the strip.
+;;;----------------------------------------
+
+(defun edge-notch-top-cut (cw cd g ed edge)
+  (list (if (edge-notch-back-p edge) "x0y1" "x0y0") (- cw (* 2.0 g)) ed))
+
+(defun edge-notch-top-outline (cw cd g ed edge / c)
+  (setq c (edge-notch-top-cut cw cd g ed edge))
+  (notch-rect-outline (- cw (* 2.0 g)) (- cd g) (cadr c) (caddr c) (car c)))
+
+;;; Its runs: LEFT / RIGHT (into BUL / BUR) y from the front edge, BACK (into
+;;; the BACK) x from BUL's inner face; at a back edge its BACK edge meets
+;;; nothing (the BACK is shorter) and carries no tab.
+(defun edge-notch-top-runs (cw cd g ed edge / sideW tw lr)
+  (setq sideW (- cd g)
+        tw (- cw (* 2.0 g))
+        lr (if (edge-notch-back-p edge) (edge-notch-run 0.0 (- sideW ed)) (edge-notch-run ed sideW)))
+  (list (cons "LEFT" lr) (cons "RIGHT" lr)
+        (cons "BACK" (if (edge-notch-back-p edge) nil (list 0.0 tw)))))
+
+;;; The corner notch's runs on a TOP or BOTTOM it cuts (notch-top-joints
+;;; plans exactly these); unboxed, whole.
+(defun notch-top-runs (cw cd g nw nd corner / sideW tw whole cut)
+  (setq sideW (- cd g)
+        tw (- cw (* 2.0 g))
+        whole (list 0.0 sideW))
+  (if (not (notch-boxed-p nw g))
+    (list (cons "LEFT" whole) (cons "RIGHT" whole) (cons "BACK" (list 0.0 tw)))
+    (progn
+      (setq cut (if (notch-back-p corner) (edge-notch-run 0.0 (- sideW nd)) (edge-notch-run nd sideW)))
+      (list (cons "LEFT" (if (notch-left-p corner) cut whole))
+            (cons "RIGHT" (if (notch-left-p corner) whole cut))
+            (cons "BACK" (cond ((not (notch-back-p corner)) (list 0.0 tw))
+                               ((notch-left-p corner) (edge-notch-run nw tw))
+                               (T (edge-notch-run 0.0 (- tw nw)))))))))
+
+(defun edge-notch-plan-top (runs cd / e below inset l r k)
+  (setq e (notch-p "puzzle.tabCentresFromEnd")
+        below (notch-p "puzzle.singleSocketBelow")
+        inset (notch-joint-inset cd e (notch-p "puzzle.singleJointMaxDepth"))
+        l (edge-notch-run-of runs "LEFT")
+        r (edge-notch-run-of runs "RIGHT")
+        k (edge-notch-run-of runs "BACK"))
+  (list (cons "LEFT" (if l (notch-shift (notch-replan-sockets (edge-notch-run-len l) inset below) (car l)) nil))
+        (cons "RIGHT" (if r (notch-shift (notch-replan-sockets (edge-notch-run-len r) inset below) (car r)) nil))
+        (cons "BACK" (if k (notch-shift (notch-replan-sockets (edge-notch-run-len k) e below) (car k)) nil))))
+
+(defun edge-notch-top-joints (cw cd g ed edge)
+  (edge-notch-plan-top (edge-notch-top-runs cw cd g ed edge) cd))
+
+;;;----------------------------------------
+;;; THE BACK (a back edge only): shorter by eh, from the bottom (BB) or from
+;;; the top (TB); x from the LEFT face, y up.
+;;;----------------------------------------
+
+(defun edge-notch-back-cut (cw eh edge)
+  (list (if (edge-notch-top-p edge) "x0y1" "x0y0") cw eh))
+
+(defun edge-notch-back (cw ch eh edge / c)
+  (if (edge-notch-back-p edge)
+    (progn
+      (setq c (edge-notch-back-cut cw eh edge))
+      (notch-rect-outline cw ch (cadr c) (caddr c) (car c)))
+    (notch-plain-rect cw ch)))
+
+;;; Its runs: LEFT / RIGHT (the sides' back edges) y up, TOP / BOTTOM x along.
+(defun edge-notch-back-runs (cw ch g eh edge / lr)
+  (setq lr (cond ((not (edge-notch-back-p edge)) (list 0.0 ch))
+                 ((edge-notch-top-p edge) (edge-notch-run 0.0 (- ch eh)))
+                 (T (edge-notch-run eh ch))))
+  (list (cons "LEFT" lr) (cons "RIGHT" lr)
+        (cons "TOP" (if (and (edge-notch-back-p edge) (edge-notch-top-p edge)) nil (list 0.0 cw)))
+        (cons "BOTTOM" (if (and (edge-notch-back-p edge) (not (edge-notch-top-p edge))) nil (list 0.0 cw)))))
+
+;;; The corner notch's runs on the BACK (notch-back-joints plans exactly
+;;; these for a boxed back corner); a front corner, or a rebate, whole.
+(defun notch-back-runs (cw ch g nw nh corner / full top hh left whole near cutx)
+  (setq full (notch-full-p ch nh)
+        top (notch-from-top-p ch nh)
+        hh (notch-hh ch nh)
+        left (notch-left-p corner)
+        whole (list 0.0 cw))
+  (if (or (not (notch-back-p corner)) (not (notch-boxed-p nw g)))
+    (list (cons "LEFT" (list 0.0 ch)) (cons "RIGHT" (list 0.0 ch)) (cons "TOP" whole) (cons "BOTTOM" whole))
+    (progn
+      (setq near (cond (full nil) (top (edge-notch-run 0.0 (- ch hh))) (T (edge-notch-run nh ch)))
+            cutx (if left (edge-notch-run nw cw) (edge-notch-run 0.0 (- cw nw))))
+      (list (cons "LEFT" (if left near (list 0.0 ch)))
+            (cons "RIGHT" (if left (list 0.0 ch) near))
+            (cons "TOP" (if (or full top) cutx whole))
+            (cons "BOTTOM" (if top whole cutx))))))
+
+;;; The BACK's joints planned on its runs: the sockets the sides' tabs and
+;;; the TOP's / BOTTOM's tabs land in, and drawBACK's dia 3 rows on what is
+;;; left of each of its four edges (D10: an edge a cut MADE carries none).
+(defun edge-notch-plan-back (runs cw ch g / e below one three sfe S l r tp b lt rt scr)
+  (setq e (notch-p "puzzle.tabCentresFromEnd")
+        below (notch-p "puzzle.singleSocketBelow")
+        one (notch-p "puzzle.singleTabAtOrBelow")
+        three (notch-p "puzzle.middleTabBelow")
+        sfe (notch-p "puzzle.screwFromEnd")
+        S (notch-screw-axis g)
+        l (edge-notch-run-of runs "LEFT")
+        r (edge-notch-run-of runs "RIGHT")
+        tp (edge-notch-run-of runs "TOP")
+        b (edge-notch-run-of runs "BOTTOM")
+        lt (if l (notch-shift (notch-replan-tabs (edge-notch-run-len l) e one three) (car l)) nil)
+        rt (if r (notch-shift (notch-replan-tabs (edge-notch-run-len r) e one three) (car r)) nil)
+        scr '())
+  (if l (foreach y (notch-rows-between-tabs (car l) (cadr l) lt sfe) (setq scr (cons (list S y) scr))))
+  (if r (foreach y (notch-rows-between-tabs (car r) (cadr r) rt sfe) (setq scr (cons (list (- cw S) y) scr))))
+  (if tp (foreach x (notch-row-between (car tp) (cadr tp) g sfe) (setq scr (cons (list x (- ch S)) scr))))
+  (if b (foreach x (notch-row-between (car b) (cadr b) g sfe) (setq scr (cons (list x S) scr))))
+  (list (cons "LEFT-SOCKETS" lt) (cons "RIGHT-SOCKETS" rt)
+        (cons "TOP-SOCKETS" (if tp (notch-shift (notch-replan-sockets (- (edge-notch-run-len tp) (* 2.0 g)) e below) (+ (car tp) g)) nil))
+        (cons "BOTTOM-SOCKETS" (if b (notch-shift (notch-replan-sockets (- (edge-notch-run-len b) (* 2.0 g)) e below) (+ (car b) g)) nil))
+        (cons "SCREWS" (reverse scr))))
+
+(defun edge-notch-back-joints (cw ch g eh edge)
+  (edge-notch-plan-back (edge-notch-back-runs cw ch g eh edge) cw ch g))
+
+;;;----------------------------------------
+;;; THE KEEP-OUT (D8): what the cut takes of the carcass, in plan (x0 y0 x1
+;;; y1) and height, as ((x0 y0 x1 y1) z0 z1). At a back edge it runs from the
+;;; cut faces of the sides and the BOTTOM / TOP (cd - g - ed) to the back
+;;; face: the BACK's own g goes with it.
+;;;----------------------------------------
+
+(defun edge-notch-keepout (cw cd ch g ed eh edge)
+  (list (list 0.0 (if (edge-notch-back-p edge) (- cd g ed) 0.0) cw (if (edge-notch-back-p edge) cd ed))
+        (if (edge-notch-top-p edge) (- ch eh) 0.0)
+        (if (edge-notch-top-p edge) ch eh)))
+
+;;; Does anything at plan `rect`, from height z0 up to z1, cross it?
+(defun edge-notch-crosses-p (cw cd ch g ed eh edge rect z0 z1 / k)
+  (setq k (edge-notch-keepout cw cd ch g ed eh edge))
+  (and (notch-overlap-p rect (car k)) (< z0 (caddr k)) (> z1 (cadr k))))
+
+;;;----------------------------------------
+;;; COEXISTENCE (D22): the edge notch's rectangle on a side and the corner
+;;; notch's on its own side, both in the side's FRONT frame (x from the front
+;;; edge, y up), (x0 y0 x1 y1).
+;;;----------------------------------------
+
+(defun edge-notch-side-rect (cd ch g ed eh edge / sideW)
+  (setq sideW (- cd g))
+  (list (if (edge-notch-back-p edge) (- sideW ed) 0.0)
+        (if (edge-notch-top-p edge) (- ch eh) 0.0)
+        (if (edge-notch-back-p edge) sideW ed)
+        (if (edge-notch-top-p edge) ch eh)))
+
+(defun notch-side-rect (cd ch g nd nh corner / sideW hh)
+  (setq sideW (- cd g)
+        hh (notch-hh ch nh))
+  (list (if (notch-back-p corner) (- sideW nd) 0.0)
+        (if (notch-from-top-p ch nh) (- ch hh) 0.0)
+        (if (notch-back-p corner) sideW nd)
+        (if (notch-from-top-p ch nh) ch hh)))
+
+;;; Does the corner notch cut this horizontal board? (section 2: the BOTTOM
+;;; unless it hangs from the top; the TOP at full height or from the top.)
+(defun notch-cuts-board-p (ch nh hz)
+  (if (= hz "TOP")
+    (or (notch-full-p ch nh) (notch-from-top-p ch nh))
+    (not (notch-from-top-p ch nh))))
+
+;;;----------------------------------------
+;;; THE COMPOUND OUTLINE (D22): a board bw x bh less TWO cuts, each (fc nw
+;;; nh) in notch-rect-outline's grammar (nw >= bw or nh >= bh is a strip off
+;;; one edge). The strips shrink the rectangle (edge-notch-shrink); a corner
+;;; cut, clipped to what is left, takes a corner of THAT (edge-notch-corners,
+;;; ((fc w h) ...) named on the shrunk rectangle); the walk goes round it
+;;; once, anticlockwise, from its x0y0 corner. For ONE cut it is
+;;; notch-rect-outline's own polygon.
+;;;----------------------------------------
+
+(defun edge-notch-strip-p (bw bh c)
+  (and c (or (>= (cadr c) bw) (>= (caddr c) bh))))
+
+(defun edge-notch-shrink (bw bh cuts / x0 y0 x1 y1)
+  (setq x0 0.0 y0 0.0 x1 bw y1 bh)
+  (foreach c cuts
+    (if (edge-notch-strip-p bw bh c)
+      (if (>= (cadr c) bw)
+        (if (notch-fc-y0 (car c)) (setq y0 (max y0 (caddr c))) (setq y1 (min y1 (- bh (caddr c)))))
+        (if (notch-fc-x0 (car c)) (setq x0 (max x0 (cadr c))) (setq x1 (min x1 (- bw (cadr c))))))))
+  (list x0 y0 x1 y1))
+
+(defun edge-notch-corners (bw bh cuts box / out rx0 rx1 ry0 ry1 cx0 cx1 cy0 cy1)
+  (setq out '())
+  (foreach c cuts
+    (if (and c (not (edge-notch-strip-p bw bh c)))
+      (progn
+        (if (notch-fc-x0 (car c)) (setq rx0 0.0 rx1 (cadr c)) (setq rx0 (- bw (cadr c)) rx1 bw))
+        (if (notch-fc-y0 (car c)) (setq ry0 0.0 ry1 (caddr c)) (setq ry0 (- bh (caddr c)) ry1 bh))
+        (setq cx0 (max rx0 (car box)) cx1 (min rx1 (caddr box))
+              cy0 (max ry0 (cadr box)) cy1 (min ry1 (cadddr box)))
+        (if (and (> cx1 cx0) (> cy1 cy0))
+          (setq out (append out (list (list (strcat (if (<= cx0 (car box)) "x0" "x1") (if (<= cy0 (cadr box)) "y0" "y1"))
+                                            (- cx1 cx0) (- cy1 cy0)))))))))
+  out)
+
+(defun edge-notch-walk (box corners / x0 y0 x1 y1 hit out)
+  (setq x0 (car box) y0 (cadr box) x1 (caddr box) y1 (cadddr box) out '())
+  (foreach fc '("x0y0" "x1y0" "x1y1" "x0y1")
+    (setq hit (assoc fc corners))
+    (setq out (append out
+                (cond
+                  ((null hit) (list (list (if (notch-fc-x0 fc) x0 x1) (if (notch-fc-y0 fc) y0 y1))))
+                  ((= fc "x0y0") (list (list x0 (+ y0 (caddr hit))) (list (+ x0 (cadr hit)) (+ y0 (caddr hit))) (list (+ x0 (cadr hit)) y0)))
+                  ((= fc "x1y0") (list (list (- x1 (cadr hit)) y0) (list (- x1 (cadr hit)) (+ y0 (caddr hit))) (list x1 (+ y0 (caddr hit)))))
+                  ((= fc "x1y1") (list (list x1 (- y1 (caddr hit))) (list (- x1 (cadr hit)) (- y1 (caddr hit))) (list (- x1 (cadr hit)) y1)))
+                  (T (list (list (+ x0 (cadr hit)) y1) (list (+ x0 (cadr hit)) (- y1 (caddr hit))) (list x0 (- y1 (caddr hit)))))))))
+  out)
+
+(defun edge-notch-less-two (bw bh cutA cutB / box)
+  (setq box (edge-notch-shrink bw bh (list cutA cutB)))
+  (edge-notch-walk box (edge-notch-corners bw bh (list cutA cutB) box)))
+
+;;;----------------------------------------
+;;; THE REFUSALS (Room refuses first): nil, or the sentence.
+;;;----------------------------------------
+
+;;; notch.minInterior applies to what is left: the interior beside the rebate
+;;; in depth (the BOTTOM's or the TOP's depth after the cut, cd - g - ed) and
+;;; in height (from the rebate to the far board's inner face, ch - g - eh),
+;;; never less than a joint needs (D6).
+(defun edge-notch-refusal (cw cd ch g ed eh edge / keep)
+  (setq keep (max (notch-min-joint-edge (notch-p "puzzle.dogboneHalfHeight") g) (notch-p "notch.minInterior")))
+  (cond
+    ((not (edge-notch-ok edge))
+      "NOTCH: the edge is TB, BB, TF or BF.")
+    ((or (<= ed 0.0) (<= eh 0.0))
+      "NOTCH: the depth and the height of an edge notch must both be more than 0.")
+    ((< (- cd g ed) keep)
+      (strcat "NOTCH: an edge notch must leave " (rtos keep 2 0) " mm of the interior beside it in depth. Make it shallower."))
+    ((< (- ch g eh) keep)
+      (strcat "NOTCH: an edge notch must leave " (rtos keep 2 0) " mm of the interior beside it in height. Make it lower."))
+    (T nil)))
+
+;;; The first key whose run both cuts leave and whose meet cannot hold a
+;;; joint: nil, or the key.
+(defun edge-notch-short-run (a b minEdge / out ra rb)
+  (setq out nil)
+  (foreach k (mapcar 'car a)
+    (setq ra (edge-notch-run-of a k)
+          rb (edge-notch-run-of b k))
+    (if (and (null out) ra rb (< (edge-notch-run-len (edge-notch-run-meet ra rb)) minEdge))
+      (setq out k)))
+  out)
+
+(defun edge-notch-short-said (key board)
+  (strcat "NOTCH: what the corner notch and the edge notch leave of the " key " edge of " board
+          " cannot hold a joint. Make one of them smaller."))
+
+;;; notch-rebate-eats-p's law asked of a GIVEN side plan (the met one): a
+;;; back-edge tab whose dog bone reaches into the rebate's height at a back
+;;; corner, or a top or bottom socket whose pocket reaches into its length.
+(defun edge-notch-rebate-eats-p (cd ch g nw nd nh corner sj / bone half sideW hh top lo hi hit)
+  (setq bone (notch-p "puzzle.dogboneHalfHeight")
+        half (notch-p "puzzle.socketHalfWidth")
+        sideW (- cd g)
+        hh (notch-hh ch nh)
+        top (notch-from-top-p ch nh)
+        hit nil)
+  (if (notch-back-p corner) (setq lo (- sideW nd) hi sideW) (setq lo 0.0 hi nd))
+  (if (notch-back-p corner)
+    (foreach c (cdr (assoc "BACK-TABS" sj))
+      (if (if top (> (+ c bone) (- ch hh)) (< (- c bone) hh)) (setq hit T))))
+  (foreach c (append (cdr (assoc "TOP-SOCKETS" sj)) (cdr (assoc "BOTTOM-SOCKETS" sj)))
+    (if (and (> (+ c half) lo) (< (- c half) hi)) (setq hit T)))
+  hit)
+
+;;; COEXISTENCE: the corner notch (nw nd nh corner) and the edge notch on one
+;;; carcass. Their rectangles on the corner notch's side must not overlap;
+;;; every jointed edge both cuts leave must still hold a joint (D6), naming
+;;; the board and the edge; and a rebate (an unboxed corner notch) moves no
+;;; joint of its own, so the edge notch's re-planned joints must stay out of
+;;; it (notch-rebate-eats-p's law, asked of the met plan).
+(defun edge-notch-meets-refusal (cw cd ch g ed eh edge nw nd nh corner / minEdge side hz bad)
+  (setq minEdge (notch-min-joint-edge (notch-p "puzzle.dogboneHalfHeight") g)
+        side (notch-side-name corner)
+        hz (edge-notch-board edge)
+        bad nil)
+  (cond
+    ((notch-overlap-p (edge-notch-side-rect cd ch g ed eh edge) (notch-side-rect cd ch g nd nh corner))
+      (strcat "NOTCH: the edge notch and the corner notch overlap on " side ". Move one of them, or make it smaller."))
+    ((setq bad (edge-notch-short-run (notch-side-runs cd ch g nw nd nh corner) (edge-notch-side-runs cd ch g ed eh edge) minEdge))
+      (edge-notch-short-said bad side))
+    ((and (notch-boxed-p nw g) (notch-cuts-board-p ch nh hz)
+          (setq bad (edge-notch-short-run (notch-top-runs cw cd g nw nd corner) (edge-notch-top-runs cw cd g ed edge) minEdge)))
+      (edge-notch-short-said bad hz))
+    ((setq bad (edge-notch-short-run (notch-back-runs cw ch g nw nh corner) (edge-notch-back-runs cw ch g eh edge) minEdge))
+      (edge-notch-short-said bad "BACK"))
+    ((and (not (notch-boxed-p nw g))
+          (edge-notch-rebate-eats-p cd ch g nw nd nh corner
+            (edge-notch-plan-side (edge-notch-runs-meet (notch-side-runs cd ch g nw nd nh corner)
+                                                        (edge-notch-side-runs cd ch g ed eh edge)) cd)))
+      (strcat "NOTCH: a notch narrower than the board is a rebate in " side
+              ", and the edge notch moves a joint into it. Make the corner notch at least as wide as the board, or smaller."))
+    (T nil)))
+
+;;; D7, in this notch's words: a hole the cut reaches on either side.
+(defun edge-notch-hole-refusal (kind board)
+  (strcat "NOTCH: the " kind " drilling of " board " falls in the edge notch, and a " kind
+          " cannot be fixed to air. Make the notch smaller, or cut another edge."))
+
+;;;========================================
 ;;; I. NUMBERS - THE GOLDEN CASE (fixtures/golden-notch.json)
 ;;;========================================
 ;;;
@@ -1525,6 +2010,130 @@
 ;;; |nh| may run to 634 (770 - 634 - 36 = 100); -635 is refused: "NOTCH: a
 ;;; notch from the top must leave 100 mm of the interior under it. Make it
 ;;; shorter, or make it full height."
+
+;;;========================================
+;;; I3. NUMBERS - THE EDGE NOTCH (D22, fixtures/golden-edge-notch-bb.json,
+;;;     fixtures/golden-edge-notch-tb.json)
+;;;========================================
+;;;
+;;; CLAUDE.md T79 F5: "NUMBERS block for BUD 600 BB d 20 h 120 and TB d 50 h
+;;; 100." The same parent as section I (KIT_BUD_FULL defaults: W 600, D 558,
+;;; H 770, G 18, front 25, 1 shelf at 385, hinge L; sideW 540, tw 564). Joint
+;;; inset 95. Every point list below is anticlockwise, once round.
+;;;
+;;; CASE A, BB: ed 20, eh 120 (a skirting board).
+;;; KEEP-OUT: plan x 0..600, y 520..558; height z 0..120.
+;;;
+;;; BOARD      PARENT       CUT
+;;; BUL        540 x 770    less 20 x 120 at its rear BOTTOM corner, "x1y0"
+;;;                         (BUL frame, x from the FRONT):
+;;;                         (0 0) (520 0) (520 120) (540 120) (540 770) (0 770)
+;;;   CORNER MARK (D12): (520 80) -> (520 120) -> (540 120)
+;;;   area 0.4158 -> 0.4134 m2 (413400 mm2)
+;;; BUR        540 x 770    less 20 x 120 at "x0y0" (BUR frame, x from the BACK):
+;;;                         (20 0) (540 0) (540 770) (0 770) (0 120) (20 120)
+;;;   CORNER MARK (D12): (0 120) -> (20 120) -> (20 80)
+;;;   area 0.4134 m2
+;;; BOTTOM     564 x 540    564 x 520, the strip at the back gone
+;;;   plan frame  (0 0) (564 0) (564 520) (0 520)
+;;;   drawTOP_ROT90 frame, re-origined at its new back edge:
+;;;               (520 0) (520 564) (0 564) (0 0); no corner, no mark
+;;;   area 0.30456 -> 0.29328 m2 (293280 mm2)
+;;; TOP        564 x 540    unchanged (the parent's)
+;;; BACK       600 x 770    600 x 650, carcass z 120..770; own frame
+;;;                         (0 0) (600 0) (600 650) (0 650); no corner
+;;;   area 0.462 -> 0.39 m2 (390000 mm2)
+;;; SHELF-1    560 x 520    unchanged (385 is over the rebate)
+;;; PLINTH     600          untouched
+;;;
+;;; WHICH JOINTS MOVE:
+;;;
+;;; BOARD, EDGE                      PARENT             CUT
+;;; BUL bottom sockets (from front)  95, 445            95, 425   (on 0..520)
+;;; BUL bottom screw row             50, 270, 490       50, 260, 470
+;;; BUL top sockets / screw row      the parent's       unchanged
+;;; BUL back-edge tabs (y)           95, 385, 675       215, 445, 675  (on 120..770)
+;;; BUR (its own frame, x from back) the same numbers, read from the back:
+;;;                                  bottom sockets 445, 115; screws 490, 280, 70
+;;; BOTTOM tabs into BUL / BUR (y)   95, 445            95, 425   (on 0..520)
+;;; BOTTOM tabs into BACK (x)        95, 469            NONE (meets nothing)
+;;; BACK sockets, both side edges    95, 385, 675       215, 445, 675  (carcass z;
+;;;                                                     own frame 95, 325, 555)
+;;; BACK top sockets (carcass x)     113, 487           113, 487  unchanged
+;;; BACK bottom sockets              113, 487           NONE
+;;; BACK side screw rows (x 9, 591)  50, 240, 530, 720  170, 330, 560, 720  (carcass
+;;;                                                     z; own frame 50, 210, 440, 600)
+;;; BACK top screw row               68, 300, 532       68, 300, 532  (own y 641)
+;;; BACK bottom screw row            68, 300, 532       NONE
+;;;
+;;; CASE B, TB: ed 50, eh 100 (a coving).
+;;; KEEP-OUT: plan x 0..600, y 490..558; height z 670..770.
+;;;
+;;; BOARD      PARENT       CUT
+;;; BUL        540 x 770    less 50 x 100 at its rear TOP corner, "x1y1":
+;;;                         (0 0) (540 0) (540 670) (490 670) (490 770) (0 770)
+;;;   CORNER MARK (D12): (530 670) -> (490 670) -> (490 710)
+;;;   area 0.4158 -> 0.4108 m2 (410800 mm2)
+;;; BUR        540 x 770    less 50 x 100 at "x0y1" (x from the BACK):
+;;;                         (0 0) (540 0) (540 770) (50 770) (50 670) (0 670)
+;;;   CORNER MARK (D12): (50 710) -> (50 670) -> (10 670)
+;;;   area 0.4108 m2
+;;; TOP        564 x 540    564 x 490, the strip at the back gone
+;;;   plan frame  (0 0) (564 0) (564 490) (0 490)
+;;;   drawTOP_ROT90 frame, re-origined: (490 0) (490 564) (0 564) (0 0)
+;;;   drawn from its UNDERSIDE (D11): (0 564) (0 0) (490 0) (490 564)
+;;;   area 0.30456 -> 0.27636 m2 (276360 mm2)
+;;; BOTTOM     564 x 540    unchanged (the parent's)
+;;; BACK       600 x 770    600 x 670, carcass z 0..670:
+;;;                         (0 0) (600 0) (600 670) (0 670)
+;;;   area 0.462 -> 0.402 m2 (402000 mm2)
+;;;
+;;; WHICH JOINTS MOVE:
+;;;
+;;; BUL top sockets (x from front)   95, 445            95, 395   (on 0..490)
+;;; BUL top screw row                50, 270, 490       50, 245, 440
+;;; BUL bottom sockets / screw row   the parent's       unchanged
+;;; BUL back-edge tabs (y)           95, 385, 675       95, 335, 575  (on 0..670)
+;;; BUR (x from back)                top sockets 445, 145; top screws 490, 295, 100
+;;; TOP tabs into BUL / BUR (y)      95, 445            95, 395
+;;; TOP tabs into BACK               95, 469            NONE
+;;; BACK sockets, both side edges    95, 385, 675       95, 335, 575
+;;; BACK top sockets                 113, 487           NONE
+;;; BACK bottom sockets              113, 487           113, 487  unchanged
+;;; BACK side screw rows (x 9, 591)  50, 240, 530, 720  50, 215, 455, 620
+;;; BACK top screw row               68, 300, 532       NONE
+;;; BACK bottom screw row (y 9)      68, 300, 532       68, 300, 532
+;;;
+;;; THE ROOM (edge-notch-refusal): cd - g - ed >= 100 and ch - g - eh >= 100,
+;;; so on this BUD ed may run to 440 and eh to 652; 441 is refused: "NOTCH: an
+;;; edge notch must leave 100 mm of the interior beside it in depth. Make it
+;;; shallower."; 653: "NOTCH: an edge notch must leave 100 mm of the interior
+;;; beside it in height. Make it lower."
+;;;
+;;; CASE C, COEXISTENCE: the corner notch BL 200 / 200 / 300 (from the floor)
+;;; WITH the edge notch TB 50 / 100. On BUL (front frame) the corner's
+;;; rectangle is x 340..540, y 0..300 and the edge's x 490..540, y 670..770:
+;;; apart, so both are cut. (BB 20 / 120 with the same corner: x 520..540,
+;;; y 0..120 overlaps; refused: "NOTCH: the edge notch and the corner notch
+;;; overlap on BUL. Move one of them, or make it smaller.")
+;;; BUL        (0 0) (340 0) (340 300) (540 300) (540 670) (490 670)
+;;;            (490 770) (0 770), two inner corners, two marks:
+;;;            (340 260) -> (340 300) -> (380 300)
+;;;            (530 670) -> (490 670) -> (490 710)
+;;;            area 0.3508 m2 (350800 mm2)
+;;;            bottom run 0..340: sockets 95, 245; screws 50, 170, 290
+;;;            top run 0..490:    sockets 95, 395; screws 50, 245, 440
+;;;            back run 300..670: tabs 395, 575
+;;; BACK       (0 300) (200 300) (200 0) (600 0) (600 670) (0 670), one mark
+;;;            (160 300) -> (200 300) -> (200 260); area 0.342 m2 (342000 mm2)
+;;;            left run 300..670: sockets 395, 575; screws (x 9) 350, 485, 620
+;;;            right run 0..670:  sockets 95, 335, 575; screws (x 591) 50, 215, 455, 620
+;;;            bottom run 200..600: sockets 313, 487; screws (y 9) 268, 400, 532
+;;;            top: none
+;;; TOP        case B's (the corner notch cuts the BOTTOM only)
+;;; BOTTOM     section I's corner notch (the edge notch does not reach it)
+;;; BUR        case B's; the corner's STEP, RETURN and LID as section I's with
+;;;            nh 300 (the LID at 300..318, under the rebate)
 
 ;;;========================================
 ;;; J. DRAWING (the command draws what the routines return, nothing more)
@@ -1850,5 +2459,143 @@
   (setq *error* _olderr)
   (princ))
 
-(princ "\nKIT_NOTCH loaded. Type NOTCH_FULL to run.")
+;;;========================================
+;;; K2. THE EDGE COMMAND (D22)
+;;;========================================
+
+;;; The BACK's socket centres, as marks on NOTCH_MANUAL (section J's grammar).
+(defun edge-notch-back-marks (bj cw ch / out)
+  (setq out '())
+  (foreach y (cdr (assoc "LEFT-SOCKETS" bj)) (setq out (cons (list 0.0 y) out)))
+  (foreach y (cdr (assoc "RIGHT-SOCKETS" bj)) (setq out (cons (list cw y) out)))
+  (foreach x (cdr (assoc "TOP-SOCKETS" bj)) (setq out (cons (list x ch) out)))
+  (foreach x (cdr (assoc "BOTTOM-SOCKETS" bj)) (setq out (cons (list x 0.0) out)))
+  (reverse out))
+
+(defun c:EDGENOTCH_FULL ( / kit g cw cd ch edge ed eh msg pt x0 y0 cx odstep sideW tw hz
+                           sj tj bj sumX sumY lineH
+                           _oldCmdecho _oldOsmode _oldClayer _olderr)
+
+  ;; Save state
+  (setq _oldCmdecho (getvar "CMDECHO"))
+  (setq _oldOsmode  (getvar "OSMODE"))
+  (setq _oldClayer  (getvar "CLAYER"))
+  (setq _olderr *error*)
+
+  ;; Error handler (ESC / crash safe)
+  (defun *error* (msg)
+    (if _oldClayer  (setvar "CLAYER"  _oldClayer))
+    (if _oldOsmode  (setvar "OSMODE"  _oldOsmode))
+    (if _oldCmdecho (setvar "CMDECHO" _oldCmdecho))
+    (setq *error* _olderr)
+    (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
+      (princ (strcat "\nERROR: " msg)))
+    (princ))
+
+  (setvar "CMDECHO" 0)
+  (setvar "INSUNITS" 4)
+  (setvar "MEASUREMENT" 1)
+
+  ;; === INPUT: the parent carcass ===
+  (initget "B W U")
+  (setq kit (getkword "\nParent kit [B=BUD / W=WARDROBE / U=WUD wall unit] <B>: "))
+  (if (null kit) (setq kit "B"))
+
+  (setq g (getreal "\nBoard THICKNESS [mm] (18=standard, 22=heavy) <18>: "))
+  (if (or (null g) (<= g 0.0)) (setq g 18.0))
+
+  (setq cw (getreal "\nCabinet WIDTH [mm] <600>: "))
+  (if (or (null cw) (<= cw 0.0)) (setq cw 600.0))
+
+  (setq cd (getreal (if (= kit "W") "\nCabinet DEPTH [mm] <578>: " "\nCabinet DEPTH [mm] <558>: ")))
+  (if (or (null cd) (<= cd 0.0)) (setq cd (if (= kit "W") 578.0 558.0)))
+
+  (setq ch (getreal (if (= kit "W") "\nCabinet HEIGHT [mm] <2150>: " "\nCabinet HEIGHT [mm] <770>: ")))
+  (if (or (null ch) (<= ch 0.0)) (setq ch (if (= kit "W") 2150.0 770.0)))
+
+  ;; === INPUT: the edge (the owner's "poziome cut ... wszystkich 4 rogow") ===
+  (initget "TB BB TF BF")
+  (setq edge (getkword "\nEdge to CUT [TB=top-back / BB=bottom-back / TF=top-front / BF=bottom-front] <BB>: "))
+  (if (null edge) (setq edge "BB"))
+
+  (setq ed (getreal "\nEdge notch DEPTH into the carcass [mm] <20>: "))
+  (if (null ed) (setq ed (notch-p "notch.edgeDefaults.depth")))
+
+  (setq eh (getreal "\nEdge notch HEIGHT [mm] <120>: "))
+  (if (null eh) (setq eh (notch-p "notch.edgeDefaults.height")))
+
+  ;; === ROOM REFUSES FIRST ===
+  (setq msg (edge-notch-refusal cw cd ch g ed eh edge))
+  (if msg
+    (princ (strcat "\n" msg))
+    (progn
+      (setq pt (getpoint "\nInsertion point for the cut boards: "))
+      (if (null pt)
+        (princ "\nNo point selected.")
+        (progn
+          (createViewLayers)
+          (createCNCLayers)
+          (command "._LAYER" "_N" "NOTCH_MANUAL" "_C" "8" "NOTCH_MANUAL" "")
+
+          (setq x0 (car pt) y0 (cadr pt) cx x0 odstep 50.0
+                sideW (- cd g)
+                tw (- cw (* 2.0 g))
+                hz (edge-notch-board edge))
+          (setq sj (edge-notch-side-joints cd ch g ed eh edge)
+                tj (edge-notch-top-joints cw cd g ed edge)
+                bj (edge-notch-back-joints cw ch g eh edge))
+
+          ;; 1. THE SIDES, BOTH, each in its own LISP frame
+          (notch-draw-board cx y0 sideW ch (edge-notch-side cd ch g ed eh edge nil) nil "BUL")
+          (notch-draw-marks cx y0 (notch-side-marks sj sideW ch nil) 4.0)
+          (setq cx (+ cx sideW odstep))
+          (notch-draw-board cx y0 sideW ch (edge-notch-side cd ch g ed eh edge T) nil "BUR")
+          (notch-draw-marks cx y0 (notch-side-marks sj sideW ch T) 4.0)
+          (setq cx (+ cx sideW odstep))
+
+          ;; 2. THE TOP or THE BOTTOM it cuts across, in PLAN
+          (notch-draw-board cx y0 tw sideW (edge-notch-top-outline cw cd g ed edge) nil hz)
+          (notch-draw-marks cx y0 (notch-top-marks tj tw sideW) 4.0)
+          (setq cx (+ cx tw odstep))
+
+          ;; 3. THE BACK (a back edge), with drawBACK's rows on what is left
+          (if (edge-notch-back-p edge)
+            (progn
+              (notch-draw-board cx y0 cw ch (edge-notch-back cw ch eh edge) nil "BACK")
+              (notch-draw-marks cx y0 (edge-notch-back-marks bj cw ch) 4.0)
+              (notch-draw-marks cx y0 (cdr (assoc "SCREWS" bj)) 1.5)
+              (setq cx (+ cx cw odstep))))
+
+          ;;========================================
+          ;; SUMMARY TEXT BLOCK
+          ;;========================================
+          (setq sumX (+ cx 300.0) sumY (+ y0 ch) lineH 30.0)
+          (notch-say (strcat "EDGE NOTCH " edge " " (rtos ed 2 0) " deep x " (rtos eh 2 0) " high, the whole width, on "
+                             (cond ((= kit "W") "KIT_WARDROBE") ((= kit "U") "KIT_WUD") (T "KIT_BUD")) " "
+                             (rtos cw 2 0) " x " (rtos ch 2 0) " x " (rtos cd 2 0) ", G=" (rtos g 2 0)))
+          (notch-say "---------")
+          (notch-say (strcat "BUL, BUR: " (rtos sideW 2 0) " x " (rtos ch 2 0) " less " (rtos ed 2 0) " x " (rtos eh 2 0)))
+          (notch-say (strcat hz ": " (rtos tw 2 0) " x " (rtos sideW 2 0) " -> " (rtos tw 2 0) " x " (rtos (- sideW ed) 2 0)))
+          (notch-say (strcat "BACK: " (if (edge-notch-back-p edge)
+                                         (strcat (rtos cw 2 0) " x " (rtos ch 2 0) " -> " (rtos cw 2 0) " x " (rtos (- ch eh) 2 0))
+                                         "unchanged")))
+          (notch-say "no closing boards: the rebate is open to the wall or the floor")
+          (notch-say "---------")
+          (notch-say (strcat "side top sockets: " (notch-fmt (cdr (assoc "TOP-SOCKETS" sj)))))
+          (notch-say (strcat "side bottom sockets: " (notch-fmt (cdr (assoc "BOTTOM-SOCKETS" sj)))))
+          (notch-say (strcat "side back tabs: " (notch-fmt (cdr (assoc "BACK-TABS" sj)))))
+          (notch-say (strcat hz " tabs into the sides: " (notch-fmt (cdr (assoc "LEFT" tj)))))
+          (notch-say (strcat hz " tabs into BACK: " (notch-fmt (cdr (assoc "BACK" tj)))))
+          (notch-say "---------")
+          (drawTextLC "SUMMARY" sumX sumY lineH "Property of Skylon Joinery" 6)
+          (princ "\nEdge-notched boards drawn.")))))
+
+  ;; Restore state
+  (if _oldClayer  (setvar "CLAYER"  _oldClayer))
+  (if _oldOsmode  (setvar "OSMODE"  _oldOsmode))
+  (if _oldCmdecho (setvar "CMDECHO" _oldCmdecho))
+  (setq *error* _olderr)
+  (princ))
+
+(princ "\nKIT_NOTCH loaded. Type NOTCH_FULL (a corner) or EDGENOTCH_FULL (an edge) to run.")
 (princ)

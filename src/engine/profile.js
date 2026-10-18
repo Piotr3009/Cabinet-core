@@ -517,6 +517,10 @@ export const DEFAULT_CABINET_PROFILE = {
   // puzzle's and the cutter's own (KIT_NOTCH.lsp section A).
   notch: {
     defaults: { widthMm: 200, depthMm: 200, heightMm: 0 }, // T75 proposed, owner to confirm
+    // T79 F5 (KIT_NOTCH.lsp D22), the owner: *"możesz zrobić mi też poziome cut?
+    // wszystkich 4 rogów?"*  What the CUT EDGE window opens with: the edge (BB,
+    // a skirting at the bottom-back), DEPTH into the carcass, HEIGHT up the side.
+    edgeDefaults: { edge: 'BB', depthMm: 20, heightMm: 120 }, // T79 proposed, owner to confirm
     // Chat-fix 15.10.2026 (the owner: *"komin nie ma mozliwosci automatycznego
     // wycinania w szafce naroznika jak przesuwamy - patrz skos"*): a cabinet
     // slid into a chimney breast or a box gets its corner notch derived from
@@ -6399,7 +6403,13 @@ export function migrateCabinetProfile(profile) {
       shareOut: { ...D.ui.shareOut, ...profile.ui?.shareOut },
     },
     // T75 F7 · the notch's defaults, key by key.
-    notch: { ...D.notch, ...profile.notch, defaults: { ...D.notch.defaults, ...profile.notch?.defaults } },
+    notch: {
+      ...D.notch,
+      ...profile.notch,
+      defaults: { ...D.notch.defaults, ...profile.notch?.defaults },
+      // T79 F5 · the edge notch's defaults, key by key, the same way.
+      edgeDefaults: { ...D.notch.edgeDefaults, ...profile.notch?.edgeDefaults },
+    },
     // T75 F23 · the joint system and the dowel numbers, key by key, so a
     // profile saved before tonight cuts the puzzle and holds the gate shut.
     //

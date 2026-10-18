@@ -1552,6 +1552,8 @@ export default function RightPanel() {
       </div>
       {/* T75 F7 · the CUT CORNER window, opened at the click on a lit corner. */}
       <NotchModal />
+      {/* T79 F5 · the CUT EDGE window, opened at the click on a lit edge. */}
+      <EdgeNotchModal />
     </aside>
   );
 }
@@ -1830,37 +1832,75 @@ function contentsBadge(drawers, shelves, rail) {
 // cuts, through the store's ONE action (`setUnitNotch`, one undo step), which
 // asks the engine first and shows its refusal here in its own words. A notch
 // that exists is taken off from the same row.
+//
+// T79 F5 (KIT_NOTCH.lsp D22), the owner: *"cut the corner działa idealnie, ale
+// możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*  A second button,
+// CUT EDGE, lights the four horizontal side edges the same way
+// (`3d/NotchEdges.jsx`, `uiStore.edgeNotchPick`); a click on one opens
+// EdgeNotchWindow at the click, and an edge notch that exists is taken off
+// from the same row.
 function NotchRow({ unit }) {
   const pick = useUiStore((s) => s.notchPick);
   const startNotchPick = useUiStore((s) => s.startNotchPick);
   const stopNotchPick = useUiStore((s) => s.stopNotchPick);
+  const edgePick = useUiStore((s) => s.edgeNotchPick);
+  const startEdgeNotchPick = useUiStore((s) => s.startEdgeNotchPick);
+  const stopEdgeNotchPick = useUiStore((s) => s.stopEdgeNotchPick);
   const setUnitNotch = useProjectStore((s) => s.setUnitNotch);
+  const setUnitEdgeNotch = useProjectStore((s) => s.setUnitEdgeNotch);
   const notch = unit.params?.notch || null;
+  const edgeNotch = unit.params?.edgeNotch || null;
   const lit = pick === unit.id;
-  // The corners go out with the row: a unit deselected, a section folded.
+  const edgeLit = edgePick === unit.id;
+  // The corners and the edges go out with the row: a unit deselected, a section folded.
   useEffect(() => () => { if (useUiStore.getState().notchPick === unit.id) stopNotchPick(); }, [unit.id, stopNotchPick]);
+  useEffect(() => () => { if (useUiStore.getState().edgeNotchPick === unit.id) stopEdgeNotchPick(); }, [unit.id, stopEdgeNotchPick]);
   return (
-    <div className="flex gap-1" data-notch-row={unit.id}>
-      <button
-        type="button"
-        className={`cc-btn flex-1 ${lit ? 'border-gold text-gold' : ''}`}
-        data-testid="cut-corner"
-        title={lit ? 'Click one of the lit corners in the scene' : 'Cut a corner out of this carcass'}
-        onClick={() => (lit ? stopNotchPick() : startNotchPick(unit.id))}
-      >
-        {lit ? 'PICK A CORNER' : 'CUT CORNER'}
-      </button>
-      {notch && (
+    <div className="space-y-1">
+      <div className="flex gap-1" data-notch-row={unit.id}>
         <button
           type="button"
-          className="cc-btn px-2"
-          data-testid="remove-corner-cut"
-          title={`Take the ${notch.corner} notch off again`}
-          onClick={() => { setUnitNotch(unit.id, null); stopNotchPick(); }}
+          className={`cc-btn flex-1 ${lit ? 'border-gold text-gold' : ''}`}
+          data-testid="cut-corner"
+          title={lit ? 'Click one of the lit corners in the scene' : 'Cut a corner out of this carcass'}
+          onClick={() => (lit ? stopNotchPick() : startNotchPick(unit.id))}
         >
-          {`REMOVE ${notch.corner} CUT`}
+          {lit ? 'PICK A CORNER' : 'CUT CORNER'}
         </button>
-      )}
+        {notch && (
+          <button
+            type="button"
+            className="cc-btn px-2"
+            data-testid="remove-corner-cut"
+            title={`Take the ${notch.corner} notch off again`}
+            onClick={() => { setUnitNotch(unit.id, null); stopNotchPick(); }}
+          >
+            {`REMOVE ${notch.corner} CUT`}
+          </button>
+        )}
+      </div>
+      <div className="flex gap-1" data-edge-notch-row={unit.id}>
+        <button
+          type="button"
+          className={`cc-btn flex-1 ${edgeLit ? 'border-gold text-gold' : ''}`}
+          data-testid="cut-edge"
+          title={edgeLit ? 'Click one of the lit edges in the scene' : 'Cut a rebate along a whole edge of this carcass'}
+          onClick={() => (edgeLit ? stopEdgeNotchPick() : startEdgeNotchPick(unit.id))}
+        >
+          {edgeLit ? 'PICK AN EDGE' : 'CUT EDGE'}
+        </button>
+        {edgeNotch && (
+          <button
+            type="button"
+            className="cc-btn px-2"
+            data-testid="remove-edge-cut"
+            title={`Take the ${edgeNotch.edge} edge cut off again`}
+            onClick={() => { setUnitEdgeNotch(unit.id, null); stopEdgeNotchPick(); }}
+          >
+            {`REMOVE ${edgeNotch.edge} CUT`}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -2019,6 +2059,108 @@ function NotchWindow({ args }) {
         {said && <p className="text-[11px] text-status-danger" data-testid="notch-said">{said}</p>}
         <div className="flex justify-end">
           <button type="submit" className="cc-btn" data-testid="notch-cut">CUT</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ─── T79 F5 · CUT EDGE: THE SMALL WINDOW AT THE CLICK (KIT_NOTCH.lsp D22) ──
+// NotchWindow's twin: EDGE (the four, the clicked one lit), DEPTH and HEIGHT
+// open on `profile.notch.edgeDefaults` (or the edge notch the unit carries),
+// Enter cuts through the store's ONE action (`setUnitEdgeNotch`), and a
+// refusal shows here in the engine's own words.
+const EDGE_NOTCH_CHOICES = [
+  { id: 'TB', title: 'top-back: a coving' },
+  { id: 'BB', title: 'bottom-back: a skirting board' },
+  { id: 'TF', title: 'top-front: a bulkhead' },
+  { id: 'BF', title: 'bottom-front: a plinth return' },
+];
+
+function EdgeNotchModal() {
+  const modal = useUiStore((s) => s.modal);
+  const args = useUiStore((s) => s.modalArgs);
+  if (modal !== 'edge-notch' || !args?.unitId || !args?.edge) return null;
+  return <EdgeNotchWindow key={`${args.unitId}:${args.edge}`} args={args} />;
+}
+
+function EdgeNotchWindow({ args }) {
+  const profile = useCabinetProfileStore((s) => s.profile);
+  const closeModal = useUiStore((s) => s.closeModal);
+  const stopEdgeNotchPick = useUiStore((s) => s.stopEdgeNotchPick);
+  const setUnitEdgeNotch = useProjectStore((s) => s.setUnitEdgeNotch);
+  const unit = useProjectStore((s) => s.units.find((u) => u.id === args.unitId)) || null;
+  const def = profile?.notch?.edgeDefaults || {};
+  const had = unit?.params?.edgeNotch || null;
+  const [edge, setEdge] = useState(String(args.edge || had?.edge || def.edge || 'BB').toUpperCase());
+  const [d, setD] = useState(String(had?.d ?? def.depthMm ?? ''));
+  const [h, setH] = useState(String(had?.h ?? def.heightMm ?? ''));
+  const [said, setSaid] = useState('');
+  const close = () => { closeModal(); stopEdgeNotchPick(); };
+  // DEPTH takes the caret on a short timer until it has it (NotchWindow's own answer).
+  useEffect(() => {
+    let id = 0;
+    const until = Date.now() + 3000;
+    const land = () => {
+      const el = document.querySelector('[data-testid="edge-notch-ask"] [data-edge-notch-field="depth"]');
+      if (el && document.activeElement !== el) { el.focus(); el.select?.(); }
+      if ((!el || document.activeElement !== el) && Date.now() < until) id = setTimeout(land, 30);
+    };
+    id = setTimeout(land, 0);
+    return () => clearTimeout(id);
+  }, []);
+  const apply = () => {
+    const res = setUnitEdgeNotch(args.unitId, { edge, d: Number(d), h: Number(h) });
+    if (!res?.ok) { setSaid(res?.said || ''); return; }
+    close();
+  };
+  const field = (label, key, value, onChange) => (
+    <label className="block">
+      <span className="cc-label">{label}</span>
+      <input
+        className="cc-input w-full text-right"
+        data-edge-notch-field={key}
+        value={value}
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => { onChange(e.target.value); setSaid(''); }}
+      />
+    </label>
+  );
+  return (
+    <Modal name="edge-notch" title={`CUT EDGE ${edge}`} anchor={args.anchor || null} width="w-64" onClose={close}>
+      <form
+        className="space-y-2"
+        data-testid="edge-notch-ask"
+        data-edge-notch-edge={edge}
+        data-edge-notch-unit={args.unitId}
+        onSubmit={(e) => { e.preventDefault(); apply(); }}
+      >
+        <div>
+          <span className="cc-label">EDGE</span>
+          <div className="grid grid-cols-4 gap-1" data-edge-notch-field="edge">
+            {EDGE_NOTCH_CHOICES.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                data-edge-notch-choice={c.id}
+                title={c.title}
+                className={edge === c.id ? 'cc-btn-gold' : 'cc-btn'}
+                onClick={() => { setEdge(c.id); setSaid(''); }}
+              >
+                {c.id}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {field('DEPTH', 'depth', d, setD)}
+          {field('HEIGHT', 'height', h, setH)}
+        </div>
+        {/* T79 F5 (KIT_NOTCH.lsp D22): the small information, the owner's own two cases. */}
+        <p className="text-[11px] text-ink-400" data-testid="edge-notch-help">A rebate along the whole edge: skirting at the bottom-back, coving at the top-back.</p>
+        {said && <p className="text-[11px] text-status-danger" data-testid="edge-notch-said">{said}</p>}
+        <div className="flex justify-end">
+          <button type="submit" className="cc-btn" data-testid="edge-notch-cut">CUT</button>
         </div>
       </form>
     </Modal>

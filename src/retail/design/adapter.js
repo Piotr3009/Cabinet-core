@@ -4745,3 +4745,64 @@ export function removeCornerCut(unitId) {
   U().stopNotchPick();
   return { ok: Boolean(res?.ok), said: res?.said || '' };
 }
+
+// ─── T79 F5 · CUT EDGE, ON THE CLIENT'S SIZE STEP (KIT_NOTCH.lsp D22) ──────
+//
+// The owner, 18.10.2026: *"cut the corner działa idealnie, ale możesz zrobić mi
+// też poziome cut? wszystkich 4 rogów?"*  CUT CORNER's twin, and not one new
+// law either: the four horizontal side edges are lit by the shared scene's
+// `3d/NotchEdges.jsx` off the shared ui store's `edgeNotchPick`, the click
+// opens the `edge-notch` window at the click (retail's `detail/EdgeNotchAsk.jsx`),
+// and the cut is the store's ONE action (`setUnitEdgeNotch`), which asks the
+// engine first and hands back its refusal as a whole sentence.
+
+/** Does this wardrobe take an edge notch (the corner notch's own kits)? */
+export function canCutEdge(unitId) { return canCutCorner(unitId); }
+
+/** The edge notch a unit carries, or null. */
+export function edgeNotchOfUnit(unitId) {
+  return unitOf(unitId)?.params?.edgeNotch || null;
+}
+
+/** Are this unit's four edges lit? */
+export function cuttingEdge(unitId) {
+  return Boolean(unitId) && U().edgeNotchPick === unitId;
+}
+
+/** CUT EDGE: light the four edges (or put them out again). */
+export function toggleCutEdge(unitId) {
+  if (cuttingEdge(unitId)) { U().stopEdgeNotchPick(); return false; }
+  if (!canCutEdge(unitId)) return false;
+  U().startEdgeNotchPick(unitId);
+  return true;
+}
+
+/** What the window opens with: the profile's own defaults. */
+export function edgeNotchDefaults() {
+  const d = getCabinetProfile().notch?.edgeDefaults || {};
+  return { edge: String(d.edge || 'BB'), d: Number(d.depthMm) || 0, h: Number(d.heightMm) || 0 };
+}
+
+/** ENTER in the window: the cut, or the engine's refusal in its own words. */
+export function cutEdge(unitId, edge, { d, h } = {}) {
+  const res = S().setUnitEdgeNotch(unitId, { edge, d, h });
+  if (res?.ok) {
+    closeEditor();
+    U().stopEdgeNotchPick();
+  }
+  return { ok: Boolean(res?.ok), said: res?.said || '' };
+}
+
+/** A click elsewhere: the window closes and nothing is cut. */
+export function dismissCutEdge() {
+  closeEditor();
+  U().stopEdgeNotchPick();
+  return { ok: true, said: '' };
+}
+
+/** REMOVE EDGE CUT: the same one action, with nothing. */
+export function removeEdgeCut(unitId) {
+  const res = S().setUnitEdgeNotch(unitId, null);
+  U().stopEdgeNotchPick();
+  return { ok: Boolean(res?.ok), said: res?.said || '' };
+}

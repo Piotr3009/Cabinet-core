@@ -23,6 +23,11 @@
 // `computeCabinet`'s drilling pass. A unit with no `params.notch` never reaches
 // a line of it, so every golden is byte-identical by construction.
 //
+// T79 F5 (18.10.2026): section H2 mirrors KIT_NOTCH.lsp's own section H2, THE
+// EDGE NOTCH (D22: a rebate along a whole horizontal edge, `params.edgeNotch`),
+// and section Z2 cuts it, after the corner notch, on what that left. A unit with
+// no `params.edgeNotch` never reaches a line of either.
+//
 // Pure: numbers in, numbers or records out. No store, no React, no three.js.
 
 import {
@@ -70,6 +75,9 @@ export function notchProfile(profile = {}) {
     // 17.10.2026 (KIT_NOTCH.lsp D9): the owner's "okolo 40 mm w kazda strone",
     // each leg of the CORNER_4MM mark at a re-entrant corner.
     'cnc.cornerMarkLeg': num(profile.cnc?.cornerMark?.legMm, 40),
+    // 18.10.2026 (KIT_NOTCH.lsp D22): what the CUT EDGE window opens with, ed and eh.
+    'notch.edgeDefaults.depth': num(profile.notch?.edgeDefaults?.depthMm, 20),
+    'notch.edgeDefaults.height': num(profile.notch?.edgeDefaults?.heightMm, 120),
   };
 }
 
@@ -849,6 +857,413 @@ export function notchRefusal(cw, cd, ch, g, nw, nd, nh, corner, K) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// H2. THE EDGE NOTCH (KIT_NOTCH.lsp D22 and its section H2, 18.10.2026)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// T79 F5. The owner: *"cut the corner działa idealnie, ale możesz zrobić mi też
+// poziome cut? wszystkich 4 rogów?"*  A rebate along ONE horizontal edge of the
+// side elevation, the whole width of the carcass: TB top-back (a coving), BB
+// bottom-back (a skirting), TF top-front (a bulkhead), BF bottom-front (a
+// plinth return); the LISP's ed and eh are this file's d and h. The routines
+// are the LISP's, camelCased, the same arguments in the same order; where the
+// LISP returns an alist of runs or joints this returns an object with the same
+// keys, and where it returns nil for a list, [].
+
+export const EDGE_NOTCH_EDGES = Object.freeze(['TB', 'BB', 'TF', 'BF']);
+
+export function edgeNotchOk(edge) { return EDGE_NOTCH_EDGES.includes(edge); }
+export function edgeNotchBackP(edge) { return edge === 'TB' || edge === 'BB'; }
+export function edgeNotchTopP(edge) { return edge === 'TB' || edge === 'TF'; }
+/** The corner notch's corner with the same back-ness: the side's corner name is notchSideFc's own. */
+export function edgeNotchAsCorner(edge) { return edgeNotchBackP(edge) ? 'BL' : 'FL'; }
+/** The board the edge cuts across: the TOP for a top edge, else the BOTTOM. */
+export function edgeNotchBoard(edge) { return edgeNotchTopP(edge) ? 'TOP' : 'BOTTOM'; }
+
+// ── THE SIDES, BUL AND BUR BOTH (drawBUL x from the FRONT, drawBUR from the BACK) ──
+
+export function edgeNotchSideFc(edge, burFrame) {
+  return notchSideFc(edgeNotchAsCorner(edge), burFrame, edgeNotchTopP(edge));
+}
+
+export function edgeNotchSide(cd, ch, g, ed, eh, edge, burFrame) {
+  return notchRectOutline(cd - g, ch, ed, eh, edgeNotchSideFc(edge, burFrame));
+}
+
+// ── THE RUN LAW (D22: section 4's D5, read as runs) ──
+//
+// A jointed edge of a board is planned on the RUN the cuts leave it, [lo, hi],
+// by the call that planned the whole edge; null where a cut took the edge away.
+// With the corner notch on the same board, each run is the MEET of the two.
+
+export function edgeNotchRun(lo, hi) { return hi > lo ? [lo, hi] : null; }
+export function edgeNotchRunMeet(a, b) {
+  return a && b ? edgeNotchRun(Math.max(a[0], b[0]), Math.min(a[1], b[1])) : null;
+}
+export function edgeNotchRunLen(r) { return r ? r[1] - r[0] : 0; }
+/** Two boards' worth of runs, met key by key (the keys of the first). */
+export function edgeNotchRunsMeet(a, b) {
+  const out = {};
+  for (const k of Object.keys(a)) out[k] = edgeNotchRunMeet(a[k], b[k] ?? null);
+  return out;
+}
+
+/** The side's runs: BOTTOM and TOP from its FRONT edge (BUR's frame is cd - g - x), BACK up its back edge. */
+export function edgeNotchSideRuns(cd, ch, g, ed, eh, edge) {
+  const sideW = cd - g;
+  const whole = [0, sideW];
+  const cut = edgeNotchBackP(edge) ? edgeNotchRun(0, sideW - ed) : edgeNotchRun(ed, sideW);
+  let back;
+  if (!edgeNotchBackP(edge)) back = [0, ch];
+  else if (edgeNotchTopP(edge)) back = edgeNotchRun(0, ch - eh);
+  else back = edgeNotchRun(eh, ch);
+  return { BOTTOM: edgeNotchTopP(edge) ? whole : cut, TOP: edgeNotchTopP(edge) ? cut : whole, BACK: back };
+}
+
+/** The corner notch's runs on ITS side (notchSideJoints plans exactly these); a rebate leaves them whole. */
+export function notchSideRuns(cd, ch, g, nw, nd, nh, corner) {
+  const sideW = cd - g;
+  const whole = [0, sideW];
+  if (!notchBoxedP(nw, g)) return { BOTTOM: whole, TOP: whole, BACK: [0, ch] };
+  const full = notchFullP(ch, nh);
+  const top = notchFromTopP(ch, nh);
+  const hh = notchHh(ch, nh);
+  const cut = notchBackP(corner) ? edgeNotchRun(0, sideW - nd) : edgeNotchRun(nd, sideW);
+  let back;
+  if (!notchBackP(corner)) back = [0, ch];
+  else if (full) back = null;
+  else if (top) back = edgeNotchRun(0, ch - hh);
+  else back = edgeNotchRun(nh, ch);
+  return { BOTTOM: top ? whole : cut, TOP: full || top ? cut : whole, BACK: back };
+}
+
+/** The side's joints planned on its runs (section 4's calls), from the FRONT edge, keyed as notchSideJoints. */
+export function edgeNotchPlanSide(runs, cd, K) {
+  const e = notchP(K, 'puzzle.tabCentresFromEnd');
+  const below = notchP(K, 'puzzle.singleSocketBelow');
+  const inset = notchJointInset(cd, e, notchP(K, 'puzzle.singleJointMaxDepth'));
+  const one = notchP(K, 'puzzle.singleTabAtOrBelow');
+  const three = notchP(K, 'puzzle.middleTabBelow');
+  const sfe = notchP(K, 'puzzle.screwFromEnd');
+  const on = (r, plan) => (r ? notchShift(plan(edgeNotchRunLen(r)), r[0]) : []);
+  return {
+    'TOP-SOCKETS': on(runs.TOP, (len) => notchReplanSockets(len, inset, below)),
+    'BOTTOM-SOCKETS': on(runs.BOTTOM, (len) => notchReplanSockets(len, inset, below)),
+    'TOP-SCREWS': on(runs.TOP, (len) => notchScrewRow(len, sfe)),
+    'BOTTOM-SCREWS': on(runs.BOTTOM, (len) => notchScrewRow(len, sfe)),
+    'BACK-TABS': on(runs.BACK, (len) => notchReplanTabs(len, e, one, three)),
+  };
+}
+
+export function edgeNotchSideJoints(cd, ch, g, ed, eh, edge, K) {
+  return edgeNotchPlanSide(edgeNotchSideRuns(cd, ch, g, ed, eh, edge), cd, K);
+}
+
+// ── THE TOP (a top edge) or THE BOTTOM (a bottom edge), in its PLAN frame ──
+
+/** [fc, nw, nh]: the strip, as notchRectOutline takes it (x from BUL's inner face, y from the front). */
+export function edgeNotchTopCut(cw, cd, g, ed, edge) {
+  return [edgeNotchBackP(edge) ? 'x0y1' : 'x0y0', cw - 2 * g, ed];
+}
+
+export function edgeNotchTopOutline(cw, cd, g, ed, edge) {
+  const c = edgeNotchTopCut(cw, cd, g, ed, edge);
+  return notchRectOutline(cw - 2 * g, cd - g, c[1], c[2], c[0]);
+}
+
+/** Its runs: LEFT / RIGHT y from the front, BACK x from BUL's inner face; at a back edge its BACK edge meets nothing. */
+export function edgeNotchTopRuns(cw, cd, g, ed, edge) {
+  const sideW = cd - g;
+  const tw = cw - 2 * g;
+  const lr = edgeNotchBackP(edge) ? edgeNotchRun(0, sideW - ed) : edgeNotchRun(ed, sideW);
+  return { LEFT: lr, RIGHT: lr, BACK: edgeNotchBackP(edge) ? null : [0, tw] };
+}
+
+/** The corner notch's runs on a TOP or BOTTOM it cuts (notchTopJoints plans exactly these); a rebate, whole. */
+export function notchTopRuns(cw, cd, g, nw, nd, corner) {
+  const sideW = cd - g;
+  const tw = cw - 2 * g;
+  const whole = [0, sideW];
+  if (!notchBoxedP(nw, g)) return { LEFT: whole, RIGHT: whole, BACK: [0, tw] };
+  const cut = notchBackP(corner) ? edgeNotchRun(0, sideW - nd) : edgeNotchRun(nd, sideW);
+  let bk;
+  if (!notchBackP(corner)) bk = [0, tw];
+  else if (notchLeftP(corner)) bk = edgeNotchRun(nw, tw);
+  else bk = edgeNotchRun(0, tw - nw);
+  return { LEFT: notchLeftP(corner) ? cut : whole, RIGHT: notchLeftP(corner) ? whole : cut, BACK: bk };
+}
+
+export function edgeNotchPlanTop(runs, cd, K) {
+  const e = notchP(K, 'puzzle.tabCentresFromEnd');
+  const below = notchP(K, 'puzzle.singleSocketBelow');
+  const inset = notchJointInset(cd, e, notchP(K, 'puzzle.singleJointMaxDepth'));
+  const on = (r, i) => (r ? notchShift(notchReplanSockets(edgeNotchRunLen(r), i, below), r[0]) : []);
+  return { LEFT: on(runs.LEFT, inset), RIGHT: on(runs.RIGHT, inset), BACK: on(runs.BACK, e) };
+}
+
+export function edgeNotchTopJoints(cw, cd, g, ed, edge, K) {
+  return edgeNotchPlanTop(edgeNotchTopRuns(cw, cd, g, ed, edge), cd, K);
+}
+
+// ── THE BACK (a back edge only): shorter by eh, x from the LEFT face, y up ──
+
+export function edgeNotchBackCut(cw, eh, edge) {
+  return [edgeNotchTopP(edge) ? 'x0y1' : 'x0y0', cw, eh];
+}
+
+export function edgeNotchBack(cw, ch, eh, edge) {
+  if (!edgeNotchBackP(edge)) return notchPlainRect(cw, ch);
+  const c = edgeNotchBackCut(cw, eh, edge);
+  return notchRectOutline(cw, ch, c[1], c[2], c[0]);
+}
+
+/** Its runs: LEFT / RIGHT (the sides' back edges) y up, TOP / BOTTOM x along. */
+export function edgeNotchBackRuns(cw, ch, g, eh, edge) {
+  let lr;
+  if (!edgeNotchBackP(edge)) lr = [0, ch];
+  else if (edgeNotchTopP(edge)) lr = edgeNotchRun(0, ch - eh);
+  else lr = edgeNotchRun(eh, ch);
+  return {
+    LEFT: lr,
+    RIGHT: lr,
+    TOP: edgeNotchBackP(edge) && edgeNotchTopP(edge) ? null : [0, cw],
+    BOTTOM: edgeNotchBackP(edge) && !edgeNotchTopP(edge) ? null : [0, cw],
+  };
+}
+
+/** The corner notch's runs on the BACK (notchBackJoints plans exactly these, boxed); a front corner or a rebate, whole. */
+export function notchBackRuns(cw, ch, g, nw, nh, corner) {
+  const whole = [0, cw];
+  if (!notchBackP(corner) || !notchBoxedP(nw, g)) return { LEFT: [0, ch], RIGHT: [0, ch], TOP: whole, BOTTOM: whole };
+  const full = notchFullP(ch, nh);
+  const top = notchFromTopP(ch, nh);
+  const hh = notchHh(ch, nh);
+  const left = notchLeftP(corner);
+  let near;
+  if (full) near = null;
+  else if (top) near = edgeNotchRun(0, ch - hh);
+  else near = edgeNotchRun(nh, ch);
+  const cutx = left ? edgeNotchRun(nw, cw) : edgeNotchRun(0, cw - nw);
+  return {
+    LEFT: left ? near : [0, ch],
+    RIGHT: left ? [0, ch] : near,
+    TOP: full || top ? cutx : whole,
+    BOTTOM: top ? whole : cutx,
+  };
+}
+
+/**
+ * The BACK's joints planned on its runs: the sockets the sides' tabs and the
+ * TOP's / BOTTOM's tabs land in, and drawBACK's dia 3 rows on what is left of
+ * each of its four edges (D10: an edge a cut MADE carries none).
+ */
+export function edgeNotchPlanBack(runs, cw, ch, g, K) {
+  const e = notchP(K, 'puzzle.tabCentresFromEnd');
+  const below = notchP(K, 'puzzle.singleSocketBelow');
+  const one = notchP(K, 'puzzle.singleTabAtOrBelow');
+  const three = notchP(K, 'puzzle.middleTabBelow');
+  const sfe = notchP(K, 'puzzle.screwFromEnd');
+  const S = notchScrewAxis(g);
+  const { LEFT: l, RIGHT: r, TOP: tp, BOTTOM: b } = runs;
+  const lt = l ? notchShift(notchReplanTabs(edgeNotchRunLen(l), e, one, three), l[0]) : [];
+  const rt = r ? notchShift(notchReplanTabs(edgeNotchRunLen(r), e, one, three), r[0]) : [];
+  const scr = [];
+  if (l) for (const y of notchRowsBetweenTabs(l[0], l[1], lt, sfe)) scr.push([S, y]);
+  if (r) for (const y of notchRowsBetweenTabs(r[0], r[1], rt, sfe)) scr.push([cw - S, y]);
+  if (tp) for (const x of notchRowBetween(tp[0], tp[1], g, sfe)) scr.push([x, ch - S]);
+  if (b) for (const x of notchRowBetween(b[0], b[1], g, sfe)) scr.push([x, S]);
+  const across = (run) => (run ? notchShift(notchReplanSockets(edgeNotchRunLen(run) - 2 * g, e, below), run[0] + g) : []);
+  return {
+    'LEFT-SOCKETS': lt,
+    'RIGHT-SOCKETS': rt,
+    'TOP-SOCKETS': across(tp),
+    'BOTTOM-SOCKETS': across(b),
+    SCREWS: scr,
+  };
+}
+
+export function edgeNotchBackJoints(cw, ch, g, eh, edge, K) {
+  return edgeNotchPlanBack(edgeNotchBackRuns(cw, ch, g, eh, edge), cw, ch, g, K);
+}
+
+// ── THE KEEP-OUT (D8), in plan and height ──
+
+/** [[x0, y0, x1, y1], z0, z1]: at a back edge from the cut faces (cd - g - ed) to the back face. */
+export function edgeNotchKeepout(cw, cd, ch, g, ed, eh, edge) {
+  const back = edgeNotchBackP(edge);
+  const top = edgeNotchTopP(edge);
+  return [[0, back ? cd - g - ed : 0, cw, back ? cd : ed], top ? ch - eh : 0, top ? ch : eh];
+}
+
+/** Does anything at plan `rect`, from height z0 up to z1, cross it? */
+export function edgeNotchCrossesP(cw, cd, ch, g, ed, eh, edge, rect, z0, z1) {
+  const k = edgeNotchKeepout(cw, cd, ch, g, ed, eh, edge);
+  return notchOverlapP(rect, k[0]) && z0 < k[2] && z1 > k[1];
+}
+
+// ── COEXISTENCE: the two rectangles on a side, in its FRONT frame ──
+
+export function edgeNotchSideRect(cd, ch, g, ed, eh, edge) {
+  const sideW = cd - g;
+  const back = edgeNotchBackP(edge);
+  const top = edgeNotchTopP(edge);
+  return [back ? sideW - ed : 0, top ? ch - eh : 0, back ? sideW : ed, top ? ch : eh];
+}
+
+export function notchSideRect(cd, ch, g, nd, nh, corner) {
+  const sideW = cd - g;
+  const hh = notchHh(ch, nh);
+  const top = notchFromTopP(ch, nh);
+  return [notchBackP(corner) ? sideW - nd : 0, top ? ch - hh : 0, notchBackP(corner) ? sideW : nd, top ? ch : hh];
+}
+
+/** Does the corner notch cut this horizontal board (section 2)? */
+export function notchCutsBoardP(ch, nh, hz) {
+  return hz === 'TOP' ? notchFullP(ch, nh) || notchFromTopP(ch, nh) : !notchFromTopP(ch, nh);
+}
+
+// ── THE COMPOUND OUTLINE: a board less TWO cuts (one: notchRectOutline's polygon) ──
+
+export function edgeNotchStripP(bw, bh, c) { return Boolean(c) && (c[1] >= bw || c[2] >= bh); }
+
+/** The rectangle the strips leave, [x0, y0, x1, y1]. */
+export function edgeNotchShrink(bw, bh, cuts) {
+  let [x0, y0, x1, y1] = [0, 0, bw, bh];
+  for (const c of cuts) {
+    if (!edgeNotchStripP(bw, bh, c)) continue;
+    if (c[1] >= bw) {
+      if (notchFcY0(c[0])) y0 = Math.max(y0, c[2]);
+      else y1 = Math.min(y1, bh - c[2]);
+    } else if (notchFcX0(c[0])) x0 = Math.max(x0, c[1]);
+    else x1 = Math.min(x1, bw - c[1]);
+  }
+  return [x0, y0, x1, y1];
+}
+
+/** The corner cuts, clipped to `box`, each [fc, w, h] named on THAT rectangle. */
+export function edgeNotchCorners(bw, bh, cuts, box) {
+  const out = [];
+  for (const c of cuts) {
+    if (!c || edgeNotchStripP(bw, bh, c)) continue;
+    const [rx0, rx1] = notchFcX0(c[0]) ? [0, c[1]] : [bw - c[1], bw];
+    const [ry0, ry1] = notchFcY0(c[0]) ? [0, c[2]] : [bh - c[2], bh];
+    const cx0 = Math.max(rx0, box[0]);
+    const cx1 = Math.min(rx1, box[2]);
+    const cy0 = Math.max(ry0, box[1]);
+    const cy1 = Math.min(ry1, box[3]);
+    if (cx1 > cx0 && cy1 > cy0) {
+      out.push([`${cx0 <= box[0] ? 'x0' : 'x1'}${cy0 <= box[1] ? 'y0' : 'y1'}`, cx1 - cx0, cy1 - cy0]);
+    }
+  }
+  return out;
+}
+
+/** Once round `box`, anticlockwise from its x0y0 corner, each cut corner taking its three points. */
+export function edgeNotchWalk(box, corners) {
+  const [x0, y0, x1, y1] = box;
+  const out = [];
+  for (const fc of ['x0y0', 'x1y0', 'x1y1', 'x0y1']) {
+    const hit = corners.find((c) => c[0] === fc);
+    if (!hit) out.push([notchFcX0(fc) ? x0 : x1, notchFcY0(fc) ? y0 : y1]);
+    else if (fc === 'x0y0') out.push([x0, y0 + hit[2]], [x0 + hit[1], y0 + hit[2]], [x0 + hit[1], y0]);
+    else if (fc === 'x1y0') out.push([x1 - hit[1], y0], [x1 - hit[1], y0 + hit[2]], [x1, y0 + hit[2]]);
+    else if (fc === 'x1y1') out.push([x1, y1 - hit[2]], [x1 - hit[1], y1 - hit[2]], [x1 - hit[1], y1]);
+    else out.push([x0 + hit[1], y1], [x0 + hit[1], y1 - hit[2]], [x0, y1 - hit[2]]);
+  }
+  return out;
+}
+
+export function edgeNotchLessTwo(bw, bh, cutA, cutB) {
+  const box = edgeNotchShrink(bw, bh, [cutA, cutB]);
+  return edgeNotchWalk(box, edgeNotchCorners(bw, bh, [cutA, cutB], box));
+}
+
+// ── THE REFUSALS (Room refuses first) ──
+
+/** notch.minInterior applies to what is left, in depth (cd - g - ed) and in height (ch - g - eh), never under D6. */
+export function edgeNotchRefusal(cw, cd, ch, g, ed, eh, edge, K) {
+  const keep = Math.max(notchMinJointEdge(notchP(K, 'puzzle.dogboneHalfHeight'), g), notchP(K, 'notch.minInterior'));
+  if (!edgeNotchOk(edge)) return 'NOTCH: the edge is TB, BB, TF or BF.';
+  if (!(ed > 0) || !(eh > 0)) return 'NOTCH: the depth and the height of an edge notch must both be more than 0.';
+  if (cd - g - ed < keep) {
+    return `NOTCH: an edge notch must leave ${roundTo(keep, 0)} mm of the interior beside it in depth. Make it shallower.`;
+  }
+  if (ch - g - eh < keep) {
+    return `NOTCH: an edge notch must leave ${roundTo(keep, 0)} mm of the interior beside it in height. Make it lower.`;
+  }
+  return null;
+}
+
+/** The first key whose run both cuts leave and whose meet cannot hold a joint, or null. */
+export function edgeNotchShortRun(a, b, minEdge) {
+  for (const k of Object.keys(a)) {
+    const ra = a[k];
+    const rb = b[k] ?? null;
+    if (ra && rb && edgeNotchRunLen(edgeNotchRunMeet(ra, rb)) < minEdge) return k;
+  }
+  return null;
+}
+
+export function edgeNotchShortSaid(key, board) {
+  return `NOTCH: what the corner notch and the edge notch leave of the ${key} edge of ${board}`
+    + ' cannot hold a joint. Make one of them smaller.';
+}
+
+/** notchRebateEatsP's law asked of a GIVEN side plan (the met one). */
+export function edgeNotchRebateEatsP(cd, ch, g, nw, nd, nh, corner, sj, K) {
+  const bone = notchP(K, 'puzzle.dogboneHalfHeight');
+  const half = notchP(K, 'puzzle.socketHalfWidth');
+  const sideW = cd - g;
+  const hh = notchHh(ch, nh);
+  const top = notchFromTopP(ch, nh);
+  const [lo, hi] = notchBackP(corner) ? [sideW - nd, sideW] : [0, nd];
+  let hit = false;
+  if (notchBackP(corner)) {
+    for (const c of sj['BACK-TABS'] || []) if (top ? c + bone > ch - hh : c - bone < hh) hit = true;
+  }
+  for (const c of [...(sj['TOP-SOCKETS'] || []), ...(sj['BOTTOM-SOCKETS'] || [])]) {
+    if (c + half > lo && c - half < hi) hit = true;
+  }
+  return hit;
+}
+
+/**
+ * COEXISTENCE: the corner notch (nw nd nh corner) with the edge notch. Their
+ * rectangles on the corner notch's side must not overlap; every jointed edge
+ * both leave must still hold a joint (D6); and a rebate's side must not have
+ * a re-planned joint moved into it.
+ */
+export function edgeNotchMeetsRefusal(cw, cd, ch, g, ed, eh, edge, nw, nd, nh, corner, K) {
+  const minEdge = notchMinJointEdge(notchP(K, 'puzzle.dogboneHalfHeight'), g);
+  const side = notchSideName(corner);
+  const hz = edgeNotchBoard(edge);
+  if (notchOverlapP(edgeNotchSideRect(cd, ch, g, ed, eh, edge), notchSideRect(cd, ch, g, nd, nh, corner))) {
+    return `NOTCH: the edge notch and the corner notch overlap on ${side}. Move one of them, or make it smaller.`;
+  }
+  let bad = edgeNotchShortRun(notchSideRuns(cd, ch, g, nw, nd, nh, corner), edgeNotchSideRuns(cd, ch, g, ed, eh, edge), minEdge);
+  if (bad) return edgeNotchShortSaid(bad, side);
+  if (notchBoxedP(nw, g) && notchCutsBoardP(ch, nh, hz)) {
+    bad = edgeNotchShortRun(notchTopRuns(cw, cd, g, nw, nd, corner), edgeNotchTopRuns(cw, cd, g, ed, edge), minEdge);
+    if (bad) return edgeNotchShortSaid(bad, hz);
+  }
+  bad = edgeNotchShortRun(notchBackRuns(cw, ch, g, nw, nh, corner), edgeNotchBackRuns(cw, ch, g, eh, edge), minEdge);
+  if (bad) return edgeNotchShortSaid(bad, 'BACK');
+  if (!notchBoxedP(nw, g)) {
+    const met = edgeNotchRunsMeet(notchSideRuns(cd, ch, g, nw, nd, nh, corner), edgeNotchSideRuns(cd, ch, g, ed, eh, edge));
+    if (edgeNotchRebateEatsP(cd, ch, g, nw, nd, nh, corner, edgeNotchPlanSide(met, cd, K), K)) {
+      return `NOTCH: a notch narrower than the board is a rebate in ${side}, and the edge notch moves a joint into it.`
+        + ' Make the corner notch at least as wide as the board, or smaller.';
+    }
+  }
+  return null;
+}
+
+/** D7, in this notch's words: a hole the cut reaches on either side. */
+export function edgeNotchHoleRefusal(kind, board) {
+  return `NOTCH: the ${kind} drilling of ${board} falls in the edge notch, and a ${kind}`
+    + ' cannot be fixed to air. Make the notch smaller, or cut another edge.';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Z. THE ENGINE CUTS WHAT THE ROUTINES DESCRIBE
 // ═══════════════════════════════════════════════════════════════════════════
 //
@@ -911,8 +1326,11 @@ export function notchOf(params, profile = {}) {
   };
 }
 
-/** Can this kit take a notch at all? null when it can, else the sentence. */
-export function notchKitRefusal(type) {
+/**
+ * Can this kit take a notch at all? null when it can, else the sentence.
+ * T79 F5: `what` names the cut, 'an edge' for the edge notch (D22); one kit list.
+ */
+export function notchKitRefusal(type, what = 'a corner') {
   const c = type?.carcass || {};
   // The tall unit joined the parents on 15.10.2026 (the owner: *"wysokie
   // szafki i wiszace nie maja mozliwosci w kominie wciec"*); the Cargo shares
@@ -924,7 +1342,7 @@ export function notchKitRefusal(type) {
   if (ok) return null;
   // A kit's label may carry a long dash of its own; the sentence says it plain.
   const name = String(type?.label || type?.id || 'unit').replace(/\s*[\u2013\u2014]\s*/g, ', ');
-  return `NOTCH: a corner is cut from a base unit (KIT_BUD), a tall unit (KIT_BUDTALL), a wardrobe (KIT_WARDROBE) or a wall unit (KIT_WUD) carcass; `
+  return `NOTCH: ${what} is cut from a base unit (KIT_BUD), a tall unit (KIT_BUDTALL), a wardrobe (KIT_WARDROBE) or a wall unit (KIT_WUD) carcass; `
     + `a ${name} is not one of them.`;
 }
 
@@ -1541,5 +1959,397 @@ export function notchSummary(cut) {
     dropped: cut.dropped || 0,
     ...(cut.top ? { anchor: 'top' } : {}),
     ...(cut.notch?.auto ? { auto: true, for: cut.notch.for } : {}),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Z2. THE ENGINE CUTS THE EDGE NOTCH (KIT_NOTCH.lsp D22)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// T79 F5, section Z's twin for the edge notch: what the unit asks for, the
+// verdict asked of the parent's own cut, and the two passes either side of
+// the drilling pass, run AFTER the corner notch's own (so a board both reach
+// is cut by both, section H2's compound outline and met runs). A unit with no
+// `params.edgeNotch` never reaches a line of it (the gate `edgeNotch`).
+
+/**
+ * The edge notch a unit asks for, read once, or null. Missing numbers fall
+ * back to `profile.notch.edgeDefaults` (T79 proposed, owner to confirm).
+ */
+export function edgeNotchOf(params, profile = {}) {
+  const n = params?.edgeNotch;
+  if (!n || typeof n !== 'object') return null;
+  const K = notchProfile(profile);
+  const pick = (v, key) => (v != null && v !== '' && Number.isFinite(Number(v)) ? Number(v) : notchP(K, key));
+  return {
+    edge: String(n.edge || '').toUpperCase(),
+    d: pick(n.d, 'notch.edgeDefaults.depth'),
+    h: pick(n.h, 'notch.edgeDefaults.height'),
+  };
+}
+
+/** The boards the edge notch cuts (D8 asks everything else). */
+const EDGE_CUT_PARTS = new Set(['BUL', 'BUR', 'TOP', 'BOTTOM', 'BACK']);
+/** D7 for the edge notch: these on either side are a refusal; a hanger cannot be fixed to air either. */
+const EDGE_REFUSED_KINDS = {
+  hinge: 'hinge', runner: 'runner', rail_bracket: 'rail bracket', hanger: 'hanger',
+};
+
+/** How far the corner notch moved a side's frame (a full-height boxed corner re-origins its side). */
+function cornerSideShift(n, sideId, H, G) {
+  if (!n || notchSideName(n.corner) !== sideId || !notchBoxedP(n.w, G) || !notchFullP(H, n.h)) return 0;
+  const left = notchLeftP(n.corner);
+  const back = notchBackP(n.corner);
+  return (left ? !back : back) ? n.d : 0;
+}
+
+/**
+ * THE VERDICT, asked of the PARENT's own cut (the unit computed without its
+ * edge notch, the corner notch included): null when the edge notch can be
+ * cut, else { message, panel }. Room refuses first: a refused edge notch cuts
+ * nothing and the parent is what is cut.
+ */
+export function edgeNotchVerdict({
+  parent, params, type, profile,
+}) {
+  const e = edgeNotchOf(params, profile);
+  if (!e) return null;
+  const say = (message, panel = null) => ({ message, panel });
+  const kit = notchKitRefusal(type, 'an edge');
+  if (kit) return say(kit);
+  if (parent?.params?.slope_cut) {
+    return say('NOTCH: a carcass cut under a slope cannot take an edge notch as well. Move it out of the slope first.');
+  }
+  if (params?.extension) {
+    return say('NOTCH: a carcass grown into a recess cannot take an edge notch as well. Move it out of the recess first.');
+  }
+  const K = notchProfile(profile);
+  const { width: W, height: H, depth: D, board_t: G } = parent.params;
+  const geo = edgeNotchRefusal(W, D, H, G, e.d, e.h, e.edge, K);
+  if (geo) return say(geo);
+  // COEXISTENCE (D22): a corner notch the parent carries, cut and not refused.
+  const n = parent?.derived?.notch && !parent.derived.notch.refused ? notchOf(params, profile) : null;
+  if (n) {
+    const meets = edgeNotchMeetsRefusal(W, D, H, G, e.d, e.h, e.edge, n.w, n.d, n.h, n.corner, K);
+    if (meets) return say(meets, notchSideName(n.corner));
+  }
+  // D7, on EITHER side, each in its own frame (BUR's from the back).
+  const sideW = D - G;
+  for (const [sideId, bur] of [['BUL', false], ['BUR', true]]) {
+    const fc = edgeNotchSideFc(e.edge, bur);
+    const dx = cornerSideShift(n, sideId, H, G);
+    for (const d of parent.drills || []) {
+      const kind = EDGE_REFUSED_KINDS[d.kind];
+      if (!kind || d.panel !== sideId) continue;
+      const rad = (Number(d.d) || 0) / 2;
+      if (notchHoleInP(d.x + dx, d.y, rad, sideW, H, e.d, e.h, fc)) return say(edgeNotchHoleRefusal(kind, sideId), sideId);
+    }
+  }
+  // ...and THE WALL UNIT's hanger cut-outs in the BACK the cut takes.
+  const cutoutLayer = profile?.wallUnit?.hangers?.cutoutLayer;
+  const bk = (parent.panels || []).find((p) => p.id === 'BACK');
+  if (edgeNotchBackP(e.edge) && cutoutLayer && bk) {
+    const [z0, z1] = edgeNotchTopP(e.edge) ? [H - e.h, H] : [0, e.h];
+    if ((bk.cnc?.pockets || []).some((k) => k.layer === cutoutLayer && k.y2 > z0 + EPS && k.y1 < z1 - EPS)) {
+      return say('NOTCH: the hanger cut-out of the BACK falls in the edge notch, and a hanger cannot be fixed to air.'
+        + ' Make the notch smaller, or cut another edge.', 'BACK');
+    }
+  }
+  // D8: anything else the parent puts in the carcass that crosses the keep-out
+  // (a shelf too: the rebate would take a whole strip of it).
+  for (const p of parent.panels || []) {
+    if (EDGE_CUT_PARTS.has(p.part) || !insideCarcass(p.box, W, H, D)) continue;
+    const { rect, z0, z1 } = planOf(p.box, D);
+    if (edgeNotchCrossesP(W, D, H, G, e.d, e.h, e.edge, rect, z0, z1)) {
+      return say(`NOTCH: ${p.id} stands where the edge notch goes. Move it, or make the notch smaller.`, p.id);
+    }
+  }
+  const rails = [parent.assemblies?.rail, ...(parent.assemblies?.columnRails || [])].filter(Boolean);
+  for (const r of rails) {
+    const y = D - Number(r.z);
+    const z = Number(r.y) || 0;
+    if (edgeNotchCrossesP(W, D, H, G, e.d, e.h, e.edge, [r.x1, y - 1, r.x2, y + 1], z, z)) {
+      return say('NOTCH: the hanging rail runs through the edge notch. Move the rail, or make the notch smaller.');
+    }
+  }
+  return null;
+}
+
+/** A refused edge notch: the PARENT's cut, and the sentence the Check prints (#28). */
+export function withEdgeNotchRefusal(parent, verdict, params, profile) {
+  const e = edgeNotchOf(params, profile);
+  return {
+    ...parent,
+    warnings: [...(parent.warnings || []), {
+      code: NOTCH_REFUSED,
+      ...(verdict.panel ? { panel: verdict.panel } : {}),
+      message: verdict.message,
+    }],
+    derived: { ...(parent.derived || {}), edgeNotch: { ...e, refused: verdict.message } },
+  };
+}
+
+/** The missing corners for the 3-D (`cnc.notch`, a second one as `also`), each named on the board's final rectangle. */
+function cornerRecordOf(corners) {
+  const recs = corners.map(([fc, w, h]) => ({ fc, nw: roundTo(w, 4), nh: roundTo(h, 4) }));
+  if (!recs.length) return null;
+  return recs.length === 1 ? recs[0] : { ...recs[0], also: recs[1] };
+}
+
+const r4pts = (pts) => pts.map(([x, y]) => [roundTo(x, 4), roundTo(y, 4)]);
+
+// ── PHASE A: after the corner notch's own, before the drilling ────────────
+
+/**
+ * Cut the boards the edge reaches: BUL and BUR (the L corner), the TOP or the
+ * BOTTOM (a strip), the BACK at a back edge (a strip). Mutates `panels` in
+ * place and returns the record PHASE B needs; null when the unit asks for no
+ * edge notch. `cornerCut` is the corner notch's own record (notchCarcass),
+ * already cut: a board both reach is cut by both, in its ORIGINAL frame, so
+ * the drilling pass sets out as on the parent.
+ */
+export function edgeNotchCarcass({
+  params, profile, panels, W, H, D, G, cornerCut = null,
+}) {
+  const e = edgeNotchOf(params, profile);
+  if (!e) return null;
+  const pz = profile.puzzle;
+  const K = notchProfile(profile);
+  const leg = notchP(K, 'cnc.cornerMarkLeg');
+  const markLayer = pz?.layers?.cornerMark || 'CORNER_4MM';
+  const { edge } = e;
+  const ed = e.d;
+  const eh = e.h;
+  const back = edgeNotchBackP(edge);
+  const top = edgeNotchTopP(edge);
+  const sideW = D - G;
+  const tw = W - 2 * G;
+  const nc = cornerCut?.notch ? cornerCut : null;
+  const n = nc ? nc.notch : null;
+  const cut = {
+    edge, ed, eh, back, top, W, H, D, G, sideW,
+    regions: {},
+    reorigin: {},
+    cornerReorigin: nc?.reorigin || {},
+    boards: [],
+    withCorner: Boolean(nc),
+  };
+  const byId = (id) => panels.find((p) => p.id === id);
+  const stamp = (p, extra) => {
+    p.meta = { ...(p.meta || {}), edgeNotch: { edge, d: ed, h: eh, ...extra } };
+  };
+  // A board both notches reach carries the corner's mark already: it is read
+  // again off the compound outline, with the edge's.
+  const keptMarks = (p) => (p.cnc?.marks || []).filter((m) => m.layer !== markLayer);
+
+  // ── THE SIDES, BOTH ──
+  for (const [sideId, bur] of [['BUL', false], ['BUR', true]]) {
+    const side = byId(sideId);
+    if (!side || side.part !== sideId) continue;
+    const efc = edgeNotchSideFc(edge, bur);
+    const ecut = [efc, ed, eh];
+    const here = nc && nc.sideId === sideId;
+    const ccut = here && nc.boxed ? [notchSideFc(n.corner, bur, nc.top), nc.nd, nc.hh] : null;
+    const cuts = ccut ? [ccut, ecut] : [ecut];
+    const outline = ccut ? edgeNotchLessTwo(sideW, H, ccut, ecut) : notchRectOutline(sideW, H, ed, eh, efc);
+    const runs = here
+      ? edgeNotchRunsMeet(notchSideRuns(D, H, G, n.w, n.d, n.h, n.corner), edgeNotchSideRuns(D, H, G, ed, eh, edge))
+      : edgeNotchSideRuns(D, H, G, ed, eh, edge);
+    const sj = edgeNotchPlanSide(runs, D, K);
+    // The joints are measured from the FRONT; BUR's frame runs from the back.
+    const fromFront = (xs) => (bur ? xs.map((x) => sideW - x) : xs);
+    const tabRuns = [{ edge: bur ? 'left' : 'right', at: bur ? 0 : sideW, centres: sj['BACK-TABS'] }];
+    const sockets = socketPanelGeometry({
+      w: sideW, h: H, G, puzzle: pz,
+      sockets: { top: fromFront(sj['TOP-SOCKETS']), bottom: fromFront(sj['BOTTOM-SOCKETS']) },
+    });
+    const S = notchScrewAxis(G);
+    const screws = [
+      ...fromFront(sj['TOP-SCREWS']).map((x) => ({ layer: pz.layers.screw, kind: 'screw', x, y: H - S, d: pz.screwDiameter })),
+      ...fromFront(sj['BOTTOM-SCREWS']).map((x) => ({ layer: pz.layers.screw, kind: 'screw', x, y: S, d: pz.screwDiameter })),
+    ];
+    side.cnc = {
+      ...side.cnc,
+      outline: outlineWithTabs(outline, tabRuns, G, pz),
+      pockets: [...tabBones(tabRuns, G, pz), ...sockets.pockets],
+      holes: [...sockets.holes, ...screws],
+      marks: [...keptMarks(side), ...cornerMarkRecords(outline, leg, pz)],
+      notch: cornerRecordOf(edgeNotchCorners(sideW, H, cuts, edgeNotchShrink(sideW, H, cuts))),
+    };
+    side.area_m2 = polygonArea(outline) / 1e6;
+    cut.regions[sideId] = { fc: efc, nw: ed, nh: eh, bw: sideW, bh: H };
+    cut.boards.push(sideId);
+    stamp(side, { cut: 'side', outline: r4pts(outline) });
+  }
+
+  // ── THE TOP (a top edge) OR THE BOTTOM (a bottom edge): a strip off its depth ──
+  const hz = edgeNotchBoard(edge);
+  const tb = byId(hz);
+  if (tb && tb.part === hz) {
+    const ecut = edgeNotchTopCut(W, D, G, ed, edge);
+    const here = nc && nc.boxed && notchCutsBoardP(H, n.h, hz);
+    const pc = here ? notchTopCut(W, D, G, n.w, n.d, n.corner) : null;
+    const ccut = pc ? [pc[0], pc[1], pc[2]] : null;
+    const cuts = ccut ? [ccut, ecut] : [ecut];
+    const plan = ccut ? edgeNotchLessTwo(tw, sideW, ccut, ecut) : notchRectOutline(tw, sideW, ecut[1], ecut[2], ecut[0]);
+    const runs = here
+      ? edgeNotchRunsMeet(notchTopRuns(W, D, G, n.w, n.d, n.corner), edgeNotchTopRuns(W, D, G, ed, edge))
+      : edgeNotchTopRuns(W, D, G, ed, edge);
+    const tj = edgeNotchPlanTop(runs, D, K);
+    // drawTOP_ROT90's frame, x' from the BACK edge (notchRot90Pts), in its ORIGINAL frame.
+    const drawn = notchRot90Pts(plan, sideW);
+    const tabRuns = [
+      { edge: 'bottom', at: 0, centres: tj.LEFT.map((y) => sideW - y) },
+      { edge: 'top', at: tw, centres: tj.RIGHT.map((y) => sideW - y) },
+      { edge: 'left', at: 0, centres: tj.BACK },
+    ];
+    // A plan corner named on the plan rectangle, renamed into the drawn frame:
+    // plan y1 (the back) is drawn x0, plan x0 (BUL's side) is drawn y0.
+    const corners = edgeNotchCorners(tw, sideW, cuts, edgeNotchShrink(tw, sideW, cuts))
+      .map(([fc, w, h]) => [`${notchFcY0(fc) ? 'x1' : 'x0'}${notchFcX0(fc) ? 'y0' : 'y1'}`, h, w]);
+    tb.cnc = {
+      ...tb.cnc,
+      outline: outlineWithTabs(drawn, tabRuns, G, pz),
+      pockets: tabBones(tabRuns, G, pz),
+      holes: [],
+      marks: [...keptMarks(tb), ...cornerMarkRecords(drawn, leg, pz)],
+      notch: cornerRecordOf(corners),
+    };
+    tb.h = roundTo(sideW - ed, 4);
+    tb.area_m2 = polygonArea(plan) / 1e6;
+    cut.regions[hz] = { fc: back ? 'x0y0' : 'x1y0', nw: ed, nh: tw, bw: sideW, bh: tw };
+    cut.reorigin[hz] = { axis: 'x', dx: back ? ed : 0, dy: 0, run: sideW - ed };
+    cut.boards.push(hz);
+    stamp(tb, { cut: 'plan', outline: r4pts(plan) });
+  }
+
+  // ── THE BACK (a back edge): a strip off its height ──
+  const bk = back ? byId('BACK') : null;
+  if (bk && bk.part === 'BACK') {
+    const ecut = edgeNotchBackCut(W, eh, edge);
+    const ccut = nc && nc.back ? [notchBackFc(n.corner, nc.top), nc.nw, nc.hh] : null;
+    const cuts = ccut ? [ccut, ecut] : [ecut];
+    const outline = ccut ? edgeNotchLessTwo(W, H, ccut, ecut) : notchRectOutline(W, H, ecut[1], ecut[2], ecut[0]);
+    const runs = nc
+      ? edgeNotchRunsMeet(notchBackRuns(W, H, G, n.w, n.h, n.corner), edgeNotchBackRuns(W, H, G, eh, edge))
+      : edgeNotchBackRuns(W, H, G, eh, edge);
+    const bj = edgeNotchPlanBack(runs, W, H, G, K);
+    const sockets = socketPanelGeometry({
+      w: W, h: H, G, puzzle: pz,
+      sockets: {
+        left: bj['LEFT-SOCKETS'], right: bj['RIGHT-SOCKETS'], top: bj['TOP-SOCKETS'], bottom: bj['BOTTOM-SOCKETS'],
+      },
+      screws: bj.SCREWS.map(([x, y]) => ({ x, y })),
+    });
+    // D7: beside a rebate (an unboxed corner notch) the rows its corner took are
+    // dropped with it, as notchCarcass drops them.
+    const holes = sockets.holes.filter((hl) => !(ccut && !nc.boxed
+      && notchHoleInP(hl.x, hl.y, (Number(hl.d) || 0) / 2, W, H, nc.nw, nc.hh, ccut[0])));
+    // THE WALL UNIT: its hanger cut-outs stay (one the cut reaches is refused).
+    const cutoutLayer = profile.wallUnit?.hangers?.cutoutLayer;
+    const hangerCuts = (bk.cnc?.pockets || []).filter((k) => cutoutLayer && k.layer === cutoutLayer);
+    bk.cnc = {
+      ...bk.cnc,
+      outline,
+      pockets: [...sockets.pockets, ...hangerCuts],
+      holes,
+      marks: [...keptMarks(bk), ...cornerMarkRecords(outline, leg, pz)],
+      notch: cornerRecordOf(edgeNotchCorners(W, H, cuts, edgeNotchShrink(W, H, cuts))),
+    };
+    bk.h = roundTo(H - eh, 4);
+    bk.area_m2 = polygonArea(outline) / 1e6;
+    cut.regions.BACK = { fc: ecut[0], nw: W, nh: eh, bw: W, bh: H };
+    cut.reorigin.BACK = { axis: 'y', dx: 0, dy: top ? 0 : eh, run: H - eh };
+    cut.boards.push('BACK');
+    stamp(bk, { cut: 'back' });
+  }
+  return cut;
+}
+
+// ── PHASE B: after the drilling, and after the corner notch's own ────────
+
+/**
+ * Drop the drilling the edge cut away (D7: a shelf-pin hole steps away from
+ * it by ed instead), drop the marks in it, re-origin the boards it made
+ * SHORTER (the TOP / BOTTOM at a back edge, the BACK at the bottom) so their
+ * frame starts at their own edge, and step the legs out of a bottom edge's
+ * footprint. A side the corner notch re-origined first is read back into its
+ * original frame by that shift. Mutates `drills`, `panels` and `legs`.
+ */
+export function edgeNotchDrills({
+  cut, panels, drills, legs,
+}) {
+  if (!cut) return;
+  const { regions } = cut;
+  const inRegion = (rg, x, y, rad = 0) => rg && notchHoleInP(x, y, rad, rg.bw, rg.bh, rg.nw, rg.nh, rg.fc);
+  const shiftOf = (id) => Number(cut.cornerReorigin?.[id]?.dx) || 0;
+  const keep = [];
+  const dropped = [];
+  for (const d of drills) {
+    const rg = regions[d.panel];
+    if (!rg || OWN_KINDS.has(d.kind)) { keep.push(d); continue; }
+    const rad = (Number(d.d) || 0) / 2;
+    if (!inRegion(rg, d.x + shiftOf(d.panel), d.y, rad)) { keep.push(d); continue; }
+    if (d.kind === 'shelf' && (d.panel === 'BUL' || d.panel === 'BUR')) {
+      keep.push({ ...d, x: roundTo(d.x + (notchFcX0(rg.fc) ? cut.ed : -cut.ed), 4) });
+      continue;
+    }
+    dropped.push(d);
+  }
+  drills.length = 0;
+  drills.push(...keep);
+  for (const p of panels) {
+    const rg = regions[p.id];
+    if (!rg || !Array.isArray(p.cnc?.marks)) continue;
+    const ox = shiftOf(p.id);
+    p.cnc.marks = p.cnc.marks.filter((m) => !markPoints(m).some((q) => inRegion(rg, (Number(q?.[0]) || 0) + ox, q?.[1])));
+  }
+  for (const [id, ro] of Object.entries(cut.reorigin)) {
+    const p = panels.find((x) => x.id === id);
+    if (!p) continue;
+    if (ro.dx || ro.dy) {
+      p.cnc = {
+        ...p.cnc,
+        ...shiftGeom(p.cnc, -ro.dx, -ro.dy),
+        ...(Array.isArray(p.cnc.marks) ? { marks: p.cnc.marks.map((m) => shiftMark(m, -ro.dx, -ro.dy)) } : {}),
+      };
+      for (const d of drills) {
+        if (d.panel !== id) continue;
+        d.x = roundTo(d.x - ro.dx, 4);
+        d.y = roundTo(d.y - ro.dy, 4);
+      }
+    }
+    if (ro.axis === 'x') {
+      // The TOP / BOTTOM: its box loses ed at the cut's end of the depth (box z runs from the back).
+      p.cnc = { ...p.cnc, drawn_w: roundTo(ro.run, 4) };
+      p.box = { ...p.box, z: roundTo(p.box.z + (cut.back ? cut.ed : 0), 4), d: roundTo(ro.run, 4) };
+    } else {
+      p.cnc = { ...p.cnc, drawn_h: roundTo(ro.run, 4) };
+      p.box = { ...p.box, y: roundTo(p.box.y + ro.dy, 4), h: roundTo(ro.run, 4) };
+    }
+  }
+  // Legs standing in a bottom edge's footprint step out of it, along the depth.
+  if (legs && Array.isArray(legs.positions) && !cut.top) {
+    const lw = Number(legs.width) || 0;
+    const [fz0, fz1] = cut.back ? [0, cut.ed] : [cut.D - cut.ed, cut.D];
+    legs.positions = legs.positions.map((pos) => {
+      if (!(pos.z < fz1 && pos.z + lw > fz0)) return pos;
+      const z = cut.back ? pos.z + cut.ed + cut.G : pos.z - cut.ed - cut.G;
+      return { ...pos, z: roundTo(z, 4), edgeNotch: true };
+    });
+  }
+  cut.dropped = dropped.length;
+}
+
+/** What the result publishes about the edge notch (`derived.edgeNotch`). */
+export function edgeNotchSummary(cut) {
+  if (!cut) return null;
+  return {
+    edge: cut.edge,
+    d: cut.ed,
+    h: cut.eh,
+    cut: [...cut.boards],
+    dropped: cut.dropped || 0,
+    ...(cut.withCorner ? { withCorner: true } : {}),
   };
 }

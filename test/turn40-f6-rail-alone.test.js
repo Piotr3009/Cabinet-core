@@ -16,11 +16,12 @@ import { readFileSync } from 'node:fs';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
 import {
-  RAIL_MOUNT, RAIL_ALONE_NOTE, LEGACY_RAIL_NOTE, hangerDropMm, isLegacyRail,
+  RAIL_MOUNT, RAIL_ALONE_NOTE, LEGACY_RAIL_NOTE, assemblyShelfPos, hangerDropMm, isLegacyRail,
   railChosenAlone, railMountOf,
 } from '../src/engine/railAssembly.js';
 import { useProjectStore, paramsForEngine } from '../src/stores/projectStore.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+import { hangSavedAssembly } from './rail-assembly-saved.js';
 
 const store = () => useProjectStore.getState();
 const src = (rel) => readFileSync(new URL(`../src/${rel}`, import.meta.url), 'utf8');
@@ -37,16 +38,19 @@ function wardrobe() {
 const itemsOf = (id) => store().units.find((u) => u.id === id).params.sections[0].items;
 const resultOf = (id) => computeCabinet(paramsForEngine(store().units.find((u) => u.id === id)), P);
 
-// ═══ THE DEFAULT IS UNCHANGED ══════════════════════════════════════════════
+// ═══ AMENDED BY T79 F11: THE DEFAULT IS ALONE, AND A SAVED ASSEMBLY STANDS ══
+// The owner, 18.10.2026: *"zlikwiduj propozycję install rail with or without
+// shelf, bez sensu, usuń to"*. The add path makes the rod alone; T37's
+// assembly is what a saved project carries, read to the millimetre.
 
-test('F6 — the DEFAULT is still T37’s assembly, to the millimetre', () => {
+test('F6 · a SAVED T37 assembly still hangs its rod, to the millimetre', () => {
   const id = wardrobe();
-  const railId = store().addHangerRail(id);
+  const { railId } = hangSavedAssembly(id);
   assert.ok(railId);
   const items = itemsOf(id);
   const rail = items.find((i) => i.id === railId);
   const shelf = items.find((i) => i.kind === 'shelf');
-  assert.ok(shelf, 'a FIX shelf came with it');
+  assert.ok(shelf, 'the saved FIX shelf is there');
   assert.equal(shelf.variant, 'fixed');
   assert.equal(railMountOf(rail), RAIL_MOUNT.SHELF);
   assert.equal(rail.shelf_id, shelf.id);
@@ -61,7 +65,7 @@ test('F6 — the DEFAULT is still T37’s assembly, to the millimetre', () => {
 
 test('F6 — RAIL ALONE: no shelf, and the rod still hangs', () => {
   const id = wardrobe();
-  const railId = store().addHangerRail(id, { withShelf: false });
+  const railId = store().addHangerRail(id);
   assert.ok(railId);
   const items = itemsOf(id);
   assert.deepEqual(items.filter((i) => i.kind === 'shelf'), [], 'not one shelf came with it');
@@ -82,7 +86,7 @@ test('F6 — RAIL ALONE: no shelf, and the rod still hangs', () => {
 // alone rod cuts nothing.
 test('F6 — a rail alone is ALONE: its own item, its own height, and NO board', () => {
   const id = wardrobe();
-  const railId = store().addHangerRail(id, { withShelf: false });
+  const railId = store().addHangerRail(id);
   const rail = itemsOf(id).find((i) => i.id === railId);
   // T42-F1: LEGACY is not one of the kinds any more — there are two.
   assert.equal(railMountOf(rail), RAIL_MOUNT.ALONE);
@@ -98,20 +102,21 @@ test('F6 — a rail alone is ALONE: its own item, its own height, and NO board',
   assert.equal(r.drills.filter((d) => d.kind === 'rail_bracket').length, 2, 'but the side flange is drilled');
   // The assembly does not cut one either — the fix shelf is that board.
   const other = wardrobe();
-  store().addHangerRail(other);
+  hangSavedAssembly(other);
   assert.equal(resultOf(other).panels.some((p) => p.part === 'RAIL-PART'), false);
 });
 
 test('F6 — the rod lands at the SAME height either way', () => {
   // The two constructions differ by a board, not by a position: T37's own
-  // bargain was that the shelf stands where the partitioner stood.
-  const withShelf = wardrobe();
-  store().addHangerRail(withShelf);
-  const a = resultOf(withShelf).assemblies.rail.y;
-
+  // bargain was that the shelf stands where the partitioner stood. T79 F11:
+  // the saved assembly is stood where T37's add path stood its shelf.
   const alone = wardrobe();
-  store().addHangerRail(alone, { withShelf: false });
+  store().addHangerRail(alone);
   const b = resultOf(alone).assemblies.rail.y;
+
+  const withShelf = wardrobe();
+  hangSavedAssembly(withShelf, { shelfAt: assemblyShelfPos({ railAxis: b, drop: hangerDropMm(P) }) });
+  const a = resultOf(withShelf).assemblies.rail.y;
 
   assert.equal(Math.round(a), Math.round(b),
     `with a shelf ${a}, alone ${b} — one rod, one height`);
@@ -121,7 +126,7 @@ test('F6 — the rod lands at the SAME height either way', () => {
 
 test('F6 — "alone by choice" and "old" are told apart', () => {
   const id = wardrobe();
-  const railId = store().addHangerRail(id, { withShelf: false });
+  const railId = store().addHangerRail(id);
   const chosen = itemsOf(id).find((i) => i.id === railId);
   assert.equal(chosen.mount, RAIL_MOUNT.ALONE);
   assert.equal(railChosenAlone(chosen), true);
@@ -146,18 +151,17 @@ test('F6 — and the modal says the right sentence to each', () => {
   assert.match(props, /data-legacy-rail-note="1"/);
 });
 
-// ═══ THE CHOICE IS IN THE MODAL, WHICH IS WHAT HE ASKED FOR ════════════════
+// ═══ AMENDED BY T79 F11: THE CHOICE IS GONE FROM THE MODAL ═════════════════
+// *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń
+// to"*: kasacja, physical. The rod is added alone and nothing asks.
 
-test('F6 — the choice is IN THE RAIL MODAL, with the assembly pre-selected', () => {
+test('F6 · the choice is GONE from the rail modal (T79 F11)', () => {
   const add = src('components/AddItems.jsx');
-  assert.match(add, /const \[railWithShelf, setRailWithShelf\] = useState\(true\)/,
-    'the DEFAULT stays the assembly — T37’s verdict, unoverturned');
-  assert.match(add, /data-rail-with-shelf="1"/);
-  assert.match(add, /data-rail-alone="1"/);
-  assert.match(add, /withShelf: railWithShelf/, 'and the button’s answer reaches the store');
-  // The copy changes with the choice, because the difference is a board.
-  assert.match(add, /Adds the ROD ON ITS OWN/);
-  assert.match(add, /Adds a FIX SHELF with the rail hung under it/);
+  assert.doesNotMatch(add, /railWithShelf|setRailWithShelf/, 'the state is deleted');
+  assert.doesNotMatch(add, /data-rail-with-shelf|data-rail-alone=|data-rail-mode/, 'the two buttons are deleted');
+  assert.doesNotMatch(add, /withShelf/, 'and nothing reaches the store');
+  assert.doesNotMatch(add, /data-rail-assembly-hint|Adds the ROD ON ITS OWN|Adds a FIX SHELF/, 'the hint is deleted');
+  assert.doesNotMatch(src('stores/projectStore.js'), /withShelf/, 'the store takes no such answer');
 });
 
 test('F6 — A STORED RAIL WITH NO MOUNT READS AS ALONE — one sentence, zero layers', () => {

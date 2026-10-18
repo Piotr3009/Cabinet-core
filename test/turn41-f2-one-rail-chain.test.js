@@ -30,6 +30,7 @@ import { drillFindings } from '../src/engine/cnc/drillGuard.js';
 import { exportGate } from '../src/engine/cnc/exportGate.js';
 import { migrateUnitShelves, paramsForEngine, useProjectStore } from '../src/stores/projectStore.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+import { hangSavedAssembly } from './rail-assembly-saved.js';
 import { templateParams } from '../src/lib/templates.js';
 
 const DROP = hangerDropMm(P);
@@ -203,10 +204,12 @@ const freshProject = () => store().loadProject({
 }, []);
 
 /** A wardrobe with a rail ASSEMBLY on it, and the ids of both its items. */
+// T79 F11: *"zlikwiduj propozycję install rail with or without shelf, bez sensu,
+// usuń to"*; the add path hangs the rod alone, so the assembly is a SAVED one.
 function wardrobeWithAssembly() {
   freshProject();
   const u = store().addUnit('WARDROBE');
-  store().addHangerRail(u.id);
+  hangSavedAssembly(u.id);
   const items = store().units.find((x) => x.id === u.id).params.sections[0].items;
   return {
     unitId: u.id,

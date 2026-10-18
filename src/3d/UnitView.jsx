@@ -2391,6 +2391,8 @@ export default function UnitView({
     if (caught.unitId === unit.id && Number.isFinite(caught.ownPos)) return caught.ownPos;
     return null;
   }, [shelfDrag, unit.id]);
+  // T79 F11: the rod's own catch while it is in the hand, `{axis, below}` or null.
+  const [railMagnet, setRailMagnet] = useState(null);
 
   // The two openings the shelf being dragged stands between — the same list,
   // sliced to the board in the hand. Turn 28 (F3): its OWN bay's list.
@@ -2702,7 +2704,9 @@ export default function UnitView({
     onSelect();
     const hit = pointerToPlane(e.clientX, e.clientY);
     if (!hit) return;
-    const support = Number(result.assemblies?.rail?.support) || 0;
+    // T79 F11: THIS rod's support, from the store's one reader of it (a column
+    // rod publishes none on `assemblies.rail`), so the magnet and the hand agree.
+    const support = Number(useProjectStore.getState().railTravelFor(unit.id, itemId)?.support) || 0;
     const grabDelta = currentAxisMm - (hit.y - originY) / MM;
     if (orbitRef?.current) orbitRef.current.enabled = false;
 
@@ -2710,9 +2714,14 @@ export default function UnitView({
       const p = pointerToPlane(ev.clientX, ev.clientY);
       if (!p) return;
       const axisMm = (p.y - originY) / MM + grabDelta;
-      onMoveRail(itemId, axisMm - support);
+      // T79 F11: the drag is offered the place under a shelf; Alt refuses it.
+      const state = onMoveRail(itemId, axisMm - support, { magnet: !ev.altKey });
+      const caught = state?.magnet || null;
+      setRailMagnet((was) => (!caught ? null
+        : (was?.axis === caught.axis ? was : { axis: caught.axis, below: caught.below })));
     };
     const up = () => {
+      setRailMagnet(null);
       if (orbitRef?.current) orbitRef.current.enabled = true;
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
@@ -2721,7 +2730,7 @@ export default function UnitView({
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
-  }, [onMoveRail, onSelect, pointerToPlane, originY, orbitRef, result]);
+  }, [onMoveRail, onSelect, pointerToPlane, originY, orbitRef, unit.id]);
 
   // Which joint system this project is cut with, as its LAYER NAMES — the same
   // indirection engine/joinery.js has used since turn 8, so a second system
@@ -3406,6 +3415,18 @@ export default function UnitView({
           <DimLabel
             position={[mm(W / 2), mm(magnetLine) + 0.05, mm(D) + 0.1]}
             text={formatMm(fieldFromPos(magnetLine, G), { unit: true })}
+            tone="gold"
+          />
+        </group>
+      )}
+
+      {/* T79 F11 · the rod caught under a shelf: the same guide, at the rod's axis. */}
+      {railMagnet && !contour && (
+        <group userData={{ ccHelper: true, ccRailMagnet: railMagnet.axis }}>
+          <DashedGuide y={railMagnet.axis} width={W} depth={D} />
+          <DimLabel
+            position={[mm(W / 2), mm(railMagnet.axis) + 0.05, mm(D) + 0.1]}
+            text={`${formatMm(railMagnet.below, { unit: true })} under the shelf · Alt refuses`}
             tone="gold"
           />
         </group>

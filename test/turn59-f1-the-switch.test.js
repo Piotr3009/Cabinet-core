@@ -268,7 +268,8 @@ const EXEMPT = {
     + ' T78 F9 · a Carousel row on the L only: one click fits or takes out the bought mechanism through the store\'s `setCornerKit` (one BOM line, a placeholder body, zero holes; a fixed shelf in its way is refused in words). *"krecacy sie naroznik na garnki w srodku."*'
     + ' T78 F11 · a Blind corner pull-out row on the blind kits only (Hafele), through the same setCornerKit: one BOM line, a placeholder body behind the blank, zero holes; a fixed shelf in its way is refused in words. *"hafele naroznik slepy czyli wysuwane."*'
     + ' T79 F2 . the shelves\' WHICH SIDE gains a third button, Above divider, shown only while the divider ends under a FIX shelf below the top; hovering lights the full-width opening over it and Add centres full-width shelves there; an opening that goes away while picked asks for a bay again, never a mute Add. *"jak dodamy fix półkę i divider pod spodem to nie mam możliwości dodania całkowitej półki powyżej bo kod dzieli mi całą szafę na bay 1 i 2, a nie mam czegoś takiego że jest bay nie dzielony powyżej."* Mockup approved 14:45: *"1 - tak."*'
-    + ' T79 F3 · the internal drawers block asks COLUMNS 1 or 2 beside the count while the unit is undivided; 2 adds one divider mid-width, a stack in each column and one fixed shelf over both in one undo; a divided unit keeps "Which column". *"jak ustawiamy sobie teraz 3 szuflady internal to niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."*; mockup approved: *"2 - tak."*',
+    + ' T79 F3 · the internal drawers block asks COLUMNS 1 or 2 beside the count while the unit is undivided; 2 adds one divider mid-width, a stack in each column and one fixed shelf over both in one undo; a divided unit keeps "Which column". *"jak ustawiamy sobie teraz 3 szuflady internal to niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."*; mockup approved: *"2 - tak."*'
+    + ' T79 F11 . the With a shelf / Rail alone toggle, its state and the assembly hint are deleted (kasacja); Add hanger rail adds the rod alone and says the drag proposes its place under a shelf. *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to; przy przesuwaniu zaproponuj 50 mm poniżej półki."*',
   // ─── RENEWED BY TURN 72 · THE SAME FILE, A THIRD LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission, so tonight's
   // edit is argued again with tonight's quote and tonight's hash. The map does
@@ -314,7 +315,8 @@ const FROZEN = {
   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
   // T78 F11 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F2, F3 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/AddItems.jsx': 'b1c82aa397be918baa33b5052c911090e9d2dad8952385ebcc5b8857daedba27',
+  // T79 F11 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/AddItems.jsx': 'ce9ced6e4ec2542a0bee8d1e5612c611ad208bc6ebcf309943b96dd0690d7161',
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/AssignMaterialsModal.jsx': '1f9d71d9af9b57ba7e8f77b38c99fda7368a657a3289b69be87ac166337cc82e',

@@ -127,6 +127,10 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f34-t79-f09.mjs',
   // T79 F10 (18.10.2026): the recess gives way to the stand-off
   'test/turn79-f10-recess-standoff.test.js',
+  // T79 F11 (18.10.2026): the rail is alone, and it snaps under a shelf
+  'test/turn79-f11-rail.test.js',
+  'test/rail-assembly-saved.js',
+  'scripts/t78-classify.d/f34-t79-f11.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -4578,7 +4578,12 @@ export const DEFAULT_CABINET_PROFILE = {
     //
     // A workshop whose bracket drops further changes this one line; the shelf
     // does not move, the rod does.
-    hanger: { dropMm: 40 },
+    //
+    // T79 F11 · `belowShelfMm`: where a dragged rod is PROPOSED, its axis this
+    // far under a shelf's underside (the owner, 18.10.2026: *"przy przesuwaniu
+    // zaproponuj 50 mm poniżej półki"*); the catch is `editor.shelfMagnetMm`.
+    // Read by the store's drag only, never by a cut.
+    hanger: { dropMm: 40, belowShelfMm: 50 },
     // ─── THE SHELF SUPPORT (turn 25, CLAUDE.md F6) ──────────────────────────
     //
     // The owner: he wants to SEE gold or silver sleeves — and they are the

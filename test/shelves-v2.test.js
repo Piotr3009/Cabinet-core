@@ -32,6 +32,7 @@ import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import { shelfGapLadder } from '../src/engine/items.js';
 // Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
 import { confirmDrawerBox } from './drawer-box-gate.js';
+import { hangSavedAssembly } from './rail-assembly-saved.js';
 
 const store = () => useProjectStore.getState();
 const G = P.board.thickness;
@@ -130,7 +131,9 @@ test('a unit in a PROJECT sets its partition back with the shelves', () => {
   const { id } = store().addUnit('WARDROBE');
   confirmDrawerBox();
   store().addDrawers(id, 2);
-  store().addHangerRail(id);
+  // T79 F11: *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to"*: the
+  // add path hangs the rod alone, so the rail's own shelf is a SAVED assembly's.
+  hangSavedAssembly(id);
   const r = resultOf(id);
   const depth = unitOf(id).params.depth;
   const internalDepth = depth - G;

@@ -166,20 +166,17 @@ test('each column may hang its own rail, cut to its own light', () => {
   // Each rail is its own purchase, at the column's length.
   const railLines = r.hardware.filter((h) => h.role === 'rail' && h.qty > 0);
   assert.equal(railLines.length, 2);
-  // ─── RE-PINNED 17.08.2026 (CLAUDE.md T37-F2) ─────────────────────────────
-  // …and each has its board above it. Until tonight that board was a
-  // partitioner (`Z1-RAIL-PART`); it is now the assembly's own FIX SHELF, in
-  // that column, standing where the partitioner stood. One rail, one board —
-  // what changed is that a joiner can drag it.
+  // ─── RE-PINNED BY T79 F11 ───────────────────────────────────────────────
+  // T37 hung each rod under its own FIX SHELF. The owner, 18.10.2026:
+  // *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to"*. Each column's rod is
+  // added ALONE: no partitioner and no shelf, the rod on its own in its column.
   const items = store().units.find((u) => u.id === id).params.sections[0].items;
   assert.ok(!r.panels.some((p) => p.part === 'RAIL-PART'), 'no partitioner is cut any more');
+  assert.equal(items.filter((i) => i.kind === 'shelf').length, 0, 'and no rail brought a shelf');
   for (const zone of [0, 1]) {
     const rod = items.find((i) => i.kind === 'hanger' && i.zone === zone);
-    const shelf = items.find((i) => i.kind === 'shelf' && i.id === rod.shelf_id);
-    assert.ok(shelf, `column ${zone + 1}'s rail brought its own shelf`);
-    assert.equal(shelf.zone, zone, 'and it stands in that column');
-    assert.equal(shelf.variant, 'fixed');
-    assert.ok(r.panels.some((p) => p.part === 'SHELF' && p.meta?.itemId === shelf.id), 'and it is cut');
+    assert.equal(rod.mount, 'alone', `column ${zone + 1}'s rod is alone`);
+    assert.equal(rod.shelf_id, undefined, 'and names no shelf');
   }
 });
 

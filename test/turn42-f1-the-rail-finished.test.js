@@ -282,11 +282,13 @@ test('F1 — DRAG: the ALONE rod is dragged and an ASSEMBLY’s is not', () => {
   assert.match(hw, /onPointerDown=\{grab \|\| undefined\}/);
   // The view converts the pointer's world Y into the item's own offset, and the
   // store snaps and writes it. One number, one writer.
+  // AMENDED BY T79 F11 (*"przy przesuwaniu zaproponuj 50 mm poniżej półki"*):
+  // the drag also says whether it takes the magnet's proposal (Alt refuses).
   const view = read('src/3d/UnitView.jsx');
   assert.match(view, /const startRailDrag = useCallback\(/);
-  assert.match(view, /onMoveRail\(itemId, axisMm - support\)/);
+  assert.match(view, /onMoveRail\(itemId, axisMm - support, \{ magnet: !ev\.altKey \}\)/);
   const store = read('src/stores/projectStore.js');
-  assert.match(store, /moveRail: \(unitId, itemId, offsetMm\) => \{/);
+  assert.match(store, /moveRail: \(unitId, itemId, offsetMm, \{ magnet: offered = true \} = \{\}\) => \{/);
   assert.match(store, /if \(railMountOf\(item\) === RAIL_MOUNT\.SHELF\) return null;/);
   assert.match(store, /get\(\)\.updateItem\(unitId, itemId, \{ pos_mm: pos \}\)/);
 });

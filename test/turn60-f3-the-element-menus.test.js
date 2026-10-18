@@ -35,6 +35,7 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { WATCH_LAYOUTS } from '../src/engine/watchDrawer.js';
 import { elementKind, isMainViewElement, opensOwnModal } from '../src/engine/elements.js';
 import { pickMode, picksOnClick, setPickMode } from '../src/3d/picking.js';
+import { hangSavedAssembly } from './rail-assembly-saved.js';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const S = () => useProjectStore.getState();
@@ -500,10 +501,13 @@ const REHOMED = () => read('src/retail/design/Options.jsx')
   + read('src/retail/design/detail/ReHomed.jsx');
 
 test('F3.3 · SHELF — pinned is a NOTE, locked is a refusal, and they differ', () => {
-  const unit = room({ rail: true });
+  // T79 F11: *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to"*: the add
+  // path hangs the rod alone, so the shelf that carries one is a SAVED assembly's.
+  const unit = room();
+  hangSavedAssembly(unit.id);
   const items = itemsOf(unit.id);
   const carried = items.find((i) => i.kind === 'shelf');
-  assert.ok(carried, 'a rail arrives with the shelf it hangs from');
+  assert.ok(carried, 'a saved rail arrives with the shelf it hangs from');
 
   const travel = A.shelfTravel(unit.id, carried.id);
   assert.equal(travel.pinned, true, 'something hangs on it — T58-F3.1');
@@ -640,22 +644,23 @@ test('F3.4 · DRAWERS — the ONE slider stands down where it would overwrite a 
     'PRO\'s own per-drawer height is gone from the copy');
 });
 
-test('F3.5 · RAIL — the engine\'s own two mounts, and the height that is its shelf\'s', () => {
-  const unit = room({ rail: true });
-  const rail = itemsOf(unit.id).find((i) => i.kind === 'hanger');
-  const travel = A.railTravel(unit.id, rail.id);
+// ─── AMENDED BY T79 F11 ─────────────────────────────────────────────────────
+// *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to"*: the mount is never
+// offered (RAIL_MOUNTS and setRailMount are deleted) and a rod is added alone.
+// A SAVED assembly's rod still follows its shelf and says so.
+test('F3.5 · RAIL · a saved rod follows its shelf; a rod added now is alone and owns its height', () => {
+  const unit = room();
+  const saved = hangSavedAssembly(unit.id);
+  const travel = A.railTravel(unit.id, saved.railId);
   assert.equal(travel.mounted, 'shelf');
   assert.equal(travel.blocked, true, 'a rod on a shelf does not own its own height');
   assert.equal(A.railReason(travel), REASONS.railFollowsItsShelf);
-  assert.deepEqual(A.RAIL_MOUNTS.map((m) => m.id), ['shelf', 'alone'],
-    'the engine has two mounts and no double-rail law');
+  assert.equal(A.RAIL_MOUNTS, undefined, 'the mount list is deleted');
+  assert.equal(A.setRailMount, undefined, 'and so is the switch');
 
-  // Changing the mount is a RE-PLACEMENT: the fix shelf goes with the rod
-  // rather than being orphaned in the cut list.
-  const shelvesBefore = itemsOf(unit.id).filter((i) => i.kind === 'shelf').length;
-  A.setRailMount(unit.id, rail.id, 'alone');
-  assert.equal(itemsOf(unit.id).filter((i) => i.kind === 'shelf').length, shelvesBefore - 1,
-    'switching to ON ITS OWN left a shelf carrying nothing');
+  // Taking the saved shelf out takes its rod (T37-F2); the rod added now is alone.
+  S().removeItem(unit.id, saved.shelfId);
+  assert.ok(S().addHangerRail(unit.id, {}));
   const alone = itemsOf(unit.id).find((i) => i.kind === 'hanger');
   const now = A.railTravel(unit.id, alone.id);
   assert.equal(now.mounted, 'alone');

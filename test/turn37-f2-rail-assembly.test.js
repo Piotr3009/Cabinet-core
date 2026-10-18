@@ -9,6 +9,7 @@
 // Four things this file holds, and the fourth is the one that costs:
 //
 //   1. THE ADD PATH makes an ASSEMBLY — one fix shelf and one rail, linked.
+//      (T79 F11: the add path makes the rod alone; a SAVED assembly holds this.)
 //   2. THE RIDE — move the shelf and the rod moves with it, every time, with
 //      nothing in the store keeping a copy of the number in step.
 //   3. THE DROP comes from the PROFILE (`hardware.hanger.dropMm`), and its
@@ -32,10 +33,9 @@ import {
   RAIL_MOUNT, railMountOf, railShelfIdOf, resolveShelfMountedRail,
 } from '../src/engine/railAssembly.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
-import { watchProjectHistory, unwatchProjectHistory } from '../src/stores/historyStore.js';
-import { onBatchEnd } from '../src/stores/historyBatch.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import { confirmDrawerBox } from './drawer-box-gate.js';
+import { hangSavedAssembly } from './rail-assembly-saved.js';
 
 const src = (p) => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8');
 const store = () => useProjectStore.getState();
@@ -53,75 +53,65 @@ const itemsOf = (id) => unitOf(id).params.sections[0].items;
 
 // ─── 1. the assembly ────────────────────────────────────────────────────────
 
-test('F2 — adding a rail adds ONE fix shelf and ONE rail, linked', () => {
+// ─── AMENDED BY T79 F11 ─────────────────────────────────────────────────────
+// The owner, 18.10.2026: *"zlikwiduj propozycję install rail with or without
+// shelf, bez sensu, usuń to"*. The add path makes the rod ALONE now; the
+// assembly this file holds is the one a SAVED project carries
+// (`rail-assembly-saved.js`), and the engine still reads it to the millimetre.
+test('F2 · adding a rail adds ONE rail, alone; a saved assembly still reads as one', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
   const before = itemsOf(id).length;
 
   const railId = store().addHangerRail(id);
   assert.ok(railId, 'the call still answers with the rail\'s id');
-
   const items = itemsOf(id);
-  assert.equal(items.length - before, 2, 'exactly two items arrived');
-  const rail = items.find((i) => i.id === railId);
-  const shelves = items.filter((i) => i.kind === 'shelf');
-  assert.equal(shelves.length, 1, 'one shelf, not two');
+  assert.equal(items.length - before, 1, 'exactly one item arrived, so one undo step takes it');
+  assert.equal(items.filter((i) => i.kind === 'shelf').length, 0, 'and no shelf came with it');
+  assert.equal(railMountOf(items.find((i) => i.id === railId)), RAIL_MOUNT.ALONE);
+  assert.equal(store().railAssemblyOf(id, railId), null, 'an alone rod is not half an assembly');
 
-  // The LINK, both halves of it.
-  assert.equal(rail.mount, 'shelf');
-  assert.equal(rail.shelf_id, shelves[0].id);
+  // The SAVED assembly: the LINK, both halves of it.
+  const other = store().addUnit('WARDROBE').id;
+  const saved = hangSavedAssembly(other);
+  const rail = itemsOf(other).find((i) => i.id === saved.railId);
+  const shelf = itemsOf(other).find((i) => i.id === saved.shelfId);
   assert.equal(railMountOf(rail), RAIL_MOUNT.SHELF);
-  assert.equal(railShelfIdOf(rail), shelves[0].id);
+  assert.equal(railShelfIdOf(rail), shelf.id);
   assert.equal(isLegacyRail(rail), false);
-
   // …and the shelf is FIX, which is the owner's own word: *"traktowana jak
   // półka, tylko że fix"*. A pin shelf would drop a rod full of coats.
-  assert.equal(shelves[0].variant, 'fixed');
+  assert.equal(shelf.variant, 'fixed');
 
   // The store reads the pair back as one thing.
-  const pair = store().railAssemblyOf(id, railId);
+  const pair = store().railAssemblyOf(other, saved.railId);
   assert.ok(pair, 'the assembly is readable');
-  assert.equal(pair.shelf.id, shelves[0].id);
-  assert.equal(pair.rail.id, railId);
+  assert.equal(pair.shelf.id, shelf.id);
+  assert.equal(pair.rail.id, saved.railId);
 });
 
-test('F2 — the two arrive in ONE undo step', () => {
-  // The history watcher is a SUBSCRIBER with a trailing timer
-  // (`stores/historyStore.js`), so what a test can hold is the thing the
-  // watcher actually reads: was a BATCH running while the two items landed?
-  // One batch is one undo step — a joiner who presses Ctrl+Z after "Add hanger
-  // rail" gets rid of the rail, not of half of it.
-  watchProjectHistory();
-  try {
-    project();
-    const { id } = store().addUnit('WARDROBE');
-    let depthDuring = 0;
-    const stop = onBatchEnd(() => { depthDuring += 1; });
-    const railId = store().addHangerRail(id);
-    stop();
-    assert.ok(railId);
-    assert.equal(itemsOf(id).filter((i) => i.kind === 'shelf' || i.kind === 'hanger').length, 2);
-    assert.equal(depthDuring, 1, 'ONE outermost batch closed, not two');
-  } finally {
-    unwatchProjectHistory();
-  }
-});
-
-test('F2 — the rod lands EXACTLY where the old automatic placement put it', () => {
-  // The whole point of deriving the drop from `wardrobe.rail.partitionAbove`:
-  // the joiner who presses the button tonight gets the rod he got yesterday.
+test('F2 · the alone rod lands where the automatic placement put it, on the assembly\'s millimetre', () => {
+  // T37's bargain was that the shelf stood where the partitioner stood
+  // (`axis + drop`), so the rod came out on the automatic placement's own
+  // millimetre. The alone rod is born there; a saved assembly whose shelf
+  // stands at `axis + drop` hangs its rod on the same millimetre.
   project();
   const { id } = store().addUnit('WARDROBE');
   store().addDrawers(id, 2);
-  store().addHangerRail(id);
+  const railId = store().addHangerRail(id);
 
   const r = store().unitResult(id);
-  const shelf = itemsOf(id).find((i) => i.kind === 'shelf');
-  assert.equal(r.assemblies.rail.y, shelf.pos_mm - hangerDropMm(P),
+  const rod = itemsOf(id).find((i) => i.id === railId);
+  assert.equal(r.assemblies.rail.y, r.assemblies.rail.support + rod.pos_mm,
+    'the rod is its number above its support');
+
+  const other = store().addUnit('WARDROBE').id;
+  store().addDrawers(other, 2);
+  hangSavedAssembly(other, { shelfAt: assemblyShelfPos({ railAxis: r.assemblies.rail.y, drop: hangerDropMm(P) }) });
+  const shelf = itemsOf(other).find((i) => i.kind === 'shelf');
+  assert.equal(store().unitResult(other).assemblies.rail.y, shelf.pos_mm - hangerDropMm(P),
     'the rod is the shelf underside less the bracket drop');
-  // And the shelf stands where the partitioner stood: `axis + drop`.
-  assert.equal(assemblyShelfPos({ railAxis: r.assemblies.rail.y, drop: hangerDropMm(P) }),
-    shelf.pos_mm);
+  assert.equal(store().unitResult(other).assemblies.rail.y, r.assemblies.rail.y, 'one rod, one height');
 });
 
 // ─── 2. the ride ────────────────────────────────────────────────────────────
@@ -129,7 +119,7 @@ test('F2 — the rod lands EXACTLY where the old automatic placement put it', ()
 test('F2 — the rod RIDES the shelf: move the board, the rail follows', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
-  const railId = store().addHangerRail(id);
+  const { railId } = hangSavedAssembly(id);
   const shelf = itemsOf(id).find((i) => i.kind === 'shelf');
   const drop = hangerDropMm(P);
 
@@ -151,7 +141,7 @@ test('F2 — the rod RIDES the shelf: move the board, the rail follows', () => {
 test('F2 — the assembly leaves together: delete the shelf, the rod goes', () => {
   project();
   const { id } = store().addUnit('WARDROBE');
-  const railId = store().addHangerRail(id);
+  const { railId } = hangSavedAssembly(id);
   const shelf = itemsOf(id).find((i) => i.kind === 'shelf');
 
   store().removeItem(id, shelf.id);
@@ -309,7 +299,7 @@ test('F2 — a COLUMN rail rides a shelf in ITS bay, and only there', () => {
   const zones = store().zonesOf(id);
   assert.ok(zones.length >= 2, 'two bays');
 
-  const railId = store().addHangerRail(id, { zone: 0 });
+  const { railId } = hangSavedAssembly(id, { zone: 0 });
   assert.ok(railId);
   const rail = itemsOf(id).find((i) => i.id === railId);
   const shelf = itemsOf(id).find((i) => i.id === rail.shelf_id);

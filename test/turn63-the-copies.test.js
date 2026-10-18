@@ -102,9 +102,11 @@ const FLOOR = {
   // tylko te 2 opcje"* — so there is no disabled option to explain. Every
   // other label is where it was, and the fidelity assertion above still holds
   // both sides to all fifty.
+  // T79 F11 · AddItems 26 to 22: the two rail buttons and their two titles are struck out by the
+  // owner, *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to"*.
   'LightingPanel.jsx': 24, 'DoorModal.jsx': 31, 'ElementProperties.jsx': 50, 'UnitWarnings.jsx': 0,
   'WatchLayoutModal.jsx': 5, 'RailModal.jsx': 6, 'UnitSizeModal.jsx': 3, 'AddItemsModal.jsx': 4,
-  'AddItems.jsx': 26, 'FrontGapModal.jsx': 5, 'FrontGapWarnings.jsx': 0, 'JpullRunModal.jsx': 2,
+  'AddItems.jsx': 22, 'FrontGapModal.jsx': 5, 'FrontGapWarnings.jsx': 0, 'JpullRunModal.jsx': 2,
   'DecorPickerModal.jsx': 5, 'DecorPicker.jsx': 6, 'ColourPicker.jsx': 3, 'VeneerPicker.jsx': 6,
   'MaterialChoicePanel.jsx': 3, 'ChosenDecorTile.jsx': 2, 'FrontStyleGallery.jsx': 2,
   'WizardHardware.jsx': 7, 'UnitFinishModal.jsx': 8,

@@ -197,10 +197,10 @@ import { interiorFloor } from '../engine/shelfHeights.js';
 import { railDatumFor, railSupportTops } from '../engine/railDatum.js';
 // T37-F1: a piece selection spans cabinets — each member carries its own unit.
 import { membersOf, parseMember } from '../lib/selection.js';
-// T37-F2: the rail is a FIX SHELF with a rod hung under it. The link, the drop
-// and where the assembly's shelf stands — `engine/railAssembly.js`.
+// T37-F2: a saved rail may ride a FIX SHELF; the link and the drop,
+// `engine/railAssembly.js` (T79 F11: a new rod is added alone).
 import {
-  assemblyShelfPos, hangerDropMm, RAIL_MOUNT, railMountOf, railShelfIdOf,
+  hangerDropMm, RAIL_MOUNT, railMountOf, railShelfIdOf,
 } from '../engine/railAssembly.js';
 import { endPanelHeightDefault } from '../engine/autoparts.js';
 // Turn 24 (CLAUDE.md F3): the caliper's six numbers, and the drawer gate.
@@ -6064,8 +6064,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // re-resolved here, because `resolveRailAxis` is what decided which board
     // is the support and this must not be allowed a second opinion.
     const G = unit.params.board_t ?? profile.board.thickness;
+    // T79 F11: a column rod publishes no support, so it is read back as this
+    // docstring says: the engine stood the axis at support + offset.
     const support = rail && Number.isFinite(Number(rail.support))
-      ? Math.max(0, Number(rail.support)) : G;
+      ? Math.max(0, Number(rail.support))
+      : (rail && offset > 0 && Number.isFinite(Number(rail.y)) ? Math.max(0, Number(rail.y) - offset) : G);
     const radius = profile.hardware.rail.diameter / 2;
     const ceiling = rail && Number.isFinite(Number(rail.ceiling))
       ? Number(rail.ceiling) : ((Number(unit.params.height) || 0) - G);
@@ -6080,6 +6083,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       step: profile.editor.mmStep,
       support,
       axis: rail ? Number(rail.y) : support + offset,
+      // T79 F11: the rod's run along the width, so the magnet knows its bay.
+      x1: rail ? Number(rail.x1) : G,
+      x2: rail ? Number(rail.x2) : (Number(unit.params.width) || 0) - G,
       mounted: railMountOf(item),
       blocked: max <= min || railMountOf(item) === RAIL_MOUNT.SHELF,
     };
@@ -6099,52 +6105,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *            depth:{min:number,max:number,by:string|null},
    *            height:{min:number,max:number,by:string|null},step:number}|null}
    */
-  /**
-   * ─── TURN 60 (CLAUDE.md F3.5) · WITH A SHELF, OR ON ITS OWN ──────────────
-   *
-   * ADDITIVE, and PRO calls it nowhere: PRO chooses a rod's mount when the rod
-   * is ADDED (`addHangerRail({ withShelf })`, T40 F6) and never again, so there
-   * has never been a way to change one's mind.
-   *
-   * Retail's menu needs exactly that, and it must not be `updateItem({ mount })`
-   * — which is what the word alone would suggest and which is wrong twice: on a
-   * rod born alone it writes a mount with no shelf behind it and nothing moves,
-   * and on an assembly it ORPHANS the fix shelf the rod was hanging from, which
-   * stays in the cut list carrying nothing.
-   *
-   * So this is the store's own add-time law, run again: take the rod out (which
-   * takes its shelf with it, T37-F2) and put one back with the other answer, at
-   * the height it was at. One action, two writes, and not a line of new
-   * arithmetic anywhere.
-   *
-   * @returns {string|null} the new rail item's id, or null if it could not be
-   *          re-placed (in which case nothing was removed)
-   */
-  setRailMount: (unitId, itemId, mount) => runBatch(() => {
-    const unit = get().units.find((u) => u.id === unitId);
-    if (!unit) return null;
-    const item = (unit.params.sections?.[0]?.items || [])
-      .find((i) => i.id === itemId && i.kind === 'hanger');
-    if (!item) return null;
-    const want = String(mount) === RAIL_MOUNT.ALONE ? RAIL_MOUNT.ALONE : RAIL_MOUNT.SHELF;
-    if (railMountOf(item) === want) return itemId;
-    const zone = item.zone == null || !Number.isFinite(Number(item.zone))
-      ? null : Math.trunc(Number(item.zone));
-    const keep = {
-      materialId: item.material_id || null,
-      materialLabel: item.material_label || null,
-      zone,
-      withShelf: want === RAIL_MOUNT.SHELF,
-    };
-    // …and the SHELF goes with it. `removeItem` takes a rod out when its shelf
-    // is removed (T37-F2) but not the other way round, so taking the rod alone
-    // would leave a fix shelf standing in the cut list carrying nothing.
-    const shelfId = railShelfIdOf(item);
-    get().removeItem(unitId, itemId);
-    if (shelfId && railMountOf(item) === RAIL_MOUNT.SHELF) get().removeItem(unitId, shelfId);
-    return get().addHangerRail(unitId, keep);
-  }),
-
   /**
    * ─── TURN 60 (CLAUDE.md F3.4) · WHAT GOES IN AN EXISTING DRAWER ──────────
    *
@@ -7866,37 +7826,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * of the drawer stack below it (BACKLOG #12: "hangers in between"). The chosen
    * hardware travels with the item, so the BOM names the product.
    *
-   * ─── TURN 37 (CLAUDE.md F2): IT IS AN ASSEMBLY NOW ────────────────────────
+   * T79 F11: the rail is added ALONE, always: *"zlikwiduj propozycję install rail with or
+   * without shelf, bez sensu, usuń to"*. A saved T37 assembly still loads and rides its shelf.
    *
-   * The owner, 17.08.2026: *"dlaczego drążek nie może być z półką powyżej, i ta
-   * półka być traktowana jak półka, tylko że fix? Zrób półkę nad drążkiem —
-   * półka, a drążek dołącz do półki i tyle."*
-   *
-   * So this makes TWO items, in one undo step: a FIX SHELF, and a rail that
-   * names it. The shelf is an ordinary fix shelf from that moment on — it is
-   * dragged by hand, it clamps against its neighbours, it is listed and
-   * dimensioned and cut like every other shelf — and the rod rides it, because
-   * `engine/railAssembly.js` resolves the rod's height FROM the shelf at
-   * compute time. There is nothing left to type.
-   *
-   * WHERE THE SHELF GOES is not a new placement rule. The old law is run
-   * exactly as it was (`nextHangerOffset` → the automatic rod height), and the
-   * shelf is stood where that rod's PARTITIONER would have stood — `axis +
-   * drop`, with `drop` defaulting to the partitioner's own 40. So the rod comes
-   * out on the same millimetre it came out on yesterday; what is new is the
-   * board above it, and that the joiner can drag it.
-   *
-   * @returns {string|null} the RAIL's item id, as it always has — the shelf is
-   *   reachable from it through `shelf_id`, and `railAssemblyOf` reads the pair.
+   * @returns {string|null} the rail's item id
    */
   addHangerRail: (unitId, {
     materialId = null, materialLabel = null, zone = null,
-    // ─── TURN 40 (CLAUDE.md F6): WITH A SHELF, OR ON ITS OWN ───────────────
-    // The owner: *"następnie dodawanie drążka raz i z półką proszę — wybór w
-    // drążek modal, to ważne."* T37's assembly stays the DEFAULT — that was
-    // his own verdict and nothing here overturns it — and this is the
-    // alternative, chosen when the rod is added.
-    withShelf = true,
   } = {}) => {
     const profile = getCabinetProfile();
     const unit = get().units.find((u) => u.id === unitId);
@@ -7938,64 +7874,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }),
       axis: (Number(zoneBase) || 0) + bornAt,
     });
-    // One undo step for two items: a joiner who presses Ctrl+Z after "Add
-    // hanger rail" expects the rail to be gone, not half of it.
-    const drop = hangerDropMm(profile);
-    const railAxis = (Number(zoneBase) || 0) + bornAt;
-    let railId = null;
-
-    // ─── TURN 40 (F6): A ROD ON ITS OWN ──────────────────────────────────────
-    //
-    // And it is not a new construction. The LEGACY law — `engine/railDatum.js`,
-    // untouched since T35 — is the complete, tested answer for a rail with no
-    // shelf: it hangs the rod above the nearest thing below it and cuts its own
-    // RAIL-PART partitioner over it. So this writes exactly the item the app
-    // wrote before T37, plus one field that records WHY it has no shelf —
-    // because "somebody asked for it alone" and "it is from an old job" look
-    // identical to the geometry and are not the same thing to a person.
-    if (!withShelf) {
-      return get().addItem(unitId, {
-        kind: 'hanger',
-        mount: RAIL_MOUNT.ALONE,
-        pos_mm: snapTo(born.offset, profile.editor.mmStep),
-        datum: born.datum,
-        ...(wantZone == null ? {} : { zone: wantZone }),
-        material_id: materialId,
-        material_label: materialLabel,
-      });
-    }
-
-    // ─── T37-F2: THE ASSEMBLY ────────────────────────────────────────────────
-    runBatch(() => {
-      const shelfId = get().addItem(unitId, {
-        kind: 'shelf',
-        // FIX, and that is the owner's own word: *"traktowana jak półka, tylko
-        // że fix"*. It carries a rod; a pin shelf would drop it.
-        variant: 'fixed',
-        pos_mm: snapTo(assemblyShelfPos({ railAxis, drop }), profile.editor.mmStep),
-        ...(wantZone == null ? {} : { zone: wantZone }),
-      });
-      if (!shelfId) return;
-      railId = get().addItem(unitId, {
-        kind: 'hanger',
-        // THE LINK. `mount: 'shelf'` plus a shelf id is what makes the engine
-        // read the new law; a rail without both is a legacy rail and is read
-        // by T35's, untouched.
-        mount: 'shelf',
-        shelf_id: shelfId,
-        // The T35 pair is still written, and it is DEAD WEIGHT on purpose
-        // (CLAUDE.md F2: *"the engine law may remain as dead weight for legacy
-        // only"*). It records where the rod hung at birth, so a reader that
-        // has never heard of `mount` — an old export, an old fixture — puts it
-        // on the same millimetre rather than at zero.
-        pos_mm: snapTo(born.offset, profile.editor.mmStep),
-        datum: born.datum,
-        ...(wantZone == null ? {} : { zone: wantZone }),
-        material_id: materialId,
-        material_label: materialLabel,
-      });
+    // The LEGACY law (`engine/railDatum.js`, untouched since T35) is the whole
+    // answer for a rod with no shelf: it hangs above the nearest thing below it.
+    return get().addItem(unitId, {
+      kind: 'hanger',
+      mount: RAIL_MOUNT.ALONE,
+      pos_mm: snapTo(born.offset, profile.editor.mmStep),
+      datum: born.datum,
+      ...(wantZone == null ? {} : { zone: wantZone }),
+      material_id: materialId,
+      material_label: materialLabel,
     });
-    return railId;
   },
 
   /**
@@ -8779,7 +8668,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * `pos_mm` has meant on a hanger item since T35. The view subtracts the
    * support the engine published; nothing here has to resolve a datum again.
    */
-  moveRail: (unitId, itemId, offsetMm) => {
+  moveRail: (unitId, itemId, offsetMm, { magnet: offered = true } = {}) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
     const item = (unit.params.sections?.[0]?.items || [])
@@ -8790,10 +8679,51 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // view is the belt to the braces: one rod, one owner of its height.
     if (railMountOf(item) === RAIL_MOUNT.SHELF) return null;
     const profile = getCabinetProfile();
-    const pos = snapTo(Math.max(0, Number(offsetMm) || 0), profile.editor.mmStep);
-    if (pos === item.pos_mm) return { pos };
+    const want = snapTo(Math.max(0, Number(offsetMm) || 0), profile.editor.mmStep);
+    // T79 F11: *"przy przesuwaniu zaproponuj 50 mm poniżej półki"*. The shelf
+    // magnet's catch (`applyMagnet`, `editor.shelfMagnetMm`); the drag with Alt
+    // held, and a slider's number, pass `magnet: false` and refuse it.
+    const pull = offered
+      ? applyMagnet(want, get().railMagnetCandidates(unitId, itemId), profile.editor.shelfMagnetMm)
+      : { pos: want, caught: null };
+    const pos = pull.pos;
+    const magnet = pull.caught || null;
+    if (pos === item.pos_mm) return { pos, magnet };
     get().updateItem(unitId, itemId, { pos_mm: pos });
-    return { pos };
+    return { pos, magnet };
+  },
+
+  /**
+   * T79 F11 · where a dragged ALONE rod is proposed: `hardware.hanger
+   * .belowShelfMm` under every shelf (adjustable or FIX) and every drawer cap
+   * PARTITION over the rod's own run, in the frame `moveRail` writes (an
+   * offset above the rod's support, `railTravelFor`), inside its travel.
+   *
+   * @returns {Array<{pos:number, axis:number, below:number, panelId:string, itemId:string|null}>}
+   */
+  railMagnetCandidates: (unitId, itemId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const item = (unit?.params.sections?.[0]?.items || [])
+      .find((i) => i.id === itemId && i.kind === 'hanger');
+    if (!item || railMountOf(item) === RAIL_MOUNT.SHELF) return [];
+    const travel = get().railTravelFor(unitId, itemId);
+    if (!travel) return [];
+    const profile = getCabinetProfile();
+    const below = Number(profile.hardware.hanger.belowShelfMm) || 0;
+    return (get().unitResult(unitId)?.panels || [])
+      .filter((p) => (p.part === 'SHELF' || p.part === 'PARTITION') && p.box
+        && Math.min(p.box.x + p.box.w, travel.x2) - Math.max(p.box.x, travel.x1) > 1)
+      .map((p) => {
+        const axis = Number(p.box.y) - below;
+        return {
+          pos: snapTo(axis - travel.support, profile.editor.mmStep),
+          axis,
+          below,
+          panelId: p.id,
+          itemId: p.meta?.itemId ?? null,
+        };
+      })
+      .filter((c) => c.pos >= travel.min && c.pos <= travel.max);
   },
 
   setRailHeight: (unitId, itemId, mmRaw) => {

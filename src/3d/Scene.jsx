@@ -2091,7 +2091,7 @@ export default function Scene({
           onEditRail={(railItemId, at) => openModal('rail', {
             unitId: unit.id, railItemId, at,
           })}
-          onMoveRail={(itemId, offsetMm) => moveRail(unit.id, itemId, offsetMm)}
+          onMoveRail={(itemId, offsetMm, opts) => moveRail(unit.id, itemId, offsetMm, opts)}
           // ─── Turn 20 (CLAUDE.md F11.1) ───
           // A double-click on a drawer's BOX — a side, the back, the bottom —
           // opens the drawer's own window. Same modal as "Edit cabinet",

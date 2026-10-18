@@ -115,6 +115,14 @@ export const T78_PRO_EDITS = [
     words: 'the owner, 18.10.2026 (14:17): *"jak ustawiamy sobie teraz 3 szuflady internal to niech pyta czy chcesz 1 czy 2 '
       + 'kolumny, coś jak baye."*; mockup approved 14:45: *"2 - tak."*',
   },
+  {
+    pro: 'src/components/AddItems.jsx',
+    by: 'T79 F11',
+    why: 'kasacja: the With a shelf / Rail alone toggle, its state and the assembly hint are deleted; Add hanger rail adds '
+      + 'the rod alone (the store takes withShelf no more) and says the drag proposes its place under a shelf.',
+    words: 'the owner, 18.10.2026: *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to; przy '
+      + 'przesuwaniu zaproponuj 50 mm poniżej półki."*',
+  },
 ];
 
 /**
@@ -168,11 +176,13 @@ export const T78_RETAIL_EDITS = [
   },
   {
     retail: 'src/retail/design/adapter.js',
-    by: 'T78 F12 (the one writer of the central files)',
+    by: 'T78 F12 (the one writer of the central files); T79 F11',
     why: 'glassKinds(), glassKind(project) and setGlassKind(kind): the profile\'s kinds and default, the project\'s choice '
       + '(design.fronts.glassKind) written through the store\'s setDesign; the engine validates the word. '
       + 'T79 F10: wallGapOfUnit (the SIZE step\'s FROM THE WALL field) reads the unit\'s own wall_gap with the derived '
-      + 'recess_mm taken as 0, so a typed 100 reads back 100 and not 100 less the recess (-100 in a 300 recess).',
+      + 'recess_mm taken as 0, so a typed 100 reads back 100 and not 100 less the recess (-100 in a 300 recess). '
+      + 'T79 F11: RAIL_MOUNTS and setRailMount deleted (the mount is never offered: a rod is added alone); setRailOffset, '
+      + 'a slider\'s number, passes moveRail `magnet: false` so it never jumps to the drag\'s proposal.',
     words: 'the owner, 11.10.2026: *"domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12. Chat fix 15.10.2026, before T79 '
       + '(the import and doorCountRefusal\'s pair under the minimum leaf, through engine/cabinet.js leafCountRefusal): '
       + '*"zebym mial mozliwosc podzielenia ich na 2"*. T79 F5 (by hand): canCutEdge, edgeNotchOfUnit, cuttingEdge, '
@@ -180,8 +190,10 @@ export const T78_RETAIL_EDITS = [
       + 'store\'s one action setUnitEdgeNotch (KIT_NOTCH.lsp D22); the owner, 18.10.2026: *"cut the corner działa '
       + 'idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*. T79 F10, the owner 18.10.2026: *"jak '
       + 'odsunie od ściany na grubość większą niż recess to powinien zlikwidować recess w szafie, lub zmniejszać go '
-      + 'odsuwaniem od recesu."*',
-    hunks: ['@@ -39 +39 @@', '@@ -1819,0 +1820,9 @@', '@@ -1918,0 +1928,25 @@', '@@ -2666 +2700,3 @@', '@@ -4713,0 +4750,61 @@'],
+      + 'odsuwaniem od recesu."*'
+      + ' T79 F11, the owner 18.10.2026: *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to; przy '
+      + 'przesuwaniu zaproponuj 50 mm poniżej półki."*',
+    hunks: ['@@ -39 +39 @@', '@@ -1819,0 +1820,9 @@', '@@ -1918,0 +1928,25 @@', '@@ -2666 +2700,3 @@', '@@ -3562,13 +3598,2 @@', '@@ -3576,9 +3600,0 @@', '@@ -3595 +3611 @@', '@@ -4713,0 +4730,61 @@'],
   },
   {
     retail: 'src/retail/styles/roomeditor.css',

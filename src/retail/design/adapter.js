@@ -3595,29 +3595,9 @@ export const setStackFronts = (unitId, mm) => S().setAllDrawerHeights(unitId, mm
 
 // ─── 5 · THE HANGING RAIL ──────────────────────────────────────────────────
 
-/**
- * The engine has TWO rail mounts and they are not "single / double": T35's rod
- * hangs under its own SHELF, T40's hangs ALONE off the carcass sides
- * (`engine/railAssembly.js RAIL_MOUNT`). There is no double-rail law in this
- * engine, and offering one would be retail inventing a product. The brief's
- * "single / double" is answered with the engine's own pair, and the difference
- * is named in the morning report.
- */
-export const RAIL_MOUNTS = Object.freeze([
-  { id: RAIL_MOUNT.SHELF, label: 'WITH A SHELF', hint: 'A board over the rod, and the rod hangs from it.' },
-  { id: RAIL_MOUNT.ALONE, label: 'ON ITS OWN', hint: 'No shelf and no board above it — it mounts to the sides.' },
-]);
-
+// T79 F11: a rod is added alone and its mount is never offered: *"zlikwiduj propozycję
+// install rail with or without shelf, bez sensu, usuń to"*.
 export const railTravel = (unitId, itemId) => S().railTravelFor?.(unitId, itemId) || null;
-/**
- * The mount is a re-placement, not a field: `updateItem({ mount })` writes a
- * word and leaves either a rod with no shelf behind it or a fix shelf carrying
- * nothing. The store's own `setRailMount` runs its add-time law again.
- */
-export const setRailMount = (unitId, itemId, mount) => S().setRailMount(
-  unitId, itemId, mount === RAIL_MOUNT.ALONE ? RAIL_MOUNT.ALONE : RAIL_MOUNT.SHELF,
-);
-
 /**
  * …and the height is clamped to the ends the engine gave, because `moveRail`
  * clamps only at zero and `setRailHeight` does not clamp at all: a rod written
@@ -3628,7 +3608,7 @@ export function setRailOffset(unitId, itemId, mm) {
   const travel = railTravel(unitId, itemId);
   if (!travel || travel.blocked) return null;
   const at = Math.max(travel.min, Math.min(travel.max, Math.round(Number(mm) || 0)));
-  return S().moveRail(unitId, itemId, at);
+  return S().moveRail(unitId, itemId, at, { magnet: false });
 }
 
 /** Why the rod's own slider is not offered: its height is its SHELF's (T41). */

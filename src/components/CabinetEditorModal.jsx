@@ -21,7 +21,7 @@ import { surfaceFor, outlineFor } from '../3d/materials.js';
 // T49 F9: whether this piece is cut from a veneered board (lib, not engine).
 import { panelIsVeneered } from '../lib/veneerSheen.js';
 import { useUiStore } from '../stores/uiStore.js';
-import { useProjectStore } from '../stores/projectStore.js';
+import { useProjectStore, centreBetweenPick } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { projectSheen, resolveFinishes, resolveUnitDesign } from '../engine/design.js';
 import { panelFinish } from '../engine/materials.js';
@@ -227,6 +227,24 @@ export default function CabinetEditorModal() {
 
   const selected = panels.find((p) => p.id === selectedId) || null;
 
+  // ─── T79 (CLAUDE.md F12): CENTER BETWEEN, ARMED FROM THIS WINDOW'S MENU ───
+  // *"wybierasz dolny i górny element"*: while the shelf menu below has armed
+  // the two picks on this cabinet, a click on a board that may be picked is a
+  // PICK, handed to the uiStore's `selectElement` as the room hands it; any
+  // other click (the empty canvas among them) ends the mode and selects as
+  // it always has.
+  const selectOrPick = useCallback((id) => {
+    const ui = useUiStore.getState();
+    if (unit && ui.centreBetween?.unitId === unit.id) {
+      if (id && centreBetweenPick(panels.find((p) => p.id === id))) {
+        ui.selectElement(unit.id, id, { pick: true });
+        return;
+      }
+      ui.cancelCentreBetween();
+    }
+    setSelectedId(id);
+  }, [unit, panels]);
+
   // ─── Turn 17 (CLAUDE.md F5): BACK, ONE LEVEL ─────────────────────────────
   //
   // Owner: inside the editor, with ONE element open, there is no way back to
@@ -250,11 +268,15 @@ export default function CabinetEditorModal() {
       if (e.key !== 'Escape') return;
       e.stopPropagation();
       e.preventDefault();
+      // T79 F12 · while Center between is armed on this cabinet the key ends
+      // the picking and nothing more: the piece stays in hand.
+      const ui = useUiStore.getState();
+      if (ui.centreBetween?.unitId === args?.unitId) { ui.cancelCentreBetween(); return; }
       setSelectedId(null);
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [selectedId]);
+  }, [selectedId, args?.unitId]);
 
   const item = useMemo(() => {
     const id = selected?.meta?.itemId;
@@ -370,7 +392,7 @@ export default function CabinetEditorModal() {
             profile={profile}
             exploded={exploded}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={selectOrPick}
             openFronts={openFronts}
             allOpen={allOpen}
             onToggleFront={toggleFront}

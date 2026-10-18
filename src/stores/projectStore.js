@@ -8843,6 +8843,90 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ?.filter((i) => i.kind === 'shelf').length || 0;
   },
 
+  /**
+   * ─── TURN 79 (CLAUDE.md F12): CENTER BETWEEN TWO ELEMENTS ────────────────
+   *
+   * The owner, 18.10.2026: *"naciskasz wycentruj pomiędzy, wybierasz dolny i
+   * górny element i wtedy wszystkie półki pomiędzy tymi elementami się
+   * centrują."*
+   *
+   * Center all's own arithmetic, between two faces the hand picked instead of
+   * the bay's floor and top: the LOWER board's top face and the UPPER board's
+   * underside, read off the engine's own panel boxes. The adjustable shelves of
+   * that bay standing between them go on `evenShelfPositions` (equal clear
+   * gaps), the `mmStep` snap, then the clamp, as `centreShelves` does. Both
+   * picks in one bay; a bottom, a top or a full-width board serves any bay, and
+   * two of those centre every bay on its own ladder (Center all's null). A
+   * fixed shelf is never moved and never jumped: standing in the span, it
+   * refuses the act in words, as two bays and an empty span do.
+   *
+   * @param {string} unitId
+   * @param {string} lowerRef  the engine's panel id of the first pick
+   * @param {string} upperRef  and of the second (the two are read by height)
+   * @returns {{ok: true, count: number} | {ok: false, error: string}}
+   */
+  centreShelvesBetween: (unitId, lowerRef, upperRef) => runBatch(() => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const panels = unit ? get().unitResult(unitId)?.panels || [] : [];
+    const picks = [lowerRef, upperRef].map((ref) => panels.find((p) => p.id === ref) || null);
+    if (picks.some((p) => !centreBetweenPick(p))) return { ok: false, error: CENTRE_BETWEEN_SAY.kind };
+    if (lowerRef === upperRef) return { ok: false, error: CENTRE_BETWEEN_SAY.same };
+    const profile = getCabinetProfile();
+    const boardT = unit.params.board_t ?? profile.board.thickness;
+    const items = unit.params.sections[0].items;
+    // The bays by their lights, the reading `splitBoundariesFor` makes: a
+    // board in ONE light is that bay's, a board across several (a bottom, a
+    // top, a full-width shelf or cap) is every bay's.
+    const lights = widthZones({
+      width: Number(unit.params.width) || 0, boardT, partitions: items.filter((i) => i.kind === 'partition'),
+    });
+    const overlaps = (box, light) => box.x < light.to && box.x + box.w > light.from;
+    const bayOf = (box) => {
+      const hit = lights.flatMap((light, i) => (overlaps(box, light) ? [i] : []));
+      return hit.length === 1 ? hit[0] : null;
+    };
+    const [lower, upper] = [...picks].sort((a, b) => a.box.y - b.box.y);
+    const [lowerBay, upperBay] = [bayOf(lower.box), bayOf(upper.box)];
+    if (lowerBay != null && upperBay != null && lowerBay !== upperBay) {
+      return { ok: false, error: CENTRE_BETWEEN_SAY.bays };
+    }
+    const bay = lowerBay ?? upperBay;
+    const from = lower.box.y + lower.box.h;
+    const to = upper.box.y;
+    // Every horizontal board standing between the two faces in that bay's
+    // light: a fixed one (a FIX shelf, a rail's shelf, a drawer cap, a split
+    // divider) is a boundary the act may not jump; the rest is the ladder.
+    const inSpan = panels.filter((p) => centreBetweenPick(p) && HORIZONTAL_BOARDS.has(p.part)
+      && p !== lower && p !== upper && p.box.y >= from && p.box.y < to
+      && (bay == null || overlaps(p.box, lights[bay])));
+    const itemOf = (p) => items.find((i) => i.kind === 'shelf' && i.id === p.meta?.itemId) || null;
+    const isFixed = (p) => !itemOf(p) || Boolean(p.meta?.locked) || p.meta?.variant === 'fixed'
+      || itemOf(p).variant === 'fixed' || isPinnedShelf(itemOf(p), items);
+    if (inSpan.some(isFixed)) return { ok: false, error: CENTRE_BETWEEN_SAY.fixed };
+    if (!inSpan.length) return { ok: false, error: CENTRE_BETWEEN_SAY.none };
+    // One ladder for the bay picked; with no bay named, one per bay, never one
+    // ladder through a partition (Center all's own law, T58 F3.2).
+    const ladders = new Map();
+    for (const p of [...inSpan].sort((a, b) => a.box.y - b.box.y)) {
+      const key = bay ?? bayOf(p.box);
+      ladders.set(key, [...(ladders.get(key) || []), itemOf(p)]);
+    }
+    const at = new Map();
+    for (const here of ladders.values()) {
+      const positions = evenShelfPositions({
+        zoneBottom: from, zoneTop: to, count: here.length, boardT,
+      });
+      here.forEach((sh, i) => at.set(sh.id, snapTo(positions[i], profile.editor.mmStep)));
+    }
+    const next = items.map((i) => (at.has(i.id) ? { ...i, pos_mm: at.get(i.id) } : i));
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, sections: [{ ...u.params.sections[0], items: next }] } } : u)),
+    }));
+    // The clamp has the final word, as it does after Center all.
+    get().reclampShelves(unitId);
+    return { ok: true, count: inSpan.length };
+  }),
+
   /** ONE bay's own ladder. The loop above is the only caller that matters. */
   redistributeShelvesInBay: (unitId, bay = null) => {
     const s = get();
@@ -10897,6 +10981,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
 // Cache to localStorage on every change (fallback only — the DB stays primary)
 useProjectStore.subscribe((state) => saveCache(state));
 
+// ─── T79 F12 · CENTER BETWEEN: THE SECOND PICK RUNS IT ──────────────────────
+// `uiStore.selectElement` reads the two picks into `centreBetween` and never
+// reads this store (the one direction), so the run is here: the moment the
+// second pick lands the mode ends and the centring runs, or says why not.
+useUiStore.subscribe((ui) => {
+  const between = ui.centreBetween;
+  if (!between?.lower || !between?.upper) return;
+  useUiStore.getState().cancelCentreBetween();
+  const said = useProjectStore.getState().centreShelvesBetween(between.unitId, between.lower, between.upper);
+  if (said?.error) useUiStore.getState().notify(said.error, 'warn');
+});
+
 /**
  * The units a given unit can actually collide with: same wall, same mounting
  * level. A wall unit hangs ABOVE a base unit — that is how a kitchen is built,
@@ -11605,6 +11701,28 @@ function shelfBandSegmentsFor(unit, profile, zone = null, precomputed = null, pi
     ],
   }, profile);
 }
+
+// ─── T79 F12 · CENTER BETWEEN: WHAT MAY BE PICKED, AND THE WORDS ────────────
+// *"wybierasz dolny i górny element"*: a shelf (any, the rail's own fix shelf
+// and a split divider among them), the drawer cap (`PARTITION`, a column's
+// `Z<n>-PART`), the BOTTOM or the TOP. One reading, asked by the store that
+// centres and by the view that lights the candidates.
+const HORIZONTAL_BOARDS = new Set(['SHELF', 'PARTITION']);
+const CENTRE_BETWEEN_PARTS = new Set([...HORIZONTAL_BOARDS, 'BOTTOM', 'TOP']);
+
+/** May this engine panel be one of Center between's two picks? */
+export function centreBetweenPick(panel) {
+  return Boolean(panel?.box) && CENTRE_BETWEEN_PARTS.has(panel.part);
+}
+
+/** Center between refuses in words, never silently. */
+export const CENTRE_BETWEEN_SAY = {
+  fixed: 'A fixed shelf stands between your picks; centring stops at it.',
+  bays: 'Your picks stand in two different bays; centring works inside one bay.',
+  none: 'No shelf stands between your picks; there is nothing to centre.',
+  same: 'You picked the same element twice; pick the lower one, then the upper one.',
+  kind: 'Pick a shelf, the drawer cap, the bottom or the top of this cabinet.',
+};
 
 /** The vertical band a shelf may live in: above the drawer stack, below the top. */
 export function shelfLimits(unit, profile, zone = null, at = null) {

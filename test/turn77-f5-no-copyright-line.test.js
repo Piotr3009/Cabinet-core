@@ -103,6 +103,8 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f34-t79-f01.mjs',
   // T79 F2 (18.10.2026): a full-width shelf above the divider
   'test/turn79-f02-above-divider.test.js',
+  // T79 F12 (18.10.2026): Center between
+  'test/turn79-f12-centre-between.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

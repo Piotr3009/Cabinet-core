@@ -189,11 +189,15 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
     // AMENDED BY T79 F1 (18.10.2026): `Messages` (every level in one bottom-left column with a history, the owner:
     // *"wszystkie informacje po zmianach ... zrób po lewej, niech one tam znikają"*), argued, re-frozen. Not a widening file.
     'Messages',
+    // AMENDED BY T79 F12: `CabinetEditorModal` (Center between armed from the shelf menu in this window: a
+    // click in its canvas is the pick, *"wybierasz dolny i górny element"*), argued, re-frozen. Not a widening file.
+    'CabinetEditorModal',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');
   for (const [name, turn] of exempt) {
     // AMENDED BY T78 F19: T78 licenses CompanyDefaultsModal (the Joints choice). AMENDED BY T79 F1: T79 licenses Messages.
+    // AMENDED BY T79 F12: T79 licenses CabinetEditorModal (Center between's pick).
     assert.ok(['67', '69', '71', '72', '74', '75', '78', '79'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
   }
   assert.ok(!exempt.some(([n, t]) => /UnitSize/.test(n) && t === '69'), 'F9 bought no exemption');

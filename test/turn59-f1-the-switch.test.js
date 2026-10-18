@@ -197,7 +197,8 @@ const EXEMPT = {
     + 'CENTER ALL at the bottom of the shelf menu; F6 · the board picker carries '
     + '`data-board-thickness` so the room\'s sheet can name what it hides instead of taking '
     + 'every `<select>` in the dock; F12 · the divider reaches the same setback row. *"nie '
-    + 'choose, tylko te 2 opcje."*',
+    + 'choose, tylko te 2 opcje."*'
+    + ' T79 F12 · Center between beside Center all, the same width: one click arms the shared uiStore\'s two-pick mode, the panel says which pick is next, Escape cancels. *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie półki pomiędzy tymi elementami się centrują."*',
   // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
   // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
   // client cannot reach. Three of his fourteen points are answered in PRO's own
@@ -289,6 +290,10 @@ const EXEMPT = {
   // the same commit."*
   'src/components/Messages.jsx':
     'T79 F1 . all three levels stand in ONE bottom-left column (the centre and the bottom-centre blocks deleted), the newest nearest the Changes bar under them; the bar opens the list of the last profile.ui.messages.historyMax messages (newest first, HH:MM, the level\'s dot, the text, Clear), collapsed by default, Escape collapses it, never saved; a folded yellow or grey says its count once (its text), a red beside it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*',
+  // CLAUDE.md T79 F12: the shelf menu's Center between stands in this window
+  // too, so a click in its own canvas must be able to be the pick.
+  'src/components/CabinetEditorModal.jsx':
+    'T79 F12 · Center between armed from the shelf menu in this window: a click on a shelf, the drawer cap, the bottom or the top in its canvas is handed to the uiStore\'s selectElement as a pick (as the room hands it), any other click ends the mode, and Escape ends the picking while the piece stays in hand. *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie półki pomiędzy tymi elementami się centrują."*',
 };
 
 /**
@@ -312,7 +317,8 @@ const FROZEN = {
   'src/components/AuthModal.jsx': 'b51d7a14910e89553528fe2e36f787502e4b4a77b6c408ebb24323510c164ddc',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/BomPanel.jsx': 'ee8cf839b68c547c36a3f76de1edb89a5d44becddc4e04744c9f3242ca0af074',
-  'src/components/CabinetEditorModal.jsx': '3d21bba5af9dc42fecbb620b6594b5a4be79be2e9ce5446cf4b53dc4b09b3ca4',
+  // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CabinetEditorModal.jsx': '2dcdc4452665fffbfe991235c0a2e2cf4af1d0ede439a0adce0df81339da3b4e',
   'src/components/CanvasToolbar.jsx': 'ee85f7f7d4b3a64021f56cbea5fe36ff504136ace340216fdef71fcb316e2bd9',
   'src/components/CheckPanel.jsx': '65a991cbc4aed29b3c9a49ed613e715dd3d033106f8e5e9ded45e8125a8dc014',
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
@@ -334,7 +340,8 @@ const FROZEN = {
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/ElementProperties.jsx': '12cbeb62e1dc609f8b1a6013e891ec8abea4a2302bae5fed0094371afe68cee3',
+  // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/ElementProperties.jsx': 'bb3aaa178fa989e54344f7763445d15f2f37b9ba7a618a04f79c4c8474ffc489',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',
@@ -577,6 +584,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/AddItems.jsx',
     'src/components/AssignMaterialsModal.jsx',
     'src/components/BomPanel.jsx',
+    // T79 F12 · *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element"*: a click in the editor's canvas is the pick.
+    'src/components/CabinetEditorModal.jsx',
     // T75 F22 · *"the CNC export carries a banner counting the lines that are not 'cut'"*.
     'src/components/CncTree.jsx',
     'src/components/CncView.jsx',

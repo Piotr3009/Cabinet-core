@@ -764,7 +764,8 @@ export const useUiStore = create((set, get) => ({
       // never separately — that has been this store's own rule since T36 —
       // and a set left standing after its primary was nulled is a set no
       // panel is looking at and every group edit would still write to.
-      ...(primary === get().selectedUnitId ? {} : { selectedElement: null, selectedElements: [] }),
+      // T79 F12: …and a Center between armed on the old one ends with it.
+      ...(primary === get().selectedUnitId ? {} : { selectedElement: null, selectedElements: [], centreBetween: null }),
     });
   },
   clearSelection: () => set({
@@ -773,6 +774,7 @@ export const useUiStore = create((set, get) => ({
     selectedSection: null,
     selectedElement: null,
     selectedElements: [],
+    centreBetween: null,
   }),
 
   // ─── One ELEMENT inside a unit (turn 9, CLAUDE.md F4.1) ───
@@ -818,9 +820,20 @@ export const useUiStore = create((set, get) => ({
   /**
    * @param {string|null} unitId
    * @param {string|null} elementRef  the ENGINE's own panel id, e.g. `SHELF-2`
-   * @param {object} opts  { additive } — Ctrl (or ⌘) held, F2
+   * @param {object} opts  { additive }: Ctrl (or ⌘) held, F2; { pick }: a
+   *   Center between pick, said only by the 3D press on a board (T79 F12)
    */
-  selectElement: (unitId, elementRef, { additive = false } = {}) => set((s) => {
+  selectElement: (unitId, elementRef, { additive = false, pick = false } = {}) => set((s) => {
+    // ─── T79 (CLAUDE.md F12): WHILE CENTER BETWEEN IS ARMED, A CLICK IS A PICK
+    // On the cabinet that armed it: the lower first, then the upper, and the
+    // selection stays on the shelf whose menu armed it. Only the press on a
+    // board says `pick`: any other selection (another cabinet, a Check row,
+    // the re-selection an Undo makes) is a click elsewhere, ends the mode and
+    // selects as it always has.
+    const armed = s.centreBetween;
+    if (pick && armed && armed.unitId === unitId && elementRef) {
+      return { centreBetween: armed.lower ? { ...armed, upper: elementRef } : { ...armed, lower: elementRef } };
+    }
     // ─── TURN 37 (CLAUDE.md F1): GRABBING A MEMBER KEEPS THE SET ────────────
     //
     // The owner's whole verdict is *"złapać 6 półek z 3 szaf i przesunąć ich
@@ -855,9 +868,21 @@ export const useUiStore = create((set, get) => ({
       rightPanelOpen: true,
       selectedElements: next,
       selectedElement: primary,
+      centreBetween: null,
     };
   }),
-  clearElement: () => set({ selectedElement: null, selectedElements: [] }),
+  clearElement: () => set({ selectedElement: null, selectedElements: [], centreBetween: null }),
+
+  // ─── T79 (CLAUDE.md F12): CENTER BETWEEN, TWO PICKS IN ORDER ─────────────
+  // *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy
+  // wszystkie półki pomiędzy tymi elementami się centrują."* Armed by the
+  // shelf menu's `Center between`; `selectElement` above reads the next two
+  // picks on THAT cabinet into it, and the project store runs the centring
+  // the moment the second lands (this store never reads that one). Escape, or
+  // a click anywhere else, ends it.
+  centreBetween: null,               // { unitId, lower, upper } | null
+  armCentreBetween: (unitId) => set({ centreBetween: unitId ? { unitId, lower: null, upper: null } : null }),
+  cancelCentreBetween: () => set({ centreBetween: null }),
 
   // Shelf being dragged in 3D — drives the live dimension readout
   dragging: null,                    // { unitId, itemId, pos_mm, above, below }

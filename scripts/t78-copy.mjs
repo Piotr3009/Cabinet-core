@@ -97,6 +97,15 @@ export const T78_PRO_EDITS = [
       + 'całkowitej półki powyżej bo kod dzieli mi całą szafę na bay 1 i 2, a nie mam czegoś takiego że jest bay '
       + 'nie dzielony powyżej."*; mockup approved 14:45: *"1 - tak."*',
   },
+  {
+    pro: 'src/components/ElementProperties.jsx',
+    by: 'T79 F12',
+    why: 'Center between beside Center all, the same width: one click arms the two-pick mode of the shared uiStore '
+      + '(`centreBetween`), the panel says which pick is next, Escape cancels; the project store centres the shelves '
+      + 'between the two picks (`centreShelvesBetween`) or refuses in words.',
+    words: 'the owner, 18.10.2026: *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie '
+      + 'półki pomiędzy tymi elementami się centrują."*',
+  },
 ];
 
 /**

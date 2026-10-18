@@ -224,6 +224,9 @@ export function panelPlacement(panel) {
         v: [0, 1, 0],
         n: [-1, 0, 0],
       };
+    // T79 F6 (18.10.2026, KIT_RECESS.lsp D17 amended): the recess's EXT-BACK is
+    // a back drilled with its dia 3 rows, drawn upright: the BACK's own frame.
+    case 'RECESS-BACK':
     case 'BACK':
       // ─── Turn 12 (CLAUDE.md F10): A BACK MAY BE DRAWN ROTATED ───
       //

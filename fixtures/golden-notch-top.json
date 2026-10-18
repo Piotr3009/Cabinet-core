@@ -6,7 +6,8 @@
     "source": "KIT_NOTCH.lsp D21 (the notch from the top, its NUMBERS block I2: BUD 600, BL 200 x 200 x -300) on KIT_BUD_FULL.lsp (the parent, golden-bud.json's BUD-A with 1 shelf): the TOP cut instead of the BOTTOM, BUL and the BACK cut at the top, RETURN, STEP and FLOOR",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "18.10.2026 (the owner's list, CLAUDE.md T79 F6): KIT_NOTCH.lsp D10 AMENDED. The BACK carries the row beside the notch into the RETURN's end (x 209, y 520 620 720) and the row under it into the FLOOR's back edge (y 461, x 68 109 150) (SCREWS_3MM|BACK 13 -> 19, BACK holes 31 -> 37). The owner: \"jak mamy cut the corners lub recess to nie rysujesz mi dziurek na srubki 3 mm, to trzeba bedzie dodac\"; 14:17: \"ale tylko na plecach.\" The box boards still carry nothing; outlines and every other drilling unchanged."
   },
   "params": {
     "type": "BUD",
@@ -140,7 +141,7 @@
           "d": 18
         },
         "outline": 6,
-        "holes": 31,
+        "holes": 37,
         "pockets": 9,
         "readiness": null
       },
@@ -272,7 +273,7 @@
       ],
       [
         "SCREWS_3MM|BACK",
-        13
+        19
       ],
       [
         "SCREWS_3MM|BUL",

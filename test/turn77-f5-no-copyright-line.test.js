@@ -116,6 +116,9 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f34-t79-f05.mjs',
   'src/3d/NotchEdges.jsx',
   'src/retail/design/detail/EdgeNotchAsk.jsx',
+  // T79 F6 (18.10.2026): the dia 3 rows on the back round a notch and a recess
+  'test/turn79-f06-back-rows.test.js',
+  'scripts/t78-classify.d/f34-t79-f06.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

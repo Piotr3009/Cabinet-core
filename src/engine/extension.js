@@ -41,7 +41,7 @@ import { sidePanelGeometry, socketPanelGeometry, rectGeometry } from './puzzle.j
 import { roundTo } from './format.js';
 import {
   notchProfile, notchP, notchJointInset, notchReplanSockets, notchReplanTabs, notchShift,
-  notchMinJointEdge, notchScrewAxis, notchScrewRow, notchRowsBetweenTabs,
+  notchMinJointEdge, notchScrewAxis, notchScrewRow, notchRowsBetweenTabs, notchEdgeRow,
   notchRectOutline, notchDogbone, notchRot90Pts, notchCornerOfOutline,
   notchKitRefusal, outlineWithTabs, tabBones, polygonArea, shiftGeom,
   cornerMarkRecords,
@@ -368,15 +368,26 @@ export function recessBackJoints(piece, window, cw, ch, g, ex0, ex1, ez0, ez1, t
       for (const x of recessRunRow(Math.max(a, x0), Math.min(b, x1), sfe)) scr.push([x - x0, S]);
     }
   }
-  // 17.10.2026 (KIT_RECESS.lsp D17): NO hand-fix rows round the window. The
-  // columns G / 2 outside the window's vertical edges (into RETURN-L's and
-  // RETURN-R's ends) and the rows outside its horizontal edges (into the
-  // FLOOR's and the LID's front edges) are gone. The owner: *"nie bedziemy tam
-  // wkrecac wkretow, system wkrety dookola plecow w tym przypadku nie
-  // zadziala"*. The BACK keeps drawBACK's rows into the sides, the TOP and the
-  // BOTTOM exactly as above. The window and the band's interior stay bound
-  // for the record of what the rows were measured from.
-  void wx0; void wz0; void wx1; void wz1; void bz0; void bz1; void ix0; void ix1;
+  // 18.10.2026 (KIT_RECESS.lsp D17 amended), the owner: *"jak mamy cut the
+  // corners lub recess to nie rysujesz mi dziurek na śrubki 3 mm, to trzeba
+  // będzie dodać"*; *"ale tylko na plecach."*  The rows round the window are
+  // back (17.10 took them away), S outside each edge a board stands behind: a
+  // column into RETURN-L's and RETURN-R's front ends over bz0 .. bz1, a row
+  // into the FLOOR's and the LID's front edges over wx0 .. wx1, THE BACK SCREW
+  // ROW over each run (notchEdgeRow; every run is at least notch.minInterior,
+  // D4, so none is ever short).
+  const inPieceX = (x) => x > x0 - EPS && x < x1 + EPS;
+  const inPieceZ = (z) => z > z0 - EPS && z < z1 + EPS;
+  const column = (x) => {
+    for (const z of notchEdgeRow(bz0, bz1, sfe)) if (z >= z0 && z <= z1) scr.push([x - x0, z - z0]);
+  };
+  const row = (z) => {
+    for (const x of notchEdgeRow(wx0, wx1, sfe)) if (x >= x0 && x <= x1) scr.push([x - x0, z - z0]);
+  };
+  if (!recessLeftP(ex0) && inPieceX(wx0 - S)) column(wx0 - S);
+  if (!recessRightP(ex1, cw) && inPieceX(wx1 + S)) column(wx1 + S);
+  if (!recessFloorP(ez0) && inPieceZ(wz0 - S)) row(wz0 - S);
+  if (!recessTopP(ez1, ch) && inPieceZ(wz1 + S)) row(wz1 + S);
   return { LEFT, RIGHT, TOP, BOTTOM, SCREWS: scr };
 }
 
@@ -425,14 +436,28 @@ export function recessLidScrews(g, ex0, ex1, ed, K) {
 export function recessExtBack(ex0, ex1, ez0, ez1) { return [ex1 - ex0, ez1 - ez0]; }
 
 /**
- * recess-ext-back-screws: NONE since 17.10.2026 (D17). It was a column into
- * each vertical board's back end over bz0 .. bz1 at x = S and w - S, and
- * drawBACK's row into each horizontal board's back edge at z = S and h - S.
- * The owner: *"system wkrety dookola plecow w tym przypadku nie zadziala"*.
+ * recess-ext-back-screws, DRILLED since 18.10.2026 (KIT_RECESS.lsp D17
+ * amended: the EXT-BACK is a back): x from its left end, z up from its bottom
+ * end, a column into each vertical board's back end over bz0 .. bz1 at x = S
+ * and w - S, and a row into each horizontal board's back edge at z = S and
+ * h - S over the run between the two vertical boards, g .. w - g: THE BACK
+ * SCREW ROW (notchEdgeRow), drawBACK's notchRowBetween on every run over
+ * 2 x screwFromEnd, two at the quarters at exactly minInterior (where
+ * notchRowBetween drills three holes in one place). Stated until 17.10.2026,
+ * none from 17.10 to 18.10.
  */
 export function recessExtBackScrews(cw, ch, g, ex0, ex1, ez0, ez1, K) {
-  void cw; void ch; void g; void ex0; void ex1; void ez0; void ez1; void K;
-  return [];
+  const S = notchScrewAxis(g);
+  const sfe = notchP(K, 'puzzle.screwFromEnd');
+  const eb = recessExtBack(ex0, ex1, ez0, ez1);
+  const out = [];
+  for (const z of notchShift(notchEdgeRow(recessBz0(ez0, g), recessBz1(ez1, ch, g), sfe), -ez0)) {
+    out.push([S, z]);
+    out.push([eb[0] - S, z]);
+  }
+  for (const x of notchEdgeRow(g, eb[0] - g, sfe)) { out.push([x, S]); out.push([x, eb[1] - S]); }
+  void cw;
+  return out;
 }
 
 // ── SHELVES ───────────────────────────────────────────────────────────────
@@ -849,7 +874,11 @@ export function extensionCarcass({
     x: roundTo(x0, 4), y: roundTo(z0, 4), z: roundTo(D - y1, 4),
     w: roundTo(x1 - x0, 4), h: roundTo(z1 - z0, 4), d: roundTo(y1 - y0, 4),
   });
-  const board = (id, part, w, h, place, screws) => {
+  const board = (id, part, w, h, place, screws, drilled = false) => {
+    const rows = (screws || []).map(([x, y]) => [roundTo(x, 4), roundTo(y, 4)]);
+    const geom = rectGeometry(w, h);
+    // 18.10.2026 (D17 amended): a back's rows are DRILLED, dia 3 on the screw layer.
+    if (drilled) geom.holes = rows.map(([x, y]) => ({ layer: pz.layers.screw, kind: 'screw', x, y, d: pz.screwDiameter }));
     const p = makePanel({
       id,
       part,
@@ -860,16 +889,13 @@ export function extensionCarcass({
       edgeCode: codes.none,
       edgeLen: 0,
       box: boxOf(place),
-      cnc: { rotated: false, drawn_w: w, drawn_h: h, ...rectGeometry(w, h) },
+      cnc: { rotated: false, drawn_w: w, drawn_h: h, ...geom },
       meta: {
         // Outline only, no puzzle joint, no machined hole (KIT_RECESS.lsp D11):
-        // the extension's fixing is the joiner's, on THE BACK SCREW ROW.
-        readiness: 'geometry',
-        fixing: 'manual',
-        extension: {
-          x0: ex0, x1: ex1, z0: ez0, z1: ez1, d: ed, board: id,
-          screws: (screws || []).map(([x, y]) => [roundTo(x, 4), roundTo(y, 4)]),
-        },
+        // the extension's fixing is the joiner's. 18.10.2026 (D17 amended): the
+        // EXT-BACK is a back, drilled with its rows, and is a cut part.
+        ...(drilled ? {} : { readiness: 'geometry', fixing: 'manual' }),
+        extension: { x0: ex0, x1: ex1, z0: ez0, z1: ez1, d: ed, board: id, screws: rows },
       },
     });
     panels.push(p);
@@ -884,7 +910,7 @@ export function extensionCarcass({
   if (places.FLOOR) board('FLOOR', 'RECESS-FLOOR', lid[0], lid[1], places.FLOOR, lidScrews);
   if (places.LID) board('LID', 'RECESS-LID', lid[0], lid[1], places.LID, lidScrews);
   const eb = recessExtBack(ex0, ex1, ez0, ez1);
-  board('EXT-BACK', 'RECESS-BACK', eb[0], eb[1], places['EXT-BACK'], recessExtBackScrews(W, H, G, ex0, ex1, ez0, ez1, K));
+  board('EXT-BACK', 'RECESS-BACK', eb[0], eb[1], places['EXT-BACK'], recessExtBackScrews(W, H, G, ex0, ex1, ez0, ez1, K), true);
 
   // ── SHELVES IN THE BAND (D10) ──
   // 17.10.2026 (D16): the FIXED shelf grows like any other (the owner: *"nie

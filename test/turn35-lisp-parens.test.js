@@ -185,3 +185,25 @@ test('T79 F5 · KIT_NOTCH.lsp balances 0/0 with D22, section H2, its NUMBERS blo
   assert.match(text, /\(defun c:EDGENOTCH_FULL /);
   assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
 });
+
+// T79 F6 \u00b7 the parens test grows again: KIT_NOTCH.lsp D10 and KIT_RECESS.lsp
+// D17 are amended under licence (the owner, 18.10.2026: *"jak mamy cut the
+// corners lub recess to nie rysujesz mi dziurek na \u015brubki 3 mm, to trzeba
+// b\u0119dzie doda\u0107"*; *"ale tylko na plecach."*): the BACK's dia 3 rows follow
+// every edge of a back that meets a board. Both balance by name.
+for (const [kit, marks] of [
+  ['KIT_NOTCH.lsp', [/AMENDED 18\.10\.2026 \(CLAUDE\.md T79 F6\)/, /\(defun notch-edge-row \(a b e\)/,
+    /;;; I5\. NUMBERS - THE BACK'S ROWS ROUND THE BOX/, /\(cons "SHORT" \(reverse short\)\)/]],
+  ['KIT_RECESS.lsp', [/AMENDED 18\.10\.2026 \(CLAUDE\.md T79 F6\)/, /\(foreach z \(notch-edge-row bz0 bz1 sfe\)/,
+    /\(defun recess-ext-back-screws \(cw ch g ex0 ex1 ez0 ez1 \/ S sfe eb bz0 bz1 out\)/,
+    /\(foreach x \(notch-edge-row g \(- \(car eb\) g\) sfe\)/, /;;; THE NARROWEST BAND \(D4, no golden; D17 AMENDED 18\.10\.2026\)/]],
+]) {
+  test(`T79 F6 \u00b7 ${kit} balances 0/0 with the BACK's rows round the box`, () => {
+    const text = readFileSync(join(LISP_DIR, kit), 'utf8');
+    const { balance, min } = parenScan(text);
+    assert.equal(balance, 0);
+    assert.equal(min, 0);
+    for (const m of marks) assert.match(text, m);
+    assert.ok(/^[\x00-\x7F]*$/.test(text), `${kit} is ASCII`);
+  });
+}

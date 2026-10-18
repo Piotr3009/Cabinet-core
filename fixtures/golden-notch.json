@@ -7,7 +7,7 @@
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
-    "repinned": "17.10.2026 (the owner's morning): KIT_NOTCH.lsp D9 and D10. No dog bone is drilled at the notch's re-entrant corner (TOP, BOTTOM, SHELF-1: holes 1 -> 0; the CORNER_4MM marks stand there, not summarised here) and the BACK's row on its notched edge into the RETURN's end is gone (SCREWS_3MM|BACK 14 -> 10). The owner: \"nie, nie dodawaj wiercenia ... nazwij to corner 4 mm\" and \"nie bedziemy tam wkrecac wkretow\". The outlines, the box boards and every other drilling unchanged. Before this: 15.10.2026 (evening), the STEP covers the RETURN's end (STEP 218 x 770, RETURN 182 x 770)."
+    "repinned": "18.10.2026 (the owner's list, CLAUDE.md T79 F6): KIT_NOTCH.lsp D10 AMENDED. The BACK's row on its notched edge, into the RETURN's end (own frame x 9, y 50 240 530 720), is back (SCREWS_3MM|BACK 10 -> 14, BACK holes 24 -> 28). The owner: \"jak mamy cut the corners lub recess to nie rysujesz mi dziurek na srubki 3 mm, to trzeba bedzie dodac\"; 14:17: \"ale tylko na plecach.\" The box boards still carry nothing; outlines and every other drilling unchanged. Before this: 17.10.2026 (the owner's morning): KIT_NOTCH.lsp D9 and D10. No dog bone is drilled at the notch's re-entrant corner (TOP, BOTTOM, SHELF-1: holes 1 -> 0; the CORNER_4MM marks stand there, not summarised here) and the BACK's row on its notched edge into the RETURN's end is gone (SCREWS_3MM|BACK 14 -> 10). The owner: \"nie, nie dodawaj wiercenia ... nazwij to corner 4 mm\" and \"nie bedziemy tam wkrecac wkretow\". The outlines, the box boards and every other drilling unchanged. Before this: 15.10.2026 (evening), the STEP covers the RETURN's end (STEP 218 x 770, RETURN 182 x 770)."
   },
   "params": {
     "type": "BUD",
@@ -140,7 +140,7 @@
           "d": 18
         },
         "outline": 4,
-        "holes": 24,
+        "holes": 28,
         "pockets": 7,
         "readiness": null
       },
@@ -252,7 +252,7 @@
       ],
       [
         "SCREWS_3MM|BACK",
-        10
+        14
       ],
       [
         "SCREWS_3MM|BUL",

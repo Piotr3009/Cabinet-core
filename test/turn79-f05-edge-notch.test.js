@@ -154,8 +154,22 @@ test('F5 · the run law, asked of the corner notch\'s runs, plans exactly what n
     assert.deepEqual(bp['TOP-SOCKETS'], bj['TOP-SOCKETS'], `${said}: the BACK's top edge`);
     assert.deepEqual(bp['BOTTOM-SOCKETS'], bj['BOTTOM-SOCKETS'], `${said}: the BACK's bottom edge`);
     if (N.notchBoxedP(nw, 18)) {
+      // T79 F6 (KIT_NOTCH.lsp D10 amended, the owner 18.10.2026: *"to trzeba będzie dodać ... ale tylko na plecach"*):
+      // the corner notch's BACK also carries the rows into its box (the RETURN's column, the LID's or the FLOOR's
+      // row); the run law plans the BACK's carcass edges, so every hole it plans is drawBACK's, and drawBACK's
+      // others stand on the box's lines only.
       const key = (list) => list.map(([x, y]) => `${r2(x)},${r2(y)}`).sort();
-      assert.deepEqual(key(bp.SCREWS), key(bj.SCREWS), `${said}: drawBACK's rows`);
+      const have = new Set(key(bj.SCREWS));
+      for (const k of key(bp.SCREWS)) assert.ok(have.has(k), `${said}: drawBACK's rows carry the planned ${k}`);
+      const S = 9;
+      const hh = nh === 0 ? 770 : Math.abs(nh);
+      const nearX = left ? nw + S : 600 - nw - S;
+      const boxY = nh < 0 ? 770 - hh - S : hh + S;
+      const planned = new Set(key(bp.SCREWS));
+      const extra = bj.SCREWS.filter(([x, y]) => !planned.has(`${r2(x)},${r2(y)}`));
+      for (const [x, y] of extra) {
+        assert.ok(r2(x) === r2(nearX) || (nh !== 0 && r2(y) === r2(boxY)), `${said}: the extra hole ${x},${y} stands on the box's lines`);
+      }
     }
   }
 });

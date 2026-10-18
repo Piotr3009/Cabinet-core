@@ -218,9 +218,14 @@ test('F4 · NUMBERS: which joints move (I2 WHICH JOINTS MOVE), routine and real 
   assert.deepEqual(bj['NEAR-SOCKETS'], [95, 375]);
   assert.deepEqual(bj['TOP-SOCKETS'], [313, 487]);
   assert.deepEqual(bj['BOTTOM-SOCKETS'], [113, 487]);
+  // T79 F6 (KIT_NOTCH.lsp D10 amended, 18.10.2026; the owner: *"to trzeba będzie
+  // dodać ... ale tylko na plecach"*): beside the notch the row into the
+  // RETURN's end (x 209), under it the row into the FLOOR's back edge (y 461).
   assert.deepEqual(bj.SCREWS, [
     [591, 50], [591, 240], [591, 530], [591, 720],
     [9, 50], [9, 235], [9, 420],
+    [209, 520], [209, 620], [209, 720],
+    [68, 461], [109, 461], [150, 461],
     [268, 761], [400, 761], [532, 761],
     [68, 9], [300, 9], [532, 9],
   ]);
@@ -238,7 +243,9 @@ test('F4 · NUMBERS: which joints move (I2 WHICH JOINTS MOVE), routine and real 
 test('F4 · the LISP\'s own I2 block, line by line, is the engine\'s cut (outlines, marks, areas, the box, the joints, the room)', () => {
   const lisp = read('reference/lisp/KIT_NOTCH.lsp');
   const from = lisp.indexOf(';;; I2. NUMBERS - THE NOTCH FROM THE TOP');
-  const to = lisp.indexOf(';;; J. DRAWING', from);
+  // T79 F6: the block I3 (the BACK's rows round the box) stands between I2 and J; I2 ends where it starts.
+  const i3 = lisp.indexOf(';;; I3. NUMBERS', from);
+  const to = i3 > from ? i3 : lisp.indexOf(';;; J. DRAWING', from);
   assert.ok(from > 0 && to > from, 'the I2 block stands before section J');
   const lines = lisp.slice(from, to).split('\n').map((l) => l.replace(/^;;;\s?/, ''));
   const prose = lines.join(' ').replace(/\s+/g, ' ');

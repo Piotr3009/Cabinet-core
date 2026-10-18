@@ -7,7 +7,7 @@
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
-    "repinned": "17.10.2026 (the owner's morning): KIT_RECESS.lsp D17 and D18. The twelve hand-fix screws round the window (into RETURN-L, RETURN-R, the FLOOR and the LID) are gone (SCREWS_3MM|BACK 26 -> 14, the parent's own) and the shelf's two bump corners carry CORNER_4MM marks, not dog bones (holes 2 -> 0). The owner: \"system wkrety dookola plecow w tym przypadku nie zadziala\"."
+    "repinned": "18.10.2026 (the owner's list, CLAUDE.md T79 F6): KIT_RECESS.lsp D17 AMENDED. The twelve rows round the window (into RETURN-L, RETURN-R, the FLOOR and the LID) are back (SCREWS_3MM|BACK 14 -> 26, BACK holes 34 -> 46) and the EXT-BACK, a back, is drilled with its twelve rows round the band (SCREWS_3MM|EXT-BACK 0 -> 12, its holes 0 -> 12, readiness geometry -> cut). The owner: \"jak mamy cut the corners lub recess to nie rysujesz mi dziurek na srubki 3 mm, to trzeba bedzie dodac\"; 14:17: \"ale tylko na plecach.\" RETURN-L, RETURN-R, the FLOOR and the LID still carry nothing. Before this: 17.10.2026 (the owner's morning): KIT_RECESS.lsp D17 and D18. The twelve hand-fix screws round the window (into RETURN-L, RETURN-R, the FLOOR and the LID) are gone (SCREWS_3MM|BACK 26 -> 14, the parent's own) and the shelf's two bump corners carry CORNER_4MM marks, not dog bones (holes 2 -> 0). The owner: \"system wkrety dookola plecow w tym przypadku nie zadziala\"."
   },
   "params": {
     "type": "BUD",
@@ -144,7 +144,7 @@
           "d": 18
         },
         "outline": 4,
-        "holes": 34,
+        "holes": 46,
         "pockets": 11,
         "readiness": null
       },
@@ -284,9 +284,9 @@
           "d": 18
         },
         "outline": 4,
-        "holes": 0,
+        "holes": 12,
         "pockets": 0,
-        "readiness": "geometry"
+        "readiness": null
       }
     ],
     "drills": [
@@ -316,7 +316,7 @@
       ],
       [
         "SCREWS_3MM|BACK",
-        14
+        26
       ],
       [
         "SCREWS_3MM|BUL",
@@ -325,6 +325,10 @@
       [
         "SCREWS_3MM|BUR",
         6
+      ],
+      [
+        "SCREWS_3MM|EXT-BACK",
+        12
       ],
       [
         "SHELVES_7_5MM|BUL",

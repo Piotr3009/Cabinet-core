@@ -39,8 +39,9 @@
 ;;; SKY:tabCentres are COMMON's own; notch-profile, notch-p,
 ;;; notch-replan-sockets, notch-replan-tabs, notch-shift, notch-min-joint-edge,
 ;;; notch-screw-axis, notch-screw-row, notch-row-between,
-;;; notch-rows-between-tabs, notch-joint-inset, notch-rect-outline,
-;;; notch-dogbone and notch-rot90-pts are KIT_NOTCH's own. All are CALLED.
+;;; notch-rows-between-tabs, notch-edge-row (18.10.2026), notch-joint-inset,
+;;; notch-rect-outline, notch-dogbone and notch-rot90-pts are KIT_NOTCH's
+;;; own. All are CALLED.
 ;;;
 ;;; A NOTE ON NAMES. AutoLISP symbols are CASE-INSENSITIVE. The carcass is
 ;;; cw cd ch g (width, depth, height, board); the extension is ex0 ex1 (its
@@ -172,6 +173,11 @@
 ;;; that ARE drilled are the BACK's own: G / 2 outside each window edge that
 ;;; has a board's end or edge behind it (a RETURN's end, the FLOOR's and the
 ;;; LID's front edges), drawBACK's spacing along that edge.
+;;; 18.10.2026 (D17 AMENDED, CLAUDE.md T79 F6): the EXT-BACK is a back, and a
+;;; back carries its rows ("ale tylko na plecach"): its screws are DRILLED
+;;; round the band (recess-ext-back-screws) and it is a cut part (readiness
+;;; 'cut', no 'manual' fixing); RETURN-L, RETURN-R, the FLOOR and the LID stay
+;;; as above.
 ;;;
 ;;;========================================
 ;;; 3. DECISIONS TAKEN FOR THE OWNER (each one line to veto)
@@ -217,7 +223,9 @@
 ;;;     below it is the parent's.
 ;;; D11 THE ADDED BOARDS ARE THE JOINER'S, as the notch box is: outlines only,
 ;;;     nothing drilled in them. (Screws were STATED on them until 17.10.2026;
-;;;     D17: none now, biscuits by hand.)
+;;;     D17: none now, biscuits by hand.) 18.10.2026 (D17 amended): the
+;;;     EXT-BACK is a back and is drilled with drawBACK's rows round the band;
+;;;     RETURN-L, RETURN-R, the FLOOR and the LID stay outlines.
 ;;; D12 THE PINS. The back shelf-pin column of a grown side steps back by ed
 ;;;     over the band (the notch's D7 mirrored: the parent's own columnFromEdge
 ;;;     from the NEW back edge); above and below the band it stays.
@@ -264,6 +272,36 @@
 ;;;     biscuits by hand, a Lamello one day; this file draws nothing for it
 ;;;     ("teraz nic"). The BACK's rows into the sides, the TOP and the BOTTOM
 ;;;     stay exactly where drawBACK puts them.
+;;;     AMENDED 18.10.2026 (CLAUDE.md T79 F6), the owner: *"jak mamy cut the
+;;;     corners lub recess to nie rysujesz mi dziurek na srubki 3 mm, to
+;;;     trzeba bedzie dodac"*; 14:17: *"ale tylko na plecach."*  The removal
+;;;     above is REVERSED on the backs, and only on the backs: the dia 3 rows
+;;;     follow EVERY edge of a back that meets a board.
+;;;       THE BACK      along the window's edges, S = G / 2 outside each edge
+;;;                     a board stands behind: a column into RETURN-L's and
+;;;                     RETURN-R's front ends over bz0 .. bz1, a row into the
+;;;                     FLOOR's and the LID's front edges over wx0 .. wx1 (what
+;;;                     was drilled until 17.10.2026); where the band reaches
+;;;                     an edge, the BACK's new edge beside it is a window edge
+;;;                     and takes the same column (CASE A: x 319)
+;;;       THE EXT-BACK  along the band's four edges: a column into each
+;;;                     vertical board's back end (a RETURN, or a grown side's
+;;;                     bump) over bz0 .. bz1, x = S and w - S; a row into
+;;;                     each horizontal board's back edge (the FLOOR or the
+;;;                     BOTTOM's bump, the LID or the TOP's bump) over the run
+;;;                     between the two vertical boards, g .. w - g, z = S and
+;;;                     h - S (recess-ext-back-screws, what it stated until
+;;;                     17.10.2026, now DRILLED: the EXT-BACK is a cut part)
+;;;     Each run carries THE BACK SCREW ROW over its length (KIT_NOTCH's
+;;;     notch-edge-row). Over g .. w - g that is drawBACK's notch-row-between
+;;;     whenever the run is longer than 2 x screwFromEnd; at exactly
+;;;     notch.minInterior (100, the narrowest band D4 lets through) it is two
+;;;     at the run's quarters, where notch-row-between would drill three holes
+;;;     in one place. Every run here is at least notch.minInterior long (D4),
+;;;     never under one hole's offset, so none is ever dropped.
+;;;     RETURN-L, RETURN-R, the FLOOR and the LID still state NO screw
+;;;     (recess-return-screws and recess-lid-screws answer nil): "tylko na
+;;;     plecach".
 ;;; D18 THE CORNER MARK, NOT THE DOG BONE. The owner 17.10.2026 on every L
 ;;;     outline: *"nie, nie dodawaj wiercenia, dodaj jeden layer w samym
 ;;;     cornerze okolo 40 mm w kazda strone na linii L shape i nazwij to
@@ -642,12 +680,14 @@
 ;;; (recess-side-joints "BACK-TABS" for a grown side, the parent's for the
 ;;; other). Only the edges the piece has are jointed:
 ;;;   ("LEFT" ..) ("RIGHT" ..) ("TOP" ..) ("BOTTOM" ..)   sockets
-;;;   ("SCREWS" ((x z) ..))   drawBACK's rows on the jointed edges ONLY.
-;;;        Until 17.10.2026 this list also carried the hand-fix rows G / 2
-;;;        outside each window edge that had a board's end or edge behind it
-;;;        (into a RETURN, the FLOOR, the LID). D17, the owner: *"nie bedziemy
-;;;        tam wkrecac wkretow"*: those rows are GONE; the window's edges
-;;;        carry no screw. `window` stays an argument for the record.
+;;;   ("SCREWS" ((x z) ..))   drawBACK's rows on the jointed edges, then the
+;;;        rows G / 2 outside each window edge that has a board's end or edge
+;;;        behind it (into a RETURN, the FLOOR, the LID). Until 17.10.2026
+;;;        they were drilled; D17 (17.10.2026, the owner: *"nie bedziemy tam
+;;;        wkrecac wkretow"*) took them away; D17 AMENDED (18.10.2026, the
+;;;        owner: *"to trzeba bedzie dodac ... ale tylko na plecach"*) puts
+;;;        them back: the dia 3 rows follow every edge of the BACK that meets
+;;;        a board.
 (defun recess-back-joints (piece window cw ch g ex0 ex1 ez0 ez1 topTabs botTabs bulTabs burTabs
                            / e sfe S x0 z0 x1 z1 bw bh inZ inX left right top bottom scr
                              wx0 wz0 wx1 wz1 bz0 bz1 runs ix0 ix1)
@@ -687,11 +727,22 @@
     (foreach run (apply runs (list (recess-floor-p ez0)))
       (foreach x (recess-run-row (max (car run) x0) (min (cadr run) x1) sfe)
         (setq scr (cons (list (- x x0) S) scr)))))
-  ;; 17.10.2026 (D17): NO hand-fix rows round the window. The RETURNs' ends
-  ;; and the FLOOR's and LID's front edges behind the window's four edges get
-  ;; no screw through the BACK ("nie bedziemy tam wkrecac wkretow"); the box
-  ;; is the joiner's, on biscuits by hand. wx0 wz0 wx1 wz1 bz0 bz1 ix0 ix1 are
-  ;; bound above for the record of what the rows were measured from.
+  ;; D17 AMENDED (18.10.2026): the rows round the window, S outside each edge
+  ;; a board stands behind: into a RETURN's front end (a vertical window edge
+  ;; that is not a side) over bz0 .. bz1, into the FLOOR's and the LID's front
+  ;; edge over wx0 .. wx1; THE BACK SCREW ROW over each run (notch-edge-row)
+  (if (and (not (recess-left-p ex0)) (> (- wx0 S) (- x0 1e-6)) (< (- wx0 S) (+ x1 1e-6)))
+    (foreach z (notch-edge-row bz0 bz1 sfe)
+      (if (and (>= z z0) (<= z z1)) (setq scr (cons (list (- (- wx0 S) x0) (- z z0)) scr)))))
+  (if (and (not (recess-right-p ex1 cw)) (> (+ wx1 S) (- x0 1e-6)) (< (+ wx1 S) (+ x1 1e-6)))
+    (foreach z (notch-edge-row bz0 bz1 sfe)
+      (if (and (>= z z0) (<= z z1)) (setq scr (cons (list (- (+ wx1 S) x0) (- z z0)) scr)))))
+  (if (and (not (recess-floor-p ez0)) (> (- wz0 S) (- z0 1e-6)) (< (- wz0 S) (+ z1 1e-6)))
+    (foreach x (notch-edge-row wx0 wx1 sfe)
+      (if (and (>= x x0) (<= x x1)) (setq scr (cons (list (- x x0) (- (- wz0 S) z0)) scr)))))
+  (if (and (not (recess-top-p ez1 ch)) (> (+ wz1 S) (- z0 1e-6)) (< (+ wz1 S) (+ z1 1e-6)))
+    (foreach x (notch-edge-row wx0 wx1 sfe)
+      (if (and (>= x x0) (<= x x1)) (setq scr (cons (list (- x x0) (- (+ wz1 S) z0)) scr)))))
   (list (list "LEFT" left) (list "RIGHT" right) (list "TOP" top) (list "BOTTOM" bottom)
         (list "SCREWS" (reverse scr))))
 
@@ -743,13 +794,27 @@
 (defun recess-ext-back (ex0 ex1 ez0 ez1)
   (list (- ex1 ex0) (- ez1 ez0)))
 
-;;; Its screws: NONE (17.10.2026, D17). It was a column into each vertical
-;;; board's back end over bz0 .. bz1 at x = S and w - S, and drawBACK's row
-;;; into each horizontal board's back edge at z = S and h - S. The owner:
-;;; *"system wkrety dookola plecow w tym przypadku nie zadziala"*. Biscuits
-;;; by hand, a Lamello one day, nothing drawn now.
-(defun recess-ext-back-screws (cw ch g ex0 ex1 ez0 ez1)
-  nil)
+;;; Its screws (x from its left end, z up from its bottom end), DRILLED: a
+;;; column into each vertical board's back end (a RETURN or a grown side's
+;;; bump) over the band's run bz0 .. bz1, x = S and w - S; a row into each
+;;; horizontal board's back edge (the FLOOR or the BOTTOM's bump, the LID or
+;;; the TOP's bump), z = S and h - S, THE BACK SCREW ROW over the run between
+;;; the two vertical boards, g .. w - g (notch-edge-row; until 17.10.2026 it
+;;; was stated as notch-row-between 0 .. w, the same holes on every run over
+;;; 2 x screwFromEnd). Stated until 17.10.2026; NONE from 17.10 (D17, the
+;;; owner: *"system wkrety dookola plecow w tym przypadku nie zadziala"*); D17
+;;; AMENDED (18.10.2026): the EXT-BACK is a back, and its rows are drilled.
+(defun recess-ext-back-screws (cw ch g ex0 ex1 ez0 ez1 / S sfe eb bz0 bz1 out)
+  (setq S (notch-screw-axis g) sfe (recess-p "puzzle.screwFromEnd")
+        eb (recess-ext-back ex0 ex1 ez0 ez1)
+        bz0 (recess-bz0 ez0 g) bz1 (recess-bz1 ez1 ch g) out nil)
+  (foreach z (notch-shift (notch-edge-row bz0 bz1 sfe) (- ez0))
+    (setq out (cons (list S z) out))
+    (setq out (cons (list (- (car eb) S) z) out)))
+  (foreach x (notch-edge-row g (- (car eb) g) sfe)
+    (setq out (cons (list x S) out))
+    (setq out (cons (list x (- (cadr eb) S)) out)))
+  (reverse out))
 
 ;;; -- SHELVES -----------------------------------------------------------------
 
@@ -898,16 +963,18 @@
 ;;; BACK sockets, right edge         95, 385, 675       NONE (the RETURN's end)
 ;;; BACK top/bottom sockets (x)      113, 487           113, 233
 ;;; BACK left screw row (z)          50, 240, 530, 720  unchanged (x 9)
-;;; BACK right screw row             50, 240, 530, 720  NONE (17.10.2026, D17;
-;;;                                                     until then x 319,
-;;;                                                     z 50 385 720 into the
-;;;                                                     RETURN's end)
+;;; BACK right screw row             50, 240, 530, 720  x 319, z 50 385 720 into
+;;;                                                     the RETURN's end (D17
+;;;                                                     AMENDED 18.10.2026; none
+;;;                                                     from 17.10 to 18.10)
 ;;; BACK top/bottom rows (x)         68, 300, 532       68, 173, 278 (the run 18..328)
+;;;   so the BACK carries 13 dia 3 holes (10 from 17.10 to 18.10)
 ;;;
-;;; THE ADDED BOARDS' FIXING: NONE STATED (17.10.2026, D17: biscuits by hand,
-;;; a Lamello one day, nothing drawn). Until that morning the file stated:
-;;; RETURN-L (x from its front end, z up)  into BOTTOM's bump edge: x 50 66 82, z 9
-;;;                                        into TOP's bump edge:    x 50 66 82, z 761
+;;; THE ADDED BOARDS' FIXING: RETURN-L states NONE (17.10.2026, D17: biscuits
+;;; by hand, a Lamello one day; until that morning it stated x 50 66 82 into
+;;; the BOTTOM's and the TOP's bump edges, z 9 and 761). The EXT-BACK is a
+;;; back and is DRILLED (D17 AMENDED 18.10.2026; stated until 17.10, none from
+;;; 17.10 to 18.10), 12 dia 3 holes:
 ;;; EXT-BACK (x from its left end, z up)   into RETURN-L's end: x 9,   z 50 385 720
 ;;;                                        into BUR's bump end: x 281, z 50 385 720
 ;;;                                        into BOTTOM's bump:  x 68 145 222, z 9
@@ -925,13 +992,14 @@
 ;;; BOTTOM     564 x 540    unchanged (the floor not reached)
 ;;; BACK       600 x 770    600 x 770, the pocket x 128..472, z 228..572, 18 deep;
 ;;;                         every parent socket and row kept (none in the window)
-;;;   NO hand-fix rows round the window (17.10.2026, D17). Until that morning
-;;;   they were DRILLED, S = 9 outside each edge:
+;;;   the rows round the window, DRILLED (D17 AMENDED 18.10.2026; drilled
+;;;   until 17.10, none from 17.10 to 18.10), S = 9 outside each edge:
 ;;;     into RETURN-L's end  x 119, z 278 400 522
 ;;;     into RETURN-R's end  x 481, z 278 400 522
 ;;;     into the FLOOR's front edge  x 178 300 422, z 219
 ;;;     into the LID's front edge    x 178 300 422, z 581
-;;;   so the BACK keeps exactly the parent's 14 screws and 20 sockets.
+;;;   so the BACK carries the parent's 14 screws, the window's 12 (26 dia 3
+;;;   holes) and the parent's 20 sockets.
 ;;; RETURN-L   -            132 x 344, carcass x 110..128, y 558..690, z 228..572
 ;;; RETURN-R   -            132 x 344, carcass x 472..490
 ;;; FLOOR      -            380 x 132, carcass x 110..490, y 558..690, z 210..228
@@ -957,16 +1025,35 @@
 ;;; carried the point (960 0) and the right one (-200 0): the owner's
 ;;; triangles.
 ;;;
-;;; THE ADDED BOARDS' FIXING: NONE STATED (17.10.2026, D17). Until then:
+;;; THE ADDED BOARDS' FIXING (CASE B): RETURN-L, RETURN-R, the FLOOR and the
+;;; LID state NONE (17.10.2026, D17). Until then:
 ;;; RETURN-L, RETURN-R                     none of their own (the FLOOR, the
 ;;;                                        LID, the BACK and the EXT-BACK hold them)
 ;;; FLOOR (x from left, y from front)      into RETURN-L's end: x 9,   y 50 66 82
 ;;;                                        into RETURN-R's end: x 371, y 50 66 82
 ;;; LID                                    the same, into their top ends
+;;; The EXT-BACK is DRILLED (D17 AMENDED 18.10.2026), 12 dia 3 holes:
 ;;; EXT-BACK (x from left, z up)           into RETURN-L: x 9,   z 68 190 312
 ;;;                                        into RETURN-R: x 371, z 68 190 312
 ;;;                                        into the FLOOR: x 68 190 312, z 9
 ;;;                                        into the LID:   x 68 190 312, z 371
+;;;
+;;; THE NARROWEST BAND (D4, no golden; D17 AMENDED 18.10.2026): the same BUD,
+;;; ex0 110, ex1 246, ez0 210, ez1 346, ed 150. The interior 128..228 x
+;;; 228..328 is exactly notch.minInterior (100) each way, so every run round
+;;; the window and round the band is 100 = 2 x screwFromEnd and carries two
+;;; holes at its quarters:
+;;; BACK round the window (x, z)           into RETURN-L: x 119, z 253 303
+;;;                                        into RETURN-R: x 237, z 253 303
+;;;                                        into the FLOOR: x 153 203, z 219
+;;;                                        into the LID:   x 153 203, z 337
+;;;   so the BACK carries the parent's 14 and the window's 8 (22 dia 3 holes)
+;;; EXT-BACK 136 x 136 (x from left, z up) into RETURN-L: x 9,   z 43 93
+;;;                                        into RETURN-R: x 127, z 43 93
+;;;                                        into the FLOOR: x 43 93, z 9
+;;;                                        into the LID:   x 43 93, z 127
+;;;   8 dia 3 holes (notch-row-between 0 .. 136 would drill all three of each
+;;;   row at x 68, one place)
 
 ;;;========================================
 ;;; G. DRAWING (the command draws what the routines return, nothing more)

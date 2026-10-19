@@ -75,22 +75,24 @@ export const LICENSED = {
 };
 
 export const LIVENESS = {
-  // KIT_NOTCH.lsp I5 and KIT_RECESS.lsp CASE B: the BACK with BL full carries 14 (the column into the RETURN at own x 9),
-  // the recess window's BACK 26 and its EXT-BACK 12, drilled and placed; the same BUD without either keeps its 14.
+  // REWRITTEN 19.10.2026 (chat fix, f36-owner-1910b.mjs): the owner withdrew the BACK's rows into the box ("nie na
+  // pierwszych plecach tylko na tych drugich ktore sa we wnetrzu recess"). What stays live of F6: the EXT-BACK, a back,
+  // drilled with its twelve and placed (joinery.js); the first back with BL full carries 10 again (no column at own
+  // x 9), the window's BACK the parent's 14, the plain BUD 14, the box boards 0.
   backRowsRoundTheBox: () => {
     const full = computeCabinet(kit('BUD', { shelves: 1, front_t: 25, hinge: 'L', notch: { corner: 'BL', w: 200, d: 200, h: 0 } }), P);
     const win = computeCabinet(kit('BUD', { shelves: 1, front_t: 25, hinge: 'L', extension: { x0: 110, x1: 490, z0: 210, z1: 590, d: 150 } }), P);
     const plain = computeCabinet(kit('BUD', { shelves: 1, front_t: 25, hinge: 'L' }), P);
     const nearCol = screwsOn(full, 'BACK').filter((d) => d.x === 9).map((d) => d.y);
     const eb = win.panels.find((p) => p.id === 'EXT-BACK');
-    const live = screwsOn(full, 'BACK').length === 14 && nearCol.join(' ') === '50 240 530 720'
-      && screwsOn(win, 'BACK').length === 26 && screwsOn(win, 'EXT-BACK').length === 12
+    const live = screwsOn(full, 'BACK').length === 10 && nearCol.length === 0
+      && screwsOn(win, 'BACK').length === 14 && screwsOn(win, 'EXT-BACK').length === 12
       && Boolean(panelPlacement(eb)) && eb?.meta?.readiness == null && screwsOn(plain, 'BACK').length === 14
       && ['RETURN', 'STEP'].every((id) => screwsOn(full, id).length === 0)
       && ['RETURN-L', 'RETURN-R', 'FLOOR', 'LID'].every((id) => screwsOn(win, id).length === 0);
     return {
       live,
-      said: `BUD 600 with BL 200 / 200 / 0: the BACK ${screwsOn(full, 'BACK').length} dia 3 (the RETURN's column at own x 9: `
+      said: `BUD 600 with BL 200 / 200 / 0: the BACK ${screwsOn(full, 'BACK').length} dia 3 (at own x 9: `
         + `${nearCol.join(' ') || 'none'}); with the window 110..490 x 210..590: the BACK ${screwsOn(win, 'BACK').length}, the `
         + `EXT-BACK ${screwsOn(win, 'EXT-BACK').length} (placed: ${Boolean(panelPlacement(eb))}, readiness ${eb?.meta?.readiness ?? 'cut'}); `
         + `the box boards ${['RETURN', 'STEP'].map((id) => screwsOn(full, id).length).join(' / ')} and `

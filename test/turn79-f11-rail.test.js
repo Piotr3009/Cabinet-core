@@ -97,7 +97,11 @@ test('F11 · addHangerRail adds the rail ALONE: one item, no shelf, unit-wide an
   const r = S().unitResult(id);
   assert.equal(r.assemblies.rail.mount, RAIL_MOUNT.ALONE);
   assert.ok(!r.panels.some((p) => p.part === 'RAIL-PART'), 'and no board above it');
-  assert.equal(S().addHangerRail(id), null, 'one rail per column, as ever');
+  // REWRITTEN 19.10.2026 (chat fix, KIT_HANGER_TWO.lsp D1): two rails per bay; the third is refused.
+  const second = S().addHangerRail(id);
+  assert.ok(second, 'a second rod, alone, 950 under the first');
+  assert.equal(itemsOf(id).find((i) => i.id === second).mount, RAIL_MOUNT.ALONE);
+  assert.equal(S().addHangerRail(id), null, 'a third is refused');
 
   const c = wardrobe(1200);
   S().addPartition(c);

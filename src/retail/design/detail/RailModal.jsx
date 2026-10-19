@@ -63,9 +63,13 @@ export default function RailModal() {
   const zone = item.zone != null && Number.isFinite(Number(item.zone))
     ? Math.trunc(Number(item.zone))
     : null;
-  const drawn = zone == null
-    ? result?.assemblies?.rail
-    : (result?.assemblies?.columnRails || []).find((r) => r.zone === zone);
+  // CHAT FIX 19.10.2026 (KIT_HANGER_TWO.lsp): BY ITEM ID first, as the store's
+  // railTravelFor reads it: a second unit-wide rod is published among the
+  // column rods with no column, and the zone alone would name the first.
+  const drawn = (result?.assemblies?.columnRails || []).find((r) => r.itemId === item.id)
+    || (zone == null
+      ? result?.assemblies?.rail
+      : (result?.assemblies?.columnRails || []).find((r) => r.zone === zone));
   const support = Number(drawn?.support);
 
   return (

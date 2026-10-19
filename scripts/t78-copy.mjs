@@ -124,6 +124,22 @@ export const T78_PRO_EDITS = [
       + 'przesuwaniu zaproponuj 50 mm poniżej półki."*',
   },
   {
+    pro: 'src/components/AddItems.jsx',
+    by: 'chat fix 19.10.2026 (after T79)',
+    why: 'Add hanger rail asks the store why not (hangerRailRefusal: a third rod, or no room under the first) and says '
+      + 'in words; a second rod in the same bay is born betweenRailsMm under the first (secondRailAxis) and the message '
+      + 'says so; the entry closes only when the bay hangs its two (KIT_HANGER_TWO.lsp D1, D2).',
+    words: 'the owner, 19.10.2026: *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze, i proponuj (jak polki) '
+      + '950 jedne od drugiego"*; *"tak ale tylko jako propozycja"*.',
+  },
+  {
+    pro: 'src/components/RailModal.jsx',
+    by: 'chat fix 19.10.2026 (after T79)',
+    why: 'the window finds its rod BY ITEM ID first (a second unit-wide rod is published among the column rods with no '
+      + 'column), as the store\'s railTravelFor reads it; the zone lookup stays as the fallback.',
+    words: 'the owner, 19.10.2026: *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze"*.',
+  },
+  {
     pro: 'src/components/ElementProperties.jsx',
     by: 'T79 F13',
     why: 'SET BACK\'s standard chip is the PROJECT\'s setback, the one a shelf or a divider with nothing said is cut at '
@@ -178,6 +194,15 @@ export const HAND_COPY_EDITS = [
  */
 export const T78_RETAIL_EDITS = [
   {
+    retail: 'src/retail/design/reasons.js',
+    by: 'chat fix 19.10.2026 (by hand, reasons.js is retail\'s own)',
+    why: 'kasacja: REASONS.railAlreadyThere is deleted with the one-rail-per-column law it named (the store\'s '
+      + 'hangerRailRefusal says why a rod is refused now: a third, or no room under the first); the hunk at 305.',
+    words: 'the owner, 19.10.2026: *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze, i proponuj (jak polki) '
+      + '950 jedne od drugiego"*.',
+    hunks: ['@@ -305,3 +304,0 @@'],
+  },
+  {
     retail: 'src/retail/design/Options.jsx',
     by: 'T78 F12 (the one writer of the central files)',
     why: 'the FRONTS step gains a GLASS list under the style list, shown for the GL style only: clear, smoke, reeded, one '
@@ -198,7 +223,9 @@ export const T78_RETAIL_EDITS = [
       + 'T79 F10: wallGapOfUnit (the SIZE step\'s FROM THE WALL field) reads the unit\'s own wall_gap with the derived '
       + 'recess_mm taken as 0, so a typed 100 reads back 100 and not 100 less the recess (-100 in a 300 recess). '
       + 'T79 F11: RAIL_MOUNTS and setRailMount deleted (the mount is never offered: a rod is added alone); setRailOffset, '
-      + 'a slider\'s number, passes moveRail `magnet: false` so it never jumps to the drag\'s proposal.',
+      + 'a slider\'s number, passes moveRail `magnet: false` so it never jumps to the drag\'s proposal. '
+      + 'CHAT FIX 19.10.2026: interiorRefusals.hanger is the store\'s hangerRailRefusal (two rods per bay, the owner: '
+      + '*"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze"*).',
     words: 'the owner, 11.10.2026: *"domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12. Chat fix 15.10.2026, before T79 '
       + '(the import and doorCountRefusal\'s pair under the minimum leaf, through engine/cabinet.js leafCountRefusal): '
       + '*"zebym mial mozliwosc podzielenia ich na 2"*. T79 F5 (by hand): canCutEdge, edgeNotchOfUnit, cuttingEdge, '
@@ -209,7 +236,9 @@ export const T78_RETAIL_EDITS = [
       + 'odsuwaniem od recesu."*'
       + ' T79 F11, the owner 18.10.2026: *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to; przy '
       + 'przesuwaniu zaproponuj 50 mm poniżej półki."*',
-    hunks: ['@@ -39 +39 @@', '@@ -1819,0 +1820,9 @@', '@@ -1918,0 +1928,25 @@', '@@ -2666 +2700,3 @@', '@@ -3562,13 +3598,2 @@', '@@ -3576,9 +3600,0 @@', '@@ -3595 +3611 @@', '@@ -4713,0 +4730,61 @@'],
+    // CHAT FIX 19.10.2026 (by hand, adapter.js is retail's own): interiorRefusals' hanger row reads the store's own
+    // sentence (hangerRailRefusal: a third rod, or no room under the first), the second rod allowed; the hunk at 2282.
+    hunks: ['@@ -39 +39 @@', '@@ -1819,0 +1820,9 @@', '@@ -1918,0 +1928,25 @@', '@@ -2248,4 +2282,4 @@', '@@ -2666 +2700,3 @@', '@@ -3562,13 +3598,2 @@', '@@ -3576,9 +3600,0 @@', '@@ -3595 +3611 @@', '@@ -4713,0 +4730,61 @@'],
   },
   {
     retail: 'src/retail/styles/roomeditor.css',

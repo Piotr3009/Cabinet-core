@@ -56,6 +56,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // the stack at the clicked zone; the old shoe-box world died (licence 2).
   const addShoeDrawer = useProjectStore((s) => s.addShoeDrawer);
   const railHeightsAboveFloor = useProjectStore((s) => s.railHeightsAboveFloor);
+  const hangerRailRefusal = useProjectStore((s) => s.hangerRailRefusal);
+  const secondRailAxis = useProjectStore((s) => s.secondRailAxis);
   const unitResult = useProjectStore((s) => s.unitResult);
   const zonesOf = useProjectStore((s) => s.zonesOf);
   // T79 F2 · the undivided opening over the divider's FIX shelf, or null.
@@ -206,6 +208,13 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
 
   const onAddRail = (material) => {
     const zone = zones.length > 1 ? railZone : null;
+    // CHAT FIX 19.10.2026 (KIT_HANGER_TWO.lsp D1, D2), the owner: *"nie ma
+    // mozliwosci dodania drugiego ponizej, dodaj to prosze"*. A bay hangs two
+    // rods; the store says in words why not (a third, or no room under the
+    // first), and a second is born 950 under the first as a PROPOSAL.
+    const why = hangerRailRefusal(unit.id, zone);
+    if (why) { notify(why, 'warn'); return; }
+    const second = secondRailAxis(unit.id, zone);
     const id = addHangerRail(unit.id, {
       materialId: material?.id || null,
       materialLabel: material?.name || null,
@@ -218,7 +227,9 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       return;
     }
     // T79 F11: the rail is added alone, and the drag proposes its place under a shelf.
-    notify(`Rail added. Drag it near a shelf and it settles ${formatMm(profile.hardware.hanger.belowShelfMm, { unit: true })} under it; Alt refuses.`, 'ok');
+    notify(second
+      ? `Second rail added ${formatMm(second.between, { unit: true })} under the first; drag it, Alt refuses the magnet.`
+      : `Rail added. Drag it near a shelf and it settles ${formatMm(profile.hardware.hanger.belowShelfMm, { unit: true })} under it; Alt refuses.`, 'ok');
     // ─── TURN 33 (CLAUDE.md F3): THE PULL-DOWN SUGGESTION ───────────────────
     // The owner's rule: a rail above 2000 mm FROM THE FLOOR gets a grey HINT
     // suggesting the pull-down — never a block. Measured off the computed
@@ -326,9 +337,9 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       id: 'hanger',
       label: 'Hanger rail',
       // Turn 32 (CLAUDE.md F4): a divided cabinet may hang one rail PER
-      // COLUMN, so a fitted unit-wide rail only closes the door when there
-      // are no columns left to ask about.
-      disabled: !type.supports.rail || (Boolean(rail) && zones.length <= 1),
+      // COLUMN. CHAT FIX 19.10.2026 (KIT_HANGER_TWO.lsp D1): a bay hangs TWO,
+      // so the door closes only when every bay has its two.
+      disabled: !type.supports.rail || (zones.length <= 1 && Boolean(hangerRailRefusal(unit.id, null))),
       why: rail ? 'already fitted' : 'not for this type',
     },
     // ─── TURN 50 (CLAUDE.md F9): THE MENU ASKS WHAT KIND OF FURNITURE ─────

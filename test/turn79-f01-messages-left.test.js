@@ -23,7 +23,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
-  LEVELS, greyMs, historyMax, historyRow, historyTime, makeMessage, messagesAt,
+  LEVELS, hideMs, historyMax, historyRow, historyTime, makeMessage, messagesAt,
   recordHistory,
 } from '../src/engine/messages.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
@@ -52,12 +52,16 @@ test('F1 · the three levels place LEFT, and nothing stands in the centre or the
   assert.deepEqual(messagesAt(list, 'bottom'), []);
 });
 
-test('F1 · the timing is unchanged: grey on its clock, yellow on click-away, red on click', () => {
+// REWRITTEN 19.10.2026 (chat fix): the hand gestures stand, and every level
+// also leaves on its clock ("wszystkie chowaja sie po 4 s, czerwone po 8 s").
+test('F1 · the gestures stand, and every level leaves on its own clock (19.10.2026)', () => {
   assert.equal(LEVELS.grey.until, 'time');
   assert.equal(LEVELS.yellow.until, 'clickAway');
   assert.equal(LEVELS.red.until, 'click');
-  assert.equal(P.ui.messages.greyMs, 3000);
-  assert.equal(greyMs(P), 3000);
+  assert.equal(hideMs(P, 'grey'), 4000);
+  assert.equal(hideMs(P, 'yellow'), 4000);
+  assert.equal(hideMs(P, 'red'), 8000);
+  assert.equal(makeMessage('x', 'error', { at: 5, profile: P }).expiresAt, 5 + 8000);
 });
 
 test('F1 · the centre block and the bottom-centre block are GONE from the source (kasacja)', () => {

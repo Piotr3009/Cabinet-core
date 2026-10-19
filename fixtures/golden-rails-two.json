@@ -1,0 +1,240 @@
+{
+  "meta": {
+    "name": "golden-rails-two.json",
+    "turn": "T78",
+    "F": "F37",
+    "source": "KIT_HANGER_TWO.lsp NUMBERS on KIT_WARDROBE_FULL.lsp: WARDROBE 600 x 2150 x 568, the first rod ALONE at its default (railOffset 1400, axis 1418), the second born 950 under it (pos_mm 450, axis 468): two bracket screws per side on SCREWS_3MM, two rail lines of 564",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "WARDROBE",
+    "width": 600,
+    "height": 2150,
+    "depth": 568,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": 1400,
+    "hinge": "L",
+    "doors": null,
+    "unit_num": "01",
+    "sections": [
+      {
+        "width_mm": 600,
+        "items": [
+          {
+            "id": "h1",
+            "kind": "hanger",
+            "pos_mm": 1400,
+            "datum": "bottom",
+            "mount": "alone"
+          },
+          {
+            "id": "h2",
+            "kind": "hanger",
+            "pos_mm": 450,
+            "datum": "bottom",
+            "mount": "alone"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,550,2150,<,2.15,1.183",
+      "01,BUR,550,2150,>,2.15,1.183",
+      "01,TOP,564,550,>,0.56,0.310",
+      "01,BOTTOM,564,550,>,0.56,0.310",
+      "01,BACK,600,2150,,0,1.290",
+      "01,01-F,597,2147,<>^v,5.49,1.282"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 550,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 2150,
+          "d": 550
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 550,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 2150,
+          "d": 550
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 550,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 2132,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 550
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 550,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 550
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 600,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 600,
+          "h": 2150,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 34,
+        "pockets": 10,
+        "readiness": null
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 2147,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 0,
+          "z": 571,
+          "w": 597,
+          "h": 2147,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F",
+        6
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F",
+        12
+      ],
+      [
+        "HINGES_5MM|BUL",
+        12
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        20
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        14
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        8
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        8
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 6,
+        "label": "Hinges"
+      },
+      {
+        "role": "legs",
+        "qty": 4,
+        "label": "Legs"
+      },
+      {
+        "role": "rail",
+        "qty": 1,
+        "label": "Hanging rail"
+      },
+      {
+        "role": "rail",
+        "qty": 1,
+        "label": "Hanging rail"
+      }
+    ]
+  }
+}

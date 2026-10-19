@@ -7886,6 +7886,65 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {string|null} the rail's item id
    */
+  /**
+   * CHAT FIX 19.10.2026 (KIT_HANGER_TWO.lsp D1, D2), the owner: *"nie ma
+   * mozliwosci dodania drugiego ponizej, dodaj to prosze, i proponuj (jak
+   * polki) 950 jedne od drugiego"*. Why a rail may NOT be added to this bay,
+   * in words, or null: a third rod (D1), or no room `betweenRailsMm` under the
+   * one there (D2). The bay's rods are read off the engine's published answer.
+   */
+  hangerRailRefusal: (unitId, zone = null) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return 'No such cabinet.';
+    const wantZone = zone == null ? null : Math.trunc(Number(zone));
+    const items = unit.params.sections?.[0]?.items || [];
+    const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
+      ? null : Math.trunc(Number(i.zone)));
+    const there = items.filter((i) => i.kind === 'hanger' && zoneOf(i) === wantZone);
+    if (there.length >= 2) return 'This bay already hangs two rails.';
+    if (!there.length) return null;
+    const second = get().secondRailAxis(unitId, wantZone);
+    if (!second) return null;
+    if (!second.fits) {
+      return `No room for a second rail ${formatMm(second.between, { unit: true })} under this one; raise the first.`;
+    }
+    return null;
+  },
+
+  /**
+   * Where a second rod in this bay is PROPOSED: `hardware.hanger
+   * .betweenRailsMm` under the rod that is there, axis to axis (KIT_HANGER_TWO
+   * .lsp hanger-two-axis), and whether it stands clear of the floor and the
+   * drawer stack (hanger-two-fits-p). Null when the bay has no rod yet.
+   *
+   * @returns {{axis:number, between:number, first:number, floor:number, fits:boolean}|null}
+   */
+  secondRailAxis: (unitId, zone = null) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const wantZone = zone == null ? null : Math.trunc(Number(zone));
+    const result = get().unitResult(unitId);
+    const rods = [
+      ...(result?.assemblies?.rail ? [{ ...result.assemblies.rail, zone: null }] : []),
+      ...(result?.assemblies?.columnRails || []),
+    ].filter((r) => (r.zone == null ? null : r.zone) === wantZone);
+    if (!rods.length) return null;
+    const first = Math.min(...rods.map((r) => Number(r.y)));
+    const between = Number(profile.hardware.hanger.betweenRailsMm) || 0;
+    const G = unit.params.board_t ?? profile.board.thickness;
+    const radius = profile.hardware.rail.diameter / 2;
+    const columnStack = wantZone != null
+      ? (result.assemblies.columnDrawers || []).find((c) => c.zone === wantZone)
+      : null;
+    const floor = columnStack
+      ? columnStack.top + G
+      : (wantZone == null && result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : G);
+    const axis = first - between;
+    return { axis, between, first, floor, fits: axis - radius >= floor };
+  },
+
   addHangerRail: (unitId, {
     materialId = null, materialLabel = null, zone = null,
   } = {}) => {
@@ -7894,11 +7953,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!unit) return null;
     const wantZone = zone == null ? null : Math.trunc(Number(zone));
     const items = unit.params.sections?.[0]?.items || [];
-    // Turn 32 (CLAUDE.md F4): one rail PER COLUMN — a second in the same
-    // column (or a second unit-wide one) is still refused.
+    // CHAT FIX 19.10.2026 (KIT_HANGER_TWO.lsp D1, D2): a bay hangs two rods at
+    // most; the second is born `betweenRailsMm` under the first, or refused in
+    // words (`hangerRailRefusal`). Until today one rod per bay (T32 F4).
+    if (get().hangerRailRefusal(unitId, wantZone)) return null;
     const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
       ? null : Math.trunc(Number(i.zone)));
-    if (items.some((i) => i.kind === 'hanger' && zoneOf(i) === wantZone)) return null;
+    const second = items.some((i) => i.kind === 'hanger' && zoneOf(i) === wantZone)
+      ? get().secondRailAxis(unitId, wantZone) : null;
     const result = computeCabinet(paramsForEngine(unit), profile);
     const G = unit.params.board_t ?? profile.board.thickness;
     const columnStack = wantZone != null
@@ -7907,12 +7969,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const zoneBase = columnStack
       ? columnStack.top + G
       : (wantZone == null && result.assemblies.drawerZone ? result.assemblies.drawerZone.top + G : G);
-    const offset = nextHangerOffset({
-      band: shelfLimits(unit, profile, wantZone),
-      positions: shelvesInEngineOrder(items).map((sh) => sh.pos_mm),
-      zoneBase,
-      fallback: unit.params.rail_offset,
-    }, profile);
+    const offset = second
+      ? second.axis - zoneBase
+      : nextHangerOffset({
+        band: shelfLimits(unit, profile, wantZone),
+        positions: shelvesInEngineOrder(items).map((sh) => sh.pos_mm),
+        zoneBase,
+        fallback: unit.params.rail_offset,
+      }, profile);
     // T35-F1: a NEW rail answers the datum question at birth, from where the
     // automatic placement actually put it — the nearest thing below it.
     const bornAt = snapTo(offset, profile.editor.mmStep);
@@ -8765,7 +8829,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!travel) return [];
     const profile = getCabinetProfile();
     const below = Number(profile.hardware.hanger.belowShelfMm) || 0;
-    return (get().unitResult(unitId)?.panels || [])
+    const result = get().unitResult(unitId);
+    const shelves = (result?.panels || [])
       .filter((p) => (p.part === 'SHELF' || p.part === 'PARTITION') && p.box
         && Math.min(p.box.x + p.box.w, travel.x2) - Math.max(p.box.x, travel.x1) > 1)
       .map((p) => {
@@ -8777,8 +8842,22 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           panelId: p.id,
           itemId: p.meta?.itemId ?? null,
         };
-      })
-      .filter((c) => c.pos >= travel.min && c.pos <= travel.max);
+      });
+    // CHAT FIX 19.10.2026 (KIT_HANGER_TWO.lsp D3), the owner: *"proponuj (jak
+    // polki) 950 jedne od drugiego"*: every other rod over the same run offers
+    // the place `betweenRailsMm` under it AND over it, axis to axis.
+    const between = Number(profile.hardware.hanger.betweenRailsMm) || 0;
+    const rods = between > 0 ? [
+      ...(result?.assemblies?.rail ? [result.assemblies.rail] : []),
+      ...(result?.assemblies?.columnRails || []),
+    ].filter((r) => r.itemId !== itemId && Math.min(Number(r.x2), travel.x2) - Math.max(Number(r.x1), travel.x1) > 1)
+      .flatMap((r) => [Number(r.y) - between, Number(r.y) + between].map((axis) => ({
+        pos: snapTo(axis - travel.support, profile.editor.mmStep),
+        axis,
+        between,
+        railItemId: r.itemId ?? null,
+      }))) : [];
+    return [...shelves, ...rods].filter((c) => c.pos >= travel.min && c.pos <= travel.max);
   },
 
   setRailHeight: (unitId, itemId, mmRaw) => {

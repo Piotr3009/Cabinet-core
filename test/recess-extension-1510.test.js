@@ -134,7 +134,7 @@ test('CASE A: BUR grows to 690 x 770, a plain rectangle; its sockets, rows and b
     [[542.8284, 225.1716, 4], [542.8284, 574.8284, 4]]);
 });
 
-test('CASE A: the BACK is one shorter piece 328 x 770; its sockets and rows; the RETURN\'s column', () => {
+test('CASE A: the BACK is one shorter piece 328 x 770; its sockets and rows; no column into the RETURN (19.10)', () => {
   const pieces = recessBackPieces(600, 770, G, 310, 600, 0, 770);
   assert.deepEqual(pieces, [[0, 0, 328, 770]]);
   const window = recessWindow(600, 770, G, 310, 600, 0, 770);
@@ -146,16 +146,15 @@ test('CASE A: the BACK is one shorter piece 328 x 770; its sockets and rows; the
   assert.deepEqual(bj.RIGHT, []);
   assert.deepEqual(bj.TOP, [113, 233]);
   assert.deepEqual(bj.BOTTOM, [113, 233]);
-  // REWRITTEN 18.10.2026 (CLAUDE.md T79 F6, KIT_RECESS.lsp D17 amended), the
-  // owner: *"jak mamy cut the corners lub recess to nie rysujesz mi dziurek na
-  // śrubki 3 mm, to trzeba będzie dodać"*; 14:17: *"ale tylko na plecach."*
-  // The column into the RETURN's end, gone from 17.10 to 18.10, is back; the
-  // rows into BUL, the TOP and the BOTTOM stand as they were.
+  // REWRITTEN 19.10.2026 (chat fix, KIT_RECESS.lsp D17 as on 17.10), the
+  // owner: *"nie na pierwszych plecach tylko na tych drugich ktore sa we
+  // wnetrzu recess"*: the column into the RETURN's end ([319, 50], [319, 385],
+  // [319, 720], drawn from 18.10 to 19.10) is gone again; the rows into BUL,
+  // the TOP and the BOTTOM stay.
   assert.deepEqual(bj.SCREWS, [
     [9, 50], [9, 240], [9, 530], [9, 720],
     [68, 761], [173, 761], [278, 761],
     [68, 9], [173, 9], [278, 9],
-    [319, 50], [319, 385], [319, 720],
   ]);
 });
 
@@ -189,7 +188,7 @@ test('CASE A: the shelf in the band grows (D10): 560 x 670 less 310 x 150, its d
 
 // ─── D. BOARD BY BOARD, CASE B (the window) ────────────────────────────────
 
-test('CASE B: one whole BACK with a window, the rows round it; the FLOOR, the LID, two RETURNs', () => {
+test('CASE B: one whole BACK with a window, no row round it (19.10); the FLOOR, the LID, two RETURNs', () => {
   const pieces = recessBackPieces(600, 770, G, 110, 490, 210, 590);
   assert.deepEqual(pieces, [[0, 0, 600, 770]]);
   const window = recessWindow(600, 770, G, 110, 490, 210, 590);
@@ -202,17 +201,12 @@ test('CASE B: one whole BACK with a window, the rows round it; the FLOOR, the LI
   const bj = recessBackJoints(pieces[0], window, 600, 770, G, 110, 490, 210, 590, [113, 487], [113, 487], [95, 385, 675], [95, 385, 675], K);
   assert.deepEqual(bj.LEFT, [95, 385, 675]); assert.deepEqual(bj.RIGHT, [95, 385, 675]);
   assert.deepEqual(bj.TOP, [113, 487]); assert.deepEqual(bj.BOTTOM, [113, 487]);
-  // REWRITTEN 18.10.2026 (T79 F6, D17 amended), the owner: *"to trzeba będzie
-  // dodać"*; *"ale tylko na plecach."*  The rows round the window are back (the
-  // twelve S outside each edge, into the RETURNs' ends and the FLOOR's and
-  // LID's front edges), after drawBACK's fourteen.
-  assert.equal(bj.SCREWS.length, 26, 'the parent\'s fourteen and the window\'s twelve');
-  assert.deepEqual(bj.SCREWS.slice(14), [
-    [119, 278], [119, 400], [119, 522],
-    [481, 278], [481, 400], [481, 522],
-    [178, 219], [300, 219], [422, 219],
-    [178, 581], [300, 581], [422, 581],
-  ], 'into RETURN-L, RETURN-R, the FLOOR, the LID');
+  // REWRITTEN 19.10.2026 (chat fix, D17 as on 17.10): the twelve round the
+  // window (S outside each edge, into the RETURNs' ends and the FLOOR's and
+  // LID's front edges, drawn from 18.10 to 19.10) are gone; the BACK keeps
+  // exactly drawBACK's fourteen.
+  assert.equal(bj.SCREWS.length, 14, 'the parent\'s fourteen, nothing round the window');
+  assert.deepEqual(bj.SCREWS.slice(14), [], 'no hand-fix row round the window');
   assert.deepEqual(recessBoxPlaces(600, 558, 770, G, 110, 490, 210, 590, 150), {
     'RETURN-L': [110, 558, 228, 128, 690, 572],
     'RETURN-R': [472, 558, 228, 490, 690, 572],
@@ -347,15 +341,15 @@ test('CASE A through computeCabinet: every board the LISP names, to its numbers'
   ]);
   const bCorners = bottom.cnc.outline.filter(([x, y]) => (x === 690 || x === 0 || x === 150) && (y === 0 || y === 564 || y === 310));
   assert.deepEqual(bCorners, [[690, 0], [690, 564], [0, 564], [0, 310], [150, 310], [150, 0]]);
-  // BACK: 328 x 770, its sockets and rows. REWRITTEN 18.10.2026 (T79 F6, D17
-  // amended, the owner: *"to trzeba będzie dodać ... ale tylko na plecach"*):
-  // the column into the RETURN's end is back (gone from 17.10 to 18.10).
+  // BACK: 328 x 770, its sockets and rows. REWRITTEN 19.10.2026 (chat fix, D17
+  // as on 17.10, the owner: *"na tych pierwszych nie, to juz bylo usuniete i
+  // znowu trzeba usunac"*): NO column into the RETURN's end ([319, 50],
+  // [319, 385], [319, 720], drawn from 18.10 to 19.10).
   const back = panelOf(r, 'BACK');
   assert.deepEqual(back.cnc.outline, [[0, 0], [328, 0], [328, 770], [0, 770]]);
   assert.deepEqual(back.box, { x: 0, y: 0, z: 0, w: 328, h: 770, d: 18 });
   assert.deepEqual(drillsOf(r, 'BACK', 'screw').map((d) => [d.x, d.y]), [
     [9, 50], [9, 240], [9, 530], [9, 720], [68, 761], [173, 761], [278, 761], [68, 9], [173, 9], [278, 9],
-    [319, 50], [319, 385], [319, 720],
   ]);
   assert.deepEqual(drillsOf(r, 'BACK', 'puzzle').filter((d) => d.y === 762).map((d) => d.x), [88.5, 137.5, 208.5, 257.5]);
   // The shelf: drawn depth x width, its dog bone, its plan for the 3-D.
@@ -396,9 +390,9 @@ test('CASE B through computeCabinet: the window is a through pocket on RECESS_WI
   const back = panelOf(r, 'BACK');
   assert.deepEqual(back.cnc.pockets.filter((k) => k.layer === RECESS_WINDOW_LAYER), [{ layer: 'RECESS_WINDOW', x1: 128, y1: 228, x2: 472, y2: 572, depth: 18 }]);
   assert.equal(back.cnc.outline.length, 4);
-  // REWRITTEN 18.10.2026 (T79 F6, D17 amended): the twelve round the window
-  // are back beside the parent's fourteen; the EXT-BACK carries its twelve.
-  assert.equal(drillsOf(r, 'BACK', 'screw').length, 26, 'the parent\'s fourteen and the window\'s twelve');
+  // REWRITTEN 19.10.2026 (chat fix, D17 as on 17.10): the twelve round the
+  // window are gone again; the parent's fourteen stay; the EXT-BACK keeps its twelve.
+  assert.equal(drillsOf(r, 'BACK', 'screw').length, 14, 'the parent\'s fourteen, nothing round the window');
   assert.equal(drillsOf(r, 'EXT-BACK', 'screw').length, 12, 'the EXT-BACK, a back, drilled round the band');
   for (const id of ['RETURN-L', 'RETURN-R', 'FLOOR', 'LID']) assert.deepEqual(drillsOf(r, id), [], `${id}: "tylko na plecach"`);
   assert.equal(r.csvLines.find((l) => l.startsWith('01,BACK')), '01,BACK,600,770,,0,0.344', 'the window comes off the area');

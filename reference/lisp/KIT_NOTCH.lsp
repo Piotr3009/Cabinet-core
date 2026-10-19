@@ -221,10 +221,10 @@
 ;;; RETURN's end grain. D10 (the owner, 17.10.2026): NONE of that. The box is
 ;;; fixed on biscuits by hand (a Lamello one day), the routines answer nil,
 ;;; the BACK's notched edge carries no row, and nothing is drawn for it
-;;; ("teraz nic"). D10 AMENDED (the owner, 18.10.2026): the BACK's rows are
-;;; drawn again along every edge of the BACK a box board stands behind (the
-;;; RETURN's end, the LID's or the FLOOR's back edge); the box boards still
-;;; state no screw of their own ("tylko na plecach").
+;;; ("teraz nic"). D10 was amended on 18.10.2026 (the BACK's rows along the
+;;; box boards) and that amendment was WITHDRAWN on 19.10.2026 by the owner:
+;;; the first back states no row into the box again; only a recess's second
+;;; back, the EXT-BACK (KIT_RECESS.lsp D17), keeps its rows.
 ;;;
 ;;;========================================
 ;;; 3. DECISIONS TAKEN FOR THE OWNER (each one line to veto)
@@ -310,33 +310,16 @@
 ;;;     answer nil). The box is the joiner's, on biscuits by hand, a Lamello
 ;;;     one day; this file draws nothing for it. The BACK's rows into the
 ;;;     sides, the TOP and the BOTTOM stay exactly where drawBACK puts them.
-;;;     AMENDED 18.10.2026 (CLAUDE.md T79 F6), the owner: *"jak mamy cut the
-;;;     corners lub recess to nie rysujesz mi dziurek na srubki 3 mm, to
-;;;     trzeba bedzie dodac"*; 14:17: *"ale tylko na plecach."*  The removal
-;;;     above is REVERSED on the BACK, and only on the BACK: its dia 3 rows
-;;;     follow EVERY edge of the BACK that meets a board, the sides, the TOP
-;;;     and the BOTTOM as drawBACK puts them, and now the box boards behind
-;;;     the notched edges (notch-back-box-rows, which notch-back-joints draws
-;;;     on the notched BACK and KIT_RECESS.lsp recess-back-joints, D13, on
-;;;     the extension's BACK piece that holds them: one routine, T79 F8):
-;;;       FULL HEIGHT     the whole new edge, into the RETURN's end: the side's
-;;;                       own row moved by nw (nearX = nw + G / 2), between the
-;;;                       parent's tabs, what it was until 17.10.2026
-;;;       FROM THE FLOOR  the run beside the notch, 0 .. nh, into the RETURN's
-;;;                       end (nearX); the edge over the notch, into the LID's
-;;;                       back edge, at y = nh + G / 2, x g .. nw at an L
-;;;                       corner (cw - nw .. cw - g at an R corner)
-;;;       FROM THE TOP    (D21) the run beside it, ch - |nh| .. ch, into the
-;;;                       RETURN's end; the edge under it, into the FLOOR's
-;;;                       back edge, at y = ch - |nh| - G / 2, the same x
-;;;     Every run but the full-height edge carries THE BACK SCREW ROW over its
-;;;     length (notch-edge-row: e = screwFromEnd from each end and the middle;
-;;;     a run of 2e or less, two at its quarters); a run shorter than one
-;;;     hole's offset (e) carries NONE and the command says so in its summary
-;;;     (notch-back-joints "SHORT"). The STEP, the RETURN, the LID and the
-;;;     FLOOR still state no screw (the *-screws routines answer nil): "tylko
-;;;     na plecach". A front corner never reaches the BACK and an unboxed
-;;;     rebate has no box: both keep the parent's rows as before. NUMBERS I5.
+;;;     AMENDED 18.10.2026 (CLAUDE.md T79 F6: the BACK's rows along every box
+;;;     board, "ale tylko na plecach") and WITHDRAWN 19.10.2026, the owner on
+;;;     the eye-test of T79: *"nie na pierwszych plecach tylko na tych drugich
+;;;     ktore sa we wnetrzu recess, na tych pierwszych nie, to juz bylo
+;;;     usuniete i znowu trzeba usunac"*. So D10 stands as written above:
+;;;     the BACK (the first back) carries NO row into the RETURN, the LID or
+;;;     the FLOOR; the 18.10 rows, the "SHORT" entry and the box-row routine
+;;;     are gone. A recess's second back (KIT_RECESS.lsp D17, the EXT-BACK)
+;;;     keeps the rows of 18.10; notch-edge-row stays for it. The owner's
+;;;     19.10 words are the licence of this file.
 ;;;
 ;;; 17.10.2026, THE OWNER'S AFTERNOON:
 ;;;
@@ -736,10 +719,10 @@
     (setq prev c))
   (reverse (cons (- hi e) out)))
 
-;;; D10 AMENDED (18.10.2026): THE BACK SCREW ROW over a run a .. b of the
-;;; BACK's edge that a box board stands behind, shifted onto the run; nil on
-;;; a run shorter than one hole's offset e (notch-back-joints names it in
-;;; "SHORT" and the command says so).
+;;; THE BACK SCREW ROW over a run a .. b of a back's edge that a board stands
+;;; behind, shifted onto the run; nil on a run shorter than one hole's offset
+;;; e. Since 19.10.2026 only KIT_RECESS.lsp's EXT-BACK calls it (D10 above):
+;;; the first back's notched edges carry no row.
 (defun notch-edge-row (a b e)
   (if (< (- b a) e) nil (notch-shift (notch-screw-row (- b a) e) a)))
 
@@ -1107,68 +1090,6 @@
     (notch-dogbone cw ch nw (notch-hh ch nh) (notch-back-fc corner (notch-from-top-p ch nh)) r)
     nil))
 
-;;; D10 AMENDED (18.10.2026): THE BACK'S ROWS INTO THE BOX, in the BACK's
-;;; ORIGINAL frame (x from the LEFT face, y up), as
-;;; (("SCREWS" (x y) ..) ("SHORT" (name len) ..)):
-;;;   FULL HEIGHT     the whole new edge, into the RETURN's end: the side's
-;;;                   own row moved by nw (nearX = nw + G / 2), between the
-;;;                   parent's tabs
-;;;   FROM THE FLOOR  the RETURN's run 0 .. nh at nearX; the LID's row at
-;;;                   y = nh + G / 2 over bx0 .. bx1
-;;;   FROM THE TOP    (D21) the RETURN's run ch - |nh| .. ch at nearX; the
-;;;                   FLOOR's row at y = ch - |nh| - G / 2, the same x
-;;; No SCREWS at a front corner or for an unboxed rebate: no box stands behind
-;;; the BACK. ONE ROUTINE, TWO CALLERS (T79 F8, 18.10.2026, the F6 x F8 seam;
-;;; the owner: *"ale tylko na plecach."*): notch-back-joints draws exactly
-;;; these on the notched BACK, KIT_RECESS.lsp recess-back-joints (D13) on the
-;;; extension's BACK piece that holds them.
-(defun notch-back-box-rows (cw ch g nw nh corner / e one three sfe S hh left nearX bx0 bx1 scr short run)
-  (setq e (notch-p "puzzle.tabCentresFromEnd")
-        one (notch-p "puzzle.singleTabAtOrBelow")
-        three (notch-p "puzzle.middleTabBelow")
-        sfe (notch-p "puzzle.screwFromEnd")
-        S (notch-screw-axis g)
-        hh (notch-hh ch nh)
-        left (notch-left-p corner)
-        nearX (if left (+ nw S) (- cw nw S))
-        scr '()
-        short '())
-  ;; the LID's (the FLOOR's) run under the BACK's edge over (under) a
-  ;; part-height notch: from the side's inner face to the RETURN's face
-  (if left (setq bx0 g bx1 nw) (setq bx0 (- cw nw) bx1 (- cw g)))
-  (cond
-    ((or (not (notch-back-p corner)) (not (notch-boxed-p nw g))) nil)
-    ;; a full-height back notch's notched edge meets the RETURN over the whole
-    ;; height: the side's own row moved by nw, between the parent's tabs (what
-    ;; it was until 17.10.2026; D10 took it away on 17.10)
-    ((notch-full-p ch nh)
-      (foreach y (notch-rows-between-tabs 0.0 ch (notch-replan-tabs ch e one three) sfe)
-        (setq scr (cons (list nearX y) scr))))
-    ;; D21: the run beside a notch from the top (ch - hh .. ch) into the
-    ;; RETURN's end, and the edge under it into the FLOOR's back edge
-    ((notch-from-top-p ch nh)
-      (setq run (notch-edge-row (- ch hh) ch sfe))
-      (if run
-        (foreach y run (setq scr (cons (list nearX y) scr)))
-        (setq short (cons (list "RETURN" hh) short)))
-      (setq run (notch-edge-row bx0 bx1 sfe))
-      (if run
-        (foreach x run (setq scr (cons (list x (- ch hh S)) scr)))
-        (setq short (cons (list "FLOOR" (- bx1 bx0)) short))))
-    ;; the run beside a notch from the floor (0 .. nh, (notch-screw-row hh) at
-    ;; nearX until 17.10.2026) into the RETURN's end, and the edge over the
-    ;; notch into the LID's back edge
-    (T
-      (setq run (notch-edge-row 0.0 hh sfe))
-      (if run
-        (foreach y run (setq scr (cons (list nearX y) scr)))
-        (setq short (cons (list "RETURN" hh) short)))
-      (setq run (notch-edge-row bx0 bx1 sfe))
-      (if run
-        (foreach x run (setq scr (cons (list x (+ hh S)) scr)))
-        (setq short (cons (list "LID" (- bx1 bx0)) short)))))
-  (list (cons "SCREWS" (reverse scr)) (cons "SHORT" (reverse short))))
-
 ;;; Its joints in its ORIGINAL frame:
 ;;;   FAR-SOCKETS     y up the edge AWAY from the notch (the parent's)
 ;;;   NEAR-SOCKETS    y up the notch-side edge: full height none (it meets the
@@ -1179,24 +1100,18 @@
 ;;;                   Until 17.10.2026 the notch-side row G / 2 in from the
 ;;;                   notched edge (nearX) landed in the RETURN's end grain
 ;;;                   and was "the joint that holds it". D10, the owner: NO
-;;;                   screw between the BACK and the box: that row went
+;;;                   screw between the BACK and the box: that row is gone
 ;;;                   (full height: the whole column; part height: the run
-;;;                   beside the notch). D10 AMENDED (18.10.2026): it is back,
-;;;                   and the edge over (under) a part-height notch carries
-;;;                   the row into the LID's (the FLOOR's) back edge. Order:
-;;;                   the far column; the side's own rows on the near edge;
-;;;                   the rows into the box (notch-back-box-rows: the
-;;;                   RETURN's run, the LID's (FLOOR's) row; a full-height
-;;;                   notch's whole new edge); the top row; the bottom row.
-;;;   SHORT           (("RETURN" len) ("LID" len) ..): a run of the box
-;;;                   shorter than one hole's offset, which carries no row;
-;;;                   nil when every run holds one (notch-back-box-rows')
+;;;                   beside the notch; drawn again 18.10 and gone again
+;;;                   19.10.2026 by the owner's word, D10). The far column,
+;;;                   the rows above a part-height notch (into the side's own
+;;;                   back edge) and the top and bottom rows stay.
 ;;; D21: a notch from the top shortens the TOP edge and leaves the BOTTOM
 ;;; edge the parent's; the notch-side edge is planned on the run UNDER it,
 ;;; 0 .. ch - |nh|, and its rows are that run's.
 (defun notch-back-joints (cw ch g nw nh corner / e below one three sfe S full hh top
                           left back boxed farTabs nearTabs lo hi blo bhi topS botS
-                          farX upX scr box)
+                          farX upX scr)
   (setq e (notch-p "puzzle.tabCentresFromEnd")
         below (notch-p "puzzle.singleSocketBelow")
         one (notch-p "puzzle.singleTabAtOrBelow")
@@ -1235,8 +1150,7 @@
                        (T (notch-shift (notch-replan-tabs (- ch nh) e one three) nh))))
   (setq farX (if left (- cw S) S)
         upX (if left S (- cw S))
-        scr '()
-        box (notch-back-box-rows cw ch g nw nh corner))
+        scr '())
   (foreach y (notch-rows-between-tabs 0.0 ch farTabs sfe)
     (setq scr (cons (list farX y) scr)))
   ;; the side's own rows on the near edge: all of it at a front corner or for
@@ -1254,18 +1168,14 @@
     (T
       (foreach y (notch-rows-between-tabs nh ch nearTabs sfe)
         (setq scr (cons (list upX y) scr)))))
-  ;; D10 AMENDED (18.10.2026): the rows into the box, notch-back-box-rows (a
-  ;; full-height notch's whole new edge into the RETURN; a part-height one's
-  ;; RETURN run and its LID's, D21 its FLOOR's, row)
-  (foreach p (cdr (assoc "SCREWS" box))
-    (setq scr (cons p scr)))
+  ;; D10 (17.10.2026, again 19.10.2026): NO row into the box
   (foreach x (notch-row-between lo hi g sfe)
     (setq scr (cons (list x (- ch S)) scr)))
   (foreach x (if (and back boxed) (notch-row-between blo bhi g sfe) (notch-row-between 0.0 cw g sfe))
     (setq scr (cons (list x S) scr)))
   (list (cons "FAR-SOCKETS" farTabs) (cons "NEAR-SOCKETS" nearTabs)
         (cons "TOP-SOCKETS" topS) (cons "BOTTOM-SOCKETS" botS)
-        (cons "SCREWS" (reverse scr)) (cons "SHORT" (cdr (assoc "SHORT" box)))))
+        (cons "SCREWS" (reverse scr))))
 
 ;;;----------------------------------------
 ;;; THE BOX: STEP, RETURN, LID (section 2, D1, D2). Plain rectangles: no
@@ -2156,13 +2066,12 @@
 ;;; BACK top/bottom sockets          113, 487           313, 487  (113 -> 313)
 ;;;   (carcass x; own frame 113, 287)
 ;;; BACK side screw rows (y)         50, 240, 530, 720  far edge (x 591) unchanged;
-;;;                                  the notch-edge row (carcass x 209, own
-;;;                                  frame 9, into the RETURN's end): 50, 240,
-;;;                                  530, 720 (gone 17.10.2026 by D10, back
-;;;                                  18.10.2026 by D10 AMENDED)
+;;;                                  the notch-edge row (carcass x 209, into
+;;;                                  the RETURN's end) is GONE (D10, 17.10.2026;
+;;;                                  drawn 18.10, gone again 19.10.2026)
 ;;; BACK top/bottom screw rows       68, 300, 532       268, 400, 532
 ;;;   (carcass x; own frame 68, 200, 332)
-;;;   so the BACK carries 14 dia 3 holes, as the parent (10 from 17.10 to 18.10)
+;;;   so the BACK carries 10 dia 3 holes (the parent 14)
 ;;;
 ;;; THE BOX'S FIXING: NONE STATED (D10, 17.10.2026: biscuits by hand, a
 ;;; Lamello one day, nothing drawn). Until that morning the file stated:
@@ -2245,15 +2154,11 @@
 ;;; BACK bottom sockets              113, 487           113, 487  unchanged
 ;;; BACK side screw rows (y)         50, 240, 530, 720  far edge (x 591) unchanged;
 ;;;                                  notch edge (x 9): 50, 235, 420 (the run
-;;;                                  under the notch); beside it (x 209, into
-;;;                                  the RETURN's end): 520, 620, 720 (D10
-;;;                                  AMENDED 18.10.2026)
-;;; BACK row under the notch (y 461)  none              68, 109, 150 (into the
-;;;                                                     FLOOR's back edge, D10
-;;;                                                     AMENDED 18.10.2026)
+;;;                                  under the notch), none beside it (D10;
+;;;                                  drawn 18.10, gone again 19.10.2026)
 ;;; BACK top screw row (y 761)       68, 300, 532       268, 400, 532
 ;;; BACK bottom screw row (y 9)      68, 300, 532       68, 300, 532   unchanged
-;;;   so the BACK carries 19 dia 3 holes (13 on 18.10.2026 before D10 AMENDED)
+;;;   so the BACK carries 13 dia 3 holes
 ;;;
 ;;; THE ROOM UNDER IT (notch-refusal): ch - |nh| - 2g >= 100, so on this BUD
 ;;; |nh| may run to 634 (770 - 634 - 36 = 100); -635 is refused: "NOTCH: a
@@ -2448,45 +2353,6 @@
 ;;;
 ;;; A REFUSED notch cuts no END panel: the parent is what is cut (BR 10 / 100
 ;;; / 60, a rebate that eats a joint, leaves END-R 596 x 870).
-
-;;;========================================
-;;; I5. NUMBERS - THE BACK'S ROWS ROUND THE BOX (D10 AMENDED, 18.10.2026)
-;;;========================================
-;;;
-;;; CLAUDE.md T79 F6: "the dia 3 rows on the BACK follow EVERY edge of the
-;;; BACK that meets a board". The parent of sections I and I2 (KIT_BUD_FULL:
-;;; W 600, H 770, G 18, S 9, screwFromEnd 50). The BACK's own frame (x from
-;;; its left end, y up); a full-height BACK is 400 wide (carcass x 200..600
-;;; at BL, 0..400 at BR; notch-back-joints answers in the carcass frame, so
-;;; at BL its x is the table's plus nw: the RETURN's column x 209, the far
-;;; one x 591). notch-back-joints "SCREWS", in its order:
-;;;
-;;; NOTCH             FAR COLUMN        SIDE'S OWN (NEAR)     INTO THE RETURN     INTO THE LID / FLOOR      TOP ROW (y 761)  BOTTOM ROW (y 9)  HOLES
-;;; BL 200/200/0      x 391: 50 240     none                  x 9: 50 240 530     none                      68 200 332       68 200 332        14
-;;;                   530 720                                 720
-;;; BR 200/200/0      x 9: 50 240 530   none                  x 391: 50 240 530   none                      68 200 332       68 200 332        14
-;;;                   720                                     720
-;;; BL 200/200/300    x 591: 50 240     x 9: 350 535 720      x 209: 50 150 250   LID, y 309: 68 109 150    68 300 532       268 400 532       19
-;;;                   530 720
-;;; BL 200/200/-300   x 591: 50 240     x 9: 50 235 420       x 209: 520 620 720  FLOOR, y 461: 68 109 150  268 400 532      68 300 532        19
-;;;                   530 720
-;;; BR 100/200/300    x 9: 50 240 530   x 591: 350 535 720    x 491: 50 150 250   LID, y 309: 520.5 561.5   68 300 532       68 250 432        18
-;;;                   720                                                         (the run 500..582 is 82,
-;;;                                                                               under 2 x 50: two at the
-;;;                                                                               quarters)
-;;; BL 60/200/40      x 591: 50 240     x 9: 90 270 540 720   none: the run 0..40 none: the run 18..60 is     68 300 532       128 330 532       14
-;;;                   530 720                                 is under 50         42, under 50
-;;;   SHORT (("RETURN" 40) ("LID" 42)); the command says, one line each:
-;;;   "BACK rows into the box: none on the RETURN (the run 40 is under one
-;;;   hole's offset, 50)" and "BACK rows into the box: none on the LID (the
-;;;   run 42 is under one hole's offset, 50)"; the engine says it in
-;;;   derived.notch.backRowsShort [{ board, run }].
-;;;
-;;; The box boards themselves (STEP, RETURN, LID, FLOOR): 0 holes, nothing
-;;; stated ("tylko na plecach"). BUL and BUR: their 6 / 6, unchanged.
-;;; The two INTO columns are notch-back-box-rows' "SCREWS" (its "SHORT" is
-;;; the SHORT above); KIT_RECESS.lsp recess-back-joints draws the same rows on
-;;; the extension's BACK piece that holds them (its CASE D, T79 F8).
 
 ;;;========================================
 ;;; J. DRAWING (the command draws what the routines return, nothing more)
@@ -2801,14 +2667,9 @@
                              (notch-fmt (cdr (assoc "BACK" tj)))))
           (notch-say (strcat "BACK " (if top "top" "bottom") " sockets: " (notch-fmt (notch-shift oldBack g)) " -> "
                              (notch-fmt (cdr (assoc (if top "TOP-SOCKETS" "BOTTOM-SOCKETS") bj)))))
-          ;; D10 AMENDED (18.10.2026): the BACK's dia 3 holes, and a run of the
-          ;; box too short to hold a row, said
+          ;; the BACK's dia 3 holes, said (no row into the box: D10, 19.10.2026)
           (if (notch-back-p corner)
             (notch-say (strcat "BACK dia 3 holes: " (itoa (length (cdr (assoc "SCREWS" bj)))))))
-          (foreach s (cdr (assoc "SHORT" bj))
-            (notch-say (strcat "BACK rows into the box: none on the " (car s) " (the run "
-                               (rtos (cadr s) 2 0) " is under one hole's offset, "
-                               (rtos (notch-p "puzzle.screwFromEnd") 2 0) ")")))
           (notch-say "---------")
           (drawTextLC "SUMMARY" sumX sumY lineH "Property of Skylon Joinery" 6)
           (princ "\nNotched boards drawn.")))))

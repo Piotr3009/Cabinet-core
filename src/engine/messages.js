@@ -16,6 +16,15 @@
 //
 // …and "messages QUEUE; a red is never overwritten by a grey."
 //
+// ─── CHAT FIX 19.10.2026 · EVERY LEVEL LEAVES ON ITS OWN CLOCK ─────────────
+//
+// The owner, on the left-hand messages of T79: *"ma sie chowac po kilku
+// sekundach i byc przezroczysty"*; asked "wszystkie chowaja sie po 4 s,
+// czerwone po 8 s, historia zostaje": *"tak pls"*. So every message now has
+// an `expiresAt` (`hideMs`, a profile number per level); the hand gestures
+// stand beside the clock (a click on a red, a click away from a yellow take
+// them sooner), and the row in the Changes list stays.
+//
 // ─── T79 F1 · ONE PLACE, ON THE LEFT, AND A MEMORY ─────────────────────────
 //
 // The owner, 18.10.2026: *"wszystkie informacje po zmianach które pokazujesz na
@@ -92,10 +101,11 @@ export function levelOf(tone) {
   return 'grey';
 }
 
-/** How long a grey stays, in ms — a profile number (owner-tunable). */
-export function greyMs(profile) {
-  const n = Number(profile?.ui?.messages?.greyMs);
-  return Number.isFinite(n) && n > 0 ? n : 3000;
+/** How long a level stays, in ms: profile.ui.messages.hideMs[level] (19.10.2026: 4000 / 4000 / 8000). */
+export function hideMs(profile, level = 'grey') {
+  const n = Number(profile?.ui?.messages?.hideMs?.[level]);
+  if (Number.isFinite(n) && n > 0) return n;
+  return level === 'red' ? 8000 : 4000;
 }
 
 /** How many may be on screen at once before the queue starts shedding. */
@@ -134,9 +144,9 @@ export function makeMessage(message, tone = 'grey', {
     place: spec.place,
     rank: spec.rank,
     at,
-    // Only a grey has one. A red with an expiry would be a red that goes away
-    // on its own, which is the bug this feature exists to end.
-    expiresAt: spec.until === 'time' ? at + greyMs(profile) : null,
+    // 19.10.2026: every level has one (hideMs); the red's click and the
+    // yellow's click-away stay as the quicker way out.
+    expiresAt: at + hideMs(profile, level),
   };
 }
 
@@ -186,7 +196,7 @@ export function pushMessage(list, msg) {
   return [...queue, { ...msg, count: 1 }];
 }
 
-/** The ones whose time is up. Nothing but a grey ever has a time. */
+/** The ones whose time is up (every level has one since 19.10.2026). */
 export function expired(list, now) {
   return (list || []).filter((m) => m.expiresAt != null && m.expiresAt <= now).map((m) => m.id);
 }
@@ -196,7 +206,7 @@ export function expired(list, now) {
  *
  * A YELLOW goes ("dismissed by clicking anywhere else"). A RED does not — it is
  * dismissed by clicking IT, and a red that a stray click could clear is a red
- * that clears itself. A GREY is on a clock and is nobody's business.
+ * that clears itself. A GREY waits for its clock and is nobody's business.
  */
 export function dismissedByClickAway(list) {
   return (list || []).filter((m) => m.until === 'clickAway').map((m) => m.id);

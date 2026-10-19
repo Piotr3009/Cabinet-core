@@ -175,10 +175,10 @@ export function notchRowsBetweenTabs(lo, hi, tabs, e) {
 }
 
 /**
- * notch-edge-row (D10 amended, 18.10.2026): THE BACK SCREW ROW over a run
- * a .. b of the BACK's edge that a box board stands behind, shifted onto the
- * run; [] on a run shorter than one hole's offset e (notchBackJoints names
- * it in SHORT and the summary says so).
+ * notch-edge-row: THE BACK SCREW ROW over a run a .. b of a back's edge that
+ * a board stands behind, shifted onto the run; [] on a run shorter than one
+ * hole's offset e. Since 19.10.2026 only the recess's EXT-BACK calls it
+ * (extension.js recessExtBackScrews): the first back states no row into a box.
  */
 export function notchEdgeRow(a, b, e) {
   return b - a < e ? [] : notchShift(notchScrewRow(b - a, e), a);
@@ -511,55 +511,10 @@ export function notchBackDogbone(cw, ch, nw, nh, corner, r) {
 }
 
 /**
- * notch-back-box-rows (D10 amended, 18.10.2026): THE BACK'S ROWS INTO THE
- * BOX, in the BACK's ORIGINAL frame, { SCREWS: [[x, y], ..], SHORT: [{ board,
- * run }, ..] }: a full-height notch's whole new edge into the RETURN (nearX,
- * between the parent's tabs); a part-height one's RETURN run beside it and
- * its LID's (D21: its FLOOR's) row over (under) it. No SCREWS at a front
- * corner or for an unboxed rebate. One routine, two callers (T79 F8, the F6
- * x F8 seam): notchBackJoints on the notched BACK, extension.js
- * recessBackJoints (KIT_RECESS.lsp D13) on the extension's BACK piece that
- * holds them.
- */
-export function notchBackBoxRows(cw, ch, g, nw, nh, corner, K) {
-  const e = notchP(K, 'puzzle.tabCentresFromEnd');
-  const one = notchP(K, 'puzzle.singleTabAtOrBelow');
-  const three = notchP(K, 'puzzle.middleTabBelow');
-  const sfe = notchP(K, 'puzzle.screwFromEnd');
-  const S = notchScrewAxis(g);
-  const hh = notchHh(ch, nh);
-  const left = notchLeftP(corner);
-  const nearX = left ? nw + S : cw - nw - S;
-  const scr = [];
-  const short = [];
-  // One run of the box under the BACK's edge; a run shorter than one hole's
-  // offset carries none and is named.
-  const boxRun = (board, a, b, at) => {
-    const row = notchEdgeRow(a, b, sfe);
-    if (!row.length) short.push({ board, run: b - a });
-    for (const v of row) scr.push(at(v));
-  };
-  // The LID's (the FLOOR's) run under the edge over (under) the notch.
-  const [bx0, bx1] = left ? [g, nw] : [cw - nw, cw - g];
-  if (!notchBackP(corner) || !notchBoxedP(nw, g)) return { SCREWS: scr, SHORT: short };
-  if (notchFullP(ch, nh)) {
-    for (const y of notchRowsBetweenTabs(0, ch, notchReplanTabs(ch, e, one, three), sfe)) scr.push([nearX, y]);
-  } else if (notchFromTopP(ch, nh)) {
-    boxRun('RETURN', ch - hh, ch, (y) => [nearX, y]);
-    boxRun('FLOOR', bx0, bx1, (x) => [x, ch - hh - S]);
-  } else {
-    boxRun('RETURN', 0, hh, (y) => [nearX, y]);
-    boxRun('LID', bx0, bx1, (x) => [x, hh + S]);
-  }
-  return { SCREWS: scr, SHORT: short };
-}
-
-/**
  * notch-back-joints: its joints in its ORIGINAL frame. D21: a notch from the
  * top shortens the TOP edge and leaves the BOTTOM edge the parent's; the
  * notch-side edge is planned on the run UNDER it, 0 .. ch - |nh|. D10
- * amended (18.10.2026): SCREWS follow every edge a box board stands behind;
- * SHORT names a run too short to hold a row (present only when one is).
+ * (17.10.2026, and again 19.10.2026): no screw between the BACK and the box.
  */
 export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
   const e = notchP(K, 'puzzle.tabCentresFromEnd');
@@ -600,14 +555,14 @@ export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
   const farX = left ? cw - S : S;
   const upX = left ? S : cw - S;
   const scr = [];
-  const box = notchBackBoxRows(cw, ch, g, nw, nh, corner, K);
   for (const y of notchRowsBetweenTabs(0, ch, farTabs, sfe)) scr.push([farX, y]);
-  // 18.10.2026 (KIT_NOTCH.lsp D10 amended), the owner: *"jak mamy cut the
-  // corners lub recess to nie rysujesz mi dziurek na śrubki 3 mm, to trzeba
-  // będzie dodać"*; *"ale tylko na plecach."*  The BACK's rows follow every
-  // edge a box board stands behind (notchBackBoxRows, after the side's own
-  // rows on the near edge: all of it unboxed, none at full height where the
-  // whole edge is the RETURN's, the run above (D21: under) a part-height notch).
+  // 17.10.2026 (KIT_NOTCH.lsp D10): NO screw between the BACK and the box. The
+  // owner: *"nie bedziemy tam wkrecac wkretow"*. Drawn again on 18.10 (T79 F6)
+  // and withdrawn on 19.10.2026 by the owner: *"nie na pierwszych plecach ...
+  // to juz bylo usuniete i znowu trzeba usunac"*. A full-height notch's new
+  // edge meets the RETURN only and gets no row; beside a part-height notch
+  // the run gets none and the side's own back edge above (D21: under) it
+  // keeps its rows.
   if (!back || !boxed) {
     for (const y of notchRowsBetweenTabs(0, ch, farTabs, sfe)) scr.push([upX, y]);
   } else if (top) {
@@ -615,7 +570,6 @@ export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
   } else if (!full) {
     for (const y of notchRowsBetweenTabs(nh, ch, nearTabs, sfe)) scr.push([upX, y]);
   }
-  scr.push(...box.SCREWS);
   for (const x of notchRowBetween(lo, hi, g, sfe)) scr.push([x, ch - S]);
   for (const x of (back && boxed ? notchRowBetween(blo, bhi, g, sfe) : notchRowBetween(0, cw, g, sfe))) {
     scr.push([x, S]);
@@ -626,7 +580,6 @@ export function notchBackJoints(cw, ch, g, nw, nh, corner, K) {
     'TOP-SOCKETS': topS,
     'BOTTOM-SOCKETS': botS,
     SCREWS: scr,
-    ...(box.SHORT.length ? { SHORT: box.SHORT } : {}),
   };
 }
 
@@ -1881,8 +1834,6 @@ export function notchCarcass({
   const bk = back ? byId('BACK') : null;
   if (bk && bk.part === 'BACK') {
     const bj = notchBackJoints(W, H, G, nw, nh, corner, K);
-    // T79 F6 (D10 amended): a run of the box too short for a row, said in derived.notch.
-    if (bj.SHORT) cut.backRowsShort = bj.SHORT.map(({ board, run }) => ({ board, run: roundTo(run, 4) }));
     const outline = notchBack(W, H, nw, nh, corner);
     const leftEdge = left ? bj['NEAR-SOCKETS'] : bj['FAR-SOCKETS'];
     const rightEdge = left ? bj['FAR-SOCKETS'] : bj['NEAR-SOCKETS'];
@@ -2128,7 +2079,6 @@ export function notchSummary(cut) {
     boards: [...cut.boards],
     dropped: cut.dropped || 0,
     ...(cut.top ? { anchor: 'top' } : {}),
-    ...(cut.backRowsShort ? { backRowsShort: cut.backRowsShort.map((s) => ({ ...s })) } : {}),
     ...(cut.notch?.auto ? { auto: true, for: cut.notch.for } : {}),
   };
 }

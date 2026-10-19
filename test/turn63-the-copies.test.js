@@ -391,6 +391,10 @@ const T75_LICENSED = ['src/components/AddItems.jsx'];
 // (`AddItems.jsx`). Both are CONTROLS, licensed in `EXEMPT` with the owner's
 // words and re-frozen, their copies re-made by `scripts/t78-copy.mjs`.
 const T78_LICENSED = ['src/components/UnitSizeModal.jsx', 'src/components/AddItems.jsx'];
+// CHAT FIX 19.10.2026: `RailModal.jsx` (the rod's window finds its rod by item id: a second rod in the same bay, the
+// owner: *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze"*), licensed in `EXEMPT` with his words and
+// re-frozen, its copy re-made by `scripts/t78-copy.mjs`.
+const CHATFIX_1910_LICENSED = ['src/components/RailModal.jsx'];
 
 test('T72 · every PRO original that MOVED is licensed, and every licence is spent', () => {
   let base = null;
@@ -412,7 +416,8 @@ test('T72 · every PRO original that MOVED is licensed, and every licence is spe
   const exempt = freeze.slice(at, freeze.indexOf('\n};', at));
   for (const rel of moved) {
     assert.ok(exempt.includes(`'${rel}':`), `${rel} moved without a licence in the freeze table`);
-    assert.ok(T72_LICENSED.includes(rel) || T74_LICENSED.includes(rel) || T78_LICENSED.includes(rel),
+    assert.ok(T72_LICENSED.includes(rel) || T74_LICENSED.includes(rel) || T78_LICENSED.includes(rel)
+      || CHATFIX_1910_LICENSED.includes(rel),
       `${rel} moved and this test does not know about it`);
   }
   // T74 · …and tonight's machine names exactly tonight's licences (its list of
@@ -443,7 +448,7 @@ test('T63, amended by T67 and T72 · not one byte of the other FIFTEEN originals
   if (!base) return;
   // `WatchLayoutModal` is on BOTH lists — T67 renamed it, T72 gave it three
   // controls — so the set is de-duplicated rather than counted twice.
-  const licensed = [...new Set([...T67_RENAMED, ...T72_LICENSED, ...T74_LICENSED, ...T78_LICENSED])];
+  const licensed = [...new Set([...T67_RENAMED, ...T72_LICENSED, ...T74_LICENSED, ...T78_LICENSED, ...CHATFIX_1910_LICENSED])];
   const unmoved = T63_COPIES.map((c) => c.pro).filter((p) => !licensed.includes(p));
   assert.equal(unmoved.length, 21 - licensed.length, 'the exemption grew beyond the files it names');
   const diff = execFileSync('git', ['diff', '--stat', base, '--', ...unmoved],

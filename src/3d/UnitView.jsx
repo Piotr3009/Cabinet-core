@@ -1979,6 +1979,13 @@ export default function UnitView({
     while (at && at.userData?.ccUnitId == null) at = at.parent;
     return at?.userData?.ccUnitId === unit.id && centreBetweenPick(result.panels.find((q) => q.id === ref));
   });
+  // CHAT FIX 19.10.2026 (CUT EDGE, "kwadraty jak przy naroznikach"): the edge
+  // squares stand ON the four horizontal edges (3d/NotchEdges.jsx), so a board
+  // of this carcass may lie between the eye and one. While the edges are lit
+  // a press with a square further along the ray is aimed at the square, and
+  // this board lets it travel on, exactly as `pickBehind` does for the pick.
+  const edgeHandleBehind = (e) => useUiStore.getState().edgeNotchPick === unit.id
+    && (e.intersections || []).some((hit) => hit.object?.userData?.ccNotchEdge && hit.object.userData.ccUnitId === unit.id);
   const ghost = useMemo(() => {
     if (!dragging) return null;
     const wallIndex = unit.position?.wall ?? 0;
@@ -2972,6 +2979,7 @@ export default function UnitView({
               // right button belongs to the menu and to the orbit; the middle
               // one to the pan. Neither is a grab.
               if (((e.nativeEvent || e).button ?? 0) !== 0) return;
+              if (edgeHandleBehind(e)) return;
               // ─── T79 (CLAUDE.md F12): CENTER BETWEEN TAKES THE PRESS ──────
               // While armed on this cabinet a press on a board that may be
               // picked is a PICK, handed to `selectElement`, which reads it
@@ -3118,6 +3126,7 @@ export default function UnitView({
             onClick={onAskSide && (p.part === 'BUL' || p.part === 'BUR') ? (e) => {
               if (((e.nativeEvent || e).button ?? 0) !== 0) return;
               if (Number(e.delta) > 2) return;
+              if (edgeHandleBehind(e)) return;
               const first = (e.intersections || []).find((h) => !isOverlay(h.eventObject))?.eventObject;
               if (first && first !== e.eventObject) return;
               e.stopPropagation();

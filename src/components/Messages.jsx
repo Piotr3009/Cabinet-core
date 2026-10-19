@@ -26,6 +26,11 @@ import { historyTime, messagesAt } from '../engine/messages.js';
 //           that a file was written must not be able to swallow the click
 //           that follows it.
 //
+// CHAT FIX 19.10.2026: every level ALSO leaves on its own clock (the store,
+// engine/messages.js `hideMs`: 4 s, reds 8 s) and the card is translucent
+// (the owner: *"ma sie chowac po kilku sekundach i byc przezroczysty"*); the
+// row in the Changes list stays. Nothing here decides the timing.
+//
 // ─── T79 F1 · ALL THREE ON THE LEFT, AND A HISTORY UNDER THEM ───────────────
 //
 // The owner, 18.10.2026: *"wszystkie informacje po zmianach które pokazujesz na
@@ -36,10 +41,12 @@ import { historyTime, messagesAt } from '../engine/messages.js';
 // above yellow above grey, newest nearest the bar), then whatever the page
 // hands in as `children` (the front-gap rows), so none of them covers another.
 
+// 19.10.2026: the cards stand at 70 percent over the room (the owner: "tlo
+// przezroczyste 70 procent": "tak pls"); the border and the text stay solid.
 const TONE = {
   red: 'border-status-danger bg-status-danger/20 text-status-danger',
   yellow: 'border-status-warn/70 bg-status-warn/15 text-status-warn',
-  grey: 'border-shell-600 bg-shell-800/95 text-ink-100',
+  grey: 'border-shell-600 bg-shell-800/70 text-ink-100',
 };
 
 /** The level's colour dot on a row of the Changes list. */

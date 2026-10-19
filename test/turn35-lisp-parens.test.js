@@ -186,27 +186,51 @@ test('T79 F5 · KIT_NOTCH.lsp balances 0/0 with D22, section H2, its NUMBERS blo
   assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
 });
 
-// T79 F6 \u00b7 the parens test grows again: KIT_NOTCH.lsp D10 and KIT_RECESS.lsp
-// D17 are amended under licence (the owner, 18.10.2026: *"jak mamy cut the
-// corners lub recess to nie rysujesz mi dziurek na \u015brubki 3 mm, to trzeba
-// b\u0119dzie doda\u0107"*; *"ale tylko na plecach."*): the BACK's dia 3 rows follow
-// every edge of a back that meets a board. Both balance by name.
-for (const [kit, marks] of [
-  ['KIT_NOTCH.lsp', [/AMENDED 18\.10\.2026 \(CLAUDE\.md T79 F6\)/, /\(defun notch-edge-row \(a b e\)/,
-    /;;; I5\. NUMBERS - THE BACK'S ROWS ROUND THE BOX/, /\(cons "SHORT" \(reverse short\)\)/]],
-  ['KIT_RECESS.lsp', [/AMENDED 18\.10\.2026 \(CLAUDE\.md T79 F6\)/, /\(foreach z \(notch-edge-row bz0 bz1 sfe\)/,
-    /\(defun recess-ext-back-screws \(cw ch g ex0 ex1 ez0 ez1 \/ S sfe eb bz0 bz1 out\)/,
-    /\(foreach x \(notch-edge-row g \(- \(car eb\) g\) sfe\)/, /;;; THE NARROWEST BAND \(D4, no golden; D17 AMENDED 18\.10\.2026\)/]],
+// T79 F6 · KIT_NOTCH.lsp D10 and KIT_RECESS.lsp D17 were amended on 18.10.2026
+// (the BACK's rows round the box) and REWRITTEN 19.10.2026 (chat fix), the
+// owner on the eye-test of T79: *"nie na pierwszych plecach tylko na tych
+// drugich ktore sa we wnetrzu recess, na tych pierwszych nie, to juz bylo
+// usuniete i znowu trzeba usunac"*: the first back states no row into the box
+// again (D10, D17 as on 17.10); the EXT-BACK keeps its rows of 18.10. Both
+// balance by name.
+for (const [kit, marks, gone] of [
+  ['KIT_NOTCH.lsp', [/WITHDRAWN 19\.10\.2026, the owner on/, /\(defun notch-edge-row \(a b e\)/,
+    /so the BACK carries 10 dia 3 holes \(the parent 14\)/],
+  [/;;; I5\. NUMBERS - THE BACK'S ROWS ROUND THE BOX/, /\(cons "SHORT"/, /\(defun notch-back-box-rows/]],
+  ['KIT_RECESS.lsp', [/HALF\n;;;     WITHDRAWN 19\.10\.2026/, /\(defun recess-ext-back-screws \(cw ch g ex0 ex1 ez0 ez1 \/ S sfe eb bz0 bz1 out\)/,
+    /\(foreach x \(notch-edge-row g \(- \(car eb\) g\) sfe\)/, /;;; THE NARROWEST BAND \(D4, no golden; D17 AMENDED 18\.10\.2026\)/,
+    /so the BACK carries 10 dia 3 holes \(13 from 18\.10 to 19\.10\.2026\)/],
+  [/\(foreach z \(notch-edge-row bz0 bz1 sfe\)\s*\(if \(and \(>= z z0\)/, /\(defun recess-put-hole/, /\(defun recess-notch-box-rows/]],
 ]) {
-  test(`T79 F6 \u00b7 ${kit} balances 0/0 with the BACK's rows round the box`, () => {
+  test(`T79 F6, rewritten 19.10.2026 · ${kit} balances 0/0 with the first back's rows into the box gone, the EXT-BACK's kept`, () => {
     const text = readFileSync(join(LISP_DIR, kit), 'utf8');
     const { balance, min } = parenScan(text);
     assert.equal(balance, 0);
     assert.equal(min, 0);
     for (const m of marks) assert.match(text, m);
+    for (const m of gone) assert.doesNotMatch(text, m);
     assert.ok(/^[\x00-\x7F]*$/.test(text), `${kit} is ASCII`);
   });
 }
+
+// CHAT FIX 19.10.2026 · the parens test grows with every file touched: a NEW
+// file, KIT_HANGER_TWO.lsp (the second rod in the same bay; the owner:
+// *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze, i proponuj
+// (jak polki) 950 jedne od drugiego"*), balanced by name, ASCII, no fossil
+// routine redefined.
+test('chat fix 19.10 · KIT_HANGER_TWO.lsp balances 0/0 with its five decisions and HANGERTWO_FULL', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_HANGER_TWO.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D1  TWO AT MOST\./);
+  assert.match(text, /\(defun hanger-two-axis \(firstAxis between\)/);
+  assert.match(text, /\(defun hanger-two-catches \(others between \/ out\)/);
+  assert.match(text, /\(defun c:HANGERTWO_FULL /);
+  assert.doesNotMatch(text, /\(defun drawWardrobeRailHoles/, 'KIT_WARDROBE_FULL\'s routines are called, never redefined');
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+  assert.ok(/^[\x00-\x7F]*$/.test(text), 'ASCII');
+});
 
 // T79 F8 · CLAUDE.md T79 FROZEN 2: the parens test grows with every file
 // touched. KIT_RECESS.lsp is amended under licence (the owner, 18.10.2026:
@@ -226,27 +250,25 @@ test('T79 F8 · KIT_RECESS.lsp balances 0/0 with D13 WITH A NOTCH, section H and
   assert.doesNotMatch(text, /[^\x00-\x7f]/, 'the LISP stays ASCII');
 });
 
-// T79 F8 x F6 · the seam: the extension's BACK piece cut from a notched BACK
-// carries the rows into the notch's box exactly as the notched BACK alone
-// (the owner, 18.10.2026: *"jak mamy cut the corners lub recess to nie
-// rysujesz mi dziurek na śrubki 3 mm, to trzeba będzie dodać"*; *"ale tylko na
-// plecach."*): ONE routine, KIT_NOTCH.lsp notch-back-box-rows, called by
-// notch-back-joints and by KIT_RECESS.lsp recess-back-joints through
-// recess-notch-box-rows. Both files balance by name.
-for (const [kit, marks] of [
-  ['KIT_NOTCH.lsp', [/\(defun notch-back-box-rows \(cw ch g nw nh corner /, /box \(notch-back-box-rows cw ch g nw nh corner\)\)/]],
-  ['KIT_RECESS.lsp', [/\(defun recess-notch-box-rows \(nb cw ch g /, /\(foreach p \(recess-notch-box-rows nb cw ch g\)/,
-    /;;; THE NOTCH'S BOX ROWS ON THE PIECE THAT HOLDS THEM/,
-    // the F8 review: the side row on what the notch AND the window leave of the edge, a hole once
+// T79 F8 x F6 · the seam (18.10.2026) carried the notch's box rows onto the
+// extension's BACK piece; REWRITTEN 19.10.2026 (chat fix): no row into the
+// box on the first back, so the seam's routines (recess-notch-box-rows,
+// recess-put-hole) are gone; the F8 review's recess-side-row stays. Both
+// files balance by name.
+for (const [kit, marks, gone] of [
+  ['KIT_NOTCH.lsp', [/\(defun notch-back-joints \(cw ch g nw nh corner /], [/notch-back-box-rows/]],
+  ['KIT_RECESS.lsp', [
     /\(defun recess-side-row \(bh z0 tabs nb window onSide bandSide sfe /, /\(defun recess-window-zcut \(window z0 onSide\)/,
-    /\(defun recess-put-hole \(pts p \/ found\)/, /;;; THE REVIEW CASES \(the T79 F8 review, 18\.10\.2026/]],
+    /;;; THE REVIEW CASES \(the T79 F8 review, 18\.10\.2026/],
+  [/recess-notch-box-rows/, /recess-put-hole/]],
 ]) {
-  test(`T79 F8 x F6 · ${kit} balances 0/0 with the rows into the notch's box, one routine`, () => {
+  test(`T79 F8 x F6, rewritten 19.10.2026 · ${kit} balances 0/0 without the rows into the notch's box`, () => {
     const text = readFileSync(join(LISP_DIR, kit), 'utf8');
     const { balance, min } = parenScan(text);
     assert.equal(balance, 0);
     assert.equal(min, 0);
     for (const m of marks) assert.match(text, m);
+    for (const m of gone) assert.doesNotMatch(text, m);
     assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
     assert.ok(/^[\x00-\x7F]*$/.test(text), `${kit} is ASCII`);
   });

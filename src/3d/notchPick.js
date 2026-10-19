@@ -42,11 +42,14 @@ export function notchEdgeSpots(width, depth, height) {
   const W = Number(width) || 0;
   const D = Number(depth) || 0;
   const H = Number(height) || 0;
+  // CHAT FIX 19.10.2026 (the owner: "kwadrat na srodku kazdej z 4 poziomych
+  // krawedzi boku, jak przy naroznikach": "tak"): the handle sits ON the edge,
+  // at the middle of the width, as a corner's handle sits at its corner.
   return [
-    { edge: 'TB', y: H, z: 0, x: W * 0.35 },
-    { edge: 'BB', y: 0, z: 0, x: W * 0.65 },
-    { edge: 'TF', y: H, z: D, x: W * 0.35 },
-    { edge: 'BF', y: 0, z: D, x: W * 0.65 },
+    { edge: 'TB', y: H, z: 0, x: W / 2 },
+    { edge: 'BB', y: 0, z: 0, x: W / 2 },
+    { edge: 'TF', y: H, z: D, x: W / 2 },
+    { edge: 'BF', y: 0, z: D, x: W / 2 },
   ];
 }
 

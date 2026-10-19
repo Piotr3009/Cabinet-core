@@ -13,7 +13,7 @@ import { modalAnchorFault, withModalAnchor } from '../lib/modalLayer.js';
 import { normaliseAudience } from '../lib/wizardTabs.js';
 import { entryAudience } from '../lib/appEntry.js';
 import {
-  dismissedByClickAway, expired, greyMs, historyMax, historyRow, leaveWarning, makeMessage,
+  dismissedByClickAway, expired, historyMax, historyRow, leaveWarning, makeMessage,
   pushMessage, queueMax, recordHistory, trimQueue,
 } from '../engine/messages.js';
 // TURN 59: the shared brain, running memory-only for the PBI retail mount.
@@ -1066,6 +1066,14 @@ export const useUiStore = create((set, get) => ({
   // (`messages.js levelOf`).
   messages: [],
   notify: (message, tone = 'info', opts = null) => {
+    /** The sweep, `hideMs` plus a beat after `expiresAt`, through `expired`. */
+    const armClock = (expiresAt) => {
+      if (expiresAt == null) return;
+      setTimeout(() => {
+        const gone = expired(get().messages, Date.now());
+        if (gone.length) set((s) => ({ messages: s.messages.filter((m) => !gone.includes(m.id)) }));
+      }, Math.max(0, expiresAt - Date.now()) + 60);
+    };
     if (!message) return null;
     const now = Date.now();
     const profile = getCabinetProfile();
@@ -1084,7 +1092,7 @@ export const useUiStore = create((set, get) => ({
       set((s) => ({
         messages: s.messages.map((m) => (m.id === twin.id
           ? {
-            ...m, count, baseMessage: message, message: folded, at: now,
+            ...m, count, baseMessage: message, message: folded, at: now, expiresAt: msg.expiresAt,
           }
           : m)),
         // T79 F1: the fold is ONE row of the Changes list, updated in place.
@@ -1092,6 +1100,8 @@ export const useUiStore = create((set, get) => ({
           ...twin, count, baseMessage: message, message: folded, at: now,
         }), historyMax(profile)),
       }));
+      // 19.10.2026: the fold restarts the clock, so the timer is armed again.
+      armClock(msg.expiresAt);
       return twin.id;
     }
     set((s) => {
@@ -1105,14 +1115,10 @@ export const useUiStore = create((set, get) => ({
         history: shown ? recordHistory(s.history, historyRow(shown), historyMax(profile)) : s.history,
       };
     });
-    // Only a grey has a clock. A red that expired on its own would be exactly
-    // the fault this feature exists to end, so there is no timer for one.
-    if (msg.expiresAt != null) {
-      setTimeout(() => {
-        const gone = expired(get().messages, Date.now());
-        if (gone.length) set((s) => ({ messages: s.messages.filter((m) => !gone.includes(m.id)) }));
-      }, greyMs(profile) + 60);
-    }
+    // CHAT FIX 19.10.2026 (the owner: "wszystkie chowaja sie po 4 s, czerwone
+    // po 8 s": "tak pls"): every level has a clock (engine/messages.js
+    // `hideMs`), so every message arms one; its row in the Changes list stays.
+    armClock(msg.expiresAt);
     return msg.id;
   },
   /** One message, clicked. The RED's only exit. */

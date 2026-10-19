@@ -49,10 +49,10 @@ const K = N.notchProfile(P);
 const r2 = (v) => Math.round(v * 10000) / 10000;
 
 const OWNER = 'dlaczego cut the corner likwiduje nam wcięcie do recess?';
-// T79 F6 (KIT_NOTCH.lsp D10 AMENDED), the law the combined BACK follows too (the F6 x F8 seam), the owner
-// 18.10.2026: *"jak mamy cut the corners lub recess to nie rysujesz mi dziurek na śrubki 3 mm, to trzeba będzie
-// dodać"*; 14:17: *"ale tylko na plecach."*  The LISP states it in ASCII.
-const OWNER_F6_LISP = 'jak mamy cut the corners lub recess to nie rysujesz mi dziurek na srubki 3 mm, to trzeba bedzie dodac';
+// 19.10.2026 (chat fix): the F6 x F8 seam of 18.10 (the notch's box rows on the extension's BACK piece) is gone with
+// the F6 rows, the owner: *"nie na pierwszych plecach tylko na tych drugich ktore sa we wnetrzu recess, na tych
+// pierwszych nie, to juz bylo usuniete i znowu trzeba usunac"*. The combined BACK carries drawBACK's rows only.
+const OWNER_1910 = 'nie na pierwszych plecach tylko na tych drugich ktore sa we wnetrzu recess';
 const SENTENCE = 'The recess cannot be cut: the corner cut stands where the recess band is; move one of them.';
 const OLD = 'RECESS: a carcass notched round an obstacle cannot grow into a recess as well; the notch stands.';
 
@@ -88,18 +88,16 @@ test('F8 · KIT_RECESS.lsp: D13 WITH A NOTCH under licence, section H, CASE D; t
   for (const routine of ['recess-notch-footprint', 'recess-notch-overlap-p', 'recess-runs', 'recess-in-run', 'recess-notch-zcut',
     'recess-notch-xcut', 'recess-cut-corner', 'recess-notched-top-outline', 'recess-notched-top-joints',
     'recess-notched-side-outline', 'recess-notched-side-joints', 'recess-notched-back-pieces', 'recess-notched-back-corner',
-    'recess-notched-back-outline', 'recess-notched-shelf-outline', 'recess-box-name', 'recess-notch-box-rows']) {
+    'recess-notched-back-outline', 'recess-notched-shelf-outline', 'recess-box-name']) {
     assert.ok(lisp.includes(`(defun ${routine} `), `the LISP defines ${routine}`);
   }
-  // The F6 x F8 seam: the rows into the notch's box are KIT_NOTCH's own routine, called, never re-stated.
+  // 19.10.2026: the F6 x F8 seam is gone with the F6 rows; no routine draws a row into the notch's box.
   const notchLisp = read('reference/lisp/KIT_NOTCH.lsp');
-  assert.ok(notchLisp.includes('(defun notch-back-box-rows (cw ch g nw nh corner '), 'KIT_NOTCH defines notch-back-box-rows');
-  assert.ok(notchLisp.includes('box (notch-back-box-rows cw ch g nw nh corner))'), 'notch-back-joints draws it');
-  assert.match(lisp, /\(foreach p \(recess-notch-box-rows nb cw ch g\)/, 'recess-back-joints draws it on the piece');
-  assert.match(lisp, /\(cdr \(assoc "SCREWS" \(notch-back-box-rows cw ch g \(- \(caddr nb\) \(car nb\)\) nh/, 'recess-notch-box-rows calls the notch\'s own');
+  assert.ok(!notchLisp.includes('(defun notch-back-box-rows'), 'KIT_NOTCH no longer defines notch-back-box-rows');
+  assert.ok(!lisp.includes('(defun recess-notch-box-rows'), 'KIT_RECESS no longer defines recess-notch-box-rows');
+  assert.ok(!lisp.includes('recess-put-hole'), 'and no hole-once helper is needed');
   const d13 = lisp.slice(lisp.indexOf(';;; D13 WITH A NOTCH'), lisp.indexOf(';;; D14 THE PARENTS')).replace(/;;;\s*/g, ' ').replace(/\s+/g, ' ');
-  assert.ok(d13.includes(OWNER_F6_LISP) && d13.includes('ale tylko na plecach.'), 'D13 quotes the F6 law it follows');
-  assert.ok(d13.includes('carries the rows into it exactly as the notched BACK alone does'));
+  assert.ok(d13.includes("No row goes into the notch's box (KIT_NOTCH.lsp D10: drawn 18.10, withdrawn 19.10.2026 by the owner"), 'D13 says the 19.10 law');
   // recess-refusal answers an overlap with the sentence the Check shows; the old one stands only in comments.
   assert.match(lisp, /\(cond \(\(recess-notch-overlap-p fp ex0 ex1 ez0 ez1\)\s+"The recess cannot be cut: the corner cut stands where the recess band is; move one of them\."\)/);
   const code = lisp.split('\n').filter((l) => !/^\s*;/.test(l)).join('\n');
@@ -212,25 +210,21 @@ test('F8 · section H: the TOP, a side, the BACK and a shelf both cut (the routi
     [[0, 0], [560, 0], [560, 670], [310, 670], [310, 520], [200, 520], [200, 320], [0, 320]]);
 });
 
-test('F8 x F6 · section H: recess-notch-box-rows reads the notch back off its footprint and answers KIT_NOTCH\'s own rows', () => {
-  // One law, one path: notchBackBoxRows is what notchBackJoints draws into the box, and what the extension draws.
-  for (const [nw, nh, corner] of [[200, 0, 'BL'], [200, 0, 'BR'], [200, 300, 'BL'], [200, -300, 'BL'], [100, 300, 'BR'], [60, 40, 'BL']]) {
-    const fp = X.recessNotchFootprint(600, 770, nw, nh, corner);
-    const own = N.notchBackBoxRows(600, 770, 18, nw, nh, corner, K);
-    assert.deepEqual(X.recessNotchBoxRows(fp, 600, 770, 18, K), own.SCREWS, `${corner} ${nw}/${nh}: the notch's own rows`);
-    const bj = N.notchBackJoints(600, 770, 18, nw, nh, corner, K);
-    const at = bj.SCREWS.findIndex((p) => p[0] === own.SCREWS[0]?.[0] && p[1] === own.SCREWS[0]?.[1]);
-    assert.deepEqual(bj.SCREWS.slice(at, at + own.SCREWS.length), own.SCREWS, `${corner} ${nw}/${nh}: notchBackJoints draws them, in one run`);
-    assert.deepEqual(bj.SHORT, own.SHORT.length ? own.SHORT : undefined);
+test('19.10 · section H: no routine draws a row into the notch\'s box; the combined BACK carries drawBACK\'s rows only', () => {
+  assert.equal(typeof N.notchBackBoxRows, 'undefined');
+  assert.equal(typeof X.recessNotchBoxRows, 'undefined');
+  assert.equal(typeof X.recessPutHole, 'undefined');
+  // The notched BACK alone and the combined piece agree: no hole at nw + S (carcass 209 at BL, 391 at BR).
+  for (const [nw, nh, corner, band] of [[200, 0, 'BL', BAND], [200, 300, 'BL', BAND], [200, -300, 'BL', BAND],
+    [200, 0, 'BR', { ...BAND, x0: 0, x1: 290 }], [200, 300, 'BR', { ...BAND, x0: 0, x1: 290 }]]) {
+    const nearX = corner === 'BL' ? nw + 9 : 600 - nw - 9;
+    for (const r of [computeCabinet({ ...BUD, notch: { corner, w: nw, d: 200, h: nh } }, P),
+      computeCabinet({ ...BUD, notch: { corner, w: nw, d: 200, h: nh }, extension: band }, P)]) {
+      for (const p of r.panels.filter((q) => q.part === 'BACK')) {
+        assert.ok(p.cnc.holes.filter((h) => h.kind === 'screw').every((h) => r2(h.x + p.box.x) !== nearX), `${corner} ${nw}/${nh}: no column at ${nearX}`);
+      }
+    }
   }
-  assert.deepEqual(N.notchBackBoxRows(600, 770, 18, 200, 0, 'BL', K).SCREWS, [[209, 50], [209, 240], [209, 530], [209, 720]], 'the whole new edge, x 209');
-  assert.deepEqual(N.notchBackBoxRows(600, 770, 18, 200, 300, 'BL', K).SCREWS,
-    [[209, 50], [209, 150], [209, 250], [68, 309], [109, 309], [150, 309]], 'the RETURN\'s run and the LID\'s row');
-  assert.deepEqual(N.notchBackBoxRows(600, 770, 18, 200, -300, 'BL', K).SCREWS,
-    [[209, 520], [209, 620], [209, 720], [68, 461], [109, 461], [150, 461]], 'D21: the RETURN\'s run and the FLOOR\'s row');
-  assert.deepEqual(N.notchBackBoxRows(600, 770, 18, 200, 300, 'FL', K).SCREWS, [], 'a front corner has no box behind the BACK');
-  assert.deepEqual(N.notchBackBoxRows(600, 770, 18, 10, 300, 'BL', K).SCREWS, [], 'an unboxed rebate has none');
-  assert.deepEqual(X.recessNotchBoxRows(null, 600, 770, 18, K), [], 'no notch, no rows');
 });
 
 // ═══ BOARD BY BOARD, THE ENGINE'S REAL CUT (CASE D) ════════════════════════
@@ -267,21 +261,18 @@ test('F8 · CASE D: the BACK is cut from the notched BACK, 128 wide between the 
   assert.equal(bk.cnc.notch, null);
   assert.deepEqual(bk.cnc.marks, []);
   assert.equal(r2(bk.area_m2 * 1e6), 98560);
-  // Its joints: no side meets it; the TOP's and the BOTTOM's one socket (carcass 273). Its dia 3 rows (T79 F6, the
-  // owner: "jak mamy cut the corners lub recess to nie rysujesz mi dziurek na śrubki 3 mm, to trzeba będzie dodać";
-  // "ale tylko na plecach."): the top and bottom rows on 218..328, the RETURN's column at x 9 (carcass 209, the
-  // notched BACK's own, KIT_NOTCH.lsp D10 AMENDED) and RETURN-L's at x 119 (carcass 319, the window's, D17 AMENDED).
+  // Its joints: no side meets it; the TOP's and the BOTTOM's one socket (carcass 273). Its dia 3 rows (19.10.2026,
+  // the owner: "na tych pierwszych nie, to juz bylo usuniete i znowu trzeba usunac"): the top and bottom rows on
+  // 218..328 and nothing else: no column into the notch's RETURN (x 9, carcass 209) and none into RETURN-L's end
+  // (x 119, carcass 319), both drawn from 18.10 to 19.10.
   assert.deepEqual(bk.cnc.pockets.map((k) => [k.x1, k.y1, k.x2, k.y2]), [[47.5, 761, 98.5, 776], [47.5, -6, 98.5, 9]]);
   assert.deepEqual(bk.cnc.holes.filter((h) => h.kind === 'screw').map((h) => [h.x, h.y]), [
     [68, 761], [73, 761], [78, 761], [68, 9], [73, 9], [78, 9],
-    [9, 50], [9, 240], [9, 530], [9, 720],
-    [119, 50], [119, 385], [119, 720],
   ]);
-  // The RETURN's column is the notched BACK's own, hole for hole (both BACKs stand at carcass x 200).
   const col = (r) => panelOf(r, 'BACK').cnc.holes.filter((h) => h.kind === 'screw' && h.x + panelOf(r, 'BACK').box.x === 209).map((h) => h.y);
   assert.deepEqual(col(both), col(notchAlone));
-  assert.deepEqual(col(both), [50, 240, 530, 720]);
-  assert.deepEqual(both.drills.filter((d) => d.panel === 'BACK' && d.x === 9).map((d) => d.y), [50, 240, 530, 720], 'drilled');
+  assert.deepEqual(col(both), []);
+  assert.deepEqual(both.drills.filter((d) => d.panel === 'BACK' && (d.x === 9 || d.x === 119)).map((d) => d.y), [], 'nothing drilled there');
   // Moved once: the notch's re-origin of the whole BACK was taken over (the drills stand in the piece's frame).
   assert.ok(both.drills.filter((d) => d.panel === 'BACK').every((d) => d.x >= 0 && d.x <= 128), 'every BACK hole on the board');
   assert.equal(both.panels.filter((p) => p.part === 'BACK').length, 1);
@@ -354,11 +345,11 @@ test('F8 · the LISP\'s own CASE D block, line by line, is the engine\'s cut', (
   };
   assert.deepEqual(row('BACK top/bottom rows (x)').slice(1), [csv(scr(extAlone, 761)), csv(scr(both, 761))]);
   assert.deepEqual(row('BACK left screw row (z)').slice(1, 2), [csv(panelOf(extAlone, 'BACK').cnc.holes.filter((h) => h.kind === 'screw' && h.x === 9).map((h) => h.y))]);
-  // T79 F6 x F8: the left edge meets the notch's RETURN and carries its column, the notched BACK's own (no socket).
-  const leftBoth = panelOf(both, 'BACK').cnc.holes.filter((h) => h.kind === 'screw' && h.x === 9).map((h) => h.y);
-  assert.equal(row('BACK left screw row (z)')[2], `${csv(leftBoth)} at carcass x 209, into the notch's RETURN`);
+  // 19.10.2026: the left edge meets the notch's RETURN: no socket and no row.
+  assert.deepEqual(panelOf(both, 'BACK').cnc.holes.filter((h) => h.kind === 'screw' && h.x === 9), []);
+  assert.equal(row('BACK left screw row (z)')[2], "NONE (the edge is the notch's RETURN: no joint, no row, D10)");
   assert.equal(row('BACK sockets, left edge (z)')[2], 'NONE');
-  assert.ok(prose.includes(OWNER_F6_LISP), 'CASE D quotes the F6 law');
+  assert.ok(prose.includes('withdrawn 19.10.2026'), 'CASE D names the 19.10 law');
   // THE BACK'S DIA 3 HOLES, BOTH CUT, read off the engine's cut (carcass x).
   const holesOf = (r) => { const p = panelOf(r, 'BACK'); return p.cnc.holes.filter((h) => h.kind === 'screw').map((h) => [h.x + p.box.x, h.y]); };
   const hb = holesOf(both);
@@ -366,47 +357,31 @@ test('F8 · the LISP\'s own CASE D block, line by line, is the engine\'s cut', (
   const zs = (x) => hb.filter((h) => h[0] === x).map((h) => h[1]).join(' ');
   say(`top row x ${xs(761)}, z 761`);
   say(`bottom row x ${xs(9)}, z 9`);
-  say(`into the notch's RETURN x 209, z ${zs(209)} (notch-back-box-rows)`);
-  say(`into RETURN-L's end x 319, z ${zs(319)} (the window's column)`);
   say(`so the BACK carries ${hb.length} dia 3 holes`);
-  assert.equal(hb.length, 13);
-  // THE NOTCH'S BOX ROWS ON THE PIECE THAT HOLDS THEM: part height from the floor, from the top, and a BR corner.
-  const piece = (notch, band = BAND) => holesOf(computeCabinet({ ...BUD, notch, extension: band }, P));
-  const p300 = piece({ ...NOTCH, h: 300 });
-  const at = (list, x) => list.filter((h) => h[0] === x).map((h) => h[1]).join(' ');
-  const along = (list, z) => list.filter((h) => h[1] === z).map((h) => h[0]).join(' ');
-  say(`BL 200/200/300 the piece x 0..328 holds the corner: into the RETURN x 209: ${at(p300, 209)}; into the LID, z 309: ${along(p300, 309)}; ${p300.length} dia 3 holes on the piece`);
-  const pTop = piece({ ...NOTCH, h: -300 });
-  say(`BL 200/200/-300 the same piece: into the RETURN x 209: ${at(pTop, 209)}; into the FLOOR, z 461: ${along(pTop, 461)}; ${pTop.length} dia 3 holes`);
-  const pBr = piece({ ...NOTCH, corner: 'BR' }, { ...BAND, x0: 0, x1: 290 });
-  say(`BR 200/200/0 with the band x 0..290 (BUL grows): the piece x 272..400, into the RETURN x 391 (its own x 119): ${at(pBr, 391)}; ${pBr.length} dia 3 holes`);
+  assert.equal(hb.length, 6);
+  assert.equal(zs(209), '', 'nothing into the notch\'s RETURN');
+  assert.equal(zs(319), '', 'nothing into RETURN-L\'s end');
 });
 
-test('F8 x F6 · the piece that holds the notch\'s box carries its rows exactly as the notched BACK alone (full, from the floor, from the top, BR)', () => {
+test('19.10 · the piece that holds the notch\'s box carries drawBACK\'s rows only (full, from the floor, from the top, BR)', () => {
   const cases = [
-    [{ corner: 'BL', w: 200, d: 200, h: 0 }, BAND, 13],
-    [{ corner: 'BL', w: 200, d: 200, h: 300 }, BAND, 18],
-    [{ corner: 'BL', w: 200, d: 200, h: -300 }, BAND, 18],
-    [{ corner: 'BR', w: 200, d: 200, h: 0 }, { ...BAND, x0: 0, x1: 290 }, 13],
-    [{ corner: 'BR', w: 200, d: 200, h: 300 }, { ...BAND, x0: 0, x1: 290 }, 18],
+    [{ corner: 'BL', w: 200, d: 200, h: 0 }, BAND, 6],
+    [{ corner: 'BL', w: 200, d: 200, h: 300 }, BAND, 9],
+    [{ corner: 'BL', w: 200, d: 200, h: -300 }, BAND, 9],
+    [{ corner: 'BR', w: 200, d: 200, h: 0 }, { ...BAND, x0: 0, x1: 290 }, 6],
+    [{ corner: 'BR', w: 200, d: 200, h: 300 }, { ...BAND, x0: 0, x1: 290 }, 9],
   ];
   const carcassHoles = (r) => r.panels.filter((p) => p.part === 'BACK').flatMap((p) => p.cnc.holes
     .filter((h) => h.kind === 'screw').map((h) => `${r2(h.x + p.box.x)},${r2(h.y + p.box.y)}`));
   for (const [notch, band, count] of cases) {
     const name = `${notch.corner} ${notch.w}/${notch.d}/${notch.h}`;
-    const alone = computeCabinet({ ...BUD, notch }, P);
     const two = computeCabinet({ ...BUD, notch, extension: band }, P);
     assert.deepEqual(two.warnings, [], `${name}: both cut`);
-    const rows = N.notchBackBoxRows(600, 770, 18, notch.w, notch.h, notch.corner, K).SCREWS.map(([x, z]) => `${r2(x)},${r2(z)}`);
-    assert.ok(rows.length >= 4, `${name}: the box has rows`);
-    const a = carcassHoles(alone);
     const b = carcassHoles(two);
-    for (const h of rows) {
-      assert.ok(a.includes(h), `${name}: the notched BACK alone carries ${h}`);
-      assert.equal(b.filter((x) => x === h).length, 1, `${name}: the extension's BACK carries ${h}, once`);
-    }
     assert.equal(b.length, count, `${name}: ${count} dia 3 holes on the BACK`);
     assert.equal(new Set(b).size, b.length, `${name}: no two holes in one place`);
+    const nearX = notch.corner === 'BL' ? notch.w + 9 : 600 - notch.w - 9;
+    assert.ok(b.every((k) => Number(k.split(',')[0]) !== nearX), `${name}: nothing into the RETURN at ${nearX}`);
     const drilled = two.drills.filter((d) => two.panels.some((p) => p.part === 'BACK' && p.id === d.panel) && d.kind === 'screw').length;
     assert.equal(drilled, count, `${name}: every one drilled`);
   }
@@ -439,7 +414,7 @@ test('F8 review · the PROBE table turned round: a hole once where the footprint
   const rows = [
     ['the footprints touch', { corner: 'BL', w: 200, d: 200, h: 0 }, { ...BAND, x0: 200 }, 'BACK',
       [[9, 50], [9, 240], [9, 530], [9, 720], [9, 50], [9, 385], [9, 720]],
-      [[9, 50], [9, 240], [9, 530], [9, 720], [9, 385]]],
+      []],
     ['the band and the notch on one side', { corner: 'BL', w: 200, d: 200, h: 300 }, { x0: 0, x1: 400, z0: 300, z1: 500, d: 150 }, 'BACK',
       [[9, 350], [9, 720]],
       [[9, 532], [9, 720]]],
@@ -454,7 +429,7 @@ test('F8 review · the PROBE table turned round: a hole once where the footprint
     const p = panelOf(r, id);
     if (name === 'the footprints touch') {
       assert.equal(p.w, 18, 'the piece between the notch and the window is 18 wide');
-      assert.deepEqual(holes, now, `${name}: every hole once, the RETURN's column first`);
+      assert.deepEqual(holes, now, `${name}: no hole at all since 19.10.2026 (no column into the RETURN, none into RETURN-L)`);
       assert.equal(r.drills.filter((d) => d.panel === id && d.kind === 'screw').length, now.length, `${name}: drilled once each`);
     } else {
       const side = (list) => list.filter(([x]) => x === probe[0][0]);
@@ -477,11 +452,9 @@ test('F8 review · the PROBE table turned round: a hole once where the footprint
   assert.deepEqual(X.recessSideRow(770, 0, [626], [0, 0, 200, 300], [0, 318, 382, 482], true, true, 50), [532, 720]);
   assert.deepEqual(X.recessWindowZcut([0, 318, 382, 482], 0, true), [[318, 482]]);
   assert.deepEqual(X.recessWindowZcut([0, 318, 382, 482], 0, false), []);
-  assert.deepEqual(X.recessPutHole([[9, 50]], [9, 50]), [[9, 50]]);
-  assert.deepEqual(X.recessPutHole([[9, 50]], [9, 385]), [[9, 50], [9, 385]]);
 });
 
-test('F8 review · the sweep: a notch adds no hole off its piece and none twice; every box row once', () => {
+test('F8 review · the sweep: a notch adds no hole off its piece and none twice; no row into its box (19.10)', () => {
   const bands = [];
   for (const [x0, x1] of [[310, 600], [0, 290], [200, 600], [0, 400], [300, 500], [0, 600]]) {
     for (const [z0, z1] of [[0, 770], [400, 770], [0, 400], [300, 500], [100, 700]]) bands.push({ x0, x1, z0, z1, d: 150 });
@@ -503,10 +476,10 @@ test('F8 review · the sweep: a notch adds no hole off its piece and none twice;
           const keys = p.cnc.holes.filter((q) => q.kind === 'screw').map((q) => `${r2(q.x)},${r2(q.y)}`);
           assert.equal(new Set(keys).size, keys.length, `${name}: ${p.id}, no two holes in one place`);
         }
-        const all = r.panels.filter((p) => p.part === 'BACK').flatMap((p) => p.cnc.holes
-          .filter((q) => q.kind === 'screw').map((q) => `${r2(q.x + p.box.x)},${r2(q.y + p.box.y)}`));
-        for (const [x, z] of N.notchBackBoxRows(600, 770, 18, 200, h, corner, K).SCREWS) {
-          assert.equal(all.filter((k) => k === `${r2(x)},${r2(z)}`).length, 1, `${name}: the box row (${x}, ${z}) once`);
+        // 19.10.2026: no row into the notch's box on any piece.
+        const nearX = corner === 'BL' ? 209 : 391;
+        for (const p of r.panels.filter((q) => q.part === 'BACK')) {
+          assert.ok(p.cnc.holes.filter((q) => q.kind === 'screw').every((q) => r2(q.x + p.box.x) !== nearX), `${name}: ${p.id}, nothing at ${nearX}`);
         }
       }
     }
@@ -522,18 +495,17 @@ test('F8 review · the LISP\'s REVIEW CASES are the engine\'s cut', () => {
   const prose = lisp.slice(from, to).split('\n').map((l) => l.replace(/^;;;\s?/, '')).join(' ').replace(/\s+/g, ' ');
   const say = (s) => assert.ok(prose.includes(s), `the REVIEW CASES state ${s}`);
   const at = (r, id, x) => BACK_HOLES(r, id).filter((h) => h[0] === x).map((h) => r2(h[1] + panelOf(r, id).box.y)).join(' ');
+  say('the box rows and the window\'s column of 18.10 are gone since 19.10.2026');
   const touch = computeCabinet({ ...BUD, notch: NOTCH, extension: { ...BAND, x0: 200 } }, P);
-  say(`the piece x ${panelOf(touch, 'BACK').box.x}..${panelOf(touch, 'BACK').box.x + panelOf(touch, 'BACK').w} (18 wide)`);
-  say(`share x 209: z ${at(touch, 'BACK', 9).split(' ').slice(0, 4).join(' ')} (the RETURN's), then ${at(touch, 'BACK', 9).split(' ')[4]}`);
-  say(`${BACK_HOLES(touch, 'BACK').length} holes, each once`);
-  say('PROBE: 7 holes, z 50 and 720 drilled twice');
+  assert.equal(panelOf(touch, 'BACK').w, 18);
+  assert.deepEqual(BACK_HOLES(touch, 'BACK'), [], 'the 18 wide piece between the two boxes carries no hole');
   const side = computeCabinet({ ...BUD, notch: { ...NOTCH, h: 300 }, extension: { x0: 0, x1: 400, z0: 300, z1: 500, d: 150 } }, P);
   say(`the side row x 9: z ${at(side, 'BACK', 9)}`);
   say('PROBE: x 9: z 350 720, the 350 in the window');
   const short = computeCabinet({ ...BUD, notch: { corner: 'BR', w: 200, d: 200, h: -60 }, extension: { x0: 0, x1: 600, z0: 100, z1: 700, d: 150 } }, P);
   assert.equal(at(short, 'BACK-2', 591), '', 'no side row on the 28');
-  say(`the box rows x 391: z ${at(short, 'BACK-2', 391)}`);
-  say(`the FLOOR's z 701: x ${BACK_HOLES(short, 'BACK-2').filter((h) => h[1] + 682 === 701).map((h) => h[0]).join(' ')}`);
+  assert.equal(at(short, 'BACK-2', 391), '', 'no box row either (19.10)');
+  say('(28, under one hole\'s offset): no side row there');
   say('PROBE: x 591: z 732 (in the notch) and 660 (under the board)');
 });
 

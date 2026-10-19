@@ -2279,10 +2279,10 @@ export function interiorRefusals(unitId, unit) {
     // A DIVIDER, by `addPartition`'s own gate — the same predicate the BAYS
     // chips are refused by, asked one bay further along.
     partition: bayRefusal(unitId, bayCount(unitId) + 1),
-    // ONE RAIL PER COLUMN is the store's own refusal (`addHangerRail` answers
-    // null). PRO greys it with `already fitted` when there is no column left to
-    // ask about; the words are `reasons.js`'s, named against that predicate.
-    hanger: counts.hanger > 0 && zones <= 1 ? REASONS.railAlreadyThere : '',
+    // CHAT FIX 19.10.2026 (KIT_HANGER_TWO.lsp D1, D2): a bay hangs TWO rods;
+    // the store says why not in its own words (`hangerRailRefusal`: a third,
+    // or no room 950 under the first), the same sentence PRO's press shows.
+    hanger: zones <= 1 ? (S().hangerRailRefusal(unitId, null) || '') : '',
     // ONE OF EACH BOUGHT MECHANISM PER OPENING (`addWardrobeKit` refuses a
     // second of the same kind in the same zone and answers null).
     // T75 F16 · …and none of them in a piece that stands beside a wardrobe

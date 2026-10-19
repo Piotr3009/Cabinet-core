@@ -1150,16 +1150,36 @@ function normalizeParams(raw, profile) {
       // no item written before tonight normalises to a key it did not have.
       ...(i.kind === 'hooks' && Number(i.count) > 0 ? { count: Math.trunc(Number(i.count)) } : {}),
     })),
-    columnRails: columnRailItems.map((i) => ({
-      zone: Math.trunc(Number(i.zone)),
-      offset: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
-      datum: i.datum || null,                    // T35-F1
-      mount: railMountOf(i),                     // T37-F2
-      shelfId: railShelfIdOf(i),                 // T37-F2
-      itemId: i.id ?? null,                      // T37-F2
-      material_id: i.material_id ?? null,
-      material_label: i.material_label ?? null,
-    })),
+    columnRails: [
+      ...columnRailItems.map((i) => ({
+        zone: Math.trunc(Number(i.zone)),
+        offset: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
+        datum: i.datum || null,                    // T35-F1
+        mount: railMountOf(i),                     // T37-F2
+        shelfId: railShelfIdOf(i),                 // T37-F2
+        itemId: i.id ?? null,                      // T37-F2
+        material_id: i.material_id ?? null,
+        material_label: i.material_label ?? null,
+      })),
+      // CHAT FIX 19.10.2026 (KIT_HANGER_TWO.lsp D4), the owner: *"nie ma
+      // mozliwosci dodania drugiego ponizej, dodaj to prosze"*. Every unit-wide
+      // hanger after the first is a rod of its own, cut by the column-rail law
+      // with NO column (zone null: the whole bay, BUL to BUR). The first stays
+      // `rail` / `railOffset` exactly as before, so nothing moves on a cabinet
+      // that hangs one rod.
+      ...items.filter((i) => i.kind === 'hanger' && (i.zone == null || !Number.isFinite(Number(i.zone))))
+        .filter((i) => i !== hangerFromItems)
+        .map((i) => ({
+          zone: null,
+          offset: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
+          datum: i.datum || null,
+          mount: railMountOf(i),
+          shelfId: railShelfIdOf(i),
+          itemId: i.id ?? null,
+          material_id: i.material_id ?? null,
+          material_label: i.material_label ?? null,
+        })),
+    ],
     // ─── Turn 17 (CLAUDE.md F8.1): THE FRONTS COME OFF ──────────────────────
     // The exact mirror of turn 15's "Remove doors", on the kit whose fronts ARE
     // its face: `false` takes them off so the boxes can be worked on, and the
@@ -5630,15 +5650,21 @@ export function computeCabinet(params, profileOverride) {
   // exists. On the override channel like everything else in this turn: no
   // zoned hanger item, no block, no change to any fixture.
   const columnRailSets = [];
-  if (type.supports.rail && Array.isArray(cfg.columnRails) && cfg.columnRails.length
-    && verticalItems.length) {
+  if (type.supports.rail && Array.isArray(cfg.columnRails) && cfg.columnRails.length) {
     for (const spec of cfg.columnRails) {
-      const k = Math.trunc(Number(spec?.zone));
-      const bay = bays[k];
+      // CHAT FIX 19.10.2026 (KIT_HANGER_TWO.lsp D4): a spec with no column is a
+      // SECOND unit-wide rod: its bay is the whole light, BUL to BUR, its
+      // supports the unit-wide shelves and the unit-wide stack, as the first's.
+      const whole = spec?.zone == null;
+      if (!whole && !verticalItems.length) continue;
+      const k = whole ? null : Math.trunc(Number(spec?.zone));
+      const bay = whole ? { from: G, to: W - G, size: internalWidth } : bays[k];
       if (!bay) continue;
-      const stack = columnDrawerSets.find((s) => s.zone === k) || null;
+      const stack = whole ? null : (columnDrawerSets.find((s) => s.zone === k) || null);
       const bayShelfItems = (cfg.shelfItems || [])
-        .filter((it) => Number.isFinite(Number(it?.zone)) && Math.trunc(Number(it.zone)) === k);
+        .filter((it) => (whole
+          ? (it?.zone == null || !Number.isFinite(Number(it.zone)))
+          : (Number.isFinite(Number(it?.zone)) && Math.trunc(Number(it.zone)) === k)));
       // T37-F2: a COLUMN's rail rides a shelf exactly as the unit-wide one
       // does — one law, two callers. Its shelf must be in ITS bay.
       const colRides = spec.mount === RAIL_MOUNT.SHELF
@@ -5671,7 +5697,7 @@ export function computeCabinet(params, profileOverride) {
         const colCeiling = H - G;
         const colSupports = railSupportTops({
           floor: G,
-          stackTop: stack ? stack.partY + G : null,
+          stackTop: whole ? (hasDrawers ? partitionY + G : null) : (stack ? stack.partY + G : null),
           shelves: bayShelfItems
             .map((it) => ({ id: it?.id ?? null, top: (Number(it?.pos_mm) || 0) + shelfThickness(it, G) })),
           ceiling: colCeiling,
@@ -5694,7 +5720,9 @@ export function computeCabinet(params, profileOverride) {
         if (colHeld.lowered) {
           warnings.push({
             code: 'RAIL_TOO_HIGH',
-            message: `Column ${k + 1}: rail too high for the carcass — lowered to fit under the top.`,
+            message: whole
+              ? 'Second rail too high for the carcass — lowered to fit under the top.'
+              : `Column ${k + 1}: rail too high for the carcass — lowered to fit under the top.`,
           });
         }
       }
@@ -5702,8 +5730,8 @@ export function computeCabinet(params, profileOverride) {
         zone: k,
         bay,
         bounds: {
-          left: k === 0 ? 'BUL' : `VPART-${k}`,
-          right: k === bays.length - 1 ? 'BUR' : `VPART-${k + 1}`,
+          left: (whole || k === 0) ? 'BUL' : `VPART-${k}`,
+          right: (whole || k === bays.length - 1) ? 'BUR' : `VPART-${k + 1}`,
         },
         railY: colRailY,
         support: colSupport,
@@ -10503,7 +10531,7 @@ export function computeCabinet(params, profileOverride) {
     hinges: hingedLeafCount > 0 ? centres.length * hingedLeafCount + splitHingeDelta : 0,
     runner_pairs: numDrawers,
     hangers: type.hangers ? P.wallUnit.hangers.count : 0,
-    rail: hasRail ? 1 : 0,
+    rail: (hasRail ? 1 : 0) + columnRailSets.filter((set) => set.zone == null).length,
   };
 
   // ── Hardware ───────────────────────────────────────────────────────────────
@@ -10971,9 +10999,11 @@ export function computeCabinet(params, profileOverride) {
   // Turn 32 (CLAUDE.md F4): a column's rail is its own purchase, cut to the
   // column's own light.
   for (const set of columnRailSets) {
+    // CHAT FIX 19.10.2026: a second unit-wide rod (zone null) is the bay's
+    // light long, the same purchase line as the first, so the two merge to 2.
     hw('rail', 'Hanging rail', 1, 'pcs',
-      { length_mm: set.bay.size, material_id: set.material_id, zone: set.zone },
-      [`${roundTo(set.bay.size, 0)} mm`, `column ${set.zone + 1}`, set.material_label || '']
+      { length_mm: set.bay.size, material_id: set.material_id, ...(set.zone == null ? {} : { zone: set.zone }) },
+      [`${roundTo(set.bay.size, 0)} mm`, set.zone == null ? '' : `column ${set.zone + 1}`, set.material_label || '']
         .filter(Boolean).join(' · '));
   }
   hw('shelf_pins', 'Shelf pins', numShelves * SH.pinsPerShelf, 'pcs',

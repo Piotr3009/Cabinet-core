@@ -47,7 +47,7 @@
 import { sidePanelGeometry, socketPanelGeometry, rectGeometry } from './puzzle.js';
 import { roundTo } from './format.js';
 // T79 F8 (KIT_RECESS.lsp D13, section H): notchOf to cutNotchCorner are what the extension asks of a carcass
-// the notch has cut; T79 F8 x F6 (D13 with KIT_NOTCH.lsp D10 amended): notchBackBoxRows, the rows into its box.
+// the notch has cut.
 import {
   notchProfile, notchP, notchJointInset, notchReplanSockets, notchReplanTabs, notchShift,
   notchMinJointEdge, notchScrewAxis, notchScrewRow, notchRowsBetweenTabs, notchEdgeRow,
@@ -56,7 +56,6 @@ import {
   cornerMarkRecords, notchEndCut, edgeNotchEndCut, notchEndOutline, edgeNotchCorners,
   notchOf, notchHh, notchFromTopP, notchFullP, notchBoxedP, notchLeftP, notchBackP,
   notchTopCut, notchTopJoints, notchSideFc, notchSideJoints, notchShelfCut, notchHoleInP, cutNotchCorner,
-  notchBackBoxRows,
 } from './notch.js';
 // T79 F8: a grown BUR's marks move with its re-origin (extensionDrills).
 import { shiftMark } from './marks.js';
@@ -348,11 +347,9 @@ export function recessRunRow(a, b, e) {
  * `nb` (T79 F8, KIT_RECESS.lsp D13): the footprint on the BACK of a BOXED
  * notch at a back corner, or null: the rows keep off it, run by run (a side
  * row on the edge the notch cuts runs on what the notch AND the window leave
- * of it, a row on its run: recessSideRow), and the piece that holds the
- * notch's box carries the rows into it exactly as the notched BACK alone does
- * (recessNotchBoxRows, KIT_NOTCH's notchBackBoxRows, D10 amended), after
- * drawBACK's rows and before the window's, a hole once (recessPutHole); with
- * null every row is where it was.
+ * of it, a row on its run: recessSideRow); with null every row is where it
+ * was. 19.10.2026 (D17, the owner): no row into the notch's box and none
+ * round the window; the first back carries drawBACK's rows only.
  */
 export function recessBackJoints(piece, window, cw, ch, g, ex0, ex1, ez0, ez1, topTabs, botTabs, bulTabs, burTabs, K, nb = null) {
   const sfe = notchP(K, 'puzzle.screwFromEnd');
@@ -401,34 +398,14 @@ export function recessBackJoints(piece, window, cw, ch, g, ex0, ex1, ez0, ez1, t
       }
     }
   }
-  // 18.10.2026 (KIT_RECESS.lsp D17 amended), the owner: *"jak mamy cut the
-  // corners lub recess to nie rysujesz mi dziurek na śrubki 3 mm, to trzeba
-  // będzie dodać"*; *"ale tylko na plecach."*  The rows round the window are
-  // back (17.10 took them away), S outside each edge a board stands behind: a
-  // column into RETURN-L's and RETURN-R's front ends over bz0 .. bz1, a row
-  // into the FLOOR's and the LID's front edges over wx0 .. wx1, THE BACK SCREW
-  // ROW over each run (notchEdgeRow; every run is at least notch.minInterior,
-  // D4, so none is ever short).
-  const inPieceX = (x) => x > x0 - EPS && x < x1 + EPS;
-  const inPieceZ = (z) => z > z0 - EPS && z < z1 + EPS;
-  // T79 F8 x F6 (D13 with KIT_NOTCH.lsp D10 amended, 18.10.2026): the rows
-  // into the notch's box, exactly as notchBackJoints draws them on the
-  // notched BACK (recessNotchBoxRows), on the piece that holds them.
-  for (const [x, z] of recessNotchBoxRows(nb, cw, ch, g, K)) {
-    if (inPieceX(x) && inPieceZ(z)) recessPutHole(scr, [x - x0, z - z0]);
-  }
-  // A hole once (recessPutHole): where the footprints touch (D13) the band's
-  // RETURN stands behind the notch's own and the two columns share x.
-  const column = (x) => {
-    for (const z of notchEdgeRow(bz0, bz1, sfe)) if (z >= z0 && z <= z1) recessPutHole(scr, [x - x0, z - z0]);
-  };
-  const row = (z) => {
-    for (const x of notchEdgeRow(wx0, wx1, sfe)) if (x >= x0 && x <= x1) recessPutHole(scr, [x - x0, z - z0]);
-  };
-  if (!recessLeftP(ex0) && inPieceX(wx0 - S)) column(wx0 - S);
-  if (!recessRightP(ex1, cw) && inPieceX(wx1 + S)) column(wx1 + S);
-  if (!recessFloorP(ez0) && inPieceZ(wz0 - S)) row(wz0 - S);
-  if (!recessTopP(ez1, ch) && inPieceZ(wz1 + S)) row(wz1 + S);
+  // 17.10.2026 (KIT_RECESS.lsp D17): NO hand-fix rows round the window and
+  // none into a notch's box; the BACK keeps drawBACK's rows into the sides,
+  // the TOP and the BOTTOM. Drawn again on 18.10 (T79 F6, F8) and withdrawn on
+  // 19.10.2026 by the owner: *"nie na pierwszych plecach tylko na tych
+  // drugich ktore sa we wnetrzu recess"*. The second back, the EXT-BACK,
+  // keeps its rows (recessExtBackScrews). The window and the band's interior
+  // stay bound for the record of what the rows were measured from.
+  void wx0; void wz0; void wx1; void wz1; void bz0; void bz1;
   return { LEFT, RIGHT, TOP, BOTTOM, SCREWS: scr };
 }
 
@@ -677,34 +654,10 @@ export function recessSideRow(bh, z0, tabs, nb, window, onSide, bandSide, sfe) {
   return out;
 }
 
-/** recess-put-hole: a hole on a piece once; `p` joins `pts` unless it holds it already (to EPS). Where the footprints touch (D13) the window's column falls on the notch's. */
-export function recessPutHole(pts, p) {
-  if (!pts.some((q) => Math.abs(q[0] - p[0]) < EPS && Math.abs(q[1] - p[1]) < EPS)) pts.push(p);
-  return pts;
-}
-
 /** recess-notch-xcut: the notch and its RETURN on the TOP's (BOTTOM's) back edge, carcass x; [] unless `edgeP`. */
 export function recessNotchXcut(nb, g, cw, edgeP) {
   if (!nb || !edgeP) return [];
   return [nb[0] <= 0 ? [0, nb[2] + g] : [nb[0] - g, cw]];
-}
-
-/**
- * recess-notch-box-rows (T79 F8 x F6, 18.10.2026, D13 with KIT_NOTCH.lsp D10
- * amended): the BACK's rows into a BOXED back-corner notch's box, [[x, z], ..]
- * in carcass x from the LEFT face and z up. The notch is read back off its
- * footprint `nb` (its width, the L corner when it starts at 0, h 0 at the
- * whole height, a negative h from the top, D21) and its rows are KIT_NOTCH's
- * own notchBackBoxRows: the very rows notchBackJoints draws on the notched
- * BACK alone, one routine. [] without nb.
- */
-export function recessNotchBoxRows(nb, cw, ch, g, K) {
-  if (!nb) return [];
-  const hh = nb[3] - nb[1];
-  let nh = hh;
-  if (nb[1] <= 0 && nb[3] >= ch) nh = 0;
-  else if (nb[1] > 0) nh = -hh;
-  return notchBackBoxRows(cw, ch, g, nb[2] - nb[0], nh, nb[0] <= 0 ? 'BL' : 'BR', K).SCREWS;
 }
 
 /**

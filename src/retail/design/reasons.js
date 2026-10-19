@@ -302,9 +302,6 @@ export const REASONS = {
   oneDoorTooWide: ({ width, max }) => `A single door is cut up to ${max} mm; this wardrobe is `
     + `${width} mm, so it opens as a pair.`,
 
-  /** PREDICATE: `addHangerRail` returned null — one rail per column (T32 F4). */
-  railAlreadyThere: 'There is already a rail in this column.',
-
   /**
    * T61 F4 · PREDICATE: `projectStore.addWardrobeKit` refuses a second of the
    * same kind in the same opening — `if (items.some((i) => i.kind === kind &&

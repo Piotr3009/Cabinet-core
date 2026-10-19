@@ -6,7 +6,8 @@
     "source": "KIT_RECESS.lsp D21 (the END panel grows with its side, its NUMBERS block F2 case D: BUD 600, the band 310..600 x 210..590, 150 deep, to the right edge and past END-R) on KIT_BUD_FULL.lsp: END-R 746 deep, the bump over the band's own height",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "19.10.2026 (chat fix, the owner's eye-test of T79): KIT_NOTCH.lsp D10 and KIT_RECESS.lsp D17: the 18.10 rows on the FIRST back are withdrawn. The owner: \"nie na pierwszych plecach tylko na tych drugich ktore sa we wnetrzu recess, na tych pierwszych nie, to juz bylo usuniete i znowu trzeba usunac\". No row into the notch's box and none round the window on the BACK; the EXT-BACK (the second back) keeps its rows of 18.10. SCREWS_3MM|BACK 22 -> 13;"
   },
   "params": {
     "type": "BUD",
@@ -154,7 +155,7 @@
           "d": 18
         },
         "outline": 8,
-        "holes": 40,
+        "holes": 31,
         "pockets": 9,
         "readiness": null
       },
@@ -326,7 +327,7 @@
       ],
       [
         "SCREWS_3MM|BACK",
-        22
+        13
       ],
       [
         "SCREWS_3MM|BUL",

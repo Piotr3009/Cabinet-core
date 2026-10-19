@@ -19,17 +19,23 @@ import { askNotchEdge, notchEdgeSpots } from './notchPick.js';
 // `NotchCorners.jsx`'s twin (KIT_NOTCH.lsp D22). CUT EDGE (PRO's right panel,
 // retail's SIZE step) sets `uiStore.edgeNotchPick` to the selected unit, and
 // this lights its four horizontal side edges in the same gold: a thin bar
-// along the whole width at each edge, and above the carcass top a handle that
-// takes the click (above, so no board of the carcass stands between it and the
-// eye), with a drop line down to its bar. The click opens the small window AT
-// THE CLICK (`edge-notch` in `lib/modalLayer.js`, about an object, held to an
-// anchor); the window does the rest. Nothing here writes a unit.
+// along the whole width at each edge, and ON the edge, at the middle of the
+// width, the square handle that takes the click. The click opens the small
+// window AT THE CLICK (`edge-notch` in `lib/modalLayer.js`, about an object,
+// held to an anchor); the window does the rest. Nothing here writes a unit.
+//
+// CHAT FIX 19.10.2026, the owner's eye-test of T79 F5: *"linia krawedzi
+// prawie niewidoczna i trudna do klikniecia; ma byc jak narozniki, kwadraty"*;
+// asked "kwadrat na srodku kazdej z 4 poziomych krawedzi boku, jak przy
+// naroznikach?": *"tak, bez mockupu, identycznie jak pionowe"*. The lifted
+// handles and their drop lines are gone; the square stands on its edge, the
+// corner's size, and a board of this carcass standing in front of it lets the
+// press through to it (`UnitView.jsx`, `edgeHandleBehind`).
 //
 // R7: nothing here is a DOM node; a walk finds the handles by
 // `userData.ccNotchEdge`, as every helper in this folder is found.
 
 const HANDLE_MM = 70;
-const LIFT_MM = 90;
 const BAR_MM = 14;
 
 export default function NotchEdges({
@@ -39,8 +45,6 @@ export default function NotchEdges({
   const [hot, setHot] = useState(null);
   if (!unitId || pick !== unitId) return null;
   const W = Number(width) || 0;
-  const H = Number(height) || 0;
-  const top = H + LIFT_MM;
   return (
     <group userData={{ ccHelper: true, ccNotchEdges: unitId }}>
       {notchEdgeSpots(width, depth, height).map((sp) => {
@@ -53,14 +57,9 @@ export default function NotchEdges({
               <boxGeometry args={[mm(W), mm(BAR_MM), mm(BAR_MM)]} />
               <meshBasicMaterial color={COLORS.gold} transparent opacity={opacity} depthTest={false} toneMapped={false} />
             </mesh>
-            {/* ...the drop line from the handle down to it */}
-            <mesh position={[mm(sp.x), mm((top + sp.y) / 2), mm(sp.z)]} renderOrder={13} raycast={() => null}>
-              <boxGeometry args={[mm(4), mm(top - sp.y), mm(4)]} />
-              <meshBasicMaterial color={COLORS.gold} transparent opacity={opacity} depthTest={false} toneMapped={false} />
-            </mesh>
-            {/* ...and the handle above the top, which takes the click */}
+            {/* ...and the square ON the edge, at the middle, which takes the click */}
             <mesh
-              position={[mm(sp.x), mm(top), mm(sp.z)]}
+              position={[mm(sp.x), mm(sp.y), mm(sp.z)]}
               renderOrder={14}
               userData={{ ccNotchEdge: sp.edge, ccUnitId: unitId }}
               onPointerOver={(e) => { e.stopPropagation(); setHot(sp.edge); }}

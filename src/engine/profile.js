@@ -4609,7 +4609,12 @@ export const DEFAULT_CABINET_PROFILE = {
     // far under a shelf's underside (the owner, 18.10.2026: *"przy przesuwaniu
     // zaproponuj 50 mm poniżej półki"*); the catch is `editor.shelfMagnetMm`.
     // Read by the store's drag only, never by a cut.
-    hanger: { dropMm: 40, belowShelfMm: 50 },
+    // CHAT FIX 19.10.2026 · `betweenRailsMm`: where a SECOND rod in the same
+    // bay is proposed, axis to axis under (or over) the other one, when it is
+    // added and when either is dragged (KIT_HANGER_TWO.lsp D2, D3; the owner:
+    // *"proponuj (jak polki) 950 jedne od drugiego"*; *"tak ale tylko jako
+    // propozycja"*). PROPOSED, owner to confirm. Read by the store only.
+    hanger: { dropMm: 40, belowShelfMm: 50, betweenRailsMm: 950 },
     // ─── THE SHELF SUPPORT (turn 25, CLAUDE.md F6) ──────────────────────────
     //
     // The owner: he wants to SEE gold or silver sleeves — and they are the
@@ -5394,10 +5399,13 @@ export const DEFAULT_CABINET_PROFILE = {
     // live in engine/messages.js; these are the NUMBERS in them, here
     // because rule 2 says a number lives in the profile.
     messages: {
-      // "GREY — a few seconds." Three is a few: long enough to read a file
-      // name, short enough that a bulk action does not paper the screen.
-      // OWNER'S DEFAULT, 15.08.2026 — one number, and it moves alone.
-      greyMs: 3000,
+      // CHAT FIX 19.10.2026, the owner on the left-hand messages: *"ma sie
+      // chowac po kilku sekundach i byc przezroczysty"*; asked "wszystkie
+      // chowaja sie po 4 s, czerwone po 8 s, historia zostaje": *"tak pls"*.
+      // Every level leaves on its own clock (engine/messages.js `hideMs`); a
+      // click on a red and a click away from a yellow still take them sooner.
+      // The row in the Changes list stays. Replaces greyMs 3000 (15.08.2026).
+      hideMs: { grey: 4000, yellow: 4000, red: 8000 },
       // How many may stand at once before the queue sheds the least important
       // OLDEST one. Never a red (engine/messages.js `trimQueue`).
       // OWNER-TUNABLE DEFAULT, 15.08.2026 — the owner has not named it; five

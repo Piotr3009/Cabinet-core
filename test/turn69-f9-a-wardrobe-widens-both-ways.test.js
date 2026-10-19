@@ -192,6 +192,10 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
     // AMENDED BY T79 F12: `CabinetEditorModal` (Center between armed from the shelf menu in this window: a
     // click in its canvas is the pick, *"wybierasz dolny i górny element"*), argued, re-frozen. Not a widening file.
     'CabinetEditorModal',
+    // AMENDED BY THE CHAT FIX OF 19.10.2026: `RailModal` (the rod's window finds its rod by item id: a second rod in
+    // the same bay, the owner: *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze"*), argued, re-frozen.
+    // Not a widening file.
+    'RailModal',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');

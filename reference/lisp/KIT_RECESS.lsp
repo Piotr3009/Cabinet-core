@@ -39,8 +39,8 @@
 ;;; SKY:tabCentres are COMMON's own; notch-profile, notch-p,
 ;;; notch-replan-sockets, notch-replan-tabs, notch-shift, notch-min-joint-edge,
 ;;; notch-screw-axis, notch-screw-row, notch-row-between,
-;;; notch-rows-between-tabs, notch-edge-row (18.10.2026), notch-back-box-rows
-;;; (18.10.2026, D13), notch-joint-inset, notch-rect-outline, notch-dogbone
+;;; notch-rows-between-tabs, notch-edge-row (18.10.2026, the EXT-BACK's rows),
+;;; notch-joint-inset, notch-rect-outline, notch-dogbone
 ;;; and notch-rot90-pts are KIT_NOTCH's own. All are CALLED.
 ;;;
 ;;; A NOTE ON NAMES. AutoLISP symbols are CASE-INSENSITIVE. The carcass is
@@ -173,9 +173,9 @@
 ;;; machined hole (F22 readiness 'geometry', fixing 'manual'), screwed on THE
 ;;; BACK SCREW ROW of SKYLON_COMMON ([screwFromEnd, mid, length - screwFromEnd]
 ;;; on the G / 2 axis). The routines below STATE where the screws go. The rows
-;;; that ARE drilled are the BACK's own: G / 2 outside each window edge that
-;;; has a board's end or edge behind it (a RETURN's end, the FLOOR's and the
-;;; LID's front edges), drawBACK's spacing along that edge.
+;;; that ARE drilled are the BACK's own: drawBACK's rows into the sides, the
+;;; TOP and the BOTTOM (D17: none round the window since 17.10.2026, drawn
+;;; again 18.10 and withdrawn 19.10.2026 by the owner).
 ;;; 18.10.2026 (D17 AMENDED, CLAUDE.md T79 F6): the EXT-BACK is a back, and a
 ;;; back carries its rows ("ale tylko na plecach"): its screws are DRILLED
 ;;; round the band (recess-ext-back-screws) and it is a cut part (readiness
@@ -249,21 +249,14 @@
 ;;;     (recess-cut-corner), and every edge cut by both takes its joints run
 ;;;     by run on what the two leave of it (recess-runs, D7): the BACK's side
 ;;;     row too, on the edge the notch cuts, on what the notch and the window
-;;;     leave of it, a row on its run (recess-side-row); where the footprints
-;;;     touch, the window's column falls on the notch's and the hole is
-;;;     drilled once (recess-put-hole; both the T79 F8 review). The BACK's
-;;;     pieces are cut from the NOTCHED back: a full-height notch takes its
-;;;     strip off the piece it reaches (that edge is the notch's: no joint),
-;;;     a part-height one is a corner of the piece that holds it; and the
-;;;     piece that holds the notch's box carries the rows into it exactly as
-;;;     the notched BACK alone does (KIT_NOTCH.lsp D10 AMENDED, the owner
-;;;     18.10.2026: *"jak mamy cut the corners lub recess to nie rysujesz mi
-;;;     dziurek na srubki 3 mm, to trzeba bedzie dodac"*; *"ale tylko na
-;;;     plecach."*): the whole new edge into the RETURN at full height, the
-;;;     RETURN's run and the LID's (from the top the FLOOR's) row at part
-;;;     height, by KIT_NOTCH's own notch-back-box-rows (recess-notch-box-rows,
-;;;     one routine; written apart until the F6 x F8 seam, the piece lost
-;;;     them). On a notched carcass the extension's FLOOR and LID are
+;;;     leave of it, a row on its run (recess-side-row; the T79 F8 review).
+;;;     The BACK's pieces are cut from the NOTCHED back: a full-height notch
+;;;     takes its strip off the piece it reaches (that edge is the notch's:
+;;;     no joint), a part-height one is a corner of the piece that holds it.
+;;;     No row goes into the notch's box (KIT_NOTCH.lsp D10: drawn 18.10,
+;;;     withdrawn 19.10.2026 by the owner, see D17 below), so the piece that
+;;;     holds the box carries drawBACK's rows only. On a notched carcass the
+;;;     extension's FLOOR and LID are
 ;;;     EXT-FLOOR and EXT-LID (the notch's box has a LID and, from the top, a
 ;;;     FLOOR of its own; recess-box-name). When the footprints overlap, the
 ;;;     notch stands and the extension is refused in words the Check shows
@@ -309,18 +302,15 @@
 ;;;     biscuits by hand, a Lamello one day; this file draws nothing for it
 ;;;     ("teraz nic"). The BACK's rows into the sides, the TOP and the BOTTOM
 ;;;     stay exactly where drawBACK puts them.
-;;;     AMENDED 18.10.2026 (CLAUDE.md T79 F6), the owner: *"jak mamy cut the
-;;;     corners lub recess to nie rysujesz mi dziurek na srubki 3 mm, to
-;;;     trzeba bedzie dodac"*; 14:17: *"ale tylko na plecach."*  The removal
-;;;     above is REVERSED on the backs, and only on the backs: the dia 3 rows
-;;;     follow EVERY edge of a back that meets a board.
-;;;       THE BACK      along the window's edges, S = G / 2 outside each edge
-;;;                     a board stands behind: a column into RETURN-L's and
-;;;                     RETURN-R's front ends over bz0 .. bz1, a row into the
-;;;                     FLOOR's and the LID's front edges over wx0 .. wx1 (what
-;;;                     was drilled until 17.10.2026); where the band reaches
-;;;                     an edge, the BACK's new edge beside it is a window edge
-;;;                     and takes the same column (CASE A: x 319)
+;;;     AMENDED 18.10.2026 (CLAUDE.md T79 F6, "ale tylko na plecach": the rows
+;;;     round the window on the BACK, and the EXT-BACK drilled) and HALF
+;;;     WITHDRAWN 19.10.2026, the owner on the eye-test of T79: *"nie na
+;;;     pierwszych plecach tylko na tych drugich ktore sa we wnetrzu recess,
+;;;     na tych pierwszych nie, to juz bylo usuniete i znowu trzeba usunac"*.
+;;;     So THE BACK (the first back) stands as written above: NO column into
+;;;     RETURN-L's and RETURN-R's front ends, NO row into the FLOOR's and the
+;;;     LID's front edges, nothing into a notch's box (D13); drawBACK's rows
+;;;     into the sides, the TOP and the BOTTOM only. What stays of 18.10:
 ;;;       THE EXT-BACK  along the band's four edges: a column into each
 ;;;                     vertical board's back end (a RETURN, or a grown side's
 ;;;                     bump) over bz0 .. bz1, x = S and w - S; a row into
@@ -329,16 +319,15 @@
 ;;;                     between the two vertical boards, g .. w - g, z = S and
 ;;;                     h - S (recess-ext-back-screws, what it stated until
 ;;;                     17.10.2026, now DRILLED: the EXT-BACK is a cut part)
-;;;     Each run carries THE BACK SCREW ROW over its length (KIT_NOTCH's
-;;;     notch-edge-row). Over g .. w - g that is drawBACK's notch-row-between
-;;;     whenever the run is longer than 2 x screwFromEnd; at exactly
-;;;     notch.minInterior (100, the narrowest band D4 lets through) it is two
-;;;     at the run's quarters, where notch-row-between would drill three holes
-;;;     in one place. Every run here is at least notch.minInterior long (D4),
-;;;     never under one hole's offset, so none is ever dropped.
+;;;     Each of its runs carries THE BACK SCREW ROW over its length
+;;;     (KIT_NOTCH's notch-edge-row). Over g .. w - g that is drawBACK's
+;;;     notch-row-between whenever the run is longer than 2 x screwFromEnd; at
+;;;     exactly notch.minInterior (100, the narrowest band D4 lets through) it
+;;;     is two at the run's quarters, where notch-row-between would drill
+;;;     three holes in one place. Every run here is at least notch.minInterior
+;;;     long (D4), never under one hole's offset, so none is ever dropped.
 ;;;     RETURN-L, RETURN-R, the FLOOR and the LID still state NO screw
-;;;     (recess-return-screws and recess-lid-screws answer nil): "tylko na
-;;;     plecach".
+;;;     (recess-return-screws and recess-lid-screws answer nil).
 ;;; D18 THE CORNER MARK, NOT THE DOG BONE. The owner 17.10.2026 on every L
 ;;;     outline: *"nie, nie dodawaj wiercenia, dodaj jeden layer w samym
 ;;;     cornerze okolo 40 mm w kazda strone na linii L shape i nazwij to
@@ -757,27 +746,22 @@
 ;;; (recess-side-joints "BACK-TABS" for a grown side, the parent's for the
 ;;; other). Only the edges the piece has are jointed:
 ;;;   ("LEFT" ..) ("RIGHT" ..) ("TOP" ..) ("BOTTOM" ..)   sockets
-;;;   ("SCREWS" ((x z) ..))   drawBACK's rows on the jointed edges, then the
-;;;        rows G / 2 outside each window edge that has a board's end or edge
-;;;        behind it (into a RETURN, the FLOOR, the LID). Until 17.10.2026
-;;;        they were drilled; D17 (17.10.2026, the owner: *"nie bedziemy tam
-;;;        wkrecac wkretow"*) took them away; D17 AMENDED (18.10.2026, the
-;;;        owner: *"to trzeba bedzie dodac ... ale tylko na plecach"*) puts
-;;;        them back: the dia 3 rows follow every edge of the BACK that meets
-;;;        a board.
+;;;   ("SCREWS" ((x z) ..))   drawBACK's rows on the jointed edges ONLY.
+;;;        Until 17.10.2026 this list also carried the hand-fix rows G / 2
+;;;        outside each window edge that had a board's end or edge behind it
+;;;        (into a RETURN, the FLOOR, the LID); D17 (17.10.2026) took them
+;;;        away, 18.10 put them back, 19.10.2026 the owner took them away
+;;;        again (D17): the window's edges carry no screw. `window` stays an
+;;;        argument for the record.
 ;;; `nb` (18.10.2026, D13): the footprint on the BACK of a BOXED notch at a
 ;;; back corner (recess-notch-footprint), or nil. The rows keep off it: a side
 ;;; row runs on what the notch leaves of that edge (and, where the band reaches
 ;;; that side too, on what the notch AND the window leave of it, D13, a row on
 ;;; its run: recess-side-row), a top or bottom row on
 ;;; what it leaves of the TOP's or the BOTTOM's back edge (the notch and its
-;;; RETURN, nw + g from that end), drawBACK's spacing on each run; the rows into
-;;; the notch's box are the notch's own, drawn on the piece that holds them
-;;; exactly as on the notched BACK alone (recess-notch-box-rows, KIT_NOTCH.lsp
-;;; notch-back-box-rows, D10 AMENDED), after drawBACK's rows and before the
-;;; window's, and a hole is drilled once (recess-put-hole: where the
-;;; footprints touch, the band's RETURN stands behind the notch's own and the
-;;; two columns share x). With nb nil every row is where it was.
+;;; RETURN, nw + g from that end), drawBACK's spacing on each run; no row into
+;;; the notch's box (KIT_NOTCH.lsp D10, 19.10.2026). With nb nil every row is
+;;; where it was.
 (defun recess-back-joints (piece window cw ch g ex0 ex1 ez0 ez1 topTabs botTabs bulTabs burTabs nb
                            / e sfe S x0 z0 x1 z1 bw bh inZ inX left right top bottom scr
                              wx0 wz0 wx1 wz1 bz0 bz1 runs ix0 ix1)
@@ -826,31 +810,12 @@
       (foreach sub (recess-runs (car run) (cadr run) (recess-notch-xcut nb g cw (and nb (<= (cadr nb) 0.0))))
         (foreach x (recess-run-row (max (car sub) x0) (min (cadr sub) x1) sfe)
           (setq scr (cons (list (- x x0) S) scr))))))
-  ;; D13 with KIT_NOTCH.lsp D10 AMENDED (18.10.2026): the rows into the
-  ;; notch's box, exactly as notch-back-joints draws them on the notched BACK
-  ;; (recess-notch-box-rows), on the piece that holds them, in its frame
-  (foreach p (recess-notch-box-rows nb cw ch g)
-    (if (and (> (car p) (- x0 1e-6)) (< (car p) (+ x1 1e-6))
-             (> (cadr p) (- z0 1e-6)) (< (cadr p) (+ z1 1e-6)))
-      (setq scr (recess-put-hole scr (list (- (car p) x0) (- (cadr p) z0))))))
-  ;; D17 AMENDED (18.10.2026): the rows round the window, S outside each edge
-  ;; a board stands behind: into a RETURN's front end (a vertical window edge
-  ;; that is not a side) over bz0 .. bz1, into the FLOOR's and the LID's front
-  ;; edge over wx0 .. wx1; THE BACK SCREW ROW over each run (notch-edge-row).
-  ;; A hole once (recess-put-hole): where the band's RETURN stands behind the
-  ;; notch's own (the footprints touch, D13) the two columns share x
-  (if (and (not (recess-left-p ex0)) (> (- wx0 S) (- x0 1e-6)) (< (- wx0 S) (+ x1 1e-6)))
-    (foreach z (notch-edge-row bz0 bz1 sfe)
-      (if (and (>= z z0) (<= z z1)) (setq scr (recess-put-hole scr (list (- (- wx0 S) x0) (- z z0)))))))
-  (if (and (not (recess-right-p ex1 cw)) (> (+ wx1 S) (- x0 1e-6)) (< (+ wx1 S) (+ x1 1e-6)))
-    (foreach z (notch-edge-row bz0 bz1 sfe)
-      (if (and (>= z z0) (<= z z1)) (setq scr (recess-put-hole scr (list (- (+ wx1 S) x0) (- z z0)))))))
-  (if (and (not (recess-floor-p ez0)) (> (- wz0 S) (- z0 1e-6)) (< (- wz0 S) (+ z1 1e-6)))
-    (foreach x (notch-edge-row wx0 wx1 sfe)
-      (if (and (>= x x0) (<= x x1)) (setq scr (recess-put-hole scr (list (- x x0) (- (- wz0 S) z0)))))))
-  (if (and (not (recess-top-p ez1 ch)) (> (+ wz1 S) (- z0 1e-6)) (< (+ wz1 S) (+ z1 1e-6)))
-    (foreach x (notch-edge-row wx0 wx1 sfe)
-      (if (and (>= x x0) (<= x x1)) (setq scr (recess-put-hole scr (list (- x x0) (- (+ wz1 S) z0)))))))
+  ;; D17 (17.10.2026, again 19.10.2026): NO hand-fix rows round the window
+  ;; and none into the notch's box (D13). The RETURNs' ends and the FLOOR's
+  ;; and LID's front edges behind the window's four edges get no screw
+  ;; through the BACK; the second back, the EXT-BACK, keeps its rows
+  ;; (recess-ext-back-screws). wx0 wz0 wx1 wz1 bz0 bz1 are bound above for
+  ;; the record of what the rows were measured from.
   (list (list "LEFT" left) (list "RIGHT" right) (list "TOP" top) (list "BOTTOM" bottom)
         (list "SCREWS" (reverse scr))))
 
@@ -1102,12 +1067,13 @@
 ;;; BACK sockets, right edge         95, 385, 675       NONE (the RETURN's end)
 ;;; BACK top/bottom sockets (x)      113, 487           113, 233
 ;;; BACK left screw row (z)          50, 240, 530, 720  unchanged (x 9)
-;;; BACK right screw row             50, 240, 530, 720  x 319, z 50 385 720 into
-;;;                                                     the RETURN's end (D17
-;;;                                                     AMENDED 18.10.2026; none
-;;;                                                     from 17.10 to 18.10)
+;;; BACK right screw row             50, 240, 530, 720  NONE (D17: none since
+;;;                                                     17.10.2026; x 319,
+;;;                                                     z 50 385 720 into the
+;;;                                                     RETURN's end from 18.10
+;;;                                                     to 19.10.2026)
 ;;; BACK top/bottom rows (x)         68, 300, 532       68, 173, 278 (the run 18..328)
-;;;   so the BACK carries 13 dia 3 holes (10 from 17.10 to 18.10)
+;;;   so the BACK carries 10 dia 3 holes (13 from 18.10 to 19.10.2026)
 ;;;
 ;;; THE ADDED BOARDS' FIXING: RETURN-L states NONE (17.10.2026, D17: biscuits
 ;;; by hand, a Lamello one day; until that morning it stated x 50 66 82 into
@@ -1131,13 +1097,10 @@
 ;;; BOTTOM     564 x 540    unchanged (the floor not reached)
 ;;; BACK       600 x 770    600 x 770, the pocket x 128..472, z 228..572, 18 deep;
 ;;;                         every parent socket and row kept (none in the window)
-;;;   the rows round the window, DRILLED (D17 AMENDED 18.10.2026; drilled
-;;;   until 17.10, none from 17.10 to 18.10), S = 9 outside each edge:
-;;;     into RETURN-L's end  x 119, z 278 400 522
-;;;     into RETURN-R's end  x 481, z 278 400 522
-;;;     into the FLOOR's front edge  x 178 300 422, z 219
-;;;     into the LID's front edge    x 178 300 422, z 581
-;;;   so the BACK carries the parent's 14 screws, the window's 12 (26 dia 3
+;;;   NO rows round the window (D17: none since 17.10.2026; drilled again from
+;;;   18.10 to 19.10.2026: into RETURN-L's end x 119 and RETURN-R's end x 481,
+;;;   z 278 400 522; into the FLOOR's front edge z 219 and the LID's z 581,
+;;;   x 178 300 422), so the BACK carries the parent's 14 screws (14 dia 3
 ;;;   holes) and the parent's 20 sockets.
 ;;; RETURN-L   -            132 x 344, carcass x 110..128, y 558..690, z 228..572
 ;;; RETURN-R   -            132 x 344, carcass x 472..490
@@ -1239,48 +1202,26 @@
 ;;; TOP/BOTTOM tabs into BACK (x)    95, 215            255
 ;;; BACK sockets, left edge (z)      95, 385, 675       NONE
 ;;; BACK top/bottom sockets (x)      113, 233           273
-;;; BACK left screw row (z)          50, 240, 530, 720  50, 240, 530, 720 at carcass x 209, into the notch's RETURN
+;;; BACK left screw row (z)          50, 240, 530, 720  NONE (the edge is the notch's RETURN: no joint, no row, D10)
 ;;; BACK top/bottom rows (x)         68, 173, 278       268, 273, 278
 ;;;   The TOP's tabs into the BACK: one run left between the notch and the
 ;;;   bump, 200..310 (110: one socket, centred; carcass x 273). The BACK's
-;;;   left edge meets the notch's RETURN: no joint, and the RETURN's column,
-;;;   x 209 (its own x 9), exactly as on the notched BACK alone (KIT_NOTCH.lsp
-;;;   D10 AMENDED, NUMBERS I5: notch-back-box-rows, by recess-notch-box-rows;
-;;;   the owner 18.10.2026: *"jak mamy cut the corners lub recess to nie
-;;;   rysujesz mi dziurek na srubki 3 mm, to trzeba bedzie dodac"*; *"ale
-;;;   tylko na plecach."*). Its right edge is the window's, with RETURN-L's
-;;;   column (D17 AMENDED). Its top and bottom rows run 218..328 (the notch
-;;;   and its RETURN, nw + g, off the TOP's back edge): notch-screw-row on 110
-;;;   gives three, the middle one on the socket's centre line, as the kit's
-;;;   own row does on a run this short.
+;;;   left edge meets the notch's RETURN: no joint and no row (KIT_NOTCH.lsp
+;;;   D10; drawn 18.10, withdrawn 19.10.2026). Its right edge is the window's:
+;;;   no row either (D17, 19.10.2026). Its top and bottom rows run 218..328
+;;;   (the notch and its RETURN, nw + g, off the TOP's back edge):
+;;;   notch-screw-row on 110 gives three, the middle one on the socket's
+;;;   centre line, as the kit's own row does on a run this short.
 ;;;
 ;;; THE BACK'S DIA 3 HOLES, BOTH CUT (carcass x; its own frame from x 200):
 ;;;   top row                     x 268 273 278, z 761
 ;;;   bottom row                  x 268 273 278, z 9
-;;;   into the notch's RETURN     x 209, z 50 240 530 720 (notch-back-box-rows)
-;;;   into RETURN-L's end         x 319, z 50 385 720 (the window's column)
-;;;   so the BACK carries 13 dia 3 holes (9 when the merge of T79 F6 and F8
-;;;   left the RETURN's column off the piece, 6 before F6)
-;;;
-;;; THE NOTCH'S BOX ROWS ON THE PIECE THAT HOLDS THEM (no golden; the same
-;;; band, carcass x, z up), each exactly the notched BACK's own (I5):
-;;;   BL 200/200/300    the piece x 0..328 holds the corner: into the RETURN
-;;;                     x 209: 50 150 250; into the LID, z 309: 68 109 150;
-;;;                     18 dia 3 holes on the piece
-;;;   BL 200/200/-300   the same piece: into the RETURN x 209: 520 620 720;
-;;;                     into the FLOOR, z 461: 68 109 150; 18 dia 3 holes
-;;;   BR 200/200/0      with the band x 0..290 (BUL grows): the piece x
-;;;                     272..400, into the RETURN x 391 (its own x 119): 50
-;;;                     240 530 720; 13 dia 3 holes
+;;;   so the BACK carries 6 dia 3 holes (13 from 18.10 to 19.10.2026, with the
+;;;   RETURN's column x 209 and the window's column x 319)
 ;;;
 ;;; THE REVIEW CASES (the T79 F8 review, 18.10.2026; no golden; carcass x, z
-;;; up). Each stood as the PROBE column says until recess-put-hole and
-;;; recess-side-row:
-;;;   the footprints touch: BL 200/200/0, the band x 200..600 floor to top
-;;;     the piece x 200..218 (18 wide); the notch's RETURN column and
-;;;     RETURN-L's share x 209: z 50 240 530 720 (the RETURN's), then 385
-;;;     (RETURN-L's own); 5 holes, each once
-;;;     PROBE: 7 holes, z 50 and 720 drilled twice
+;;; up). Each stood as the PROBE column says until recess-side-row (the box
+;;; rows and the window's column of 18.10 are gone since 19.10.2026):
 ;;;   the band and the notch on one side: BL 200/200/300, the band x 0..400,
 ;;;     z 300..500 (BUL grows; the window x 0..382, z 318..482): the left
 ;;;     edge runs 300..318 (no row: 18 is under one hole's offset) and
@@ -1288,8 +1229,7 @@
 ;;;     PROBE: x 9: z 350 720, the 350 in the window
 ;;;   a short run under a notch from the top: BR 200/200/-60, the band x 0..600,
 ;;;     z 100..700: BACK-2 is z 682..770 (88), its right edge runs 682..710
-;;;     (28, under one hole's offset): no side row there; the box rows x 391:
-;;;     z 725 755, the FLOOR's z 701: x 450 491 532
+;;;     (28, under one hole's offset): no side row there
 ;;;     PROBE: x 591: z 732 (in the notch) and 660 (under the board)
 
 ;;;========================================
@@ -1471,8 +1411,7 @@
 ;;; past it and cut away). Refused, the band is cut alone. Every
 ;;; routine below CALLS the extension's own (sections B to E) and the notch's
 ;;; own (notch-top-cut, notch-top-joints, notch-side-fc, notch-side-joints,
-;;; notch-shelf-cut, notch-hh, notch-from-top-p, notch-back-box-rows); none
-;;; re-states a law.
+;;; notch-shelf-cut, notch-hh, notch-from-top-p); none re-states a law.
 ;;; Which boards both cut, when the footprints are apart:
 ;;;   the SIDE only when a BOXED notch is part-height on the side the band
 ;;;        reaches (their heights apart): recess-notched-side-outline /
@@ -1483,9 +1422,8 @@
 ;;;        reaches it: recess-notched-top-outline / -joints;
 ;;;   the BACK when the notch is at a back corner: recess-notched-back-pieces,
 ;;;        recess-notched-back-corner, recess-notched-back-outline, and the
-;;;        rows by recess-back-joints with its `nb` (a boxed notch: the rows
-;;;        into the notch's box by recess-notch-box-rows, KIT_NOTCH's own
-;;;        notch-back-box-rows, on the piece that holds them); the
+;;;        rows by recess-back-joints with its `nb` (no row into the notch's
+;;;        box: KIT_NOTCH.lsp D10 since 19.10.2026); the
 ;;;        sockets on each piece are those of the boards as cut (a side or a
 ;;;        TOP / BOTTOM the notch cut gives the notch's, one both cut gives
 ;;;        section H's); an UNBOXED notch's rebate drops the rows it cuts away
@@ -1555,14 +1493,6 @@
         (setq out (cons z out)))))
   (reverse out))
 
-;;; A hole on a piece once: p consed onto the hole list pts unless it holds p
-;;; already (to 1e-6). Where the footprints touch (D13) the band's RETURN
-;;; stands behind the notch's own and the window's column falls on the
-;;; notch's: one hole, one screw.
-(defun recess-put-hole (pts p / found)
-  (foreach q pts (if (equal q p 1e-6) (setq found T)))
-  (if found pts (cons p pts)))
-
 ;;; The notch's width on the TOP's (BOTTOM's) back edge, carcass x, as a cut
 ;;; list: the notch and its RETURN, nw + g from its end; nil unless `edgeP`
 ;;; (the notch reaches that edge of the BACK).
@@ -1570,25 +1500,6 @@
   (if (and nb edgeP)
     (list (if (<= (car nb) 0.0) (list 0.0 (+ (caddr nb) g)) (list (- (car nb) g) cw)))
     nil))
-
-;;; THE ROWS INTO THE NOTCH'S BOX (18.10.2026, D13 with KIT_NOTCH.lsp D10
-;;; AMENDED): the BACK's rows into a BOXED back-corner notch's box, carcass x
-;;; from the LEFT face and z up, ((x z) ..). The notch is read back off its
-;;; footprint nb (recess-notch-footprint the other way round: its width, the
-;;; L corner when it starts at 0, h 0 when it runs the whole height, a
-;;; negative h when it hangs from the top, D21) and its rows are KIT_NOTCH's
-;;; own notch-back-box-rows: the very rows notch-back-joints draws on the
-;;; notched BACK alone, one routine. nil without nb.
-(defun recess-notch-box-rows (nb cw ch g / hh nh)
-  (if (null nb)
-    nil
-    (progn
-      (setq hh (- (cadddr nb) (cadr nb))
-            nh (cond ((and (<= (cadr nb) 0.0) (>= (cadddr nb) ch)) 0.0)
-                     ((> (cadr nb) 0.0) (- hh))
-                     (T hh)))
-      (cdr (assoc "SCREWS" (notch-back-box-rows cw ch g (- (caddr nb) (car nb)) nh
-                                                (if (<= (car nb) 0.0) "BL" "BR")))))))
 
 ;;; A CORNER TAKEN OUT of an outline: the anticlockwise outline `pts` of a
 ;;; w x h board less the rectangle nw x nh at its corner fc (x0y0 x1y0 x1y1

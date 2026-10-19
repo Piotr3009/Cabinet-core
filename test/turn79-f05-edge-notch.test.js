@@ -609,9 +609,12 @@ test('F5 · the picker: CUT EDGE lights the four edges (and puts the corners out
   U().startNotchPick(id);
   assert.equal(U().edgeNotchPick, null);
   U().stopNotchPick();
+  // REWRITTEN 19.10.2026 (chat fix, the owner: "kwadrat na srodku kazdej z 4
+  // poziomych krawedzi boku, jak przy naroznikach": "tak"): the square's spot
+  // is the middle of the edge, not a lifted handle at 35 / 65 percent.
   assert.deepEqual(notchEdgeSpots(600, 558, 770), [
-    { edge: 'TB', y: 770, z: 0, x: 210 }, { edge: 'BB', y: 0, z: 0, x: 390 },
-    { edge: 'TF', y: 770, z: 558, x: 210 }, { edge: 'BF', y: 0, z: 558, x: 390 },
+    { edge: 'TB', y: 770, z: 0, x: 300 }, { edge: 'BB', y: 0, z: 0, x: 300 },
+    { edge: 'TF', y: 770, z: 558, x: 300 }, { edge: 'BF', y: 0, z: 558, x: 300 },
   ]);
   assert.deepEqual(MODAL_KINDS['edge-notch'], { about: 'object', label: 'Cut edge' });
   assert.equal(modalNeedsAnchor('edge-notch'), true);

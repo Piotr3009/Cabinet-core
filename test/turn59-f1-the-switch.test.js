@@ -273,7 +273,9 @@ const EXEMPT = {
     + ' T78 F11 · a Blind corner pull-out row on the blind kits only (Hafele), through the same setCornerKit: one BOM line, a placeholder body behind the blank, zero holes; a fixed shelf in its way is refused in words. *"hafele naroznik slepy czyli wysuwane."*'
     + ' T79 F2 . the shelves\' WHICH SIDE gains a third button, Above divider, shown only while the divider ends under a FIX shelf below the top; hovering lights the full-width opening over it and Add centres full-width shelves there; an opening that goes away while picked asks for a bay again, never a mute Add. *"jak dodamy fix półkę i divider pod spodem to nie mam możliwości dodania całkowitej półki powyżej bo kod dzieli mi całą szafę na bay 1 i 2, a nie mam czegoś takiego że jest bay nie dzielony powyżej."* Mockup approved 14:45: *"1 - tak."*'
     + ' T79 F3 · the internal drawers block asks COLUMNS 1 or 2 beside the count while the unit is undivided; 2 adds one divider mid-width, a stack in each column and one fixed shelf over both in one undo; a divided unit keeps "Which column". *"jak ustawiamy sobie teraz 3 szuflady internal to niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."*; mockup approved: *"2 - tak."*'
-    + ' T79 F11 . the With a shelf / Rail alone toggle, its state and the assembly hint are deleted (kasacja); Add hanger rail adds the rod alone and says the drag proposes its place under a shelf. *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to; przy przesuwaniu zaproponuj 50 mm poniżej półki."*',
+    + ' T79 F11 . the With a shelf / Rail alone toggle, its state and the assembly hint are deleted (kasacja); Add hanger rail adds the rod alone and says the drag proposes its place under a shelf. *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to; przy przesuwaniu zaproponuj 50 mm poniżej półki."*'
+    + ' CHAT FIX 19.10.2026 (re-frozen): Add hanger rail asks the store why not (a third rod, or no room under the first) and says it in words; a second rod in the same bay is born 950 under the first as a proposal (KIT_HANGER_TWO.lsp). *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze, i proponuj (jak polki) 950 jedne od drugiego"*; *"tak ale tylko jako propozycja"*.',
+
   // ─── RENEWED BY TURN 72 · THE SAME FILE, A THIRD LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission, so tonight's
   // edit is argued again with tonight's quote and tonight's hash. The map does
@@ -297,11 +299,16 @@ const EXEMPT = {
   // with the owner's words from this file and re-frozen at its final hash in
   // the same commit."*
   'src/components/Messages.jsx':
-    'T79 F1 . all three levels stand in ONE bottom-left column (the centre and the bottom-centre blocks deleted), the newest nearest the Changes bar under them; the bar opens the list of the last profile.ui.messages.historyMax messages (newest first, HH:MM, the level\'s dot, the text, Clear), collapsed by default, Escape collapses it, never saved; a folded yellow or grey says its count once (its text), a red beside it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*',
+    'T79 F1 . all three levels stand in ONE bottom-left column (the centre and the bottom-centre blocks deleted), the newest nearest the Changes bar under them; the bar opens the list of the last profile.ui.messages.historyMax messages (newest first, HH:MM, the level\'s dot, the text, Clear), collapsed by default, Escape collapses it, never saved; a folded yellow or grey says its count once (its text), a red beside it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
+    + ' CHAT FIX 19.10.2026 (re-frozen): the grey card is translucent (bg-shell-800/70); the timing is the store\'s and engine/messages.js hideMs (every level leaves on its clock: 4 s, reds 8 s; the Changes row stays). *"ma sie chowac po kilku sekundach i byc przezroczysty"*; asked "wszystkie chowaja sie po 4 s, czerwone po 8 s, historia zostaje, tlo przezroczyste 70 procent?": *"tak pls"*.',
   // CLAUDE.md T79 F12: the shelf menu's Center between stands in this window
   // too, so a click in its own canvas must be able to be the pick.
   'src/components/CabinetEditorModal.jsx':
-    'T79 F12 · Center between armed from the shelf menu in this window: a click on a shelf, the drawer cap, the bottom or the top in its canvas is handed to the uiStore\'s selectElement as a pick (as the room hands it), any other click ends the mode, and Escape ends the picking while the piece stays in hand. *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie półki pomiędzy tymi elementami się centrują."*',
+    'T79 F12 · Center between armed from the shelf menu in this window: a click on a shelf, the drawer cap, the bottom or the top in its canvas is handed to the uiStore\'s selectElement as a pick (as the room hands it), any other click ends the mode, and Escape ends the picking while the piece stays in hand. *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie półki pomiędzy tymi elementami się centrują."*'
+    + ' CHAT FIX 19.10.2026 (re-frozen): Delete and Backspace on the piece picked in this window go through the room\'s one action, deleteSelectedElement (lib/deleteKey.js guard, the selection falls where the plan says, a refused piece answers in words); the Remove button untouched. *"zeby cos wykasowac trzeba isc do menu i nacisnac delete item, a nie ma zaznaczenia itemu i nacisniecie delete"*.',
+  // CHAT FIX 19.10.2026: the second rod in a bay (KIT_HANGER_TWO.lsp).
+  'src/components/RailModal.jsx':
+    'T79 F11 (the rod alone), CHAT FIX 19.10.2026 (re-frozen): the window finds its rod BY ITEM ID first (the store\'s railTravelFor reads it so); a second unit-wide rod is published among the column rods with no column, and the zone alone would name the first. *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze"*.',
 };
 
 /**
@@ -320,7 +327,8 @@ const FROZEN = {
   // T78 F11 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F2, F3 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F11 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/AddItems.jsx': 'ce9ced6e4ec2542a0bee8d1e5612c611ad208bc6ebcf309943b96dd0690d7161',
+  // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/AddItems.jsx': '49184c38bab4b6e75920c86c18b48edf09c8bea816ec9acbdfe0e43a2d6acf44',
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/AssignMaterialsModal.jsx': '1f9d71d9af9b57ba7e8f77b38c99fda7368a657a3289b69be87ac166337cc82e',
@@ -328,7 +336,8 @@ const FROZEN = {
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/BomPanel.jsx': 'ee8cf839b68c547c36a3f76de1edb89a5d44becddc4e04744c9f3242ca0af074',
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/CabinetEditorModal.jsx': '2dcdc4452665fffbfe991235c0a2e2cf4af1d0ede439a0adce0df81339da3b4e',
+  // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CabinetEditorModal.jsx': '3f080e23b09ce5c5018f89649264e77cb85e5f5594dafecd839673d6db9fd066',
   'src/components/CanvasToolbar.jsx': 'ee85f7f7d4b3a64021f56cbea5fe36ff504136ace340216fdef71fcb316e2bd9',
   'src/components/CheckPanel.jsx': '65a991cbc4aed29b3c9a49ed613e715dd3d033106f8e5e9ded45e8125a8dc014',
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
@@ -368,14 +377,16 @@ const FROZEN = {
   'src/components/MaterialPicker.jsx': 'd2b1d49bb1ef08d55652437986d4d40a2cac7c1683b42d16b0523b0e08fca5b7',
   'src/components/MenuBar.jsx': '8259c2d7b81f5f176c8c20d6faf98d6c2943667e2dd6354154a85748da1c4581',
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/Messages.jsx': 'f01a71b01c20512a52e5442e01082fac769b1be2a66869f5955150ef654c672f',
+  // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/Messages.jsx': '3cb03d1bd5da7c8bcd963e3a4cc88eda6fb4de69cd57bc2dda8ddbecbb0d0fde',
   'src/components/MockModeBadge.jsx': '081294a78610a7fd3baef730ca7a318d8d193e40ef66c5d278e45f9672c82826',
   'src/components/Modal.jsx': '4bee3abfa7d391916931428869da887ea6e56c002ee1980b596413de5fc7ddbe',
   'src/components/MultiUnitPanel.jsx': 'ad7d770b51042f0c2e8d9633df4067c5a7d8d4af6e358fad2e90cf62e631531c',
   'src/components/NewProjectFlow.jsx': '504081eb2764b691da4209f87ac3d59dcc8643b7828ef26ba03aa870543d8966',
   'src/components/NumberField.jsx': 'ae2f9b89ea20a8da26fdf77db1cdb00cb487a2e5110128263f4c33f32eb5c176',
   'src/components/PartDetailModal.jsx': 'aaa5a376c870dd56a1d80ab4373bd4cc035a1d78570f943b0a3a4b32ffeb1eff',
-  'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
+  // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/RailModal.jsx': '99b29df3301ec735ce4da66cd80f1665f9306c95ae0d4cc0bb92c213106ca91f',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
   // T78 PART E, after the walk re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F4 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -618,6 +629,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // T79 F1 · *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej"*: one bottom-left column and the Changes list.
     'src/components/Messages.jsx',
     'src/components/PartDetailModal.jsx',
+    // CHAT FIX 19.10.2026 · *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze"*: the rod's window finds its rod by item id.
+    'src/components/RailModal.jsx',
     'src/components/RightPanel.jsx',
     'src/components/RoomModal.jsx',
     // T75 F20 · *"`lib/templates.js` grows `kind: 'set'`"*: the modal saves a selection as a set.

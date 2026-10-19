@@ -163,11 +163,14 @@ test('F4 · a greyed row carries the predicate\'s own sentence, not a retail one
   S().addDrawers(id, 3);
   assert.equal(A.interiorRefusals(id, unit(id)).watch, '');
 
-  // THE HANGING RAIL — one per column, the store's own refusal (`addHangerRail`
-  // answers null); the words are `reasons.js`'s against that predicate.
+  // THE HANGING RAIL. REWRITTEN 19.10.2026 (chat fix, KIT_HANGER_TWO.lsp D1):
+  // two per bay, the store's own sentence (`hangerRailRefusal`) greys the row
+  // when the bay hangs its two, and the press agrees.
   S().addHangerRail(id, {});
-  assert.equal(A.interiorRefusals(id, unit(id)).hanger, REASONS.railAlreadyThere);
-  assert.equal(S().addHangerRail(id, {}), null, 'the store did not refuse the second rail');
+  assert.equal(A.interiorRefusals(id, unit(id)).hanger, '', 'room for a second');
+  assert.ok(S().addHangerRail(id, {}), 'the second rail');
+  assert.equal(A.interiorRefusals(id, unit(id)).hanger, 'This bay already hangs two rails.');
+  assert.equal(S().addHangerRail(id, {}), null, 'the store did not refuse the third rail');
 
   // A BOUGHT MECHANISM — one of each kind per opening.
   S().addWardrobeKit(id, 'trouser');

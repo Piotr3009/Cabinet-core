@@ -23,7 +23,7 @@ import { useUiStore } from '../src/stores/uiStore.js';
 import { useHistoryStore } from '../src/stores/historyStore.js';
 import { gatePatch, touchesProject, PROJECT_KEYS } from '../src/stores/dirtyGate.js';
 import {
-  LEVELS, UNSAVED_MESSAGE, dismissedByClickAway, expired, greyMs, leaveWarning, levelOf,
+  LEVELS, UNSAVED_MESSAGE, dismissedByClickAway, expired, hideMs, leaveWarning, levelOf,
   makeMessage, messagesAt, pushMessage, queueMax, sortForDisplay, trimQueue,
 } from '../src/engine/messages.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
@@ -172,14 +172,18 @@ test('the four old tones ARE the three levels, so 129 call sites keep working', 
   assert.equal(levelOf('red'), 'red');
 });
 
-test('only a GREY has a clock — a red that expired would be the old bug', () => {
+// REWRITTEN 19.10.2026 (chat fix), the owner on the left-hand messages: "ma sie
+// chowac po kilku sekundach"; asked "wszystkie chowaja sie po 4 s, czerwone po
+// 8 s, historia zostaje": "tak pls". Every level has a clock now.
+test('every level has a clock: greys and yellows 4 s, reds 8 s (19.10.2026)', () => {
   const red = makeMessage('boom', 'error', { at: 1000, profile: P });
   const yellow = makeMessage('careful', 'warn', { at: 1000, profile: P });
   const grey = makeMessage('saved', 'ok', { at: 1000, profile: P });
-  assert.equal(red.expiresAt, null);
-  assert.equal(yellow.expiresAt, null);
-  assert.equal(grey.expiresAt, 1000 + greyMs(P));
-  assert.deepEqual(expired([red, yellow, grey], 1000 + greyMs(P)), [grey.id]);
+  assert.equal(red.expiresAt, 1000 + hideMs(P, 'red'));
+  assert.equal(yellow.expiresAt, 1000 + hideMs(P, 'yellow'));
+  assert.equal(grey.expiresAt, 1000 + hideMs(P, 'grey'));
+  assert.deepEqual(expired([red, yellow, grey], 1000 + hideMs(P, 'grey')), [yellow.id, grey.id]);
+  assert.deepEqual(expired([red, yellow, grey], 1000 + hideMs(P, 'red')), [red.id, yellow.id, grey.id]);
   assert.deepEqual(expired([red, yellow, grey], 1000), []);
 });
 
@@ -237,13 +241,16 @@ test('all three levels stand in ONE place, on the left, red above yellow above g
   assert.deepEqual(messagesAt(list, 'bottom'), []);
 });
 
-test('the two numbers are PROFILE numbers (rule 2)', () => {
-  assert.equal(P.ui.messages.greyMs, 3000);
+test('the numbers are PROFILE numbers (rule 2)', () => {
+  assert.deepEqual(P.ui.messages.hideMs, { grey: 4000, yellow: 4000, red: 8000 });
   assert.equal(P.ui.messages.maxOnScreen, 5);
-  assert.equal(greyMs(P), 3000);
+  assert.equal(hideMs(P, 'grey'), 4000);
+  assert.equal(hideMs(P, 'yellow'), 4000);
+  assert.equal(hideMs(P, 'red'), 8000);
   assert.equal(queueMax(P), 5);
   // …and a profile that has never heard of them still works.
-  assert.equal(greyMs(null), 3000);
+  assert.equal(hideMs(null, 'grey'), 4000);
+  assert.equal(hideMs(null, 'red'), 8000);
   assert.equal(queueMax({}), 5);
 });
 

@@ -7,7 +7,7 @@
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
-    "repinned": "18.10.2026 (the owner's list, CLAUDE.md T79 F6): KIT_RECESS.lsp D17 AMENDED. The column through the BACK into RETURN-L's end is back (x 319, z 50 385 720; SCREWS_3MM|BACK 10 -> 13, BACK holes 24 -> 27) and the EXT-BACK, a back, is drilled with its twelve rows round the band (SCREWS_3MM|EXT-BACK 0 -> 12, its holes 0 -> 12, readiness geometry -> cut). The owner: \"jak mamy cut the corners lub recess to nie rysujesz mi dziurek na srubki 3 mm, to trzeba bedzie dodac\"; 14:17: \"ale tylko na plecach.\" RETURN-L still carries nothing. Before this: 17.10.2026 (the owner's morning): KIT_RECESS.lsp D17 and D18. No dog bone at the bump corners (TOP, BOTTOM, SHELF-1: holes 1 -> 0; CORNER_4MM marks instead) and no column through the BACK into RETURN-L's end (SCREWS_3MM|BACK 13 -> 10). The owner: \"nie, nie dodawaj wiercenia\" and \"nie bedziemy tam wkrecac wkretow\". Outlines, boards and the rest unchanged."
+    "repinned": "19.10.2026 (chat fix, the owner's eye-test of T79): KIT_NOTCH.lsp D10 and KIT_RECESS.lsp D17: the 18.10 rows on the FIRST back are withdrawn. The owner: \"nie na pierwszych plecach tylko na tych drugich ktore sa we wnetrzu recess, na tych pierwszych nie, to juz bylo usuniete i znowu trzeba usunac\". No row into the notch's box and none round the window on the BACK; the EXT-BACK (the second back) keeps its rows of 18.10. SCREWS_3MM|BACK 13 -> 10; Before this: 18.10.2026 (the owner's list, CLAUDE.md T79 F6): KIT_RECESS.lsp D17 AMENDED. The column through the BACK into RETURN-L's end is back (x 319, z 50 385 720; SCREWS_3MM|BACK 10 -> 13, BACK holes 24 -> 27) and the EXT-BACK, a back, is drilled with its twelve rows round the band (SCREWS_3MM|EXT-BACK 0 -> 12, its holes 0 -> 12, readiness geometry -> cut). The owner: \"jak mamy cut the corners lub recess to nie rysujesz mi dziurek na srubki 3 mm, to trzeba bedzie dodac\"; 14:17: \"ale tylko na plecach.\" RETURN-L still carries nothing. Before this: 17.10.2026 (the owner's morning): KIT_RECESS.lsp D17 and D18. No dog bone at the bump corners (TOP, BOTTOM, SHELF-1: holes 1 -> 0; CORNER_4MM marks instead) and no column through the BACK into RETURN-L's end (SCREWS_3MM|BACK 13 -> 10). The owner: \"nie, nie dodawaj wiercenia\" and \"nie bedziemy tam wkrecac wkretow\". Outlines, boards and the rest unchanged."
   },
   "params": {
     "type": "BUD",
@@ -141,7 +141,7 @@
           "d": 18
         },
         "outline": 4,
-        "holes": 27,
+        "holes": 24,
         "pockets": 7,
         "readiness": null
       },
@@ -253,7 +253,7 @@
       ],
       [
         "SCREWS_3MM|BACK",
-        13
+        10
       ],
       [
         "SCREWS_3MM|BUL",

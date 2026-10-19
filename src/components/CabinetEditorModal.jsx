@@ -12,6 +12,7 @@ import Hardware, { DoorHinges, hingeSpecsFor } from '../3d/Hardware.jsx';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
 import { useStorageBase } from '../lib/storageBase.js';
+import { isDeleteKey } from '../lib/deleteKey.js';
 import { useViewHandle } from '../3d/viewHandle.js';
 import EditorRig from '../3d/EditorRig.jsx';
 import useContextGuard from '../3d/contextGuard.jsx';
@@ -107,6 +108,8 @@ export default function CabinetEditorModal() {
   const anchor = args?.anchor || null;
   const units = useProjectStore((s) => s.units);
   const unitResult = useProjectStore((s) => s.unitResult);
+  const deleteSelectedElement = useProjectStore((s) => s.deleteSelectedElement);
+  const notify = useUiStore((s) => s.notify);
   const storedDesign = useProjectStore((s) => s.project.design);
   const profile = useCabinetProfileStore((s) => s.profile);
 
@@ -265,6 +268,24 @@ export default function CabinetEditorModal() {
   useEffect(() => {
     if (!selectedId) return undefined;
     const onKey = (e) => {
+      // ─── CHAT FIX 19.10.2026 · DELETE, IN THIS WINDOW TOO ─────────────────
+      // The owner: *"zeby cos wykasowac trzeba isc do menu i nacisnac delete
+      // item, a nie ma zaznaczenia itemu i nacisniecie delete"*. The piece
+      // picked here lives in this window's own state, so the room's key
+      // (ConfiguratorPage, which reads the uiStore's selection) never saw it.
+      // The same guard (`lib/deleteKey.js`: inert in a field) and the same
+      // action as the room's key, `deleteSelectedElement`; the selection falls
+      // where the plan says (a stack of drawers, one per press), a refused
+      // piece answers with its sentence, the Remove button stays as it is.
+      if (isDeleteKey(e)) {
+        if (!args?.unitId) return;
+        e.stopPropagation();
+        e.preventDefault();
+        const res = deleteSelectedElement({ unitId: args.unitId, elementRef: selectedId });
+        if (res.ok) setSelectedId(res.next || null);
+        else if (res.error && res.error !== 'Nothing is selected.') notify(res.error, 'warn');
+        return;
+      }
       if (e.key !== 'Escape') return;
       e.stopPropagation();
       e.preventDefault();
@@ -276,7 +297,7 @@ export default function CabinetEditorModal() {
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [selectedId, args?.unitId]);
+  }, [selectedId, args?.unitId, deleteSelectedElement, notify]);
 
   const item = useMemo(() => {
     const id = selected?.meta?.itemId;

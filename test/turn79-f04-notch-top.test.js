@@ -218,14 +218,13 @@ test('F4 · NUMBERS: which joints move (I2 WHICH JOINTS MOVE), routine and real 
   assert.deepEqual(bj['NEAR-SOCKETS'], [95, 375]);
   assert.deepEqual(bj['TOP-SOCKETS'], [313, 487]);
   assert.deepEqual(bj['BOTTOM-SOCKETS'], [113, 487]);
-  // T79 F6 (KIT_NOTCH.lsp D10 amended, 18.10.2026; the owner: *"to trzeba będzie
-  // dodać ... ale tylko na plecach"*): beside the notch the row into the
-  // RETURN's end (x 209), under it the row into the FLOOR's back edge (y 461).
+  // REWRITTEN 19.10.2026 (chat fix, KIT_NOTCH.lsp D10 as on 17.10; the owner:
+  // *"na tych pierwszych nie, to juz bylo usuniete i znowu trzeba usunac"*):
+  // no row beside the notch into the RETURN's end (x 209) and none under it
+  // into the FLOOR's back edge (y 461), both drawn from 18.10 to 19.10.
   assert.deepEqual(bj.SCREWS, [
     [591, 50], [591, 240], [591, 530], [591, 720],
     [9, 50], [9, 235], [9, 420],
-    [209, 520], [209, 620], [209, 720],
-    [68, 461], [109, 461], [150, 461],
     [268, 761], [400, 761], [532, 761],
     [68, 9], [300, 9], [532, 9],
   ]);

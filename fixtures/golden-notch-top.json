@@ -7,7 +7,7 @@
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
-    "repinned": "18.10.2026 (the owner's list, CLAUDE.md T79 F6): KIT_NOTCH.lsp D10 AMENDED. The BACK carries the row beside the notch into the RETURN's end (x 209, y 520 620 720) and the row under it into the FLOOR's back edge (y 461, x 68 109 150) (SCREWS_3MM|BACK 13 -> 19, BACK holes 31 -> 37). The owner: \"jak mamy cut the corners lub recess to nie rysujesz mi dziurek na srubki 3 mm, to trzeba bedzie dodac\"; 14:17: \"ale tylko na plecach.\" The box boards still carry nothing; outlines and every other drilling unchanged."
+    "repinned": "19.10.2026 (chat fix, the owner's eye-test of T79): KIT_NOTCH.lsp D10 and KIT_RECESS.lsp D17: the 18.10 rows on the FIRST back are withdrawn. The owner: \"nie na pierwszych plecach tylko na tych drugich ktore sa we wnetrzu recess, na tych pierwszych nie, to juz bylo usuniete i znowu trzeba usunac\". No row into the notch's box and none round the window on the BACK; the EXT-BACK (the second back) keeps its rows of 18.10. SCREWS_3MM|BACK 19 -> 13; Before this: 18.10.2026 (the owner's list, CLAUDE.md T79 F6): KIT_NOTCH.lsp D10 AMENDED. The BACK carries the row beside the notch into the RETURN's end (x 209, y 520 620 720) and the row under it into the FLOOR's back edge (y 461, x 68 109 150) (SCREWS_3MM|BACK 13 -> 19, BACK holes 31 -> 37). The owner: \"jak mamy cut the corners lub recess to nie rysujesz mi dziurek na srubki 3 mm, to trzeba bedzie dodac\"; 14:17: \"ale tylko na plecach.\" The box boards still carry nothing; outlines and every other drilling unchanged."
   },
   "params": {
     "type": "BUD",
@@ -141,7 +141,7 @@
           "d": 18
         },
         "outline": 6,
-        "holes": 37,
+        "holes": 31,
         "pockets": 9,
         "readiness": null
       },
@@ -273,7 +273,7 @@
       ],
       [
         "SCREWS_3MM|BACK",
-        19
+        13
       ],
       [
         "SCREWS_3MM|BUL",

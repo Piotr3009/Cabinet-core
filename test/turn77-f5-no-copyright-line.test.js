@@ -147,6 +147,13 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f34-t79-f18.mjs',
   // T79 WALK (18.10.2026): the acceptance walk
   'scripts/t79-walk.mjs',
+  // Chat fix 19.10.2026 (three packages: Delete, CUT EDGE, messages; the first back; the second rod)
+  'scripts/t78-classify.d/f35-owner-1910.mjs',
+  'scripts/t78-classify.d/f36-owner-1910b.mjs',
+  'scripts/t78-classify.d/f37-owner-1910c.mjs',
+  'scripts/chatfix-1910-walk.mjs',
+  'test/chatfix-1910-delete-edges-messages.test.js',
+  'test/chatfix-1910-hanger-two.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

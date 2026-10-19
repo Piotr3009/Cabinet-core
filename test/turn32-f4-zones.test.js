@@ -156,7 +156,12 @@ test('each column may hang its own rail, cut to its own light', () => {
   const { id } = dividedWardrobe(1200);
   const a = store().addHangerRail(id, { zone: 0 });
   assert.ok(a, 'column 1 takes a rail');
-  assert.equal(store().addHangerRail(id, { zone: 0 }), null, 'a second in the same column is refused');
+  // REWRITTEN 19.10.2026 (chat fix, KIT_HANGER_TWO.lsp D1): a column hangs TWO
+  // rods, the second 950 under the first; the THIRD is the refusal now.
+  const a2 = store().addHangerRail(id, { zone: 0 });
+  assert.ok(a2, 'a second in the same column is born 950 under the first');
+  assert.equal(store().addHangerRail(id, { zone: 0 }), null, 'a third in the same column is refused');
+  store().removeItem(id, a2);
   const b = store().addHangerRail(id, { zone: 1 });
   assert.ok(b, 'column 2 takes its own');
 

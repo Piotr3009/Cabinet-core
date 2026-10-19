@@ -645,10 +645,19 @@ export function recessWindowZcut(window, z0, onSide) {
  */
 export function recessSideRow(bh, z0, tabs, nb, window, onSide, bandSide, sfe) {
   const out = [];
-  const cuts = [...recessNotchZcut(nb, z0, onSide), ...recessWindowZcut(window, z0, onSide && bandSide)];
+  // CHAT FIX 19.10.2026 (KIT_RECESS.lsp recess-side-row amended; the owner:
+  // *"czasami cnc rysuje items jak 3 mm drills ... poza elementami"*): the
+  // window takes the side edge over its height wherever the band reaches that
+  // side (a BITE), notch or no notch. Until tonight the window's cut was asked
+  // only on a notch's edge, so a plain recess to the right edge ran drawBACK's
+  // right column straight through the bite (golden-recess: x 591, z 392.5 in
+  // the window). The runs are what the notch (its edge) AND the window (the
+  // band's side) leave; a row stands on its run.
+  const cutEdge = onSide || bandSide;
+  const cuts = [...recessNotchZcut(nb, z0, onSide), ...recessWindowZcut(window, z0, bandSide)];
   for (const run of recessRuns(0, bh, cuts)) {
     for (const z of notchRowsBetweenTabs(run[0], run[1], recessInRun(tabs, run), sfe)) {
-      if (!onSide || (z > run[0] - EPS && z < run[1] + EPS)) out.push(z);
+      if (!cutEdge || (z > run[0] - EPS && z < run[1] + EPS)) out.push(z);
     }
   }
   return out;
@@ -1196,7 +1205,14 @@ export function extensionCarcass({
         pockets: [
           ...sockets.pockets,
           ...cuts,
-          ...(kind === 'window' ? [{ layer: RECESS_WINDOW_LAYER, x1: roundTo(pc[0], 4), y1: roundTo(pc[1], 4), x2: roundTo(pc[2], 4), y2: roundTo(pc[3], 4), depth: G }] : []),
+          // CHAT FIX 19.10.2026 (KIT_RECESS.lsp D9 amended; the owner: *"czy
+          // mozesz sie upewnic na milion procent ze wszystkie elementy sa
+          // zamkniete?"*): the window lies wholly INSIDE the board, so it is a
+          // CUT-OUT and is traced CLOCKWISE (cnc/dxf.js, T25 F1.2: the signal
+          // VCarve reads for which side the material is on). Until tonight it
+          // ran anticlockwise, the outline's way, and the export gate's Check
+          // #9 said so in red on every recess with a window.
+          ...(kind === 'window' ? [{ layer: RECESS_WINDOW_LAYER, x1: roundTo(pc[0], 4), y1: roundTo(pc[1], 4), x2: roundTo(pc[2], 4), y2: roundTo(pc[3], 4), depth: G, cutout: true }] : []),
         ],
         // 17.10.2026 (D18): a bite's two corners and a corner cut's one get the
         // mark, not the bone; a window is a pocket with round corners (D9).

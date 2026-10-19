@@ -7,7 +7,7 @@
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
-    "repinned": "19.10.2026 (chat fix, the owner's eye-test of T79): KIT_NOTCH.lsp D10 and KIT_RECESS.lsp D17: the 18.10 rows on the FIRST back are withdrawn. The owner: \"nie na pierwszych plecach tylko na tych drugich ktore sa we wnetrzu recess, na tych pierwszych nie, to juz bylo usuniete i znowu trzeba usunac\". No row into the notch's box and none round the window on the BACK; the EXT-BACK (the second back) keeps its rows of 18.10. SCREWS_3MM|BACK 22 -> 13;"
+    "repinned": "19.10.2026 (chat fix, the owner's eye-test of T79): KIT_NOTCH.lsp D10 and KIT_RECESS.lsp D17: the 18.10 rows on the FIRST back are withdrawn. The owner: \"nie na pierwszych plecach tylko na tych drugich ktore sa we wnetrzu recess, na tych pierwszych nie, to juz bylo usuniete i znowu trzeba usunac\". No row into the notch's box and none round the window on the BACK; the EXT-BACK (the second back) keeps its rows of 18.10. SCREWS_3MM|BACK 22 -> 13; 19.10.2026 (chat fix): two laws. KIT_SITE_TRIM.lsp: END-R CUT 20 bigger on its top, bottom and back (746 x 870 -> 766 x 910, edging 3.23 -> 3.35, area 0.576 -> 0.607), the nominal kept beside it. The owner: \"side panele powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok (nie przod, 0 to zawsze powinno byc ok)\". KIT_RECESS.lsp recess-side-row amended: the window takes the BACK's side edge wherever the band reaches that side (a bite), so drawBACK's right column keeps off the bite; the owner: \"czasami cnc rysuje items jak 3 mm drills czy cos takiego czy litery poza elementami, czy mozesz sie upewnic na milion procent ze wszystkie elementy sa zamkniete?\" (SCREWS_3MM|BACK 13 -> 14: the right column x 591 was 50, 392.5, 720 with the 392.5 in the bite; it is 50, 178 under the bite and 622, 720 over it)."
   },
   "params": {
     "type": "BUD",
@@ -51,7 +51,7 @@
       "01,BOTTOM,564,540,>,0.56,0.305",
       "01,BACK,600,770,,0,0.368",
       "01,SHELF-1,560,670,>,0.56,0.329",
-      "01,END-R,746,870,<>^v,3.23,0.576",
+      "01,END-R,766,910,<>^v,3.35,0.607",
       "01,01-F,597,767,<>^v,2.73,0.458",
       "01,RETURN-L,132,344,,0,0.045",
       "01,FLOOR,290,132,,0,0.038",
@@ -155,7 +155,7 @@
           "d": 18
         },
         "outline": 8,
-        "holes": 31,
+        "holes": 32,
         "pockets": 9,
         "readiness": null
       },
@@ -183,8 +183,8 @@
         "id": "END-R",
         "part": "END-PANEL",
         "role": "end_panel",
-        "w": 746,
-        "h": 870,
+        "w": 766,
+        "h": 910,
         "thickness": 25,
         "box": {
           "x": 600,
@@ -327,7 +327,7 @@
       ],
       [
         "SCREWS_3MM|BACK",
-        13
+        14
       ],
       [
         "SCREWS_3MM|BUL",

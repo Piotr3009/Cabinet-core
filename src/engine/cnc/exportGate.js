@@ -29,6 +29,8 @@
 import { resultFindings } from './edgeGuard.js';
 import { drillFindings } from './drillGuard.js';
 import { frontDecorationFindings, frontLayerFindings } from './frontOperations.js';
+import { offBoardGateFindings } from './offBoardGuard.js';
+import { panelEntities } from './dxf.js';
 
 /**
  * Both guards, on one computed cabinet, in the app's own finding shape.
@@ -57,6 +59,11 @@ export function unitFindings(result, { profile = null, unitId = null, unitNum = 
     message: `${num ? `${num} ` : ''}${f.message}`,
   }));
   out.push(...drillFindings(result, { profile, unitId, unitNum: num }));
+  // CHAT FIX 19.10.2026 (the owner: *"czy mozesz sie upewnic na milion procent
+  // ze wszystkie elementy sa zamkniete?"*): is everything the file draws ON
+  // the board (the outline closed, every hole inside it, every text and mark
+  // on it)? Asked of the writer's own entity list (`offBoardGuard.js`).
+  out.push(...offBoardGateFindings(result, { profile, unitId, unitNum: num, panelEntities }));
   out.push(...frontDecorationFindings(result, { unitId, unitNum: num }));
   out.push(...(decorationLayerFindings || frontLayerFindings([{ result, unit: { id: unitId } }])));
   return out;

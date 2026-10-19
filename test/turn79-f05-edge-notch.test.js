@@ -209,8 +209,22 @@ test('F5 · NUMBERS A: the BOTTOM 520 deep (re-origined at its new back edge), t
   assert.deepEqual([back.w, back.h, back.cnc.drawn_w, back.cnc.drawn_h], [600, 650, 600, 650]);
   assert.deepEqual(back.box, { ...panelOf(parent, 'BACK').box, y: 120, h: 650 });
   assert.equal(r2(back.area_m2 * 1e6), 390000);
-  assert.deepEqual(bb.derived.edgeNotch, { edge: 'BB', d: 20, h: 120, cut: ['BUL', 'BUR', 'BOTTOM', 'BACK'], dropped: 0 });
-  assert.equal(bb.panels.length, parent.panels.length, 'no closing boards');
+  // 19.10.2026 (D22 amended; the owner: *"jak tniemy pionowe to wszystko jest a jak poziome to nie ma, dlaczego?"*):
+  // the closing boards, by the corner notch's own law run the whole width: the EDGE-STEP (600 x 120 in the g behind
+  // the sides' cut ends) and the EDGE-LID (564 x 20 on it, between the sides); no RETURN, no screw.
+  assert.deepEqual(bb.derived.edgeNotch, { edge: 'BB', d: 20, h: 120, cut: ['BUL', 'BUR', 'BOTTOM', 'BACK', 'EDGE-STEP', 'EDGE-LID'], dropped: 0 });
+  assert.equal(bb.panels.length, parent.panels.length + 2, 'two closing boards');
+  const step = panelOf(bb, 'EDGE-STEP');
+  const lid = panelOf(bb, 'EDGE-LID');
+  assert.deepEqual([step.part, step.role, step.w, step.h, step.box], ['NOTCH-STEP', 'notch_box', 600, 120, { x: 0, y: 0, z: 20, w: 600, h: 120, d: 18 }]);
+  assert.deepEqual([lid.part, lid.role, lid.w, lid.h, lid.box], ['NOTCH-LID', 'notch_box', 564, 20, { x: 18, y: 120, z: 18, w: 564, h: 18, d: 20 }]);
+  assert.deepEqual([step.cnc.outline.length, step.cnc.pockets.length, step.cnc.holes.length, lid.cnc.pockets.length], [4, 0, 0, 0], 'plain rectangles');
+  assert.deepEqual([step.meta.readiness, step.meta.fixing, step.meta.edgeNotch], ['geometry', 'manual', { edge: 'BB', d: 20, h: 120, box: 'EDGE-STEP' }]);
+  assert.deepEqual(N.edgeNotchBoxPlaces(600, 558, 770, 18, 20, 120, 'BB'), { STEP: [0, 520, 0, 600, 538, 120], LID: [18, 520, 120, 582, 540, 138] });
+  assert.deepEqual(N.edgeNotchBoxPlaces(600, 558, 770, 18, 50, 100, 'TB'), { STEP: [0, 490, 670, 600, 508, 770], FLOOR: [18, 490, 652, 582, 540, 670] });
+  assert.deepEqual(N.edgeNotchBoxPlaces(600, 558, 770, 18, 20, 120, 'BF'), { LID: [18, 0, 120, 582, 20, 138] }, 'a front edge: no STEP (D4)');
+  assert.deepEqual([N.edgeNotchStep(600, 120, 'BB'), N.edgeNotchStep(600, 120, 'BF'), N.edgeNotchLid(600, 18, 20, 'BB'), N.edgeNotchLid(600, 18, 20, 'TB'), N.edgeNotchFloor(600, 18, 50, 'TB')],
+    [[600, 120], null, [564, 20], null, [564, 50]]);
 });
 
 test('F5 · NUMBERS B (TB 50 / 100): the rear TOP corners, the TOP 490 deep drawn from its underside, the BACK 670 high', () => {

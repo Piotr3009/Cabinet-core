@@ -43,6 +43,12 @@ import { buildUnitDxfFiles } from '../src/engine/cnc/dxf.js';
 import { mirrorCornerName, mirrorOutline } from '../src/engine/topFrame.js';
 import { goldenOf } from '../scripts/t75-golden.mjs';
 import { dump } from '../scripts/t64-classify.mjs';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal; the DW
+// relief is 20 below the top the joiner trims TO (the cut's top less the trim).
+import { nominal, trimOf } from './site-trim.js';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const read = (rel) => readFileSync(`${ROOT}${rel}`, 'utf8');
@@ -304,10 +310,10 @@ test('F7 · the plinth: untouched by a back notch, nw shorter at a front corner 
   assert.deepEqual(N.notchPlinth(600, 558, 200, 200, 'FL', 50, 18), [200, 600]);
   const front = computeCabinet({ ...BUD, hinge: 'R', plinth: true, notch: { corner: 'FL', w: 200, d: 200, h: 0 } }, P);
   const pl = panelOf(front, 'PLINTH');
-  assert.equal(pl.w, 400);
+  assert.equal(nominal(pl).w, 400);
   assert.equal(pl.box.x, 200);
   const back = computeCabinet({ ...BUD, plinth: true, notch: NOTCH }, P);
-  assert.equal(panelOf(back, 'PLINTH').w, 600);
+  assert.equal(nominal(panelOf(back, 'PLINTH')).w, 600);
 });
 
 test('F7 · the leg in the notch steps out of it; the others stay', () => {

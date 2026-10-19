@@ -33,6 +33,11 @@ import {
   flushHistory, unwatchProjectHistory, useHistoryStore, watchProjectHistory,
 } from '../src/stores/historyStore.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const store = () => useProjectStore.getState();
 const history = () => useHistoryStore.getState();
@@ -178,7 +183,7 @@ test('F4.3 — a wall unit\'s DOOR height and its MASKING PANEL height are indep
 
   // …and the piece the engine cuts is 120 mm longer, hanging below the carcass.
   const panel = resultOf(id).panels.find((p) => p.part === 'END-PANEL');
-  assert.equal(panel.h, unitOf(id).params.height + 120);
+  assert.equal(nominal(panel).h, unitOf(id).params.height + 120);
   assert.equal(panel.box.y, -120);
   assert.equal(panel.meta.below_mm, 120);
 

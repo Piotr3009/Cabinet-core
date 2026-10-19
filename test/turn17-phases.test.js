@@ -24,6 +24,12 @@ import { panelPlacement, machiningLines } from '../src/engine/joinery.js';
 import { grainRun } from '../src/engine/decors.js';
 import { rulerDistance } from '../src/engine/ruler.js';
 import { partLabelText, partCode } from '../src/engine/cnc/partLabel.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal; the DW
+// relief is 20 below the top the joiner trims TO (the cut's top less the trim).
+import { nominal, trimOf } from './site-trim.js';
 
 const unit = (id, extra = {}) => computeCabinet({ ...defaultParamsFor(id, P), ...extra }, P);
 
@@ -280,6 +286,17 @@ test('F7 — a bare kit call is untouched: nothing said, nothing changes', () =>
     // (*"the appliance itself shows no front (the machine is the face)"*) hangs
     // a SHORT door, so its ladder is the LISP's low one run over the door's own
     // height and lifted onto the machine, the overlay door's grammar.
+    // CHAT FIX 19.10.2026 (the off-board probe): a HOOD's door stands above its
+    // aperture as a tower's stands on its machine: the low ladder over the
+    // door's own height, lifted by the aperture (cabinet.js `ladderBase`).
+    const aperture = Number(defaultParamsFor(id, P).hood_aperture_mm) || 0;
+    if (aperture > 0) {
+      const door = r.panels.find((x) => x.role === 'front');
+      assert.deepEqual(r.drillSummary.hinge_centers,
+        hingeCentres(door.h, P.hinges.rules.low, P).map((c) => Math.round((c + aperture) * 10000) / 10000),
+        `${id}: the hood's short door, its own ladder lifted over the aperture`);
+      continue;
+    }
     if (type.applianceTower && r.derived.door_base_y > 0) {
       const base = r.derived.door_base_y;
       const door = r.panels.find((x) => x.role === 'front');
@@ -407,13 +424,16 @@ test('F9 — the plinth is cut out at that position, 20 mm from the top', () => 
   const plinth = r.panels.find((p) => p.part === 'PLINTH');
   assert.ok(plinth, 'the unit cuts its own plinth');
   const ys = plinth.cnc.outline.map(([, y]) => y);
-  assert.ok(ys.includes(plinth.h - 20), 'the notch starts 20 mm below the top edge');
+  // 19.10.2026: 20 below the top the joiner trims TO, which is the cut's top less the site trim.
+  const topLine = plinth.h - trimOf(plinth);
+  assert.ok(ys.includes(topLine - 20), 'the notch starts 20 mm below the top edge');
   assert.ok(Math.max(...ys) === plinth.h, 'and the top edge is still there');
   // The opening is the appliance's own width, and it runs out of the bottom.
-  const atCut = plinth.cnc.outline.filter(([, y]) => Math.abs(y - (plinth.h - 20)) < 1e-9);
+  const atCut = plinth.cnc.outline.filter(([, y]) => Math.abs(y - (topLine - 20)) < 1e-9);
   assert.equal(atCut.length, 2);
-  assert.equal(Math.abs(atCut[1][0] - atCut[0][0]), defaultParamsFor('DW_PANEL', P).width,
-    'the opening is the appliance’s own width');
+  // The opening reaches both ends of a single unit's plinth, and both ends grew (19.10.2026).
+  assert.equal(Math.abs(atCut[1][0] - atCut[0][0]), defaultParamsFor('DW_PANEL', P).width + 2 * trimOf(plinth),
+    'the opening is the appliance’s own width, the end trims included');
 });
 
 test('F9 — notchedPlinth leaves no zero-length edge, wherever the opening falls', () => {

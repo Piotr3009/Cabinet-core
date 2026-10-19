@@ -15,6 +15,11 @@ import { rectCorners } from '../src/engine/room.js';
 import { getCabinetProfile } from '../src/engine/profile.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
 import * as A from '../src/retail/design/adapter.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const S = () => useProjectStore.getState();
 
@@ -37,7 +42,7 @@ test('T73 F8 · gap unset: the panel is exactly as deep as before (the project n
   const ep = endPanel(id);
   const unit = S().units.find((u) => u.id === id);
   const frontT = Number(unit.params.front_t) || P.front.thickness;
-  assert.equal(ep.w, P.room.wallBackClearance + 600 + P.doors.gap + frontT);
+  assert.equal(nominal(ep).w, P.room.wallBackClearance + 600 + P.doors.gap + frontT);
 });
 
 test('T73 F8 · gap 100: the end panel is 90 deeper than at gap 10, and its back edge is on the wall', () => {
@@ -47,10 +52,10 @@ test('T73 F8 · gap 100: the end panel is 90 deeper than at gap 10, and its back
   setGap(id, 100);
   const at100 = endPanel(id);
   assert.equal(Number(S().units.find((u) => u.id === id).params.wall_gap), 100, 'the room refused the gap');
-  assert.equal(at100.w - at10.w, 90);
+  assert.equal(nominal(at100).w - nominal(at10).w, 90);
   // In the unit's own frame the carcass back is z 0 and the wall is z -gap.
   assert.equal(at100.box.z, -100);
-  assert.equal(at100.box.d, at100.w);
+  assert.equal(at100.box.d, nominal(at100).w);
 });
 
 test('T73 F8 · gap 100: the cornice return runs back to the wall behind THIS unit', () => {

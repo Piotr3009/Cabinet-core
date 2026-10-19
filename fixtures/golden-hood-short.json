@@ -6,7 +6,8 @@
     "source": "KIT_WUD_FULL.lsp as KIT_WUD_HOOD reads it: the hood at hoodShort.defaults (660 high, hung at 1560), open underneath, one door above the 350 aperture",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "19.10.2026 (chat fix, the off-board probe): the HOOD's door is a SHORT door above its aperture, its hinge ladder the low rule over its own height lifted by the aperture (cabinet.js ladderBase), as a tower's door on its machine. The owner: \"czasami cnc rysuje items jak 3 mm drills czy cos takiego czy litery poza elementami, czy mozesz sie upewnic na milion procent ze wszystkie elementy sa zamkniete?\". Until tonight the ladder ran over the carcass height and the cups stood off the 367 door (420, 620 on a 367 board): FRONT_HINGES_35MM|01-F 3 -> 2, FRONT_HINGES_3MM 6 -> 4, hinges qty 3 -> 2."
   },
   "params": {
     "type": "WUD_HOOD_SHORT",
@@ -141,15 +142,15 @@
     "drills": [
       [
         "FRONT_HINGES_35MM|01-F",
-        3
+        2
       ],
       [
         "FRONT_HINGES_3MM|01-F",
-        6
+        4
       ],
       [
         "HINGES_5MM|BUL",
-        8
+        6
       ],
       [
         "HINGES_5MM|BUR",
@@ -183,7 +184,7 @@
     "hardware": [
       {
         "role": "hinges",
-        "qty": 3,
+        "qty": 2,
         "label": "Hinges"
       },
       {

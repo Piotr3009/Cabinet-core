@@ -19,6 +19,11 @@ import {
 } from '../src/engine/autoparts.js';
 import { migrateDesign } from '../src/engine/design.js';
 import { buildBom } from '../src/engine/bom.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const base = (extra = {}) => ({
   type: 'BUD', width: 600, height: 770, depth: 558, board_t: 18, front_t: 25, unit_num: '01', ...extra,
@@ -44,8 +49,10 @@ test('the plinth is as tall as the legs and as wide as the unit', () => {
   const r = computeCabinet(base({ plinth: true }), P);
   const plinth = partsOf(r, 'PLINTH')[0];
   assert.ok(plinth, 'a standing unit gets a plinth');
-  assert.equal(plinth.w, 600);
-  assert.equal(plinth.h, P.baseUnit.legHeight);
+  assert.equal(nominal(plinth).w, 600);
+  assert.equal(nominal(plinth).h, P.baseUnit.legHeight);
+  assert.deepEqual([plinth.w, plinth.h], [600 + 2 * trimOf(plinth), P.baseUnit.legHeight + 2 * trimOf(plinth)],
+    'the CUT: every edge grown for the site trim (19.10.2026)');
   assert.equal(plinth.role, 'plinth');
   assert.equal(plinth.box.y, -P.baseUnit.legHeight, 'it sits under the carcass, in the leg space');
   // ─── Turn 11 (CLAUDE.md F5.4) ───
@@ -63,7 +70,7 @@ test('the plinth is as tall as the legs and as wide as the unit', () => {
 
   // Raise the legs and the plinth follows — no gap, no second setting.
   const tallLegs = migrateCabinetProfile({ ...P, baseUnit: { ...P.baseUnit, legHeight: 150 } });
-  assert.equal(partsOf(computeCabinet(base({ plinth: true }), tallLegs), 'PLINTH')[0].h, 150);
+  assert.equal(nominal(partsOf(computeCabinet(base({ plinth: true }), tallLegs), 'PLINTH')[0]).h, 150);
 });
 
 test('a wall unit never gets a plinth, whatever it is asked for', () => {

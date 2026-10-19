@@ -68,7 +68,9 @@ test('materials group per decor and thickness, FRONTS listed separately', () => 
   assert.deepEqual(kinds, ['carcasses', 'fronts'], 'carcasses first, fronts after — separate');
   for (const g of summary) {
     assert.ok(g.net_m2 > 0);
-    assert.equal(g.order_m2, Math.round(g.net_m2 * 1.15 * 1000) / 1000, '+15 % waste');
+    // The order is rounded from the UNROUNDED net (bomInvoice.js), so the two
+    // roundings may differ by a thousandth (19.10.2026: the plinth's site-trim area landed on one).
+    assert.ok(Math.abs(g.order_m2 - g.net_m2 * 1.15) <= 0.0011, `+15 % waste (${g.order_m2} vs ${g.net_m2} x 1.15)`);
     // The sheets line is a DIVISION with the owner's label, never a plan.
     assert.match(g.sheet_label, /^~\d+ sheets? of 2800×2070$/);
     assert.equal(g.sheets, Math.max(1, Math.ceil(g.order_m2 / ((2800 * 2070) / 1e6))));

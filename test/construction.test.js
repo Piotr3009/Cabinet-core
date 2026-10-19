@@ -24,6 +24,11 @@ import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import { menuActions } from '../src/lib/contextActions.js';
 // Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
 import { confirmDrawerBox } from './drawer-box-gate.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const store = () => useProjectStore.getState();
 const INFILL = 20;
@@ -168,7 +173,7 @@ test('adding the plinth and the top infill makes them real; removing them makes 
 
   assert.equal(store().addPlinth(id), true);
   assert.equal(partsOf(id, 'PLINTH').length, 1);
-  assert.equal(partsOf(id, 'PLINTH')[0].h, P.baseUnit.legHeight);
+  assert.equal(nominal(partsOf(id, 'PLINTH')[0]).h, P.baseUnit.legHeight);
 
   const height = store().addTopInfill(id);
   assert.equal(height, P.autoParts.topInfill.defaultHeight, 'the default is 40');
@@ -253,17 +258,17 @@ test('an end panel is a cut piece outside the carcass side', () => {
   // Turn 6 (CLAUDE.md F3): as deep as the DOORS are proud, not as deep as the
   // carcass — the piece exists to finish the run flush with the door face.
   // test/end-panel.test.js is where that rule lives; this only keeps up.
-  assert.equal(ep.w, P.room.wallBackClearance + unit.params.depth + P.doors.gap + unit.params.front_t,
+  assert.equal(nominal(ep).w, P.room.wallBackClearance + unit.params.depth + P.doors.gap + unit.params.front_t,
     'from the wall behind it to the plane of the doors (turn 8, F3)');
   assert.equal(ep.box.x, unit.params.width, 'on the OUTSIDE of the right side');
   // "To floor" is the default: it runs past the legs, down to the floor.
-  assert.equal(ep.h, unit.params.height + P.baseUnit.legHeight);
+  assert.equal(nominal(ep).h, unit.params.height + P.baseUnit.legHeight);
   assert.equal(ep.box.y, -P.baseUnit.legHeight);
 
   // Unit height instead: it stops where the carcass does.
   store().updateEndPanel(id, epId, { height: 'unit' });
   const shorter = partsOf(id, 'END-PANEL')[0];
-  assert.equal(shorter.h, unit.params.height);
+  assert.equal(nominal(shorter).h, unit.params.height);
   assert.equal(shorter.box.y, 0);
 
   // One per side, and the second attempt is refused with a reason.

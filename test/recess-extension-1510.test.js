@@ -388,7 +388,8 @@ test('CASE B through computeCabinet: the window is a through pocket on RECESS_WI
   assert.deepEqual(r.derived.extension.boards, ['RETURN-L', 'RETURN-R', 'FLOOR', 'LID', 'EXT-BACK']);
   assert.deepEqual(r.derived.extension.grown, ['BACK', 'SHELF-1']);
   const back = panelOf(r, 'BACK');
-  assert.deepEqual(back.cnc.pockets.filter((k) => k.layer === RECESS_WINDOW_LAYER), [{ layer: 'RECESS_WINDOW', x1: 128, y1: 228, x2: 472, y2: 572, depth: 18 }]);
+  // 19.10.2026 (D9 amended): a cut-out, traced clockwise in the DXF (cutout true).
+  assert.deepEqual(back.cnc.pockets.filter((k) => k.layer === RECESS_WINDOW_LAYER), [{ layer: 'RECESS_WINDOW', x1: 128, y1: 228, x2: 472, y2: 572, depth: 18, cutout: true }]);
   assert.equal(back.cnc.outline.length, 4);
   // REWRITTEN 19.10.2026 (chat fix, D17 as on 17.10): the twelve round the
   // window are gone again; the parent's fourteen stay; the EXT-BACK keeps its twelve.

@@ -39,6 +39,11 @@ import * as A from '../src/retail/design/adapter.js';
 import { goldenOf } from '../scripts/t75-golden.mjs';
 import { dump } from '../scripts/t64-classify.mjs';
 import { GATES, LISP } from '../scripts/t78-classify.d/f34-t79-f04.mjs';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const read = (rel) => readFileSync(`${ROOT}${rel}`, 'utf8');
@@ -345,7 +350,7 @@ test('F4 · the legs stay, the plinth stays, the keep-out reads the top (D21)', 
   assert.deepEqual(N.notchPlinth(600, 558, 200, 200, 'FL', 50, 18), [200, 600], 'the floor notch as before');
   const front = computeCabinet({ ...BUD, hinge: 'R', plinth: true, notch: { corner: 'FL', w: 200, d: 200, h: -300 } }, P);
   assert.equal(refusalOf(front), null, JSON.stringify(front.warnings));
-  assert.equal(panelOf(front, 'PLINTH').w, 600, 'the plinth is whole under a front notch from the top');
+  assert.equal(nominal(panelOf(front, 'PLINTH')).w, 600, 'the plinth is whole under a front notch from the top');
   // An object in the keep-out's plan: under the FLOOR it is clear, rising past its underside it crosses.
   const rect = [50, 400, 150, 500];
   assert.equal(N.notchCrossesP(600, 558, 770, 18, 200, 200, -300, 'BL', rect, 0, 452), false);

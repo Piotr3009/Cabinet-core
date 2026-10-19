@@ -29,6 +29,11 @@ import {
   parenBalance, balanceOfKits, routineCensus, routineFaults, gateFaults,
   T50_ROUTINE, T50_KIT, T50_GATED, T50_LISP_FILES,
 } from '../scripts/t50-paren-balance.mjs';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const WARDROBE = { ...defaultParamsFor('WARDROBE', P), unit_num: '01' };
 /** A ceiling FLAT for the first 200 mm and then falling — T47's own knee. */
@@ -47,15 +52,16 @@ test('F5 · an end panel under the slope stops at it, and says at what angle', (
   const flat = partOf(build({ end_panels: EP_R }), 'END-PANEL');
   const cut = partOf(build({ end_panels: EP_R, slope_cut: STRAIGHT }), 'END-PANEL');
 
-  assert.ok(cut.h < flat.h, 'it is shorter than the one under a flat ceiling');
+  assert.ok(nominal(cut).h < nominal(flat).h, 'it is shorter than the one under a flat ceiling');
   // The ceiling at the panel's own x (just past the carcass's 600) is 1200;
   // the panel drops 100 to the floor, so its own board is 1300 tall.
-  assert.equal(cut.h, 1300);
-  assert.equal(cut.box.h, cut.h, 'and the box in the room is the board that was cut');
+  assert.equal(nominal(cut).h, 1300);
+  assert.equal(cut.box.h, nominal(cut).h, 'and the box in the room is the nominal board (the cut carries the site trim, 19.10.2026)');
+  assert.equal(cut.h, 1300 + 2 * trimOf(cut), 'the CUT: the top and the bottom trim');
   assert.equal(cut.w, flat.w, 'the DEPTH is untouched — the slope runs along the wall');
 
   assert.equal(cut.meta.slopeCut.h, 1300);
-  assert.equal(cut.meta.slopeCut.full, flat.h, 'and it says what it would have been');
+  assert.equal(cut.meta.slopeCut.full, nominal(flat).h, 'and it says what it would have been');
   assert.ok(Number(cut.meta.slopeCut.angles?.[0]?.deg) > 0, 'with the angle on the part');
   assert.match(slopeNoteText(cut), /^CUT \d+\.\d°/, '…and on the CNC sheet');
 });
@@ -63,7 +69,8 @@ test('F5 · an end panel under the slope stops at it, and says at what angle', (
 test('F5 · a flat room’s end panel is byte-identical', () => {
   const flat = partOf(build({ end_panels: EP_R }), 'END-PANEL');
   assert.equal(flat.meta.slopeCut, undefined, 'no record at all');
-  assert.equal(slopeNoteText(flat), '', 'and nothing on the sheet');
+  // 19.10.2026: the one note a flat room's end panel carries is the site trim's.
+  assert.match(slopeNoteText(flat, { ascii: true }), /^OVERSIZE \+\d+ BACK\/TOP\/BOTTOM - TRIM ON SITE \(NOM \d+ x \d+\)$/, 'the site-trim note, and nothing else, on the sheet');
   assert.deepEqual(flat.cnc.outline, [[0, 0], [flat.w, 0], [flat.w, flat.h], [0, flat.h]]);
   assert.equal(flat.cnc.drawn_h, undefined, 'and no drawn size it never carried');
 });
@@ -77,9 +84,9 @@ test('F5 · an end panel under the FLAT stretch of a bent ceiling is not cut eit
     end_panels: [{ id: 'ep', side: 'L', thickness: 18, height: 'floor' }],
     slope_cut: KNEE,
   }), 'END-PANEL');
-  assert.equal(left.h, 2200, 'the FLAT run at 2100, plus its own 100 of drop');
+  assert.equal(nominal(left).h, 2200, 'the FLAT run at 2100, plus its own 100 of drop');
   assert.equal(left.meta.slopeCut.angles[0].deg, 0, 'a level cut carries a level angle');
-  assert.equal(slopeNoteText(left), '', 'and a level cut prints no CUT note');
+  assert.doesNotMatch(slopeNoteText(left), /CUT /, 'and a level cut prints no CUT note');
 });
 
 test('F5 · an end panel clear of the ceiling keeps its full height', () => {

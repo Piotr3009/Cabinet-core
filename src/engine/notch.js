@@ -894,6 +894,49 @@ export function edgeNotchSideFc(edge, burFrame) {
   return notchSideFc(edgeNotchAsCorner(edge), burFrame, edgeNotchTopP(edge));
 }
 
+/**
+ * edge-notch-box-places (D22 AMENDED 19.10.2026; the owner: *"2 cut dziala ale
+ * nie rozumiem dlaczego nie ma paneli plyt, w sensie jak tniemy pionowe to
+ * wszystko jest a jak poziome to nie ma, dlaczego?"*, *"identycznie jak
+ * pionowe"*): the closing boards of an edge notch, notchBoxPlaces run the
+ * whole width with no RETURN. Plan frame (x from the LEFT face, y from the
+ * FRONT face, z up):
+ *   STEP   a back edge only (D4): cw x eh in the g behind both sides' cut ends,
+ *          y cd - ed - g .. cd - ed, from the floor (BB) or hanging from the
+ *          top (TB, D21);
+ *   LID    a bottom edge: (cw - 2 g) x ed ON the STEP between the sides, from
+ *          the STEP's front face to the BACK's (a back edge) or from the front
+ *          face ed back (a front edge), z eh .. eh + g;
+ *   FLOOR  a top edge: the LID mirrored, under the STEP.
+ * @returns {{STEP?:number[], LID?:number[], FLOOR?:number[]}} [x0, y0, z0, x1, y1, z1] each
+ */
+export function edgeNotchBoxPlaces(cw, cd, ch, g, ed, eh, edge) {
+  const back = edgeNotchBackP(edge);
+  const top = edgeNotchTopP(edge);
+  const [z0, z1] = top ? [ch - eh, ch] : [0, eh];
+  const out = {};
+  if (back) out.STEP = [0, cd - ed - g, z0, cw, cd - ed, z1];
+  const [ly0, ly1] = back ? [cd - ed - g, cd - g] : [0, ed];
+  if (top) out.FLOOR = [g, ly0, z0 - g, cw - g, ly1, z0];
+  else out.LID = [g, ly0, z1, cw - g, ly1, z1 + g];
+  return out;
+}
+
+/** edge-notch-step: [cw, eh], back edges only. */
+export function edgeNotchStep(cw, eh, edge) {
+  return edgeNotchBackP(edge) ? [cw, eh] : null;
+}
+
+/** edge-notch-lid: [cw - 2 g, ed], bottom edges only (every edge notch is part height). */
+export function edgeNotchLid(cw, g, ed, edge) {
+  return edgeNotchTopP(edge) ? null : [cw - 2 * g, ed];
+}
+
+/** edge-notch-floor: the LID mirrored, top edges only (D21). */
+export function edgeNotchFloor(cw, g, ed, edge) {
+  return edgeNotchTopP(edge) ? [cw - 2 * g, ed] : null;
+}
+
 export function edgeNotchSide(cd, ch, g, ed, eh, edge, burFrame) {
   return notchRectOutline(cd - g, ch, ed, eh, edgeNotchSideFc(edge, burFrame));
 }
@@ -1303,11 +1346,16 @@ export function notchEndCut(ch, g, nw, nd, nh, corner, hand, sb, sf, ph, pb) {
   return [notchSideFc(corner, hand === 'R', notchFromTopP(ch, nh)), w, notchEndH(ch, notchHh(ch, nh), anchor, ph, pb)];
 }
 
-/** edge-notch-end-cut: the edge notch on EITHER END panel, flush with the side's cut face. */
+/**
+ * edge-notch-end-cut: the edge notch on EITHER END panel (D23). At a back edge
+ * the STEP closes the rebate (D22 amended 19.10.2026) and the END covers its
+ * end: its cut face on the STEP's back face, sb + ed (until 19.10.2026 flush
+ * with the side's cut face, sb + g + ed). At a front edge flush with the side's.
+ */
 export function edgeNotchEndCut(ch, g, ed, eh, edge, hand, sb, sf, ph, pb) {
   return [
     edgeNotchSideFc(edge, hand === 'R'),
-    edgeNotchBackP(edge) ? sb + g + ed : ed + sf,
+    edgeNotchBackP(edge) ? sb + ed : ed + sf,
     notchEndH(ch, eh, edgeNotchTopP(edge) ? 'top' : 'floor', ph, pb),
   ];
 }
@@ -1496,8 +1544,13 @@ export function notchVerdict({ parent, params, type, profile }) {
     if (notchHoleInP(d.x, d.y, rad, sideW, H, n.d, hh, fc)) return say(notchHoleRefusal(kind, sideId), sideId);
   }
   // D8: anything else the parent puts in the carcass that crosses the keep-out.
+  // 19.10.2026 (D22 amended): the EDGE notch's own closing boards are not an
+  // obstacle of the parent's: where the two notches meet, the EDGE notch is
+  // the one refused, in its own words (edgeNotchMeetsRefusal), and the corner
+  // notch is cut first as D22 says.
   for (const p of parent.panels || []) {
     if (CUT_PARTS.has(p.part) || !insideCarcass(p.box, W, H, D)) continue;
+    if (p.role === 'notch_box' && p.meta?.edgeNotch?.box) continue;
     const { rect, z0, z1 } = planOf(p.box, D);
     if (notchCrossesP(W, D, H, G, n.w, n.d, n.h, n.corner, rect, z0, z1)) {
       return say(`NOTCH: ${p.id} stands where the notch and its box go. Move it, or cut another corner.`, p.id);
@@ -2230,7 +2283,7 @@ const r4pts = (pts) => pts.map(([x, y]) => [roundTo(x, 4), roundTo(y, 4)]);
  * the drilling pass sets out as on the parent.
  */
 export function edgeNotchCarcass({
-  params, profile, panels, W, H, D, G, cornerCut = null,
+  params, profile, panels, W, H, D, G, cornerCut = null, codes = null, makePanel = null,
 }) {
   const e = edgeNotchOf(params, profile);
   if (!e) return null;
@@ -2383,6 +2436,58 @@ export function edgeNotchCarcass({
     cut.reorigin.BACK = { axis: 'y', dx: 0, dy: top ? 0 : eh, run: H - eh };
     cut.boards.push('BACK');
     stamp(bk, { cut: 'back' });
+  }
+
+  // ── THE CLOSING BOARDS: EDGE-STEP, EDGE-LID / EDGE-FLOOR (D22 amended 19.10.2026) ──
+  //
+  // The owner: *"2 cut dziala ale nie rozumiem dlaczego nie ma paneli plyt, w
+  // sensie jak tniemy pionowe to wszystko jest a jak poziome to nie ma,
+  // dlaczego?"*; *"identycznie jak pionowe"*. The corner notch's box law run
+  // the whole width (edgeNotchBoxPlaces): the STEP at a back edge (D4), the
+  // LID over a bottom edge, the FLOOR under a top edge, no RETURN, no screw
+  // (D10), the joiner's fixing; cut exactly as notchCarcass cuts its box.
+  const places = typeof makePanel === 'function' ? edgeNotchBoxPlaces(W, D, H, G, ed, eh, edge) : null;
+  if (places) {
+    const boxOf = ([x0, y0, z0, x1, y1, z1]) => ({
+      x: roundTo(x0, 4), y: roundTo(z0, 4), z: roundTo(D - y1, 4),
+      w: roundTo(x1 - x0, 4), h: roundTo(z1 - z0, 4), d: roundTo(y1 - y0, 4),
+    });
+    const board = (id, part, w, h, place, edged) => {
+      const p = makePanel({
+        id,
+        part,
+        role: 'notch_box',
+        w,
+        h,
+        thickness: G,
+        edgeCode: edged ? edged.code : (codes?.none ?? ''),
+        edgeLen: edged ? metres(edged.len) : 0,
+        box: boxOf(place),
+        cnc: { rotated: false, drawn_w: w, drawn_h: h, ...rectGeometry(w, h) },
+        meta: {
+          readiness: 'geometry',
+          fixing: 'manual',
+          edgeNotch: { edge, d: ed, h: eh, box: id },
+        },
+      });
+      panels.push(p);
+      cut.boards.push(id);
+    };
+    const step = edgeNotchStep(W, eh, edge);
+    if (step && places.STEP) board('EDGE-STEP', 'NOTCH-STEP', roundTo(step[0], 4), roundTo(step[1], 4), places.STEP, null);
+    // A FRONT edge's LID or FLOOR ends at the carcass face, in the room: its
+    // front edge is banded as the corner notch's front LID is.
+    const lid = edgeNotchLid(W, G, ed, edge);
+    if (lid && places.LID) {
+      board('EDGE-LID', 'NOTCH-LID', roundTo(lid[0], 4), roundTo(lid[1], 4), places.LID,
+        back ? null : { code: codes?.right ?? '', len: lid[0] });
+    }
+    const floor = edgeNotchFloor(W, G, ed, edge);
+    if (floor && places.FLOOR) {
+      board('EDGE-FLOOR', 'NOTCH-FLOOR', roundTo(floor[0], 4), roundTo(floor[1], 4), places.FLOOR,
+        back ? null : { code: codes?.right ?? '', len: floor[0] });
+    }
+    cut.box = Object.keys(places);
   }
   return cut;
 }

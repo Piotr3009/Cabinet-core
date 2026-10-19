@@ -244,7 +244,9 @@ test('19.10 · the seven goldens are the cut, byte for byte, re-pinned with the 
   assert.deepEqual(REPINNED.map((x) => x.file).sort(), files.map((f) => `fixtures/${f}`).sort());
   for (const { why } of REPINNED) assert.ok(why.includes(OWNER));
   const back = (f) => JSON.parse(read(`fixtures/${f}`)).expected.drills.find(([k]) => k === 'SCREWS_3MM|BACK')[1];
-  assert.deepEqual(files.map(back), [10, 13, 10, 14, 6, 13, 13]);
+  // 19.10.2026 (the afternoon, KIT_RECESS.lsp recess-side-row amended): golden-recess-end-panel's BACK keeps its right
+  // column off the bite, 13 -> 14 (x 591: 50, 178, 622, 720); the other six as the morning left them.
+  assert.deepEqual(files.map(back), [10, 13, 10, 14, 6, 13, 14]);
   const extBack = (f) => (JSON.parse(read(`fixtures/${f}`)).expected.drills.find(([k]) => k === 'SCREWS_3MM|EXT-BACK') || [null, 0])[1];
   assert.deepEqual(['golden-recess.json', 'golden-recess-band.json', 'golden-notch-and-recess.json'].map(extBack), [12, 12, 12]);
   const base = JSON.parse(read('verify/t70/goldens-base.json'));

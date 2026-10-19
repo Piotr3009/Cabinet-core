@@ -6,7 +6,8 @@
     "source": "KIT_NOTCH.lsp D22 (the edge notch, its NUMBERS block I3 case A: BUD 600, BB 20 x 120, a skirting board) on KIT_BUD_FULL.lsp (the parent, golden-bud.json's BUD-A with 1 shelf): BUL and BUR cut at the rear bottom, the BOTTOM 520 deep, the BACK 650 high, no closing boards",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "19.10.2026 (chat fix, KIT_NOTCH.lsp D22 amended): the edge notch takes the corner notch's closing boards run the whole width. The owner: \"2 cut dziala ale nie rozumiem dlaczego nie ma paneli plyt, w sensie jak tniemy pionowe to wszystko jest a jak poziome to nie ma, dlaczego?\" (\"identycznie jak pionowe\"). Two boards added: EDGE-STEP 600 x 120 (plan y 520..538, z 0..120, in the g behind the sides' cut ends) and EDGE-LID 564 x 20 (on it, between the sides, z 120..138); no RETURN, no screw, no joint; every other board untouched."
   },
   "params": {
     "type": "BUD",
@@ -37,7 +38,9 @@
       "01,BOTTOM,564,520,>,0.56,0.293",
       "01,BACK,600,650,,0,0.390",
       "01,SHELF-1,560,520,>,0.56,0.291",
-      "01,01-F,597,767,<>^v,2.73,0.458"
+      "01,01-F,597,767,<>^v,2.73,0.458",
+      "01,EDGE-STEP,600,120,,0,0.072",
+      "01,EDGE-LID,564,20,,0,0.011"
     ],
     "panels": [
       {
@@ -179,6 +182,46 @@
         "holes": 0,
         "pockets": 1,
         "readiness": null
+      },
+      {
+        "id": "EDGE-STEP",
+        "part": "NOTCH-STEP",
+        "role": "notch_box",
+        "w": 600,
+        "h": 120,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 20,
+          "w": 600,
+          "h": 120,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "EDGE-LID",
+        "part": "NOTCH-LID",
+        "role": "notch_box",
+        "w": 564,
+        "h": 20,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 120,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 20
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
       }
     ],
     "drills": [

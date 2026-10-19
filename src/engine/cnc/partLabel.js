@@ -126,9 +126,18 @@ export function slopeNoteText(panel, { ascii = false } = {}) {
   if (over && Number(over.mm) > 0) {
     // …and the NOMINAL beside it, so nobody prices the extra (F4). The board on
     // the bench is 60 wide and the job is 40; both numbers are on it.
-    const nom = Number(over.nominal);
-    parts.push(`OVERSIZE +${Math.round(Number(over.mm))}${ascii ? ' - ' : ' — '}TRIM ON SITE`
-      + (Number.isFinite(nom) ? ` (NOM ${Math.round(nom * 10) / 10})` : ''));
+    // CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp D4): an end panel or a plinth
+    // grown on several edges names them (TOP/BOTTOM/BACK) and its nominal is
+    // both sizes (NOM 596 x 2250); the filler's one-edge record prints as it did.
+    const edges = Array.isArray(over.edges) && over.edges.length
+      ? ` ${over.edges.map((e) => String(e).toUpperCase()).join('/')}` : '';
+    const nomObj = over.nominal && typeof over.nominal === 'object' ? over.nominal : null;
+    const nom = nomObj ? NaN : Number(over.nominal);
+    const r1 = (v) => Math.round(Number(v) * 10) / 10;
+    const nomText = nomObj && Number.isFinite(Number(nomObj.w)) && Number.isFinite(Number(nomObj.h))
+      ? ` (NOM ${r1(nomObj.w)} x ${r1(nomObj.h)})`
+      : (Number.isFinite(nom) ? ` (NOM ${r1(nom)})` : '');
+    parts.push(`OVERSIZE +${Math.round(Number(over.mm))}${edges}${ascii ? ' - ' : ' — '}TRIM ON SITE${nomText}`);
   }
   // Joined with a SEMICOLON and not a bar: the note wraps by words on a narrow
   // board (`cnc/dxf.js panelNoteBlock`), and a lone `|` at the head of a line

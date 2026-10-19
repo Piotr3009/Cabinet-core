@@ -10,6 +10,11 @@ import { clampUnitHeight } from '../src/engine/collision.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
 // Turn 24 (CLAUDE.md F3.1): no thickness, no drawers — the gate, opened.
 import { confirmDrawerBox } from './drawer-box-gate.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 // ─── Project heights (BACKLOG #29, turn 5 F3) ───
 //
@@ -138,7 +143,7 @@ test('the toe kick reaches the legs, the plinth and the floor drop', () => {
 
   store().addPlinth(id);
   const withPlinth = computeCabinet(paramsForEngine(unitOf(id)), P);
-  assert.equal(withPlinth.panels.find((p) => p.id === 'PLINTH').h, 140,
+  assert.equal(nominal(withPlinth.panels.find((p) => p.id === 'PLINTH')).h, 140,
     'the plinth is as tall as the legs it hides');
 });
 

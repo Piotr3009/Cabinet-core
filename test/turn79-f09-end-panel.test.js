@@ -51,6 +51,15 @@ import { useProjectStore } from '../src/stores/projectStore.js';
 import { goldenOf } from '../scripts/t75-golden.mjs';
 import { dump } from '../scripts/t64-classify.mjs';
 import { GATES, LISP, GOLDENS, LIVENESS } from '../scripts/t78-classify.d/f34-t79-f09.mjs';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel is CUT `siteTrim`
+// bigger on its top, its bottom and its back for the joiner to scribe on site
+// (the owner: *"side panele powinny byc wieksze o 20 mm ... panele 20mm gora
+// + dol + bok (nie przod)"*). D23 and D21 describe the board that FOLLOWS ITS
+// SIDE, which is the NOMINAL the engine keeps beside the cut
+// (`meta.oversize.nominal`): every geometry below is read off that nominal
+// (`endOf`); the cut list, the DXF and the areas are the CUT, held to
+// KIT_SITE_TRIM.lsp section 4 (test/chatfix-1910-site-trim.test.js).
+import { asNominal } from './site-trim.js';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const read = (rel) => readFileSync(`${ROOT}${rel}`, 'utf8');
@@ -62,6 +71,8 @@ const kit = (extra = {}) => ({ ...defaultParamsFor('BUD', P), unit_num: '01', sh
 const EPL = { id: 'ep-l', side: 'L', height: 'floor', thickness: 25 };
 const EPR = { id: 'ep-r', side: 'R', height: 'floor', thickness: 25 };
 const panelOf = (r, id) => r.panels.find((p) => p.id === id);
+// The END panel as the nominal board it is in the room (the cut carries the site trim).
+const endOf = (r, id) => asNominal(panelOf(r, id));
 const cut = (extra) => computeCabinet(kit(extra), P);
 const NOTCH = { corner: 'BL', w: 200, d: 200, h: 300 };
 const BAND = { x0: 310, x1: 600, z0: 210, z1: 590, d: 150, ends: ['R'] };
@@ -88,9 +99,9 @@ test('F9 · probe rows 1 to 9: partly in the band, END-R grows with BUR where th
   assert.deepEqual(r.derived.extension.ends, ['R'], 'row 9: the room tells the engine the band reaches past END-R');
   assert.equal(r.derived.extension.d, 290);
   assert.deepEqual(panelOf(r, 'BUR').box.z, -272);
-  assert.deepEqual([panelOf(r, 'END-R').w, panelOf(r, 'END-R').box.z, panelOf(r, 'END-R').box.z + panelOf(r, 'END-R').box.d], [886, -300, 586]);
-  assert.equal(panelOf(r, 'END-R').w - 596, panelOf(r, 'BUR').w - 540, 'grown by the same ed');
-  assert.ok(r.csvLines.includes('01,END-R,886,870,<>^v,3.51,0.771'), 'the cut list follows');
+  assert.deepEqual([endOf(r, 'END-R').w, endOf(r, 'END-R').box.z, endOf(r, 'END-R').box.z + endOf(r, 'END-R').box.d], [886, -300, 586]);
+  assert.equal(endOf(r, 'END-R').w - 596, panelOf(r, 'BUR').w - 540, 'grown by the same ed');
+  assert.ok(r.csvLines.includes('01,END-R,906,910,<>^v,3.63,0.824'), 'the cut list follows: the CUT, 886 x 870 and the site trim on the back, top and bottom');
   // Row 7: the band bottom 0, top 600: z 0..490 in the carcass; END-R covers the LID's end (490), BUR stops at 472.
   // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): both corners 290 wide, not 300.
   id = roomWith({ x_mm: 1300, width: 1000, depth: 300, bottom_mm: 0, top_mm: 600 });
@@ -98,7 +109,7 @@ test('F9 · probe rows 1 to 9: partly in the band, END-R grows with BUR where th
   r = S().unitResult(id);
   assert.deepEqual(panelOf(r, 'BUR').cnc.notch, { fc: 'x0y1', nw: 290, nh: 298 });
   assert.deepEqual(panelOf(r, 'LID').box.y + panelOf(r, 'LID').box.h, 490);
-  assert.deepEqual(panelOf(r, 'END-R').cnc.notch, { fc: 'x0y1', nw: 290, nh: 280 });
+  assert.deepEqual(endOf(r, 'END-R').cnc.notch, { fc: 'x0y1', nw: 290, nh: 280 });
   // Row 8: the recess ends at 1510, inside END-R's 25 (1500..1525): BUR grows, END-R stays on the wall line.
   id = roomWith({ x_mm: 1300, width: 210, depth: 300 });
   S().addEndPanel(id, { side: 'R' });
@@ -106,8 +117,8 @@ test('F9 · probe rows 1 to 9: partly in the band, END-R grows with BUR where th
   assert.equal(r.derived.extension.ends, undefined, 'the band does not reach past END-R');
   // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): BUR 540 + 290.
   assert.equal(panelOf(r, 'BUR').w, 830, 'BUR grows all the same');
-  assert.deepEqual([panelOf(r, 'END-R').w, panelOf(r, 'END-R').box.z], [596, -10]);
-  assert.equal(panelOf(r, 'END-R').meta.followsSide, undefined);
+  assert.deepEqual([endOf(r, 'END-R').w, endOf(r, 'END-R').box.z], [596, -10]);
+  assert.equal(endOf(r, 'END-R').meta.followsSide, undefined);
   // A unit with no end panel: the extension the room asks for is the one it always was.
   id = roomWith({ x_mm: 1300, width: 1000, depth: 300 });
   r = S().unitResult(id);
@@ -123,7 +134,7 @@ test('F9 · a grown END stops on the recess\'s own bottom and head: never into t
   let u = S().units.find((x) => x.id === id);
   let r = S().unitResult(id);
   assert.deepEqual([r.derived.extension.z0, r.derived.extension.ends], [0, ['R']]);
-  let ep = panelOf(r, 'END-R');
+  let ep = endOf(r, 'END-R');
   assert.deepEqual([ep.w, ep.box.y, ep.box.z], [886, -100, -300]);
   assert.deepEqual(ep.cnc.notch, { fc: 'x0y0', nw: 290, nh: 50 }, 'the 50 under the recess stays on the wall line');
   // END-R run up 300 over the carcass, the recess's head 1000 over the floor (900 over the carcass underside).
@@ -132,13 +143,13 @@ test('F9 · a grown END stops on the recess\'s own bottom and head: never into t
   u = S().units.find((x) => x.id === id);
   S().setEndPanelTop(id, u.params.end_panels[0].id, 300);
   r = S().unitResult(id);
-  ep = panelOf(r, 'END-R');
+  ep = endOf(r, 'END-R');
   assert.deepEqual([ep.w, ep.h, ep.box.z], [886, 1170, -300]);
   assert.deepEqual(ep.cnc.notch, { fc: 'x0y1', nw: 290, nh: 170 }, 'the 170 over the head stays on the wall line');
   // A recess from the floor to the ceiling: the END grows over its whole height, as before.
   id = roomWith({ x_mm: 1300, width: 1000, depth: 300, bottom_mm: 0 });
   S().addEndPanel(id, { side: 'R' });
-  ep = panelOf(S().unitResult(id), 'END-R');
+  ep = endOf(S().unitResult(id), 'END-R');
   assert.deepEqual([ep.w, ep.cnc.notch], [886, null]);
 });
 
@@ -150,15 +161,15 @@ test('F9 · probe rows 10 to 13: wholly inside, the END panel reaches the recess
   assert.deepEqual([u.params.depth, u.params.depth_full, u.params.recess_mm], [848, 558, 290]);
   const r = S().unitResult(id);
   const bur = panelOf(r, 'BUR');
-  const ep = panelOf(r, 'END-R');
+  const ep = endOf(r, 'END-R');
   // Row 12 was 596 at z 0..596. Now: its stand-off behind the carcass's back plane, as on the wall line, its face on the doors'.
   assert.deepEqual([ep.w, ep.box.z, ep.box.z + ep.box.d], [886, -10, 876]);
   assert.equal(ep.box.d, u.params.depth + P.room.wallBackClearance + P.doors.gap + u.params.front_t, 'the carcass depth, the wall gap and the door');
   assert.equal(bur.box.z + bur.box.d, 848);
-  assert.ok(r.csvLines.includes('01,END-R,886,870,<>^v,3.51,0.771'));
+  assert.ok(r.csvLines.includes('01,END-R,906,910,<>^v,3.63,0.824'), 'the CUT: 886 x 870 and the site trim');
   // Row 13, the reference: out of the recess it is the 596 it always was.
   S().moveUnit(id, 2600, 1);
-  assert.deepEqual([panelOf(S().unitResult(id), 'END-R').w, panelOf(S().unitResult(id), 'END-R').box.z], [596, -10]);
+  assert.deepEqual([endOf(S().unitResult(id), 'END-R').w, endOf(S().unitResult(id), 'END-R').box.z], [596, -10]);
 });
 
 test('F9 · wholly inside, the END keeps to the wall line under or over the recess (D21): never in the wall', () => {
@@ -169,7 +180,7 @@ test('F9 · wholly inside, the END keeps to the wall line under or over the rece
   // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): 300 less the stand-off 10 is 290, the END 886 deep, its corners 290 wide.
   assert.equal(u.params.recess_mm, 290);
   assert.equal(u.params.recess_band, undefined, 'derived, never stored');
-  let ep = panelOf(S().unitResult(id), 'END-R');
+  let ep = endOf(S().unitResult(id), 'END-R');
   assert.deepEqual([ep.w, ep.box.y, ep.box.z, ep.box.z + ep.box.d], [886, -100, -10, 876]);
   assert.deepEqual(ep.cnc.notch, { fc: 'x0y0', nw: 290, nh: 50 }, 'its back edge on the wall line under the recess');
   // Its head 1000 over the floor and END-R run up 300 over the carcass (to 1170): 170 over the head on the wall line.
@@ -177,13 +188,13 @@ test('F9 · wholly inside, the END keeps to the wall line under or over the rece
   S().addEndPanel(id, { side: 'R' });
   u = S().units.find((x) => x.id === id);
   S().setEndPanelTop(id, u.params.end_panels[0].id, 300);
-  ep = panelOf(S().unitResult(id), 'END-R');
+  ep = endOf(S().unitResult(id), 'END-R');
   assert.deepEqual([ep.w, ep.h, ep.box.z], [886, 1170, -10]);
   assert.deepEqual(ep.cnc.notch, { fc: 'x0y1', nw: 290, nh: 170 });
   // Floor to ceiling: nothing to keep off, a plain deeper board (the probe's row 12 turned round).
   id = roomWith({ x_mm: 800, width: 1300, depth: 300 });
   S().addEndPanel(id, { side: 'R' });
-  ep = panelOf(S().unitResult(id), 'END-R');
+  ep = endOf(S().unitResult(id), 'END-R');
   assert.deepEqual([ep.w, ep.cnc.notch, ep.meta.followsSide], [886, undefined, undefined]);
 });
 
@@ -193,7 +204,7 @@ test('F9 x F10 · the END reads the recess the stand-off leaves: partly in and w
   // the wall face (z 0 there), on the wall line, partly in and wholly inside alike.
   const roomBack = (id) => {
     const u = S().units.find((x) => x.id === id);
-    return wallGapOf(u, P) + panelOf(S().unitResult(id), 'END-R').box.z;
+    return wallGapOf(u, P) + endOf(S().unitResult(id), 'END-R').box.z;
   };
   for (const [gap, recess] of [[null, 290], [100, 200], [300, 0], [350, 0]]) {
     const part = roomWith({ x_mm: 1300, width: 1000, depth: 300 });
@@ -201,7 +212,7 @@ test('F9 x F10 · the END reads the recess the stand-off leaves: partly in and w
     S().addEndPanel(part, { side: 'R' });
     const pr = S().unitResult(part);
     assert.equal(pr.derived.extension?.d, recess > 0 ? recess : undefined, `partly in, stand-off ${gap ?? 10}`);
-    if (recess > 0) assert.equal(panelOf(pr, 'END-R').w - 596 - ((gap ?? 10) - 10), panelOf(pr, 'BUR').w - 540, 'END-R grows by BUR\'s ed');
+    if (recess > 0) assert.equal(endOf(pr, 'END-R').w - 596 - ((gap ?? 10) - 10), panelOf(pr, 'BUR').w - 540, 'END-R grows by BUR\'s ed');
     assert.equal(roomBack(part), 0 - recess, `partly in, stand-off ${gap ?? 10}: the END's back in the room`);
     const whole = roomWith({ x_mm: 800, width: 1300, depth: 300 });
     if (gap != null) S().updateUnitParams(whole, { wall_gap: gap });
@@ -210,7 +221,7 @@ test('F9 x F10 · the END reads the recess the stand-off leaves: partly in and w
     assert.equal(u.params.recess_mm, recess > 0 ? recess : undefined, `wholly inside, stand-off ${gap ?? 10}`);
     assert.equal(roomBack(whole), 0 - recess, `wholly inside, stand-off ${gap ?? 10}: the END's back in the room`);
     const wr = S().unitResult(whole);
-    const ep = panelOf(wr, 'END-R');
+    const ep = endOf(wr, 'END-R');
     assert.equal(ep.box.z + ep.box.d, u.params.depth + P.doors.gap + u.params.front_t, 'its face on the doors\'');
     assert.equal(ep.w - 596 - ((gap ?? 10) - 10), panelOf(wr, 'BUR').w - 540, 'wholly inside, END-R deepens by what BUR gained');
   }
@@ -220,7 +231,7 @@ test('F9 x F10 · the END reads the recess the stand-off leaves: partly in and w
   S().updateUnitParams(id, { wall_gap: 100 });
   S().addEndPanel(id, { side: 'R' });
   const lines = S().unitResult(id).csvLines;
-  assert.ok(lines.includes('01,END-R,886,870,<>^v,3.51,0.771'));
+  assert.ok(lines.includes('01,END-R,906,910,<>^v,3.63,0.824'), 'the CUT: 886 x 870 and the site trim');
   const saved = JSON.parse(JSON.stringify({ project: S().project, units: S().units }));
   for (const old of [false, true]) {
     const units = JSON.parse(JSON.stringify(saved.units));
@@ -229,7 +240,7 @@ test('F9 x F10 · the END reads the recess the stand-off leaves: partly in and w
     S().loadProject(saved.project, units);
     const u = S().units.find((x) => x.id === id);
     assert.deepEqual([u.params.recess_mm, u.params.depth], [200, 758], old ? 'the old save re-derived' : 'saved as derived');
-    assert.deepEqual([panelOf(S().unitResult(id), 'END-R').w, panelOf(S().unitResult(id), 'END-R').box.z], [886, -100]);
+    assert.deepEqual([endOf(S().unitResult(id), 'END-R').w, endOf(S().unitResult(id), 'END-R').box.z], [886, -100]);
     assert.deepEqual(S().unitResult(id).csvLines, lines, 'the same cut after the reload');
   }
 });
@@ -237,27 +248,28 @@ test('F9 x F10 · the END reads the recess the stand-off leaves: partly in and w
 test('F9 · probe rows 14 to 21: the END panel on a notched side is cut, the other hand is not', () => {
   // Row 16: full height, END-L is shallower, its back on the STEP's back face (z 200).
   let r = cut({ notch: { ...NOTCH, h: 0 }, end_panels: [EPL, EPR] });
-  assert.deepEqual([panelOf(r, 'STEP').box.z, panelOf(r, 'END-L').box.z, panelOf(r, 'END-L').w], [200, 200, 386]);
-  assert.equal(panelOf(r, 'END-R').w, 596, 'the other hand');
+  assert.deepEqual([panelOf(r, 'STEP').box.z, endOf(r, 'END-L').box.z, endOf(r, 'END-L').w], [200, 200, 386]);
+  assert.equal(endOf(r, 'END-R').w, 596, 'the other hand');
   // Rows 18, 19: from the floor and from the top.
   r = cut({ notch: NOTCH, end_panels: [EPL] });
-  assert.deepEqual(panelOf(r, 'END-L').cnc.notch, { fc: 'x1y0', nw: 210, nh: 400 });
+  assert.deepEqual(endOf(r, 'END-L').cnc.notch, { fc: 'x1y0', nw: 210, nh: 400 });
   r = cut({ notch: { ...NOTCH, h: -300 }, end_panels: [EPL] });
-  assert.deepEqual(panelOf(r, 'END-L').cnc.notch, { fc: 'x1y1', nw: 210, nh: 300 });
+  assert.deepEqual(endOf(r, 'END-L').cnc.notch, { fc: 'x1y1', nw: 210, nh: 300 });
   // Row 21: the edge notch, both ENDs.
   r = cut({ edgeNotch: { edge: 'BB', d: 20, h: 120 }, end_panels: [EPL, EPR] });
-  assert.deepEqual(panelOf(r, 'END-L').cnc.notch, { fc: 'x1y0', nw: 48, nh: 220 });
-  assert.deepEqual(panelOf(r, 'END-R').cnc.notch, { fc: 'x0y0', nw: 48, nh: 220 });
+  // 19.10.2026 (D22 amended): on the EDGE-STEP's back face, sb + ed = 30 (was 48, flush with the side).
+  assert.deepEqual(endOf(r, 'END-L').cnc.notch, { fc: 'x1y0', nw: 30, nh: 220 });
+  assert.deepEqual(endOf(r, 'END-R').cnc.notch, { fc: 'x0y0', nw: 30, nh: 220 });
   // Row 22: the scene has a frame for it now (handedness u x v = -n, as every placement).
-  const pl = panelPlacement(panelOf(r, 'END-L'));
+  const pl = panelPlacement(endOf(r, 'END-L'));
   const cross = [pl.u[1] * pl.v[2] - pl.u[2] * pl.v[1], pl.u[2] * pl.v[0] - pl.u[0] * pl.v[2], pl.u[0] * pl.v[1] - pl.u[1] * pl.v[0]];
   assert.deepEqual(cross.map((v) => v + 0), pl.n.map((v) => -v + 0));
-  assert.deepEqual(panelPlacement(panelOf(r, 'END-L')), panelPlacement({ ...panelOf(r, 'END-L'), part: 'BUL', meta: {} }));
-  assert.deepEqual(panelPlacement(panelOf(r, 'END-R')), panelPlacement({ ...panelOf(r, 'END-R'), part: 'BUR', meta: {} }));
+  assert.deepEqual(panelPlacement(endOf(r, 'END-L')), panelPlacement({ ...endOf(r, 'END-L'), part: 'BUL', meta: {} }));
+  assert.deepEqual(panelPlacement(endOf(r, 'END-R')), panelPlacement({ ...endOf(r, 'END-R'), part: 'BUR', meta: {} }));
   // A REFUSED notch cuts no END: the parent is what is cut (Room refuses first).
   r = cut({ notch: { corner: 'BR', w: 10, d: 100, h: 60 }, end_panels: [EPR] });
   assert.ok(r.warnings.some((w) => w.code === 'NOTCH_REFUSED'));
-  assert.deepEqual([panelOf(r, 'END-R').w, panelOf(r, 'END-R').cnc.notch], [596, undefined]);
+  assert.deepEqual([endOf(r, 'END-R').w, endOf(r, 'END-R').cnc.notch], [596, undefined]);
 });
 
 // ═══ THE LISP FIRST ════════════════════════════════════════════════════════
@@ -298,8 +310,9 @@ test('F9 · the routines, the LISP\'s own answers (H3, section D)', () => {
   assert.deepEqual(N.notchEndCut(770, 18, 200, 150, 300, 'FR', 'R', 10, 28, 870, 100), ['x1y0', 178, 400], 'a front corner: flush');
   assert.deepEqual(N.notchEndCut(770, 18, 10, 30, 40, 'BR', 'R', 10, 28, 870, 100), ['x0y0', 58, 140], 'a rebate: flush');
   // edge-notch-end-cut: flush with the side's cut face.
-  assert.deepEqual(N.edgeNotchEndCut(770, 18, 20, 120, 'BB', 'L', 10, 28, 870, 100), ['x1y0', 48, 220]);
-  assert.deepEqual(N.edgeNotchEndCut(770, 18, 20, 120, 'BB', 'R', 10, 28, 870, 100), ['x0y0', 48, 220]);
+  // 19.10.2026 (D22 amended, the EDGE-STEP): at a back edge the END covers the STEP's end, sb + ed (was sb + g + ed, 48).
+  assert.deepEqual(N.edgeNotchEndCut(770, 18, 20, 120, 'BB', 'L', 10, 28, 870, 100), ['x1y0', 30, 220]);
+  assert.deepEqual(N.edgeNotchEndCut(770, 18, 20, 120, 'BB', 'R', 10, 28, 870, 100), ['x0y0', 30, 220]);
   assert.deepEqual(N.edgeNotchEndCut(770, 18, 50, 100, 'TF', 'L', 10, 28, 870, 100), ['x0y1', 78, 100]);
   // notch-end-outline: one walk; one cut is notch-rect-outline's own polygon; a plain END the plain rectangle.
   for (const c of [['x1y0', 210, 400], ['x0y0', 48, 220], ['x1y1', 78, 300], ['x0y1', 150, 180]]) {
@@ -348,15 +361,15 @@ test('F9 · KIT_NOTCH.lsp I4, line by line, is the engine\'s cut (outlines, mark
     [{ notch: { ...NOTCH, h: -300 }, end_panels: [EPL] }, 'END-L', 455520],
     [{ notch: { corner: 'FR', w: 200, d: 150, h: 300 }, end_panels: [EPR] }, 'END-R', 447320],
     [{ notch: { corner: 'BR', w: 10, d: 30, h: 40 }, end_panels: [EPR] }, 'END-R', 510400],
-    [{ edgeNotch: { edge: 'BB', d: 20, h: 120 }, end_panels: [EPL, EPR] }, 'END-L', 507960],
+    [{ edgeNotch: { edge: 'BB', d: 20, h: 120 }, end_panels: [EPL, EPR] }, 'END-L', 511920],
     [{ edgeNotch: { edge: 'BB', d: 20, h: 120 }, end_panels: [EPL, EPR] }, 'END-R', null],
-    [{ edgeNotch: { edge: 'TB', d: 50, h: 100 }, end_panels: [{ ...EPL, top_mm: 200 }] }, 'END-L', 614320],
-    [{ notch: NOTCH, edgeNotch: { edge: 'TB', d: 50, h: 100 }, end_panels: [EPL] }, 'END-L', 426720],
+    [{ edgeNotch: { edge: 'TB', d: 50, h: 100 }, end_panels: [{ ...EPL, top_mm: 200 }] }, 'END-L', 619720],
+    [{ notch: NOTCH, edgeNotch: { edge: 'TB', d: 50, h: 100 }, end_panels: [EPL] }, 'END-L', 428520],
   ];
   for (const [extra, id, area] of cases) {
     const r = cut(extra);
     assert.equal(r.warnings.filter((w) => /REFUSED/.test(w.code)).length, 0, JSON.stringify(extra));
-    const p = panelOf(r, id);
+    const p = endOf(r, id);
     say(ptsOf(p.cnc.outline));
     for (const m of p.cnc.marks) say(arrowOf(m.pts));
     if (area) {
@@ -373,7 +386,7 @@ test('F9 · KIT_RECESS.lsp F2, line by line, is the engine\'s cut', () => {
   const prose = block('reference/lisp/KIT_RECESS.lsp', ';;; F2. NUMBERS - THE END PANEL', ';;; G. DRAWING');
   const say = (s) => assert.ok(prose.includes(s), `F2 states ${s}`);
   const d = cut({ extension: BAND, end_panels: [EPR] });
-  const ep = panelOf(d, 'END-R');
+  const ep = endOf(d, 'END-R');
   say(ptsOf(ep.cnc.outline));
   for (const m of ep.cnc.marks) say(arrowOf(m.pts));
   assert.deepEqual([ep.w, ep.h, ep.box.z, r4(ep.box.z + ep.box.d)], [746, 870, -160, 586]);
@@ -389,10 +402,10 @@ test('F9 · KIT_RECESS.lsp F2, line by line, is the engine\'s cut', () => {
   say('the EXT-BACK at carcass z -150..-132');
   assert.deepEqual([panelOf(d, 'EXT-BACK').box.z, r4(panelOf(d, 'EXT-BACK').box.z + panelOf(d, 'EXT-BACK').box.d)], [-150, -132]);
   // CASE A with END-R, the same band on the left, wholly inside.
-  const a = panelOf(cut({ extension: { ...BAND, z0: 0, z1: 770 }, end_panels: [EPR] }), 'END-R');
+  const a = endOf(cut({ extension: { ...BAND, z0: 0, z1: 770 }, end_panels: [EPR] }), 'END-R');
   say(`z -160..586: ${ptsOf(a.cnc.outline)}; area ${a.area_m2} m2`);
   // The recess stops short of the END's own edges: it grows from the recess's bottom to its head, no further.
-  const s = panelOf(cut({ extension: { ...BAND, z0: 0, z1: 770, rz0: -50, rz1: 900 }, end_panels: [{ ...EPR, top_mm: 200 }] }), 'END-R');
+  const s = endOf(cut({ extension: { ...BAND, z0: 0, z1: 770, rz0: -50, rz1: 900 }, end_panels: [{ ...EPR, top_mm: 200 }] }), 'END-R');
   assert.deepEqual([s.w, s.h, s.box.z, r4(s.box.z + s.box.d)], [746, 1070, -160, 586]);
   say('746 x 1070, its box z -160..586');
   say(ptsOf(s.cnc.outline));
@@ -400,13 +413,13 @@ test('F9 · KIT_RECESS.lsp F2, line by line, is the engine\'s cut', () => {
   assert.equal(Math.round(s.area_m2 * 1e6), 780220);
   say('area 0.78022 m2 (780220 mm2)');
   const l = cut({ extension: { x0: 0, x1: 290, z0: 0, z1: 590, d: 150, ends: ['L'] }, end_panels: [EPL, EPR] });
-  say(`"x1y1": ${ptsOf(panelOf(l, 'END-L').cnc.outline)}`);
-  assert.equal(panelOf(l, 'END-R').w, 596, 'the other hand unchanged');
-  const w = panelOf(cut({ depth: 708, depth_full: 558, recess_mm: 150, end_panels: [EPR] }), 'END-R');
+  say(`"x1y1": ${ptsOf(endOf(l, 'END-L').cnc.outline)}`);
+  assert.equal(endOf(l, 'END-R').w, 596, 'the other hand unchanged');
+  const w = endOf(cut({ depth: 708, depth_full: 558, recess_mm: 150, end_panels: [EPR] }), 'END-R');
   assert.deepEqual([w.w, w.box.z, w.box.z + w.box.d], [746, -10, 736]);
   say('END-R 746 x 870, its box z -10..736');
   // ...and kept to the wall line under a recess that starts 50 over the floor (the room's recess_band).
-  const wb = panelOf(cut({ depth: 708, depth_full: 558, recess_mm: 150, recess_band: { rz0: -50 }, end_panels: [EPR] }), 'END-R');
+  const wb = endOf(cut({ depth: 708, depth_full: 558, recess_mm: 150, recess_band: { rz0: -50 }, end_panels: [EPR] }), 'END-R');
   assert.deepEqual(X.recessEndCuts(770, 0, 770, 150, 'R', 870, 100, -50, null), [['x0y0', 150, 50]]);
   say('(recess-end-cuts 770 0 770 150 "R" 870 100 -50 nil) = (("x0y0" 150 50))');
   assert.deepEqual([wb.w, wb.box.z, wb.box.z + wb.box.d], [746, -10, 736]);
@@ -432,42 +445,46 @@ test('F9 · the END outline is its side\'s: the same corners, at the same height
   // The corner notch, from the floor: the same corner; the END's corner holds the side's height and runs down to the floor.
   let r = cut({ notch: NOTCH, end_panels: [EPL] });
   let [s] = cornerSpan(panelOf(r, 'BUL'));
-  let [e] = cornerSpan(panelOf(r, 'END-L'));
+  let [e] = cornerSpan(endOf(r, 'END-L'));
   assert.equal(e.fc, s.fc);
   assert.deepEqual([e.y0, e.y1, s.y0, s.y1], [-100, 300, 0, 300]);
   // Its cut face on the STEP's back face (z 200); the side's on the STEP's front face (z 218): the END covers the STEP's end.
   // (END-L's x runs back from its front face: the cut face stands at x = drawn_w - nw.)
-  const ep = panelOf(r, 'END-L');
+  const ep = endOf(r, 'END-L');
   assert.equal(ep.box.z + ep.box.d - (ep.cnc.drawn_w - e.nw), panelOf(r, 'STEP').box.z);
   assert.equal(panelOf(r, 'STEP').box.z, 200);
   assert.equal(panelOf(r, 'BUL').box.z + s.nw, panelOf(r, 'STEP').box.z + 18);
   // From the top (F4).
   r = cut({ notch: { ...NOTCH, h: -300 }, end_panels: [EPL] });
   [s] = cornerSpan(panelOf(r, 'BUL'));
-  [e] = cornerSpan(panelOf(r, 'END-L'));
+  [e] = cornerSpan(endOf(r, 'END-L'));
   assert.deepEqual([e.fc, e.y0, e.y1], [s.fc, s.y0, s.y1]);
   // The edge notch (F5): the same corner, flush with the side's cut face (carcass z 38) on both hands.
   r = cut({ edgeNotch: { edge: 'TB', d: 50, h: 100 }, end_panels: [{ ...EPL, top_mm: 200 }, EPR] });
   for (const [sideId, epId] of [['BUL', 'END-L'], ['BUR', 'END-R']]) {
     [s] = cornerSpan(panelOf(r, sideId));
-    [e] = cornerSpan(panelOf(r, epId));
+    [e] = cornerSpan(endOf(r, epId));
     assert.equal(e.fc, s.fc, epId);
     assert.equal(e.y0, s.y0, `${epId}: the rebate's underside`);
-    assert.equal(e.y1, panelOf(r, epId).box.y + panelOf(r, epId).box.h, `${epId}: run on to its own top`);
-    // The cut face: the side's back edge less its corner = the END's back edge less its corner, in the carcass.
+    assert.equal(e.y1, endOf(r, epId).box.y + endOf(r, epId).box.h, `${epId}: run on to its own top`);
+    // The cut face: the side's back edge less its corner is the EDGE-STEP's front face; the END's back edge less its
+    // corner is the STEP's BACK face (19.10.2026, D22 amended: the END covers the STEP's end, as at a boxed corner).
     const sideFace = panelOf(r, sideId).box.z + s.nw;
-    const endFace = panelOf(r, epId).box.z + e.nw;
+    const endFace = endOf(r, epId).box.z + e.nw;
+    const step = panelOf(r, 'EDGE-STEP');
     assert.equal(sideFace, 68);
-    assert.equal(endFace, sideFace, `${epId} flush with ${sideId}`);
+    assert.equal(step.box.z + step.box.d, sideFace, 'the STEP stands in the g behind the side\'s cut end');
+    assert.equal(endFace, step.box.z, `${epId} covers the STEP's end`);
+    assert.equal(endFace, 50);
   }
   // The recess, partly in: the same ed, the same corners, over the band's own height (it covers the FLOOR and the LID).
   r = cut({ extension: BAND, end_panels: [EPR] });
   const sides = cornerSpan(panelOf(r, 'BUR'));
-  const ends = cornerSpan(panelOf(r, 'END-R'));
+  const ends = cornerSpan(endOf(r, 'END-R'));
   assert.deepEqual(ends.map((c) => [c.fc, c.nw]), sides.map((c) => [c.fc, c.nw]));
   assert.deepEqual(ends.map((c) => [c.y0, c.y1]), [[-100, 210], [590, 770]], 'the band 210..590, the END to the floor');
   assert.deepEqual(sides.map((c) => [c.y0, c.y1]), [[0, 228], [572, 770]], 'the side under the FLOOR and the LID');
-  assert.equal(panelOf(r, 'END-R').box.d - 596, panelOf(r, 'BUR').w - 540, 'grown by the same ed');
+  assert.equal(endOf(r, 'END-R').box.d - 596, panelOf(r, 'BUR').w - 540, 'grown by the same ed');
 });
 
 test('F9 · wholly inside: the END panel\'s depth is the carcass\'s, the wall gap and the door, as on the wall line', () => {
@@ -475,7 +492,7 @@ test('F9 · wholly inside: the END panel\'s depth is the carcass\'s, the wall ga
     const D = 558 + recess;
     const r = cut({ depth: D, depth_full: 558, recess_mm: recess, end_panels: [EPL, EPR] });
     for (const id of ['END-L', 'END-R']) {
-      const p = panelOf(r, id);
+      const p = endOf(r, id);
       assert.equal(p.box.d, D + 10 + 28, `${id} at ${recess}`);
       assert.equal(p.box.z, -10);
       assert.equal(p.w, D + 38);
@@ -491,26 +508,30 @@ test('F9 · wholly inside: the END panel\'s depth is the carcass\'s, the wall ga
 test('F9 · BOM and the cut list follow the outline; the drawing and the export read it; nothing is refused', () => {
   const plain = cut({ end_panels: [EPL] });
   const r = cut({ notch: NOTCH, end_panels: [EPL] });
-  const ep = panelOf(r, 'END-L');
-  assert.equal(ep.area_m2, 0.43452);
-  assert.ok(r.csvLines.includes('01,END-L,596,870,<>^v,2.93,0.435'));
-  assert.equal(r4(r.totals.front_area_m2 - plain.totals.front_area_m2), r4(0.43452 - 0.51852), 'the front sheet loses the corner');
-  assert.deepEqual(cutRows(r).fronts.filter((x) => x.id === 'END-L').map((x) => [x.w, x.h]), [[596, 870]]);
-  const detail = JSON.stringify(partDetailDrawing(ep, { drills: r.drills, profile: P }));
-  assert.ok(detail.includes('386,400'), 'the part detail draws the corner');
+  const ep = endOf(r, 'END-L');
+  assert.equal(ep.area_m2, 0.43452, 'the nominal board');
+  // The cut list, the sheet and the drawing are the CUT (KIT_SITE_TRIM.lsp section 4): 616 x 910 less 230 x 420.
+  const cutEp = panelOf(r, 'END-L');
+  assert.equal(cutEp.area_m2, 0.46396);
+  assert.ok(r.csvLines.includes('01,END-L,616,910,<>^v,3.05,0.464'));
+  assert.equal(r4(r.totals.front_area_m2 - plain.totals.front_area_m2), r4(0.46396 - 0.56056), 'the front sheet loses the corner');
+  assert.deepEqual(cutRows(r).fronts.filter((x) => x.id === 'END-L').map((x) => [x.w, x.h]), [[616, 910]]);
+  const detail = JSON.stringify(partDetailDrawing(cutEp, { drills: r.drills, profile: P }));
+  assert.ok(detail.includes('386,420'), 'the part detail draws the corner, as cut');
   for (const res of [r, cut({ extension: BAND, end_panels: [EPR] }), cut({ edgeNotch: { edge: 'BB', d: 20, h: 120 }, end_panels: [EPL, EPR] })]) {
     assert.deepEqual(resultFindings(res), [], 'no outline fault');
     assert.deepEqual(unitFindings(res, { profile: P }), [], 'the export gate holds');
   }
   const file = buildUnitDxfFiles(r, P).find((f) => f.panelId === 'END-L');
   const outline = file.entities.find((e) => e.layer === 'OUTLINE');
-  assert.deepEqual(outline.pts, [[0, 0], [386, 0], [386, 400], [596, 400], [596, 870], [0, 870]]);
+  assert.deepEqual(outline.pts, [[0, 0], [386, 0], [386, 420], [616, 420], [616, 910], [0, 910]], 'the CUT (KIT_SITE_TRIM.lsp section 4)');
   const marks = file.entities.filter((e) => e.layer === 'CORNER_4MM');
-  assert.deepEqual(marks, [{ type: 'poly', layer: 'CORNER_4MM', closed: false, pts: [[386, 360], [386, 400], [426, 400]] }], 'one open L (D12)');
+  assert.deepEqual(marks, [{ type: 'poly', layer: 'CORNER_4MM', closed: false, pts: [[386, 380], [386, 420], [426, 420]] }], 'one open L (D12), moved with its corner');
 });
 
 test('F9 · the 3-D cuts the corner the engine states; an uncut END panel is still its box', () => {
   const r = cut({ notch: NOTCH, end_panels: [EPL, EPR] });
+  // The CUT record goes in (as the scene gets it); the solid is the NOMINAL board (KIT_SITE_TRIM.lsp D4).
   const { solid } = panelSolids(panelOf(r, 'END-L'), P.puzzle.layers, P, r.drills);
   assert.ok(solid, 'the notched END panel rendered as a plain box');
   solid.computeBoundingBox();
@@ -532,7 +553,7 @@ test('F9 · save and reload: the end panels and the notch are unit params, the b
   S().loadProject(saved.project, saved.units);
   assert.deepEqual(S().unitResult(id).csvLines, before);
   // T79 F10 (*"lub zmniejszać go odsuwaniem od recesu, logika."*): 886 x 870 less 290 x 280, edging 2 x (886 + 870).
-  assert.ok(before.includes('01,END-R,886,870,<>^v,3.51,0.690'));
+  assert.ok(before.includes('01,END-R,906,910,<>^v,3.63,0.731'), 'the CUT: 906 x 910 less 310 x 300 (the corner holds its size from the final edges)');
   id = roomWith(null);
   S().addEndPanel(id, { side: 'L' });
   assert.equal(S().setUnitNotch(id, NOTCH).ok, true);
@@ -541,7 +562,7 @@ test('F9 · save and reload: the end panels and the notch are unit params, the b
   S().newProject();
   S().loadProject(saved2.project, saved2.units);
   assert.deepEqual(S().unitResult(id).csvLines, cutBefore);
-  assert.ok(cutBefore.includes('01,END-L,596,870,<>^v,2.93,0.435'));
+  assert.ok(cutBefore.includes('01,END-L,616,910,<>^v,3.05,0.464'), 'the CUT: 616 x 910 less 230 x 420');
 });
 
 // ═══ THE GOLDENS AND THE GATE ═══════════════════════════════════════════════

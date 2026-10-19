@@ -6,7 +6,8 @@
     "source": "KIT_NOTCH.lsp D22 (the edge notch, its NUMBERS block I3 case B: BUD 600, TB 50 x 100, a coving) on KIT_BUD_FULL.lsp: BUL and BUR cut at the rear top, the TOP 490 deep (drawn from its underside, D11), the BACK 670 high",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "19.10.2026 (chat fix, KIT_NOTCH.lsp D22 amended): the edge notch takes the corner notch's closing boards run the whole width. The owner: \"2 cut dziala ale nie rozumiem dlaczego nie ma paneli plyt, w sensie jak tniemy pionowe to wszystko jest a jak poziome to nie ma, dlaczego?\". Two boards added: EDGE-STEP 600 x 100 (plan y 490..508, z 670..770, hanging from the top, D21) and EDGE-FLOOR 564 x 50 (under it, z 652..670); no RETURN, no screw, no joint; every other board untouched."
   },
   "params": {
     "type": "BUD",
@@ -37,7 +38,9 @@
       "01,BOTTOM,564,540,>,0.56,0.305",
       "01,BACK,600,670,,0,0.402",
       "01,SHELF-1,560,520,>,0.56,0.291",
-      "01,01-F,597,767,<>^v,2.73,0.458"
+      "01,01-F,597,767,<>^v,2.73,0.458",
+      "01,EDGE-STEP,600,100,,0,0.060",
+      "01,EDGE-FLOOR,564,50,,0,0.028"
     ],
     "panels": [
       {
@@ -179,6 +182,46 @@
         "holes": 0,
         "pockets": 1,
         "readiness": null
+      },
+      {
+        "id": "EDGE-STEP",
+        "part": "NOTCH-STEP",
+        "role": "notch_box",
+        "w": 600,
+        "h": 100,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 670,
+          "z": 50,
+          "w": 600,
+          "h": 100,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "EDGE-FLOOR",
+        "part": "NOTCH-FLOOR",
+        "role": "notch_box",
+        "w": 564,
+        "h": 50,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 652,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 50
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
       }
     ],
     "drills": [

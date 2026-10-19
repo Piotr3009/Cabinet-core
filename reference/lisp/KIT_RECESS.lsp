@@ -221,6 +221,14 @@
 ;;;     it and leaves its corners round, no dog bone. A cut that reaches an
 ;;;     edge is an OUTLINE cut with a CORNER MARK at each re-entrant corner
 ;;;     (D18, 17.10.2026; a dog bone until then), as the notch's is.
+;;;     AMENDED 19.10.2026 (chat fix), the owner: *"czy mozesz sie upewnic na
+;;;     milion procent ze wszystkie elementy sa zamkniete?"*  The window lies
+;;;     wholly INSIDE the board, so it is a CUT-OUT and its polyline runs
+;;;     CLOCKWISE (the engine's T25 F1.2: a hole traced the outline's way
+;;;     round is a hole machined to its own outside). Until tonight the window
+;;;     ran anticlockwise, the outline's way, and the export gate said so in
+;;;     red on every recess with a window. The JS mirror: cutout T on the
+;;;     RECESS_WINDOW pocket record.
 ;;; D10 THE SHELVES GROW. DECIDED by the owner ("glebsze"): a shelf whose
 ;;;     height lies within the band's interior takes the bump; one above or
 ;;;     below it is the parent's.
@@ -1363,9 +1371,10 @@
         (setq cut (recess-back-cut piece w))
         (setq outline (recess-back-outline piece cut) dbs (recess-back-dogbones piece cut r))
         (recess-draw-board x y outline dbs (if (equal piece (car pieces)) "BACK" "BACK-2"))
+        ;; D9 amended 19.10.2026: a cut-out, CLOCKWISE (x0 y0) (x0 y1) (x1 y1) (x1 y0).
         (if (and cut (= (recess-cut-kind cut (- (caddr piece) (car piece)) (- (cadddr piece) (cadr piece))) "window"))
-          (makePolyline (recess-offset-pts (list (list (car cut) (cadr cut)) (list (caddr cut) (cadr cut))
-                                                 (list (caddr cut) (cadddr cut)) (list (car cut) (cadddr cut))) x y)
+          (makePolyline (recess-offset-pts (list (list (car cut) (cadr cut)) (list (car cut) (cadddr cut))
+                                                 (list (caddr cut) (cadddr cut)) (list (caddr cut) (cadr cut))) x y)
                         "RECESS_WINDOW"))
         (setq bj (recess-back-joints piece w cw ch g ex0 ex1 ez0 ez1
                                      (notch-shift (cadr (assoc "BACK" (recess-top-joints cw cd g ex0 ex1 ed))) g)
@@ -1476,20 +1485,30 @@
   (if onSide (list (list (- (cadr window) z0) (- (cadddr window) z0))) nil))
 
 ;;; drawBACK's side row on a piece's side edge, (z ..) in the piece's frame,
-;;; between the tabs the edge carries. Off the notch's edge (onSide nil) it is
-;;; the one run of the whole edge, as it always was. On the edge the notch
-;;; cuts (onSide), D13: every edge cut by both takes its joints run by run on
-;;; what the two leave of it, so the runs are what the notch AND, when the band
-;;; reaches that side too (bandSide), the window leave of it, and a row stands
-;;; on its run: a hole drawBACK's spacing puts past a run's end would be
-;;; drilled into the notch, into the window or past the board (none on a run
-;;; shorter than one hole's offset). The T79 F8 review, 18.10.2026.
-(defun recess-side-row (bh z0 tabs nb window onSide bandSide sfe / out)
-  (setq out nil)
+;;; between the tabs the edge carries. An edge nothing cuts (no notch on it,
+;;; the band not reaching it) is the one run of the whole edge, as it always
+;;; was. On the edge the notch cuts (onSide), D13: every edge cut by both takes
+;;; its joints run by run on what the two leave of it; on the side the band
+;;; reaches (bandSide) the window takes the edge over its height (a BITE, D9),
+;;; notch or no notch. So the runs are what the notch AND the window leave of
+;;; the edge, and a row stands on its run: a hole drawBACK's spacing puts past
+;;; a run's end would be drilled into the notch, into the window or past the
+;;; board (none on a run shorter than one hole's offset). The T79 F8 review,
+;;; 18.10.2026.
+;;; AMENDED 19.10.2026 (chat fix), the owner: *"czasami cnc rysuje items jak
+;;; 3 mm drills czy cos takiego czy litery poza elementami, czy mozesz sie
+;;; upewnic na milion procent ze wszystkie elementy sa zamkniete?"*  Until
+;;; tonight the window's cut was asked only on a notch's edge ((and onSide
+;;; bandSide)), so a plain recess to the right edge ran drawBACK's right column
+;;; straight through the bite: golden-recess, x 591, z 392.5, a dia 3 hole in
+;;; the window. The window's cut is asked wherever the band reaches the side.
+(defun recess-side-row (bh z0 tabs nb window onSide bandSide sfe / out cutEdge)
+  (setq out nil
+        cutEdge (or onSide bandSide))
   (foreach run (recess-runs 0.0 bh (append (recess-notch-zcut nb z0 onSide)
-                                           (recess-window-zcut window z0 (and onSide bandSide))))
+                                           (recess-window-zcut window z0 bandSide)))
     (foreach z (notch-rows-between-tabs (car run) (cadr run) (recess-in-run tabs run) sfe)
-      (if (or (not onSide) (and (> z (- (car run) 1e-6)) (< z (+ (cadr run) 1e-6))))
+      (if (or (not cutEdge) (and (> z (- (car run) 1e-6)) (< z (+ (cadr run) 1e-6))))
         (setq out (cons z out)))))
   (reverse out))
 

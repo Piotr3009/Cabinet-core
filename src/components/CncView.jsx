@@ -9,6 +9,7 @@ import { exportablePanels } from '../engine/cnc/groups.js';
 import { CNC_VIEWS, groupByCabinet, groupByMaterial } from '../engine/cnc/views.js';
 import { labelFit, symbolVisible } from '../engine/cnc/annotation.js';
 import { panelLabelBlock, panelNoteBlock } from '../engine/cnc/dxf.js';
+import { labelAnchors } from '../engine/cnc/labelAnchor.js';
 import { useElementSize, useSheetView } from '../lib/sheetView.js';
 import { projectLabelPlan } from '../lib/partLabels.js';
 import { edgeArrowGeometry } from '../engine/partNumbers.js';
@@ -739,7 +740,11 @@ function Part({
     w: Math.abs(panel.cnc?.drawn_w ?? panel.w),
     h: Math.abs(panel.cnc?.drawn_h ?? panel.h),
   };
-  const [labelX, labelY] = toSheet(place, box.w / 2, box.h / 2);
+  // CHAT FIX 19.10.2026: the anchors are the DXF's own (`cnc/labelAnchor.js`,
+  // read off the outline, moved onto the board when the middle is a window or
+  // a cut-out), so the sheet shows the words where the file writes them.
+  const captionAnchor = labelAnchors(panel, { captionH: (label.size || 0) + Math.max(0, (label.lines || []).length - 1) * (label.size || 0) * 1.25 }).caption;
+  const [labelX, labelY] = toSheet(place, captionAnchor[0], captionAnchor[1]);
   const labelTurn = place.bounds.turn || 0;
   // ─── TURN 47 (F2/F3/F4): THE ANGLE, BESIDE THE EDGE ──────────────────────
   // *"na CNC tez zeby bylo napisane."* The EXPORT's own formatter, at the
@@ -760,7 +765,13 @@ function Part({
   // sticker) carries it; the front face shows none.
   const edgeArrow = (!front && partNo != null && label.visible)
     ? edgeArrowGeometry(panel, profile, { textMm: label.size * 0.9 }) : null;
-  const [noteX, noteY] = toSheet(place, box.w / 2, box.h - slopeNote.size * 1.2);
+  // 19.10.2026: the sheet centres the note's lines on the anchor (`l.dy`), so
+  // it reads the BLOCK's middle, lifted where the block would run off the board.
+  const noteAnchor = labelAnchors(panel, {
+    noteSize: slopeNote.size || 0,
+    noteBlockH: (slopeNote.size || 0) + Math.max(0, (slopeNote.lines || []).length - 1) * (slopeNote.step || 0),
+  }).noteCentre;
+  const [noteX, noteY] = toSheet(place, noteAnchor[0], noteAnchor[1]);
   // Drilling and machining marks are the drawing's own geometry now — a ⌀5 hole
   // is five millimetres wide at every zoom, never the screen-space minimum turn
   // 11 gave it. Under the threshold it is not drawn at all, which is what stops

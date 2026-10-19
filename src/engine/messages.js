@@ -229,6 +229,12 @@ export function messagesAt(list, place) {
 // first, at most `historyMax` rows, never persisted (a list of what this
 // session said, not a record of the project).
 
+/** How long the open Changes list stays open, ms (19.10.2026: it closes itself). */
+export function historyOpenMs(profile) {
+  const n = Number(profile?.ui?.messages?.historyOpenMs);
+  return Number.isFinite(n) && n > 0 ? n : 10000;
+}
+
 /** How many rows the Changes list keeps, a profile number. */
 export function historyMax(profile) {
   const n = Number(profile?.ui?.messages?.historyMax);

@@ -61,6 +61,7 @@ import {
   extensionCarcass, extensionDrills, extensionSummary, extensionVerdict, withExtensionRefusal,
   endPanelsFollowSides,
 } from './extension.js';
+import { applySiteTrim } from './siteTrim.js';
 // T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
 // of the parent's own puzzle cut, the puzzle stripped before the drilling and
 // the pairs added after it. Never reached while the system is the puzzle.
@@ -2298,8 +2299,18 @@ export function computeCabinet(params, profileOverride) {
   // ladder run over its own height and lifted by its base. Zero on every
   // other kit, so the line below is what it was.
   const towerBase = cfg.tower ? cfg.tower.doorBase : 0;
+  // CHAT FIX 19.10.2026 (the off-board probe, scripts/chatfix-1910-offboard-
+  // probe.mjs): a HOOD's door stands above its aperture exactly as a tower's
+  // stands on its machine, so it is a SHORT door too: its ladder runs over
+  // its own height and is lifted by the aperture. Until today the ladder ran
+  // over the carcass's 720 and the hood's 367 door carried cups at 420 and
+  // 620, off the board (WUD_HOOD, WUD_HOOD_SHORT). Zero on every other kit.
   const overlayBase = overlay ? overlay.doorBase : towerBase;
-  const shortDoor = Boolean(overlay) || towerBase > 0;
+  const shortDoor = Boolean(overlay) || towerBase > 0 || hoodApertureMm > 0;
+  // What LIFTS the ladder into the carcass frame: the stack's or the tower's
+  // base, else the hood's aperture (`doorY` and `frontH` below already carry
+  // the aperture as their own term, so it is not added to overlayBase).
+  const ladderBase = overlayBase > 0 ? overlayBase : hoodApertureMm;
   // A wall-unit front may run below the box; a HOOD's front starts ABOVE the
   // aperture, which is the same one line seen from the other end (F9).
   // TURN 40 (F3b): …and it STANDS on the overlay stack when there is one.
@@ -2380,7 +2391,9 @@ export function computeCabinet(params, profileOverride) {
   // and crams five onto 411 mm. Its rows are the ladder the LISP writes for a
   // door of a low height (KIT_LOW_CABINET: two under 800, three under 1200).
   // A full-height tower door (a fridge freezer) keeps the kit's own.
-  const hingeRule = P.hinges.rules[towerBase > 0 ? 'low' : type.hingeRule] || P.hinges.rules.base;
+  // CHAT FIX 19.10.2026: a HOOD's door is a low door too (367 on a 720 hood):
+  // the base rule's three cups would stand 100 and 67 on it, 33 mm apart.
+  const hingeRule = P.hinges.rules[(towerBase > 0 || hoodApertureMm > 0) ? 'low' : type.hingeRule] || P.hinges.rules.base;
   // ─── Turn 17 (CLAUDE.md F7) ───
   // The kit's own maths, then the project's standard, then whatever the joiner
   // has said about THIS cabinet. A bare `computeCabinet()` — every golden
@@ -2408,7 +2421,7 @@ export function computeCabinet(params, profileOverride) {
   // frame the Doors modal shows and `setHingePos` writes), so it is NOT lifted
   // a second time. Only the rule's own answer is.
   const centres = shortDoor && !saidRows
-    ? centresRaw.map((c) => roundTo(c + overlayBase, 4))
+    ? centresRaw.map((c) => roundTo(c + ladderBase, 4))
     : centresRaw;
   // ─── THE CUPS FOLLOW THE HINGES (turn 17, CLAUDE.md F7.3) ────────────────
   //
@@ -2433,7 +2446,7 @@ export function computeCabinet(params, profileOverride) {
   // The cup is bored from the DOOR's own bottom edge, so a door that starts
   // part-way up the carcass takes its own base off first. `overlayBase` is 0
   // for every other cabinet, which is why this is one expression and not two.
-  const cupY = centres.map((c) => c - overlayBase + cfg.doorExtend);
+  const cupY = centres.map((c) => c - ladderBase + cfg.doorExtend);
 
   // ── Wardrobe drawers (internal, behind the doors) ──────────────────────────
   const DR = P.wardrobe.drawers;
@@ -7821,7 +7834,7 @@ export function computeCabinet(params, profileOverride) {
         twoBelowMm: cfg.hingeTwoBelowMm,
       }, P),
       place: (rows) => rows
-        .map((c) => roundTo(c - overlayBase + cfg.doorExtend, 4))
+        .map((c) => roundTo(c - ladderBase + cfg.doorExtend, 4))
         .filter((y) => y >= 0 && y + margin <= leafH),
     });
   };
@@ -8814,7 +8827,7 @@ export function computeCabinet(params, profileOverride) {
   // what it left: a board both reach is cut by both. Null with no edge notch.
   const edgeNotchCut = params?.edgeNotch
     ? edgeNotchCarcass({
-      params, profile: P, panels, W, H, D, G, cornerCut: notchCut,
+      params, profile: P, panels, W, H, D, G, cornerCut: notchCut, codes, makePanel: panel,
     })
     : null;
   // 15.10.2026 · the recess extension, in the notch's own place (KIT_RECESS.lsp
@@ -8835,6 +8848,15 @@ export function computeCabinet(params, profileOverride) {
   endPanelsFollowSides({
     params, panels, notchCut, edgeNotchCut, extensionCut, H, D, G, profile: P,
   });
+  // CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): the END panel and the PLINTH are
+  // cut `siteTrim` bigger on the edges a joiner scribes on site (an end panel:
+  // top, bottom, back, never the front; a plinth: top, bottom, the open ends),
+  // the nominal stated beside them (`meta.oversize`), the box and the scene
+  // keeping the nominal. The owner: *"side panele powinny byc wieksze o 20
+  // mm, to samo z plinth, panele 20mm gora + dol + bok (nie przod)"*. After
+  // the pass above, so a panel that followed its side grows the shape it was
+  // cut to. A profile with siteTrim 0 cuts every board as before.
+  applySiteTrim({ panels, profile: P });
 
   // ── Drills ─────────────────────────────────────────────────────────────────
   const drills = [];

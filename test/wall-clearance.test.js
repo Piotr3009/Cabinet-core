@@ -24,6 +24,11 @@ import { backStandoff, unitPlanSpan, wallClearance } from '../src/engine/collisi
 import { migrateRoom, rectCorners, roomWalls } from '../src/engine/room.js';
 import { buildTopView } from '../src/engine/drawings/views.js';
 import { buildUnitCard } from '../src/engine/drawings/unitCard.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const store = () => useProjectStore.getState();
 const GAP = P.room.wallBackClearance;
@@ -108,7 +113,7 @@ test('an end panel is cut deep enough to reach the wall behind it', () => {
 
   assert.equal(ep.box.z, -GAP, 'it starts AT the wall');
   assert.equal(ep.box.z + ep.box.d, door.box.z + door.box.d, 'and finishes flush with the door');
-  assert.equal(ep.w, GAP + unit.params.depth + P.doors.gap + unit.params.front_t);
+  assert.equal(nominal(ep).w, GAP + unit.params.depth + P.doors.gap + unit.params.front_t);
 });
 
 test('a deliberate inset DOES lengthen the end panel — it still reaches the wall', () => {

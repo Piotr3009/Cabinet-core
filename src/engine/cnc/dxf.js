@@ -25,6 +25,7 @@
 // header state the true extents so any CAM package sees them immediately.
 
 import { layerTableFor } from './layers.js';
+import { labelAnchors, outlineBox } from './labelAnchor.js';
 import { partLabelText, slopeNoteText } from './partLabel.js';
 import { labelBlock } from './annotation.js';
 import { turnPoint } from './layout.js';
@@ -283,7 +284,19 @@ export function panelNoteBlock(panel, {
   profile, mmPerPx = 1, minPx = 0, ascii = false,
 }) {
   const cnc = profile.cnc;
-  const box = labelBox(panel);
+  // 19.10.2026: the note is laid out in the OUTLINE's own box, not the record's
+  // rectangle: a dishwasher plinth is a 20 mm strip over a cut-out the width
+  // of the board (`notchedPlinth`), and a note sized to the 100 mm rectangle
+  // stacked its lines into the cut-out. A board whose outline fills its
+  // rectangle (every other board) is sized exactly as before.
+  const rect = labelBox(panel);
+  const ol = panel?.cnc?.outline;
+  const box = Array.isArray(ol) && ol.length >= 3
+    ? (() => {
+      const [x0, y0, x1, y1] = outlineBox(ol);
+      return { w: Math.min(rect.w, x1 - x0), h: Math.min(rect.h, y1 - y0) };
+    })()
+    : rect;
   const text = slopeNoteText(panel, { ascii });
   const ellipsis = ascii ? '~' : '…';
   const at = (sizeMm) => labelBlock({
@@ -503,6 +516,18 @@ export function panelEntities(panel, drills, { unitNum, profile, label = null })
   // what keeps every existing file byte-identical.
   const note = panelNoteBlock(panel, { profile, ascii: true });
   const caption = panelLabel(panel, { unitNum, profile, no: partNo });
+  // CHAT FIX 19.10.2026 (the owner: *"cnc rysuje ... litery poza elementami"*):
+  // the two anchors are read off the OUTLINE and moved onto the board when the
+  // middle of the rectangle is a window, a cut-out or thin air
+  // (`cnc/labelAnchor.js`, one law with the CNC sheet). A rectangle's anchors
+  // are what they were: w / 2, h / 2 and h - size * 1.2.
+  const anchors = labelAnchors(panel, {
+    // The whole block has to stand on the board: every line of it.
+    captionH: (caption.h || 0) + Math.max(0, caption.lines.length - 1) * (caption.step || 0),
+    noteSize: note.size || 0,
+    noteBlockH: (note.size || 0) + Math.max(0, (note.lines || []).length - 1) * (note.step || 0),
+  });
+  void w; void h;
   if (note.visible) {
     // At the part's TOP EDGE — beside the cut, not in the middle where the
     // label is — and laid out inside the part's own box, so it can never grow
@@ -511,8 +536,8 @@ export function panelEntities(panel, drills, { unitNum, profile, label = null })
       entities.push({
         type: 'text',
         layer: textLayer,
-        x: w / 2,
-        y: h - note.size * 1.2 - i * note.step,
+        x: anchors.note[0],
+        y: anchors.note[1] - i * note.step,
         h: note.size,
         str: l.text,
       });
@@ -522,8 +547,8 @@ export function panelEntities(panel, drills, { unitNum, profile, label = null })
     entities.push({
       type: 'text',
       layer: textLayer,
-      x: w / 2,
-      y: h / 2 + ((caption.lines.length - 1) / 2 - i) * caption.step,
+      x: anchors.caption[0],
+      y: anchors.caption[1] + ((caption.lines.length - 1) / 2 - i) * caption.step,
       h: caption.h,
       str: line,
     });

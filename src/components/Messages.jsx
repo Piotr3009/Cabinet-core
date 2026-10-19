@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
-import { historyTime, messagesAt } from '../engine/messages.js';
+import { historyOpenMs, historyTime, messagesAt } from '../engine/messages.js';
+import { getCabinetProfile } from '../engine/profile.js';
 
 // ─── THE THREE LEVELS, ON THE SCREEN (turn 31, CLAUDE.md F2) ────────────────
 //
@@ -132,6 +133,15 @@ function HistoryBar() {
     const onKey = (e) => { if (e.key === 'Escape') closeHistory(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, [open, closeHistory]);
+  // CHAT FIX 19.10.2026, the owner: *"changes chat can we keep close, nawet
+  // jesli uzytkownik otworzy czy mozemy za jakis czas zamknac? bo za bardzo
+  // przeszkadza"*: the open list closes itself after
+  // profile.ui.messages.historyOpenMs; the bar stays, the rows stay.
+  useEffect(() => {
+    if (!open) return undefined;
+    const t = setTimeout(closeHistory, historyOpenMs(getCabinetProfile()));
+    return () => clearTimeout(t);
   }, [open, closeHistory]);
 
   return (

@@ -28,6 +28,11 @@ import {
   flushHistory, unwatchProjectHistory, useHistoryStore, watchProjectHistory,
 } from '../src/stores/historyStore.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const PANEL = readFileSync(new URL('../src/components/MultiUnitPanel.jsx', import.meta.url), 'utf8');
 
@@ -60,7 +65,7 @@ test('F9.3 the panel is cut DEEPER by exactly the inset, and starts at the wall'
     }, P);
     const ep = r.panels.find((p) => p.part === 'END-PANEL');
     assert.equal(
-      ep.w,
+      nominal(ep).w,
       GAP + inset + r.params.depth + P.doors.gap + r.params.front_t,
       `${inset}: unit depth + inset, and the standing clearance every unit has`,
     );
@@ -77,7 +82,8 @@ test('F9.3 …and a bare kit call with no inset cuts exactly what it cut yesterd
     ...defaultParamsFor('BUD', P), unit_num: '01', end_panels: [{ side: 'R' }],
   }, P);
   const ep = bare.panels.find((p) => p.part === 'END-PANEL');
-  assert.equal(ep.w, GAP + bare.params.depth + P.doors.gap + bare.params.front_t);
+  assert.equal(nominal(ep).w, GAP + bare.params.depth + P.doors.gap + bare.params.front_t);
+  assert.equal(ep.w, nominal(ep).w + trimOf(ep), 'the CUT: the back edge grown for the site trim (19.10.2026)');
   assert.equal(ep.box.z, -GAP);
 });
 
@@ -93,7 +99,7 @@ test('F9.2 the field moves every selected cabinet, and their panels with them', 
   // rightly (turn 3, phase 4).
   const added = store().addEndPanel(c.id, { side: 'R' });
   assert.equal(added.error, null, 'the outer end of the run takes a panel');
-  const before = epOf(c.id).w;
+  const before = nominal(epOf(c.id)).w;
 
   const { applied, skipped } = store().setUnitInsetsBulk([a.id, b.id, c.id], { back: 40 });
   assert.equal(applied, 3, 'all three moved');
@@ -101,7 +107,7 @@ test('F9.2 the field moves every selected cabinet, and their panels with them', 
   for (const u of [a, b, c]) {
     assert.equal(unitOf(u.id).params.inset_back_mm, 40, `${u.id} stands 40 off the wall`);
   }
-  assert.equal(epOf(c.id).w, before + 40, 'and that panel reaches the wall');
+  assert.equal(nominal(epOf(c.id)).w, before + 40, 'and that panel reaches the wall');
 });
 
 test('F9.2 …and it is ONE undo step, like every other bulk action', () => {

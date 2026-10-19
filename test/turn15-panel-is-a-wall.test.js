@@ -30,6 +30,11 @@ import { backStandoff } from '../src/engine/collision.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const store = () => useProjectStore.getState();
 const WALL = 5000;
@@ -193,11 +198,11 @@ test('THE 10 mm: an end panel is automatically that much deeper than its unit', 
   const frontT = result.panels.find((p) => p.role === 'front').thickness;
 
   assert.equal(
-    panel.w,
+    nominal(panel).w,
     P.room.wallBackClearance + depth + P.doors.gap + frontT,
     'wall gap + carcass + door standoff + door thickness',
   );
-  assert.equal(panel.w - (depth + P.doors.gap + frontT), 10,
+  assert.equal(nominal(panel).w - (depth + P.doors.gap + frontT), 10,
     'exactly 10 mm deeper than the unit it masks — automatically, never typed');
   // …and it therefore STARTS at the wall.
   assert.equal(panel.box.z, -P.room.wallBackClearance);

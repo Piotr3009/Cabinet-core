@@ -32,6 +32,12 @@ import {
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal; the DW
+// relief is 20 below the top the joiner trims TO (the cut's top less the trim).
+import { nominal, trimOf } from './site-trim.js';
 
 const build = (type, extra = {}) => computeCabinet(
   { ...defaultParamsFor(type, P), unit_num: '01', ...extra }, P,
@@ -161,8 +167,8 @@ test('F1.3 a bare default D/W arrives WITH its toe kick', () => {
   assert.equal(defaultParamsFor('DW_PANEL', P).plinth, true);
   const kick = partOf(dw(), 'PLINTH');
   assert.ok(kick, 'the piece he cares about most is there');
-  assert.equal(kick.h, P.baseUnit.legHeight, 'at the run’s own height');
-  assert.equal(kick.box.y, -kick.h, 'standing under the carcass, where a toe kick stands');
+  assert.equal(nominal(kick).h, P.baseUnit.legHeight, 'at the run’s own height');
+  assert.equal(kick.box.y, -nominal(kick).h, 'standing under the carcass, where a toe kick stands');
 });
 
 test('F1.3 …and it is on THIS kit only: a plinth stays a decision everywhere else', () => {
@@ -179,9 +185,9 @@ test('F1.3 …and it is on THIS kit only: a plinth stays a decision everywhere e
 test('F1.3 it is the turn-27 notch, unchanged, and it joins a run', () => {
   const type = getUnitType('DW_PANEL');
   const kick = partOf(dw({ leg_height: 50 }), 'PLINTH');
-  assert.equal(kick.h, 50, 'the run’s number, not a constant');
+  assert.equal(nominal(kick).h, 50, 'the run’s number, not a constant');
   const ys = kick.cnc.outline.map(([, y]) => y);
-  assert.ok(ys.includes(kick.h - type.plinthCutFromTop), 'relieved 20 mm below the top');
+  assert.ok(ys.includes(kick.h - trimOf(kick) - type.plinthCutFromTop), 'relieved 20 mm below the top the joiner trims to');
   assert.equal(Math.max(...ys), kick.h, 'and the top edge runs right through');
   // A `member` of a run cuts nothing — the long piece is next door. That is the
   // run law and the D/W is in it, which is the whole of turn 27 F2.4.

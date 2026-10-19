@@ -34,7 +34,8 @@ test('F1 — fourteen kits, every one 0/0, and the count is DERIVED', () => {
   // T78 AMENDED again: the L corner's drawer stack and bi-fold door are kits of their own
   // (KIT_CORNER_L_DRAWERS.lsp, KIT_CORNER_L_BIFOLD.lsp): the walk ends between 16 and 23.
   // CHAT FIX 19.10.2026 AMENDED: the second hanging rod is a kit of its own (KIT_HANGER_TWO.lsp, *"lisp najpierw"*): the walk ends between 16 and 24.
-  assert.ok([16, 17, 18, 19, 20, 21, 22, 23, 24].includes(rows.length), `fourteen kits, the T75 ones and the T78 joints, ${rows.length}`);
+  // CHAT FIX 19.10.2026 AMENDED AGAIN: the site-trim allowance is a modifier file of its own (KIT_SITE_TRIM.lsp; the owner: *"side panele powinny byc wieksze o 20 mm, to samo z plinth"*): the walk ends between 16 and 25.
+  assert.ok([16, 17, 18, 19, 20, 21, 22, 23, 24, 25].includes(rows.length), `fourteen kits, the T75 ones and the T78 joints, ${rows.length}`);
   assert.ok(rows.some((r) => r.name === T57_KIT), 'and the new one is the J-pull');
   for (const r of rows) {
     assert.equal(r.balance, 0, `${r.name} is ${r.balance} out`);

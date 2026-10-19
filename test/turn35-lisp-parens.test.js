@@ -232,6 +232,58 @@ test('chat fix 19.10 · KIT_HANGER_TWO.lsp balances 0/0 with its five decisions 
   assert.ok(/^[\x00-\x7F]*$/.test(text), 'ASCII');
 });
 
+// CHAT FIX 19.10.2026 (the afternoon) · a second NEW file, KIT_SITE_TRIM.lsp
+// (the site-trim allowance on the END panel and the PLINTH; the owner: *"side
+// panele powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol
+// + bok (nie przod)"*), balanced by name, ASCII, drawRect COMMON's own.
+test('chat fix 19.10 · KIT_SITE_TRIM.lsp balances 0/0 with its five decisions and SITETRIM_FULL', () => {
+  const text = readFileSync(join(LISP_DIR, 'KIT_SITE_TRIM.lsp'), 'utf8');
+  const { balance, min } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.match(text, /;;; D1  ONE NUMBER PER PART, 20/);
+  assert.match(text, /;;; D2  THE FRONT EDGE OF AN END PANEL NEVER GROWS/);
+  assert.match(text, /;;; D3  A PLINTH'S MACHINE-CUT JOIN NEVER GROWS/);
+  assert.match(text, /\(defun site-trim-grow \(pts w h t edges \/ dl dr dt db out\)/);
+  assert.match(text, /\(defun site-trim-size \(w h t edges\)/);
+  assert.match(text, /\(defun site-trim-end-edges \(hand\)/);
+  assert.match(text, /\(defun site-trim-plinth-edges \(leftOpen rightOpen \/ e\)/);
+  assert.match(text, /\(defun c:SITETRIM_FULL /);
+  assert.doesNotMatch(text, /\(defun drawRect/, 'COMMON\'s routines are called, never redefined');
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+  assert.ok(/^[\x00-\x7F]*$/.test(text), 'ASCII');
+});
+
+// CHAT FIX 19.10.2026 (the afternoon) · KIT_NOTCH.lsp amended under licence
+// (the owner: *"2 cut dziala ale nie rozumiem dlaczego nie ma paneli plyt ...
+// jak tniemy pionowe to wszystko jest a jak poziome to nie ma"*): D22's
+// closing boards, H2's four routines, edge-notch-end-cut, I3 and I4; and
+// KIT_RECESS.lsp's recess-side-row (the owner: *"czasami cnc rysuje items jak
+// 3 mm drills ... poza elementami"*). Both balance by name.
+test('chat fix 19.10 · KIT_NOTCH.lsp and KIT_RECESS.lsp balance 0/0 with D22 amended and recess-side-row amended', () => {
+  const notch = readFileSync(join(LISP_DIR, 'KIT_NOTCH.lsp'), 'utf8');
+  let scan = parenScan(notch);
+  assert.equal(scan.balance, 0);
+  assert.equal(scan.min, 0);
+  assert.match(notch, /;;;     AMENDED 19\.10\.2026 \(chat fix\), the owner: \*"2 cut dziala ale nie/);
+  assert.match(notch, /\(defun edge-notch-box-places \(cw cd ch g ed eh edge \/ back top z0 z1 ly0 ly1 out\)/);
+  assert.match(notch, /\(defun edge-notch-step \(cw eh edge\)/);
+  assert.match(notch, /\(defun edge-notch-lid \(cw g ed edge\)/);
+  assert.match(notch, /\(defun edge-notch-floor \(cw g ed edge\)/);
+  assert.match(notch, /\(if \(edge-notch-back-p edge\) \(\+ sb ed\) \(\+ ed sf\)\)/, 'edge-notch-end-cut: on the STEP\'s back face');
+  assert.match(notch, /;;;   EDGE-STEP  600 x 120   plan x 0\.\.600, y 520\.\.538, z 0\.\.120/);
+  const recess = readFileSync(join(LISP_DIR, 'KIT_RECESS.lsp'), 'utf8');
+  scan = parenScan(recess);
+  assert.equal(scan.balance, 0);
+  assert.equal(scan.min, 0);
+  assert.match(recess, /\(defun recess-side-row \(bh z0 tabs nb window onSide bandSide sfe \/ out cutEdge\)/);
+  assert.match(recess, /\(recess-window-zcut window z0 bandSide\)/);
+  for (const text of [notch, recess]) {
+    assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+    assert.ok(/^[\x00-\x7F]*$/.test(text), 'ASCII');
+  }
+});
+
 // T79 F8 · CLAUDE.md T79 FROZEN 2: the parens test grows with every file
 // touched. KIT_RECESS.lsp is amended under licence (the owner, 18.10.2026:
 // *"dlaczego cut the corner likwiduje nam wcięcie do recess?"*): D13 WITH A

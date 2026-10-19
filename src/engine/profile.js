@@ -2521,6 +2521,16 @@ export const DEFAULT_CABINET_PROFILE = {
       height: null,
       setback: 50,          // recessed from the front face (toe kick)
       thickness: null,      // null = the unit's board thickness
+      // ─── THE SITE-TRIM ALLOWANCE (chat fix 19.10.2026, KIT_SITE_TRIM.lsp) ──
+      //
+      // The owner, 19.10.2026: *"side panele powinny byc wieksze o 20 mm, to
+      // samo z plinth, panele 20mm gora + dol + bok (nie przod, 0 to zawsze
+      // powinno byc ok)"*. A plinth is CUT this much bigger on its top edge,
+      // its bottom edge and each end that is not a machine-cut join, and the
+      // joiner scribes it to the floor on site; the nominal is stated beside
+      // it (the side infill's own idiom, `fillerOversize`). 0 switches it off.
+      // PROPOSED, owner to confirm.
+      siteTrim: 20,
     },
     // ─── THE WORKTOP (turn 30, CLAUDE.md F8) ───────────────────────────
     //
@@ -2653,6 +2663,15 @@ export const DEFAULT_CABINET_PROFILE = {
       // a boolean: when the extension lands, a wall unit opts into it by name
       // and nothing about the data has to change shape.
       defaultHeightByMount: { wall: 'carcass', floor: 'floor' },
+      // ─── THE SITE-TRIM ALLOWANCE (chat fix 19.10.2026, KIT_SITE_TRIM.lsp) ──
+      //
+      // The owner, 19.10.2026: *"side panele powinny byc wieksze o 20 mm ...
+      // panele 20mm gora + dol + bok (nie przod, 0 to zawsze powinno byc
+      // ok)"*. An end panel is CUT this much bigger on its top edge, its
+      // bottom edge and its back edge (the wall); the front edge is the door
+      // line and never grows. The nominal is stated beside it. 0 switches it
+      // off. PROPOSED, owner to confirm.
+      siteTrim: 20,
     },
     // ─── The bottom masking panel (turn 14, CLAUDE.md F5 / BACKLOG #45) ─────
     //
@@ -5416,6 +5435,11 @@ export const DEFAULT_CABINET_PROFILE = {
       // keeps before the oldest goes (engine/messages.js `recordHistory`).
       // T79 PROPOSED, owner to confirm: fifty is a working session of notices.
       historyMax: 50,
+      // CHAT FIX 19.10.2026, the owner: *"changes chat can we keep close, nawet
+      // jesli uzytkownik otworzy czy mozemy za jakis czas zamknac? bo za bardzo
+      // przeszkadza"*. The open list closes itself after this long; the bar
+      // stays. PROPOSED, owner to confirm.
+      historyOpenMs: 10000,
     },
 
     // ─── THE MODAL RULE (turn 12, CLAUDE.md rule 15) ───

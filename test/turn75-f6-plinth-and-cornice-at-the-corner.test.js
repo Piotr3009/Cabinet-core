@@ -24,6 +24,11 @@ import {
 } from '../src/engine/cornice.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const S = () => useProjectStore.getState();
 const U = (id) => S().units.find((u) => u.id === id);
@@ -59,7 +64,11 @@ test('F6 · run B\'s kick is carried on to the FACE of run A\'s kick, square', (
   assert.equal(plinth.meta.corner.butt, 'square', 'no 45° cut');
   assert.equal(plinth.meta.corner.mm, ext);
   assert.equal(plinth.meta.corner.faceOf, a);
-  assert.ok(S().unitResult(b).csvLines.some((l) => l.startsWith(`02,PLINTH,${U(b).params.width + ext},`)));
+  // 19.10.2026: the cut list row is the CUT: the open end grown, the corner butt end not (D3), top and bottom grown.
+  const kickB = S().unitResult(b).panels.find((x) => x.id === 'PLINTH');
+  assert.deepEqual(nominal(kickB), { w: U(b).params.width + ext, h: kickB.box.h });
+  assert.deepEqual(kickB.meta.oversize.frame, ['R', 'T', 'B'], 'the butt at the corner stays square');
+  assert.ok(S().unitResult(b).csvLines.some((l) => l.startsWith(`02,PLINTH,${U(b).params.width + ext + trimOf(kickB)},`)));
   // Run A runs into the corner and keeps its own kick, unchanged.
   const kickA = S().unitResult(a).panels.find((x) => x.id === 'PLINTH');
   assert.equal(kickA.box.w, U(a).params.width);

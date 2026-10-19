@@ -154,6 +154,16 @@ export const NEW_FILES = [
   'scripts/chatfix-1910-walk.mjs',
   'test/chatfix-1910-delete-edges-messages.test.js',
   'test/chatfix-1910-hanger-two.test.js',
+  // Chat fix 19.10.2026, the afternoon (the off-board guard, the site trim, the edge notch's boards)
+  'src/engine/siteTrim.js',
+  'src/engine/cnc/offBoardGuard.js',
+  'src/engine/cnc/labelAnchor.js',
+  'scripts/chatfix-1910-offboard-probe.mjs',
+  'scripts/t78-classify.d/f38-owner-1910d.mjs',
+  'test/site-trim.js',
+  'test/chatfix-1910-site-trim.test.js',
+  'test/chatfix-1910-offboard.test.js',
+  'test/chatfix-1910-edge-box.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

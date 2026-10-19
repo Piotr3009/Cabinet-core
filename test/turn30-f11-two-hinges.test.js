@@ -67,6 +67,10 @@ test('F11 a BARE call passes no threshold and drills the kit’s own count', () 
     // short door on its own ladder (turn17-phases F7 asserts it); at 500 the
     // stack does not even fit and the kit is raised to its minimum.
     if (getUnitType(type).applianceTower && r.derived.door_base_y > 0) continue;
+    // CHAT FIX 19.10.2026 (the off-board probe; the owner: *"czasami cnc rysuje items jak 3 mm drills ... poza
+    // elementami"*): a HOOD's door is a short door above its aperture on the low ladder, lifted by the aperture
+    // (turn17-phases F7 asserts it); here the kit's own ladder is not the question.
+    if (Number(defaultParamsFor(type, P).hood_aperture_mm) > 0) continue;
     seen += 1;
     // Which LADDER this kit is on is read off the type, never guessed.
     const rule = P.hinges.rules[getUnitType(type).hingeRule] || P.hinges.rules.base;

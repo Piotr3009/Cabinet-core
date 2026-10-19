@@ -45,6 +45,12 @@ import { handleClassOf } from '../src/engine/handles.js';
 import { frontDimensionRows } from '../src/engine/frontDimensions.js';
 import { doorHingeDatum } from '../src/engine/doors.js';
 import { autoPartsFor, takesPlinth } from '../src/engine/autoparts.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal; the DW
+// relief is 20 below the top the joiner trims TO (the cut's top less the trim).
+import { nominal, trimOf } from './site-trim.js';
 
 const build = (type, extra = {}) => computeCabinet(
   { ...defaultParamsFor(type, P), unit_num: '01', ...extra }, P,
@@ -107,9 +113,9 @@ test('F2.1 the PLINTH is on by DEFAULT — the piece he cares about most', () =>
   const bare = dw();
   const kick = bare.panels.find((p) => p.part === 'PLINTH');
   assert.ok(kick, 'a bare default D/W has its toe kick');
-  assert.equal(kick.h, P.baseUnit.legHeight, 'at the run’s own height');
+  assert.equal(nominal(kick).h, P.baseUnit.legHeight, 'at the run’s own height');
   const ys = kick.cnc.outline.map(([, y]) => y);
-  assert.ok(ys.includes(kick.h - getUnitType('DW_PANEL').plinthCutFromTop), 'notched, 20 from the top');
+  assert.ok(ys.includes(kick.h - trimOf(kick) - getUnitType('DW_PANEL').plinthCutFromTop), 'notched, 20 from the top the joiner trims to');
 });
 
 test('F2.1 interiorOccupied: nothing goes in, whatever is asked for', () => {
@@ -251,9 +257,9 @@ test('F2.3 no cup hinges, no cup drilling, no plate pattern, nothing in the BOM'
 test('F2.4 the toe kick is one piece, relieved 20 mm below its top edge', () => {
   const r = dw({ plinth: true, leg_height: 50 });
   const plinth = r.panels.find((p) => p.part === 'PLINTH');
-  assert.equal(plinth.h, 50, 'at the run’s own height (turn 22, F4)');
+  assert.equal(nominal(plinth).h, 50, 'at the run’s own height (turn 22, F4)');
   const ys = plinth.cnc.outline.map(([, y]) => y);
-  assert.ok(ys.includes(plinth.h - getUnitType('DW_PANEL').plinthCutFromTop));
+  assert.ok(ys.includes(plinth.h - trimOf(plinth) - getUnitType('DW_PANEL').plinthCutFromTop));
   assert.equal(Math.max(...ys), plinth.h, 'the top edge runs right through');
   // A BUD's plinth is a plain rectangle — the notch is the drop front's, and
   // it is keyed on the gesture rather than on the kit.

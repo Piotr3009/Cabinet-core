@@ -84,7 +84,8 @@ test('F4 · the LISP census is DERIVED, and it is 14/14', () => {
   // T78 AMENDED again: the L corner's drawer stack and bi-fold door are kits of their own
   // (KIT_CORNER_L_DRAWERS.lsp, KIT_CORNER_L_BIFOLD.lsp): the walk ends between 16 and 23.
   // CHAT FIX 19.10.2026 AMENDED: the second hanging rod is a kit of its own (KIT_HANGER_TWO.lsp, *"lisp najpierw"*): the walk ends between 16 and 24.
-  assert.ok([16, 17, 18, 19, 20, 21, 22, 23, 24].includes(onDisk), `the census is ${onDisk}`);
+  // CHAT FIX 19.10.2026 AMENDED AGAIN: the site-trim allowance is a modifier file of its own (KIT_SITE_TRIM.lsp; the owner: *"side panele powinny byc wieksze o 20 mm, to samo z plinth"*): the walk ends between 16 and 25.
+  assert.ok([16, 17, 18, 19, 20, 21, 22, 23, 24, 25].includes(onDisk), `the census is ${onDisk}`);
 });
 
 test('F4 · the file argues BOTH turns, and names its two bases', () => {

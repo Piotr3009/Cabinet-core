@@ -29,6 +29,11 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { takesPlinth } from '../src/engine/autoparts.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const dw = (extra = {}) => computeCabinet(
   { ...defaultParamsFor('DW_PANEL', P), unit_num: '01', ...extra }, P,
@@ -155,18 +160,21 @@ test('F3 …and nothing about the INTERIOR changed: the machine still occupies i
 
 test('F3 the toe kick is still the run’s own, notched 20 mm from the top', () => {
   const kick = dw().panels.find((p) => p.part === 'PLINTH');
-  assert.equal(kick.h, 100, 'the project’s toe kick');
+  assert.equal(nominal(kick).h, 100, 'the project’s toe kick');
   assert.equal(getUnitType('DW_PANEL').plinthCutFromTop, 20);
   // The notch is in the OUTLINE — a relief for the appliance door — and it is
   // what makes this kick a different board from a BUD's. On a D/W standing on
   // its own the relief is the whole width, so what is left is the 20 mm strip
   // along the top: the board is drawn from y 80 to y 100, not from 0.
-  assert.deepEqual(kick.cnc.outline, [[0, 80], [600, 80], [600, 100], [0, 100]]);
+  // 19.10.2026 (KIT_SITE_TRIM.lsp section 4): the CUT, both ends and the top grown; the strip's
+  // bottom is a machine cut and moves with the origin, so the strip is 20 + the top trim.
+  const t = trimOf(kick);
+  assert.deepEqual(kick.cnc.outline, [[0, 80 + t], [600 + 2 * t, 80 + t], [600 + 2 * t, 100 + 2 * t], [0, 100 + 2 * t]]);
   const plain = bud({ plinth: true }).panels.find((p) => p.part === 'PLINTH');
-  assert.deepEqual(plain.cnc.outline, [[0, 0], [600, 0], [600, 100], [0, 100]],
+  assert.deepEqual(plain.cnc.outline, [[0, 0], [600 + 2 * t, 0], [600 + 2 * t, 100 + 2 * t], [0, 100 + 2 * t]],
     'a BUD’s toe kick is the whole board — the relief is the D/W’s alone');
   const at50 = dw({ leg_height: 50 }).panels.find((p) => p.part === 'PLINTH');
-  assert.equal(at50.h, 50, 'and it follows the project, not a constant');
+  assert.equal(nominal(at50).h, 50, 'and it follows the project, not a constant');
 });
 
 // ─── every other kit is untouched ───────────────────────────────────────────

@@ -20,6 +20,7 @@
 import { computeCabinet } from '../../src/engine/cabinet.js';
 import { defaultParamsFor } from '../../src/engine/types.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../../src/engine/profile.js';
+import { sceneBoard } from '../../src/engine/siteTrim.js';
 
 const OWNER = '*"nie wycina mi panelu bocznego do recess a powinno."*';
 const kit = (type, extra = {}) => ({ ...defaultParamsFor(type, P), unit_num: '01', ...extra });
@@ -76,7 +77,10 @@ export const LIVENESS = {
   // The NUMBERS: I4 case A (END-L less 210 x 400 at x1y0), F2 case D (END-R 746 deep, its two corners), and wholly inside
   // (END-R reaching the recess back and the door face); the same unit without the cut keeps a plain 596 x 870.
   endFollows: () => {
-    const panel = (res, id) => res.panels.find((p) => p.id === id);
+    // CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp, f38-owner-1910d.mjs): the END panel's CUT carries the site trim; D23 and
+    // D21 describe the board that follows its side, the NOMINAL the engine keeps beside the cut (meta.oversize.nominal),
+    // so this liveness reads the nominal (sceneBoard: the record the room draws).
+    const panel = (res, id) => sceneBoard(res.panels.find((p) => p.id === id));
     const n = computeCabinet(kit('BUD', { shelves: 1, notch: NOTCH, end_panels: [EPL] }), P);
     const b = computeCabinet(kit('BUD', { shelves: 1, extension: BAND, end_panels: [EPR] }), P);
     const w = computeCabinet(kit('BUD', { shelves: 1, depth: 708, depth_full: 558, recess_mm: 150, end_panels: [EPR] }), P);

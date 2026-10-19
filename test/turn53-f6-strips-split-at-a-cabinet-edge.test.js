@@ -36,6 +36,11 @@ import { CUT_STANDING_PARTS, cutStanding } from '../src/engine/grain.js';
 import {
   oversizeCabinets, splitStretchAtEdges, stripLimitMm, stripsAtCabinetEdges,
 } from '../src/engine/strips.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const store = () => useProjectStore.getState();
 
@@ -129,12 +134,12 @@ test('F6 — a run longer than the board cuts STRIPS, and they sum to the run', 
   const limit = stripLimitMm(P, 'carcasses');
   const strips = store().unitResult(owner.id).panels.filter((p) => p.role === 'plinth');
   assert.ok(strips.length > 1, `${strips.length} strips on a ${store().runElements[owner.id].plinth.length} run`);
-  assert.equal(strips.reduce((n, p) => n + p.w, 0), 3200, 'the whole toe kick');
+  assert.equal(strips.reduce((n, p) => n + nominal(p).w, 0), 3200, 'the whole toe kick');
   for (const s of strips) {
     assert.ok(s.w <= limit, `${s.id} is ${s.w} ≤ ${limit}`);
     assert.equal(s.meta.strip.limit, limit, 'and says which board it was cut to');
   }
-  assert.deepEqual(strips.map((p) => p.w), [1950, 1250], 'his own two numbers');
+  assert.deepEqual(strips.map((p) => nominal(p).w), [1950, 1250], 'his own two numbers');
   // The joints are cabinet lines: strip 1 covers three cabinets, strip 2 two.
   assert.deepEqual(strips.map((p) => p.meta.unitIds.length), [3, 2]);
 });
@@ -145,7 +150,7 @@ test('F6 — a run that FITS the board is one board, exactly as it was', () => {
   const plinths = store().unitResult(owner.id).panels.filter((p) => p.role === 'plinth');
   assert.equal(plinths.length, 1, 'one piece');
   assert.equal(plinths[0].id, 'PLINTH', 'under its own old name');
-  assert.equal(plinths[0].w, 1800);
+  assert.equal(nominal(plinths[0]).w, 1800);
   assert.equal(plinths[0].meta?.strip, undefined, 'and it says nothing about strips');
 });
 

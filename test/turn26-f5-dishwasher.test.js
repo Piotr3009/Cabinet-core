@@ -26,6 +26,11 @@ import { handleClassOf } from '../src/engine/handles.js';
 import { doorHingeDatum } from '../src/engine/doors.js';
 import { hardwareInstances } from '../src/engine/hardware3d.js';
 import { impliedLegHeight } from '../src/engine/runs.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const dw = (extra = {}) => computeCabinet({ ...defaultParamsFor('DW_PANEL', P), unit_num: '01', ...extra }, P);
 const base = (extra = {}) => computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: '02', ...extra }, P);
@@ -127,7 +132,7 @@ test('F5.4 — the toe kick is the RUN’s, at the run’s leg height, in one pi
   // 20 mm below its top edge and open at the bottom, so the line the eye
   // follows along the run is unbroken.
   const ys = plinth.cnc.outline.map(([, y]) => y);
-  assert.ok(ys.includes(plinth.h - getUnitType('DW_PANEL').plinthCutFromTop), 'relieved 20 mm below the top');
+  assert.ok(ys.includes(plinth.h - trimOf(plinth) - getUnitType('DW_PANEL').plinthCutFromTop), 'relieved 20 mm below the top the joiner trims to (19.10.2026)');
   assert.equal(Math.max(...ys), plinth.h, 'and the top edge runs right through');
 });
 

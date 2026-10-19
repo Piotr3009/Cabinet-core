@@ -21,6 +21,11 @@ import { computeCabinet, wearsFrontMaterial } from '../src/engine/cabinet.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { buildBom } from '../src/engine/bom.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const store = () => useProjectStore.getState();
 const ROOM_HEIGHT = 2500;
@@ -64,7 +69,8 @@ test('an end panel finishes in the same plane as the door, not behind it', () =>
   const clearance = P.room.wallBackClearance;
   const expected = clearance + unit.params.depth + P.doors.gap + unit.params.front_t;
   assert.equal(ep.box.d, expected);
-  assert.equal(ep.w, expected, 'and the cut piece is that long');
+  assert.equal(nominal(ep).w, expected, 'and the nominal piece is that long');
+  assert.equal(ep.w, expected + trimOf(ep), 'the CUT is the site-trim allowance longer, on the back edge (19.10.2026)');
 
   // …which is the same statement, checked against where the door actually is.
   assert.equal(
@@ -135,7 +141,7 @@ test('the top edge drags between the top of the unit and the ceiling', () => {
   assert.equal(endPanelOf(id).meta.top_mm, 0, 'it starts at the top of the unit');
 
   assert.equal(store().setEndPanelTop(id, epId, 300), 300);
-  assert.equal(endPanelOf(id).h, unit.params.height + P.baseUnit.legHeight + 300,
+  assert.equal(nominal(endPanelOf(id)).h, unit.params.height + P.baseUnit.legHeight + 300,
     'and the cut piece grows with it — the BOM is not told separately');
 
   // Below the carcass top is not a thing: that is what "unit height" is for.
@@ -157,8 +163,9 @@ test('double-clicking the edge sends it to the ceiling — exactly to the ceilin
   // Floor to ceiling, in one piece: the drop below the carcass plus the carcass
   // plus the run above it is the room's height.
   assert.equal(ep.box.y, -P.baseUnit.legHeight);
-  assert.equal(ep.box.y + ep.h, ROOM_HEIGHT - P.baseUnit.legHeight);
-  assert.equal(ep.h, ROOM_HEIGHT);
+  assert.equal(ep.box.y + nominal(ep).h, ROOM_HEIGHT - P.baseUnit.legHeight);
+  assert.equal(nominal(ep).h, ROOM_HEIGHT);
+  assert.equal(ep.h, ROOM_HEIGHT + 2 * trimOf(ep), 'the CUT carries the top and bottom trims (19.10.2026)');
 });
 
 test('the top height is PER PANEL — "apply to all" does not carry it', () => {
@@ -198,7 +205,7 @@ test('a wall unit takes one too, and it ENDS WITH THE CABINET', () => {
   const unit = unitOf(id);
   const ep = endPanelOf(id);
   assert.equal(ep.box.y, 0, 'it starts at the bottom of the carcass and goes no lower');
-  assert.equal(ep.h, unit.params.height, 'it is exactly as tall as the cabinet');
+  assert.equal(nominal(ep).h, unit.params.height, 'it is exactly as tall as the cabinet');
   assert.equal(ep.meta.height, 'carcass');
   assert.equal(ep.box.d, P.room.wallBackClearance + unit.params.depth + P.doors.gap + unit.params.front_t,
     'a hung unit stands off its wall too, and its end panel reaches back to it');

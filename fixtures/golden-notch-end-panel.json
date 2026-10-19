@@ -7,7 +7,7 @@
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
-    "repinned": "19.10.2026 (chat fix, the owner's eye-test of T79): KIT_NOTCH.lsp D10 and KIT_RECESS.lsp D17: the 18.10 rows on the FIRST back are withdrawn. The owner: \"nie na pierwszych plecach tylko na tych drugich ktore sa we wnetrzu recess, na tych pierwszych nie, to juz bylo usuniete i znowu trzeba usunac\". No row into the notch's box and none round the window on the BACK; the EXT-BACK (the second back) keeps its rows of 18.10. SCREWS_3MM|BACK 19 -> 13;"
+    "repinned": "19.10.2026 (chat fix, the owner's eye-test of T79): KIT_NOTCH.lsp D10 and KIT_RECESS.lsp D17: the 18.10 rows on the FIRST back are withdrawn. The owner: \"nie na pierwszych plecach tylko na tych drugich ktore sa we wnetrzu recess, na tych pierwszych nie, to juz bylo usuniete i znowu trzeba usunac\". No row into the notch's box and none round the window on the BACK; the EXT-BACK (the second back) keeps its rows of 18.10. SCREWS_3MM|BACK 19 -> 13; 19.10.2026 (chat fix, KIT_SITE_TRIM.lsp): the END panel is CUT 20 bigger on its top, bottom and back for the site trim, the nominal (596 x 870 less 210 x 400) kept beside it (meta.oversize.nominal). The owner: \"side panele powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok (nie przod, 0 to zawsze powinno byc ok)\". END-L 596 x 870 -> 616 x 910 on the cut list, its outline (0 0) (386 0) (386 420) (616 420) (616 910) (0 910), the corner 230 x 420 from the new edges, edging 2.93 -> 3.05, area 0.435 -> 0.464; nothing else moves."
   },
   "params": {
     "type": "BUD",
@@ -47,7 +47,7 @@
       "01,BOTTOM,564,540,>,0.56,0.265",
       "01,BACK,600,770,,0,0.402",
       "01,SHELF-1,560,520,>,0.56,0.291",
-      "01,END-L,596,870,<>^v,2.93,0.435",
+      "01,END-L,616,910,<>^v,3.05,0.464",
       "01,01-F,597,767,<>^v,2.73,0.458",
       "01,RETURN,182,300,,0,0.055",
       "01,STEP,218,300,,0,0.065",
@@ -178,8 +178,8 @@
         "id": "END-L",
         "part": "END-PANEL",
         "role": "end_panel",
-        "w": 596,
-        "h": 870,
+        "w": 616,
+        "h": 910,
         "thickness": 25,
         "box": {
           "x": -25,

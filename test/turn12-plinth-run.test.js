@@ -22,6 +22,11 @@ import { useProjectStore } from '../src/stores/projectStore.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const store = () => useProjectStore.getState();
 const unitOf = (id) => store().units.find((u) => u.id === id);
@@ -132,7 +137,7 @@ test('a member cuts nothing — no second plinth inside the long one', () => {
     ...base, plinth: true, run_plinth: { role: 'member', ownerId: 'a' },
   }, P).panels.filter((p) => p.part === 'PLINTH');
   assert.equal(owner.length, 1);
-  assert.equal(owner[0].w, 1800);
+  assert.equal(nominal(owner[0]).w, 1800);
   assert.equal(member.length, 0);
 });
 
@@ -141,9 +146,11 @@ test('a bare computeCabinet cuts the single-unit plinth it always did', () => {
   // goes through this path, and it must not have moved.
   const base = defaultParamsFor('BUD', P);
   const plain = computeCabinet({ ...base, plinth: true }, P).panels.find((p) => p.part === 'PLINTH');
-  assert.equal(plain.w, base.width);
+  assert.equal(nominal(plain).w, base.width);
   assert.equal(plain.box.x, 0);
-  assert.equal(plain.meta, undefined, 'no run metadata on a piece that is not a run');
+  // 19.10.2026: the site-trim record is the one note a bare plinth carries now; no RUN metadata.
+  assert.equal(plain.meta?.run, undefined, 'no run metadata on a piece that is not a run');
+  assert.equal(plain.meta?.oversize?.mm, trimOf(plain), 'the site-trim allowance, stated');
 });
 
 // ─── …and the same thing, in the store ──────────────────────────────────────
@@ -152,18 +159,18 @@ test('THREE units, ONE plinth', () => {
   const [a, b, c] = run(3);
   const first = plinthOf(a);
   assert.ok(first, 'the first unit carries it');
-  assert.equal(first.w, 1800);
+  assert.equal(nominal(first).w, 1800);
   assert.equal(plinthOf(b), null, 'and nobody else cuts one');
   assert.equal(plinthOf(c), null);
   // One part per segment in the BOM, summed length — CLAUDE.md F8.
   const all = store().allResults().flatMap((e) => e.result.panels).filter((p) => p.part === 'PLINTH');
   assert.equal(all.length, 1);
-  assert.equal(all[0].w, 1800);
+  assert.equal(nominal(all[0]).w, 1800);
 });
 
 test('a fourth unit pushed against the run JOINS it — the plinth extends', () => {
   const ids = run(3);
-  assert.equal(plinthOf(ids[0]).w, 1800);
+  assert.equal(nominal(plinthOf(ids[0])).w, 1800);
   const { id } = store().addUnit('BUD');
   store().updateUnitParams(id, { width: 600 });
   store().moveUnit(id, 1800, 0);
@@ -179,24 +186,24 @@ test('a fourth unit pushed against the run JOINS it — the plinth extends', () 
   // So it is 1800 + 600 — three cabinets and one — and the two of them are the
   // 2400 this test has always asserted.
   const strips = store().unitResult(ids[0]).panels.filter((p) => p.role === 'plinth');
-  assert.equal(strips.reduce((n, p) => n + p.w, 0), 2400, 'the toe kick grew to take it in');
-  assert.deepEqual(strips.map((p) => p.w), [1800, 600], 'in strips, split on a cabinet edge');
+  assert.equal(strips.reduce((n, p) => n + nominal(p).w, 0), 2400, 'the toe kick grew to take it in');
+  assert.deepEqual(strips.map((p) => nominal(p).w), [1800, 600], 'in strips, split on a cabinet edge');
   assert.equal(plinthOf(id), null, 'and the new unit cuts nothing of its own');
 });
 
 test('…and pulling one away shortens it again', () => {
   const ids = run(3);
   store().moveUnit(ids[2], 4000, 0);
-  assert.equal(plinthOf(ids[0]).w, 1200, 'the two that are left');
-  assert.equal(plinthOf(ids[2]).w, 600, 'and the one that walked away has its own');
+  assert.equal(nominal(plinthOf(ids[0])).w, 1200, 'the two that are left');
+  assert.equal(nominal(plinthOf(ids[2])).w, 600, 'and the one that walked away has its own');
 });
 
 test('turning one unit\'s plinth off splits the kick in two', () => {
   const [a, b, c] = run(3);
   store().removePlinth(b);
-  assert.equal(plinthOf(a).w, 600);
+  assert.equal(nominal(plinthOf(a)).w, 600);
   assert.equal(plinthOf(b), null);
-  assert.equal(plinthOf(c).w, 600);
+  assert.equal(nominal(plinthOf(c)).w, 600);
 });
 
 // ─── T48-F3 AMENDS THE SET-UP, NOT THE RULE ─────────────────────────────────
@@ -226,7 +233,7 @@ test('a wall unit is never in a plinth run — it hangs', () => {
   store().addPlinth(base);
   const { id: wall } = store().addUnit('WUD');
   assert.equal(store().addPlinth(wall), false, 'a hanging unit stands on no legs');
-  assert.equal(plinthOf(base).w, unitOf(base).params.width);
+  assert.equal(nominal(plinthOf(base)).w, unitOf(base).params.width);
 });
 
 test('one PART per segment, and its length is the segment', () => {
@@ -234,10 +241,11 @@ test('one PART per segment, and its length is the segment', () => {
   const ids = run(2);
   const [a] = ids;
   const plinth = plinthOf(a);
-  assert.equal(plinth.w, 1200);
-  assert.equal(plinth.h, store().unitResult(a).assemblies.carcass.legHeight);
+  assert.equal(nominal(plinth).w, 1200);
+  assert.equal(nominal(plinth).h, store().unitResult(a).assemblies.carcass.legHeight);
   // It is a front-material piece, exactly as turn 11 established.
   assert.equal(plinth.finish_exposed, true);
-  // …and it is drawn as one rectangle of that length on the CNC sheet.
-  assert.equal(plinth.cnc.outline[1][0], 1200);
+  // …and it is drawn as one rectangle of that length on the CNC sheet: the CUT, both ends grown (19.10.2026).
+  assert.equal(plinth.cnc.outline[1][0], 1200 + 2 * trimOf(plinth));
+  assert.equal(plinth.cnc.outline.length, 4);
 });

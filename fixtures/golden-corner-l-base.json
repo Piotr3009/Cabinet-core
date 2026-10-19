@@ -7,7 +7,7 @@
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
-    "repinned": "15.10.2026: the owner (the L leaves must shorten with the front): the overlapping leaf B now clears leaf A's face by clearance.corner (3), where T75 left its end on A's face; B is 3 shorter (309.5 on the 900 L)"
+    "repinned": "15.10.2026: the owner (the L leaves must shorten with the front): the overlapping leaf B now clears leaf A's face by clearance.corner (3), where T75 left its end on A's face; B is 3 shorter (309.5 on the 900 L) 19.10.2026 (chat fix, KIT_SITE_TRIM.lsp): the L's two plinths are CUT 20 bigger on the far end, the top and the bottom for the site trim (the butt at the inner corner stays square, D3), the nominal kept beside them. The owner: \"side panele powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok (nie przod, 0 to zawsze powinno byc ok)\". PLINTH-A 410 x 100 -> 430 x 140, PLINTH-B 392 x 100 -> 412 x 140; nothing else moves."
   },
   "params": {
     "type": "CORNER_L_BASE",
@@ -37,8 +37,8 @@
       "01,TOP-L,864,864,>,0.65,0.642",
       "01,BOTTOM-L,864,864,>,0.65,0.642",
       "01,SHELF-L-1,862,862,>,0.68,0.626",
-      "01,PLINTH-A,410,100,^v,0.82,0.041",
-      "01,PLINTH-B,392,100,^v,0.78,0.039",
+      "01,PLINTH-A,430,140,^v,0.86,0.060",
+      "01,PLINTH-B,412,140,^v,0.82,0.058",
       "01,01-A-F,341,767,<>^v,2.22,0.261",
       "01,01-B-F,310,767,<>^v,2.15,0.237"
     ],
@@ -187,8 +187,8 @@
         "id": "PLINTH-A",
         "part": "PLINTH",
         "role": "plinth",
-        "w": 410,
-        "h": 100,
+        "w": 430,
+        "h": 140,
         "thickness": 18,
         "box": {
           "x": 490,
@@ -207,8 +207,8 @@
         "id": "PLINTH-B",
         "part": "PLINTH",
         "role": "plinth",
-        "w": 392,
-        "h": 100,
+        "w": 412,
+        "h": 140,
         "thickness": 18,
         "box": {
           "x": 490,

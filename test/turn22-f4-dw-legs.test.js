@@ -25,6 +25,12 @@ import { getUnitType, defaultParamsFor } from '../src/engine/types.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal; the DW
+// relief is 20 below the top the joiner trims TO (the cut's top less the trim).
+import { nominal, trimOf } from './site-trim.js';
 
 const store = () => useProjectStore.getState();
 const unitOf = (id) => store().units.find((u) => u.id === id);
@@ -80,8 +86,8 @@ test('F4.2 enter 50 and the D/W’s plinth line, front bottom and total height a
     const front = r.panels.find((p) => p.part === 'FRONT');
     return {
       stands: r.assemblies.carcass.legHeight,
-      plinthH: plinth ? plinth.h : 0,
-      plinthTop: plinth ? r.assemblies.carcass.legHeight + plinth.box.y + plinth.h : null,
+      plinthH: plinth ? nominal(plinth).h : 0,
+      plinthTop: plinth ? r.assemblies.carcass.legHeight + plinth.box.y + nominal(plinth).h : null,
       frontBottom: r.assemblies.carcass.legHeight + front.box.y,
       total: r.assemblies.carcass.legHeight + r.params.height,
     };
@@ -169,7 +175,7 @@ test('F4.3 the unclamped field carries the whole run with it, D/W included', () 
   const plinths = store().allResults()
     .flatMap((e) => e.result.panels).filter((p) => p.part === 'PLINTH');
   assert.equal(plinths.length, 1, 'one length of toe kick for the run');
-  assert.equal(plinths[0].h, 50);
+  assert.equal(nominal(plinths[0]).h, 50);
 });
 
 test('F4.3 zero legs is a legal answer and the geometry survives it', () => {

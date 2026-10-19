@@ -420,10 +420,34 @@
 ;;;       TOP       TB / TF: narrower by ed at the back / at the front
 ;;;       FRONTS    untouched (the owner said nothing of doors; D4)
 ;;;       PLINTH    untouched at BF: it keeps its own law
-;;;     NO CLOSING BOARDS: the rebate is open to the wall or the floor, so
-;;;     there is no RETURN, STEP, LID or FLOOR. ed is cut off every board the
-;;;     edge reaches, as nd is; at a back edge the BACK's own g goes with the
-;;;     cut, so the wall gets ed + g of room behind the boards there.
+;;;     NO CLOSING BOARDS (18.10.2026): the rebate is open to the wall or the
+;;;     floor, so there is no RETURN, STEP, LID or FLOOR. ed is cut off every
+;;;     board the edge reaches, as nd is; at a back edge the BACK's own g goes
+;;;     with the cut, so the wall gets ed + g of room behind the boards there.
+;;;     AMENDED 19.10.2026 (chat fix), the owner: *"2 cut dziala ale nie
+;;;     rozumiem dlaczego nie ma paneli plyt, w sensie jak tniemy pionowe to
+;;;     wszystko jest a jak poziome to nie ma, dlaczego?"*; asked "identycznie
+;;;     jak pionowe?": *"tak, bez mockupu, identycznie jak pionowe"*. THE
+;;;     CLOSING BOARDS, by the corner notch's own law (section 2, D1, D2, D4,
+;;;     D21), an edge notch being the corner notch run the whole width (nw =
+;;;     cw) with no RETURN (there is no side face left to close):
+;;;       STEP    a BACK edge only (D4: a front edge is the fronts' opening):
+;;;               cw x eh, the shallow part's own back, standing in the g
+;;;               behind both sides' cut ends (plan y cd - ed - g .. cd - ed)
+;;;               and covering them as the back covers the sides' ends; from
+;;;               the floor (BB) or hanging from the top (TB, D21). The
+;;;               keep-out behind it is ed deep, as the corner notch's is nd
+;;;               (D2: the obstacle gets the whole ed; the STEP stands in the
+;;;               BACK's g). The END panel covers its end (D23: w = sb + ed).
+;;;       LID     a BOTTOM edge (BB, BF): (cw - 2 g) x ed, lying ON the STEP
+;;;               between the sides, from the STEP's front face to the BACK's
+;;;               (a back edge) or from the carcass front face ed back (a
+;;;               front edge), at z eh .. eh + g.
+;;;       FLOOR   a TOP edge (TB, TF): the LID mirrored, UNDER the STEP at
+;;;               z ch - eh - g .. ch - eh.
+;;;       NO RETURN, NO SCREW (D10): plain rectangles, the joiner's fixing.
+;;;     Routines: edge-notch-box-places, edge-notch-step, edge-notch-lid,
+;;;     edge-notch-floor (section H2); NUMBERS I3 carries the boards.
 ;;;     THE JOINTS follow the shortened edges (D5 read as RUNS, section H2's
 ;;;     run law): the sides' sockets and dia 3 screws along the cut edge, the
 ;;;     sides' back tabs and the BACK's matching sockets on the back edge the
@@ -483,11 +507,13 @@
 ;;;                  boxed back corner that is the STEP's back face, nd in
 ;;;                  front of the carcass back face, so the END covers the
 ;;;                  STEP's end as it covers the BACK's (w = sb + nd). A rebate
-;;;                  (D3) and the edge notch (D22) have no board closing them,
-;;;                  so the END is flush with the side's cut face (sb + g + nd,
-;;;                  sb + g + ed: the BACK's g goes with the cut). At a front
-;;;                  corner or edge, flush with the side's cut face, nd or ed
-;;;                  behind the carcass front (nd + sf, ed + sf).
+;;;                  (D3) has no board closing it, so the END is flush with the
+;;;                  side's cut face (sb + g + nd: the BACK's g goes with the
+;;;                  cut). The edge notch (D22) had none until 19.10.2026 (sb
+;;;                  + g + ed); since its STEP (D22 amended) the END covers the
+;;;                  STEP's end at a back edge as at a boxed back corner (sb +
+;;;                  ed). At a front corner or edge, flush with the side's cut
+;;;                  face, nd or ed behind the carcass front (nd + sf, ed + sf).
 ;;;       FULL HEIGHT the corner is a strip: the END is that much shallower and
 ;;;                  its frame starts at what is left, as the side's does.
 ;;;     ONE WALK round every cut it takes (notch-end-outline: a cut is (fc w
@@ -1517,6 +1543,40 @@
   (notch-rect-outline (- cd g) ch ed eh (edge-notch-side-fc edge burFrame)))
 
 ;;;----------------------------------------
+;;; THE CLOSING BOARDS (D22 amended 19.10.2026): notch-box-places run the
+;;; whole width, with no RETURN. Where they stand, in plan and height:
+;;;   (("STEP" x0 y0 z0 x1 y1 z1) ("LID" ...)) or (("STEP" ...) ("FLOOR" ...))
+;;;   at a back edge; (("LID" ...)) or (("FLOOR" ...)) at a front edge (D4).
+;;;----------------------------------------
+
+(defun edge-notch-box-places (cw cd ch g ed eh edge / back top z0 z1 ly0 ly1 out)
+  (setq back (edge-notch-back-p edge)
+        top (edge-notch-top-p edge)
+        out '())
+  (if top (setq z0 (- ch eh) z1 ch) (setq z0 0.0 z1 eh))
+  (if back
+    (setq out (cons (list "STEP" 0.0 (- cd ed g) z0 cw (- cd ed) z1) out)))
+  (if back (setq ly0 (- cd ed g) ly1 (- cd g)) (setq ly0 0.0 ly1 ed))
+  (if top
+    (setq out (cons (list "FLOOR" g ly0 (- z0 g) (- cw g) ly1 z0) out))
+    (setq out (cons (list "LID" g ly0 z1 (- cw g) ly1 (+ z1 g)) out)))
+  (reverse out))
+
+;;; THE STEP: cw x eh, back edges only (the shallow part's own back, over both
+;;; sides' cut ends).
+(defun edge-notch-step (cw eh edge)
+  (if (edge-notch-back-p edge) (list cw eh) nil))
+
+;;; THE LID: (cw - 2 g) x ed, bottom edges only (every edge notch is part
+;;; height: edge-notch-refusal keeps ch - g - eh at minInterior or more).
+(defun edge-notch-lid (cw g ed edge)
+  (if (edge-notch-top-p edge) nil (list (- cw (* 2 g)) ed)))
+
+;;; THE FLOOR: the LID mirrored, top edges only (D21).
+(defun edge-notch-floor (cw g ed edge)
+  (if (edge-notch-top-p edge) (list (- cw (* 2 g)) ed) nil))
+
+;;;----------------------------------------
 ;;; THE RUN LAW (D22: section 4's D5, read as runs). A jointed edge of a
 ;;; board is planned on the RUN the cuts leave it, (lo hi), by the call that
 ;;; planned the whole edge; nil where a cut took the edge away. With the
@@ -1932,11 +1992,13 @@
                          (cond ((notch-full-p ch nh) "full") ((notch-from-top-p ch nh) "top") (T "floor"))
                          ph pb)))))
 
-;;; The edge notch on EITHER END panel: nothing closes the rebate, so the cut
-;;; face is flush with the side's (D23).
+;;; The edge notch on EITHER END panel (D23). At a back edge the STEP closes
+;;; the rebate (D22 amended 19.10.2026) and the END covers its end: its cut
+;;; face on the STEP's back face, sb + ed (until 19.10.2026 flush with the
+;;; side's cut face, sb + g + ed). At a front edge flush with the side's.
 (defun edge-notch-end-cut (ch g ed eh edge hand sb sf ph pb)
   (list (edge-notch-side-fc edge (= hand "R"))
-        (if (edge-notch-back-p edge) (+ sb g ed) (+ ed sf))
+        (if (edge-notch-back-p edge) (+ sb ed) (+ ed sf))
         (notch-end-h ch eh (if (edge-notch-top-p edge) "top" "floor") ph pb)))
 
 ;;; Does the cut c cover the height y of a board ph high?
@@ -2176,7 +2238,17 @@
 ;;; inset 95. Every point list below is anticlockwise, once round.
 ;;;
 ;;; CASE A, BB: ed 20, eh 120 (a skirting board).
-;;; KEEP-OUT: plan x 0..600, y 520..558; height z 0..120.
+;;; KEEP-OUT: plan x 0..600, y 520..558; height z 0..120. (The notch AND its
+;;; box, D8: since 19.10.2026 the STEP stands in the BACK's g at y 520..538
+;;; and the obstacle's own room behind it is y 538..558, ed deep, D2; until
+;;; then the whole 520..558 was open to the wall.)
+;;;
+;;; THE CLOSING BOARDS (D22 amended 19.10.2026), plain rectangles, no joint,
+;;; no hole, the joiner's fixing:
+;;;   EDGE-STEP  600 x 120   plan x 0..600, y 520..538, z 0..120 (edge-notch-step)
+;;;   EDGE-LID   564 x 20    plan x 18..582, y 520..540, z 120..138 (edge-notch-lid)
+;;;   (edge-notch-box-places 600 558 770 18 20 120 "BB") =
+;;;     (("STEP" 0 520 0 600 538 120) ("LID" 18 520 120 582 540 138))
 ;;;
 ;;; BOARD      PARENT       CUT
 ;;; BUL        540 x 770    less 20 x 120 at its rear BOTTOM corner, "x1y0"
@@ -2221,7 +2293,17 @@
 ;;; BACK bottom screw row            68, 300, 532       NONE
 ;;;
 ;;; CASE B, TB: ed 50, eh 100 (a coving).
-;;; KEEP-OUT: plan x 0..600, y 490..558; height z 670..770.
+;;; KEEP-OUT: plan x 0..600, y 490..558; height z 670..770. (The STEP at
+;;; y 490..508, the obstacle's room 508..558.)
+;;;
+;;; THE CLOSING BOARDS (D22 amended 19.10.2026):
+;;;   EDGE-STEP  600 x 100   plan x 0..600, y 490..508, z 670..770
+;;;   EDGE-FLOOR 564 x 50    plan x 18..582, y 490..540, z 652..670
+;;;   (edge-notch-box-places 600 558 770 18 50 100 "TB") =
+;;;     (("STEP" 0 490 670 600 508 770) ("FLOOR" 18 490 652 582 540 670))
+;;; A FRONT edge, BF 20 / 120 on the same parent: no STEP (D4), the LID
+;;;   564 x 20 at plan y 0..20, z 120..138; TF 50 / 100: the FLOOR 564 x 50 at
+;;;   y 0..50, z 652..670.
 ;;;
 ;;; BOARD      PARENT       CUT
 ;;; BUL        540 x 770    less 50 x 100 at its rear TOP corner, "x1y1":
@@ -2308,7 +2390,7 @@
 ;;;            its cut face at x 386 = carcass z 200, the STEP's back face:
 ;;;            (0 0) (386 0) (386 400) (596 400) (596 870) (0 870)
 ;;;   CORNER MARK (D12): (386 360) -> (386 400) -> (426 400)
-;;;   area 0.51852 -> 0.43452 m2 (434520 mm2); the cut list keeps 596 x 870
+;;;   area 0.51852 -> 0.43452 m2 (434520 mm2); the cut list keeps 596 x 870 (the nominal: since KIT_SITE_TRIM.lsp, 19.10.2026, the cut list says 616 x 910 and states 596 x 870 beside it)
 ;;; END-R      the other hand: unchanged
 ;;;
 ;;; CASE B: BL 200 / 200 / 0, full height (golden-notch.json's own notch). BUL
@@ -2333,23 +2415,28 @@
 ;;;            (58 0) (596 0) (596 870) (0 870) (0 140) (58 140)
 ;;;   CORNER MARK: (18 140) -> (58 140) -> (58 100); area 0.5104 m2 (510400 mm2)
 ;;;
-;;; CASE F, THE EDGE NOTCH (section I3 case A): BB 20 / 120 on BOTH ENDs (w =
-;;; sb + g + ed = 48, h = 120 + 100 = 220), flush with the sides' cut face at
-;;; carcass z 38, where the BOTTOM's back edge now stands:
-;;; END-L      (0 0) (548 0) (548 220) (596 220) (596 870) (0 870)
-;;;   CORNER MARK: (548 180) -> (548 220) -> (588 220); area 0.50796 m2 (507960 mm2)
-;;; END-R      (48 0) (596 0) (596 870) (0 870) (0 220) (48 220)
-;;;   CORNER MARK: (8 220) -> (48 220) -> (48 180); area 0.50796 m2
+;;; CASE F, THE EDGE NOTCH (section I3 case A): BB 20 / 120 on BOTH ENDs. Since
+;;; 19.10.2026 (D22 amended: the EDGE-STEP) the END covers the STEP's end, its
+;;; cut face on the STEP's back face at carcass z 20 (w = sb + ed = 30, h =
+;;; 120 + 100 = 220); until then flush with the sides' cut face at z 38 (w 48).
+;;; END-L      (0 0) (566 0) (566 220) (596 220) (596 870) (0 870)
+;;;   CORNER MARK: (566 180) -> (566 220) -> (596 220) (the leg stops at the
+;;;   edge's end, 30 short of 40); area 0.51192 m2 (511920 mm2)
+;;; END-R      (30 0) (596 0) (596 870) (0 870) (0 220) (30 220)
+;;;   CORNER MARK: (0 220) -> (30 220) -> (30 180); area 0.51192 m2
 ;;;
 ;;; CASE G: TB 50 / 100 (section I3 case B) on an END-L run up 200 over the
-;;; carcass (top 200, ph 1070): less 78 x 300 at "x1y1" (h = 100 + 200):
-;;;            (0 0) (596 0) (596 770) (518 770) (518 1070) (0 1070)
-;;;   CORNER MARK: (558 770) -> (518 770) -> (518 810); area 0.61432 m2 (614320 mm2)
+;;; carcass (top 200, ph 1070): less 60 x 300 at "x1y1" (w = sb + ed, h = 100
+;;; + 200):
+;;;            (0 0) (596 0) (596 770) (536 770) (536 1070) (0 1070)
+;;;   CORNER MARK: (576 770) -> (536 770) -> (536 810); area 0.61972 m2 (619720 mm2)
 ;;;
 ;;; CASE H, BOTH (section I3 case C): BL 200 / 200 / 300 with TB 50 / 100.
-;;; END-L      (0 0) (386 0) (386 400) (596 400) (596 770) (518 770) (518 870)
+;;; END-L      (0 0) (386 0) (386 400) (596 400) (596 770) (536 770) (536 870)
 ;;;            (0 870), two marks (386 360) -> (386 400) -> (426 400) and
-;;;            (558 770) -> (518 770) -> (518 810); area 0.42672 m2 (426720 mm2)
+;;;            (576 770) -> (536 770) -> (536 810); area 0.42852 m2 (428520 mm2)
+;;; (The cut list carries each END 20 bigger on its top, bottom and back since
+;;; KIT_SITE_TRIM.lsp, 19.10.2026; the numbers above are the nominal it states.)
 ;;;
 ;;; A REFUSED notch cuts no END panel: the parent is what is cut (BR 10 / 100
 ;;; / 60, a rebate that eats a joint, leaves END-R 596 x 870).

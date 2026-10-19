@@ -6,7 +6,7 @@
  * by any means including automated tools and AI systems, is strictly
  * prohibited without prior written permission from Skylon Development Ltd.
  */
-// ─── CHAT FIX 19.10.2026 · THE WALK: DELETE IN THE WINDOW, THE EDGE SQUARES, THE CLOCKS ───
+// ─── CHAT FIX 19.10.2026 · THE WALK: DELETE IN THE WINDOW, THE EDGE SQUARES, THE CLOCKS, THE ROD, THE AFTERNOON ───
 //
 // Test the way the client clicks (T74's law): a real wardrobe, a real click on
 // a piece in the cabinet editor window, a real Delete key; a real click on
@@ -151,6 +151,57 @@ try {
   check('4.2 a third is refused in words', third === null && why === 'This bay already hangs two rails.', String(why));
   const pulled = await page.ask(`${P}.moveRail(${J(w2)}, ${J(first)}, 1395)`);
   check('4.3 a drag of the first rod to 1395 is caught at 1400 (950 over the second)', pulled && pulled.pos === 1400 && pulled.magnet && pulled.magnet.railItemId === second, JSON.stringify(pulled));
+
+  // ── 5. THE AFTERNOON (ZIP 4): THE EDGE NOTCH'S BOARDS, THE SITE TRIM, THE CHANGES LIST CLOSING ITSELF ──
+  // A BUD with the bottom-back edge notch (KIT_NOTCH.lsp I3 case A), an END panel on its right and a plinth.
+  const bud = await page.ask(`(() => { const r = ${P}.addUnit('BUD', { wall: 0, x: 2400 }); return r && r.id; })()`);
+  await page.sleep(900);
+  const en = await page.ask(`${P}.setUnitEdgeNotch(${J(bud)}, { edge: 'BB', d: 20, h: 120 })`);
+  await page.ask(`${P}.addEndPanel(${J(bud)}, { side: 'R' })`);
+  await page.ask(`${P}.addPlinth(${J(bud)})`);
+  await page.sleep(1200);
+  const boards = await page.ask(`${P}.unitResult(${J(bud)}).panels.filter((p) => p.role === 'notch_box').map((p) => p.id + ' ' + p.w + 'x' + p.h).join('|')`);
+  check('5.0 the edge notch cuts its closing boards (KIT_NOTCH.lsp D22 amended)', en && en.ok && boards === 'EDGE-STEP 600x120|EDGE-LID 564x20', `${JSON.stringify(en)} ${boards}`);
+  const sceneBoards = await page.ask(`(() => { const v = window.__cc.views.room; const ids = new Set(); v.scene.traverse((o) => { if (o.isMesh && o.userData && /^EDGE-/.test(String(o.userData.ccPanelId || ''))) ids.add(o.userData.ccPanelId); }); return [...ids].sort().join('|'); })()`);
+  check('5.1 the scene draws the EDGE-STEP and the EDGE-LID', sceneBoards === 'EDGE-LID|EDGE-STEP', sceneBoards);
+  const trim = await page.ask(`(() => { const r = ${P}.unitResult(${J(bud)}); const ep = r.panels.find((p) => p.id === 'END-R'); const pl = r.panels.find((p) => p.id === 'PLINTH');
+    return { ep: [ep.w, ep.h, ep.box.d, ep.box.h, (ep.meta.oversize || {}).frame], pl: [pl.w, pl.h, pl.box.w, pl.box.h], epNotch: ep.meta.oversize && ep.meta.oversize.nominal.cnc.notch }; })()`);
+  check('5.2 END-R is CUT 20 bigger on its back, top and bottom, its box the nominal; the plinth on all four (KIT_SITE_TRIM.lsp)',
+    trim && JSON.stringify(trim.ep) === '[616,910,596,870,["L","T","B"]]' && JSON.stringify(trim.pl) === '[640,140,600,100]', JSON.stringify(trim));
+  check('5.3 END-R covers the EDGE-STEP\'s end (sb + ed = 30, D23)', trim && trim.epNotch && trim.epNotch.nw === 30 && trim.epNotch.nh === 220, JSON.stringify(trim && trim.epNotch));
+  const endSolid = await page.ask(`(() => { const v = window.__cc.views.room; let box = null; v.scene.traverse((o) => { if (!box && o.isMesh && o.userData && o.userData.ccPanelId === 'END-R' && o.userData.ccUnitId === ${J(bud)}) { box = new v.three.Box3().setFromObject(o); } });
+    if (!box) { v.scene.traverse((o) => { if (!box && o.isMesh && o.userData && o.userData.ccPanelId === 'END-R') box = new v.three.Box3().setFromObject(o); }); }
+    return box ? [Math.round((box.max.y - box.min.y) * 1000), Math.round((box.max.z - box.min.z) * 1000)] : null; })()`);
+  check('5.4 the room draws the END panel at its NOMINAL (870 high, 596 deep), not the cut', endSolid && endSolid[0] === 870 && endSolid[1] === 596, JSON.stringify(endSolid));
+  await roomView(page); await settleCamera(page);
+  await page.screenshot(`${OUT}/09-edge-box-and-trim.png`);
+  // The CNC sheet says OVERSIZE +20 BACK/TOP/BOTTOM on END-R and ALL EDGES on the plinth.
+  await page.ask(`${U}.setViewMode('cnc')`);
+  await page.sleep(1500);
+  let sheet = '';
+  for (let i = 0; i < 12 && !/NOM 596 x 870/.test(sheet); i += 1) {
+    await page.sleep(500);
+    sheet = await page.ask(`[...document.querySelectorAll('svg text')].map((t) => t.textContent).filter((t) => /OVERSIZE/.test(t)).join('|')`);
+  }
+  // (the plinth's own note is drawn only where the sheet's scale keeps it legible: minLabelPx; END-R's is the proof)
+  check('5.5 the CNC sheet says OVERSIZE +20 BACK/TOP/BOTTOM - TRIM ON SITE (NOM 596 x 870) on END-R', /BACK\/TOP\/BOTTOM/.test(sheet) && /NOM 596 x 870/.test(sheet), sheet.slice(0, 140));
+  const checkRows = await page.ask(`${P}.runChecks().filter((f) => f.unitId === ${J(bud)} || /\\b01\\b/.test(String(f.message || ''))).map((f) => (f.check || '?') + ':' + (f.level || '') + ':' + String(f.message || '').slice(0, 90))`);
+  check('5.6a the Check on this cabinet: one row, #30 yellow (the box boards are the joiner\'s to finish), nothing red', checkRows.length === 1 && /^30:yellow/.test(checkRows[0]), JSON.stringify(checkRows));
+  await page.screenshot(`${OUT}/10-cnc-oversize-notes.png`);
+  await page.ask(`${U}.setViewMode('3d')`);
+  await page.sleep(600);
+  // The Changes list closes itself after historyOpenMs (10 s).
+  await page.ask(`(() => { ${U}.clearMessages(); ${U}.clearHistory(); ${U}.notify('Walk: a row for the list', 'ok'); return true; })()`);
+  await page.ask(`${U}.toggleHistory()`);
+  await page.sleep(500);
+  const openNow = await page.ask(`${U}.historyOpen`);
+  check('5.6 the Changes list opens on the click', openNow === true, String(openNow));
+  await page.screenshot(`${OUT}/11-changes-open.png`);
+  await page.sleep(10800);
+  const openLater = await page.ask(`${U}.historyOpen`);
+  const rows = await page.ask(`${U}.history.length`);
+  check('5.7 after 10.8 s it has closed itself; its rows stay', openLater === false && rows >= 1, `open ${openLater}, rows ${rows}`);
+  await page.screenshot(`${OUT}/12-changes-closed-itself.png`);
 } catch (e) {
   check('walk ran to the end', false, String(e && e.stack || e).slice(0, 300));
 } finally {

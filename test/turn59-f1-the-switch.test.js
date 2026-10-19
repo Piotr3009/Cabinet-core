@@ -151,6 +151,7 @@ const EXEMPT = {
   'src/components/AssignMaterialsModal.jsx': 'DECOR F4: applied strip stock badges use the same thickness validation as purchasing. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T78 F21 · the sprayed set is assigned its PAINT here, in the same modal every other material is assigned in (withPaints: the Paints department rows beside the boards), not on the Spraying page. *"cale sprayowanie jako osobne menu Cabinet Core."*',
   'src/components/CncView.jsx': 'ORNATE, Piotr 10.10.2026: gotowy kod wlacznei z leyersami prosze do cnc. Shows canonical reference layers and relief depth readouts without changing production export approval. ' + 'DECOR F3: explicit front/back machining preview from shared export geometry. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
+    + ' T79 F1 (the sheet) . CHAT FIX 19.10.2026 (re-frozen): the caption and the note stand where engine/cnc/labelAnchor.js puts them (the outline\'s own middle, the note\'s block middle), moved onto the board when the rectangle\'s middle is a window or a cut-out; a rectangle\'s sheet is byte for byte what it was. *"czasami cnc rysuje items jak 3 mm drills czy cos takiego czy litery poza elementami"*.'
     + ' T76 F4 · the readout names a V groove for what it is: V, its width at the mouth, its centre line. *"The V groove is a V ... The DXF layer name and the `front-operations.json` entry say which."*'
     + ' T77 F7 · a ready Ornate leaf on the front face says "Proposed relief reference" in the colour of its reference contours, apart from the red blocked label (since F4 a relief that built is not a fault). *"The relief is a PROPOSAL and stays one ... The slab is cut; the relief ships as CAD/CAM reference files with the state `geometry`, never as approved machining, until the owner says otherwise."*'
     + ' Chat fix 17.10.2026 \u00b7 every part\'s caption carries its project number and wears its cabinet\'s colour, from the same plan the downloads use. *"ponumerujemy wszystkie elementy ... kolory napisow pod kolory szafki ... ok koduj"*'
@@ -300,7 +301,8 @@ const EXEMPT = {
   // the same commit."*
   'src/components/Messages.jsx':
     'T79 F1 . all three levels stand in ONE bottom-left column (the centre and the bottom-centre blocks deleted), the newest nearest the Changes bar under them; the bar opens the list of the last profile.ui.messages.historyMax messages (newest first, HH:MM, the level\'s dot, the text, Clear), collapsed by default, Escape collapses it, never saved; a folded yellow or grey says its count once (its text), a red beside it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
-    + ' CHAT FIX 19.10.2026 (re-frozen): the grey card is translucent (bg-shell-800/70); the timing is the store\'s and engine/messages.js hideMs (every level leaves on its clock: 4 s, reds 8 s; the Changes row stays). *"ma sie chowac po kilku sekundach i byc przezroczysty"*; asked "wszystkie chowaja sie po 4 s, czerwone po 8 s, historia zostaje, tlo przezroczyste 70 procent?": *"tak pls"*.',
+    + ' CHAT FIX 19.10.2026 (re-frozen): the grey card is translucent (bg-shell-800/70); the timing is the store\'s and engine/messages.js hideMs (every level leaves on its clock: 4 s, reds 8 s; the Changes row stays). *"ma sie chowac po kilku sekundach i byc przezroczysty"*; asked "wszystkie chowaja sie po 4 s, czerwone po 8 s, historia zostaje, tlo przezroczyste 70 procent?": *"tak pls"*.'
+    + ' CHAT FIX 19.10.2026, the afternoon (re-frozen again): the open Changes list closes itself after engine/messages.js historyOpenMs (profile.ui.messages.historyOpenMs, 10 s, PROPOSED); the bar and the rows stay. *"changes chat can we keep close, nawet jesli uzytkownik otworzy czy mozemy za jakis czas zamknac? bo za bardzo przeszkadza"*.',
   // CLAUDE.md T79 F12: the shelf menu's Center between stands in this window
   // too, so a click in its own canvas must be able to be the pick.
   'src/components/CabinetEditorModal.jsx':
@@ -344,7 +346,8 @@ const FROZEN = {
   // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
   'src/components/CncTree.jsx': '68aa1ffd5f8c07525c34b7b242c3adc387bc70157a38ae5bd07d0f257691d8e0',
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/CncView.jsx': '519b7e96ca356180dd91830dd8fb3aacc26b4c6e76f53c4888d5ac01ae454fec',
+  // CHAT FIX 19.10.2026 (the afternoon) re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CncView.jsx': '516abfc24d9f2ed2cbadf91898da2b559423ea568401ae6117d796c637945f03',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
   // T78 F19 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/CompanyDefaultsModal.jsx': 'e365305d290ab32057544e05f83b068f1ef9414642fe00f429cfbedb84dbc917',
@@ -377,8 +380,8 @@ const FROZEN = {
   'src/components/MaterialPicker.jsx': 'd2b1d49bb1ef08d55652437986d4d40a2cac7c1683b42d16b0523b0e08fca5b7',
   'src/components/MenuBar.jsx': '8259c2d7b81f5f176c8c20d6faf98d6c2943667e2dd6354154a85748da1c4581',
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/Messages.jsx': '3cb03d1bd5da7c8bcd963e3a4cc88eda6fb4de69cd57bc2dda8ddbecbb0d0fde',
+  // CHAT FIX 19.10.2026 re-frozen at the new hash, twice (the morning, the afternoon); EXEMPT above carries the reasons.
+  'src/components/Messages.jsx': '319794dc58eec269c60e180e3565b463a7f9668de1af04156d549596a58476c0',
   'src/components/MockModeBadge.jsx': '081294a78610a7fd3baef730ca7a318d8d193e40ef66c5d278e45f9672c82826',
   'src/components/Modal.jsx': '4bee3abfa7d391916931428869da887ea6e56c002ee1980b596413de5fc7ddbe',
   'src/components/MultiUnitPanel.jsx': 'ad7d770b51042f0c2e8d9633df4067c5a7d8d4af6e358fad2e90cf62e631531c',

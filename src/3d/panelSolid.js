@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mm } from './constants.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { cncRect, notchedOutline, socketNotches, tabOutlines } from '../engine/socketFace.js';
+import { sceneBoard } from '../engine/siteTrim.js';
 // Turn 46 (F6a): the ONE cut, imported — never a second diagonal in the scene.
 import { slopeCutActive, trimOutlineOnSlope } from '../engine/puzzle.js';
 import { panelPlacement } from '../engine/joinery.js';
@@ -72,7 +73,14 @@ export function machinedPanelGeometry(panel, layers, profile, drills = []) {
  *   which is what tells the caller to use a `boxGeometry` as it always has.
  *   `jpull` (T75) is true where the J is carved into `solid`.
  */
-export function panelSolids(panel, layers, profile, drills = []) {
+export function panelSolids(cutPanel, layers, profile, drills = []) {
+  // ─── CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp D4): THE ROOM DRAWS THE NOMINAL
+  // An end panel or a plinth is CUT `siteTrim` bigger for the joiner to scribe
+  // on site (`engine/siteTrim.js`); the board in the room is the nominal one
+  // (a board 20 mm into the floor would break the first law: material never
+  // enters material), so the scene reads the nominal record the engine left
+  // beside the cut. Every other panel comes back as itself.
+  const panel = sceneBoard(cutPanel);
   // ─── T55 (CLAUDE.md F1): THE BOARD THAT KNOWS ITS OWN CORNERS ────────────
   // The raked top-infill strip publishes its four corners in the room frame
   // (`meta.corners`, engine/cabinet.js — the single source of truth). Its

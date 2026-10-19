@@ -30,6 +30,11 @@ import { endPanelDrop, endPanelHeightDefault, END_PANEL_HEIGHTS } from '../src/e
 import { buildBom } from '../src/engine/bom.js';
 import { defaultParamsFor, getUnitType, UNIT_TYPE_ORDER } from '../src/engine/types.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
+// CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
+// `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
+// powinny byc wieksze o 20 mm, to samo z plinth, panele 20mm gora + dol + bok
+// (nie przod)"*), so a test about the ROOM's board reads the nominal.
+import { nominal, trimOf } from './site-trim.js';
 
 const withPanel = (typeId, ep = {}) => computeCabinet({
   ...defaultParamsFor(typeId, P),
@@ -62,16 +67,16 @@ test('THE FIX: a WUD end panel is exactly as tall as its carcass', () => {
   const result = withPanel('WUD');
   const ep = panelOf(result);
   assert.equal(ep.box.y, 0, 'it starts at the bottom of the carcass');
-  assert.equal(ep.h, params.height, 'and it is the carcass height, full stop');
+  assert.equal(nominal(ep).h, params.height, 'and it is the carcass height, full stop');
 });
 
 test('…even when the stored value says "floor", because that was never a decision', () => {
   // Every wall unit in every project made before turn 13 says 'floor': the
   // project default was project-WIDE. Overruled rather than migrated.
   const params = defaultParamsFor('WUD', P);
-  assert.equal(panelOf(withPanel('WUD', { height: 'floor' })).h, params.height);
-  assert.equal(panelOf(withPanel('WUD', { height: 'unit' })).h, params.height);
-  assert.equal(panelOf(withPanel('WUD', { height: 'carcass' })).h, params.height);
+  assert.equal(nominal(panelOf(withPanel('WUD', { height: 'floor' }))).h, params.height);
+  assert.equal(nominal(panelOf(withPanel('WUD', { height: 'unit' }))).h, params.height);
+  assert.equal(nominal(panelOf(withPanel('WUD', { height: 'carcass' }))).h, params.height);
 });
 
 test('a STANDING unit is untouched — "to the floor" still means the floor', () => {
@@ -82,15 +87,15 @@ test('a STANDING unit is untouched — "to the floor" still means the floor', ()
   const legs = P.baseUnit.legHeight;
   const ep = panelOf(withPanel('BUD', { height: 'floor' }));
   assert.equal(ep.box.y, -legs, 'past the legs, as it always has');
-  assert.equal(ep.h, params.height + legs);
+  assert.equal(nominal(ep).h, params.height + legs);
   // …and its "unit height" answer is unchanged too.
-  assert.equal(panelOf(withPanel('BUD', { height: 'unit' })).h, params.height);
+  assert.equal(nominal(panelOf(withPanel('BUD', { height: 'unit' }))).h, params.height);
 });
 
 test('the panel still runs ABOVE the unit when it is asked to (turn 8, F3)', () => {
   const params = defaultParamsFor('WUD', P);
   const ep = panelOf(withPanel('WUD', { top_mm: 250 }));
-  assert.equal(ep.h, params.height + 250, 'up is a separate question from down');
+  assert.equal(nominal(ep).h, params.height + 250, 'up is a separate question from down');
   assert.equal(ep.box.y, 0);
 });
 
@@ -98,7 +103,7 @@ test('THE PARKED SLOT: "extended" drops a wall unit’s panel, and only that val
   const params = defaultParamsFor('WUD', P);
   const ep = panelOf(withPanel('WUD', { height: 'extended' }));
   assert.equal(ep.box.y, -params.mount_height);
-  assert.equal(ep.h, params.height + params.mount_height,
+  assert.equal(nominal(ep).h, params.height + params.mount_height,
     'the shape BACKLOG #45 needs already works — it is the default that changed');
 });
 
@@ -134,9 +139,11 @@ test('THE ASSERTION CLAUDE.md ASKS FOR: the BOM height shrinks', () => {
   const bom = buildBom([{ unit, result }]);
   const row = bom.units[0].rows.find((r) => r.part === 'END-PANEL');
 
-  assert.equal(row.h, params.height, 'the cut list says the carcass height');
-  // What it WOULD have said before: carcass + the mounting height.
-  const old = params.height + params.mount_height;
+  // 19.10.2026: the cut list says the CUT, the carcass height and the two site trims.
+  const trim = trimOf(result.panels.find((p) => p.part === 'END-PANEL'));
+  assert.equal(row.h, params.height + 2 * trim, 'the cut list says the carcass height plus the site trim top and bottom');
+  // What it WOULD have said before: carcass + the mounting height (and the trims).
+  const old = params.height + params.mount_height + 2 * trim;
   assert.ok(row.h < old, `${row.h} must be less than the old ${old}`);
   assert.equal(old - row.h, params.mount_height, 'exactly the mounting height less — no more, no less');
 });

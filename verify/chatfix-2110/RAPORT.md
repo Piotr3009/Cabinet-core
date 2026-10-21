@@ -152,3 +152,11 @@ e. UI: przełącznik "in-frame" per projekt (styl kuchni) albo per ciąg (pytani
     dzisiejszy połysk i in-frame?
 12. Wciąż otwarte z 19.10: liczby notch b/c (wybrałeś b i c, liczby niepotwierdzone), trzy PROPOSED z paczki 4, pytania
     7 do 15 z HANDOVER 19.10.
+
+## 8. Odpowiedzi Piotra (21.10, 22:40) na pytania z sekcji 7 wersji z 21:27
+
+1 tak (tabela liczb in-frame potwierdzona w całości); 2 panel końcowy na styk; 3 in-frame per projekt; 4 "nie rozumiem"
+(odczyt Claude: pudło szuflady jak dziś, lip 1 mm nie dotyka prowadnicy; do potwierdzenia); 5 tak (zawias Blum in-frame
+na boku; numer katalogowy przy starcie T80); 6 wypełnienie 19 = informacja dla stolarza + na PDF w przekroju kawałek
+timber; 7 tak (kit in-frame jako Code turn T80); 8 tak (Petros: wpisy ZROBIONE 19.10, ZROBIONE + DECYZJE 21.10,
+HANDOVER 21.10 napisane, 9f31099f zamknięty); 9 tak (sześć liczb połysku potwierdzone, 60 % zostaje). "Mam zipa."

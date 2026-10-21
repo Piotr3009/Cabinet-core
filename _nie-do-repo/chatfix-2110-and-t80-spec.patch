@@ -1,0 +1,2441 @@
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 06da6ff..c5d3cda 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -1,96 +1,93 @@
+-# CLAUDE.md, TURN 79 · THE OWNER'S LIST OF 18.10: MESSAGES, BAYS, DRAWER COLUMNS, THE NOTCH GROWS, RECESS LOGIC, CABINEO ON THE BOX
+-
+-Run autonomously. Zero questions, zero stops: every decision below is the
+-owner's own (18.10.2026, a list dictated at 14:06, reviewed point by point
+-at 14:17, 14:45 and 14:51; his words are quoted where they decide), so
+-nothing here is asked again. If a point cannot be done, skip it WHOLE,
+-write why in the PR, and go on to the next. Full suite, never `--silent`.
+-Frames under `verify/t79/`. Branch `claude/t79-the-list-of-18-10`, one
+-commit per F, PR at the end; the owner merges. Nothing lands in Petros from
+-this session. The owner, 14:55: *"zipa do tury dla agentów włącznie z
+-poleceniem żeby robić automatycznie wszystko żebym nie musiał się martwić."*
+-
+-The owner, asked how to run it, 14:51: *"ja bym zrobił wszystko z agentami w
+-Codzie."* So: agents and parallel mode ON. The central files have ONE
+-writer and every other agent hands that writer a patch: `engine/cabinet.js`,
+-`engine/profile.js`, `engine/notch.js`, `engine/extension.js`,
+-`engine/cabineo.js`, `engine/zones.js`, `stores/projectStore.js`,
+-`stores/uiStore.js`, `3d/UnitView.jsx`. Agents that do not touch those
+-files run in parallel from the first minute: the LISP drafts and parens,
+-the UI files (PRO, then retail through the copy script), the CNC and label
+-files, the goldens and fragments, the tests and the walk. Never two agents
+-in one file.
+-
+-The ORDER of the parts is the order of value: PART A first, PART F last. A
+-part left undone is left undone whole and named in the PR.
++# CLAUDE.md, TURN 80 · IN-FRAME: THE BRITISH FRAME, ONE BOARD PER RUN
++
++Run autonomously. Zero questions, zero stops: every number below is the
++owner's own (21.10.2026, dictated at 22:03, settled at 22:14 and 22:40 after
++two dimensioned sections and a 3D mockup he approved; his words are quoted
++where they decide), so nothing here is asked again. If a point cannot be
++done, skip it WHOLE, write why in the PR, and go on to the next. Full suite,
++never `--silent`. Frames under `verify/t80/`. Branch `claude/t80-in-frame`,
++one commit per F, PR at the end; the owner merges. Nothing lands in Petros
++from this session. The owner, 22:47: *"daj zipa o caly zestaw do T80 ...
++i ja uruchamiam w Codzie."*
++
++Agents and parallel mode ON, as in T79. The central files have ONE writer
++and every other agent hands that writer a patch: `engine/cabinet.js`,
++`engine/profile.js`, `engine/design.js`, `engine/hingeLadder.js`,
++`engine/doors.js`, `engine/autoparts.js`, `stores/projectStore.js`
++(`paramsForEngine` lives there, line 1082 on 21.10), `stores/uiStore.js`,
++`3d/UnitView.jsx`, `engine/cnc/dxf.js`. Agents that do not touch those
++files run in parallel from the first minute: the LISP draft and parens
++(PART A), the UI files (PRO, then retail through the copy script), the
++drawings and BOM files, the goldens and fragments, the tests and the walk.
++Never two agents in one file. The ORDER of the parts is the order of
++value: PART A first (the law), PART G last.
+ 
+ ## THE ORDER
+-The owner's list of 18.10, his priorities, his words where they decide:
+-- Messages: *"wszystkie informacje po zmianach które pokazujesz na ekranie
+-  proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić
+-  jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie
+-  informacje pokazują się na środku i zasłaniają nam widok pracy."* (F1)
+-- A full-width shelf above a divider: *"jak dodamy fix półkę i divider pod
+-  spodem to nie mam możliwości dodania całkowitej półki powyżej bo kod
+-  dzieli mi całą szafę na bay 1 i 2, a nie mam czegoś takiego że jest bay
+-  nie dzielony powyżej."* Mockup approved 14:45: *"1 - tak."* (F2)
+-- Drawer columns: *"wstawianie szuflad w szafie działa super z diverterem
+-  ale muszę wstawić diverter z półką fix, a nie powinno być tak że diverter
+-  powinien się wstawiać sam jak wybieramy ile kolumn szuflad wstawiamy 1
+-  czy 2? ... wtedy półka ponad szufladami i tak jest fix."* 14:17: *"jak
+-  ustawiamy sobie teraz 3 szuflady internal to niech pyta czy chcesz 1 czy 2
+-  kolumny, coś jak baye."* Mockup approved 14:45: *"2 - tak."* (F3)
+-- The notch grows: *"cut the corner działa idealnie, ale możesz zrobić mi
+-  też poziome cut? wszystkich 4 rogów?"* and *"cut corner ucina nam tylko od
+-  dołu a co jeśli będziemy chcieli od góry, nie powinno być funkcji -500 na
+-  przykład i wtedy ucina od góry? i mała informacja o tym."* (F4, F5)
+-- Screw holes on the back: *"jak mamy cut the corners lub recess to nie
+-  rysujesz mi dziurek na śrubki 3 mm, to trzeba będzie dodać"*; 14:17:
+-  *"ale tylko na plecach."* (F6)
+-- The corner mark: *"sprawdź czy mi zmieniłeś ten corner layer do wycinania?
+-  ale chyba tak zrobiony już jest."* (F7, a check, no code unless it fails)
+-- Notch and recess together: *"dlaczego cut the corner likwiduje nam wcięcie
+-  do recess?"* (F8)
+-- The end panel: *"nie wycina mi panelu bocznego do recess a powinno."* (F9)
+-- Recess logic: *"jak odsunie od ściany na grubość większą niż recess to
+-  powinien zlikwidować recess w szafie, lub zmniejszać go odsuwaniem od
+-  recesu, logika."* (F10)
+-- The rail: *"zlikwiduj propozycję install rail with or without shelf, bez
+-  sensu, usuń to; a jak będziemy instalować rail to przy przesuwaniu
+-  zaproponuj 50 mm poniżej półki, jak jakąś wyczuje, coś jak mamy teraz
+-  propozycję levelowania półek jedna obok drugiej."* (F11)
+-- Centre between: *"centrowanie półek pomiędzy elementami, czyli mamy
+-  standard center i center pomiędzy elementami (nowa funkcja): naciskasz
+-  wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie
+-  półki pomiędzy tymi elementami się centrują."* (F12)
+-- Setbacks: *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za
+-  dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*
+-  (F13)
+-- Cabineo on the drawer box: *"jak mamy wybrane jakąkolwiek funkcję
+-  łączenia czy dog bones czy inne zawsze projektuj cabineo na szuflady, na
+-  przednich i tylnych ściankach dodawaj cabineo jeden do 100 mm, 2 powyżej
+-  100 mm, minimum odległość to 25 od góry i dołu"*; 14:45: *"cabineo musi
+-  być na frontowej i tylnej ściance, czyli nawiercanie w bokach będzie
+-  liczone od góry boxa bo [dół] jest inny"*; 14:51: positions from the top:
+-  *"tak"*; Cabineo 12: *"tak"*; tall boxes: *"przy wysokich nie rozsuwaj"*;
+-  the bottom: *"tak, bo jest wsuwane więc nie ma po co dodawać cabineo."*
+-  Mockup approved. (F14)
+-- Four small ones from the HANDOVER of 18.10, accepted 14:55 (*"ok daj"*):
+-  label colours on the entity for VCarve, the Restore sleeve rows button,
+-  the NL 420 runner, the 21 / 44 sheet choice. (F15 to F18)
+-
+-Parked by the owner, NOT this turn: the pull-down rail (14:51: *"zostaw na
+-razie, będziemy gadać później o tym"*), its hinge twin and the offline LOD;
+-the two-leaf small door (the handover's T79 item, now T80); divider L/R in
+-3D; the divider sleeves +18; the second-bay shelves a/b/c/d.
++The owner, 21.10.2026, in his words where they decide:
++- 20:24: *"a co z british style kitchen z ramkami?"* The engine knows only
++  lay-on fronts today (S/H/F/G/A are all lay-on, the hinge counted from the
++  side's edge, the gap from the profile). In-frame is a different family:
++  the fronts sit IN a frame, the frame is a visible piece of furniture.
++- 20:31: *"4 - cnc blum in frame, 6 - mockup pls"*: ONE MDF board routed
++  on the CNC with the openings cut through (the window mechanism of T25
++  F1.2), never a frame glued from strips; Blum hinges for in-frame.
++- 21:45, shown the first mockup (stile 45, frame 22): *"rama cos takiego
++  dokladnie, ale szafki stoja od siebie 4 mm oddzielone, na wierzchu sa
++  ramki, 18+18+4 daje 40 mm, pokaz przekroj."* Then, at 22:03, the numbers
++  that replace that scheme:
++- *"raczej plyta, malo kiedy bedzie jeden ciag dluzszy jak 2800, a jak
++  bedzie to bedziemy laczyc."* ONE frame per run, from one board; a run
++  longer than the board is joined.
++- *"najlepiej jakbysmy zrobili wszedzie ramke 38 mm, wtedy bedziemy mogli
++  szafki do siebie polaczyc i wtedy bedzie super; 1 mm bedzie w srodku
++  wystawac, bedzie jeszcze lepiej 1 mm, bo veneer ma 19 mm x 2 bedzie
++  idealnie."* 38 everywhere; cabinets BUTTED (0 mm); the stile between two
++  cabinets 38 = 1 + 18 + 18 + 1, the 1 mm a LIP into the opening past the
++  side's inner face; a veneered 19 side comes out flush.
++- *"ramka 25, drzwi 22 i jest idealnie, 3 mm gap pomiedzy carcasem a
++  drzwiami."* Frame 25 thick on the carcass face; the door 22, its face
++  flush with the frame's face; 3 mm of air between the door's back and the
++  carcass front edge.
++- *"jak podwojne drzwi to miedzy drzwiami nie ma ramki, tylko miedzy
++  szafkami."* No stile inside a pair of doors, no rail inside a drawer
++  stack: the frame stands between cabinets and round the edge only.
++- *"3 mm zawsze."* The gap of a front in its opening: 3 to the frame, 3
++  between fronts.
++- *"zawias na boku szafki (specjalne zawiasy z Bluma)."* The hinge plate on
++  the carcass side, the cup in the door as today, a Blum in-frame hinge.
++- 22:14, shown the vertical section with three rail variants: *"jezeli
++  chodzi o dol to zdecydowanie wariant C"* (the bottom rail 38 = lip 1 +
++  bottom 18 + 19 HANGING UNDER the carcass bottom, in front of the plinth);
++  *"jezeli chodzi o gore to ma isc nad szafke tak samo jak dol, a pozniej
++  ktos stolarz wypelni ta dziure i blat pojdzie na wierzch, taka jest
++  idea"* (the top rail 38 = lip 1 + top 18 + 19 ABOVE the carcass top; the
++  joiner fills those 19 on site; the worktop sits on top); *"zrob
++  ostateczne mockupy."*
++- 22:40, the final mockup approved point by point: *"1 tak"* (the whole
++  table), *"2 na styk"* (the end panel butted to the side), *"3 per
++  projekt"* (the switch is per project), *"5 tak"* (Blum in-frame on the
++  side), *"6 informacja i na pdf na przekroju pokaz kawalek timber"* (the
++  19 mm filler is a NOTE for the joiner, not a BOM line, and the PDF
++  section shows a piece of timber there), *"7 tak"* (this turn), *"9 tak"*
++  (the gloss numbers of 21.10 stay).
++
++The mockup he approved: `verify/t80/mockup-inframe-final-sheet.png` (five
++frames from the live scene over real units: a run of BUD 600 with one door,
++BUD 800 with a pair, BUDR2 500 with two drawer fronts, an end panel on the
++left, a WUD 600 above; worktop on the frame). The sections he read:
++`verify/t80/przekroj-poziomy-v2-38.png` (plan, his numbers),
++`verify/t80/przekroj-pionowy.png` (the rail variants; C is his),
++`verify/t80/przekroj-poziomy-v1-40.png` (the 40 scheme he replaced; history
++only). The mockup script that drew it, `scripts/chatfix-2110-mockup-
++inframe-final.mjs`, is the geometry in code: read it before PART C.
+ 
+ ## LAWS
+-T75's LAWS, T76's two, T77's one and T78's two hold in full: done means the
+-whole road (UI, construction and collisions, BOM, drawing, save and reload,
+-export with readiness); LISP IS LAW and "lisp najpierw" for every new cut
+-geometry, and a T75+ kit is amended only under a licence that quotes the
+-owner; the six fossil kits are untouchable, so a project-level decision
+-reaches the engine ONLY through `paramsForEngine()` and a bare
++T75's LAWS, T76's two, T77's one, T78's two and T79's two hold in full: done
++means the whole road (UI, construction and collisions, BOM, drawing, save
++and reload, export with readiness); LISP IS LAW and "lisp najpierw" for
++every new cut geometry, and a T75+ kit is amended only under a licence that
++quotes the owner; the six fossil kits are untouchable, so a project-level
++decision reaches the engine ONLY through `paramsForEngine()` and a bare
+ `computeCabinet()` matches its LISP byte for byte; diagnose before you cut
+ (every BUG starts with a committed PROBE table); test the way the client
+ clicks (real mouse); one law one path; 1:1 = COPY through
+@@ -98,652 +95,432 @@ clicks (real mouse); one law one path; 1:1 = COPY through
+ without the owner's order; material never enters material; a carcass side
+ never stays visible; room refuses first and never silently; left adds,
+ right edits; a new function ships with its visible entry; kasacja is
+-physical deletion, tombstones at most two lines, deletions over additions;
+-no em or en dash in anything written, this file included; every new source
+-file begins with the Skylon Development Ltd copyright header (the one every
+-file carries since 15.10.2026). Two laws are this turn's own:
+-**A vertical divider stands ON the board that crowns a drawer stack and
+-never passes through the boxes** (the owner, 8.9.2026, reaffirmed by the F3
+-mockup: the divider ends under the FIX shelf over the stacks).
+-**The drawer box is on Cabineo whenever the unit has a joint system at all**
+-(puzzle, dowels, biscuits or Cabineo): the carcass keeps its own system, the
+-box always takes Cabineo 12.
++physical deletion; no em or en dash in anything written, this file
++included; every new source file begins with the Skylon Development Ltd
++copyright header; nothing invented (a hardware number comes from the owner
++or from a reference file that names its source, never from memory). Five
++laws are this turn's own:
++**The frame is a RUN's board, not a cabinet's** (the owner: *"raczej
++plyta"*): one piece from the first cabinet's outer edge to the last one's,
++cut from one board, the openings routed through; a run longer than the
++board is joined at the centre line of a stile between two cabinets.
++**38 everywhere** (*"wszedzie ramke 38"*): every stile and every rail of the
++frame is 38 wide, nothing narrower, nothing wider.
++**The lip follows from 38** (*"1 mm bedzie w srodku wystawac ... veneer 19 x
++2 bedzie idealnie"*): the lip is what 38 leaves after two sides, `lip = (38
++- t - t) / 2`: 1 for 18 mm boards, 0 for 19 mm boards, never negative (a
++board over 19 is a red Check, not a wider stile). The frame's opening is
++the carcass opening less the lip on every side.
++**19 outside** (*"wariant C", "gora tak samo"*): the top rail stands `38 -
++t - lip` = 19 above the carcass top, the bottom rail hangs 19 below the
++carcass bottom;
++nothing of the cabinet moves to meet it. The worktop sits on the frame; the
++19 above the carcass is the joiner's filler (a note, timber on the section
++drawing, never a BOM line).
++**3 always** (*"3 mm zawsze"*): an in-frame front keeps 3 to the frame on
++every side and 3 to its neighbour; the door is 22 in a frame 25, flush at
++the face, 3 of air behind it.
++In-frame OFF is today: with the switch off, every number, every board,
++every golden, every pixel is byte for byte what main has. The switch
++decides, nothing else leaks.
+ 
+ ## FROZEN
+ 1. Goldens: the six, T75's, T76's decoration file, T77's ornate records,
+-   T78's seventeen, byte-identical, proven by `scripts/t78-classify.mjs`
++   T78's and T79's, byte-identical, proven by `scripts/t78-classify.mjs`
+    (strict, no flag) with this turn's fragments `scripts/t78-classify.d/
+-   f34-t79-f*.mjs`, one per F that touches `src/engine` or `src/lib`. A
+-   golden an F moves KNOWINGLY is named in that fragment's REPINNED with the
+-   owner's words (F6 is the only one that may). New cut geometries get
+-   goldens of their own (named per F).
+-2. Fossil LISP untouched (the six kits and SKYLON_COMMON). T75+ LISP files
+-   amended only under a `LISP: { file: why }` licence in the F's fragment,
+-   with the owner's quote; parens test grows with every file touched.
++   f40-t80-f*.mjs`, one per F that touches `src/engine` or `src/lib`. NO
++   golden is re-pinned this turn (REPINNED stays empty in every fragment):
++   in-frame is a new style, never a change to the lay-on fronts. New cut
++   geometries get goldens of their own (PART F).
++2. Fossil LISP untouched (the six kits and SKYLON_COMMON). This turn adds
++   ONE LISP file, `reference/lisp/KIT_INFRAME.lsp`; T75+ kits are not
++   amended (if a kit must change, that is a skip, named in the PR).
+ 3. PRO freeze (`test/turn59-f1-the-switch.test.js`): every PRO file edited
+    is licensed in `EXEMPT` with the owner's words from this file and
+    re-frozen at its final hash in the same commit.
+ 4. Lighting untouched. `engine/ledStrips.js`, `engine/lighting.js`,
+    `engine/lightRig.js`, the light panels: not one line.
+-5. Biscuit numbers untouched; the dowel numbers untouched; the carcass
+-   Cabineo table (D.2, D.2b) untouched: the box gets its OWN table.
+-6. Drawers untouched by F13: `drawers.setback 50`, `fillerFrontOffset 40`,
+-   the drawer cap board's depth, the runner drilling, byte for byte.
+-7. The pull-down rail, `3d/hardwareLod.js`, `3d/glbSource.js`,
+-   `3d/frameDemand.jsx`, `3d/coneroModels.js`: not one line (parked).
+-8. The suite is green at the start (record the count: 6772 on 18.10, one
+-   known regex case may show red on a long-sha clone; it is not yours) and
+-   at the end.
+-
+-## PART A · THE SCREEN (F1, F2, F12)
+-
+-### F1 · MESSAGES GO TO THE LEFT, AND KEEP A HISTORY
+-- Owner: *"po lewej, niech one tam znikają; na dole po lewej lista
+-  rozwijana i tam historia zmian."*
+-- Today (`components/Messages.jsx:119-127`): grey messages (`info`, `ok`,
+-  which is nearly every `notify`) stand at `top-1/2 left-1/2`, over the
+-  room; red and yellow at `bottom-6 left-1/2`. No history: a message leaves
+-  the array on expiry or dismiss (`stores/uiStore.js:1031-1074`,
+-  `engine/messages.js` LEVELS 38-65).
+-- Fix, placement: ONE bottom-left column for every level, in
+-  `ConfiguratorPage.jsx` (mounted at 729 today) and `App.jsx:143`: from the
+-  bottom up, the history bar, then the messages (red above yellow above
+-  grey, newest nearest the bar), then `FrontGapWarnings` (today
+-  `left-3 bottom-3`, `FrontGapWarnings.jsx:62`), so nothing of the three
+-  covers another. Width `max-w-[26rem]`, `LAYER_CLASS.message` as today.
+-  `engine/messages.js` LEVELS: `place: 'left'` for all three; the centre
+-  and bottom-centre blocks of `Messages.jsx` are deleted (kasacja), not
+-  hidden. Timing unchanged: grey leaves after `profile.ui.messages.greyMs`
+-  (3000), yellow on click-away, red on click.
+-- Fix, history: `uiStore.history` keeps the last `profile.ui.messages
+-  .historyMax` (50, new number) messages as `{id, message, level, at}`,
+-  pushed when a message is first shown (a folded `N × msg` is one row,
+-  updated in place). The history bar: a one-line `cc-panel` at the very
+-  bottom-left, `Changes · 12 ▴`, click toggles a `cc-scroll` list (newest
+-  first, time `HH:MM`, the level's colour dot, the text) with a `Clear`
+-  button; collapsed by default; not persisted. Keyboard: Escape collapses.
+-- Retail: untouched (it mounts no `Messages`; it reads the last word
+-  inline, `retail/design/adapter.js:2339-2349`).
+-- EXEMPT: `Messages.jsx`, `ConfiguratorPage.jsx`, `App.jsx` with the
+-  owner's words above. Test `test/turn79-f01-messages-left.test.js`: the
+-  three levels place left; a 51st entry drops the oldest; the centre block
+-  is gone from the source. Walk: add a shelf, frame the message at the
+-  bottom-left; open the history, frame it.
+-
+-### F2 · A FULL-WIDTH SHELF ABOVE THE DIVIDER (the third button)
+-- Owner: *"nie mam czegoś takiego że jest bay nie dzielony powyżej."*
+-  Mockup `verify/t79/mockup-02-full-width-shelf-above-divider.png` (shipped
+-  with this spec), approved.
+-- Today: the divider already ends under the lowest FIX shelf above its
+-  floor (`engine/zones.js partitionSpan 201-242`, `cabinet.js:4896-4905`,
+-  `meta.terminatesOn` at 4976); the engine already knows a full-width shelf
+-  (`item.zone == null`, `cabinet.js:4583`). Only the picker is missing:
+-  `components/AddItems.jsx:764-808` offers `Bay 1 · N` and `Bay 2 · N` and
+-  nothing else once a partition exists.
+-- Fix, UI: a third button `Above divider · <light>` after the bays, shown
+-  only when the divider's span ends below the top (span.to + G < ceiling);
+-  hovering it highlights the opening above the carrying FIX shelf on the
+-  canvas the way the bays are highlighted (`onZoneHover` with a sentinel
+-  `'above'` that `UnitView` draws as the full-width band from span.to + G to
+-  the top underside); the count field and Add work as for a bay.
+-- Fix, store: `addShelves(unitId, count, zone)` accepts `zone: 'above'`:
+-  the shelves are `zone: null` (full width) and are CENTRED in the opening
+-  above the divider top by `evenShelfPositions({zoneBottom: span.to + G,
+-  zoneTop: ceiling, count, boardT})`, never below span.to. A full-width
+-  shelf asked for below the divider top is refused in words
+-  (`notify(..., 'warn')`: "A full-width shelf cannot cross the divider;
+-  pick a bay or raise it above the divider."), never clipped.
+-- Engine: not one line. Goldens: identical by construction.
+-- Retail: `retail/design/detail/AddItems.jsx` through the copy script.
+-- EXEMPT: `AddItems.jsx` (PRO). Test `test/turn79-f02-above-divider.test.js`:
+-  a 1200 wardrobe, FIX shelf at 1000, divider below: `addShelves(..., 2,
+-  'above')` gives two `zone: null` shelves between 1018 and the top, equal
+-  gaps; asked at 500 it refuses with the sentence above. Walk: the three
+-  buttons framed; the shelf added; `verify/t79/f02-above.png`.
+-
+-### F12 · CENTRE BETWEEN TWO ELEMENTS
+-- Owner: *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i
+-  wtedy wszystkie półki pomiędzy tymi elementami się centrują."*
+-- Today: `Center all` (`components/ElementProperties.jsx:1243-1253`,
+-  `centreShelves(unitId, bayRef)` at `projectStore.js:8781`,
+-  `redistributeShelvesInBay` 8789 with `evenShelfPositions`) spreads every
+-  adjustable shelf of a bay between its floor and its ceiling; pinned (FIX,
+-  carrying) shelves are boundaries.
+-- Fix: a second button `Center between` beside `Center all`, same width,
+-  shown with it. Click 1 arms a two-pick mode in `uiStore`
+-  (`centreBetween: {unitId, lower: null, upper: null}`); the panel says
+-  `Pick the lower element`, then `Pick the upper element`; a pick is a
+-  click on a shelf (any), the drawer cap PARTITION, the rail partitioner,
+-  the BOTTOM or the TOP of the same unit (the existing `selectElement`,
+-  `uiStore.js:819`, with the mode reading the two picks in order); Escape
+-  or a click elsewhere cancels. On the second pick the store runs
+-  `centreShelvesBetween(unitId, lowerRef, upperRef)`: the adjustable
+-  shelves of the SAME bay whose `pos_mm` lies between the lower's top face
+-  and the upper's underside are spread by `evenShelfPositions` between
+-  those two faces; FIX shelves inside the span are refused in words ("A
+-  fixed shelf stands between your picks; centring stops at it."), two picks
+-  in different bays are refused in words, fewer than one shelf between is
+-  refused in words. `mmStep` snap and `reclampShelves` as `Center all`.
+-- Retail: `retail/design/detail/ElementProperties.jsx` through the copy
+-  script; the two-pick mode lives in the shared `uiStore`.
+-- EXEMPT: `ElementProperties.jsx`, `UnitView.jsx` (the pick highlight).
+-  Test `test/turn79-f12-centre-between.test.js`: three shelves between a
+-  FIX shelf at 600 and the top: picks (FIX, TOP) give equal gaps; picks in
+-  two bays refuse. Walk: the two picks framed, `verify/t79/f12-between.png`.
+-
+-## PART B · DRAWER COLUMNS (F3)
+-
+-### F3 · INTERNAL DRAWERS: 1 OR 2 COLUMNS, THE DIVIDER AND THE CAP COME BY THEMSELVES
+-- Owner: *"niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."* Mockup
+-  `verify/t79/mockup-03-drawer-columns.png`, approved: divider mid-width, a stack in
+-  each column, ONE FIX board over both stacks, the divider from the base to
+-  that board's underside.
+-- PROBE, committed first, `verify/t79/f03-probe.md` (the chat probe of
+-  18.10 re-run): WARDROBE 1200, partition at x_mm 591, 2 drawers with
+-  `zone: null`: the engine builds the full-width stack (PARTITION x18..1182
+-  at y426, boxes x71..1129 THROUGH the divider) and VPART-1 from y18 to the
+-  top, through the boxes and through the PARTITION board, with no warning
+-  (`cabinet.js:795-796` zone-null drawers never become column drawers;
+-  `partitionFloor` at 4884 knows only the overlay stack; `partitionSpan`
+-  cannot end on the PARTITION board because it is not a shelf item). That
+-  is the owner's *"program nie bierze pod uwagę że to jest diverted."*
+-- Fix, engine (the law above): a vertical partition standing in a unit
+-  with a full-width internal stack has its floor at `partitionY + G` (the
+-  top face of the stack's PARTITION board), never at G: `partitionFloor`
+-  reads `drawerZone.top + G` when a zone-null stack exists; the span then
+-  runs from there to the lowest FIX shelf above or the top. The PARTITION
+-  board stays full width. Material never enters material.
+-- Fix, engine, two columns: when every zone of the unit carries a stack
+-  (every bay has column drawers), the cap over them is ONE full-width FIX
+-  board `PARTITION` (x G, w internalWidth) at `max(partY)` of the columns
+-  (today `Z{k+1}-PART` per zone, `cabinet.js:5474-5484`, one board per bay
+-  and nothing over an empty bay: keep that for a lone column); the divider
+-  between the columns runs from the base to that board's underside
+-  (`terminatesOn: 'PARTITION'`), its biscuit set and screws by the 1710d
+-  law (biscuits only on the FIX board). Stacks of unequal height: ONE cap
+-  at the taller stack, the shorter stack's headroom stays open (the
+-  owner's mockup shows one board, never two). Column rails unchanged.
+-- Fix, store: `addDrawers(unitId, count, mount, heightMm, zone, variant,
+-  {columns})`: with `columns: 2` on a unit with no partition, add one
+-  partition at `W / 2` (left face at `(W - G) / 2`, `addPartition` 8306),
+-  then the stack in zone 0 and the same stack in zone 1, in ONE history
+-  batch (one undo). `columns: 1` is today. A unit that already has a
+-  partition keeps today's "Which bay" picker (the columns choice is not
+-  shown). The divider added this way is an ordinary partition afterwards
+-  (draggable, deletable; deleting it leaves two column stacks, which the
+-  engine already handles).
+-- Fix, UI: `components/AddItems.jsx` drawers block, internal mount only:
+-  `COLUMNS` with `1` and `2` beside `HOW MANY`, shown when the unit has no
+-  partition yet; the hint under it: "2 columns: a divider mid-width, a
+-  stack in each column, one fixed shelf over both." Retail through the copy
+-  script.
+-- LISP: none (no new cut geometry; the cap and the partition are existing
+-  parts).
+-- Goldens: the six and T75/T78 identical by construction (no fixture has a
+-  partition with drawers, and the two-column cap only exists where every
+-  bay carries a stack); the classifier fragment `f34-t79-f03.mjs` names the
+-  gate `columns` (opens when a unit has a partition AND drawers) and proves
+-  no golden opens it. New golden `golden-drawer-columns.json`: WARDROBE
+-  1200, `columns: 2`, 3 drawers each.
+-- EXEMPT: `AddItems.jsx`. Tests `test/turn79-f03-drawer-columns.test.js`:
+-  the probe table as assertions (the divider floor is the cap's top face;
+-  the cap is one board x18..1182; VPART from the cap to the top); the store
+-  adds partition + two stacks in one batch; a unit with a partition shows no
+-  columns choice. Walk, real mouse: 3 internal drawers, columns 2, frames
+-  `verify/t79/f03-columns.png`, `f03-cnc.png`.
+-
+-## PART C · THE NOTCH GROWS (F4, F5, F6, F7, F8, F9, F10)
+-
+-The notch is `engine/notch.js`, the mirror of `reference/lisp/KIT_NOTCH.lsp`
+-(T75 F7; `params.notch = {corner, w, d, h}`, `h 0` = full height, read at
+-`notchOf` 820-834; cut boards at `notchCarcass` 1100-1356; PRO window
+-`components/RightPanel.jsx NotchWindow 1955-2025`; retail
+-`retail/design/Options.jsx:346-380`, `adapter.js:4681-4736`). The recess is
+-`engine/extension.js`, the mirror of `KIT_RECESS.lsp` (15.10; the band from
+-`lib/wallElements.js`, derived by `recessExtensionFor`
+-`projectStore.js:978-1011`, injected at 1034 and 1041; wholly inside:
+-`settleRecesses` 3242-3263, `params.recess_mm`). Both are T75+ files: LISP
+-first, amended under licence with the owner's words, parens tested.
+-
+-### F4 · THE NOTCH FROM THE TOP (a negative height)
+-- Owner: *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry? i
+-  mała informacja o tym."*
+-- Today: bottom only, by construction: `notchSideFc` (393-396) and
+-  `notchBackFc` (458) return `x0y0` / `x1y0`; `notchHh` (95) measures up
+-  from the underside; the LID needs room under the TOP (refusal 758-760).
+-- LISP first, `KIT_NOTCH.lsp`: D21 THE TOP-ANCHORED NOTCH: `h < 0` means
+-  the cut starts at the TOP and runs down `|h|`; the side's corner is
+-  `x0y1` / `x1y1`; the TOP is cut instead of the BOTTOM; the box boards are
+-  the same three (RETURN, STEP, and the closing board is a FLOOR under the
+-  cut instead of a LID over it); the BACK, at a back corner, loses its top
+-  part of the notched edge; `h 0` stays full height; `|h|` must leave
+-  `minInteriorMm` under the cut as it must leave it above today. NUMBERS
+-  block for BUD 600, notch BL w 200 d 200 h -300, board by board.
+-- Engine mirror: `notchOf` accepts negative h (`anchor: 'top'`);
+-  `notchSideFc` / `notchBackFc` / `notchHh` / the LID-or-FLOOR board follow
+-  D21; shelves crossed by a top notch are cut as those crossed by a bottom
+-  one; `notchDrills` re-origins a full-height side as today and a top notch
+-  as the mirror of the bottom case. 3D (`panelSolid.js cutNotchCorner`)
+-  takes the corner from `cnc.notch.fc`; nothing else there.
+-- UI, the small information: `NotchWindow` HEIGHT field accepts a negative
+-  number; the help line reads "WIDTH along the back, DEPTH into the
+-  carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT
+-  cuts from the top (e.g. -500)." Retail `NotchAsk.jsx` the same line,
+-  through the copy script where it is a copy, by hand where it is not (name
+-  it in the PR).
+-- Golden `golden-notch-top.json` (BUD 600, BL 200/200/-300). The six and
+-  `golden-notch.json` identical: the gate `notchTop` opens only on h < 0.
+-- Tests `test/turn79-f04-notch-top.test.js`: the LISP NUMBERS block held
+-  board by board; the refusal below `minInteriorMm`; the help text present
+-  in PRO and retail. Walk: a BUD with -300, frames 3D and CNC.
+-
+-### F5 · THE HORIZONTAL NOTCH: ALL FOUR EDGES OF THE SIDE
+-- Owner: *"możesz zrobić mi też poziome cut? wszystkich 4 rogów?"* The four
+-  corners of the SIDE elevation: top-back, bottom-back, top-front,
+-  bottom-front: a rebate running the full width of the carcass along that
+-  edge (a skirting board at the bottom-back, a coving at the top-back, a
+-  bulkhead at the top-front, a plinth return at the bottom-front).
+-- LISP first, `KIT_NOTCH.lsp` D22 THE EDGE NOTCH: `params.edgeNotch =
+-  {edge: 'TB' | 'BB' | 'TF' | 'BF', d, h}` (d into the depth, h into the
+-  height), full width; BUL and BUR get the L corner `d × h` at that edge
+-  (the same corner-mark law of 1710h, one open L vector per inner corner,
+-  `engine/marks.js`); at a back edge the BACK is shorter by h (BB: from the
+-  bottom, TB: from the top) and the BOTTOM (BB) or the TOP (TB) is narrower
+-  by d at the back; at a front edge the BOTTOM / TOP is narrower by d at
+-  the front and the fronts are untouched (the owner said nothing of doors;
+-  the plinth at BF keeps its own law); no closing boards (the rebate is
+-  open to the wall or the floor); `minInteriorMm` applies to what is left.
+-  NUMBERS block for BUD 600 BB d 20 h 120 and TB d 50 h 100.
+-- Engine mirror `engine/notch.js` section for D22 (`edgeNotchOf`,
+-  `edgeNotchCarcass`, `edgeNotchDrills`: the dia 3 rows and the puzzle on a
+-  shortened edge follow the shortened edge, as the corner notch does);
+-  a corner notch and an edge notch on the same side may coexist when their
+-  rectangles do not overlap, otherwise refused in words.
+-- UI: in `NotchRow` a second button `CUT EDGE` opening `EdgeNotchWindow`
+-  (EDGE with the four, DEPTH, HEIGHT, the help line "A rebate along the
+-  whole edge: skirting at the bottom-back, coving at the top-back."); the
+-  3D picker highlights the four horizontal edges of the selected unit the
+-  way `NotchCorners.jsx` highlights the four vertical corners. Retail the
+-  same through the copy script or by hand (name it).
+-- Goldens `golden-edge-notch-bb.json`, `golden-edge-notch-tb.json`. The six
+-  identical: the gate `edgeNotch` opens only on `params.edgeNotch`.
+-- Tests `test/turn79-f05-edge-notch.test.js`: NUMBERS held; the corner mark
+-  is one open L per inner corner; coexistence and refusal. Walk: BB and TB
+-  framed in 3D and CNC.
+-
+-### F6 · THE DIA 3 ROWS ON THE BACK ARE NOT LOST TO A NOTCH OR A RECESS
+-- Owner: *"nie rysujesz mi dziurek na śrubki 3 mm, to trzeba będzie
+-  dodać; ale tylko na plecach."*
+-- PROBE (the chat probe of 18.10, commit it as `verify/t79/f06-probe.md`):
+-  with notch BL full the BACK has 10 holes instead of 14 (the column on the
+-  notched edge dropped by `notchBackJoints` D10, `notch.js:507-518`); with
+-  the recess the rows around the window / beside the band are dropped by
+-  `recessBackJoints` D17 (`extension.js:371-379`). BUL / BUR keep 6 / 6.
+-  Those removals were the owner's 17.10 word ("nie będziemy tam wkręcać
+-  wkrętów") and are REVERSED today by his later word: the rows are wanted.
+-- LISP first: `KIT_NOTCH.lsp` D10 and `KIT_RECESS.lsp` D17 amended under
+-  licence with today's quote: the dia 3 rows on the BACK follow EVERY edge
+-  of the BACK that meets a board: the carcass sides, top and bottom as
+-  today, and now the notch's RETURN board along the notched edge (above the
+-  notch for a part-height notch, the whole new edge for a full one) and the
+-  recess boards (RETURN-L / RETURN-R / FLOOR / LID / EXT-BACK) along the
+-  window's edges and the band's edges; the row's pitch and end offsets as
+-  the kit's own; a run shorter than two pitches gets two holes, shorter
+-  than one hole's offsets gets none and says so in the summary. BUL / BUR
+-  rows unchanged (6 / 6).
+-- Engine mirror in `notchBackJoints` and `recessBackJoints`; the holes
+-  reach `drills` as the others do (`cabinet.js:8718-8720`); the 3D
+-  `DrillRings` shows them.
+-- Goldens: `golden-notch.json`, `golden-recess.json`,
+-  `golden-recess-band.json`, `t75-wardrobe-corner.json` MOVE knowingly:
+-  REPINNED in `f34-t79-f06.mjs` with the quote; the six identical (no
+-  fossil has a notch).
+-- Tests: `chatfix-1710-corners-screws-shelves.test.js:239` and `:257` are
+-  REWRITTEN to the new law (a green test beside the old rule is a lie), and
+-  `test/turn79-f06-back-rows.test.js` holds the counts (BL full: 14 again,
+-  with the column into the RETURN; window case: rows on all four window
+-  edges). Walk: the BACK in CNC view with a notch, frame.
+-
+-### F7 · THE CORNER MARK: A CHECK, NOT A CHANGE
+-- Owner: *"sprawdź czy mi zmieniłeś ten corner layer do wycinania? ale
+-  chyba tak zrobiony już jest."*
+-- The 1710h law is on main (`engine/marks.js`, one open 3-point L per
+-  inner corner, layer `CORNER_4MM`, aci 53, `cnc/layers.js:112`). Verify
+-  in the walk: export the BUD-with-notch DXF, count on `CORNER_4MM` exactly
+-  one open polyline of three vertices per inner corner, no closed shape;
+-  frame the CNC view. If it holds, the PR says "F7 verified, no change". If
+-  it does not, fix it to the 1710h law and say what was wrong.
+-
+-### F8 · A NOTCH AND A RECESS ON THE SAME CARCASS
+-- Owner: *"dlaczego cut the corner likwiduje nam wcięcie do recess?"*
+-- PROBE (committed, `verify/t79/f08-probe.md`): `cabinet.js:1790-1793`
+-  refuses the extension whenever a notch exists (`extensionVerdict` →
+-  `recessRefusal(..., Boolean(params.notch))`, `extension.js:496`: "a
+-  carcass notched round an obstacle cannot grow into a recess as well; the
+-  notch stands", the law of `KIT_RECESS.lsp` D13), and `cabinet.js:8666`
+-  gates `extensionCarcass` on `!notchCut`. The refusal is SILENT: `checks.js
+-  :665` maps `NOTCH_REFUSED` (28) and nothing maps `EXTENSION_REFUSED`;
+-  `recessExtensionFor` never looks at the notch. That is the owner's
+-  "likwiduje".
+-- LISP first, `KIT_RECESS.lsp` D13 amended under licence: a notch and a
+-  recess coexist when their footprints on the BACK do not overlap (the
+-  notch's `w` along the back at its corner against the band `x0..x1`, and
+-  for a part-height notch its height band against `z0..z1`); then both are
+-  cut, each by its own routine, in the order notch then extension, and the
+-  BACK pieces of the extension are cut from the notched BACK (the notch
+-  shortens the piece at that edge). When they overlap, the extension is
+-  refused in words and the refusal is VISIBLE: Check gets
+-  `EXTENSION_REFUSED` as #32 with the sentence "The recess cannot be cut:
+-  the corner cut stands where the recess band is; move one of them."
+-- Engine mirror: `extensionVerdict` takes the notch's footprint, not
+-  `Boolean(notch)`; `cabinet.js:8666` runs `extensionCarcass` after
+-  `notchCarcass` on the already-notched boards; `checks.js` #32; `cabinet
+-  .js:1790` keeps the parent-with-notch behaviour for the refused case.
+-- Goldens: `golden-notch-and-recess.json` (BUD 600, notch BL 200/200/0,
+-  band 310..600, no overlap); the existing notch and recess goldens
+-  identical except where F6 moved them.
+-- Tests `test/turn79-f08-notch-and-recess.test.js`: coexistence board by
+-  board; overlap refuses with #32 visible; `recess-extension-1510.test.js
+-  :249, :412-418` rewritten to the new D13. Walk: 3D of both, frame.
+-
+-### F9 · THE END PANEL FOLLOWS ITS SIDE INTO THE RECESS AND INTO THE NOTCH
+-- Owner: *"nie wycina mi panelu bocznego do recess a powinno."*
+-- PROBE (`verify/t79/f09-probe.md`): the END PANEL is always a plain
+-  rectangle (`cabinet.js:7051 rectGeometry(endPanelDepth, epH)`; depth at
+-  6970 `wallGap + insetBack + D + gap + frontT`); `extensionCarcass` and
+-  `notchCarcass` touch BUL / BUR / TOP / BOTTOM / BACK / SHELF (/ PLINTH)
+-  only; `recessExtensionFor` clips the band to 0..W and ignores the pads.
+-  Wholly inside a recess the END panel comes out about 140 short of the
+-  carcass depth because `wallGap` goes negative with `recess_mm` (the chat
+-  probe: END-R z 0 d 596 against D 708).
+-- Fix, one law one path: the end panel is cut by the SAME outline as the
+-  side it covers. Partly in the band: the END panel on a side that grows
+-  (BUL grows when `x0 <= 0`, BUR when `x1 >= W`, `extension.js:685`) takes
+-  the side's grown outline (`sideCorners` → `cnc.notch` + `also`, 628-634)
+-  with the pad's own x added to the band's test (the band is tested
+-  against `-padL..W+padR`, not `0..W`); notched: the END panel on the
+-  notched side takes the side's `cnc.notch` (and the F5 edge notch). Wholly
+-  inside: `endPanelDepth` uses `depth_full + recess_mm` the way the carcass
+-  does, so the END panel reaches the recess back with the sides. Its BOM
+-  area and cut-list line follow the outline.
+-- Goldens: `golden-recess-end-panel.json` (BUD 600 + END-R, band to the
+-  right edge), `golden-notch-end-panel.json` (BL notch + END-L). The six
+-  identical (no end panel in them).
+-- Tests `test/turn79-f09-end-panel.test.js`: the END outline equals the
+-  side's outline in each case; wholly-in depth equals the carcass depth.
+-  Walk: 3D framed from the recess side.
+-
+-### F10 · THE RECESS GIVES WAY TO THE STAND-OFF
+-- Owner: *"jak odsunie od ściany na grubość większą niż recess to powinien
+-  zlikwidować recess w szafie, lub zmniejszać go odsuwaniem od recesu."*
+-- Today: `recessExtensionFor` reads `e.depth` (`projectStore.js:1003`) and
+-  `settleRecesses` reads it at 3249; neither looks at the unit's stand-off.
+-  The stand-off is `backStandoff(unit, profile) = wallGapOf + inset_back_mm`
+-  (`collision.js:304-306`, `runs.js:57-78`, `wall_gap` else
+-  `room.wallBackClearance` 10, then `- recess_mm + standoff_mm`).
+-- Fix, store, one place: `effectiveRecessDepth(unit, element) =
+-  element.depth - (nominal stand-off of the unit with recess_mm taken as 0)`;
+-  `<= 0` means no recess for this unit (no `recess_mm`, no extension, the
+-  unit stands off the wall in front of the recess as any unit does);
+-  `> 0` means the recess is that much and both `settleRecesses` and
+-  `recessExtensionFor` use it. Moving the unit off the wall (wall_gap,
+-  retail `Options.jsx:325-342`, store clamp 6718-6733) re-settles in the
+-  same action, so the carcass shrinks or regains its recess as the number
+-  crosses the depth; `nominalOf` (828-832) unchanged.
+-- Engine: not one line (it receives numbers). Goldens identical.
+-- Tests `test/turn79-f10-recess-standoff.test.js`: depth 300, stand-off
+-  100 gives 200; stand-off 300 gives none; stand-off 350 gives none and no
+-  extension record. Walk: slide the wall_gap in retail, three frames.
+-
+-## PART D · THE RAIL AND THE SETBACKS (F11, F13)
+-
+-### F11 · THE RAIL IS ALONE, AND IT SNAPS 50 MM UNDER A SHELF
+-- Owner: *"zlikwiduj propozycję install rail with or without shelf, bez
+-  sensu, usuń to; przy przesuwaniu zaproponuj 50 mm poniżej półki."*
+-- Kasacja, physical: in `components/AddItems.jsx` the `railWithShelf` state
+-  (98), the two buttons `With a shelf` / `Rail alone` (868-893) and the
+-  `data-rail-assembly-hint` text; `addHangerRail` (`projectStore.js:~7734`)
+-  takes `withShelf` no more and adds the rail ALONE; in the retail adapter
+-  the `RAIL_MOUNTS` labels (3604-3607) and `setRailMount` (6058, its only
+-  caller `adapter.js:3615`) go. Deletions over additions; the PR shows the
+-  balance. The engine's shelf-mounted branch (`engine/railAssembly.js`
+-  RAIL_MOUNT, the partitioner) STAYS this turn for the projects that have
+-  one; its kasacja is a separate owner decision (NOT THIS TURN). A saved
+-  project with a shelf-mounted rail loads and renders as before.
+-- The magnet: the shelf magnet already exists (`engine/shelfMagnet.js`
+-  `magnetCandidates` 57, `applyMagnet` 113; `projectStore.js
+-  shelfMagnetCandidates` 10254, `moveShelf` 10308 with
+-  `editor.shelfMagnetMm` 10; the guide `UnitView.jsx:2357-2363, 3350-3356`).
+-  `moveRail` (8624) gets the same: candidates are, for every shelf of the
+-  rail's bay (adjustable or FIX) and the drawer cap PARTITION, the rail
+-  axis height `shelf underside - profile.hardware.hanger.belowShelfMm` (50,
+-  new number) measured the way `moveRail` measures the rail; within
+-  `shelfMagnetMm` the rail is caught and the DashedGuide with the mm label
+-  shows; Alt refuses, as free panels do (6150-6190).
+-- Retail: `retail/design/detail/AddItems.jsx` through the copy script;
+-  `RailModal.jsx` notes (`LEGACY_RAIL_NOTE`, `RAIL_ALONE_NOTE`) untouched.
+-- EXEMPT: `AddItems.jsx`, `UnitView.jsx`. Tests: `test/turn79-f11-rail
+-  .test.js` (the toggle is gone from the source; `addHangerRail` adds
+-  alone; `moveRail` within 10 of underside-50 lands on underside-50 and
+-  reports `magnet`); the T42 F1 rail tests stay green (ALONE is a branch
+-  they already hold). Walk: drag the rail toward a shelf, frame the guide.
+-
+-### F13 · SETBACKS: SHELVES AND DIVIDERS 10 MM, DRAWERS UNTOUCHED
+-- Owner: *"wszystkie cofnięcia zmień z 20 na 10 mm; tylko półki i dividery,
+-  szuflady zostaw nie ruszaj."*
+-- Today: a SHELF stands back `profile.carcass.shelfDepthClearance` 20
+-  (`profile.js:242`, `setbackOf(item.front_mm, C.shelfDepthClearance)` at
+-  seven sites of `cabinet.js`); a vertical PARTITION stands back
+-  `interior_setback_mm` injected by the store as 20 (`projectStore.js
+-  :1071-1073`, the seed `partition_front_mm` 20 at 7524; the engine's own
+-  default is 0, `cabinet.js:2182`, so a bare kit matches its LISP). The
+-  SAME `partitionDepth` (2183-2184) also sets the drawer cap PARTITION
+-  board (4790-4794, 5475-5482) and the runner drilling (9394, 9403, 9571).
+-- Fix, by the fossil law (the engine's bare numbers do not move; the goldens
+-  stay byte-identical): `profile.carcass.shelfSetbackMm: 10` and
+-  `profile.carcass.dividerSetbackMm: 10` (new keys); `paramsForEngine`
+-  injects `shelf_front_mm: 10` and `interior_setback_mm: 10`; the engine
+-  reads a shelf's setback as `setbackOf(item.front_mm, params.shelf_front_mm
+-  ?? C.shelfDepthClearance)` (bare: 20, as the LISP), and the vertical
+-  divider's as `setbackOf(item.front_mm ?? params.partition_front_mm,
+-  interiorSetback)` as today; the drawer cap board and the runner drilling
+-  read their OWN `drawer_cap_setback_mm`, injected as 20 from
+-  `profile.wardrobe.drawers.capSetbackMm: 20` (new key, the old number), so
+-  every drawer board, runner hole and golden is byte for byte what it was.
+-  New shelves and dividers are seeded with no `front_mm` (they follow the
+-  profile); migration on load: a shelf or divider item whose `front_mm` is
+-  exactly 20 (the old seed) becomes 10 (`profile.js` migration block, as
+-  5816 does for the sheet), any other hand value stays and is named in the
+-  PR count. The fossil kits and SKYLON_COMMON untouched.
+-- Tests that pin 20 as the ENGINE default stay true and stay
+-  (`turn65-f5:100-101`, `shelves-v2`, `turn78-f20-biscuit:171`); the tests
+-  that pin the STORE seed move to 10 (`turn21-f7-f10-interior:120`,
+-  `turn32-f4-zones:48`, `element-editing:175`, `turn72-f2-the-shelf-menu
+-  :156,162`, `chatfix-1710-drawers-and-sleeves:87,91`), each with the quote.
+-  `test/turn79-f13-setbacks.test.js`: a store-built wardrobe: shelf depth
+-  D-G-10, divider depth D-G-10, drawer cap D-G-20, runner holes unchanged
+-  against the 18.10 numbers; the migration 20 → 10 on a saved project.
+-- Goldens: identical by construction (bare calls carry no params).
+-  Fragment `f34-t79-f13.mjs` names the gate `setback10` (opens on
+-  `shelf_front_mm` or `interior_setback_mm` present) and proves no golden
+-  opens it.
+-
+-## PART E · CABINEO ON THE BOX (F14)
+-
+-### F14 · THE DRAWER BOX IS ON CABINEO 12
+-- Owner: the quotes in THE ORDER; mockup `verify/t79/mockup-13-cabineo-drawer-box.png`
+-  approved with the correction "positions from the top of the box".
+-- Today: the box has NO joint between the sides and the front / back walls
+-  (`cabinet.js` 5082-5158 wardrobe, 5346-5400 column, 5662-5755 BUDR: the
+-  sides carry only the runner pocket and the bottom groove; the BUDR box
+-  front has two façade pilot holes at (50, 50) / (50, boxLen-50)). The
+-  walls sit BETWEEN the sides (x = boxLeftX + GB, w = boxFrontLen) and
+-  stand ON the bottom: `boxWallY = bottomY + GB`, so a wall is shorter than
+-  the side by `15 + GB + 1` (2585; BUDR 2815; column 5308): the owner's
+-  "dół jest inny". The box material is `thicknesses.box` (18, from
+-  `boxSideThickness`, `thickness.js:98`).
+-- LISP first, `SKYLON_JOINTS_CABINEO.lsp` D.2c THE DRAWER BOX, after D.2b
+-  (~717), mirroring `back-table` / `back-pockets` / `back-holes`: four
+-  joints per box, SL-BF, SR-BF, SL-BB, SR-BB; the POCKET in the wall
+-  (BOX-FRONT, BOX-BACK) at each end, on the wall's OUTSIDE face (hidden
+-  behind the drawer front, hidden at the back; the carcass is cut from
+-  outside too); the dia 5 hole in the SIDE's inside face; always Cabineo 12
+-  on the box (the owner: *"tak"*; the sheet: counterpart >= 13, connector
+-  board >= 12, both met by 18); the set-out measured FROM THE TOP EDGE of
+-  the box: wall height `hw` <= 100 gives ONE connector per joint at
+-  `hw / 2` from the wall's top; `hw` > 100 gives TWO, at 25 from the wall's
+-  top and at 25 above the wall's bottom edge (never spread for tall walls:
+-  *"przy wysokich nie rozsuwaj"*); the side's holes at the same heights
+-  measured from the SIDE's top edge (the walls' and the sides' tops are
+-  flush: `boxWallY + hw = boxY + sideH`, assert it in NUMBERS); 25 is a
+-  minimum and a position both, the sheet's `edgeMin` 20 is met. The
+-  bottom: nothing (*"wsuwane"*). The BUDR's two façade pilot holes stay
+-  where they are; a pocket meeting a pilot hole is refused in words (the
+-  carcass `cabineoRefusal` grammar). NUMBERS block: BUDR default (side 237,
+-  wall 203: two per joint at 25 and 178 from the top) and a wardrobe box
+-  with wall 90 (one at 45).
+-- Engine mirror, `engine/cabineo.js` section Z2 (own table
+-  `cabineoBoxJointTable`, `cabineoBoxVerdict`, `cabineoBoxPocketsOnto`,
+-  `cabineoBoxDrills`, `cabineoBoxHardwareLines`), called from the three box
+-  builders through ONE helper (one law one path), gated on the unit having
+-  ANY joint system named (`jointSystemOf !== null`, `dowels.js:331`; the
+-  default `'puzzle'` counts as named: the owner: *"jakąkolwiek funkcję
+-  łączenia czy dog bones czy inne"*): the pocket records as the carcass
+-  ones (`cabineo_pocket` dia 15 three lobes, `cabineo_recess` skim, face
+-  'outside', `meta.machinedFace 'outside'` on BOX-FRONT and BOX-BACK with
+-  the OUTSIDE FACE UP label the DXF already honours), the hole records
+-  `cabineo_hole` dia 5 depth 12 on DRAWER-SIDE; BOM lines `cabineo_connector`
+-  counted per box (4 or 8) with the existing spec shape; `cabineoSummary`
+-  gains `box: {joints, pockets, holes}`. The carcass table D.2 / D.2b
+-  untouched. The gate `CABINEO_GATE` stays as it is for the carcass; the box
+-  shares its `confirmed` flag.
+-- 3D: the pockets and holes drawn by the existing recess / DrillRings paths
+-  (`recesses.js panelRecesses`, `DrillRings.jsx`) once the records exist;
+-  no new drawing code.
+-- UI: nothing to choose (the law is automatic); the part detail shows the
+-  pockets as it shows carcass ones.
+-- Goldens, the fossil law: `jointSystemOf` falls back to `'puzzle'` on a
+-  bare call, so a gate on "any system" would reach BUDR and BUDR4 of the
+-  six. The gate is therefore `params.joints_system != null`: named on the
+-  unit or injected by the store from the company default, which every
+-  project unit carries since T78 F19. A bare `computeCabinet()` names none
+-  and cuts no box Cabineo, the six stay byte-identical, and every project
+-  unit gets the box Cabineo (the owner's "jakąkolwiek funkcję łączenia"
+-  is met for every unit a person builds). The fragment `f34-t79-f14.mjs`
+-  names the gate `boxCabineo` and proves no golden opens it; new goldens
+-  `golden-cabineo12-budr-box.json` (BUDR with `joints_system: 'puzzle'`)
+-  and `golden-cabineo12-wardrobe-box.json` (WARDROBE 1200, 3 internal
+-  drawers, `joints_system: 'cabineo12'`).
+-- Tests `test/turn79-f14-box-cabineo.test.js`: the LISP NUMBERS held; one
+-  vs two per joint at 100; from-the-top measure; the bottom carries none;
+-  the BUDR pilot holes untouched; BOM counts; `turn78-f20-cabineo-lisp
+-  .test.js` extended to section D.2c and its H block. Walk: a BUDR CNC
+-  view with the box pockets, the part detail of BOX-BACK, frames.
+-
+-## PART F · THE SMALL ONES FROM THE HANDOVER (F15 to F18)
+-
+-### F15 · LABEL COLOURS ON THE ENTITY, FOR VCARVE
+-- Handover: *"kolory warstw LABEL_* w VCarve (wariant b, jeśli VCarve
+-  ignoruje kolory)."* The owner has not said whether VCarve honours the
+-  layer colour, so both are written: today the `LABEL_<unit>` layer row
+-  already carries the unit's ACI (`cnc/dxf.js:627-629`, `layers.js
+-  :188-196`, `put(62, color)` at 86); now EVERY entity on a LABEL layer
+-  (the TEXT, the `#number`, the EDGE arrow polylines) carries group 62 =
+-  the same ACI on the entity itself. Without a labels plan the file stays
+-  byte for byte what it was (the `cnc-export-identity` fingerprints hold).
+-- Test `test/turn79-f15-label-colour.test.js`: every LABEL entity has 62;
+-  the no-plan file unchanged.
+-
+-### F16 · RESTORE SLEEVE ROWS, THE BUTTON
+-- Handover: *"przycisk Restore sleeve rows"*. The store has it
+-  (`restoreSleeveRows`, `projectStore.js:2632-2642`, tested at
+-  `chatfix-1710-drawers-and-sleeves:152`); no UI calls it.
+-- Fix: in `components/ElementProperties.jsx` `case 'shelf-type'`
+-  (336-366) a button `Restore sleeve rows` shown only when
+-  `item.sleeves_dropped?.length`, `cc-btn w-full`; retail through the copy
+-  script. EXEMPT. Test: the button appears with a dropped row and calls the
+-  action; absent otherwise. Walk: drop a row by the clash finding, restore
+-  it, frame.
+-
+-### F17 · THE NL 420 RUNNER, THROUGH THE PROJECT ONLY
+-- Handover: *"prowadnica NL 420"*. The ladder is `hardware.runner.movento
+-  .nominalLadder` (`profile.js:4518`, no 420; `depthSteps` 1409 each NL
+-  minus 10; `runners.js:186-215`; the bucket manifest already holds four
+-  NL 420 files, `test/fixtures/bucket/runners-blum-movento-manifest.json
+-  :211-229`). Adding 420 to the ENGINE ladder would move a fossil kit's box
+-  depth (410-439 usable: 390 → 410) against its LISP, so it does not.
+-- Fix, the fossil law: `profile.hardware.runner.movento.extraNominal:
+-  [420]` (new) injected by `paramsForEngine` as `runner_ladder_extra`;
+-  `runnerLadder(profile, params)` merges it, sorted; `depthSteps` derives
+-  410 from it the same way (the 1710 law test `nl - 10` holds on the merged
+-  list); a bare call has no extra and the six stay identical; the gate
+-  `ladder420` in `f34-t79-f17.mjs`. The tests that pin the literal ladder
+-  (`turn33-f9-movento-ladder:44-49`, `turn20-f2-bucket:170-174`,
+-  `engine.test.js:447`) stay true for the bare ladder; a new case in
+-  `test/turn79-f17-nl420.test.js` proves a project box with 425 usable
+-  takes 410 under a 420 runner and the GLB resolves from the manifest.
+-  If this cannot be done in `runners.js` + `profile.js` + `projectStore.js`
+-  cleanly, skip whole and name it.
+-
+-### F18 · 21 OR 44 PER SHEET, TWO MENU ENTRIES
+-- Handover: *"przełącznik 21/44 naklejek w oknie eksportu"*. There is no
+-  export window: `Output > Part labels (PDF)` (`lib/outputMenu.js:121-125`)
+-  exports at once through `onExportLabels` (`ConfiguratorPage.jsx
+-  :431-441`) with `profile.labels.sheet` (L7160); `profile.labels.sheets`
+-  already holds `L7160` and `generic44`.
+-- Fix: two entries in the Output menu, `Part labels · 21 per sheet (Avery
+-  L7160)` and `Part labels · 44 per sheet`, both calling `onExportLabels
+-  ({sheet})`, which passes `labels.sheet = profile.labels.sheets[sheet]` to
+-  `exportLabelsPdf`; the default stays L7160; the stale hint "44 per page"
+-  (123) corrected. EXEMPT `ConfiguratorPage.jsx`. Test: both entries, both
+-  grids (3x7 and 4x11) in the produced PDF page count. Walk: the menu
+-  framed.
++5. The gloss ride of 21.10 (`profile.appearance.gloss`, `3d/materials.js`
++   surfaceFor, `3d/Scene.jsx` Environment): not one line (the owner: *"9
++   tak"*).
++6. Drawer boxes untouched: the box, its runner drilling, its Cabineo, its
++   setbacks, byte for byte. Only the drawer FRONT changes under in-frame
++   (PART D). The owner's reading of 22:40 on the question he did not
++   understand: the box is as narrow as its runners make it, the 1 mm lip
++   never touches it.
++7. The lay-on front road untouched: `engine/doors.js`, `engine/frontBoard.js`,
++   `engine/hingeLadder.js`, `engine/hinges.js`, `engine/handles.js` keep
++   every lay-on number; in-frame ADDS a branch behind the switch and never
++   rewrites a lay-on line.
++8. The plinth, the cornice stack and the side infill untouched in geometry;
++   the end panel changes only by its height and depth under in-frame
++   (PART E).
++9. The pull-down rail and its LOD files: parked, not one line.
++10. The suite is green at the start (record the count: 7047 on 21.10 after
++    the owner's push of the 2110 package; 7042 without it) and at the end.
++
++## PART A · THE LAW: KIT_INFRAME.lsp (F1)
++
++### F1 · THE LISP OF THE FRAME, FIRST
++- New file `reference/lisp/KIT_INFRAME.lsp`, the Skylon header, the owner's
++  quotes of 21.10 as its D-notes, parens balanced (the parens test grows
++  with it). It is the law of three things, in this order:
++  (a) THE FRAME OF A RUN. Input: the run's cabinets in order (each: x0, W,
++  carcass H, bottom y0, side thickness t, its front cells), the end panels
++  at each end (thickness, or none), the board length Lmax (profile
++  `inframe.boardMax` 2800) and the numbers (`stile 38`, `rail 38`, `lip 1`,
++  `frameT 25`, `outside 19`). Output: the frame board(s): width from the
++  outer face of the first end panel (or the first carcass's outer face plus
++  1 when there is no panel: the stile is then 19 = 1 + 18 and a neighbour
++  would complete it) to the last one's; height `H + 2 x 19`; origin at the
++  carcass bottom minus 19; the openings: per cabinet one rectangle `x0 + t
++  + lip .. x1 - t - lip` by `y0 + t + lip .. y0 + H - t - lip` (the
++  carcass's clear opening less the lip), each a CUTOUT (clockwise, the T25
++  F1.2 window mechanism). The lip is derived from 38 (the law): `lip = (38
++  - t - t) / 2`, 1 for 18 boards, 0 for 19 boards, so between two butted
++  cabinets the stile is `lip + t + t + lip` = 38 whatever the board (the
++  owner's *"veneer 19 x 2 bedzie idealnie"*). The outer stile at an end
++  panel is 38 too: it covers `lip + t + panel` and overhangs the panel's
++  outer face by what 38 leaves (1 for 18 + 18, 0 for 19 + 19); the owner
++  22:40: *"na styk"*; the overhang is this turn's PROPOSED reading, named
++  in the PR. The top rail: 38, from the carcass top less the lip to the
++  frame's top edge, which is `38 - t - lip` = 19 above the carcass top. The
++  bottom rail: 38, hanging the same 19 under the carcass bottom.
++  (b) THE JOIN. A frame wider than `boardMax` is cut into pieces at the
++  centre line of a stile between two cabinets, the fewest pieces with every
++  piece within `boardMax`, each piece its own board `FRAME-1`, `FRAME-2`
++  with a square butt (no joint hardware this turn: the owner, *"bedziemy
++  laczyc"*, decides the joint later; a Check tells him the frame is in two).
++  (c) THE FRONTS INSET. Each front's cell = the lay-on layout's cell of
++  that front (the board the engine already cuts for it) mapped into the
++  opening: the cell's outer edges become the opening's edges, the midline
++  between two neighbouring fronts stays the midline; the inset front is the
++  cell less 3 on a side that meets the frame and less 1.5 on a side that
++  meets another front (3 between fronts). Thickness 22 (`inframe.frontT`).
++  A door 600 wide carcass: opening 562, door 556; a pair in 800: opening
++  762, doors 376.5 each (the owner saw 376.5 in the mockup and said *"1
++  tak"*: half a millimetre is kept, not rounded); BUDR2 500: fronts 456 by
++  the cell heights less the gaps.
++- The LISP carries the three worked examples (600 one door, 800 pair,
++  BUDR2 500) as its own test values; `test/turn80-f01-lisp.test.js` reads
++  them back through the LISP census the repo already runs (the T57 "LISP is
++  law" tests) and the parens test.
++- Nothing in the engine moves in F1. The LISP is committed first and alone.
++
++## PART B · THE SWITCH (F2)
++
++### F2 · IN-FRAME PER PROJECT, ONE ROW IN SETTINGS
++- Owner 22:40: *"3 per projekt."* The decision lives in the project's
++  design, beside the sheen: `design.inframe` (boolean, default false),
++  normalised in `engine/design.js` (`migrateDesign` gives an old project
++  `false`), saved and reloaded with the project, in the project's history
++  (one undo step).
++- UI, PRO: `components/SettingsPanel.jsx` next to the `SheenSlider` row
++  (line 1079 on 21.10) and `components/WizardSettings.jsx` next to its
++  `SheenSlider` (line 1953): one row `FRONTS` with two buttons `Lay-on`
++  and `In-frame (British)`, the chosen one lit, the hint under it: "In-frame:
++  one routed frame per run, 38 mm, fronts set in it with 3 mm, hinges on the
++  side." Retail `retail/design/Options.jsx` through the copy script, the
++  same row. No numbers typed in the UI: 38, 25, 22, 3, 1, 19 live in the
++  profile (`profile.inframe`, PART C) and are shown, never edited, in the
++  hint's tooltip.
++- `paramsForEngine(unit, design)` (`stores/projectStore.js` 1082) is the
++  ONLY door to the engine: it hands `inframe: true` with the profile's
++  numbers to `computeCabinet` and to the run builder (PART C). A bare
++  `computeCabinet()` without the flag is today, byte for byte.
++- Switching ON a project whose fronts are not 22 thick: the project stays
++  as it is; Check #40 (PART F) goes red for every such front type: "In-frame
++  fronts are 22 mm: front type f1 is 18 mm. Change the front material or
++  switch back to lay-on." (the owner: *"drzwi 22 i jest idealnie"*; the
++  frame is 25 and the 3 mm of air are not negotiable).
++- EXEMPT: `SettingsPanel.jsx`, `WizardSettings.jsx`. Tests
++  `test/turn80-f02-switch.test.js`: default false, migration, undo, the
++  engine sees the flag only through `paramsForEngine`, a bare compute is
++  identical with and without the design key.
++
++## PART C · THE FRAME IN THE ENGINE (F3, F4)
++
++### F3 · THE RUN GETS ITS FRAME (construction, BOM, labels)
++- A run = the butted cabinets of one wall segment, in order, as the plinth
++  run already groups them (`engine/autoparts.js`, the MANUAL plinth; PROBE
++  first, committed as `verify/t80/f03-probe.md`: for the mockup's run of
++  three plus the WUD, which units the plinth run groups, where its code
++  decides a run's ends, and what an end panel reports at each end).
++  In-frame uses THE SAME grouping, never a second one (one law one path):
++  the frame board is a run part like the plinth board, built after the
++  cabinets (it reads their results), owned by the run, listed in the BOM
++  under the run with its own number, labelled `FRAME` (one piece) or
++  `FRAME-1..n` (joined).
++- The frame board: MDF 25 (`inframe.frameT`), material from the FRONT type
++  of the project (it is sprayed with the fronts: the owner's green frame in
++  the mockup), width and height by the LISP (a), origin by the LISP, the
++  openings by the LISP (a) and (c), the join by the LISP (b). Grain: none
++  (MDF). Edge: none (the face is sprayed, the edges are inside the paint).
++- The gap between butted cabinets is 0: the engine's own run spacing is
++  consulted in the PROBE; where today's run places cabinets with any gap,
++  the frame reads the REAL x of each cabinet and the stile between two
++  cabinets grows by that gap (the law is `lip + t + gap + t + lip`; the
++  owner wants 0, so a gap shows in Check #41 as yellow: "In-frame: cabinets
++  A and B stand 4 mm apart, the stile between them is 42, not 38").
++- Units this turn: BUD, BUD_INT, BUDR, BUDR2, BUDR4, BUDTALL, SINK, WUD,
++  WUD_GLASS (its door is a frame already: the inset front is the glass door
++  as it is, inset), LOW_CABINET, WARDROBE and WARDROBE_LOW (a wardrobe run
++  is a run). NOT this turn (the frame STOPS at them: the run splits into
++  frame segments at such a unit, each segment its own frame with 19 outer
++  stiles at the split, Check #42 names it): OVEN_BASE, FRIDGE,
++  APPLIANCE_TALL2, DW_PANEL, CORNER_L_* (every corner kit), BLIND_*, WUD_HOOD*,
++  WARDROBE_TOP, WARDROBE_DESK, FREE_PANEL, islands.
++- Save and reload: the frame is derived, never stored (like the plinth);
++  the design key is what is stored.
++- Classifier fragment `f40-t80-f03.mjs`: gate `inframe` (opens only when
++  `params.inframe` is true); proves no golden opens it; the six and T75/T78/
++  T79 goldens identical by construction. New goldens `golden-inframe-run.json`
++  (the mockup's run: BUD 600 one door, BUD 800 pair, BUDR2 500, end panel L,
++  design.inframe true) and `golden-inframe-wud.json` (WUD 600 one door).
++- Tests `test/turn80-f03-frame.test.js`: the probe table as assertions; the
++  frame's width, height, origin and openings for the three worked examples
++  of the LISP, read from the run result; the join at 3000 wide (two boards,
++  the cut on a stile centre line); the BOM line; the labels.
++
++### F4 · THE FRAME ON THE CNC (DXF, sheet, guards)
++- `engine/cnc/dxf.js`: the frame board is an ordinary board with its
++  openings as CUTOUT pockets (clockwise, `cutout: true`, line 182 on
++  21.10), the T25 F1.2 window mechanism, on the layers the back window
++  uses; the off-board guard (Check #9), the edge guard and the drill guard
++  hold as they are (a cutout lies wholly inside the board by definition).
++  The label `FRAME` (or `FRAME-1`), the EDGE arrow (the sheet's bottom edge
++  = the frame's bottom rail), the run's name, the part number through the
++  project as every board (1710j).
++- `engine/cnc/layout.js`: the frame sits on the sheet like any board; a
++  frame longer than the sheet chosen in the profile is the LISP's join (b),
++  never a layout refusal; Check #43 yellow: "In-frame frame is 3 200 wide:
++  two boards, joined at the stile between A and B."
++- The CNC view (`components/CncView.jsx`, PRO; retail through the copy
++  script): the frame appears in the tree under the run (as the plinth
++  does), its openings drawn, its label anchored by `labelAnchor.js` (a
++  frame's centre is an opening, so the anchor moves to a stile: the 19.10
++  law already does this).
++- Fragment `f40-t80-f04.mjs`; tests `test/turn80-f04-cnc.test.js`: the
++  DXF fingerprint of `golden-inframe-run`'s frame (pinned in the golden),
++  the guards green on it, the cutouts clockwise, the label on a stile.
++
++## PART D · THE FRONTS INSET (F5, F6)
++
++### F5 · DOORS AND DRAWER FRONTS, 22, SET IN THE OPENING
++- Behind `params.inframe` only: every front of a unit in a frame is the
++  inset front of the LISP (c): its cell from today's lay-on layout (the
++  engine's own front cells, PROBE first: where `cabinet.js` lays out the
++  front boards of a BUD, a BUD pair and a BUDR2, committed as
++  `verify/t80/f05-probe.md`), then less 3 to the frame and less 1.5 to a
++  neighbour; thickness `inframe.frontT` 22 (the project's front material
++  must be 22: Check #40); its face at the frame's face (carcass front + 25),
++  its back 3 in front of the carcass. A pair of doors: no stile between
++  them, 3 between the leaves (`"miedzy drzwiami nie ma ramki"`). A drawer
++  stack: no rail between the fronts, 3 between them.
++- Shaker and every front style of today applies to the inset front as it
++  applies to a lay-on one (the style is the front's own; its field 6 deep in
++  a frame 60 stays the style's numbers). Handles and knobs by today's rules
++  on the inset front's rectangle.
++- The drawer BOX does not move (FROZEN 6): its front is the inset front,
++  fixed as today.
++- Tests `test/turn80-f05-fronts.test.js`: the three worked examples; a pair
++  is two leaves of 376.5 with 3 between; a BUDR2's two fronts with 3
++  between and 3 to the rails; the face plane at carcass front + 25; the
++  lay-on numbers of the same units with the switch off, byte for byte.
++
++### F6 · THE HINGE: ON THE SIDE, A BLUM IN-FRAME HINGE, FROM A REFERENCE FILE
++- Owner: *"zawias na boku szafki (specjalne zawiasy z Bluma)"*; *"5 tak"*.
++  The hinge's numbers enter the engine ONLY through a new reference file
++  `reference/hardware/blum-inframe-hinge.json` (the pattern of
++  `cliptop-hinges.json`: `system`, `units`, `rules`, `items`, a `source`
++  line with the catalogue page or dealer page for every number). The file
++  ships with the geometry of the Blum CLIP top BLUMOTION 110° INSET hinge
++  (71B3750 screw-on, 71B3790 INSERTA) on a 0 mm cruciform plate (173H7100
++  cam, 175H7100 two-piece), cup 35 / 13, the plate set back from the
++  carcass front by `frontT + 1.5` (Blum's inset rule, dealer page of
++  21.10) LESS the 3 mm the door stands forward of the carcass, so 20.5 for
++  a 22 door; opening angle 110; door thickness to 24. Every number in that
++  file is marked PROPOSED with its source URL; the owner chooses the
++  article in the PR (the candidates the chat found on 21.10, all Blum, all
++  sold in the UK "for in-frame": 71B3750 / 71B3790 110° BLUMOTION inset;
++  71M2750 CLIP 100° sprung inset; 71B9750 95° thick-door inset; the
++  dealer pack "71B3650+P" 110° BLUMOTION with a cruciform in-frame plate).
++  The 155 of the lay-on ladder is NOT used in-frame (it is a zero-protrusion
++  lay-on hinge).
++- The ladder: `engine/hingeLadder.js` counts hinges by the door's height as
++  today (the inset door is 40 shorter than the lay-on one, so a BUD 770 door
++  of 726 keeps two); the cups on the door as today (35 / 13, the K distance
++  from the json); the plate rows on the side at the json's set-back, at the
++  cup heights; the drilling on the side (5 mm knock-in by today's
++  `plate_default`) moved to the set-back column. The lay-on ladder is not
++  touched (FROZEN 7): the inset branch is its own function beside it.
++- 3D hardware: the inset hinge is drawn with today's GLB of the 110 (the
++  json's `items` point at the files already in the bucket for the 110 and
++  its plates; no new GLB this turn), placed by the inset geometry.
++- Check #44 red when a cup would land within 3 of the lip (never on a 22
++  door with K from the json; the check exists so a changed json cannot cut
++  the lip away silently).
++- Tests `test/turn80-f06-hinge.test.js`: the json loads and names its
++  sources; a 726 door keeps two hinges; the plate column is at 20.5; the
++  cup positions; the lay-on ladder of the same door with the switch off,
++  byte for byte.
++
++## PART E · THE END PANEL, THE PLINTH, THE WORKTOP AND THE FILLER (F7, F8)
++
++### F7 · THE END PANEL REACHES THE FRAME
++- Owner 22:40: *"2 na styk"*: the end panel stays butted to the carcass
++  side as today. Under in-frame it is as deep as the carcass plus the frame
++  (`+ 25`, to the frame's face) and as tall as the frame (carcass top + 19,
++  plus the site trim of 19.10 as today); the frame runs 1 past the panel's
++  outer face (PART A, PROPOSED reading). The plinth is untouched (set back;
++  the frame hangs 19 in front of it). The wall unit's end panel the same:
++  19 above and 19 below.
++- `engine/siteTrim.js` and `KIT_SITE_TRIM.lsp` untouched: the trim is
++  added after the in-frame height, as it is added after today's height.
++- Tests `test/turn80-f07-end-panel.test.js`: depth + 25, height + 19, the
++  trim on top of it; the lay-on panel with the switch off, byte for byte.
++
++### F8 · THE WORKTOP SITS ON THE FRAME; THE FILLER IS A NOTE AND A PIECE OF TIMBER ON THE SECTION
++- Owner 22:14: *"stolarz wypelni ta dziure i blat pojdzie na wierzch"*;
++  22:40: *"6 informacja i na pdf na przekroju pokaz kawalek timber."*
++- The worktop: wherever the engine or the 3D places a worktop on a base
++  run (`addWorktop`, `stores/projectStore.js` 9847; the 3D worktop), under
++  in-frame it sits 19 higher (on the frame's top edge). The wall units do
++  not move. The cornice of a wall run stands on the frame's top edge
++  (`corniceStackTop`, `engine/cornice.js` 90: `unitTop + 19`), PROPOSED,
++  named in the PR.
++- The filler: NO board in the BOM, NO DXF. A NOTE on the run in the BOM
++  and on the unit card: "Site filler 19 mm x <run width> under the worktop
++  (joiner, not supplied)". On the PDF SECTION of a base unit
++  (`engine/drawings/section.js`, PROBE first for where the top and the
++  worktop are drawn), a hatched piece of timber 19 high over the carcass
++  top, behind the frame's top rail, labelled "site filler 19 (timber)", and
++  the frame's section (25 x 808) drawn with its lips and its 19 above and
++  below, the door 22 flush with its face, the 3 of air behind it. The wall
++  unit section the same without the worktop.
++- Tests `test/turn80-f08-filler.test.js`: the note text on the run; the
++  section SVG contains the timber piece and the frame; no BOM line, no DXF
++  for the filler; the worktop 19 higher only under in-frame.
++
++## PART F · 3D, CHECK, GOLDENS (F9, F10, F11)
++
++### F9 · THE FRAME IN 3D
++- `3d/UnitView.jsx` (one writer) and a new `3d/InframeRun.jsx`: the frame
++  of a run as ONE mesh (ExtrudeGeometry of a Shape with the openings as
++  holes, exactly `scripts/chatfix-2110-mockup-inframe-final.mjs` does it),
++  the front material of the project (sprayed, the sheen ride applies to it
++  as to a front), 25 deep from the carcass face; the inset fronts drawn at
++  the frame's face through today's front meshes (their rectangle and plane
++  from the engine, nothing computed in 3D); the end panel to the frame's
++  face; the worktop on the frame. Outlines, picking, X-ray, Hide fronts
++  (hides the fronts, never the frame), Open all (the inset door swings as
++  today's door, about the hinge side; the frame does not move), measure and
++  dimensions see the frame as a board.
++- Retail through the copy script where retail renders (`retail/design`).
++- Walk, real mouse (PART G): the five mockup views re-shot from the real
++  engine and put beside the mockup frames.
++
++### F10 · THE CHECKS
++- New checks, numbered from #40 (PROBE first: the next free numbers in
++  `engine/checks.js`; if #40..#44 are taken, take the next free and say so
++  in the PR): #40 red, front type not 22 under in-frame; #41 yellow,
++  cabinets not butted (the stile grows); #42 yellow, a unit the frame stops
++  at (the run split into frame segments); #43 yellow, the frame joined
++  (wider than the board); #44 red, a cup within 3 of the lip. Each in the
++  left messages and in the Check panel, each with its own test.
++
++### F11 · GOLDENS AND THE CLASSIFIER
++- `golden-inframe-run.json` and `golden-inframe-wud.json` (F3), pinned
++  through `scripts/t78-goldens.mjs` with the owner's words of 21.10 in
++  their meta; the DXF fingerprint of the frame in each; the six base
++  goldens IDENTICAL (`scripts/t64-classify.mjs --dump` vs
++  `verify/t70/goldens-base.json`); T75 16/16, T78 and T79 goldens held;
++  REPINNED empty in every `f40-t80-f*.mjs` fragment. The walk and the
++  tests prove in-frame OFF is main, byte for byte, on every golden.
++
++## PART G · THE WALK (F12)
++
++### F12 · scripts/t80-walk.mjs
++- PRO, real mouse: new project, Settings, FRONTS: In-frame; a run of BUD
++  600 (one door) + BUD 800 (pair) + BUDR2 500, end panel L, plinth, WUD 600
++  above; front type sprayed 22 (F&B Card Room Green as the mockup, sheen
++  30); frames `verify/t80/f12-01-three-quarter.png`, `f12-02-elevation.png`,
++  `f12-03-junction-low.png`, `f12-04-top-filler.png` (the open end: 19 above
++  the carcass, the worktop on the frame), `f12-05-wall-unit.png`, each
++  from the mockup script's camera so the owner compares like with like;
++  `f12-06-cnc-frame.png` (the CNC view, the frame with its openings and
++  label), `f12-07-bom.png` (the frame line and the filler note),
++  `f12-08-section.png` (the PDF section with the timber), `f12-09-check.png`
++  (the project with an 18 mm front type: #40 red), `f12-10-off.png` (the
++  switch back to Lay-on: today's picture). Output `verify/t80/walk.txt`.
++- The walk asserts, from the engine through `window.__cc`: the frame 1920 x
++  808 for the mockup's run (BUD 600 + 800 + 500 + end panel 18 + 1: PROBE
++  the exact width the run reports and pin it), the stile between A and B
++  38, the openings 562 x 732 / 762 x 732 / 462 x 732, the doors 556 x 726 and
++  376.5 x 726, the WUD frame 602 x 758.
+ 
+ ## NOT THIS TURN (named so nobody builds it)
+-- The pull-down rail, the hinge LOD, any offline LOD (parked by the owner
+-  18.10 14:51).
+-- The kasacja of the shelf-mounted rail branch in the engine (the owner
+-  decides it separately; this turn removes the proposal and the toggle).
+-- The two-leaf small door (T80), divider L/R in 3D, the divider sleeves
+-  +18, the second-bay shelves a/b/c/d (decisions pending).
+-- Cabineo on the drawer BOTTOM, or Cabineo 8 on the box.
+-- A horizontal notch on anything but the carcass (no doors, no worktop).
+-- Lighting, in any form.
++- In-frame per cabinet or per run (the owner: per project).
++- The hinge plate on the frame's stile (the owner: on the side).
++- The joint hardware of a joined frame (the owner decides it later).
++- Beaded, cock-beaded or moulded frames; curved frames; glazed in-frame
++  doors beyond WUD_GLASS as it is; a frame on appliance housings, corner
++  kits, blind kits, hoods, tops, desks, free panels, islands (the run splits
++  there, Check #42).
++- A second sheen ladder for veneer; any change to the gloss ride of 21.10.
++- The two-leaf small door, divider L/R in 3D, the divider sleeves +18, the
++  second-bay shelves a/b/c/d, notch b and c (numbers still missing), the
++  pull-down rail: all parked, decisions pending.
++
++## LINEAGE (one line a test reads from this file)
++T79's horizontal notch stays as built and its owner's words stay here
++because `test/turn79-f05-edge-notch.test.js` reads them from CLAUDE.md:
++*"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut?
++wszystkich 4 rogów?"* (18.10.2026). A later turn's CLAUDE.md keeps this
++line too, or moves the test to its own fixture.
+ 
+ ## TESTS AND PROOF
+ Full suite; the goldens above; `scripts/t78-classify.mjs` strict with the
+-`f34-t79-f*.mjs` fragments (REPINNED only in F6, with the quote);
+-`scripts/t78-copy.mjs --check` (retail only through the copy script);
+-`scripts/t79-walk.mjs`, REAL mouse, PRO and retail where retail is named,
+-frames `verify/t79/fNN-*.png`, output `verify/t79/walk.txt`; parens for
+-every LISP file touched (`KIT_NOTCH.lsp`, `KIT_RECESS.lsp`,
+-`SKYLON_JOINTS_CABINEO.lsp`); `test/turn79-fNN-*.test.js` per F with the
+-probe tables as assertions; every F reports the six stations of DONE; the
+-PR says how many paths do the same thing after F11 and F13 (the answer must
+-be one).
++`f40-t80-f*.mjs` fragments (REPINNED empty everywhere); `scripts/t78-copy.mjs
++--check` (retail only through the copy script); `scripts/t80-walk.mjs`, REAL
++mouse, PRO and retail where retail is named, frames `verify/t80/f12-*.png`,
++output `verify/t80/walk.txt`; parens for `KIT_INFRAME.lsp`; the LISP census
++tests grow by the new kit; `test/turn80-fNN-*.test.js` per F with the probe
++tables as assertions; NEW_FILES in `test/turn77-f5-no-copyright-line.test.js`
++lists every new file; every F reports the six stations of DONE; the PR
++proves in-frame OFF is main byte for byte (the six base goldens, every T75
++to T79 golden, the DXF fingerprints of the lay-on fixtures).
+ 
+ ## PR BODY
+-The probe tables verbatim (F3, F6, F8, F9); files and lines per F; the
+-LISP amendments with their licences and parens; the EXEMPT entries; the
+-retail divergences (what the copy script could not carry and was done by
+-hand); the goldens (old proven, new listed, F6's re-pinned with the
+-reason); the test count before and after; the walk result; the kasacja
+-balance of F11 (deleted / added); what was skipped and why; THE NUMBERS
+-PROPOSED.
+-
+-## THE NUMBERS PROPOSED (owner to confirm; all in profile.js; none typed in the UI)
++The probe tables verbatim (F3, F5, F8, F10); files and lines per F; the
++LISP with its parens and its three worked examples; the EXEMPT entries;
++the retail divergences; the goldens (old proven identical, the two new ones
++listed with their fingerprints); the test count before and after; the walk
++result with the ten frames; the hinge reference file's sources and the
++article the kit shipped with (PROPOSED); what was skipped and why; THE
++NUMBERS below, each marked CONFIRMED or PROPOSED.
++
++## THE NUMBERS (all in profile.js under `inframe`; none typed in the UI)
+ | Number | Value | Source |
+ | - | - | - |
+-| Shelf setback (project) | 10 | owner 18.10 (decided) |
+-| Divider setback (project) | 10 | owner 18.10 (decided) |
+-| Drawer cap setback | 20, unchanged | owner: "szuflady zostaw" |
+-| Rail under a shelf | 50 | owner 18.10 (decided) |
+-| Rail magnet reach | 10, the shelf magnet's | T79 proposed |
+-| Message history | 50 rows | T79 proposed |
+-| Grey message time | 3000 ms, unchanged | profile |
+-| Drawer columns divider | mid-width, draggable after | owner's mockup |
+-| Box Cabineo | 12; 1 per joint to 100, 2 above, at 25 from top and 25 above the wall's bottom, from the top | owner 18.10 (decided) |
+-| Notch from the top | negative HEIGHT | owner 18.10 (decided) |
+-| Edge notch | d and h, full width, four edges | owner 18.10; sizes T79 proposed |
+-| NL 420 | project ladder only | handover; T79 proposed road |
+-| Labels | L7160 default, generic44 by menu | owner 17.10 |
++| Frame member width (stile and rail) | 38 | owner 22:03, CONFIRMED 22:40 |
++| Frame thickness | 25 | owner 22:03, CONFIRMED |
++| Front thickness under in-frame | 22 | owner 22:03, CONFIRMED |
++| Air behind the front | 3 (= 25 less 22) | owner 22:03, CONFIRMED |
++| Front gap to the frame and between fronts | 3 | owner 22:03 "3 mm zawsze", CONFIRMED |
++| Lip into the opening | (38 - 2t) / 2: 1 for 18 boards, 0 for 19 | owner 22:03, CONFIRMED |
++| Rail outside the carcass, top and bottom | 19 | owner 22:14 "wariant C", "gora tak samo", CONFIRMED |
++| Cabinets in a run | butted, 0 | owner 22:03, CONFIRMED |
++| Stile between cabinets | lip + t + gap + t + lip = 38 when butted | owner 22:03, CONFIRMED; the gap term T80 proposed |
++| Stile at an end panel | 38, over lip + t + panel, the rest past the panel | owner 22:40 "na styk"; the overhang T80 PROPOSED |
++| Frame board maximum | 2800, then joined at a stile | owner 22:03, CONFIRMED |
++| Join hardware | none this turn | owner "bedziemy laczyc" |
++| Switch | per project, default off | owner 22:40, CONFIRMED |
++| Hinge | Blum in-frame on the side; file blum-inframe-hinge.json | owner 22:40 "5 tak"; the article T80 PROPOSED (71B3750) |
++| Plate set-back from the carcass front | frontT + 1.5 less 3 = 20.5 | Blum inset rule, dealer page 21.10; T80 PROPOSED |
++| Filler above the carcass | 19, a note and timber on the section, no BOM line | owner 22:40, CONFIRMED |
++| Worktop | 19 higher under in-frame | follows the owner's "blat pojdzie na wierzch" |
++| Cornice on a wall run | on the frame's top edge | T80 PROPOSED |
++| Units with a frame | BUD, BUD_INT, BUDR, BUDR2, BUDR4, BUDTALL, SINK, WUD, WUD_GLASS, LOW_CABINET, WARDROBE, WARDROBE_LOW | T80 PROPOSED scope |
++| Frame material | the project's front material (sprayed MDF 25) | the owner's mockup |
++| Checks | #40 to #44 as named | T80 PROPOSED numbers |
+diff --git a/scripts/chatfix-2110-mockup-inframe-final.mjs b/scripts/chatfix-2110-mockup-inframe-final.mjs
+new file mode 100644
+index 0000000..620e596
+--- /dev/null
++++ b/scripts/chatfix-2110-mockup-inframe-final.mjs
+@@ -0,0 +1,206 @@
++/*
++ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
++ *
++ * This file is proprietary and confidential. Unauthorised copying,
++ * modification, distribution or use of this file, in whole or in part,
++ * by any means including automated tools and AI systems, is strictly
++ * prohibited without prior written permission from Skylon Development Ltd.
++ */
++// ─── CHAT FIX 21.10.2026 · THE FINAL IN-FRAME MOCKUP, HIS NUMBERS ───────────
++//
++// The owner, 21.10.2026 (22:03 and 22:14), after the two sections: *"wszedzie
++// ramke 38 mm"*, *"1 mm bedzie w srodku wystawac"* (the lip into the opening;
++// a veneered 19 side comes out flush), *"ramka 25 drzwi 22 ... 3 mm gap
++// pomiedzy carcasem a drzwiami"*, *"3 mm zawsze"* (the door's gap in its
++// opening), *"jak podwojne drzwi to miedzy drzwiami nie ma ramki, tylko miedzy
++// szafkami"*, *"raczej plyta"* (ONE frame per run, from one board, up to 2800;
++// a longer run is joined), *"dol: zdecydowanie wariant C"* (the bottom rail: 1
++// lip + 18 + 19 hanging under the carcass), *"gora: ma isc nad szafke tak samo
++// jak dol, a pozniej stolarz wypelni te dziure i blat pojdzie na wierzch"*
++// (the top rail: 1 lip + 18 + 19 above the carcass; a filler on site; the
++// worktop on top), *"zawias na boku szafki (specjalne zawiasy z Bluma)"*,
++// *"zrob ostateczne mockupy"*. The end of a run (his "4 mm jak sasiad" was
++// said for the 40 scheme): drawn here as a 38 stile over the end panel, to
++// confirm. Nothing in the engine is touched: the mockup is drawn at run time
++// over real units in the real scene, their own fronts and end panel hidden.
++//
++//   npx vite build && npx vite preview --port 4173 --strictPort &
++//   node scripts/chatfix-2110-mockup-inframe-final.mjs
++import { mkdirSync } from 'node:fs';
++import { open, pro, roomView, settleCamera, showroomDown } from './t74-harness.mjs';
++
++const J = JSON.stringify;
++const OUT = 'verify/chatfix-2110';
++mkdirSync(OUT, { recursive: true });
++const page = await open();
++const P = 'window.__cc.project.getState()';
++const U = 'window.__cc.ui.getState()';
++
++// His numbers, millimetres (21.10.2026).
++const M = {
++  rail: 38, stile: 38, lip: 1, frameT: 25, doorT: 22, gap: 3, side: 18, endPanel: 18,
++  outside: 19, // what the rail puts beyond the carcass top and bottom (38 = 1 + 18 + 19)
++  shakerFrame: 60, shakerDepth: 6, knobDia: 28, knobLen: 30, worktop: 38,
++};
++
++try {
++  await pro(page);
++  const add = async (type, x) => page.ask(`(() => { const r = ${P}.addUnit(${J(type)}, { wall: 0, x: ${x} }); return r && r.id; })()`);
++  const a = await add('BUD', 1000);
++  const b = await add('BUD', 1600);
++  const c = await add('BUDR2', 2400);
++  const w = await add('WUD', 1000);
++  await page.sleep(800);
++  await page.ask(`${P}.updateUnitParams(${J(a)}, { width: 600 })`);
++  await page.ask(`${P}.updateUnitParams(${J(b)}, { width: 800 })`);
++  await page.ask(`${P}.updateUnitParams(${J(c)}, { width: 500 })`);
++  await page.ask(`${P}.updateUnitParams(${J(w)}, { width: 600 })`);
++  await page.ask(`${P}.setDoors(${J(a)}, { count: 1, hinge: 'L' })`);
++  await page.ask(`${P}.setDoors(${J(b)}, { count: 2, hinge: 'L' })`);
++  await page.ask(`${P}.setDoors(${J(w)}, { count: 1, hinge: 'L' })`);
++  await page.ask(`${P}.addEndPanel(${J(a)}, { side: 'L' })`);
++  await page.ask(`${P}.addPlinth(${J(a)})`);
++  await page.ask(`${P}.setFrontType('f1', { source: 'spray' })`);
++  await page.ask(`${P}.setFrontColour({ hex: '#7b8f7a', name: 'F&B Card Room Green', system: 'F&B' }, 'f1')`);
++  await page.ask(`${P}.setDesign({ sheen: 30 })`);
++  await page.ask(`${U}.setShowOutlines(false)`);
++  await page.ask(`(() => { const u = ${U}; if (u.selectUnit) u.selectUnit(null); if (u.closeRightPanel) u.closeRightPanel(); return true; })()`);
++  await page.sleep(1000);
++  await roomView(page); await settleCamera(page);
++
++  // Read the real geometry: per unit its carcass box and its fronts' boxes; the end panel; the worktop.
++  const geo = await page.ask(`(() => {
++    const v = window.__cc.views.room; const T = v.three;
++    const ids = ${J([a, b, c, w])};
++    const units = {}; for (const id of ids) units[id] = { box: new T.Box3(), fronts: [] };
++    const hide = []; let endPanel = null; let worktop = null;
++    v.scene.traverse((o) => {
++      if (!o.isMesh || !o.userData) return;
++      let at = o; while (at && at.userData.ccUnitId == null) at = at.parent;
++      const uid = at && at.userData.ccUnitId;
++      const role = o.userData.ccRole; const mr = o.userData.ccMaterialRole;
++      if (role === 'end_panel' || role === 'endPanel' || /end.?panel/i.test(String(role))) { endPanel = new T.Box3().setFromObject(o); hide.push(o); return; }
++      if (role === 'worktop' || /worktop/i.test(String(role))) { worktop = new T.Box3().setFromObject(o); hide.push(o); return; }
++      if (!uid || !units[uid]) return;
++      if (role === 'plinth' || /plinth/i.test(String(role)) || /plinth/i.test(String(o.userData.ccPanelId || ''))) return;
++      if (mr === 'front') { units[uid].fronts.push(new T.Box3().setFromObject(o)); hide.push(o); return; }
++      if (!o.userData.ccPanelId) return;
++      units[uid].box.expandByObject(o);
++    });
++    for (const o of hide) o.visible = false;
++    const out = { units: {}, endPanel: endPanel && [endPanel.min.toArray(), endPanel.max.toArray()], worktop: worktop && [worktop.min.toArray(), worktop.max.toArray()], hidden: hide.length };
++    for (const id of ids) out.units[id] = { box: [units[id].box.min.toArray(), units[id].box.max.toArray()], fronts: units[id].fronts.map((f) => [f.min.toArray(), f.max.toArray()]) };
++    return out;
++  })()`);
++  console.log('geometry', JSON.stringify(geo));
++
++  const built = await page.ask(`(() => {
++    const v = window.__cc.views.room; const T = v.three;
++    const M = ${J(M)}; const mm = (x) => x / 1000; const G = ${J(geo)};
++    const ids = ${J([a, b, c, w])};
++    const drawerUnits = new Set(${J([c])});
++    const paint = new T.MeshPhysicalMaterial({ color: '#7b8f7a', roughness: 0.62, clearcoat: 0.3, clearcoatRoughness: 0.36, envMapIntensity: 0.47 });
++    const filler = new T.MeshStandardMaterial({ color: '#c9b58f', roughness: 0.9 });
++    const oak = new T.MeshStandardMaterial({ color: '#8a6f4e', roughness: 0.7 });
++    const brass = new T.MeshPhysicalMaterial({ color: '#b8923e', metalness: 1, roughness: 0.35, envMapIntensity: 1.2 });
++    const g = new T.Group(); g.name = 'inframe-final';
++    const box = (w, h, d, mat, x, y, z) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); g.add(m); return m; };
++    // Runs: the three base units are one run, the wall unit another.
++    const runs = [[ids[0], ids[1], ids[2]], [ids[3]]];
++    const report = [];
++    for (const [ri, run] of runs.entries()) {
++      const boxes = run.map((id) => G.units[id].box);
++      const x0 = Math.min(...boxes.map((b) => b[0][0])); const x1 = Math.max(...boxes.map((b) => b[1][0]));
++      const y0 = Math.min(...boxes.map((b) => b[0][1])); const y1 = Math.max(...boxes.map((b) => b[1][1]));
++      const zF = Math.max(...boxes.map((b) => b[1][2])); const zB = Math.min(...boxes.map((b) => b[0][2]));
++      const base = ri === 0;
++      // ONE frame for the run: from the end panel's outer face (base run) or the carcass (wall run) to 1 mm past the far side;
++      // 19 below the bottom and 19 above the top (his "wariant C" for both).
++      const fx0 = x0 - (base ? mm(M.endPanel) + mm(1) : mm(M.lip)); const fx1 = x1 + mm(M.lip);
++      const fy0 = y0 - mm(M.outside); const fy1 = y1 + mm(M.outside);
++      const W = fx1 - fx0; const H = fy1 - fy0;
++      const shape = new T.Shape(); shape.moveTo(0, 0); shape.lineTo(W, 0); shape.lineTo(W, H); shape.lineTo(0, H); shape.closePath();
++      for (const id of run) {
++        const b = G.units[id].box;
++        // The opening: the carcass's inner width less the 1 mm lips, the inner height less the lips.
++        const ox0 = b[0][0] + mm(M.side) + mm(M.lip) - fx0; const ox1 = b[1][0] - mm(M.side) - mm(M.lip) - fx0;
++        const oy0 = b[0][1] + mm(M.side) + mm(M.lip) - fy0; const oy1 = b[1][1] - mm(M.side) - mm(M.lip) - fy0;
++        const p = new T.Path(); p.moveTo(ox0, oy0); p.lineTo(ox1, oy0); p.lineTo(ox1, oy1); p.lineTo(ox0, oy1); p.closePath(); shape.holes.push(p);
++        // Fronts INSET in that opening: every real front keeps its cell (the midline between neighbours), 3 mm to the frame, 3 mm between fronts.
++        const fronts = G.units[id].fronts.map((f) => ({ x0: f[0][0], x1: f[1][0], y0: f[0][1], y1: f[1][1] }));
++        const cells = fronts.map((f) => {
++          const left = fronts.filter((o) => o !== f && o.x1 <= f.x0 + 1e-6 && o.y1 > f.y0 && o.y0 < f.y1); const right = fronts.filter((o) => o !== f && o.x0 >= f.x1 - 1e-6 && o.y1 > f.y0 && o.y0 < f.y1);
++          const below = fronts.filter((o) => o !== f && o.y1 <= f.y0 + 1e-6 && o.x1 > f.x0 && o.x0 < f.x1); const above = fronts.filter((o) => o !== f && o.y0 >= f.y1 - 1e-6 && o.x1 > f.x0 && o.x0 < f.x1);
++          const cx0 = left.length ? (Math.max(...left.map((o) => o.x1)) + f.x0) / 2 : -Infinity; const cx1 = right.length ? (Math.min(...right.map((o) => o.x0)) + f.x1) / 2 : Infinity;
++          const cy0 = below.length ? (Math.max(...below.map((o) => o.y1)) + f.y0) / 2 : -Infinity; const cy1 = above.length ? (Math.min(...above.map((o) => o.y0)) + f.y1) / 2 : Infinity;
++          const half = mm(M.gap) / 2; const full = mm(M.gap);
++          return {
++            x0: Math.max(cx0 + half, ox0 + fx0 + full), x1: Math.min(cx1 - half, ox1 + fx0 - full),
++            y0: Math.max(cy0 + half, oy0 + fy0 + full), y1: Math.min(cy1 - half, oy1 + fy0 - full),
++            door: !drawerUnits.has(id),
++          };
++        });
++        for (const cl of cells) {
++          const w = cl.x1 - cl.x0; const h = cl.y1 - cl.y0; const cx = (cl.x0 + cl.x1) / 2; const cy = (cl.y0 + cl.y1) / 2;
++          const dt = mm(M.doorT); const sd = cl.door ? mm(M.shakerDepth) : 0; const sf = mm(M.shakerFrame);
++          // The front's face is flush with the frame's face: zF + 25; its back 3 mm off the carcass.
++          const zFace = zF + mm(M.frameT);
++          box(w, h, dt - sd, paint, cx, cy, zFace - sd - (dt - sd) / 2);
++          if (cl.door) {
++            for (const [bw, bh, dx, dy] of [[w, sf, 0, h / 2 - sf / 2], [w, sf, 0, -h / 2 + sf / 2], [sf, h - 2 * sf, -w / 2 + sf / 2, 0], [sf, h - 2 * sf, w / 2 - sf / 2, 0]]) box(bw, bh, sd, paint, cx + dx, cy + dy, zFace - sd / 2);
++            // Knobs opposite the hinge: a pair opens from the middle, so the knob sits on the edge nearest the unit's centre;
++            // 60 in, 120 from the top of a base door, from the bottom of a wall door.
++            const unitCx = (b[0][0] + b[1][0]) / 2; const pair = cells.length > 1;
++            const kx = pair ? (cx < unitCx ? cl.x1 - mm(60) : cl.x0 + mm(60)) : cl.x1 - mm(60); const ky = base ? cl.y1 - mm(120) : cl.y0 + mm(120);
++            const k = new T.Mesh(new T.CylinderGeometry(mm(M.knobDia) / 2, mm(M.knobDia) / 2 * 0.7, mm(M.knobLen), 24), brass); k.rotation.x = Math.PI / 2; k.position.set(kx, ky, zFace + mm(M.knobLen) / 2); g.add(k);
++          } else {
++            const k = new T.Mesh(new T.CylinderGeometry(mm(M.knobDia) / 2, mm(M.knobDia) / 2 * 0.7, mm(M.knobLen), 24), brass); k.rotation.x = Math.PI / 2; k.position.set(cx, cy, zFace + mm(M.knobLen) / 2); g.add(k);
++          }
++          report.push({ run: ri, unit: id, front: [Math.round(w * 1000), Math.round(h * 1000)], door: cl.door });
++        }
++        report.push({ run: ri, unit: id, opening: [Math.round((ox1 - ox0) * 1000), Math.round((oy1 - oy0) * 1000)] });
++      }
++      const frame = new T.Mesh(new T.ExtrudeGeometry(shape, { depth: mm(M.frameT), bevelEnabled: false }), paint);
++      frame.position.set(fx0, fy0, zF); g.add(frame);
++      report.push({ run: ri, frame: [Math.round(W * 1000), Math.round(H * 1000)], stileBetween: run.length > 1 ? M.side * 2 + M.lip * 2 : null });
++      if (base) {
++        // The filler the joiner adds on site (19, the frame's own height above the carcass), then the worktop on top.
++        box(x1 - x0, mm(M.outside), zF - zB, filler, (x0 + x1) / 2, y1 + mm(M.outside) / 2, (zF + zB) / 2);
++        const wd = (zF + mm(M.frameT) + mm(10)) - zB;
++        box(fx1 - fx0 + mm(10), mm(M.worktop), wd, oak, (fx0 + fx1) / 2, fy1 + mm(M.worktop) / 2, zB + wd / 2);
++        // The end panel: 18 on the left side, floor to the frame's top, to the frame's face.
++        const ep = G.endPanel; const epY0 = ep ? ep[0][1] : 0; const epZ0 = ep ? ep[0][2] : zB;
++        box(mm(M.endPanel), fy1 - epY0, zF + mm(M.frameT) - epZ0, paint, x0 - mm(M.endPanel) / 2 - mm(1), (epY0 + fy1) / 2, (epZ0 + zF + mm(M.frameT)) / 2);
++      }
++    }
++    v.scene.add(g);
++    return report;
++  })()`);
++  console.log('mockup', JSON.stringify(built));
++
++  const cam = (x, y, z, tx, ty, tz) => page.ask(`(() => { const v = window.__cc.views.room; v.camera.position.set(${x}, ${y}, ${z}); v.controls.target.set(${tx}, ${ty}, ${tz}); v.controls.update(); return true; })()`);
++  const base = geo.units[a].box; const last = geo.units[c].box; const wall = geo.units[w].box;
++  const x0 = base[0][0]; const x1 = last[1][0]; const zF = base[1][2]; const cx = (x0 + x1) / 2;
++  await cam(cx + 1.6, 1.5, zF + 2.9, cx, 1.0, zF); await page.sleep(900);
++  await page.screenshot(`${OUT}/mockup-inframe-final-01-three-quarter.png`);
++  await cam(cx, 1.1, zF + 3.2, cx, 1.1, zF); await page.sleep(900);
++  await page.screenshot(`${OUT}/mockup-inframe-final-02-elevation.png`);
++  // The junction A|B low: the 38 stile and the rail hanging 19 under the carcass.
++  const xj = base[1][0];
++  await cam(xj + 0.7, 0.5, zF + 1.5, xj, 0.3, zF); await page.sleep(900);
++  await page.screenshot(`${OUT}/mockup-inframe-final-03-junction-low.png`);
++  // The top, seen at the run's open end: the frame 19 above the carcass, the filler behind it, the worktop on top.
++  const yt = base[1][1];
++  await cam(x1 + 0.55, yt + 0.25, zF + 0.45, x1, yt - 0.02, zF - 0.15); await page.sleep(900);
++  await page.screenshot(`${OUT}/mockup-inframe-final-04-top-filler.png`);
++  // The wall unit: 19 under and over.
++  const wc = (wall[0][0] + wall[1][0]) / 2;
++  await cam(wc + 0.9, wall[0][1] - 0.2, zF + 1.6, wc, (wall[0][1] + wall[1][1]) / 2, zF); await page.sleep(900);
++  await page.screenshot(`${OUT}/mockup-inframe-final-05-wall-unit.png`);
++  console.log('frames written');
++} catch (e) {
++  console.log('ERR', String(e && e.stack || e).slice(0, 600));
++} finally {
++  await page.close();
++  await showroomDown();
++}
+diff --git a/scripts/chatfix-2110-mockup-inframe.mjs b/scripts/chatfix-2110-mockup-inframe.mjs
+new file mode 100644
+index 0000000..23ac7bd
+--- /dev/null
++++ b/scripts/chatfix-2110-mockup-inframe.mjs
+@@ -0,0 +1,131 @@
++/*
++ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
++ *
++ * This file is proprietary and confidential. Unauthorised copying,
++ * modification, distribution or use of this file, in whole or in part,
++ * by any means including automated tools and AI systems, is strictly
++ * prohibited without prior written permission from Skylon Development Ltd.
++ */
++// ─── CHAT FIX 21.10.2026 · THE MOCKUP: A BRITISH IN-FRAME CABINET ───────────
++//
++// The owner, 21.10.2026: *"a co z british style kitchen z ramkami?"*; asked
++// how: *"4 - cnc blum in frame"*, *"6 - mockup pls"*. Nothing in the engine
++// is touched: this draws, at run time, over a real BUD in the real scene, the
++// cabinet an in-frame kit WOULD cut, so the owner can veto the numbers before
++// a line of the kit exists (petros/zasady: mockup and UI confirmed before
++// code). The numbers drawn (PROPOSED, every one to confirm):
++//   the FACE FRAME   one routed 22 mm MDF board the carcass's full width and
++//                    height, stiles 45, rails 45, a mid stile 45 between two
++//                    doors, a mid rail 45 under a drawer row; its openings cut
++//                    on the CNC as cut-outs (the window mechanism, T25 F1.2)
++//   the DOORS        INSET in the openings: opening less 3 mm each side,
++//                    22 thick, the shaker field 6 deep inside a 60 frame
++//   the DRAWER FRONT inset the same, a brass knob; the doors brass knobs
++//   the HINGES       Blum CLIP top in-frame: the cup on the door as today,
++//                    the plate on the frame's stile (not drawn: a mockup)
++// Frames under verify/chatfix-2110/mockup-inframe-*.png.
++//
++//   npx vite build && npx vite preview --port 4173 --strictPort &
++//   node scripts/chatfix-2110-mockup-inframe.mjs
++import { mkdirSync } from 'node:fs';
++import { open, pro, roomView, settleCamera, showroomDown } from './t74-harness.mjs';
++
++const J = JSON.stringify;
++const OUT = 'verify/chatfix-2110';
++mkdirSync(OUT, { recursive: true });
++const page = await open();
++const P = 'window.__cc.project.getState()';
++const U = 'window.__cc.ui.getState()';
++
++// The mockup's own numbers, millimetres (PROPOSED).
++const M = {
++  stile: 45, rail: 45, midStile: 45, midRail: 45, frameT: 22, gap: 3, doorT: 22, shakerFrame: 60, shakerDepth: 6,
++  drawerOpening: 180, knobDia: 28, knobLen: 30,
++};
++
++try {
++  await pro(page);
++  const id = await page.ask(`(() => { const r = ${P}.addUnit('BUD', { wall: 0, x: 1400 }); return r && r.id; })()`);
++  await page.sleep(800);
++  await page.ask(`${P}.updateUnitParams(${J(id)}, { width: 1000 })`);
++  await page.ask(`${P}.setDoors(${J(id)}, { count: 2, hinge: 'L' })`);
++  await page.ask(`${P}.addEndPanel(${J(id)}, { side: 'L' })`);
++  await page.ask(`${P}.addEndPanel(${J(id)}, { side: 'R' })`);
++  await page.ask(`${P}.addPlinth(${J(id)})`);
++  await page.ask(`${P}.setFrontType('f1', { source: 'spray' })`);
++  // A British green, satin.
++  await page.ask(`${P}.setFrontColour({ hex: '#7b8f7a', name: 'F&B Card Room Green', system: 'F&B' }, 'f1')`);
++  await page.ask(`${P}.setDesign({ sheen: 30 })`);
++  await page.ask(`${U}.setShowOutlines(false)`);
++  await page.ask(`(() => { const u = ${U}; if (u.selectUnit) u.selectUnit(null); if (u.closeRightPanel) u.closeRightPanel(); return true; })()`);
++  await page.sleep(1000);
++  await roomView(page); await settleCamera(page);
++  // Where the carcass stands, in the room (metres): from its own panels.
++  const geo = await page.ask(`(() => { const v = window.__cc.views.room; const T = v.three; const box = new T.Box3(); const fronts = []; v.scene.traverse((o) => { if (o.isMesh && o.userData && o.userData.ccPanelId && o.userData.ccMaterialRole !== 'front' && o.userData.ccRole !== 'end_panel' && o.userData.ccRole !== 'plinth') { let at = o; while (at && at.userData.ccUnitId == null) at = at.parent; if (at && at.userData.ccUnitId === ${J(id)}) box.expandByObject(o); } if (o.isMesh && o.userData && o.userData.ccMaterialRole === 'front') { let at = o; while (at && at.userData.ccUnitId == null) at = at.parent; if (at && at.userData.ccUnitId === ${J(id)}) fronts.push(o); } }); window.__ccMock = { fronts }; return { min: box.min.toArray(), max: box.max.toArray(), fronts: fronts.length }; })()`);
++  console.log('carcass', JSON.stringify(geo));
++  const mm = (v) => v / 1000;
++  const [x0, y0] = geo.min; const [x1, y1, zFront] = geo.max;
++  const W = x1 - x0; const H = y1 - y0;
++  const built = await page.ask(`(() => {
++    const v = window.__cc.views.room; const T = v.three;
++    const M = ${J(M)}; const mm = (v) => v / 1000;
++    const fronts = window.__ccMock.fronts;
++    const base = fronts[0] && fronts[0].material;
++    // Not a clone: a material compiled by the view carries React's own refs in its userData.
++    const paint = new T.MeshPhysicalMaterial(base
++      ? { color: base.color.clone(), roughness: base.roughness, metalness: base.metalness, clearcoat: base.clearcoat, clearcoatRoughness: base.clearcoatRoughness, envMapIntensity: base.envMapIntensity }
++      : { color: '#7b8f7a', roughness: 0.7 });
++    for (const f of fronts) f.visible = false;
++    const g = new T.Group(); g.name = 'inframe-mockup';
++    const W = ${W}; const H = ${H}; const x0 = ${x0}; const y0 = ${y0}; const zF = ${zFront};
++    // THE FACE FRAME: one board W x H x 22 with its openings as holes.
++    const st = mm(M.stile); const rl = mm(M.rail); const ms = mm(M.midStile); const mr = mm(M.midRail); const ft = mm(M.frameT);
++    const drawerH = mm(M.drawerOpening);
++    const shape = new T.Shape(); shape.moveTo(0, 0); shape.lineTo(W, 0); shape.lineTo(W, H); shape.lineTo(0, H); shape.closePath();
++    const hole = (x, y, w, h) => { const p = new T.Path(); p.moveTo(x, y); p.lineTo(x + w, y); p.lineTo(x + w, y + h); p.lineTo(x, y + h); p.closePath(); shape.holes.push(p); return [x, y, w, h]; };
++    const inner = W - 2 * st; const doorW = (inner - ms) / 2; const doorsTop = H - rl - drawerH - mr; const doorH = doorsTop - rl;
++    const openings = [hole(st, rl, doorW, doorH), hole(st + doorW + ms, rl, doorW, doorH), hole(st, H - rl - drawerH, inner, drawerH)];
++    const frameGeo = new T.ExtrudeGeometry(shape, { depth: ft, bevelEnabled: false });
++    const frame = new T.Mesh(frameGeo, paint); frame.position.set(x0, y0, zF); g.add(frame);
++    // THE INSET DOORS AND THE DRAWER FRONT: opening less the gap, 22 thick, flush with the frame's face.
++    const gp = mm(M.gap); const dt = mm(M.doorT); const sf = mm(M.shakerFrame); const sd = mm(M.shakerDepth);
++    const leaf = ([ox, oy, ow, oh], shaker) => {
++      const w = ow - 2 * gp; const h = oh - 2 * gp;
++      const grp = new T.Group();
++      const slab = new T.Mesh(new T.BoxGeometry(w, h, dt - (shaker ? sd : 0)), paint);
++      slab.position.set(x0 + ox + gp + w / 2, y0 + oy + gp + h / 2, zF + ft - dt + (dt - (shaker ? sd : 0)) / 2); grp.add(slab);
++      if (shaker) {
++        // The shaker frame stands proud of the field by the recess depth: four bars round the field.
++        const bars = [[w, sf, 0, h / 2 - sf / 2], [w, sf, 0, -h / 2 + sf / 2], [sf, h - 2 * sf, -w / 2 + sf / 2, 0], [sf, h - 2 * sf, w / 2 - sf / 2, 0]];
++        for (const [bw, bh, dx, dy] of bars) { const b = new T.Mesh(new T.BoxGeometry(bw, bh, sd), paint); b.position.set(x0 + ox + gp + w / 2 + dx, y0 + oy + gp + h / 2 + dy, zF + ft - sd / 2); grp.add(b); }
++      }
++      return grp;
++    };
++    const brass = new T.MeshPhysicalMaterial({ color: '#b8923e', metalness: 1, roughness: 0.35, envMapIntensity: 1.2 });
++    const knob = (x, y) => { const k = new T.Mesh(new T.CylinderGeometry(mm(M.knobDia) / 2, mm(M.knobDia) / 2 * 0.7, mm(M.knobLen), 24), brass); k.rotation.x = Math.PI / 2; k.position.set(x0 + x, y0 + y, zF + ft + mm(M.knobLen) / 2); return k; };
++    for (const [i, o] of openings.entries()) {
++      const shaker = i < 2;
++      g.add(leaf(o, shaker));
++      const [ox, oy, ow, oh] = o;
++      if (shaker) g.add(knob(i === 0 ? ox + ow - mm(60) : ox + mm(60), oy + oh - mm(120)));
++      else g.add(knob(ox + ow / 2, oy + oh / 2));
++    }
++    v.scene.add(g);
++    return { openings, doorW: Math.round(doorW * 1000), doorH: Math.round(doorH * 1000) };
++  })()`);
++  console.log('mockup', JSON.stringify(built));
++  const cam = (x, y, z, tx, ty, tz) => page.ask(`(() => { const v = window.__cc.views.room; v.camera.position.set(${x}, ${y}, ${z}); v.controls.target.set(${tx}, ${ty}, ${tz}); v.controls.update(); return true; })()`);
++  const cx = (x0 + x1) / 2;
++  await cam(cx + 1.4, 1.3, zFront + 2.4, cx, 0.55, zFront); await page.sleep(900);
++  await page.screenshot(`${OUT}/mockup-inframe-01-three-quarter.png`);
++  await cam(cx, 0.7, zFront + 2.2, cx, 0.55, zFront); await page.sleep(900);
++  await page.screenshot(`${OUT}/mockup-inframe-02-elevation.png`);
++  await cam(x0 + 0.35, 0.95, zFront + 0.75, x0 + 0.08, 0.55, zFront); await page.sleep(900);
++  await page.screenshot(`${OUT}/mockup-inframe-03-corner-close.png`);
++  console.log('frames written');
++} catch (e) {
++  console.log('ERR', String(e && e.stack || e).slice(0, 400));
++} finally {
++  await page.close();
++  await showroomDown();
++}
+diff --git a/scripts/chatfix-2110-walk.mjs b/scripts/chatfix-2110-walk.mjs
+new file mode 100644
+index 0000000..fbd45d8
+--- /dev/null
++++ b/scripts/chatfix-2110-walk.mjs
+@@ -0,0 +1,147 @@
++/*
++ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
++ *
++ * This file is proprietary and confidential. Unauthorised copying,
++ * modification, distribution or use of this file, in whole or in part,
++ * by any means including automated tools and AI systems, is strictly
++ * prohibited without prior written permission from Skylon Development Ltd.
++ */
++// ─── CHAT FIX 21.10.2026 · THE WALK: THE GLOSS RIDE, MEASURED ON THE DOOR ───
++//
++// The owner: *"nie mamy w ogole polysku, czy mozemy zrobic polysk od 0 do 100
++// procent?"*; *"wariant A"*. The proof is a MEASUREMENT, not a feeling: a RAL
++// 5008 sprayed door shot at 5 %, 60 % and 100 % from the same camera, and the
++// door's own pixels averaged (a PNG read here, no image tool: CLAUDE.md rule
++// 4). Before the fix 5 % and 100 % differed by one unit in 255. Frames under
++// verify/chatfix-2110/.
++//
++//   npx vite build && npx vite preview --port 4173 --strictPort &
++//   node scripts/chatfix-2110-walk.mjs
++import { mkdirSync, readFileSync } from 'node:fs';
++import { inflateSync } from 'node:zlib';
++import { open, pro, roomView, settleCamera, showroomDown } from './t74-harness.mjs';
++
++const J = JSON.stringify;
++const OUT = 'verify/chatfix-2110';
++mkdirSync(OUT, { recursive: true });
++const page = await open();
++const checks = [];
++const check = (name, ok, said = '') => { checks.push({ name, ok: Boolean(ok), said }); console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${said ? ' . ' + said : ''}`); };
++const P = 'window.__cc.project.getState()';
++const U = 'window.__cc.ui.getState()';
++
++/** A minimal PNG reader (8-bit RGB / RGBA, no interlace): the mean brightness of a box, 0..255. */
++export function pngMean(path, [x0, y0, x1, y1]) {
++  const buf = readFileSync(path);
++  let pos = 8;
++  let width = 0; let height = 0; let channels = 4;
++  const idat = [];
++  while (pos < buf.length) {
++    const len = buf.readUInt32BE(pos);
++    const type = buf.toString('ascii', pos + 4, pos + 8);
++    const data = buf.subarray(pos + 8, pos + 8 + len);
++    if (type === 'IHDR') {
++      width = data.readUInt32BE(0); height = data.readUInt32BE(4);
++      const colour = data[9];
++      channels = colour === 6 ? 4 : colour === 2 ? 3 : colour === 4 ? 2 : 1;
++    } else if (type === 'IDAT') idat.push(data);
++    pos += 12 + len;
++  }
++  const raw = inflateSync(Buffer.concat(idat));
++  const stride = width * channels;
++  const out = Buffer.alloc(height * stride);
++  let prev = Buffer.alloc(stride);
++  for (let y = 0; y < height; y += 1) {
++    const f = raw[y * (stride + 1)];
++    const line = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
++    const cur = Buffer.alloc(stride);
++    for (let i = 0; i < stride; i += 1) {
++      const a = i >= channels ? cur[i - channels] : 0;
++      const b = prev[i];
++      const c = i >= channels ? prev[i - channels] : 0;
++      let v = line[i];
++      if (f === 1) v += a;
++      else if (f === 2) v += b;
++      else if (f === 3) v += (a + b) >> 1;
++      else if (f === 4) { const p = a + b - c; const pa = Math.abs(p - a); const pb = Math.abs(p - b); const pc = Math.abs(p - c); v += (pa <= pb && pa <= pc) ? a : (pb <= pc ? b : c); }
++      cur[i] = v & 255;
++    }
++    cur.copy(out, y * stride);
++    prev = cur;
++  }
++  let sum = 0; let n = 0;
++  for (let y = y0; y < y1; y += 1) {
++    for (let x = x0; x < x1; x += 1) {
++      const i = y * stride + x * channels;
++      sum += (out[i] + out[i + 1] + out[i + 2]) / 3; n += 1;
++    }
++  }
++  return n ? sum / n : 0;
++}
++
++try {
++  await pro(page);
++  const a = await page.ask(`(() => { const r = ${P}.addUnit('WARDROBE', { wall: 0, x: 400 }); return r && r.id; })()`);
++  const b = await page.ask(`(() => { const r = ${P}.addUnit('BUD', { wall: 0, x: 1100 }); return r && r.id; })()`);
++  const c = await page.ask(`(() => { const r = ${P}.addUnit('BUD', { wall: 0, x: 1700 }); return r && r.id; })()`);
++  await page.sleep(800);
++  await page.ask(`${P}.setDoors(${J(a)}, { count: 2, hinge: 'L' })`);
++  await page.ask(`${P}.setDoors(${J(b)}, { count: 1, hinge: 'L' })`);
++  await page.ask(`${P}.setDoors(${J(c)}, { count: 1, hinge: 'R' })`);
++  await page.ask(`${P}.setFrontType('f1', { source: 'spray' })`);
++  await page.ask(`${P}.setFrontColour({ hex: '#2f3b4c', name: 'RAL 5008', system: 'RAL' }, 'f1')`);
++  await page.ask(`${U}.setShowOutlines(false)`);
++  await page.sleep(600);
++  await roomView(page); await settleCamera(page);
++  const bb = await page.ask(`(() => { const v = window.__cc.views.room; const T = v.three; const box = new T.Box3(); v.scene.traverse((o) => { if (o.isMesh && o.userData && o.userData.ccPanelId) box.expandByObject(o); }); return [box.min.toArray(), box.max.toArray()]; })()`);
++  const cx = (bb[0][0] + bb[1][0]) / 2;
++  const front = bb[1][2];
++  // The studio probe is the profile's 256 px (3d/Scene.jsx reads it).
++  const probe = await page.ask(`(() => { const v = window.__cc.views.room; const t = v.scene.environment || v.scene.userData.ccEnvironment; return t ? (t.image && t.image.width) || t.source?.data?.width || null : null; })()`);
++  check('0 the studio probe is on the scene', probe != null, `probe texture width ${probe}`);
++  // A frontal, low camera: the +z studio panel reflects in a vertical door.
++  await page.ask(`(() => { const v = window.__cc.views.room; v.camera.position.set(${cx + 0.3}, 0.9, ${front + 2.6}); v.controls.target.set(${cx + 0.3}, 0.9, ${front}); v.controls.update(); return true; })()`);
++  await page.sleep(700);
++  const door = () => page.ask(`(() => { const v = window.__cc.views.room; const T = v.three; let m = null; v.scene.traverse((o) => { if (!m && o.isMesh && o.userData && o.userData.ccMaterialRole === 'front' && o.userData.ccUnitId === ${J(b)}) m = o; }); if (!m) { v.scene.traverse((o) => { if (!m && o.isMesh && o.userData && o.userData.ccMaterialRole === 'front') m = o; }); } if (!m) return null; const r = v.gl.domElement.getBoundingClientRect(); const bx = new T.Box3().setFromObject(m); const pts = [[bx.min.x, bx.min.y, bx.max.z], [bx.max.x, bx.max.y, bx.max.z]].map(([x, y, z]) => { const p = new T.Vector3(x, y, z).project(v.camera); return [r.left + (p.x * 0.5 + 0.5) * r.width, r.top + (-p.y * 0.5 + 0.5) * r.height]; }); return { x0: Math.round(Math.min(pts[0][0], pts[1][0])), x1: Math.round(Math.max(pts[0][0], pts[1][0])), y0: Math.round(Math.min(pts[0][1], pts[1][1])), y1: Math.round(Math.max(pts[0][1], pts[1][1])), mat: { roughness: m.material.roughness, clearcoat: m.material.clearcoat, ccr: m.material.clearcoatRoughness, env: m.material.envMapIntensity } }; })()`);
++  const means = {};
++  for (const s of [5, 60, 100]) {
++    await page.ask(`${P}.setDesign({ sheen: ${s} })`);
++    await page.sleep(1200);
++    const d = await door();
++    await page.screenshot(`${OUT}/gloss-${s}.png`);
++    // The door's middle third, well inside its edges.
++    const w = d.x1 - d.x0; const h = d.y1 - d.y0;
++    means[s] = { mean: pngMean(`${OUT}/gloss-${s}.png`, [d.x0 + Math.round(w * 0.3), d.y0 + Math.round(h * 0.3), d.x1 - Math.round(w * 0.3), d.y1 - Math.round(h * 0.3)]), mat: d.mat };
++    console.log(`  sheen ${s}: door mean ${means[s].mean.toFixed(1)} ${JSON.stringify(d.mat)}`);
++  }
++  check('1 the material rides the slider: coat 0.05 to 1, its roughness 0.48 to 0.03, the probe 0.29 to 1', means[5].mat.clearcoat < 0.06 && means[100].mat.clearcoat === 1 && means[100].mat.ccr <= 0.031 && means[5].mat.ccr > 0.45 && means[100].mat.env === 1,
++    `${JSON.stringify(means[5].mat)} -> ${JSON.stringify(means[100].mat)}`);
++  const delta = means[100].mean - means[5].mean;
++  check('2 the door is visibly glossier at 100 % than at 5 % (before the fix: one unit in 255)', delta >= 6, `door mean ${means[5].mean.toFixed(1)} -> ${means[60].mean.toFixed(1)} -> ${means[100].mean.toFixed(1)} (+${delta.toFixed(1)})`);
++  check('3 and 60 % stands between them', means[60].mean > means[5].mean && means[60].mean < means[100].mean, `${means[60].mean.toFixed(1)}`);
++  // The colour is still the colour: a white door at 100 % is not tinted (the studio is neutral grey).
++  await page.ask(`${P}.setFrontColour({ hex: '#f2efe6', name: 'RAL 9010', system: 'RAL' }, 'f1')`);
++  await page.sleep(1000);
++  const dw = await door();
++  await page.screenshot(`${OUT}/gloss-white-100.png`);
++  const w = dw.x1 - dw.x0; const h = dw.y1 - dw.y0;
++  const box = [dw.x0 + Math.round(w * 0.3), dw.y0 + Math.round(h * 0.3), dw.x1 - Math.round(w * 0.3), dw.y1 - Math.round(h * 0.3)];
++  const whiteMean = pngMean(`${OUT}/gloss-white-100.png`, box);
++  check('4 a white door at 100 % stays white (wariant A: the studio is neutral grey)', whiteMean > 150, `white door mean ${whiteMean.toFixed(1)}`);
++  // From the side, the studio's panels show in the doors as the camera moves: a second frame for the eye.
++  await page.ask(`${P}.setFrontColour({ hex: '#2f3b4c', name: 'RAL 5008', system: 'RAL' }, 'f1')`);
++  await page.ask(`(() => { const v = window.__cc.views.room; v.camera.position.set(${cx - 1.4}, 1.6, ${front + 2.2}); v.controls.target.set(${cx + 0.2}, 1.0, ${front}); v.controls.update(); return true; })()`);
++  await page.sleep(1000);
++  await page.screenshot(`${OUT}/gloss-100-side.png`);
++  await page.ask(`${P}.setDesign({ sheen: 5 })`);
++  await page.sleep(1000);
++  await page.screenshot(`${OUT}/gloss-5-side.png`);
++} catch (e) {
++  check('walk ran to the end', false, String(e && e.stack || e).slice(0, 300));
++} finally {
++  const bad = checks.filter((c) => !c.ok);
++  console.log(`\n${checks.length - bad.length}/${checks.length} ${bad.length ? 'RED' : 'GREEN'}`);
++  await page.close();
++  await showroomDown();
++  process.exit(bad.length ? 1 : 0);
++}
+diff --git a/scripts/t78-classify.d/f39-owner-2110.mjs b/scripts/t78-classify.d/f39-owner-2110.mjs
+new file mode 100644
+index 0000000..9d07618
+--- /dev/null
++++ b/scripts/t78-classify.d/f39-owner-2110.mjs
+@@ -0,0 +1,50 @@
++/*
++ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
++ *
++ * This file is proprietary and confidential. Unauthorised copying,
++ * modification, distribution or use of this file, in whole or in part,
++ * by any means including automated tools and AI systems, is strictly
++ * prohibited without prior written permission from Skylon Development Ltd.
++ */
++// After T79 · the owner, 21.10.2026 (20:15): *"nie mamy w ogole polysku, czy mozemy zrobic polysk od 0 do 100
++// procent? przeanalizuj prosze"*. Shown the two ways (a neutral studio at full strength, a probe of the room
++// itself) he chose (20:31): *"1 - wariant A"*, *"minimum 5 zostaw"*, *"3 - chat zip"*. MEASURED first: a RAL 5008
++// door at 5 % and at 100 % differed by one unit in 255 (verify/chatfix-2110/). THE GLOSS RIDE: six numbers in
++// `profile.appearance.gloss` ride the sheen on a sprayed or veneered piece (3d/materials.js surfaceFor): the coat to
++// 1.0 (was capped at the lacquer's 0.35), its roughness 0.5 to 0.03 (was pinned at 0.12), the studio probe's weight
++// 0.25 to 1.0 (was pinned at the 08.08 quarter), over a 256 px studio (3d/Scene.jsx Environment; was 64, a blur
++// with no highlight in it). The studio stays three's neutral RoomEnvironment, so a sprayed colour stays the colour
++// (turn 8); the lights (FROZEN 4) are not touched; a laminate, raw MDF and the hardware keep every number. No cut
++// moves: nothing here reaches computeCabinet, so every golden holds by construction.
++
++const OWNER = '*"nie mamy w ogole polysku, czy mozemy zrobic polysk od 0 do 100 procent?"*; *"wariant A"*; *"minimum 5 '
++  + 'zostaw"* (21.10.2026)';
++
++export const GATES = {};
++
++export const LICENSED = {
++  'src/engine/profile.js': {
++    why: `Owner 21.10.2026: appearance.gloss { coatMax 1.0, coatRoughnessMin 0.03, coatRoughnessMax 0.5, envMin 0.25, envMax `
++      + '1.0, probeSize 256 }, PROPOSED, merged key by key; read by the view only (3d/materials.js, 3d/Scene.jsx), never by '
++      + `a cut. ${OWNER}`,
++    gates: [],
++  },
++  'src/3d/materials.js': {
++    why: `Owner 21.10.2026: surfaceFor rides the clear coat, its roughness and the sprayed probe's weight on the sheen `
++      + '(gloss.coatMax, coatRoughnessMin/Max, envMin/envMax) for a sheen-driven piece (spray, veneer); a laminate, a raw '
++      + `board, a lacquered piece with no sheen handed in and the hardware keep every number they had. ${OWNER}`,
++    gates: [],
++  },
++  'src/3d/Scene.jsx': {
++    why: `Owner 21.10.2026: Environment builds the neutral studio probe at gloss.probeSize (256; the editor windows read `
++      + 'the profile themselves); the same RoomEnvironment, the same intensity, the lights untouched (FROZEN 4 holds: '
++      + `engine/lighting.js, lightRig.js, ledStrips.js and the panels not one line). ${OWNER}`,
++    gates: [],
++  },
++};
++
++export const LIVENESS = {};
++
++export const GOLDENS = [];
++
++export const REPINNED = [];
+diff --git a/src/3d/Scene.jsx b/src/3d/Scene.jsx
+index 54ad892..9e464a1 100644
+--- a/src/3d/Scene.jsx
++++ b/src/3d/Scene.jsx
+@@ -8,6 +8,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
+ // Turn 24 (CLAUDE.md F12): the hardware's own probe — per material, never on
+ // the scene.
+ import { buildHardwareEnv } from './hardwareEnv.js';
++import { getCabinetProfile } from '../engine/profile.js';
+ import Room from './Room.jsx';
+ import UnitView from './UnitView.jsx';
+ import FrameDemand from './frameDemand.jsx';
+@@ -164,9 +165,20 @@ function FocusRig({ request, orbitRef, onDone }) {
+  * lights by definition. It is exported rather than copied so both windows are
+  * lit by the SAME box — one rig, the standing rule.
+  */
+-export function Environment({ intensity, on }) {
++export function Environment({ intensity, on, size = null }) {
+   const gl = useThree((s) => s.gl);
+   const scene = useThree((s) => s.scene);
++  // ─── CHAT FIX 21.10.2026: THE PROBE'S RESOLUTION IS A PROFILE NUMBER ──────
++  // The owner: *"nie mamy w ogole polysku"*, *"wariant A"*. 64 px was "a
++  // blurred light probe of a white box, no detail in it to lose": true for the
++  // LIGHT it gives a matt board, false for the REFLECTION a glossy door shows,
++  // which at 64 px is a smear with no highlight in it. `appearance.gloss
++  // .probeSize` (256) keeps the studio's light panels as shapes, so a mirror
++  // coat at 100 % has something to show and a highlight moves across a door as
++  // the camera orbits. Still the same neutral box, still built once per
++  // renderer; the lights are untouched. The editor windows mount this without
++  // a size and read the profile themselves.
++  const probeSize = Number(size) > 0 ? Number(size) : (Number(getCabinetProfile()?.appearance?.gloss?.probeSize) || 64);
+ 
+   // ─── TURN 24 (CLAUDE.md F12): THE HARDWARE'S OWN PROBE ────────────────────
+   //
+@@ -183,7 +195,7 @@ export function Environment({ intensity, on }) {
+     // 64, not the default 256. This is a blurred light probe of a white box —
+     // there is no detail in it to lose, and a smaller cube map is a smaller
+     // mip chain to walk for every lit pixel of every panel.
+-    const target = pmrem.fromScene(room, 0.04, 0.1, 100, { size: 64 });
++    const target = pmrem.fromScene(room, 0.04, 0.1, 100, { size: probeSize });
+     // Kept on the scene even when the working view has the lighting switched
+     // off, so a RENDER can put it back: a still is always lit properly, whatever
+     // the editor is set to (3d/renderCapture.js).
+@@ -199,7 +211,7 @@ export function Environment({ intensity, on }) {
+         for (const one of Array.isArray(m) ? m : [m]) one?.dispose?.();
+       });
+     };
+-  }, [gl, scene]);
++  }, [gl, scene, probeSize]);
+ 
+   useEffect(() => {
+     scene.environment = on ? (scene.userData.ccEnvironment || null) : null;
+@@ -1867,7 +1879,7 @@ export default function Scene({
+           the balance turn 26 computed does not move, the room only goes down
+           — and the placed LEDs come up in 3d/LedStrips.jsx off the same flag.
+           Derived here, stored nowhere: toggling back IS the previous state. */}
+-      <Environment intensity={profile.appearance.environment.intensity * demoDim} on={realisticLighting} />
++      <Environment intensity={profile.appearance.environment.intensity * demoDim} on={realisticLighting} size={profile.appearance.gloss?.probeSize} />
+       <Lights
+         roomHeight={roomH}
+         roomWidth={roomW}
+diff --git a/src/3d/materials.js b/src/3d/materials.js
+index 90b6561..403d137 100644
+--- a/src/3d/materials.js
++++ b/src/3d/materials.js
+@@ -369,6 +369,27 @@ export function surfaceFor({
+   // the slider already yields, so the coat and the probe below cannot drift
+   // from the surface they sit on. One number, one source.
+   const gloss = sheen != null ? 1 - roughnessFromSheen(sheen, profile) : 1;
++  // ─── CHAT FIX 21.10.2026: THE GLOSS RIDE (profile.appearance.gloss) ───────
++  //
++  // The owner: *"nie mamy w ogole polysku, czy mozemy zrobic polysk od 0 do
++  // 100 procent?"*; *"wariant A"* (the neutral studio, never the room);
++  // *"minimum 5 zostaw"*. Measured: a RAL 5008 door at 5 % and at 100 %
++  // differed by one unit in 255, because the coat was capped at the lacquer's
++  // 0.35, its sharpness pinned at 0.12 and the probe pinned at 0.25 of a 64 px
++  // studio: a mirror at 100 % had nothing to reflect. Three of the four
++  // numbers now RIDE the slider on a sheen-driven piece (the roughness has
++  // since T49): the coat to `coatMax` at the top, its own roughness from
++  // `coatRoughnessMax` (dead matt) to `coatRoughnessMin` (a mirror), the
++  // probe's weight from `envMin` (the 08.08 floor) to `envMax`. The studio
++  // stays neutral grey, so a sprayed colour stays the colour (turn 8), and a
++  // laminate, a raw board and the hardware keep every number they had.
++  const GL = A.gloss || {};
++  const ride = (lo, hi, fallback) => {
++    const a = Number(lo);
++    const b = Number(hi);
++    return Number.isFinite(a) && Number.isFinite(b) ? Math.round((a + (b - a) * gloss) * 1e6) / 1e6 : fallback;
++  };
++  const rideCoat = sheenDriven && sheen != null;
+ 
+   return {
+     colour: paint
+@@ -418,14 +439,22 @@ export function surfaceFor({
+     // Untouched too: laminate (`sheenDriven` false keeps its family numbers),
+     // metalness, and the orange peel.
+     // T69 F4: no coat at all on raw MDF — there is nothing on it yet.
+-    clearcoat: raw ? 0 : (sheenDriven && sheen != null ? pbr.clearcoat * gloss : pbr.clearcoat),
+-    clearcoatRoughness: raw ? 1 : pbr.clearcoatRoughness,
++    // Chat fix 21.10.2026: the coat rides to `gloss.coatMax` (1.0) at the top
++    // of the slider, not to the lacquer's 0.35; the family number stays for a
++    // lacquered piece no slider drives.
++    clearcoat: raw ? 0 : (rideCoat ? ride(0, GL.coatMax, pbr.clearcoat) : pbr.clearcoat),
++    // ...and its own roughness rides too: dead matt has no mirror coat, full
++    // gloss a sharp one (until today pinned at the lacquer's 0.12 at every stop).
++    clearcoatRoughness: raw ? 1 : (rideCoat ? ride(GL.coatRoughnessMax, GL.coatRoughnessMin, pbr.clearcoatRoughness) : pbr.clearcoatRoughness),
+     metalness: sprayed ? (A.spray?.metalness ?? 0) : pbr.metalness,
+     // 0 switches the probe off for this material only — the scene keeps it for
+     // everything else.
+     // T69 F4: *"matte, zero grain, uniform"* — a weak probe still puts a
+     // gradient across a flat face, and raw MDF has none.
+-    envMapIntensity: sprayed ? (A.spray?.envMapIntensity ?? 0) : (raw ? 0 : 1),
++    // Chat fix 21.10.2026: on a SPRAYED piece the probe's weight rides from
++    // `gloss.envMin` (the 08.08 quarter, the floor) to `gloss.envMax`; a
++    // sprayed piece no slider drives keeps the 08.08 quarter.
++    envMapIntensity: sprayed ? (rideCoat ? ride(GL.envMin, GL.envMax, A.spray?.envMapIntensity ?? 0) : (A.spray?.envMapIntensity ?? 0)) : (raw ? 0 : 1),
+     // The fine orange peel a gun leaves. A tenth of the strength the board
+     // edges are broken at, which is roughly the difference in real life.
+     normalScale: sprayed ? (A.spray?.normalScale ?? 0.1) : 1,
+diff --git a/src/engine/profile.js b/src/engine/profile.js
+index 7a6efbc..6d5a199 100644
+--- a/src/engine/profile.js
++++ b/src/engine/profile.js
+@@ -3583,6 +3583,34 @@ export const DEFAULT_CABINET_PROFILE = {
+       lacquer: { roughness: 0.3, clearcoat: 0.35, clearcoatRoughness: 0.12, metalness: 0.0 },
+     },
+ 
++    // ─── THE GLOSS RIDE (chat fix 21.10.2026) ────────────────────────────────
++    //
++    // The owner, 21.10.2026: *"nie mamy w ogole polysku, czy mozemy zrobic
++    // polysk od 0 do 100 procent?"*; shown the two ways: *"wariant A"* (the
++    // neutral studio, never the room: a sprayed colour stays the colour);
++    // *"minimum 5 zostaw"* (the scale stays 5 to 100).
++    //
++    // MEASURED before this block: a RAL 5008 door at 5 % and at 100 % differed
++    // by one unit of brightness in 255. The slider moved the lacquer's
++    // roughness and a coat capped at 0.35, over a probe pinned at a quarter
++    // of a 64 px studio, so a mirror at 100 % had nothing to reflect. These
++    // six numbers are what rides the sheen on a sprayed or veneered piece
++    // (3d/materials.js `surfaceFor`), from the slider's bottom to its top:
++    //   coatMax            the clear coat at 100 % (was the lacquer's 0.35)
++    //   coatRoughnessMin   how sharp that coat is at 100 % (0.03: a mirror)
++    //   coatRoughnessMax   ...and at 5 % (0.5: dead matt, no coat to speak of)
++    //   envMin / envMax    the studio probe's weight at 5 % and at 100 %
++    //                      (0.25 is the hotfix of 08.08 and stays the floor)
++    //   probeSize          the studio probe's resolution (3d/Scene.jsx; 64
++    //                      was a blur with no highlight in it; 256 keeps the
++    //                      studio's light panels as shapes a glossy door shows)
++    // The studio is NEUTRAL grey (three's RoomEnvironment), so a white door
++    // stays white and a RAL chip stays its chip at every stop. PROPOSED, the
++    // owner to confirm.
++    gloss: {
++      coatMax: 1.0, coatRoughnessMin: 0.03, coatRoughnessMax: 0.5, envMin: 0.25, envMax: 1.0, probeSize: 256,
++    },
++
+     // ─── Edge break (turn 6) ───
+     // A real board edge is not a mathematical corner: the saw and the edge
+     // bander leave 0.5–1 mm of break that catches the light, and its absence is
+@@ -6210,6 +6238,9 @@ export function migrateCabinetProfile(profile) {
+         melamine: { ...D.appearance.materials.melamine, ...profile.appearance?.materials?.melamine },
+         lacquer: { ...D.appearance.materials.lacquer, ...profile.appearance?.materials?.lacquer },
+       },
++      // Chat fix 21.10.2026: the gloss ride, key by key (a profile saved before
++      // today comes back with all six).
++      gloss: { ...D.appearance.gloss, ...profile.appearance?.gloss },
+       bevel: {
+         ...D.appearance.bevel, ...profile.appearance?.bevel,
+         ao: { ...D.appearance.bevel.ao, ...profile.appearance?.bevel?.ao },
+diff --git a/test/chatfix-2110-gloss.test.js b/test/chatfix-2110-gloss.test.js
+new file mode 100644
+index 0000000..54d8a19
+--- /dev/null
++++ b/test/chatfix-2110-gloss.test.js
+@@ -0,0 +1,136 @@
++/*
++ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
++ *
++ * This file is proprietary and confidential. Unauthorised copying,
++ * modification, distribution or use of this file, in whole or in part,
++ * by any means including automated tools and AI systems, is strictly
++ * prohibited without prior written permission from Skylon Development Ltd.
++ */
++// ─── CHAT FIX 21.10.2026 · THE GLOSS RIDE ───────────────────────────────────
++//
++// The owner, 21.10.2026 (20:15): *"nie mamy w ogole polysku, czy mozemy zrobic
++// polysk od 0 do 100 procent? przeanalizuj prosze"*; shown the two ways
++// (20:31): *"1 - wariant A"* (the neutral studio, never the room), *"minimum 5
++// zostaw"*, *"3 - chat zip"*.
++//
++// MEASURED before the fix (verify/chatfix-2110/): a RAL 5008 door at 5 % and
++// at 100 % differed by one unit of brightness in 255. The slider moved the
++// roughness and a coat capped at the lacquer's 0.35 over a probe pinned at a
++// quarter of a 64 px blur. Now six profile numbers (`appearance.gloss`) ride
++// the sheen on a sprayed or veneered piece: the coat to 1.0, its roughness
++// from 0.5 to 0.03, the probe's weight from the 08.08 quarter to 1.0, over a
++// 256 px studio. The studio stays neutral grey, so a sprayed colour stays the
++// colour (turn 8); laminate, raw MDF and the hardware keep every number.
++
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++
++import { surfaceFor } from '../src/3d/materials.js';
++import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engine/profile.js';
++import { roughnessFromSheen, sheenSteps, clampSheen } from '../src/engine/design.js';
++import { LICENSED } from '../scripts/t78-classify.d/f39-owner-2110.mjs';
++
++const ROOT = new URL('../', import.meta.url).pathname;
++const read = (rel) => readFileSync(`${ROOT}${rel}`, 'utf8');
++const OWNER = 'nie mamy w ogole polysku';
++
++const finishes = { front: { kind: 'spray', hex: '#2f3b4c' }, carcass: { kind: 'melamine', hex: '#ffffff' } };
++const spray = (sheen) => surfaceFor({
++  role: 'front', materialRole: 'front', finishExposed: true, finishes, profile: P, frontColour: { hex: '#2f3b4c' }, sheen,
++});
++
++test('the six numbers live in the profile, PROPOSED with his words; a stored profile from before today gains them whole', () => {
++  const GL = P.appearance.gloss;
++  assert.deepEqual(GL, { coatMax: 1.0, coatRoughnessMin: 0.03, coatRoughnessMax: 0.5, envMin: 0.25, envMax: 1.0, probeSize: 256 });
++  assert.equal(GL.envMin, P.appearance.spray.envMapIntensity, 'the floor of the probe is the 08.08 quarter itself');
++  const src = read('src/engine/profile.js');
++  assert.ok(src.includes(OWNER), 'his words beside the numbers');
++  assert.ok(src.includes('*"wariant A"*') && src.includes('*"minimum 5 zostaw"*'));
++  const old = migrateCabinetProfile({ ...P, appearance: { ...P.appearance, gloss: undefined } });
++  assert.deepEqual(old.appearance.gloss, GL, 'migrated key by key');
++  const tuned = migrateCabinetProfile({ ...P, appearance: { ...P.appearance, gloss: { coatMax: 0.8 } } });
++  assert.deepEqual(tuned.appearance.gloss, { ...GL, coatMax: 0.8 }, 'a workshop that tuned one keeps it');
++  // The scale is untouched: 5 to 100 in fives (*"minimum 5 zostaw"*).
++  assert.deepEqual([P.appearance.sheenScale.min, P.appearance.sheenScale.max, P.appearance.sheenScale.step], [5, 100, 5]);
++  assert.equal(sheenSteps(P)[0], 5);
++  assert.equal(clampSheen(0, P), 5);
++});
++
++test('the ride: at 5 % no mirror, at 100 % a sharp full coat over the studio at full weight; the roughness as it has been since T49', () => {
++  const GL = P.appearance.gloss;
++  const matt = spray(5);
++  const full = spray(100);
++  assert.deepEqual([matt.roughness, full.roughness], [0.95, 0], 'the roughness formula did not move');
++  assert.ok(matt.clearcoat <= 0.05 + 1e-9 && matt.clearcoatRoughness >= 0.47, `dead matt: coat ${matt.clearcoat}, its roughness ${matt.clearcoatRoughness}`);
++  assert.ok(Math.abs(full.clearcoat - GL.coatMax) < 1e-9);
++  assert.ok(Math.abs(full.clearcoatRoughness - GL.coatRoughnessMin) < 1e-9);
++  assert.ok(Math.abs(full.envMapIntensity - GL.envMax) < 1e-9);
++  assert.ok(Math.abs(matt.envMapIntensity - (GL.envMin + (GL.envMax - GL.envMin) * 0.05)) < 1e-9);
++  // Monotone, one source: every stop up the slider is at least as glossy on every number.
++  let prev = null;
++  for (const s of sheenSteps(P)) {
++    const got = spray(s);
++    const gloss = 1 - roughnessFromSheen(s, P);
++    assert.ok(Math.abs(got.clearcoat - GL.coatMax * gloss) < 1e-6, `${s}: coat`);
++    assert.ok(Math.abs(got.clearcoatRoughness - (GL.coatRoughnessMax + (GL.coatRoughnessMin - GL.coatRoughnessMax) * gloss)) < 1e-6, `${s}: coat roughness`);
++    assert.ok(Math.abs(got.envMapIntensity - (GL.envMin + (GL.envMax - GL.envMin) * gloss)) < 1e-6, `${s}: probe`);
++    if (prev) {
++      assert.ok(got.clearcoat >= prev.clearcoat && got.clearcoatRoughness <= prev.clearcoatRoughness && got.envMapIntensity >= prev.envMapIntensity && got.roughness <= prev.roughness, `${s}: monotone`);
++    }
++    prev = got;
++  }
++  assert.equal(full.metalness, 0, 'a lacquer is not a metal');
++  assert.equal(full.normalScale, 0, 'the peel is as the 08.08 hotfix left it');
++});
++
++test('what the slider does not reach keeps every number: a laminate, a raw board, a lacquered piece with no sheen handed in, the melamine carcass', () => {
++  const L = P.appearance.materials.lacquer;
++  const laminate = (sheen) => surfaceFor({
++    role: 'front', materialRole: 'front', finishExposed: true,
++    finishes: { front: { kind: 'decor', hex: '#a0a0a0', texture: 'x', repeatMm: 100 }, carcass: finishes.carcass }, profile: P, sheen,
++  });
++  for (const s of [5, 100]) {
++    const l = laminate(s);
++    assert.equal(l.sheenDriven, false);
++    assert.deepEqual([l.roughness, l.clearcoat, l.clearcoatRoughness, l.envMapIntensity], [L.roughness, L.clearcoat, L.clearcoatRoughness, 1], `laminate at ${s}: the family numbers`);
++  }
++  const raw = surfaceFor({
++    role: 'front', materialRole: 'front', finishExposed: true,
++    finishes: { front: { kind: 'raw', hex: '#c8b89a', roughness: 0.95 }, carcass: finishes.carcass }, profile: P, sheen: 100,
++    finish: { kind: 'raw', hex: '#c8b89a', roughness: 0.95 },
++  });
++  assert.deepEqual([raw.clearcoat, raw.clearcoatRoughness, raw.envMapIntensity], [0, 1, 0], 'raw MDF: no coat, no probe (T69 F4)');
++  const noSheen = surfaceFor({ role: 'front', materialRole: 'front', finishExposed: true, finishes, profile: P, frontColour: { hex: '#2f3b4c' } });
++  assert.deepEqual([noSheen.clearcoat, noSheen.clearcoatRoughness, noSheen.envMapIntensity], [L.clearcoat, L.clearcoatRoughness, P.appearance.spray.envMapIntensity], 'no sheen handed in: the lacquer family and the 08.08 quarter, as before');
++  const side = surfaceFor({ role: 'side', materialRole: 'carcass', finishExposed: false, finishes, profile: P, sheen: 100 });
++  assert.deepEqual([side.sprayed, side.clearcoat, side.envMapIntensity], [false, P.appearance.materials.melamine.clearcoat, 1], 'a melamine side reflects the room, and should');
++});
++
++test('a veneer rides with the spray (T49 F9 holds); its probe stays the board\'s full weight', () => {
++  const veneer = (sheen) => surfaceFor({
++    role: 'front', materialRole: 'front', finishExposed: true,
++    finishes: { front: { kind: 'decor', hex: '#a0a0a0' }, carcass: finishes.carcass }, profile: P, sheen, veneered: true,
++  });
++  assert.equal(veneer(100).sheenDriven, true);
++  assert.ok(Math.abs(veneer(100).clearcoat - P.appearance.gloss.coatMax) < 1e-9);
++  assert.ok(veneer(5).clearcoat < 0.06);
++  assert.equal(veneer(100).envMapIntensity, 1, 'not sprayed: the board\'s own probe weight');
++});
++
++test('the studio probe is built at the profile\'s resolution; the lights are untouched; the files are licensed with his words', () => {
++  const scene = read('src/3d/Scene.jsx');
++  assert.match(scene, /pmrem\.fromScene\(room, 0\.04, 0\.1, 100, \{ size: probeSize \}\)/);
++  assert.match(scene, /appearance\?\.gloss\?\.probeSize/);
++  assert.match(scene, /size=\{profile\.appearance\.gloss\?\.probeSize\}/, 'the room scene passes it; the editor windows read the profile themselves');
++  assert.match(scene, /new RoomEnvironment\(\)/, 'still the neutral box: wariant A');
++  assert.doesNotMatch(scene, /CubeCamera/, 'no probe of the room itself');
++  const mats = read('src/3d/materials.js');
++  assert.match(mats, /envMapIntensity: sprayed \?/, 'the 08.08 signature stands');
++  assert.match(mats, /const GL = A\.gloss \|\| \{\};/);
++  for (const file of ['src/3d/materials.js', 'src/3d/Scene.jsx', 'src/engine/profile.js']) {
++    assert.ok(LICENSED[file]?.why.includes(OWNER), `${file} licensed with his words`);
++  }
++  // The hardware's own probe (T24 F12) is not this one.
++  assert.match(read('src/3d/hardwareEnv.js'), /size: 64/);
++});
+diff --git a/test/chatfix-2508-sheen-and-slope-buttons.test.js b/test/chatfix-2508-sheen-and-slope-buttons.test.js
+index 2d87139..cbc11f9 100644
+--- a/test/chatfix-2508-sheen-and-slope-buttons.test.js
++++ b/test/chatfix-2508-sheen-and-slope-buttons.test.js
+@@ -50,27 +50,39 @@ const surfaces = (design, opts = {}) => {
+ const spray = migrateDesign({ colour: { front: { hex: '#f4f4f0', name: 'White', system: 'RAL' } } });
+ const surf = (sheen) => surfaces(spray, { frontColour: '#f4f4f0', sheen }).get('01-F');
+ 
++// ─── REWRITTEN 21.10.2026 (chat fix, the gloss ride) ────────────────────────
++// The owner: *"nie mamy w ogole polysku, czy mozemy zrobic polysk od 0 do 100
++// procent?"*; *"wariant A"*; *"minimum 5 zostaw"*. The coat no longer tops out
++// at the lacquer's 0.35: it rides to `appearance.gloss.coatMax` (1.0) at 100 %,
++// its own roughness from `coatRoughnessMax` to `coatRoughnessMin`, and the
++// probe's weight from `envMin` to `envMax`. Dead matt still does not shine.
+ test('at 5 % the gloss coat is all but gone — dead matt does not shine', () => {
+   const matt = surf(5);
+   const gloss = surf(100);
+   assert.ok(matt.clearcoat < gloss.clearcoat * 0.1,
+     `dead matt keeps almost no coat — got ${matt.clearcoat} against ${gloss.clearcoat}`);
+-  assert.ok(matt.clearcoat <= P.appearance.materials.lacquer.clearcoat * 0.06,
+-    'and it is a fraction of the lacquer number, not the whole of it');
++  assert.ok(matt.clearcoat <= P.appearance.gloss.coatMax * 0.06,
++    'and it is a fraction of the top of the ride, not the whole of it');
++  assert.ok(matt.clearcoatRoughness > 0.45, 'and what coat there is, is rough (no mirror on dead matt)');
+ });
+ 
+-test('at full gloss the coat is the profile\'s own lacquer number, untouched', () => {
+-  assert.ok(Math.abs(surf(100).clearcoat - P.appearance.materials.lacquer.clearcoat) < 1e-9,
+-    'the top of the scale is exactly what the profile says a lacquer is');
++test('at full gloss the coat is the profile\'s own top of the ride (gloss.coatMax), a sharp one', () => {
++  assert.ok(Math.abs(surf(100).clearcoat - P.appearance.gloss.coatMax) < 1e-9,
++    'the top of the scale is exactly what the profile says full gloss is');
++  assert.ok(Math.abs(surf(100).clearcoatRoughness - P.appearance.gloss.coatRoughnessMin) < 1e-9);
++  assert.ok(Math.abs(surf(100).envMapIntensity - P.appearance.gloss.envMax) < 1e-9);
+ });
+ 
+ test('the coat follows the same curve as the roughness — one number, one source', () => {
+   const max = P.appearance?.sheen?.max ?? 100;
++  const GL = P.appearance.gloss;
+   for (const s of [5, 25, 60, 100]) {
+     const got = surf(s);
+-    const expected = P.appearance.materials.lacquer.clearcoat * (1 - got.roughness);
+-    assert.ok(Math.abs(got.clearcoat - expected) < 1e-9,
++    const gloss = 1 - got.roughness;
++    assert.ok(Math.abs(got.clearcoat - GL.coatMax * gloss) < 1e-9,
+       `sheen ${s} of ${max}: coat ${got.clearcoat} tracks roughness ${got.roughness}`);
++    assert.ok(Math.abs(got.clearcoatRoughness - (GL.coatRoughnessMax + (GL.coatRoughnessMin - GL.coatRoughnessMax) * gloss)) < 1e-9);
++    assert.ok(Math.abs(got.envMapIntensity - (GL.envMin + (GL.envMax - GL.envMin) * gloss)) < 1e-9);
+   }
+ });
+ 
+@@ -89,7 +101,10 @@ test('the probe, the metalness and the peel still ask `sprayed` — nothing else
+   assert.match(mats, /envMapIntensity: sprayed \?/, 'the 08.08 hotfix stands');
+   assert.match(mats, /metalness: sprayed \?/);
+   assert.match(mats, /normalScale: sprayed \?/);
+-  assert.equal(surf(5).envMapIntensity, 0.25, 'a quarter of a neutral studio, at any sheen');
++  // 21.10.2026: the 08.08 quarter is the FLOOR of the ride (gloss.envMin), reached at dead matt.
++  assert.ok(Math.abs(surf(5).envMapIntensity - (P.appearance.gloss.envMin + (P.appearance.gloss.envMax - P.appearance.gloss.envMin) * 0.05)) < 1e-9,
++    'a shade over a quarter of a neutral studio at dead matt');
++  assert.equal(P.appearance.gloss.envMin, P.appearance.spray.envMapIntensity, 'the floor is the 08.08 number itself');
+ });
+ 
+ // ─── CHAT-FIX 25.08.2026 — THE SIDE IS THE BUTTON ───────────────────────────
+diff --git a/test/sheen.test.js b/test/sheen.test.js
+index 1e32455..4c6b926 100644
+--- a/test/sheen.test.js
++++ b/test/sheen.test.js
+@@ -178,8 +178,14 @@ test('the pieces that go to the spray booth take the project sheen; board does n
+ test('a sprayed piece refuses the environment probe; board keeps it', () => {
+   const design = migrateDesign({ colour: { front: { hex: '#f4f4f0', name: 'White', system: 'RAL' } } });
+   const s = surfaces(full(), design, { frontColour: '#f4f4f0' });
+-  assert.equal(s.get('01-F').envMapIntensity, 0.25,
+-    'a quarter of a NEUTRAL studio (hotfix 08.08) — the room itself is not in that map, so white stays white');
++  // 21.10.2026 (the gloss ride; the owner: *"nie mamy w ogole polysku ... wariant A"*): the quarter of
++  // 08.08 is the FLOOR of the probe's weight (gloss.envMin), reached at dead matt; at this project's sheen it
++  // rides between the floor and gloss.envMax. Still the NEUTRAL studio: the room is not in that map, white stays white.
++  const GL = P.appearance.gloss;
++  const g = 1 - s.get('01-F').roughness;
++  assert.ok(Math.abs(s.get('01-F').envMapIntensity - (GL.envMin + (GL.envMax - GL.envMin) * g)) < 1e-9,
++    'the probe\'s weight rides the sheen from the 08.08 quarter up');
++  assert.equal(GL.envMin, 0.25, 'the floor is the hotfix number');
+   assert.equal(s.get('01-F').metalness, 0);
+   assert.equal(s.get('01-F').normalScale, 0, 'peel OFF by default — it aliased into moiré (hotfix 08.08)');
+   assert.equal(s.get('BUL').envMapIntensity, 1, 'a melamine side reflects the room, and should');
+diff --git a/test/spray-fronts.test.js b/test/spray-fronts.test.js
+index da6fad1..b117f2a 100644
+--- a/test/spray-fronts.test.js
++++ b/test/spray-fronts.test.js
+@@ -121,8 +121,10 @@ test('a sprayed front is lacquer, tinted by the colour, with no environment on i
+   // The Spraying rule, unchanged since turn 8 and re-checked here because F6
+   // adds a new way to reach it: a sprayed colour is the colour, so the room may
+   // not tint it (CLAUDE.md F1.4 — spray stays envMap-free).
+-  assert.equal(s.envMapIntensity, 0.25,
+-    'a QUARTER of a neutral synthetic studio (hotfix 08.08) — gloss for the clearcoat, no colour the scene could lend');
++  // 21.10.2026 (the gloss ride): the quarter of 08.08 is the floor of the probe's weight; at this sheen it is between
++  // gloss.envMin and gloss.envMax. The studio is neutral, so no colour the scene could lend.
++  assert.ok(s.envMapIntensity >= P.appearance.gloss.envMin - 1e-9 && s.envMapIntensity <= P.appearance.gloss.envMax + 1e-9,
++    'a neutral synthetic studio, weighted by the sheen');
+   // ─── AMENDED 25.08.2026 ───────────────────────────────────────────────────
+   // This line read the CLEARCOAT as the signature of "lacquer, not melamine".
+   // It cannot any more: the owner, at 5 % on the slider — *"nadal sie swieci"* —
+@@ -141,11 +143,14 @@ test('a sprayed front is lacquer, tinted by the colour, with no environment on i
+     frontColour: finishes.front.hex,
+     sheen: P.appearance?.sheen?.max ?? 100,
+   });
+-  assert.equal(atFullGloss.clearcoat, P.appearance.materials.lacquer.clearcoat,
+-    'lacquer, not melamine — at full gloss the coat is the lacquer number itself');
+-  assert.ok(s.clearcoat < P.appearance.materials.lacquer.clearcoat,
++  // 21.10.2026 (the gloss ride; the owner: *"polysk od 0 do 100 procent"*, *"wariant A"*): at full gloss the
++  // coat is the top of the ride (gloss.coatMax), its roughness the mirror's (gloss.coatRoughnessMin); below it less.
++  assert.equal(atFullGloss.clearcoat, P.appearance.gloss.coatMax,
++    'lacquer, not melamine: at full gloss the coat is the top of the ride');
++  assert.ok(s.clearcoat < P.appearance.gloss.coatMax,
+     'and below full gloss it is less, because a matt lacquer has less coat on it');
+-  assert.equal(s.clearcoatRoughness, P.appearance.materials.lacquer.clearcoatRoughness);
++  assert.ok(s.clearcoatRoughness > atFullGloss.clearcoatRoughness, 'and its coat is rougher than a mirror');
++  assert.ok(Math.abs(atFullGloss.clearcoatRoughness - P.appearance.gloss.coatRoughnessMin) < 1e-9);
+   assert.equal(s.normalScale, 0, 'peel is OFF by default — the 2 mm sine aliased into moiré (hotfix 08.08)');
+ });
+ 
+diff --git a/test/sprayed-carcass-sheen.test.js b/test/sprayed-carcass-sheen.test.js
+index ac9505b..3ea1934 100644
+--- a/test/sprayed-carcass-sheen.test.js
++++ b/test/sprayed-carcass-sheen.test.js
+@@ -75,7 +75,11 @@ test('a sprayed carcass refuses the environment probe, like every sprayed piece'
+     role: 'side', materialRole: 'carcass', finishExposed: false, finishes, profile: P, sheen: 60,
+   });
+ 
+-  assert.equal(side.envMapIntensity, P.appearance.spray?.envMapIntensity ?? 0);
++  // 21.10.2026 (the gloss ride): the spray's quarter is the floor of the probe's weight; at 60 it rides above it,
++  // never past gloss.envMax. Still the neutral studio, never the room.
++  assert.ok(side.envMapIntensity >= (P.appearance.spray?.envMapIntensity ?? 0) - 1e-9);
++  assert.ok(side.envMapIntensity <= P.appearance.gloss.envMax + 1e-9);
++  assert.equal(side.sprayed, true);
+   // `colour` is a THREE.Color, and a carcass side carries the profile's own
+   // shading for its role — so the assertion is that the colour CAME FROM the
+   // spray, not that it is the hex untouched.
+diff --git a/test/turn77-f5-no-copyright-line.test.js b/test/turn77-f5-no-copyright-line.test.js
+index 05ec2a1..405c9cb 100644
+--- a/test/turn77-f5-no-copyright-line.test.js
++++ b/test/turn77-f5-no-copyright-line.test.js
+@@ -164,6 +164,12 @@ export const NEW_FILES = [
+   'test/chatfix-1910-site-trim.test.js',
+   'test/chatfix-1910-offboard.test.js',
+   'test/chatfix-1910-edge-box.test.js',
++  // Chat fix 21.10.2026 (the gloss ride, wariant A; the in-frame mockup)
++  'scripts/t78-classify.d/f39-owner-2110.mjs',
++  'scripts/chatfix-2110-walk.mjs',
++  'scripts/chatfix-2110-mockup-inframe.mjs',
++  'scripts/chatfix-2110-mockup-inframe-final.mjs',
++  'test/chatfix-2110-gloss.test.js',
+ ];
+ 
+ test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {
+diff --git a/verify/chatfix-2110/RAPORT.md b/verify/chatfix-2110/RAPORT.md
+new file mode 100644
+index 0000000..3245807
+--- /dev/null
++++ b/verify/chatfix-2110/RAPORT.md
+@@ -0,0 +1,162 @@
++# Chat fix 21.10.2026: połysk od 5 do 100 (wariant A) i mockup szafki in-frame
++
++Baza: main 743b8e9 ("115", Twój push paczki 4 z 19.10). Ta paczka nakłada się na nią; nic z paczek 1 do 4 nie jest tu powtórzone.
++
++Słowa Piotra 21.10 (20:15): "nie mamy wogole polysku czy mzomey zrobic polysjk od 0 do 100procent ? przeanalizuj prosze";
++(20:24): "a co z britisg style kicthen z ramkami ?"; (20:31): "1 - wariant a ,, 2 ,imi,u, 5 zostaw 3 - chat zip. 4- cnc blum
++in frame 6 - mockup pls".
++
++Czytam to tak: 1 połysk jako wariant A (neutralne studio, nigdy pokój); 2 minimum skali zostaje 5 (nie 0); 3 jako chat
++fix + ZIP, nie Code turn; 4 in-frame = rama frezowana na CNC + zawiasy Blum in-frame; 6 najpierw mockup, nie kod.
++
++## 1. Pomiar PRZED (Twoja skarga sprawdzona liczbą, nie okiem)
++
++Sonda: drzwi natryskowe RAL 5008 na BUD, ta sama kamera z przodu nisko, zrzut przy 5 %, 60 % i 100 %, średnia jasność
++środka drzwi (własny czytnik PNG, bez narzędzia do obrazów). Wynik: 5 % i 100 % różniły się o JEDNĄ jednostkę na 255.
++Czyli miałeś rację: suwak Sheen ruszał roughness lakieru i clearcoat ograniczony do 0.35 z rodziny lacquer, nad sondą
++studia przypiętą na 0.25 (hotfix 08.08) z kostki 64 px. Lustro przy 100 % nie miało w czym się przejrzeć: sonda 64 px
++to rozmyta plama bez żadnego jasnego panelu, a 0.25 jej wagi to i tak ćwierć niczego.
++
++## 2. Co zrobione: JAZDA POŁYSKU (sześć liczb PROPOSED w profilu)
++
++`profile.appearance.gloss` (src/engine/profile.js, z Twoimi słowami obok; migracja klucz po kluczu, profil zapisany
++wcześniej dostaje wszystkie sześć):
++
++| liczba | wartość | co robi |
++|---|---|---|
++| coatMax | 1.0 | clearcoat przy 100 % (było: sufit 0.35 z lacquer) |
++| coatRoughnessMin | 0.03 | ostrość tej powłoki przy 100 % (lustro) |
++| coatRoughnessMax | 0.5 | ...i przy 5 % (mat, powłoki praktycznie nie ma) |
++| envMin | 0.25 | waga sondy studia przy 5 % (= hotfix 08.08, zostaje podłogą) |
++| envMax | 1.0 | waga sondy przy 100 % |
++| probeSize | 256 | rozdzielczość sondy studia (było 64) |
++
++src/3d/materials.js `surfaceFor`: na elemencie "sheen-driven" (natrysk albo fornir, to co było od T49) clearcoat,
++clearcoatRoughness i envMapIntensity jadą liniowo po gloss = 1 - roughness(sheen), tym samym źródłem co roughness
++(formuła roughness nie ruszona: 5 % = 0.95, 100 % = 0). Laminat, surowy MDF, element lakierowany bez podanego sheen,
++karkas melaminowy i okucia: każda liczba jak była (test to sprawdza przy 5 i 100).
++
++src/3d/Scene.jsx `Environment`: sonda studia budowana w `gloss.probeSize` (256) zamiast 64; to samo neutralne
++RoomEnvironment three, ta sama intensywność, raz na renderer. Okna edytora montują Environment bez rozmiaru i czytają
++profil same. Światła: ani linii (FROZEN 4: ledStrips.js, lighting.js, lightRig.js, LightingPanel trzymają; klasyfikator
++"lighting touched: 0"). hardwareEnv.js (sonda okuć T24 F12, 64 px): nie ruszony.
++
++Wariant A znaczy: studio jest szare i neutralne, więc biały front przy 100 % zostaje biały, a próbka RAL zostaje swoją
++próbką na każdym stopniu. Nie ma sondy pokoju (żadnej CubeCamera): drzwi nie odbijają ścian ani podłogi kuchni. To
++cena wariantu A i Twój wybór.
++
++Cięcie: nic tu nie dochodzi do computeCabinet, więc każdy golden trzyma z definicji (sześć bazowych IDENTICAL,
++T75 16/16, T78 27/27).
++
++## 3. Pomiar PO (ta sama sonda, scripts/chatfix-2110-walk.mjs, 5/5 GREEN)
++
++- materiał drzwi przy 5 %: clearcoat 0.05, jego roughness 0.4765, sonda 0.2875; przy 60 %: 0.6 / 0.218 / 0.7;
++  przy 100 %: 1.0 / 0.03 / 1.0
++- średnia jasność środka drzwi RAL 5008: 55.9 (5 %) -> 56.1 (60 %) -> 65.6 (100 %), czyli +9.7 na 255 zamiast +1
++- 60 % stoi między 5 a 100
++- białe drzwi RAL 9010 przy 100 %: 215.9 (biały zostaje biały, nic nie barwi)
++- z boku przy 100 % w drzwiach widać panele świetlne studia jako kształty, przy 5 % nic (klatki gloss-100-side.png
++  i gloss-5-side.png)
++
++Zrzuty w verify/chatfix-2110/: gloss-5.png, gloss-60.png, gloss-100.png, gloss-white-100.png, gloss-100-side.png,
++gloss-5-side.png. Uwaga do oka: przy 60 % różnica jasności z przodu jest mała (+0.2), bo z przodu nisko odbija się
++ciemna część studia; z boku i w ruchu kamery widać ją wyraźnie. Jeśli chcesz, żeby 60 % było wyraźniej "pół-połyskiem"
++z przodu, to jedna liczba: coatRoughnessMax w dół (np. 0.35) albo envMin w górę (pytanie 3).
++
++## 4. Testy i bramki
++
++- nowy test/chatfix-2110-gloss.test.js (5 testów): liczby i migracja; jazda na każdym stopniu skali, monotoniczna;
++  laminat / surowy / bez sheen / melamina nie ruszone; fornir jedzie z natryskiem; Scene czyta probeSize, bez CubeCamera,
++  licencje f39 z Twoimi słowami
++- przepisane pod nową jazdę (sprawdzały stare przypięte liczby): test/chatfix-2508-sheen-and-slope-buttons.test.js,
++  test/sheen.test.js, test/spray-fronts.test.js, test/sprayed-carcass-sheen.test.js
++- NEW_FILES (turn77-f5): cztery nowe pliki z nagłówkiem
++- klasyfikator strict: GREEN (f39-owner-2110: trzy pliki licencjonowane, zero bramek, zero goldenów)
++- t78-copy --check: CLEAN (żadna powierzchnia PRO/retail nie ruszona)
++- vite build: OK
++- pełna suita: wynik w CZYTAJ.txt w ZIP (7042 + 5 nowych oczekiwane)
++
++## 5. In-frame (British style): analiza, przekroje, mockup OSTATECZNY wg Twoich liczb, zero kodu silnika
++
++Dziś silnik nie zna ramy: wszystkie fronty (S/H/F/G/A) są nakładane (lay-on) na karkas, zawias liczony od krawędzi
++boku, szczelina frontów z profilu. "British in-frame" to inna rodzina: fronty siedzą W ramie (inset), rama jest
++widocznym elementem, a zawias to specjalny Blum do in-frame.
++
++Droga 21.10 wieczorem: pierwszy mockup (stile 45, rama 22, szafka 1000) -> Twoje "rama coś takiego dokładnie, ale
++szafki 4 mm od siebie, 18 + 18 + 4 = 40, pokaż przekrój" -> przekrój poziomy -> Twoje liczby (22:03) -> przekrój
++poziomy v2 i pionowy (trzy warianty raila) -> Twoje "dół wariant C, góra tak samo nad szafkę, stolarz wypełni, blat na
++wierzch; zrób ostateczne mockupy" (22:14) -> mockup ostateczny.
++
++Twoje liczby (22:03, 22:14), tak jak je zapisałem:
++| | liczba | Twoje słowa |
++|---|---|---|
++| rama | 38 szerokości WSZĘDZIE, 25 grubości, jedna na cały ciąg z jednej płyty (do 2800; dłuższy ciąg = łączenie) | "wszędzie ramkę 38", "ramka 25", "raczej płyta" |
++| szafki | na styk (0 mm), skręcone | "będziemy mogli szafki do siebie połączyć" |
++| stile przy styku | 38 = 1 + 18 + 18 + 1: lip 1 mm do otworu z każdej strony; przy forniru 19 równo | "1 mm będzie w środku wystawać, veneer 19 x 2" |
++| rail dół | 38 = lip 1 + dno 18 + 19 POD dnem (przed cokołem) | "dół zdecydowanie wariant C" |
++| rail góra | 38 = lip 1 + wieniec 18 + 19 NAD karkasem; stolarz wypełnia te 19 na budowie, blat na wierzchu | "góra ma iść nad szafkę tak samo jak dół, stolarz wypełni, blat pójdzie na wierzch" |
++| drzwi | 22, lico równo z ramą, 3 mm luzu do czoła karkasu (25 - 22) | "ramka 25, drzwi 22, 3 mm gap" |
++| szczelina | 3 zawsze: do ramy i między frontami | "3 mm zawsze" |
++| para drzwi, szuflady | bez ramy między nimi, tylko 3 mm; stile tylko między szafkami | "między drzwiami nie ma ramki, tylko między szafkami" |
++| panel końcowy | Twoje "4 mm jak sąsiad" padło przy schemacie 40; przy 38 na styk narysowałem stile 38 nad panelem 18 (1 mm poza panel) | pytanie 5 |
++| zawias | na boku szafki, specjalny Blum in-frame (numer z Twojego cennika) | "zawias na boku szafki (specjalne zawiasy z Bluma)" |
++
++Z tego wynika: otwór w ramie = światło karkasu minus 2 lipy, wysokość minus 2 lipy (600 x 770 -> 562 x 732), drzwi
++556 x 726; w 800 z parą drzwi 376.5 każde ((762 - 9) / 2); rama ciągu = szerokość ciągu + lipy, wysokość karkasu + 38
++(770 -> 808). Rama to element CIĄGU (jak plinth run, cornice run), nie szafki: to decyduje o modelu w silniku.
++
++Rysunki (verify/chatfix-2110/): przekrój poziomy v1 (schemat 40 z 4 mm), v2 (Twoje liczby), pionowy (trzy warianty
++raila); mockup ostateczny mockup-inframe-final-01..05.png + mockup-inframe-final-sheet.png
++(scripts/chatfix-2110-mockup-inframe-final.mjs: ciąg panel + BUD 600 + BUD 800 (para) + BUDR2 500 + WUD 600, jedna
++rama na ciąg dolny i jedna na górny, wypełnienie 19 i blat 38 narysowane nad ramą, prawdziwe fronty i panel schowane,
++nic w silniku nie ruszone). Pierwszy mockup (45/22) zostaje w repo jako historia.
++
++Co kit in-frame musiałby zawierać (Code turn klasy T80, nie chat fix; szacunek 2 do 3 dni Code):
++a. reference/lisp/KIT_INFRAME.lsp: prawo ramy ciągu (jedna płyta, otwory z siatki frontów szafek, stile 38 między
++   szafkami, rail 38 z 19 poza karkas góra i dół, lip 1), prawo inset (szczelina 3 od otworu, luz 3 do karkasu),
++   prawo zawiasu in-frame (na boku, drabinka od otworu ramy), łączenie ramy powyżej 2800
++b. silnik: rama jako element ciągu (BOM, DXF z wycięciami jak okno T25 F1.2, etykiety), fronty inset (wymiar z
++   otworu), zawias in-frame w kolumnie okuć, wypełnienie 19 nad karkasem jako element "site" (stolarz) albo w BOM
++c. 3D: rama + fronty w ramie, blat podniesiony o 19; Check: front mieści się w otworze, para drzwi 3 mm, zawias nie
++   koliduje z lipem 1 mm
++d. goldeny: nowe dla ciągu in-frame; bazowe sześć bez zmian (in-frame to nowy styl frontów, nie zmiana istniejących)
++e. UI: przełącznik "in-frame" per projekt (styl kuchni) albo per ciąg (pytanie 6)
++
++## 6. Odczyty, które zrobiłem bez pytania (do weta)
++
++- probeSize 256 (nie 512): 256 wystarczyło w pomiarze; 512 nie sprawdzałem, kosztowałoby cztery razy więcej pamięci na sondę
++- coatRoughnessMax 0.5 i coatMax 1.0: wybrane tak, żeby 5 % było "zero lustra", 100 % "lustro"
++- envMin 0.25 jako podłoga: to liczba z hotfixu 08.08, nie ruszona, żeby mat wyglądał jak dotąd
++- mockup: F&B Card Room Green, satyna 30, gałki mosiężne 28 x 30, pole shaker 60/6, blat dębowy 38: wybór do pokazania,
++  nie standard
++- mockup ostateczny: koniec ciągu = stile 38 nad panelem 18 (1 mm poza panel); panel końcowy do podłogi jak dziś; rama
++  górnej szafki też 19 pod i 19 nad; prawy koniec ciągu bez panelu (stile 19 = 1 + 18, "jakby sąsiad szedł dalej")
++- fornir jedzie razem z natryskiem (tak było od T49: oba "sheen-driven"); jeśli fornir ma mieć własny sufit połysku,
++  to druga szóstka liczb
++
++## 7. Pytania (ponumerowane)
++
++1. Sześć liczb połysku PROPOSED: zostają jak w tabeli, czy zmieniasz którąś?
++2. Skala Sheen w UI zostaje 5..100 co 5 (jak kazałeś). Etykiety (matt / satin / gloss) zostają jak były?
++3. 60 % z przodu: zostawić jak jest (liczbowo między, z boku widać), czy podciągnąć środek skali (coatRoughnessMax 0.35
++   albo envMin 0.4)?
++4. In-frame: tabela w sekcji 5 to Twoje liczby tak jak je zapisałem: potwierdzasz całość?
++5. Koniec ciągu z panelem końcowym: stile 38 nad panelem 18 (1 mm poza panel, jak w mockupie), panel fornir 19 na
++   styk (19 + 18 + 1 = 38), czy co innego? Panel do podłogi (jak dziś) czy do dołu ramy?
++6. In-frame: przełącznik per projekt (cała kuchnia) czy per ciąg?
++7. Szuflada za ramą z lipem 1 mm: pudło jak dziś (lip 1 mm nie przeszkadza prowadnicy) czy węższe?
++8. Zawias Blum in-frame na boku: numer katalogowy z Twojego cennika (zawias + płytka), nie wymyślam numerów.
++9. Wypełnienie 19 nad karkasem: tylko notatka dla stolarza, czy element w BOM (listwa 19 x szerokość ciągu)?
++10. Tryb: kit in-frame jako Code turn T80 (2 do 3 dni), start po Twoim "tak" na 4 do 9?
++11. Petros: wpis "ZROBIONE 19.10" + HANDOVER 20.10 + zamknięcie 9f31099f nadal czeka na Twoje "tak"; do tego dopisać
++    dzisiejszy połysk i in-frame?
++12. Wciąż otwarte z 19.10: liczby notch b/c (wybrałeś b i c, liczby niepotwierdzone), trzy PROPOSED z paczki 4, pytania
++    7 do 15 z HANDOVER 19.10.
++
++## 8. Odpowiedzi Piotra (21.10, 22:40) na pytania z sekcji 7 wersji z 21:27
++
++1 tak (tabela liczb in-frame potwierdzona w całości); 2 panel końcowy na styk; 3 in-frame per projekt; 4 "nie rozumiem"
++(odczyt Claude: pudło szuflady jak dziś, lip 1 mm nie dotyka prowadnicy; do potwierdzenia); 5 tak (zawias Blum in-frame
++na boku; numer katalogowy przy starcie T80); 6 wypełnienie 19 = informacja dla stolarza + na PDF w przekroju kawałek
++timber; 7 tak (kit in-frame jako Code turn T80); 8 tak (Petros: wpisy ZROBIONE 19.10, ZROBIONE + DECYZJE 21.10,
++HANDOVER 21.10 napisane, 9f31099f zamknięty); 9 tak (sześć liczb połysku potwierdzone, 60 % zostaje). "Mam zipa."

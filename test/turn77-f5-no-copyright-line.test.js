@@ -164,6 +164,12 @@ export const NEW_FILES = [
   'test/chatfix-1910-site-trim.test.js',
   'test/chatfix-1910-offboard.test.js',
   'test/chatfix-1910-edge-box.test.js',
+  // Chat fix 21.10.2026 (the gloss ride, wariant A; the in-frame mockup)
+  'scripts/t78-classify.d/f39-owner-2110.mjs',
+  'scripts/chatfix-2110-walk.mjs',
+  'scripts/chatfix-2110-mockup-inframe.mjs',
+  'scripts/chatfix-2110-mockup-inframe-final.mjs',
+  'test/chatfix-2110-gloss.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

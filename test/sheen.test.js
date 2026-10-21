@@ -178,8 +178,14 @@ test('the pieces that go to the spray booth take the project sheen; board does n
 test('a sprayed piece refuses the environment probe; board keeps it', () => {
   const design = migrateDesign({ colour: { front: { hex: '#f4f4f0', name: 'White', system: 'RAL' } } });
   const s = surfaces(full(), design, { frontColour: '#f4f4f0' });
-  assert.equal(s.get('01-F').envMapIntensity, 0.25,
-    'a quarter of a NEUTRAL studio (hotfix 08.08) — the room itself is not in that map, so white stays white');
+  // 21.10.2026 (the gloss ride; the owner: *"nie mamy w ogole polysku ... wariant A"*): the quarter of
+  // 08.08 is the FLOOR of the probe's weight (gloss.envMin), reached at dead matt; at this project's sheen it
+  // rides between the floor and gloss.envMax. Still the NEUTRAL studio: the room is not in that map, white stays white.
+  const GL = P.appearance.gloss;
+  const g = 1 - s.get('01-F').roughness;
+  assert.ok(Math.abs(s.get('01-F').envMapIntensity - (GL.envMin + (GL.envMax - GL.envMin) * g)) < 1e-9,
+    'the probe\'s weight rides the sheen from the 08.08 quarter up');
+  assert.equal(GL.envMin, 0.25, 'the floor is the hotfix number');
   assert.equal(s.get('01-F').metalness, 0);
   assert.equal(s.get('01-F').normalScale, 0, 'peel OFF by default — it aliased into moiré (hotfix 08.08)');
   assert.equal(s.get('BUL').envMapIntensity, 1, 'a melamine side reflects the room, and should');

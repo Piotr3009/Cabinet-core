@@ -121,8 +121,10 @@ test('a sprayed front is lacquer, tinted by the colour, with no environment on i
   // The Spraying rule, unchanged since turn 8 and re-checked here because F6
   // adds a new way to reach it: a sprayed colour is the colour, so the room may
   // not tint it (CLAUDE.md F1.4 — spray stays envMap-free).
-  assert.equal(s.envMapIntensity, 0.25,
-    'a QUARTER of a neutral synthetic studio (hotfix 08.08) — gloss for the clearcoat, no colour the scene could lend');
+  // 21.10.2026 (the gloss ride): the quarter of 08.08 is the floor of the probe's weight; at this sheen it is between
+  // gloss.envMin and gloss.envMax. The studio is neutral, so no colour the scene could lend.
+  assert.ok(s.envMapIntensity >= P.appearance.gloss.envMin - 1e-9 && s.envMapIntensity <= P.appearance.gloss.envMax + 1e-9,
+    'a neutral synthetic studio, weighted by the sheen');
   // ─── AMENDED 25.08.2026 ───────────────────────────────────────────────────
   // This line read the CLEARCOAT as the signature of "lacquer, not melamine".
   // It cannot any more: the owner, at 5 % on the slider — *"nadal sie swieci"* —
@@ -141,11 +143,14 @@ test('a sprayed front is lacquer, tinted by the colour, with no environment on i
     frontColour: finishes.front.hex,
     sheen: P.appearance?.sheen?.max ?? 100,
   });
-  assert.equal(atFullGloss.clearcoat, P.appearance.materials.lacquer.clearcoat,
-    'lacquer, not melamine — at full gloss the coat is the lacquer number itself');
-  assert.ok(s.clearcoat < P.appearance.materials.lacquer.clearcoat,
+  // 21.10.2026 (the gloss ride; the owner: *"polysk od 0 do 100 procent"*, *"wariant A"*): at full gloss the
+  // coat is the top of the ride (gloss.coatMax), its roughness the mirror's (gloss.coatRoughnessMin); below it less.
+  assert.equal(atFullGloss.clearcoat, P.appearance.gloss.coatMax,
+    'lacquer, not melamine: at full gloss the coat is the top of the ride');
+  assert.ok(s.clearcoat < P.appearance.gloss.coatMax,
     'and below full gloss it is less, because a matt lacquer has less coat on it');
-  assert.equal(s.clearcoatRoughness, P.appearance.materials.lacquer.clearcoatRoughness);
+  assert.ok(s.clearcoatRoughness > atFullGloss.clearcoatRoughness, 'and its coat is rougher than a mirror');
+  assert.ok(Math.abs(atFullGloss.clearcoatRoughness - P.appearance.gloss.coatRoughnessMin) < 1e-9);
   assert.equal(s.normalScale, 0, 'peel is OFF by default — the 2 mm sine aliased into moiré (hotfix 08.08)');
 });
 

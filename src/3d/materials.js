@@ -369,6 +369,27 @@ export function surfaceFor({
   // the slider already yields, so the coat and the probe below cannot drift
   // from the surface they sit on. One number, one source.
   const gloss = sheen != null ? 1 - roughnessFromSheen(sheen, profile) : 1;
+  // ─── CHAT FIX 21.10.2026: THE GLOSS RIDE (profile.appearance.gloss) ───────
+  //
+  // The owner: *"nie mamy w ogole polysku, czy mozemy zrobic polysk od 0 do
+  // 100 procent?"*; *"wariant A"* (the neutral studio, never the room);
+  // *"minimum 5 zostaw"*. Measured: a RAL 5008 door at 5 % and at 100 %
+  // differed by one unit in 255, because the coat was capped at the lacquer's
+  // 0.35, its sharpness pinned at 0.12 and the probe pinned at 0.25 of a 64 px
+  // studio: a mirror at 100 % had nothing to reflect. Three of the four
+  // numbers now RIDE the slider on a sheen-driven piece (the roughness has
+  // since T49): the coat to `coatMax` at the top, its own roughness from
+  // `coatRoughnessMax` (dead matt) to `coatRoughnessMin` (a mirror), the
+  // probe's weight from `envMin` (the 08.08 floor) to `envMax`. The studio
+  // stays neutral grey, so a sprayed colour stays the colour (turn 8), and a
+  // laminate, a raw board and the hardware keep every number they had.
+  const GL = A.gloss || {};
+  const ride = (lo, hi, fallback) => {
+    const a = Number(lo);
+    const b = Number(hi);
+    return Number.isFinite(a) && Number.isFinite(b) ? Math.round((a + (b - a) * gloss) * 1e6) / 1e6 : fallback;
+  };
+  const rideCoat = sheenDriven && sheen != null;
 
   return {
     colour: paint
@@ -418,14 +439,22 @@ export function surfaceFor({
     // Untouched too: laminate (`sheenDriven` false keeps its family numbers),
     // metalness, and the orange peel.
     // T69 F4: no coat at all on raw MDF — there is nothing on it yet.
-    clearcoat: raw ? 0 : (sheenDriven && sheen != null ? pbr.clearcoat * gloss : pbr.clearcoat),
-    clearcoatRoughness: raw ? 1 : pbr.clearcoatRoughness,
+    // Chat fix 21.10.2026: the coat rides to `gloss.coatMax` (1.0) at the top
+    // of the slider, not to the lacquer's 0.35; the family number stays for a
+    // lacquered piece no slider drives.
+    clearcoat: raw ? 0 : (rideCoat ? ride(0, GL.coatMax, pbr.clearcoat) : pbr.clearcoat),
+    // ...and its own roughness rides too: dead matt has no mirror coat, full
+    // gloss a sharp one (until today pinned at the lacquer's 0.12 at every stop).
+    clearcoatRoughness: raw ? 1 : (rideCoat ? ride(GL.coatRoughnessMax, GL.coatRoughnessMin, pbr.clearcoatRoughness) : pbr.clearcoatRoughness),
     metalness: sprayed ? (A.spray?.metalness ?? 0) : pbr.metalness,
     // 0 switches the probe off for this material only — the scene keeps it for
     // everything else.
     // T69 F4: *"matte, zero grain, uniform"* — a weak probe still puts a
     // gradient across a flat face, and raw MDF has none.
-    envMapIntensity: sprayed ? (A.spray?.envMapIntensity ?? 0) : (raw ? 0 : 1),
+    // Chat fix 21.10.2026: on a SPRAYED piece the probe's weight rides from
+    // `gloss.envMin` (the 08.08 quarter, the floor) to `gloss.envMax`; a
+    // sprayed piece no slider drives keeps the 08.08 quarter.
+    envMapIntensity: sprayed ? (rideCoat ? ride(GL.envMin, GL.envMax, A.spray?.envMapIntensity ?? 0) : (A.spray?.envMapIntensity ?? 0)) : (raw ? 0 : 1),
     // The fine orange peel a gun leaves. A tenth of the strength the board
     // edges are broken at, which is roughly the difference in real life.
     normalScale: sprayed ? (A.spray?.normalScale ?? 0.1) : 1,

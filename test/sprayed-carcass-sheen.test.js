@@ -75,7 +75,11 @@ test('a sprayed carcass refuses the environment probe, like every sprayed piece'
     role: 'side', materialRole: 'carcass', finishExposed: false, finishes, profile: P, sheen: 60,
   });
 
-  assert.equal(side.envMapIntensity, P.appearance.spray?.envMapIntensity ?? 0);
+  // 21.10.2026 (the gloss ride): the spray's quarter is the floor of the probe's weight; at 60 it rides above it,
+  // never past gloss.envMax. Still the neutral studio, never the room.
+  assert.ok(side.envMapIntensity >= (P.appearance.spray?.envMapIntensity ?? 0) - 1e-9);
+  assert.ok(side.envMapIntensity <= P.appearance.gloss.envMax + 1e-9);
+  assert.equal(side.sprayed, true);
   // `colour` is a THREE.Color, and a carcass side carries the profile's own
   // shading for its role — so the assertion is that the colour CAME FROM the
   // spray, not that it is the hex untouched.

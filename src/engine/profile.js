@@ -3583,6 +3583,34 @@ export const DEFAULT_CABINET_PROFILE = {
       lacquer: { roughness: 0.3, clearcoat: 0.35, clearcoatRoughness: 0.12, metalness: 0.0 },
     },
 
+    // ─── THE GLOSS RIDE (chat fix 21.10.2026) ────────────────────────────────
+    //
+    // The owner, 21.10.2026: *"nie mamy w ogole polysku, czy mozemy zrobic
+    // polysk od 0 do 100 procent?"*; shown the two ways: *"wariant A"* (the
+    // neutral studio, never the room: a sprayed colour stays the colour);
+    // *"minimum 5 zostaw"* (the scale stays 5 to 100).
+    //
+    // MEASURED before this block: a RAL 5008 door at 5 % and at 100 % differed
+    // by one unit of brightness in 255. The slider moved the lacquer's
+    // roughness and a coat capped at 0.35, over a probe pinned at a quarter
+    // of a 64 px studio, so a mirror at 100 % had nothing to reflect. These
+    // six numbers are what rides the sheen on a sprayed or veneered piece
+    // (3d/materials.js `surfaceFor`), from the slider's bottom to its top:
+    //   coatMax            the clear coat at 100 % (was the lacquer's 0.35)
+    //   coatRoughnessMin   how sharp that coat is at 100 % (0.03: a mirror)
+    //   coatRoughnessMax   ...and at 5 % (0.5: dead matt, no coat to speak of)
+    //   envMin / envMax    the studio probe's weight at 5 % and at 100 %
+    //                      (0.25 is the hotfix of 08.08 and stays the floor)
+    //   probeSize          the studio probe's resolution (3d/Scene.jsx; 64
+    //                      was a blur with no highlight in it; 256 keeps the
+    //                      studio's light panels as shapes a glossy door shows)
+    // The studio is NEUTRAL grey (three's RoomEnvironment), so a white door
+    // stays white and a RAL chip stays its chip at every stop. PROPOSED, the
+    // owner to confirm.
+    gloss: {
+      coatMax: 1.0, coatRoughnessMin: 0.03, coatRoughnessMax: 0.5, envMin: 0.25, envMax: 1.0, probeSize: 256,
+    },
+
     // ─── Edge break (turn 6) ───
     // A real board edge is not a mathematical corner: the saw and the edge
     // bander leave 0.5–1 mm of break that catches the light, and its absence is
@@ -6210,6 +6238,9 @@ export function migrateCabinetProfile(profile) {
         melamine: { ...D.appearance.materials.melamine, ...profile.appearance?.materials?.melamine },
         lacquer: { ...D.appearance.materials.lacquer, ...profile.appearance?.materials?.lacquer },
       },
+      // Chat fix 21.10.2026: the gloss ride, key by key (a profile saved before
+      // today comes back with all six).
+      gloss: { ...D.appearance.gloss, ...profile.appearance?.gloss },
       bevel: {
         ...D.appearance.bevel, ...profile.appearance?.bevel,
         ao: { ...D.appearance.bevel.ao, ...profile.appearance?.bevel?.ao },

@@ -8,6 +8,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 // Turn 24 (CLAUDE.md F12): the hardware's own probe — per material, never on
 // the scene.
 import { buildHardwareEnv } from './hardwareEnv.js';
+import { getCabinetProfile } from '../engine/profile.js';
 import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
 import FrameDemand from './frameDemand.jsx';
@@ -164,9 +165,20 @@ function FocusRig({ request, orbitRef, onDone }) {
  * lights by definition. It is exported rather than copied so both windows are
  * lit by the SAME box — one rig, the standing rule.
  */
-export function Environment({ intensity, on }) {
+export function Environment({ intensity, on, size = null }) {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
+  // ─── CHAT FIX 21.10.2026: THE PROBE'S RESOLUTION IS A PROFILE NUMBER ──────
+  // The owner: *"nie mamy w ogole polysku"*, *"wariant A"*. 64 px was "a
+  // blurred light probe of a white box, no detail in it to lose": true for the
+  // LIGHT it gives a matt board, false for the REFLECTION a glossy door shows,
+  // which at 64 px is a smear with no highlight in it. `appearance.gloss
+  // .probeSize` (256) keeps the studio's light panels as shapes, so a mirror
+  // coat at 100 % has something to show and a highlight moves across a door as
+  // the camera orbits. Still the same neutral box, still built once per
+  // renderer; the lights are untouched. The editor windows mount this without
+  // a size and read the profile themselves.
+  const probeSize = Number(size) > 0 ? Number(size) : (Number(getCabinetProfile()?.appearance?.gloss?.probeSize) || 64);
 
   // ─── TURN 24 (CLAUDE.md F12): THE HARDWARE'S OWN PROBE ────────────────────
   //
@@ -183,7 +195,7 @@ export function Environment({ intensity, on }) {
     // 64, not the default 256. This is a blurred light probe of a white box —
     // there is no detail in it to lose, and a smaller cube map is a smaller
     // mip chain to walk for every lit pixel of every panel.
-    const target = pmrem.fromScene(room, 0.04, 0.1, 100, { size: 64 });
+    const target = pmrem.fromScene(room, 0.04, 0.1, 100, { size: probeSize });
     // Kept on the scene even when the working view has the lighting switched
     // off, so a RENDER can put it back: a still is always lit properly, whatever
     // the editor is set to (3d/renderCapture.js).
@@ -199,7 +211,7 @@ export function Environment({ intensity, on }) {
         for (const one of Array.isArray(m) ? m : [m]) one?.dispose?.();
       });
     };
-  }, [gl, scene]);
+  }, [gl, scene, probeSize]);
 
   useEffect(() => {
     scene.environment = on ? (scene.userData.ccEnvironment || null) : null;
@@ -1867,7 +1879,7 @@ export default function Scene({
           the balance turn 26 computed does not move, the room only goes down
           — and the placed LEDs come up in 3d/LedStrips.jsx off the same flag.
           Derived here, stored nowhere: toggling back IS the previous state. */}
-      <Environment intensity={profile.appearance.environment.intensity * demoDim} on={realisticLighting} />
+      <Environment intensity={profile.appearance.environment.intensity * demoDim} on={realisticLighting} size={profile.appearance.gloss?.probeSize} />
       <Lights
         roomHeight={roomH}
         roomWidth={roomW}

@@ -208,6 +208,13 @@ export const NEW_FILES = [
   'test/turn80-f11-goldens.test.js',
   // T80 F12 (22.10.2026): the walk
   'scripts/t80-walk.mjs',
+  // T81 F1 (22.10.2026): the projector, its probe and its stage
+  'src/engine/drawings/projector.js',
+  'src/engine/drawings/silhouettes.js',
+  'scripts/t81-kitchen.mjs',
+  'scripts/t81-f01-probe.mjs',
+  'scripts/t78-classify.d/f41-t81-f01.mjs',
+  'test/turn81-f01-projector.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -1,0 +1,348 @@
+{
+  "meta": {
+    "name": "golden-inframe-wud.json",
+    "turn": "T78",
+    "F": "F40",
+    "source": "T80 F11 (the golden F3 names). KIT_INFRAME.lsp (a) and (c) on a WUD 600 with one door, open at both ends, design.inframe true, fronts 22: the frame 602 x 758 (lip 1 past each open side, 19 above and below), the opening 562 x 682, the door 556 x 676. The owner, 21.10.2026: *\"raczej plyta, malo kiedy bedzie jeden ciag dluzszy jak 2800, a jak bedzie to bedziemy laczyc\"*; *\"najlepiej jakbysmy zrobili wszedzie ramke 38 mm ... 1 mm bedzie w srodku wystawac\"*; *\"ramka 25, drzwi 22 i jest idealnie, 3 mm gap pomiedzy carcasem a drzwiami\"*; *\"jak podwojne drzwi to miedzy drzwiami nie ma ramki\"*; *\"3 mm zawsze\"*; (22:14) *\"jezeli chodzi o dol to zdecydowanie wariant C\"*, *\"gora ... tak samo jak dol\"*; (22:40) *\"1 tak\"*, *\"2 na styk\"*, *\"5 tak\"*.",
+    "computed_by": "scripts/t78-goldens.mjs inframeWudScene()",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "scene": "inframeWudScene: WUD 600, one door, on wall 0",
+    "inframe": true,
+    "units": [
+      {
+        "type": "WUD",
+        "width": 600,
+        "height": 720,
+        "depth": 400,
+        "board_t": 18,
+        "front_t": 22,
+        "front_type": "S",
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": null,
+        "mount_height": 1500,
+        "door_extend": false,
+        "unit_num": "W01",
+        "end_panels": [],
+        "inframe": true,
+        "run_frame": {
+          "role": "owner",
+          "offset": -1,
+          "dy": -19,
+          "width": 602,
+          "height": 758,
+          "frameT": 25,
+          "openings": [
+            {
+              "unitId": "w",
+              "x0": 20,
+              "y0": 38,
+              "x1": 582,
+              "y1": 720
+            }
+          ],
+          "stiles": [
+            20,
+            20
+          ],
+          "gaps": [],
+          "pieces": [
+            {
+              "name": "FRAME",
+              "from": 0,
+              "to": 602
+            }
+          ],
+          "joined": false,
+          "joinRefused": false,
+          "limit": 2790,
+          "unitIds": [
+            "w"
+          ],
+          "unitNums": [
+            "W01"
+          ],
+          "ends": {
+            "left": {
+              "kind": "OPEN",
+              "panel": 0
+            },
+            "right": {
+              "kind": "OPEN",
+              "panel": 0
+            }
+          },
+          "overhang": {
+            "left": null,
+            "right": null
+          },
+          "runWidth": 600,
+          "mount": "wall",
+          "boards": [
+            18
+          ]
+        }
+      }
+    ]
+  },
+  "expected": {
+    "units": [
+      {
+        "type": "WUD",
+        "width": 600,
+        "summary": {
+          "csvLines": [
+            "W01,BUL,382,720,<,0.72,0.275",
+            "W01,BUR,382,720,>,0.72,0.275",
+            "W01,TOP,564,382,>,0.56,0.215",
+            "W01,BOTTOM,564,382,>,0.56,0.215",
+            "W01,BACK,600,720,,0,0.432",
+            "W01,FRAME,602,758,,0,0.456",
+            "W01,W01-F,556,676,<>^v,2.46,0.376"
+          ],
+          "panels": [
+            {
+              "id": "BUL",
+              "part": "BUL",
+              "role": "side",
+              "w": 382,
+              "h": 720,
+              "thickness": 18,
+              "box": {
+                "x": 0,
+                "y": 0,
+                "z": 18,
+                "w": 18,
+                "h": 720,
+                "d": 382
+              },
+              "outline": 34,
+              "holes": 14,
+              "pockets": 7,
+              "readiness": null
+            },
+            {
+              "id": "BUR",
+              "part": "BUR",
+              "role": "side",
+              "w": 382,
+              "h": 720,
+              "thickness": 18,
+              "box": {
+                "x": 582,
+                "y": 0,
+                "z": 18,
+                "w": 18,
+                "h": 720,
+                "d": 382
+              },
+              "outline": 34,
+              "holes": 14,
+              "pockets": 7,
+              "readiness": null
+            },
+            {
+              "id": "TOP",
+              "part": "TOP",
+              "role": "top",
+              "w": 564,
+              "h": 382,
+              "thickness": 18,
+              "box": {
+                "x": 18,
+                "y": 702,
+                "z": 18,
+                "w": 564,
+                "h": 18,
+                "d": 382
+              },
+              "outline": 64,
+              "holes": 0,
+              "pockets": 6,
+              "readiness": null
+            },
+            {
+              "id": "BOTTOM",
+              "part": "BOTTOM",
+              "role": "bottom",
+              "w": 564,
+              "h": 382,
+              "thickness": 18,
+              "box": {
+                "x": 18,
+                "y": 0,
+                "z": 18,
+                "w": 564,
+                "h": 18,
+                "d": 382
+              },
+              "outline": 64,
+              "holes": 0,
+              "pockets": 6,
+              "readiness": null
+            },
+            {
+              "id": "BACK",
+              "part": "BACK",
+              "role": "back",
+              "w": 600,
+              "h": 720,
+              "thickness": 18,
+              "box": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 600,
+                "h": 720,
+                "d": 18
+              },
+              "outline": 4,
+              "holes": 34,
+              "pockets": 12,
+              "readiness": null
+            },
+            {
+              "id": "FRAME",
+              "part": "FRAME",
+              "role": "frame",
+              "w": 602,
+              "h": 758,
+              "thickness": 25,
+              "box": {
+                "x": -1,
+                "y": -19,
+                "z": 400,
+                "w": 602,
+                "h": 758,
+                "d": 25
+              },
+              "outline": 4,
+              "holes": 0,
+              "pockets": 1,
+              "readiness": null
+            },
+            {
+              "id": "W01-F",
+              "part": "FRONT",
+              "role": "front",
+              "w": 556,
+              "h": 676,
+              "thickness": 22,
+              "box": {
+                "x": 22,
+                "y": 22,
+                "z": 403,
+                "w": 556,
+                "h": 676,
+                "d": 22
+              },
+              "outline": 4,
+              "holes": 0,
+              "pockets": 1,
+              "readiness": null
+            }
+          ],
+          "drills": [
+            [
+              "FRONT_HINGES_35MM|W01-F",
+              3
+            ],
+            [
+              "FRONT_HINGES_3MM|W01-F",
+              6
+            ],
+            [
+              "HINGES_5MM|BUL",
+              8
+            ],
+            [
+              "HINGES_5MM|BUR",
+              2
+            ],
+            [
+              "PUZZLE_HOLES_7_5MM|BACK",
+              20
+            ],
+            [
+              "PUZZLE_HOLES_7_5MM|BUL",
+              8
+            ],
+            [
+              "PUZZLE_HOLES_7_5MM|BUR",
+              8
+            ],
+            [
+              "SCREWS_3MM|BACK",
+              14
+            ],
+            [
+              "SCREWS_3MM|BUL",
+              6
+            ],
+            [
+              "SCREWS_3MM|BUR",
+              6
+            ]
+          ],
+          "hardware": [
+            {
+              "role": "hinges",
+              "qty": 3,
+              "label": "Hinges"
+            },
+            {
+              "role": "hangers",
+              "qty": 2,
+              "label": "Wall hangers"
+            }
+          ]
+        }
+      }
+    ],
+    "frame": [
+      {
+        "id": "FRAME",
+        "w": 602,
+        "h": 758,
+        "thickness": 25,
+        "box": {
+          "x": -1,
+          "y": -19,
+          "z": 400,
+          "w": 602,
+          "h": 758,
+          "d": 25
+        },
+        "openings": [
+          {
+            "unitId": "w",
+            "w": 562,
+            "h": 682
+          }
+        ],
+        "stiles": [
+          20,
+          20
+        ],
+        "cutouts": [
+          [
+            20,
+            38,
+            582,
+            720
+          ]
+        ],
+        "dxf": {
+          "name": "W01-FRAME.dxf",
+          "fingerprint": "599b9cf3"
+        }
+      }
+    ]
+  }
+}

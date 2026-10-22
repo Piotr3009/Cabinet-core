@@ -203,6 +203,9 @@ export const NEW_FILES = [
   'src/components/InframeWarnings.jsx',
   'scripts/t78-classify.d/f40-t80-f10.mjs',
   'test/turn80-f10-checks.test.js',
+  // T80 F11 (22.10.2026): the two in-frame goldens
+  'scripts/t78-classify.d/f40-t80-f11.mjs',
+  'test/turn80-f11-goldens.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

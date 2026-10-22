@@ -183,6 +183,9 @@ export const NEW_FILES = [
   // T80 F4 (22.10.2026): the frame on the CNC
   'scripts/t78-classify.d/f40-t80-f04.mjs',
   'test/turn80-f04-cnc.test.js',
+  // T80 F5 (22.10.2026): the fronts set in the opening
+  'scripts/t78-classify.d/f40-t80-f05.mjs',
+  'test/turn80-f05-fronts.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -1,9 +1,9 @@
 T80 WALK: THE BRITISH FRAME, ONE BOARD PER RUN (scripts/t80-walk.mjs)
-walked 2026-10-22 09:32 UTC, HEAD 82253dc, http://127.0.0.1:4173/
+walked 2026-10-22 09:44 UTC, HEAD 6f9d956, http://127.0.0.1:4173/
 Every line: PASS or FAIL (the gesture, what was expected, what was read), NOTE (a reading), FRAME (the file beside this one).
 The gestures this turn adds are real clicks; the stage is the mockup script's own, through the store; the cameras are its numbers.
 
-NOTE   the build under the mouse | the repo's HEAD 82253dc; url http://127.0.0.1:4173/
+NOTE   the build under the mouse | the repo's HEAD 6f9d956; url http://127.0.0.1:4173/
 NOTE   THE STAGE (scripts/chatfix-2110-mockup-inframe-final.mjs, through the store's own actions) | BUD 600 one door, BUD 800 a pair, BUDR2 500, WUD 600 one door over the BUD 600; END-L 18 on the BUD 600; plinth; worktop true; front type f1 spray, board generic-22, F&B Card Room Green, sheen 30
 NOTE   the units | [["BUD","01",1000,600,770],["BUD","02",1600,800,770],["BUDR2","DR01",2400,500,770],["WUD","WU01",1000,600,720]]
 PASS   the stage, lay-on (in-frame OFF) | expect: no frame, the design lay-on | observed: inframe false; frames [null,null]; BUD 600 door [{"id":"01-F","w":595.5,"h":770,"t":22,"z":561,"d":22}]
@@ -32,7 +32,7 @@ FRAME  f12-06-cnc-frame.png
 PASS   BOM: the frame's line and the filler note | expect: In-frame frames listed; the note | observed: {"frame":true,"note":"Site filler 19 mm x 1900 under the worktop (joiner, not supplied)"}
 FRAME  f12-07-bom.png
 PASS   the BOM shut by its own x | expect: the panel gone | observed: false
-NOTE   One more section through: 01 (the native select, a real click, the arrows, Enter) | {"ok":true,"label":"01 (Wall A)","after":"u_dixqamj","num01":"01"}
+NOTE   One more section through: 01 (the native select, a real click, the arrows, Enter) | {"ok":true,"label":"01 (Wall A)","after":"u_ajyv0li","num01":"01"}
 NOTE   the sheet with the section | Wall A \u00b7 Sections A-A and B-B
 PASS   the section: a piece of timber over the carcass, named "site filler 19 (timber)" | expect: the label on the sheet | observed: true; sheets ["Cover, index and revisions","Plan \u00b7 base units","Plan \u00b7 wall units","Wall A \u00b7 Front view","Wall A \u00b7 Internal layout","Wall A \u00b7 Sections A-A and B-B","Wall A \u00b7 Perspective view","Visualisation","Cut list and materials"]
 FRAME  f12-08-section.png
@@ -44,6 +44,11 @@ PASS   in-frame OFF is today: no frame, the lay-on doors | expect: no frame; eve
 PASS   the worktop and the end panel back where they were | expect: {"worktop":{"y":870,"h":38,"d":606},"endPanel":{"x":-18,"y":-100,"z":-10,"w":18,"h":870,"d":593}} | observed: {"worktop":{"y":870,"h":38,"d":606},"endPanel":{"x":-18,"y":-100,"z":-10,"w":18,"h":870,"d":593}}
 FRAME  f12-10-off.png
 NOTE   console errors on the page | none
+PASS   retail, FRONTS: the row of two chips | expect: Lay-on, In-frame (British) | observed: ["LAY-ON","IN-FRAME (BRITISH)"]
+PASS   retail: In-frame (British) pressed (a real click): the wardrobe stands in its frame | expect: design.inframe true, a FRAME, the fronts set in | observed: {"type":"WARDROBE","inframe":true,"frame":[1220,2188],"inset":2}
+FRAME  f12-11-retail-fronts.png
+PASS   retail: Lay-on pressed: today's wardrobe | expect: no frame | observed: {"inframe":false,"frames":0}
+NOTE   console errors on the retail page | none
 
-FRAMES (10): f12-01-three-quarter.png, f12-02-elevation.png, f12-03-junction-low.png, f12-04-top-filler.png, f12-05-wall-unit.png, f12-06-cnc-frame.png, f12-07-bom.png, f12-08-section.png, f12-09-check.png, f12-10-off.png
-T80: 24 steps, 24 pass, 0 fail
+FRAMES (11): f12-01-three-quarter.png, f12-02-elevation.png, f12-03-junction-low.png, f12-04-top-filler.png, f12-05-wall-unit.png, f12-06-cnc-frame.png, f12-07-bom.png, f12-08-section.png, f12-09-check.png, f12-10-off.png, f12-11-retail-fronts.png
+T80: 27 steps, 27 pass, 0 fail

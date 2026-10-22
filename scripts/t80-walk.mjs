@@ -43,7 +43,9 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { open, pro, showroomDown } from './t74-harness.mjs';
+import {
+  open, pro, room, withWardrobe, showroomDown,
+} from './t74-harness.mjs';
 import {
   key, clickWith, boxOf, until, choose,
 } from './t75-harness.mjs';
@@ -375,6 +377,38 @@ try {
 const errs = pageErrors(page);
 note('console errors on the page', errs.length ? errs.slice(0, 3).join(' | ') : 'none');
 await page.close();
+
+// === RETAIL: THE SAME ROW, retail's own chips (CLAUDE.md F2: "Retail retail/design/Options.jsx through the copy
+// script, the same row"). A wardrobe through the WHERE step's own button (a WARDROBE run is a run), the FRONTS
+// category, In-frame (British) pressed by a real click at the chip's centre, then Lay-on. ===
+const shop = await open({ width: 1440, height: 900 });
+try {
+  await room(shop, { base: BASE });
+  await withWardrobe(shop);
+  await shop.press('[data-testid="cat-fronts"]');
+  await shop.sleep(1200);
+  const chip = (label) => boxOf(shop, `[...document.querySelectorAll('[data-testid="fronts-inframe"] button')].find((b) => b.offsetParent && b.textContent.trim().toUpperCase().startsWith(${j(label.toUpperCase())}))`);
+  const labels = await shop.ask('[...document.querySelectorAll(\'[data-testid="fronts-inframe"] button\')].map((b) => b.textContent.trim())');
+  check('retail, FRONTS: the row of two chips', labels.length === 2 && /^Lay-on/i.test(labels[0]) && /^In-frame \(British\)/i.test(labels[1]), 'Lay-on, In-frame (British)', j(labels));
+  const inChip = await chip('In-frame');
+  if (inChip) await clickWith(shop, inChip.x, inChip.y);
+  await until(shop, `${S}.project.design.inframe === true`, 5000);
+  const wardrobe = await shop.ask(`(() => { const P = ${S}; const u = P.units[0]; if (!u) return null; const r = P.unitResult(u.id);
+    const f = r.panels.find((p) => p.role === 'frame'); return { type: u.type, inframe: P.project.design.inframe === true, frame: f ? [f.w, f.h] : null, inset: r.panels.filter((p) => p.meta && p.meta.inset).length }; })()`);
+  check('retail: In-frame (British) pressed (a real click): the wardrobe stands in its frame', wardrobe && wardrobe.inframe && Boolean(wardrobe.frame) && wardrobe.inset > 0,
+    'design.inframe true, a FRAME, the fronts set in', j(wardrobe));
+  await shot(shop, 'f12-11-retail-fronts.png');
+  const offChip = await chip('Lay-on');
+  if (offChip) await clickWith(shop, offChip.x, offChip.y);
+  await until(shop, `${S}.project.design.inframe !== true`, 5000);
+  const back2 = await shop.ask(`(() => { const P = ${S}; const r = P.unitResult(P.units[0].id); return { inframe: P.project.design.inframe === true, frames: r.panels.filter((p) => p.role === 'frame').length }; })()`);
+  check('retail: Lay-on pressed: today\'s wardrobe', !back2.inframe && back2.frames === 0, 'no frame', j(back2));
+} catch (e) {
+  check('the retail leg to its end', false, 'no exception', String(e && e.stack ? e.stack.split('\n').slice(0, 3).join(' ') : e));
+}
+const errs2 = pageErrors(shop);
+note('console errors on the retail page', errs2.length ? errs2.slice(0, 3).join(' | ') : 'none');
+await shop.close();
 await showroomDown();
 
 const pass = steps.filter((s) => s.kind === 'PASS').length;

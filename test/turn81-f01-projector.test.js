@@ -89,21 +89,18 @@ for (const inframe of [true, false]) {
     const r = projectRun(group, { view: 'front', mode: 'fronts', profile: P(), worktops, frontTypeOf: a.frontTypeOf });
     const m = group.members.find((x) => x.unit.id === ids.a);
     const door = m.result.panels.find((p) => p.part === 'FRONT');
-    const doorLines = lines(r, (e) => e.src === `${ids.a}:${door.id}` && e.layer === 'DOORS' && !e.meta);
-    // Exactly one rectangle: four outline edges, closed. A lay-on door runs to
-    // the carcass top (T35 F12), where the worktop's nearer edge IS its top
-    // line: the camera sees one line there, and it is the worktop's.
-    const top = m.base + door.box.y + door.box.h;
-    const underWorktop = !inframe && lines(r, (e) => e.layer === 'WORKTOP' && Math.abs(e.y1 - top) < 0.01 && Math.abs(e.y2 - top) < 0.01
-      && Math.min(e.x1, e.x2) <= m.x + door.box.x + 0.01 && Math.max(e.x1, e.x2) >= m.x + door.box.x + door.box.w - 0.01).length === 1;
-    assert.equal(doorLines.length + (underWorktop ? 1 : 0), 4, 'the leaf\'s four edges');
-    const xs = doorLines.flatMap((e) => [e.x1, e.x2]);
-    const ys = [...doorLines.flatMap((e) => [e.y1, e.y2]), ...(underWorktop ? [top] : [])];
-    const w = Math.max(...xs) - Math.min(...xs);
-    const h = Math.max(...ys) - Math.min(...ys);
+    // Exactly one rectangle: the leaf seen whole is written as ONE rect (T81
+    // F3), and no loose edge of it is left. A lay-on door runs to the carcass
+    // top (T35 F12), where the worktop's nearer edge lies on its top line: the
+    // leaf is still seen all round, a hair inside its outline.
+    const doorRects = r.entities.filter((e) => e.kind === 'rect' && e.src === `${ids.a}:${door.id}` && e.layer === 'DOORS' && !e.meta);
+    assert.equal(doorRects.length, 1, 'the leaf, one rectangle');
+    assert.equal(lines(r, (e) => e.src === `${ids.a}:${door.id}` && e.layer === 'DOORS' && !e.meta).length, 0, 'no loose edge of it');
+    const [{ x, y, w, h }] = doorRects;
     assert.deepEqual([Math.round(w * 10) / 10, Math.round(h * 10) / 10], inframe ? [556, 726] : [door.box.w, door.box.h]);
+    assert.deepEqual([x, y], [m.x + door.box.x, m.base + door.box.y], 'where the room hangs it');
     if (inframe) assert.deepEqual([door.box.w, door.box.h], [556, 726], 'the inset door of T80');
-    const box = { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+    const box = { x0: x, x1: x + w, y0: y, y1: y + h };
     const carcass = lines(r, (e) => e.layer === 'CARCASE' && inside(e, box));
     assert.deepEqual(carcass, [], 'no carcass line inside the door');
     // Nothing from inside the cabinet shows on the fronts sheet at all.
@@ -137,7 +134,7 @@ for (const inframe of [true, false]) {
     const r = projectRun(group, { view: 'front', mode: 'xray', profile: P(), worktops });
     const m = group.members.find((x) => x.unit.id === ids.a);
     const door = m.result.panels.find((p) => p.part === 'FRONT');
-    assert.ok(lines(r, (e) => e.src === `${ids.a}:${door.id}` && e.layer === 'XRAY_FRONT').length >= 4, 'the door on XRAY_FRONT');
+    assert.equal(r.entities.filter((e) => e.kind === 'rect' && e.src === `${ids.a}:${door.id}` && e.layer === 'XRAY_FRONT' && !e.meta && !e.fill).length, 1, 'the door on XRAY_FRONT');
     assert.ok(lines(r, (e) => e.family === 'plate' && e.src.startsWith(`${ids.a}:`)).length > 0, 'the plates through it');
     assert.ok(lines(r, (e) => e.layer === 'XRAY_CARCASE').length > 0, 'the carcass on XRAY_CARCASE');
     assert.equal(r.entities.filter((e) => e.layer === 'MASK' || e.fill).length, 0, 'nothing filled, no mask');

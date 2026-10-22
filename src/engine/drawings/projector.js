@@ -89,6 +89,9 @@ export function applianceLabel(unit) {
 
 // ═══ SMALL VECTOR AND POLYGON HELPERS ══════════════════════════════════════
 
+// The worktop's face on an elevation, tinted as the set has always tinted its
+// slab (T71, setElevation's run elevation: `fill: '#f3f3f3'`).
+const SLAB_FILL = '#f3f3f3';
 const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
@@ -271,6 +274,14 @@ function movePrism(pr, off) {
     outline: pr.outline.map(mv),
     holes: pr.holes.map((h) => h.map(mv)),
   };
+}
+
+/** A flat sheet entity (rect, line, poly) moved by dx, dy in its own plane. */
+function shiftEntity(e, dx, dy) {
+  if (e.kind === 'rect') return { ...e, x: e.x + dx, y: e.y + dy };
+  if (e.kind === 'line') return { ...e, x1: e.x1 + dx, y1: e.y1 + dy, x2: e.x2 + dx, y2: e.y2 + dy };
+  if (e.kind === 'poly') return { ...e, pts: e.pts.map(([x, y]) => [x + dx, y + dy]) };
+  return null;
 }
 
 /** The 3-D bounds of a prism. */
@@ -905,11 +916,15 @@ export function runSolids(group, {
           ? [[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]]
           : (e.kind === 'line' ? [[e.x1, e.y1], [e.x2, e.y2]] : (e.pts || []));
         const closed = e.kind === 'rect' || (e.kind === 'poly' && !e.open);
-        marks.push({ kind: 'path', host, front: true, layer: 'DOORS', pen: e.pen || 'VISIBLE', closed, pts: pts.map(([x, y]) => lift2(x, y)), meta: e.meta || 'front-detail' });
+        const flat = shiftEntity({ ...e, layer: 'DOORS', pen: e.pen || 'VISIBLE', meta: e.meta || 'front-detail' }, off[0], off[1]);
+        marks.push({ kind: 'path', host, front: true, layer: 'DOORS', pen: e.pen || 'VISIBLE', closed, pts: pts.map(([x, y]) => lift2(x, y)), meta: e.meta || 'front-detail', flat });
       }
       if (p.part === 'FRONT' && !p.meta?.swingZ && !p.meta?.faceX) {
         for (const e of doorSwing(p.box, p.meta?.hinge)) {
-          marks.push({ kind: 'path', host, front: true, layer: 'DOOR_SWING', pen: 'FINE', closed: false, pts: [lift2(e.x1, e.y1), lift2(e.x2, e.y2)], meta: 'door-swing' });
+          marks.push({
+            kind: 'path', host, front: true, layer: 'DOOR_SWING', pen: 'FINE', closed: false, pts: [lift2(e.x1, e.y1), lift2(e.x2, e.y2)], meta: 'door-swing',
+            flat: shiftEntity({ ...e, layer: 'DOOR_SWING', pen: 'FINE', meta: 'door-swing' }, off[0], off[1]),
+          });
         }
       }
     }
@@ -1050,7 +1065,7 @@ function moveScene(scene, T) {
     faces: scene.faces.map((f) => ({ ...f, pts: f.pts.map(P), holes: (f.holes || []).map((h) => h.map(P)), n: N(f.n) })),
     edges: scene.edges.map((e) => ({ ...e, a: P(e.a), b: P(e.b) })),
     sils: scene.sils.map((s) => ({ ...s, pts: s.pts.map(P) })),
-    marks: scene.marks.map((mk) => (mk.pts ? { ...mk, pts: mk.pts.map(P) } : { ...mk, moved: true })),
+    marks: scene.marks.map((mk) => (mk.pts ? { ...mk, pts: mk.pts.map(P), flat: null } : { ...mk, moved: true })),
   };
 }
 
@@ -1205,9 +1220,45 @@ function renderScene(scene, V, {
     census.masks = masks.length;
   }
 
+  // ── a front seen whole is one rectangle ──
+  // In an orthographic view a front whose face toward the viewer is a
+  // rectangle and is seen all round (tested a hair inside its outline, so a
+  // nearer edge lying ON the outline, the worktop's over a lay-on door, is
+  // no cover) is written as ONE rect: the leaf the owner counts, the field of
+  // a shaker measured against it, as the single front elevation writes it.
+  const emptySet = new Set();
+  const wholeFronts = [];
+  if (V.ortho) {
+    const HAIR = 0.05;
+    for (const f of faces) {
+      const s = f.solid;
+      const leaf = s.front && s.kind === 'board';
+      if ((!leaf && s.kind !== 'worktop') || f.cut || !isFacing.get(f.id) || (f.holes && f.holes.length) || f.pts.length !== 4) continue;
+      const sc = f.pts.map((P) => V.screen(P));
+      const x0 = Math.min(...sc.map((q) => q[0])); const x1 = Math.max(...sc.map((q) => q[0]));
+      const y0 = Math.min(...sc.map((q) => q[1])); const y1 = Math.max(...sc.map((q) => q[1]));
+      if (x1 - x0 < 1e-6 || y1 - y0 < 1e-6) continue;
+      const corner = (v, a, b) => Math.abs(v - a) < 1e-6 || Math.abs(v - b) < 1e-6;
+      if (!sc.every((q) => corner(q[0], x0, x1) && corner(q[1], y0, y1))) continue;
+      const C = [0, 1, 2].map((k) => f.pts.reduce((t, P) => t + P[k], 0) / 4);
+      const ins = f.pts.map((P) => P.map((v, k) => v + Math.sign(C[k] - v) * HAIR));
+      let seen = true;
+      if (!xray) {
+        const own = facesOf.get(s.key) || emptySet;
+        for (let k = 0; k < 4 && seen; k += 1) {
+          const A = ins[k]; const B = ins[(k + 1) % 4];
+          const sA = V.screen(A); const sB = V.screen(B);
+          const got = visibleParts(V, index, A, B, { skip: own, tie: tieFor(s) }).shown
+            .reduce((t, [a, b]) => t + Math.hypot(b[0] - a[0], b[1] - a[1]), 0);
+          if (got < Math.hypot(sB[0] - sA[0], sB[1] - sA[1]) - 1e-6) seen = false;
+        }
+      }
+      if (seen) wholeFronts.push({ s, x0, y0, x1, y1 });
+    }
+  }
+
   // ── the marks that ride on the fronts ──
   const liveKeys = new Map(live.map((s) => [s.key, s]));
-  const emptySet = new Set();
   for (const mk of marks) {
     const host = liveKeys.get(mk.host);
     if (!host || !faceOn) continue;
@@ -1220,12 +1271,26 @@ function renderScene(scene, V, {
       for (let i = 0; i + 1 < n; i += 1) segs.push([mk.pts[i], mk.pts[i + 1]]);
       if (mk.closed && n > 2) segs.push([mk.pts[n - 1], mk.pts[0]]);
       const layer = xray && host.front ? 'XRAY_FRONT' : mk.layer;
+      const pen = layer === 'XRAY_FRONT' ? 'THIN' : mk.pen;
+      const shown = [];
+      let whole = true;
       for (const [A, B] of segs) {
         const pieces = xray ? { shown: [[V.screen(A), V.screen(B)]] } : visibleParts(V, index, A, B, { skip });
-        for (const [a, b] of pieces.shown) {
-          if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1e-9) continue;
-          entities.push(line(a, b, { layer, pen: layer === 'XRAY_FRONT' ? 'THIN' : mk.pen, meta: mk.meta, src: mk.host }));
-        }
+        const sA = V.screen(A); const sB = V.screen(B);
+        const seen = pieces.shown.reduce((t, [a, b]) => t + Math.hypot(b[0] - a[0], b[1] - a[1]), 0);
+        if (seen < Math.hypot(sB[0] - sA[0], sB[1] - sA[1]) - 1e-6) whole = false;
+        shown.push(...pieces.shown);
+      }
+      // Seen whole, face on: the face's own entity, as the single front
+      // elevation writes it (the shaker's field one rect, a decoration one
+      // contour with its ids, *"shaker zostaw jak jest"*).
+      if (whole && mk.flat && V.name === 'front') {
+        entities.push({ ...mk.flat, layer, pen, src: mk.host });
+        continue;
+      }
+      for (const [a, b] of shown) {
+        if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1e-9) continue;
+        entities.push(line(a, b, { layer, pen, meta: mk.meta, src: mk.host }));
       }
     } else if (mk.kind === 'handle') {
       if (mode === 'no-fronts' || mk.standing) continue;
@@ -1264,8 +1329,22 @@ function renderScene(scene, V, {
   }
   // The painter's white first, then everything that is drawn on it; a line the
   // pass cut into pieces at every crossing is one line again where it runs on.
-  const merged = mergeCollinear(entities);
-  merged.sort((a, b) => (a.layer === 'MASK' ? 0 : 1) - (b.layer === 'MASK' ? 0 : 1));
+  let merged = mergeCollinear(entities);
+  for (const { s, x0, y0, x1, y1 } of wholeFronts) {
+    const on = (e) => e.kind === 'line' && e.src === s.key && !e.cut && !e.hidden && (
+      (Math.abs(e.y1 - e.y2) < 1e-6 && (Math.abs(e.y1 - y0) < 1e-6 || Math.abs(e.y1 - y1) < 1e-6)
+        && Math.min(e.x1, e.x2) >= x0 - 1e-6 && Math.max(e.x1, e.x2) <= x1 + 1e-6)
+      || (Math.abs(e.x1 - e.x2) < 1e-6 && (Math.abs(e.x1 - x0) < 1e-6 || Math.abs(e.x1 - x1) < 1e-6)
+        && Math.min(e.y1, e.y2) >= y0 - 1e-6 && Math.max(e.y1, e.y2) <= y1 + 1e-6));
+    merged = merged.filter((e) => !on(e));
+    merged.push({
+      kind: 'rect', layer: s.ink, pen: xray ? 'THIN' : 'VISIBLE', solid: true, src: s.key, ...(s.panelId ? { part: s.panelId } : {}),
+      x: x0, y: y0, w: x1 - x0, h: y1 - y0, ...(s.kind === 'worktop' && !xray ? { fill: SLAB_FILL } : {}),
+    });
+  }
+  // The painter's white first, then a slab's own tint, then every stroke.
+  const rank = (e) => (e.layer === 'MASK' ? 0 : (e.fill ? 1 : 2));
+  merged.sort((a, b) => rank(a) - rank(b));
   census.lines = merged.filter((e) => e.kind === 'line').length;
   return { entities: merged, census };
 }

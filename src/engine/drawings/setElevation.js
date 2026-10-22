@@ -244,7 +244,8 @@ export function buildRunElevation(group, {
   withFronts = true, mode = null, room = null, worktops = [], frontTypeOf = null, shakerFrame = null, profile, ctx,
 }) {
   const sheetMode = mode || (withFronts ? 'fronts' : 'no-fronts');
-  if (sheetMode === 'xray') {
+  // T81 F3 · the fronts sheet is the projector's: only what the eye sees.
+  if (sheetMode === 'xray' || sheetMode === 'fronts') {
     return projectedRun(group, {
       mode: sheetMode, room, worktops, frontTypeOf, shakerFrame, profile, ctx,
     });

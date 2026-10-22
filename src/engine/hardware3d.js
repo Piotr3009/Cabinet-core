@@ -396,7 +396,8 @@ export function doorHingeInstances(panel, {
     side: right ? 'R' : 'L',
     dir,
     // The cup, bored into the INNER face of the door.
-    x: edgeX + dir * cups.xFromHingeEdge,
+    // T80 F6 · an inset leaf's cup is the reference file's K + half the cup in (21.5 today).
+    x: edgeX + dir * (Number(panel.meta?.insetHinge?.cupFromEdge) > 0 ? Number(panel.meta.insetHinge.cupFromEdge) : cups.xFromHingeEdge),
     y,
     z: datum.innerZ,
     // Turn 26 (F1.3): the plane nothing about this hinge may cross, carried on
@@ -419,7 +420,10 @@ export function doorHingeInstances(panel, {
     // same distance from the front edge the engine drills the plate screws at
     // (profile.hinges.xFromFrontEdge).
     plateX: plateFaceX,
-    plateZ: depth - profile.hinges.xFromFrontEdge,
+    // T80 F6 · …or, on an inset leaf, at the reference file's inset column
+    // (meta.insetHinge.plateSetback, 20.5 for a 22 door), where the engine drills it.
+    plateZ: depth - (Number.isFinite(Number(panel.meta?.insetHinge?.plateSetback))
+      ? Number(panel.meta.insetHinge.plateSetback) : profile.hinges.xFromFrontEdge),
     // Which bearer, and which of its faces — reported so a walk can assert the
     // mount rather than infer it from a coordinate (F2.2).
     hingeOn: panel.meta?.hingeOn || null,

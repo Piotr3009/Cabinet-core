@@ -59,6 +59,8 @@ import {
 // of the parent's own cut, a pass before the drilling and a pass after it.
 // T80 F5 · the fronts set in the frame: KIT_INFRAME.lsp (c), mirrored.
 import { inframeSpec, insetFronts, openingOf as inframeOpeningOf } from './inframe.js';
+// T80 F6 · the inset hinge: its numbers from reference/hardware/blum-inframe-hinge.json only.
+import { insetCupFromEdge, insetHingeSpec, insetPlateSetback } from './hingeLadder.js';
 // T80 F3 · and RECESS_WINDOW_LAYER: the in-frame frame's openings go on the
 // layer the back's window uses (T25 F1.2's cut-out).
 import {
@@ -8566,10 +8568,23 @@ export function computeCabinet(params, profileOverride) {
       const hand = pnl.meta?.hinge;
       const hung = pnl.part === 'FRONT' && (hand === 'L' || hand === 'R');
       const onSide = hung && (hand === 'L' ? Math.abs(x0 - (opening[0] + IFS.gap)) < 1e-6 : Math.abs(x1 - (opening[2] - IFS.gap)) < 1e-6);
+      // T80 F6 · the hinge it hangs on is the Blum INSET hinge of the reference
+      // file: its plate column set back from the carcass front by the file's
+      // rule (20.5 for a 22 door), its cup the file's K from the hinge edge.
+      const insetSpec = hung ? insetHingeSpec() : null;
       pnl.meta = {
         ...(pnl.meta || {}),
         ...(hung ? { cupY: (Array.isArray(pnl.meta?.cupY) ? pnl.meta.cupY : cupY).map((c) => roundTo(c + dy, 4)) } : {}),
         ...(onSide && !pnl.meta?.hingeOn ? { hingeOn: hand === 'L' ? 'BUL' : 'BUR' } : {}),
+        ...(hung ? {
+          insetHinge: {
+            plateSetback: insetPlateSetback(t, IFS.frameT),
+            cupFromEdge: insetCupFromEdge(),
+            article: insetSpec.article,
+            angle: insetSpec.angle,
+            systemLabel: insetSpec.systemLabel,
+          },
+        } : {}),
         inset: { cell, opening: { x: opening[0], y: opening[1], w: opening[2] - opening[0], h: opening[3] - opening[1] } },
       };
       inframeInset.push(pnl.id);
@@ -9149,8 +9164,15 @@ export function computeCabinet(params, profileOverride) {
   const platedSides = bayDoors.length
     ? [...new Set(bayDoors.filter((l) => !l.onPartition).map((l) => l.hingeOn))]
     : hingedSidesOf(faceLeavesCut, { panels });
+  // T80 F6 · a side an INSET leaf hangs on is drilled at that leaf's plate
+  // column (meta.insetHinge.plateSetback), not at the lay-on 37: the rows, the
+  // pair and the pilot are today's. A lay-on cabinet has no inset leaf.
+  const insetColumn = new Map(faceLeavesCut
+    .filter((p) => p.meta?.insetHinge && Number.isFinite(Number(p.meta.insetHinge.plateSetback)))
+    .map((p) => [p.meta.hingeOn || (p.meta.hinge === 'R' ? 'BUR' : 'BUL'), Number(p.meta.insetHinge.plateSetback)]));
   for (const sideId of platedSides) {
-    const x = sideId === 'BUR' ? sideW - P.hinges.xFromFrontEdge : P.hinges.xFromFrontEdge;
+    const fromFront = insetColumn.has(sideId) ? insetColumn.get(sideId) : P.hinges.xFromFrontEdge;
+    const x = sideId === 'BUR' ? sideW - fromFront : fromFront;
     const own = platedRowsFor(sideId);
     const pairs = own
       ? own.map((c) => [c - P.hinges.holePairOffset, c + P.hinges.holePairOffset])
@@ -9520,7 +9542,9 @@ export function computeCabinet(params, profileOverride) {
   // screw, said on the piece (`meta.lift`) exactly as the appliance face is.
   for (const pnl of panels.filter((x) => x.part === 'FRONT' && !x.meta?.appliance && !x.meta?.lift)) {
     const hingeSide = pnl.meta?.hinge || cfg.hinge;
-    const cupX = hingeSide === 'L' ? pnl.w - cups.xFromHingeEdge : cups.xFromHingeEdge;
+    // T80 F6 · an inset leaf's cup stands the reference file's K + half the cup from its hinge edge (21.5 today).
+    const fromEdge = Number(pnl.meta?.insetHinge?.cupFromEdge) > 0 ? Number(pnl.meta.insetHinge.cupFromEdge) : cups.xFromHingeEdge;
+    const cupX = hingeSide === 'L' ? pnl.w - fromEdge : fromEdge;
     const holeX = hingeSide === 'L' ? cupX - cups.screwOffsetX : cupX + cups.screwOffsetX;
     // Turn 26 (CLAUDE.md F1.4): the cup is the ONE hole in these kits that does
     // not go through, and this is where the sheet says so. The number is the
@@ -10974,6 +10998,12 @@ export function computeCabinet(params, profileOverride) {
     // An L's leaves were decided by their arms' virtual parents (the bi-fold's
     // leaf A takes the wide family there): their word stands.
     if (lCorner && pnl.meta?.arm && pnl.meta?.hingeFamily) continue;
+    // T80 F6 · an inset leaf hangs on the reference file's inset hinge: its
+    // angle (110) is the file's, and no family ladder is asked of it.
+    if (pnl.meta?.insetHinge) {
+      if (pnl.meta.insetHinge.angle != null) pnl.meta.openAngleDeg = pnl.meta.insetHinge.angle;
+      continue;
+    }
     const fam = hingeFamilyOf(pnl.id);
     // The standard family leaves no FAMILY mark on a leaf nobody chose for (the
     // goldens hold: they read no meta but readiness); a choice, or the wide
@@ -11018,7 +11048,7 @@ export function computeCabinet(params, profileOverride) {
     const doors = doorPanels.length === hingedPanelCount ? doorPanels : [];
     const keys = doors.length ? doors : Array.from({ length: hingedLeafCount }, () => null);
     for (const pnl of keys) {
-      const spec = resolveDoorHinge({
+      const resolvedSpec = resolveDoorHinge({
         assigned: pnl ? doorHingeAssignment({ door_hinges: cfg.doorHinges }, pnl.id) : null,
         frontThickness: frontT,
         innerDrawer,
@@ -11026,6 +11056,15 @@ export function computeCabinet(params, profileOverride) {
         // T78 F13 · the leaf's family.
         family: pnl ? hingeFamilyOf(pnl.id) : 'standard',
       });
+      // T80 F6 · an inset leaf buys the reference file's inset hinge (its
+      // article and angle, PROPOSED); the finish is the project's, as ever.
+      const ih = pnl?.meta?.insetHinge || null;
+      const spec = ih
+        ? {
+          ...resolvedSpec, angle: ih.angle, family: 'inframe', article: ih.article, articles: ih.article ? [ih.article] : [],
+          assigned: false, systemLabel: ih.systemLabel,
+        }
+        : resolvedSpec;
       // ─── TURN 36 (CLAUDE.md F6): PER-SEGMENT HINGE SETS ──────────────────
       // "A split is two doors, not one door with a line drawn on it." Each
       // segment carries its own ladder, so the ORDER is grouped by that count
@@ -11051,7 +11090,7 @@ export function computeCabinet(params, profileOverride) {
         article: spec.article,
         articles: spec.articles,
         finish: spec.finish,
-        system: cfg.hingeSystemLabel,
+        system: spec.systemLabel || cfg.hingeSystemLabel,
         assigned: spec.assigned,
       },
       hingeSpecLabel({
@@ -11062,7 +11101,8 @@ export function computeCabinet(params, profileOverride) {
         angle: spec.angle,
         finish: spec.finish,
         article: spec.article,
-        systemLabel: cfg.hingeSystemLabel,
+        // T80 F6 · an inset group names the inset hinge's own system.
+        systemLabel: spec.systemLabel || cfg.hingeSystemLabel,
         assigned: spec.assigned,
       }));
   }
@@ -11475,7 +11515,8 @@ export function computeCabinet(params, profileOverride) {
         .map((p) => [p.id, p.meta.plateY]),
     ),
     side_hinge_holes_y: hingedLeafCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
-    side_hinge_holes_x: P.hinges.xFromFrontEdge,
+    // T80 F6 · an in-frame cabinet's plates stand at the inset column.
+    side_hinge_holes_x: insetColumn.size ? [...insetColumn.values()][0] : P.hinges.xFromFrontEdge,
     hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSidesOf(
       panels.filter((p) => p.part === 'FRONT' && p.role === 'front'), { panels },
     ),

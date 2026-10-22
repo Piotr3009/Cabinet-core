@@ -1,0 +1,79 @@
+{
+  "system": "cliptop_blumotion_inset",
+  "units": "mm",
+  "status": "PROPOSED: every number below is T80's reading of the sources named beside it, the owner to choose the article in the PR",
+  "turn": "T80 F6, 22.10.2026",
+  "owner": {
+    "words": "zawias na boku szafki (specjalne zawiasy z Bluma) (21.10.2026, 22:03); 5 tak (22:40)",
+    "law": "a Blum in-frame hinge, its mounting plate on the CARCASS SIDE, its cup in the door as today; never on the frame's stile (NOT THIS TURN)"
+  },
+  "source": {
+    "how_read": "22.10.2026, through search excerpts only: the session's network refused every page fetch, so each number was read from the text a search returned for the URL named beside it (SNIPPET: quoted from the page; SUMMARY: the search tool's paraphrase). Open the URL before a number is more than PROPOSED.",
+    "catalogue": "Blum catalogue 2024, English edition",
+    "catalogue_url": "https://publications.blum.com/2024/catalogue/en/76/",
+    "brochure_url": "https://d2.blum.com/services/BEC003/cliptopbmn_fl_dok_bus_$sen-us_$aof_$v1.pdf",
+    "dealer_url": "https://www.bullerltd.co.uk/blum-clip-top-standard-inset-blumotion-cabinet-hinge-71b3750.html"
+  },
+  "rules": {
+    "hinge": {
+      "article": "71B3750",
+      "name": "CLIP top BLUMOTION 110 inset, screw-on",
+      "system_label": "CLIP top BLUMOTION 110 INSET",
+      "status": "PROPOSED (CLAUDE.md T80 F6: the article T80 ships with)",
+      "source": "https://www.blumwarehouse.co.uk/products/71b3750",
+      "quote": "CLIP TOP HINGE 110 DEGREE INSET WITH INTEGRATED BLUMOTION 08913183 71B3750 (SNIPPET)",
+      "sibling": { "article": "71B3790", "fixing": "INSERTA", "source": "https://www.lincolnsentry.com.au/blum-clip-top-blumotion-110-hinge-inserta-inset-nickel-plated/p/7102191", "quote": "Hinge, Integrated BLUMOTION,71B3790 - 110 Deg, INSERTA, F/C (SNIPPET)" }
+    },
+    "angle": { "value": 110, "status": "PROPOSED", "source": "https://www.cabinetparts.com/p/blum-hinges-european-cabinet-hinges-BH71B3750-p6667", "quote": "Clip-Top BLUMOTION Full Inset Soft-Close 110 Degree Opening Hinge for Screw Installation (SNIPPET, title)" },
+    "door_thickness_max": { "value": 24, "status": "PROPOSED (CLAUDE.md T80 F6 'door thickness to 24')", "source": "https://www.blum.com/eu/en/products/hingesystems/clip-top-blumotion/overview/", "quote": "thicker doors of up to 24 mm, depending on the application (SUMMARY); dealers give 16 to 26 (https://www.bullerltd.co.uk/blum-clip-top-standard-inset-blumotion-cabinet-hinge-71b3750.html, SNIPPET)" },
+    "cup": {
+      "diameter": 35,
+      "depth_catalogue": 13,
+      "engine_bore": "today's bore (engine/doors.js cupBoreOf, the owner's measured 11 clamped to the leaf): CLAUDE.md T80 F6 'the cups on the door as today'",
+      "status": "PROPOSED",
+      "source": "https://d2.blum.com/services/BEC003/cliptopbmn_fl_dok_bus_$sen-us_$aof_$v1.pdf",
+      "quote": "a 13 mm boring depth is required for all three holes (35 mm & 8 mm) (SNIPPET)"
+    },
+    "boring_distance_k": {
+      "used": 4,
+      "min": 3,
+      "max": 7,
+      "note": "used 4: the cup centre 21.5 from the hinge edge (17.5 + 4), today's cup line, inside Blum's 3 to 7. A dealer gives a default tab of 5 (cup centre 22.5): https://www.woodworkerexpress.com/answers/5733204/whats-the-distance-from-door-to-hole-center (SUMMARY)",
+      "status": "PROPOSED",
+      "source": "https://d2.blum.com/services/BEC003/cliptopbmn_fl_dok_bus_$sen-us_$aof_$v1.pdf",
+      "quote": "Boring distance range 3 mm to 7 mm. For door overlays up to 22 mm. (SNIPPET)"
+    },
+    "plate": {
+      "article": "173H7100",
+      "name": "CLIP cruciform mounting plate, 0 mm, cam height adjustment, screw-on",
+      "two_piece": "175H7100",
+      "spacing": 0,
+      "drill": "plate_knockin5",
+      "drill_note": "the side is drilled by today's plate_default (5 mm knock-in, 174E6100.01), as CLAUDE.md T80 F6 says; 173H7100 is a screw-on plate (chipboard screws), the owner to choose which he fits",
+      "status": "PROPOSED",
+      "source": "https://www.bullerltd.co.uk/blum-clip-hinge-mounting-plate-173h7100.html",
+      "quote": "Spacing: 0mm; Shape: cruciform; Fixing: for chipboard screws; Height adjustment: through lower and upper part/cam (SNIPPET)"
+    },
+    "plate_setback": {
+      "inset_mm": 1.5,
+      "formula": "frontT + inset_mm - (frameT - frontT), from the CARCASS FRONT edge to the plate's fixing column",
+      "for_a_22_door": 20.5,
+      "status": "PROPOSED (CLAUDE.md T80 F6 and THE NUMBERS: 'frontT + 1.5 less 3 = 20.5', Blum inset rule, dealer page of 21.10)",
+      "source": "https://www.cabinetparts.com/p/blum-hinges-european-cabinet-hinges-BH71T3790-p6710",
+      "quote": "Installation Note : Set back mounting plate screw-on position by door thickness +1.5 mm. (SNIPPET)",
+      "caution": "Blum's own pages word the rule as a shift FROM the standard 37 line ('Move back fixing position of mounting plate by front thickness FD + 1.5 mm', https://publications.blum.com/2024/catalogue/en/81/, SNIPPET; 'Setback of mounting plate would be 38.5 mm + door thickness', https://cabinotch.us/media/wysiwyg/FAQ/BlumHingeSpecifications.pdf, SNIPPET). Read that way, a door whose face stands 25 in front of the carcass puts the plate 37 + 1.5 + 22 - 25 = 35.5 from the carcass front, not 20.5 (T80's arithmetic, not a source). Blum recommends a trial door for inset use. The owner decides on a trial door before the column is drilled in production."
+    }
+  },
+  "candidates": [
+    { "article": "71B3750", "name": "CLIP top BLUMOTION 110 inset, screw-on", "door": "16 to 26", "source": "https://www.bullerltd.co.uk/blum-clip-top-standard-inset-blumotion-cabinet-hinge-71b3750.html", "quote": "Opening angle: 110 degrees. Door thickness: 16-26mm. (SNIPPET)", "shipped": true },
+    { "article": "71B3790", "name": "CLIP top BLUMOTION 110 inset, INSERTA", "door": "to 26", "source": "https://www.build.com/blum-71b3790/s316652", "quote": "Max Cabinet Door Thickness mm 26 mm (SNIPPET)" },
+    { "article": "71M2750", "name": "CLIP 100 inset, sprung, screw-on", "door": "15 to 24 / 16 to 24 / to 25 (sources disagree)", "source": "https://cpkitchencomponents.co.uk/shop/hinges-lifts/hinges/blum-clip-top-hinges/blum-100-degree-clip-on-hinge-for-use-with-in-frame-door-systems/", "quote": "Blum 100 Degree Clip On Hinge (For use with in-frame door systems) (SNIPPET, title; the only UK page found saying in-frame in its own words)" },
+    { "article": "71B9750", "name": "CLIP top BLUMOTION 95 thick door, inset, screw-on", "door": "to 30", "source": "https://lincolnsentry.com.au/blumotion-hinge-integrated-71b9750-95-degree-profile-screw-on-full-cra/p/7102202", "quote": "Hinge, Integrated BLUMOTION, 71B9750 - 95 Deg,Profile,Screw On, F/C (SNIPPET)" },
+    { "article": "71B3650+P", "name": "the dealer pack of 21.10 (110 BLUMOTION with a cruciform in-frame plate)", "source": null, "quote": "NOT FOUND on 22.10.2026: 71B3650 is a half overlay / dual application hinge (https://www.blumwarehouse.co.uk/products/71b3650, SNIPPET); it is an inset hinge only on a US face frame with the plate on the frame (https://quikdrawers.com/blum-face-frame-mounting-plate, SNIPPET), which the owner's 'zawias na boku szafki' excludes" }
+  ],
+  "items": [
+    { "file": "hardware/hinges/blum/cliptop/71B3550_42542984.glb", "family": "71B3550", "article": "42542984", "role": "hinge", "angle": 110, "finish": "nickel", "note": "today's GLB of the 110 in the bucket, drawn for the inset hinge (no new GLB this turn)" },
+    { "file": "hardware/hinges/blum/cliptop/71B3590_48445634.glb", "family": "71B3590", "article": "48445634", "role": "hinge", "angle": 110, "finish": "onyx", "note": "today's GLB of the 110, onyx" },
+    { "file": "hardware/hinges/blum/cliptop/174E6100.01_42378433.glb", "family": "174E6100.01", "article": "42378433", "role": "plate_knockin5", "angle": null, "finish": "nickel", "note": "today's plate GLB, drawn at the inset column" }
+  ]
+}

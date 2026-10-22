@@ -202,3 +202,85 @@ export function hingeRowOwner(result, y) {
   const at = pick.rows.findIndex((r) => near(r, y));
   return { panelId: pick.panelId, hingeIndex: at < 0 ? 0 : at, split: pick.split };
 }
+
+// ─── T80 F6 · THE INSET BRANCH, BESIDE THE LAY-ON LADDER ────────────────────
+//
+// The owner, 21.10.2026: *"zawias na boku szafki (specjalne zawiasy z Bluma)"*;
+// 22:40 *"5 tak"*. An in-frame door hangs on a Blum INSET hinge, its plate on
+// the carcass side, its cup in the door as today. Its numbers enter the engine
+// ONLY through `reference/hardware/blum-inframe-hinge.json` (the pattern of
+// cliptop-hinges.json: system, units, rules, items, every number with its
+// source, every one PROPOSED), read here and nowhere else. The lay-on ladder
+// above is not touched (FROZEN 7): the ROWS are the kit's own, counted by the
+// door's height as today, and what is new is where they are drilled: the plate
+// column at the json's set-back (KIT_INFRAME.lsp D13, inframe-plate-setback),
+// the cup at the json's K from the hinge edge. Nothing here runs for a lay-on
+// door; a leaf is inset when the engine says so (`meta.inset`).
+
+import INFRAME_HINGE from '../../reference/hardware/blum-inframe-hinge.json' with { type: 'json' };
+
+const r4 = (v) => Math.round(Number(v) * 10000) / 10000;
+
+/** The in-frame hinge file, as shipped (or a caller's own, for a test). */
+export function inframeHinge() {
+  return INFRAME_HINGE;
+}
+
+/** Is this front set in a frame (the engine's own word, `meta.inset`)? */
+export function isInsetLeaf(panel) {
+  return Boolean(panel?.meta?.inset) && isHingedFront(panel);
+}
+
+/**
+ * KIT_INFRAME.lsp inframe-plate-setback: the plate column's distance from the
+ * CARCASS FRONT edge: frontT + the inset rule's number, less what the door
+ * stands forward of the carcass (frameT - frontT). 20.5 for a 22 door.
+ */
+export function insetPlateSetback(frontT, frameT, hinge = INFRAME_HINGE) {
+  const inset = Number(hinge?.rules?.plate_setback?.inset_mm);
+  if (!Number.isFinite(inset) || !(Number(frontT) > 0) || !(Number(frameT) > 0)) return null;
+  return r4(Number(frontT) + inset - (Number(frameT) - Number(frontT)));
+}
+
+/** The cup's centre from the door's hinge edge: K + half the cup (21.5 with K 4). */
+export function insetCupFromEdge(hinge = INFRAME_HINGE) {
+  const k = Number(hinge?.rules?.boring_distance_k?.used);
+  const d = Number(hinge?.rules?.cup?.diameter);
+  return Number.isFinite(k) && d > 0 ? r4(k + d / 2) : null;
+}
+
+/** KIT_INFRAME.lsp inframe-cup-clear-p: the cup's edge stands K + gap off the lip, never under 3. */
+export function insetCupClear(gap, hinge = INFRAME_HINGE) {
+  const k = Number(hinge?.rules?.boring_distance_k?.used);
+  return Number.isFinite(k) && k + Number(gap) >= 3 - 1e-9;
+}
+
+/** The order line's words for an inset hinge: its article, its angle, its system. */
+export function insetHingeSpec(hinge = INFRAME_HINGE) {
+  const R = hinge?.rules || {};
+  return {
+    article: R.hinge?.article || null,
+    name: R.hinge?.name || null,
+    systemLabel: R.hinge?.system_label || null,
+    angle: Number(R.angle?.value) || null,
+    doorMax: Number(R.door_thickness_max?.value) || null,
+    plate: R.plate?.article || null,
+    plateDrill: R.plate?.drill || null,
+    status: hinge?.status || null,
+  };
+}
+
+/**
+ * Every inset leaf of a computed cabinet with its ladder as drilled: the
+ * carcass rows (the kit's own), the cups in the door's frame, the plate
+ * column on the side it hangs on. A READ of what the engine published.
+ */
+export function insetLadder(result) {
+  return (result?.panels || []).filter(isInsetLeaf).map((p) => ({
+    panelId: p.id,
+    side: p.meta?.hingeOn || (p.meta?.hinge === 'R' ? 'BUR' : 'BUL'),
+    cups: Array.isArray(p.meta?.cupY) ? p.meta.cupY.map(Number) : [],
+    rows: Array.isArray(p.meta?.cupY) ? p.meta.cupY.map((c) => r4(Number(c) + Number(p.box?.y || 0))) : [],
+    plateSetback: p.meta?.insetHinge?.plateSetback ?? null,
+  }));
+}

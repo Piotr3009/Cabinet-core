@@ -1,62 +1,51 @@
-# T80 IN-FRAME: co zrobić z tą paczką (Piotr, 21.10.2026, 23:20)
+# T81 DRAWINGS: co zrobić z tą paczką (Piotr, 22.10.2026, 23:25)
 
-Paczka: cabinetcore-t80-spec-2110-2157.zip. CAŁY ZESTAW: zawiera w sobie paczkę z 21:27
-(połysk wariant A + przekroje + mockup ostateczny, 35 plików) ORAZ spec T80. Jeśli już rozpakowałeś
-2127, ten ZIP nadpisze te same pliki tym samym, nic nie zepsuje. Baza: main 743b8e9 ("115").
-
+Paczka: cabinetcore-t81-spec-2210-2205.zip. Baza: main 3719d3b (merge PR #79, T80).
 Zawartość do repo (struktura repo-root):
-- CLAUDE.md (spec T80, ZASTĘPUJE CLAUDE.md z T79; zaczyna się od nagłówka tury; T79 zostaje w historii git)
-- verify/t80/mockup-inframe-final-01..05.png, mockup-inframe-final-sheet.png (mockup, który zatwierdziłeś "1 tak")
-- verify/t80/przekroj-poziomy-v2-38.png, przekroj-pionowy.png, przekroj-poziomy-v1-40.png (przekroje, które czytałeś)
-- src/engine/profile.js, src/3d/materials.js, src/3d/Scene.jsx + testy (połysk, z paczki 2127)
-- scripts/chatfix-2110-*.mjs, scripts/t78-classify.d/f39-owner-2110.mjs, verify/chatfix-2110/* (z paczki 2127)
-Folder _nie-do-repo/ skasuj przed git add (CZYTAJ i patch są tylko dla Ciebie).
+- CLAUDE.md (spec T81, ZASTĘPUJE CLAUDE.md z T80; T80 zostaje w historii git)
+- verify/t81/dxf-analiza.png (osiem wycinków z Twojego DXF), dxf-warstwy.md (184 warstwy), pdf-audit.png (audyt PDF z 22.10),
+  dxf-wallB-fronts.png, dxf-wallA-no-fronts.png, dxf-door-detail.png, dxf-section-drawers.png, dxf-island-plan.png (wzorce dla agentów)
+Folder _nie-do-repo/ skasuj przed git add (CZYTAJ i patch są tylko dla Ciebie). Twój DXF (57 MB) NIE idzie do repo.
 
 ## Kroki
 1. Rozpakuj do folderu repo Cabinet-core (nadpisze CLAUDE.md).
 2. Skasuj folder _nie-do-repo.
 3. git add -A
-4. git commit -m "Chat fix 21.10 (gloss ride, in-frame sections and mockup) + T80 spec: in-frame, the British frame"
+4. git commit -m "T81 spec: the drawings are the model"
 5. git push
-6. Uruchom sesję Claude Code z repo (nie z Projektu), agenci i tryb równoległy ON.
-   Prompt startowy: "Read CLAUDE.md and run TURN 80 exactly as written. Autonomous, zero questions, skip and name in the PR, PR before morning."
-7. Rano: podaj mi numer PR, robię audyt (klon, suita, klasyfikator, parens, walk, porównanie klatek z mockupem), potem merge i Twój eye-test.
+6. Sesja Claude Code z repo (nie z Projektu), environment Default (chmura), gałąź main, Auto, Opus 5.5 High, agenci i tryb równoległy ON.
+   Prompt startowy: ten sam co do T80, z "TURN 81" zamiast "TURN 80" i z "claude/t81-drawings" jako gałęzią (pełny tekst niżej).
+7. Rano: podaj mi numer PR, robię audyt (klon, suita, klasyfikator, goldeny, walk, klatki arkuszy vs 3D), potem merge i Twój eye-test PDF.
 
-## Co jest w turze (12 punktów, kolejność = wartość)
-PART A: F1 KIT_INFRAME.lsp (prawo ramy ciągu, łączenie powyżej 2800, fronty inset) NAJPIERW, osobny commit.
-PART B: F2 przełącznik per projekt: Settings i Wizard, wiersz FRONTS: Lay-on / In-frame (British), przez paramsForEngine.
-PART C: F3 rama jako element ciągu (jak plinth run): BOM, etykiety FRAME / FRAME-1..n; F4 rama na CNC (DXF z otworami jako cutout, arkusz, strażnicy, widok CNC).
-PART D: F5 drzwi i fronty szuflad 22 inset (3 do ramy, 3 między frontami, bez ramy w parze i w stosie); F6 zawias Blum in-frame na boku z pliku reference/hardware/blum-inframe-hinge.json.
-PART E: F7 panel końcowy na styk, do lica ramy, do góry ramy (+19); F8 blat na ramie (+19), wypełnienie 19 = notatka + kawałek timber na przekroju PDF, bez pozycji BOM.
-PART F: F9 rama w 3D (jedna siatka z otworami, jak mockup); F10 Checki #40 do #44; F11 goldeny golden-inframe-run i golden-inframe-wud, szóstka i wszystkie stare IDENTICAL, REPINNED puste.
-PART G: F12 walk t80-walk.mjs, 10 klatek, pięć z kamer mockupu (porównanie jeden do jednego).
-In-frame OFF = main bajt w bajt. Poza turą: zawias na stile ramy, okucie łączenia ramy, listwy ozdobne, rama na sprzętach AGD / narożnikach / okapach (ciąg dzieli się tam na segmenty, Check #42), drzwi dwuskrzydłowe, notch b/c, pull-down.
+## Co jest w turze (10 F, kolejność = wartość)
+PART A: F1 PROJEKTOR: jeden rzut tego, co rysuje pokój (te same deski, te same okucia, te same elementy ciągu), widoczność jak malarz: od tyłu do przodu z białym wypełnieniem, więc nic nie prześwituje przez front. Tryby: fronty / bez frontów / x-ray. Stare składacze arkuszy zestawu skasowane (kasacja).
+PART B: F2 KOLEJNOŚĆ ARKUSZY: 01 3D, fronty (każda ściana), bez frontów (każda ściana), X-ray (każda ściana), plan dolne, plan górne, przekroje, wizualizacja, cut list. Numery szafek na każdym arkuszu.
+PART C: F3 fronty (zawiasy jako czarne paski 6 x 70 w pozycjach z drabinki silnika, gałki fi 30 z projektu, AGD niebieskie z modelem, rama in-frame, blat, cokół, gzyms); F4 bez frontów (rama zostaje, płytki zawiasów, skrzynki, prowadnice, nogi); F5 X-ray (fronty i karkas szare, wnętrze pełne, jak X-ray w 3D); F6 plan i przekroje z tego samego projektora (cokół pod cięciem jako linia ukryta).
+PART D: F7 SYLWETKI Z GLB: skrypt czyta modele okuć z bucketa, rzutuje na trzy płaszczyzny, obrysowuje; przekroje i widoki bez frontów rysują prowadnice, nogi, zawiasy, gałki jak modele.
+PART E: F8 JEDEN KOLOR = JEDNA WARSTWA: nasze zostają, dochodzą HINGE_MARK, WORKTOP, XRAY_FRONT, XRAY_CARCASE, MASK, FRAME_BOARD; SVG i PDF w grupach warstw.
+PART F: F9 karta szafki rysuje tylko swoją szafkę (plinth i rama przycięte do szerokości), nazwa koloru raz.
+PART G: F10 walk: każdy arkusz zrzucony i sprawdzony liczbowo względem silnika.
+Poza turą: eksport DXF zestawu, cut list i CNC (zostają), rysunek ramy per ściana, plan blatu ze zlewem i płytą, listwa ozdobna 4 linie, cokolwiek w silniku cięć.
 
 ## Decyzje, które podjąłem za Ciebie w specu (PROPOSED; jedno słowo i zmienię przed pushem)
-1. Lip liczony z 38: lip = (38 - 2 x grubość boku) / 2, czyli 1 przy 18 i 0 przy 19 (Twoje "veneer 19 x 2 idealnie"); rail poza karkas = 38 - bok - lip = 19 w obu przypadkach.
-2. Stile na końcu ciągu też 38: kryje lip + bok + panel i wystaje poza panel o resztę (1 przy 18 + 18, 0 przy 19 + 19). Panel na styk, jak kazałeś.
-3. Łączenie ramy powyżej 2800: cięcie w osi stile między szafkami, bez okucia łączącego (Check żółty mówi, że rama jest w dwóch); okucie wybierzesz później.
-4. Zawias: plik reference/hardware/blum-inframe-hinge.json startuje z geometrią CLIP top BLUMOTION 110° INSET (71B3750 / 71B3790) na płytce 0 mm (173H7100 / 175H7100), płytka cofnięta od czoła karkasu o grubość frontu + 1.5 minus 3 = 20.5 (regula Blum dla inset, strona dealera z 21.10). Patrz "Zawias Blum" niżej.
-5. Zakres jednostek z ramą: BUD, BUD_INT, BUDR, BUDR2, BUDR4, BUDTALL, SINK, WUD, WUD_GLASS, LOW_CABINET, WARDROBE, WARDROBE_LOW. Sprzęty AGD, narożniki, blind, okapy, topy, desk, free panel, wyspy: rama się tam kończy (segmenty).
-6. Blat podnosi się o 19 pod in-frame; gzyms górnej szafki stoi na górnej krawędzi ramy (+19).
-7. Front inny niż 22 przy włączonym in-frame: Check #40 czerwony (nie zmieniam Ci materiału sam).
-8. Szafki w ciągu nie na styk (dziś silnik może stawiać je z odstępem): stile rośnie o odstęp, Check #41 żółty.
-9. Rama z materiału typu frontu (natrysk, jak zielona w mockupie), bez obrzeża.
+1. Okładka (cover) znika jako osobna strona: indeks i rewizje idą do kolumny strony 01 (3D), bo kazałeś "najpierw 3D".
+2. Szarości X-ray: fronty #9A9A9A, karkas #C9C9C9 (z liczb appearance.xray 0.42 / 0.2).
+3. Rama in-frame na arkuszach w osobnym kolorze FRAME_BOARD (ciemniejszy fiolet), żeby legenda odróżniała ramę od frontów w niej.
+4. Cokół na planie dolnym: linia ukryta (kreskowana), nie pełna.
+5. Sylwetki okuć: rzut trójkątów GLB, raster 0.5 mm, obrys; rodzina bez modelu dostaje dzisiejszy symbol i jest nazwana w PR.
+6. Karta szafki: części ciągu przycięte do szerokości szafki + 50 mm.
+7. Warstwy w PDF jako grupy opcjonalne (OCG), jeśli biblioteka jsPDF pozwoli; jeśli nie, grupy w SVG i wpis w PR.
 
-## Zawias Blum in-frame (Twoje "2 wyszukaj w katalogu"; nic nie wymyślam, same źródła)
-Katalog Blum 2024/25 online (wpis Petros 69d71b91): https://publications.blum.com/2024/catalogue/en/ , rozdział Hinge systems od s. 70.
-Kandydaci, wszystkie Blum, sprzedawane w UK do in-frame; wybierz jeden, wpiszę / T80 wpisze do json:
-- 71B3750 (wkręcany) / 71B3790 (INSERTA): CLIP top BLUMOTION 110°, INSET, cup 35 / 13; reguła Blum dla inset: płytkę cofnąć od czoła o grubość drzwi + 1.5 mm (u nas minus 3 mm, bo front stoi 3 mm przed karkasem). Źródło: https://www.cabinetparts.com/p/blum-hinges-european-cabinet-hinges-BH71B3750-p6667 i https://www.woodworkerexpress.com/blum-110deg-blumotion-hinge-inset-screw-on.html ; zestaw z płytkami 0 mm w UK: https://www.ironmongerydirect.co.uk/product/blum-clip-top-soft-close-cabinet-hinge-pack-&-0mm-mounting-plates-110°-inset-zinc-plated-pair-611564
-- 71M2750: CLIP 100°, inset, sprężynowy, bez BLUMOTION; dealer UK pisze wprost "for use with in-frame door systems": https://cpkitchencomponents.co.uk/shop/hinges-lifts/hinges/blum-clip-top-hinges/blum-100-degree-clip-on-hinge-for-use-with-in-frame-door-systems/
-- 71B9750: CLIP top BLUMOTION 95°, inset, do grubych drzwi (do 32 mm); przy 22 mm niepotrzebny: https://hardwarehut.com/products/blum-95degree-clip-top-blumotion-thick-door-hinge-inset-screw-on-soft-close
-- "71B3650+P": zestaw dealera UK "Blum 110 Degree Integrated Soft Close Inframe Hinge & Plate" (zawias 110° BLUMOTION + płytka krzyżowa "used on inframe kitchens to allow the hinge to open past the frame"): https://www.larkandlarks.co.uk/p/components/accessories/hinges-fittings/blum-110-degree-integrated-soft-close-inframe-hinge-plate
-Moja propozycja: 71B3750 na płytce 173H7100 (regulacja mimośrodem), bo geometria inset + cofnięcie 20.5 wychodzi z reguły Blum. Jeśli masz inny numer w cenniku, podaj, spec bierze Twój.
-
-## Gdzie jest co po T80 (żebyś wiedział, co sprawdzać rano)
-- Settings / Wizard: wiersz FRONTS: Lay-on / In-frame (British).
-- 3D: rama zielona na czole ciągu, fronty w ramie, blat na ramie, 19 nad i pod karkasem.
-- CNC: deska FRAME z otworami (cutout), etykieta na stile.
-- BOM: FRAME pod ciągiem; notatka "Site filler 19 mm x szerokość ciągu (joiner, not supplied)".
-- PDF przekrój: rama 25 x 808 z lipami, drzwi 22 równo z licem, kawałek timber 19 nad wieńcem.
-- Check: #40 front nie 22, #41 szafki nie na styk, #42 rama zatrzymana na jednostce poza zakresem, #43 rama łączona, #44 cup za blisko lipu.
-- Wyłączony in-frame = dokładnie to, co masz dziś (goldeny i DXF bajt w bajt).
+## Prompt do Code (wklej w całości)
+Read CLAUDE.md in full before anything else and run TURN 81 exactly as written there. This is an overnight, unattended run. Nobody will answer you.
+RULES OF THIS RUN
+1. You have standing permission for everything in this repository: every command, install, file edit, commit, push and the PR. Never ask for permission, never ask to proceed. ZERO QUESTIONS: never ask the user anything, never wait, never end a message with a question. If you feel the need to ask, decide instead: take the reading that follows the owner's words in CLAUDE.md most closely, write it in verify/t81/DECISIONS.md (what, why, which words) and keep going; every decision also goes into the PR body under "DECISIONS TAKEN".
+2. ZERO STOPS. A failing test, a red classifier, a missing GLB, a flaky walk, an unclear line: diagnose, fix, or skip the point WHOLE, name it in the PR under "SKIPPED AND WHY", and continue with the next F. The run ends only when the PR is opened.
+3. The owner's decisions in CLAUDE.md are final: the sheet order, the projector as the one source, hinges from the engine's ladder as black bars, knobs 30 from the project, unit numbers on every sheet, our inks kept and the missing ones added one layer per colour, hardware from the GLB, no DXF export, the cut list and CNC untouched, the engine's cuts untouched. Numbers marked PROPOSED are yours to ship as written; any new number goes into profile.js under drawings with a source line and is listed in the PR as PROPOSED.
+4. Order: PART A first (the probe, then the projector), then F2 to F10 in order. Agents and parallel mode ON; one writer per central file exactly as CLAUDE.md lists; never two agents in one file. If an agent fails or hangs, redo its work yourself and continue.
+5. Branch claude/t81-drawings from main. One commit per F, message "T81 F<n>: <name>". Push after every F.
+6. Gates before the PR, all green: full suite (node --test "test/**/*.test.js", never --silent), scripts/t78-classify.mjs strict with f41-t81-f*.mjs fragments and REPINNED empty, scripts/t78-copy.mjs --check CLEAN, the six base goldens IDENTICAL (scripts/t64-classify.mjs --dump vs verify/t70/goldens-base.json), scripts/t78-goldens.mjs --check, NEW_FILES updated, every new file with the Skylon header, no em or en dash anywhere, scripts/t81-walk.mjs with real mouse and the frames under verify/t81/. The engine's cuts must be untouched: prove it with the goldens and the DXF fingerprints and say so in the PR.
+7. If a gate stays red after a real attempt to fix it, do not stop: record the exact failure in the PR under "RED AT THE END" and open the PR anyway.
+8. Open the PR before morning with the body CLAUDE.md asks for. Attribution lines at the end of commits and the PR as the environment requires.
+9. Nothing goes to Petros or any external system. No git history rewriting, no force push, no deleting files that are not yours to delete, nothing touched under FROZEN in CLAUDE.md.
+Start now with PART A.

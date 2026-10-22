@@ -196,13 +196,17 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
     // the same bay, the owner: *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze"*), argued, re-frozen.
     // Not a widening file.
     'RailModal',
+    // AMENDED BY T80 F10 (22.10.2026): `InframeWarnings` (a new PRO surface, the in-frame checks #40 to #44 in the
+    // bottom-left column, *"Each in the left messages and in the Check panel."*), argued, frozen. Not a widening file.
+    'InframeWarnings',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');
   for (const [name, turn] of exempt) {
     // AMENDED BY T78 F19: T78 licenses CompanyDefaultsModal (the Joints choice). AMENDED BY T79 F1: T79 licenses Messages.
     // AMENDED BY T79 F12: T79 licenses CabinetEditorModal (Center between's pick).
-    assert.ok(['67', '69', '71', '72', '74', '75', '78', '79'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
+    // AMENDED BY T80 F10: T80 licenses InframeWarnings (the in-frame checks in the left column).
+    assert.ok(['67', '69', '71', '72', '74', '75', '78', '79', '80'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
   }
   assert.ok(!exempt.some(([n, t]) => /UnitSize/.test(n) && t === '69'), 'F9 bought no exemption');
   // AMENDED BY T75 F9: RoomModal's licence is renewed tonight (ADD ISLAND), so

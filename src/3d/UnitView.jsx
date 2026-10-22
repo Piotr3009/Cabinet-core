@@ -780,9 +780,6 @@ export function MovingPanel({
   // the J is the board's own shape, not a joint, so it does not wait for the
   // joint system's layers (the contour view hands none).
   const jpullCut = Boolean(p?.cnc?.jpull?.edge);
-  // T80 F9 · ...and a run's FRAME, whose openings are its shape (KIT_INFRAME.lsp
-  // D10): a slab in the contour view would hide the inset fronts behind it.
-  const frameCut = p?.part === 'FRAME';
   const frontBores = useMemo(() => {
     if (mitre || !(p.meta?.frontDecoration || isShakerFront(p))
       || !profile?.appearance?.cuts?.enabled) return EMPTY_DRILLS;
@@ -794,8 +791,8 @@ export function MovingPanel({
   const decoration = useMemo(() => (mitre ? null : frontDecorationGeometry(p, frontBores)),
     [p, mitre, frontBores]);
   const built = useMemo(
-    () => ((layers || jpullCut || frameCut) && !mitre && !decoration ? panelSolids(p, layers, profile, boredDrills) : null),
-    [p, layers, profile, mitre, boredDrills, jpullCut, frameCut, decoration],
+    () => ((layers || jpullCut) && !mitre && !decoration ? panelSolids(p, layers, profile, boredDrills) : null),
+    [p, layers, profile, mitre, boredDrills, jpullCut, decoration],
   );
   // ─── Turn 25 (CLAUDE.md F3): THE SHAKER IS A TRAY, NOT A SLAB ───────────
   // A recess in the face, leaving the frame standing — one solid, so the
@@ -2750,6 +2747,14 @@ export default function UnitView({
     () => (contour ? null : resolveJoineryLayers(profile, unitDesign?.joinery || null)),
     [profile, unitDesign, contour],
   );
+  // T80 F9 · a run's FRAME is built from its own outline in every view: its
+  // openings are its shape (KIT_INFRAME.lsp D10), and a slab in the contour
+  // view would stand over the inset fronts. So it is handed the layers the
+  // contour view withholds from the joints.
+  const frameLayers = useMemo(
+    () => resolveJoineryLayers(profile, unitDesign?.joinery || null),
+    [profile, unitDesign],
+  );
 
   return (
     <group
@@ -2972,7 +2977,7 @@ export default function UnitView({
             depth={D}
             profile={profile}
             swing={front === 'door' ? swingFor(p) : null}
-            joineryLayers={jointLayers}
+            joineryLayers={p.part === 'FRAME' ? frameLayers : jointLayers}
             onPointerDown={(e) => {
               // ─── Turn 13 (CLAUDE.md F5.1/F5.3): THE LEFT BUTTON ONLY ───
               // A pointer-down fires for every button, so a RIGHT press on a

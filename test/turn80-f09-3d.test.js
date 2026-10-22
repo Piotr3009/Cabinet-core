@@ -107,8 +107,10 @@ test('F9 · the holes do not wait for the scene\'s machining flag or the joint l
   const built = panelSolids(frame, null, off, []);
   assert.ok(built.solid);
   assert.equal(covering(built.solid, frame.box, 300, 385), 0, 'the door opening is still air');
-  // MovingPanel builds the FRAME's solid with no layers (UnitView.jsx `frameCut`).
-  assert.match(read('src/3d/UnitView.jsx'), /const frameCut = p\?\.part === 'FRAME';[\s\S]{0,1500}\(layers \|\| jpullCut \|\| frameCut\)/);
+  // The room hands the FRAME the joint layers in every view, the contour view included (UnitView.jsx `frameLayers`).
+  const view = read('src/3d/UnitView.jsx');
+  assert.match(view, /const frameLayers = useMemo\(\s*\(\) => resolveJoineryLayers\(profile, unitDesign\?\.joinery \|\| null\),/);
+  assert.match(view, /joineryLayers=\{p\.part === 'FRAME' \? frameLayers : jointLayers\}/);
   // Every other board is untouched by the change: a lay-on door with the flag off is still no solid at all.
   const layon = computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: '01' }, P);
   const door = layon.panels.find((p) => p.role === 'front');

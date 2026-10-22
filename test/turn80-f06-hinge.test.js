@@ -83,7 +83,7 @@ test('F6 · the json loads, cliptop-hinges.json\'s shape, and every number names
   // No new GLB: the items are files the CLIP top catalogue already names.
   const cliptop = JSON.parse(read('reference/hardware/cliptop-hinges.json'));
   for (const item of raw.items) assert.ok(cliptop.items.some((c) => c.file === item.file), `${item.file} is already in the bucket's list`);
-  assert.doesNotMatch(read('reference/hardware/blum-inframe-hinge.json'), /[–—]/, 'no em or en dash');
+  assert.doesNotMatch(read('reference/hardware/blum-inframe-hinge.json'), /[\u2013\u2014]/, 'no em or en dash');
   assert.ok(existsSync(`${ROOT}reference/hardware/cliptop-hinges.json`));
 });
 

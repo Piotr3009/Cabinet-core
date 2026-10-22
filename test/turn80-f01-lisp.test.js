@@ -51,7 +51,7 @@ const BUDR2 = { cab: [0, 500, 770, 0, 18], fronts: [[1.5, 0, 498.5, 382], [1.5, 
 test('F1 · KIT_INFRAME.lsp: the Skylon header, ASCII, no dash, a NEW file and the only LISP this turn adds', () => {
   assert.ok(TEXT.startsWith(';;; Copyright (c) 2026 Skylon Development Ltd. All rights reserved.'));
   assert.ok(/^[\x00-\x7F]*$/.test(TEXT), 'ASCII (AutoCAD\'s loader)');
-  assert.doesNotMatch(TEXT, /[–—]/, 'no em or en dash');
+  assert.doesNotMatch(TEXT, /[\u2013\u2014]/, 'no em or en dash');
   // Against the turn's base (main of 21.10.2026, the owner's "80"): the folder gained this file and nothing else moved.
   const base = execSync('git merge-base HEAD origin/main', { cwd: ROOT, encoding: 'utf8' }).trim();
   const moved = execSync(`git diff --name-status ${base} -- reference/lisp`, { cwd: ROOT, encoding: 'utf8' })

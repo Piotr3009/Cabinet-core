@@ -59,7 +59,7 @@ try { head = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: REPO }
 const steps = [];
 const frames = [];
 const ascii = (t) => String(t)
-  .replace(/[–—]/g, '-')
+  .replace(/[\u2013\u2014]/g, '-')
   .replace(/[^\x09\x0a\x20-\x7e]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
 const check = (gesture, ok, expect, got) => {
   steps.push({ kind: ok ? 'PASS' : 'FAIL', gesture: ascii(gesture), expect: ascii(expect), got: ascii(got) });

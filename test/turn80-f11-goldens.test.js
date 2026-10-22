@@ -42,7 +42,7 @@ test('F11 · the two goldens are written, named in the fragment, and held byte f
     assert.match(file.meta.source, /The owner, 21\.10\.2026: \*"raczej plyta/, 'the owner\'s words of 21.10 in the meta');
     assert.match(file.meta.source, /\*"3 mm zawsze"\*/);
     assert.equal(file.params.inframe, true, 'the classifier sees the golden open the inframe gate');
-    assert.doesNotMatch(read(`fixtures/${g.file}`), /[–—]/, 'no em or en dash');
+    assert.doesNotMatch(read(`fixtures/${g.file}`), /[\u2013\u2014]/, 'no em or en dash');
   }
 });
 

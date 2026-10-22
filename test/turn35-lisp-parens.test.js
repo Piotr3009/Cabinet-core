@@ -385,5 +385,5 @@ test('T80 F1 · KIT_INFRAME.lsp balances 0/0 and carries its three laws and its 
   assert.match(text, /\(defun inframe-join \(frame lmax\)/);
   assert.match(text, /\(defun inframe-fronts \(o fronts g/);
   assert.match(text, /;;; 5\. NUMBERS/);
-  assert.doesNotMatch(text, /[–—]/, 'no em or en dash');
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
 });

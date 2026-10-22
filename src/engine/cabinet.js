@@ -59,8 +59,8 @@ import {
 // of the parent's own cut, a pass before the drilling and a pass after it.
 // T80 F5 · the fronts set in the frame: KIT_INFRAME.lsp (c), mirrored; F7 · the end panel (e).
 import {
-  endPanelDepth as inframeEndPanelDepth, endPanelGrow as inframeEndPanelGrow, inframeSpec, insetFronts,
-  openingOf as inframeOpeningOf,
+  endPanelDepth as inframeEndPanelDepth, endPanelGrow as inframeEndPanelGrow, fillerNote as inframeFillerNote,
+  inframeSpec, insetFronts, openingOf as inframeOpeningOf,
 } from './inframe.js';
 // T80 F6 · the inset hinge: its numbers from reference/hardware/blum-inframe-hinge.json only.
 import { insetCupFromEdge, insetHingeSpec, insetPlateSetback } from './hingeLadder.js';
@@ -6387,6 +6387,11 @@ export function computeCabinet(params, profileOverride) {
             frameW: runFrame.width,
             // T80 F4 · the run's name and the bottom rail, for the label and the EDGE arrow.
             unitNums: runFrame.unitNums || [],
+            // T80 F8 · the carcasses' span and the mount, and over a base run the joiner's filler note
+            // (KIT_INFRAME.lsp D15: a NOTE on the run, never a board).
+            runWidth: runFrame.runWidth,
+            mount: runFrame.mount,
+            ...(i === 0 && runFrame.mount !== 'wall' ? { fillerNote: inframeFillerNote(runFrame.runWidth, inframeSpec(P)) } : {}),
             rail: holes.length ? roundTo(Math.min(...holes.map((o) => o.y0)), 4) : null,
             openings: holes.map((o) => ({ unitId: o.unitId, w: roundTo(o.x1 - o.x0, 4), h: roundTo(o.y1 - o.y0, 4) })),
             stiles: runFrame.stiles,
@@ -11869,8 +11874,11 @@ export function computeCabinet(params, profileOverride) {
       ...corniceElement,
       // Where the piece lives in this unit's own frame: its bottom edge at
       // door-top level (the carcass top), its back face in the door plane.
-      carcassTop: H,
-      doorPlane: D + P.doors.gap + frontT,
+      // T80 F8 · in a frame the cornice stands on the frame's top edge (19 over
+      // the carcass, KIT_INFRAME.lsp D3) and its face meets the frame's face
+      // (D + 25): T80 PROPOSED. Lay-on: the carcass top and the door plane.
+      carcassTop: params?.inframe === true ? H + inframeSpec(P).outside : H,
+      doorPlane: params?.inframe === true ? D + inframeSpec(P).frameT : D + P.doors.gap + frontT,
       // T73 F8 · the return's far end is the wall behind THIS unit.
       backZ: -wallGapOf({ params }, P),
       order: corniceOrderRow,
@@ -12103,6 +12111,27 @@ export function computeCabinet(params, profileOverride) {
     const topOf = new Map(panels.map((p) => [p.id, Number(p.cnc?.drawn_h) || Number(p.h) || 0]));
     return drills.filter((d) => !(topOf.has(d.panel) && Number(d.y) > topOf.get(d.panel) + 1e-6));
   })();
+
+  // ─── T80 F8 · WHAT THE DRAWINGS NEED OF THE FRAME, ONCE ──────────────────
+  // A section cuts a cabinet at its centre, through the frame's opening: it
+  // cuts the two RAILS and sees the stile beyond. Every number of that is the
+  // cabinet's own (its board, the lip 38 leaves it, 19 outside, 25 deep), so
+  // it is said here once for the drawings (engine/drawings/setSection.js) and
+  // not re-derived there. Present only under params.inframe.
+  if (params?.inframe === true) {
+    const IFD = inframeSpec(P);
+    const lipD = (IFD.stile - G - G) / 2;
+    derived.inframe = {
+      frameT: IFD.frameT,
+      outside: IFD.rail - G - lipD,
+      lip: lipD,
+      rail: IFD.rail,
+      boardT: G,
+      frontT: inframeInset.length ? (panels.find((p) => p.id === inframeInset[0])?.thickness ?? frontT) : frontT,
+      // The filler the joiner fits over a base carcass (D15): 19 high, from the TOP's back to the carcass front.
+      filler: type.mount === 'wall' ? null : { h: IFD.rail - G - lipD, z0: G, z1: D },
+    };
+  }
 
   // ─── T80 F5 · THE NUMBERS THE INSET FRONTS MOVED ─────────────────────────
   // `derived`, `drillSummary` and `assemblies` state the lay-on fronts from the

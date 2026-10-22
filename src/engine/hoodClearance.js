@@ -67,10 +67,13 @@ export function hoodClearanceMm(profile, kind = 'induction') {
  * The worktop top over this hob, in mm off the floor: the slab a record lays
  * over it where there is one, else the hob's top plus the workshop's slab.
  */
-function worktopTopOver(hob, { records = [], units = [], profile, walls = null } = {}) {
+function worktopTopOver(hob, {
+  records = [], units = [], profile, walls = null, inframe = false,
+} = {}) {
   if (!hob) return null;
+  // T80 F8 · under in-frame the slab sits on the frame: the hob's top is 19 higher.
   const slabs = worktopsFor({
-    records: records || [], units, profile, walls,
+    records: records || [], units, profile, walls, inframe,
   });
   const over = slabs.find((s) => (s.geometry?.unitIds || []).includes(hob.id)
     || (s.unitIds || []).includes(hob.id));
@@ -119,7 +122,7 @@ export function hoodClearanceRows({
       const kind = hobKindOf(hob);
       const want = hoodClearanceMm(profile, kind);
       const top = worktopTopOver(hob, {
-        records, units: list, profile, walls,
+        records, units: list, profile, walls, inframe: design ? migrateDesign(design).inframe === true : false,
       });
       const mount = unitBase(hood, profile);
       const gap = Math.round((mount - top) * 100) / 100;

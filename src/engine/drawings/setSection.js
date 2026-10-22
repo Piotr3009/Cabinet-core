@@ -94,6 +94,48 @@ export function buildStation(group, station, { room = null, worktops = [], profi
       for (const z of zs) entities.push(...legHardware({ x: z }, { width: legs.width, height: legH, profile, dx: clearance, dy: m.base }));
     }
   }
+  // ─── T80 F8 · THE FRAME AND THE FILLER ON THE SECTION ──────────────────
+  // The owner, 21.10.2026 (22:40): *"6 informacja i na pdf na przekroju pokaz
+  // kawalek timber"*. A knife through a framed cabinet's centre passes through
+  // the frame's opening: it CUTS the two rails (38, 19 of each outside the
+  // carcass, KIT_INFRAME.lsp D3) and SEES the stile beyond (25 x the frame's
+  // height); the inset door is drawn where the engine put it (22, flush with
+  // the frame's face, 3 of air behind it). Over a base carcass, behind the top
+  // rail, the joiner's 19 of timber, hatched and named: a note, never a board.
+  // Every number is the cabinet's own (`derived.inframe`). Lay-on: nothing.
+  for (const m of members) {
+    const fr = m.result.derived?.inframe;
+    if (!fr) continue;
+    const clearance = gapOf(m);
+    const D = Number(m.result.params.depth) || 0;
+    const H = Number(m.result.params.height) || 0;
+    const z = clearance + D;
+    const inner = fr.boardT + fr.lip;
+    entities.push({ ...rect('DOORS', z, m.base - fr.outside, fr.frameT, H + 2 * fr.outside), pen: 'VISIBLE', meta: { inframe: 'stile' } });
+    entities.push({ ...rect('DOORS', z, m.base - fr.outside, fr.frameT, fr.outside + inner), pen: 'CUT', solid: true, meta: { inframe: 'rail-bottom' } });
+    entities.push({ ...rect('DOORS', z, m.base + H - inner, fr.frameT, inner + fr.outside), pen: 'CUT', solid: true, meta: { inframe: 'rail-top' } });
+    if (fr.filler) {
+      const x0 = clearance + fr.filler.z0;
+      const x1 = clearance + fr.filler.z1;
+      const y0 = m.base + H;
+      const h = fr.filler.h;
+      entities.push({ ...rect('CARCASE', x0, y0, x1 - x0, h), pen: 'CUT', solid: true, meta: { inframe: 'filler' } });
+      // The timber's hatch: 45 degree lines at the house's pitch, inside the piece.
+      const pitch = ctx.mm(profile.drawings.set.hatchPitch);
+      for (let k = -h; k < x1 - x0; k += pitch) {
+        const ax = Math.max(x0, x0 + k);
+        const bx = Math.min(x1, x0 + k + h);
+        if (bx - ax <= 1e-6) continue;
+        entities.push({ ...line('CARCASE', ax, y0 + (ax - (x0 + k)), bx, y0 + (bx - (x0 + k))), pen: 'FINE', meta: { inframe: 'filler-hatch' } });
+      }
+      entities.push({
+        ...text('SHEET_MUTED', (x0 + x1) / 2, y0 + h + ctx.mm(3.2), `site filler ${h} (timber)`, ctx.mm(1.9)),
+        paperHeight: 1.9,
+        mask: true,
+        meta: { inframe: 'filler-label' },
+      });
+    }
+  }
   for (const w of worktops) {
     if (w.x <= station.x && station.x <= w.x + w.w) {
       entities.push({ ...rect('CARCASE', 0, w.y, w.d, w.h), pen: 'CUT', fill: '#d9d9d9', solid: true });

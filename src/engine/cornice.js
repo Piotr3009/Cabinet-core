@@ -539,6 +539,9 @@ export function corniceRefusals(element) {
  */
 export function runCorniceParams(runs, {
   walls = [], roomHeight = 0, frontFaceDepthOf = null, infillHeightOf = null, units = [],
+  // T80 F8 · how far a unit's frame stands over its carcass (19 in an
+  // in-frame project, 0 otherwise): the cornice stands on the frame's top edge.
+  topLiftOf = null,
 }, profile) {
   const out = new Map((units || []).map((u) => [u.id, null]));
   const depthOf = frontFaceDepthOf || (() => 0);
@@ -570,7 +573,7 @@ export function runCorniceParams(runs, {
         span,
         height: segment.height,
         top: corniceStackTop({
-          unitTop: unitTop(first, profile),
+          unitTop: unitTop(first, profile) + (topLiftOf ? Number(topLiftOf(first)) || 0 : 0),
           infillHeight: segment.units.reduce(
             (m, u) => Math.max(m, Number(infillHeightOf ? infillHeightOf(u) : u.params?.top_infill_mm) || 0),
             0,

@@ -121,6 +121,27 @@ export function buildBom(entries, {
     // T75 F23 · a dowel unit's cut list says so in a NOTE row (the gate while
     // it is shut); counted in nothing, merged with nothing.
     const dowelNote = dowelNoteRow(result);
+    // T80 F8 · the joiner's filler over a framed base run (the owner, 21.10.2026:
+    // *"6 informacja"*): a NOTE row under the run's owner, counted in nothing,
+    // merged with nothing, never a board and never a DXF.
+    const fillerNotes = (result.panels || [])
+      .filter((p) => p.role === 'frame' && p.meta?.inframe?.fillerNote)
+      .map((p) => ({
+        unit_num: result.unitNum,
+        id: `${p.id}-FILLER`,
+        part: 'FILLER',
+        role: 'inframe_note',
+        material_role: 'note',
+        material_label: `NOTE: ${p.meta.inframe.fillerNote}`,
+        w: 0,
+        h: 0,
+        qty: 1,
+        thickness: 0,
+        edge: '',
+        edge_m: 0,
+        area_m2: 0,
+        readiness: 'manual',
+      }));
     const cabineoNote = cabineoNoteRow(result);
     // T76 F5 · a front with applied strips carries a NOTE for their gluing,
     // `manual`, in the same grammar: counted in nothing, merged with nothing.
@@ -142,7 +163,7 @@ export function buildBom(entries, {
       readiness: n.state,
     }));
     units.push({
-      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: [...rows, ...stripNotes, ...(dowelNote ? [dowelNote] : []), ...(cabineoNote ? [cabineoNote] : [])], totals: result.totals, warnings: result.warnings,
+      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: [...rows, ...stripNotes, ...(dowelNote ? [dowelNote] : []), ...(cabineoNote ? [cabineoNote] : []), ...fillerNotes], totals: result.totals, warnings: result.warnings,
     });
 
     for (const r of rows) {
@@ -209,6 +230,8 @@ export function buildBom(entries, {
       units: entries.map((e) => e.unit).filter(Boolean),
       profile,
       walls: roomWalls(room),
+      // T80 F8 · the slab on the frame, as the store resolves it.
+      inframe: migrateDesign(design).inframe === true,
     });
     if (slabs.length) {
       const rows = [];

@@ -1243,6 +1243,8 @@ export function runChecks({
   if (room && design) {
     const slabs = worktopsFor({
       records: migrateDesign(design).worktops, units: list, profile, walls: roomWalls(room),
+      // T80 F8 · the slab on the frame, as the store resolves it.
+      inframe: migrateDesign(design).inframe === true,
     });
     const lines = [];
     const joints = new Set();

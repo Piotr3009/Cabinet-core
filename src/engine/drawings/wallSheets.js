@@ -144,7 +144,8 @@ export function wallDrawingSheets({
   // caller that never knew about worktops still gets them on the sheets.
   const records = (design ?? project?.design)?.worktops;
   const resolved = (worktops && worktops.length) ? worktops
-    : (Array.isArray(records) && records.length ? worktopsFor({ records, units: entries.map((e) => e?.unit).filter(Boolean), profile }) : []);
+    // T80 F8 · the fallback resolves the slab on the frame as the store does.
+    : (Array.isArray(records) && records.length ? worktopsFor({ records, units: entries.map((e) => e?.unit).filter(Boolean), profile, inframe: (design ?? project?.design)?.inframe === true }) : []);
   const slabs = resolved.map((w) => w.geometry || w);
   const plan = [];
   const push = (name, variant, wall, make) => plan.push({ name, variant, wall, make });

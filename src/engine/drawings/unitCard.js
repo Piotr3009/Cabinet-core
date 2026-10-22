@@ -126,6 +126,13 @@ export function buildUnitCard(result, {
     const box = boundsOf(entities);
     entities.push(text('VIEW_TITLE', box.x, box.y - C.noteHeight * 1.6, notes, C.noteHeight, 'left'));
   }
+  // T80 F8 · the joiner's filler over a framed base run, on the run owner's
+  // card: a NOTE, never a board (the owner, 21.10.2026: *"6 informacja"*).
+  const filler = (result.panels || []).find((p) => p.role === 'frame' && p.meta?.inframe?.fillerNote);
+  if (filler) {
+    const box = boundsOf(entities);
+    entities.push(text('VIEW_TITLE', box.x, box.y - C.noteHeight * 1.6, `NOTE: ${filler.meta.inframe.fillerNote}`, C.noteHeight, 'left'));
+  }
 
   return {
     entities,

@@ -3169,6 +3169,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // adjacency the plinth's are: docking a cabinet extends it, an end panel or
     // a gap ends it.
     const maskParams = runMaskParams(next, profile);
+    // T80 F3 · …and the FRAME of an in-frame project, the plinth's grammar on
+    // the plinth's own runs (engine/inframe.js, KIT_INFRAME.lsp (a) (b)). A
+    // lay-on project asks nothing: no element, no frame, not one params key.
+    const frameParams = design.inframe === true ? runFrameParams(next, profile) : new Map();
+    // How far a unit's frame stands over its carcass top: 19 on a framed unit (the rail outside, KIT_INFRAME.lsp D3), else 0.
+    const frameLiftOf = (u) => {
+      if (!frameParams.get(u.id)) return 0;
+      const t = Number(u.params?.board_t) > 0 ? Number(u.params.board_t) : Number(profile.board?.thickness) || 18;
+      return Number(profile.inframe.rail) - t - (Number(profile.inframe.stile) - 2 * t) / 2;
+    };
     // ─── …and the CORNICE, the same way again (turn 22, CLAUDE.md F1.3) ─────
     // One moulding across horizontally adjacent cornice-bearing units. It is
     // computed after the top infill because the piece it is FIXED TO is the
@@ -3186,11 +3196,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         + profile.doors.gap
         + (Number(u.params?.front_t) || profile.front.thickness),
       infillHeightOf: (u) => Number(u.params?.top_infill_mm) || 0,
+      // T80 F8 · the cornice stands on the frame's top edge (T80 PROPOSED).
+      topLiftOf: (u) => frameLiftOf(u),
     }, profile);
-    // T80 F3 · …and the FRAME of an in-frame project, the plinth's grammar on
-    // the plinth's own runs (engine/inframe.js, KIT_INFRAME.lsp (a) (b)). A
-    // lay-on project asks nothing: no element, no frame, not one params key.
-    const frameParams = design.inframe === true ? runFrameParams(next, profile) : new Map();
     // T75 F15 · …and the PELMET, the cornice's segments and mitres on the
     // bottom edge of a run of wall units (engine/pelmet.js).
     const pelmetParams = runPelmetParams(next, {
@@ -3208,7 +3216,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // specified finishes above his ceiling.
     for (const u of next) {
       const notice = corniceCeilingNotice({
-        unitTop: unitTop(u, profile),
+        // T80 F8 · on a framed unit the stack starts on the frame's top edge.
+        unitTop: unitTop(u, profile) + frameLiftOf(u),
         infillHeight: Number(u.params?.top_infill_mm) || 0,
         height: takesCornice(u.type) ? u.params?.cornice : 0,
         roomHeight,
@@ -9987,6 +9996,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       profile: getCabinetProfile(),
       // T75 F5 · a slab that turns a corner is resolved in both walls' frames.
       walls: roomWalls(s.project.room),
+      // T80 F8 · under in-frame the slab sits on the frame (19 higher).
+      inframe: migrateDesign(s.project.design).inframe === true,
     });
   },
 

@@ -192,6 +192,9 @@ export const NEW_FILES = [
   // T80 F7 (22.10.2026): the end panel reaches the frame
   'scripts/t78-classify.d/f40-t80-f07.mjs',
   'test/turn80-f07-end-panel.test.js',
+  // T80 F8 (22.10.2026): the worktop on the frame, the filler a note and timber
+  'scripts/t78-classify.d/f40-t80-f08.mjs',
+  'test/turn80-f08-filler.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

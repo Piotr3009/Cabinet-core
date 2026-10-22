@@ -29,6 +29,7 @@
 
 import { getUnitType } from './types.js';
 import { buildRuns, unitBase, wallGapOf } from './runs.js';
+import { sheetSizeForFamily } from './checks.js';
 
 const EPS = 1e-6;
 const r4 = (v) => Math.round(Number(v) * 10000) / 10000;
@@ -155,6 +156,24 @@ export function joinFrom(from, w, cands, lmax) {
 /** inframe-join: the whole frame against the board. */
 export function joinOf(frame, lmax) {
   return joinFrom(0, frame.w, joinCandidates(frame), lmax);
+}
+
+/**
+ * T80 F4 · THE BOARD A PIECE MUST FIT: the owner's 2800 (profile.inframe.
+ * boardMax), and never longer than the sheet the workshop chose for its
+ * FRONTS (the frame is front material; checks.js sheetSizeForFamily). A frame
+ * longer than that sheet is the LISP's join (b), never a layout refusal
+ * (CLAUDE.md T80 F4). The frame's height lies across the sheet's short side
+ * when it fits there, else along its long side.
+ */
+export function joinLimit(profile, frameH) {
+  const F = inframeSpec(profile);
+  const sheet = sheetSizeForFamily(profile, 'fronts') || {};
+  const long = Math.max(Number(sheet.width) || 0, Number(sheet.height) || 0);
+  const short = Math.min(Number(sheet.width) || 0, Number(sheet.height) || 0);
+  if (!(long > 0)) return F.boardMax;
+  const along = frameH <= short + EPS ? long : (frameH <= long + EPS ? short : long);
+  return Math.min(F.boardMax, along);
 }
 
 /** inframe-pieces: [[from, to], ...]. */
@@ -318,7 +337,8 @@ export function segmentFrame(segment, profile) {
   const F = inframeSpec(profile);
   const cabs = segment.units.map((u) => cabOf(u, profile));
   const frame = frameOf(cabs, segment.left, segment.right, F);
-  const join = joinOf(frame, F.boardMax);
+  const limit = joinLimit(profile, frame.h);
+  const join = joinOf(frame, limit);
   const cuts = join ? join.cuts : [];
   const names = pieceNames(cuts.length + 1);
   const pieces = piecesOf(frame.w, cuts).map(([from, to], i) => ({ name: names[i], from: r4(from), to: r4(to) }));
@@ -337,7 +357,10 @@ export function segmentFrame(segment, profile) {
     pieces,
     joined: pieces.length > 1,
     joinRefused: !join,
+    limit,
     unitIds: cabs.map((c) => c.id),
+    // T80 F4 · the run's name on the label: its cabinets' own names, left to right.
+    unitNums: segment.units.map((u) => String(u.params?.unit_num ?? '')),
     ends: { left: segment.left, right: segment.right },
     overhang: {
       left: segment.left.kind === 'PANEL' ? r4(endOverhang(segment.left, cabs[0].bt, F)) : null,

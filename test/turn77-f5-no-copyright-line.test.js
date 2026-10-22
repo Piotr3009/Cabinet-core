@@ -180,6 +180,9 @@ export const NEW_FILES = [
   'src/engine/inframe.js',
   'scripts/t78-classify.d/f40-t80-f03.mjs',
   'test/turn80-f03-frame.test.js',
+  // T80 F4 (22.10.2026): the frame on the CNC
+  'scripts/t78-classify.d/f40-t80-f04.mjs',
+  'test/turn80-f04-cnc.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

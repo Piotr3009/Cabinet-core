@@ -61,7 +61,9 @@ export function labelKindOf(panel) {
   if (part === 'SHELF' || part === 'PARTITION' || part === 'FIXED') return 'shelf';
   if (part === 'BACK' || part === 'EXT-BACK' || part === 'BACK-RAIL') return 'back';
   if (role === 'drawer_box') return 'drawer';
-  if (role === 'front' || role === 'false_front' || role === 'blind_blank' || role === 'end_panel' || role === 'mask' || role === 'pelmet') return 'front';
+  // T80 F4 · the in-frame frame is numbered and stickered with the fronts it is sprayed with.
+  if (role === 'front' || role === 'false_front' || role === 'blind_blank' || role === 'end_panel' || role === 'mask' || role === 'pelmet'
+    || role === 'frame') return 'front';
   return exportablePanels([panel]).length ? 'other' : null;
 }
 
@@ -232,6 +234,10 @@ export function dxfLabelsFor(plan, unitId) {
  * @returns {{left:boolean,right:boolean,top:boolean,bottom:boolean, arrow:'left'|'right'|'up'|'down'|'all'|'none'}}
  */
 export function edgeArrowOf(panel) {
+  // T80 F4 · an in-frame frame is never banded; its arrow says which edge is
+  // the BOTTOM RAIL (CLAUDE.md T80 F4: "the EDGE arrow (the sheet's bottom edge
+  // = the frame's bottom rail)"), so the board is never fitted upside down.
+  if (panel?.role === 'frame') return { left: false, right: false, top: false, bottom: true, arrow: 'down', frame: true };
   const code = String(panel?.edging?.code || '');
   const left = code.includes('<');
   const right = code.includes('>');
@@ -280,6 +286,27 @@ export function edgeArrowGeometry(panel, profile, { textMm = null } = {}) {
   const pt = (x, y) => [r4(x), r4(y)];
   const lines = [];
   let text = null;
+  // T80 F4 · THE FRAME: everything on its bottom rail. A frame's middle is an
+  // opening, so the arrow the house draws at three quarters of the height
+  // would stand in the air: here the line runs inside the bottom edge, the
+  // arrow stands in the rail pointing at it, the word beside the shaft, all
+  // within the rail's own height (meta.inframe.rail, 38).
+  if (e.frame) {
+    const rail = num(panel?.meta?.inframe?.rail, 0);
+    if (!(rail > 2 * inset + head)) return null;
+    const x0 = w * (1 - span) / 2;
+    lines.push([pt(x0, inset), pt(w - x0, inset)]);
+    const x = w * 0.75;
+    const tip = inset + 2;
+    const base = tip + head;
+    const tail = Math.max(base + 1, rail - inset);
+    const hw = head * 0.45;
+    lines.push([pt(x, tail), pt(x, base)]);
+    lines.push([pt(x - hw, base), pt(x, tip), pt(x + hw, base)]);
+    const th = Math.min(num(textMm, 0) || 0, rail - 2 * inset - 4);
+    text = th > 0 ? { x: r4(x + head), y: r4(rail / 2), h: r4(th), str: 'EDGE', anchor: 'start' } : null;
+    return { arrow: e.arrow, lines, text };
+  }
   const horizontal = e.arrow === 'left' || e.arrow === 'right';
   // the line along the banded edge
   if (horizontal) {

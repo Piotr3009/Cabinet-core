@@ -139,6 +139,16 @@ export function slopeNoteText(panel, { ascii = false } = {}) {
       : (Number.isFinite(nom) ? ` (NOM ${r1(nom)})` : '');
     parts.push(`OVERSIZE +${Math.round(Number(over.mm))}${edges}${ascii ? ' - ' : ' — '}TRIM ON SITE${nomText}`);
   }
+  // T80 F4 · THE FRAME OF A RUN (KIT_INFRAME.lsp D9): which run it closes,
+  // by its cabinets' names, and, joined, which piece of how many, the butt
+  // square at a stile's centre line (the joint's hardware is the owner's to
+  // choose: *"bedziemy laczyc"*).
+  const frame = panel?.meta?.inframe;
+  if (frame) {
+    const run = (frame.unitNums || []).filter(Boolean).join(' ');
+    parts.push(`IN-FRAME RUN ${run}`.trim());
+    if (Number(frame.of) > 1) parts.push(`PIECE ${frame.piece} OF ${frame.of}${dot}SQUARE BUTT AT A STILE`);
+  }
   // Joined with a SEMICOLON and not a bar: the note wraps by words on a narrow
   // board (`cnc/dxf.js panelNoteBlock`), and a lone `|` at the head of a line
   // reads as a character in the instruction rather than as a separator.

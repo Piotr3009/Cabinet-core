@@ -57,11 +57,11 @@ import {
 // Chat-fix 15.10.2026 (the evening) · the recess extension, KIT_RECESS.lsp's
 // mirror: the notch's reverse (the carcass grows backward over a band), asked
 // of the parent's own cut, a pass before the drilling and a pass after it.
+// T80 F3 · and RECESS_WINDOW_LAYER: the in-frame frame's openings go on the
+// layer the back's window uses (T25 F1.2's cut-out).
 import {
   extensionCarcass, extensionDrills, extensionSummary, extensionVerdict, withExtensionRefusal,
-  endPanelsFollowSides,
-  // T80 F3 · the in-frame frame's openings go on the layer the back's window uses (T25 F1.2's cut-out).
-  RECESS_WINDOW_LAYER,
+  endPanelsFollowSides, RECESS_WINDOW_LAYER,
 } from './extension.js';
 import { applySiteTrim } from './siteTrim.js';
 // T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
@@ -6378,6 +6378,9 @@ export function computeCabinet(params, profileOverride) {
             from: piece.from,
             to: piece.to,
             frameW: runFrame.width,
+            // T80 F4 · the run's name and the bottom rail, for the label and the EDGE arrow.
+            unitNums: runFrame.unitNums || [],
+            rail: holes.length ? roundTo(Math.min(...holes.map((o) => o.y0)), 4) : null,
             openings: holes.map((o) => ({ unitId: o.unitId, w: roundTo(o.x1 - o.x0, 4), h: roundTo(o.y1 - o.y0, 4) })),
             stiles: runFrame.stiles,
             ends: runFrame.ends,

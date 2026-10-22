@@ -21,7 +21,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 import { useProjectStore } from '../src/stores/projectStore.js';
 import { rectCorners } from '../src/engine/room.js';
@@ -86,7 +87,20 @@ test('F7 · the lay-on panel with the switch off is main\'s, byte for byte; site
   S().setDesign({ inframe: true });
   S().setDesign({ inframe: false });
   assert.deepEqual([JSON.stringify(endOf(a)), JSON.stringify(endOf(w))], before);
-  const base = execSync('git merge-base HEAD origin/main', { cwd: ROOT, encoding: 'utf8' }).trim();
-  const moved = execSync(`git diff --name-only ${base} -- src/engine/siteTrim.js reference/lisp/KIT_SITE_TRIM.lsp`, { cwd: ROOT, encoding: 'utf8' }).trim();
-  assert.equal(moved, '', 'engine/siteTrim.js and KIT_SITE_TRIM.lsp untouched');
+  // The two files as the turn's base left them (main of 21.10.2026, f5d8aab), pinned so the proof needs no
+  // history (a one-commit CI checkout has no base to diff against; the PRO freeze's own reason).
+  const sha256 = (b) => createHash('sha256').update(b).digest('hex');
+  assert.deepEqual(['src/engine/siteTrim.js', 'reference/lisp/KIT_SITE_TRIM.lsp'].map((f) => sha256(readFileSync(`${ROOT}${f}`))), [
+    '235fdd67a48f9d4574f1013729ee4c1f5e1450dfb40db36e256d6fdce68cdb90',
+    'cdd7408bac404c51309dc309f724d39461c03628112c097969e900f918e333c0',
+  ], 'engine/siteTrim.js and KIT_SITE_TRIM.lsp untouched');
+  // ...and git agrees, where git can answer.
+  for (const ref of ['origin/main', 'main']) {
+    const base = spawnSync('git', ['merge-base', 'HEAD', ref], { cwd: ROOT, encoding: 'utf8' });
+    if (base.status !== 0 || !base.stdout.trim()) continue;
+    const moved = spawnSync('git', ['diff', '--name-only', base.stdout.trim(), '--', 'src/engine/siteTrim.js', 'reference/lisp/KIT_SITE_TRIM.lsp'],
+      { cwd: ROOT, encoding: 'utf8' }).stdout.trim();
+    assert.equal(moved, '', 'engine/siteTrim.js and KIT_SITE_TRIM.lsp untouched (git)');
+    break;
+  }
 });

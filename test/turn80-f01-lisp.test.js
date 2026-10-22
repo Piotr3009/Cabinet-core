@@ -23,8 +23,9 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { execSync } from 'node:child_process';
+import { readdirSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 import { loadLisp } from './lisp-mini.js';
 import { parenBalance, balanceOfKits, lispConstant } from '../scripts/t57-paren-balance.mjs';
@@ -40,6 +41,24 @@ const K = (name) => lispConstant(name, `${ROOT}reference/lisp`, KIT);
 const fmt = (v) => String(Math.round(v * 1000) / 1000);
 const rect = (r) => `(${r.map(fmt).join(' ')})`;
 
+// ─── THE FOLDER AS THE TURN'S BASE LEFT IT ────────────────────────────────
+// main of 21.10.2026 (f5d8aab, the owner's "80"): every file of
+// reference/lisp but this kit, `name sha256` per line, sorted, hashed once.
+// Pinned so the proof needs no history: CI checks out one commit and has no
+// base to diff against (the PRO freeze's own reason, test/turn59-f1).
+const LISP_BASE_FINGERPRINT = '745d56d65a7b94e20bba9f85f3510b6d59d1c1ada46c3b19cecb738177480a02';
+const sha256 = (b) => createHash('sha256').update(b).digest('hex');
+const lispFingerprint = () => sha256(readdirSync(`${ROOT}reference/lisp`).filter((n) => n !== KIT).sort()
+  .map((n) => `${n} ${sha256(readFileSync(`${ROOT}reference/lisp/${n}`))}`).join('\n'));
+/** The turn's base, where git can answer (origin/main, else main), or null. */
+function baseCommit() {
+  for (const ref of ['origin/main', 'main']) {
+    const r = spawnSync('git', ['merge-base', 'HEAD', ref], { cwd: ROOT, encoding: 'utf8' });
+    if (r.status === 0 && r.stdout.trim()) return r.stdout.trim();
+  }
+  return null;
+}
+
 // The engine's own lay-on fronts of the three kits (computeCabinet, 22.10.2026,
 // verify/t80/f05-probe.md): x, y, x + w, y + h in the carcass's frame.
 const BUD600 = { cab: [0, 600, 770, 0, 18], fronts: [[1.5, 0, 598.5, 767]] };
@@ -53,10 +72,14 @@ test('F1 · KIT_INFRAME.lsp: the Skylon header, ASCII, no dash, a NEW file and t
   assert.ok(/^[\x00-\x7F]*$/.test(TEXT), 'ASCII (AutoCAD\'s loader)');
   assert.doesNotMatch(TEXT, /[\u2013\u2014]/, 'no em or en dash');
   // Against the turn's base (main of 21.10.2026, the owner's "80"): the folder gained this file and nothing else moved.
-  const base = execSync('git merge-base HEAD origin/main', { cwd: ROOT, encoding: 'utf8' }).trim();
-  const moved = execSync(`git diff --name-status ${base} -- reference/lisp`, { cwd: ROOT, encoding: 'utf8' })
-    .split('\n').filter(Boolean);
-  for (const row of moved) assert.match(row, /^A\treference\/lisp\/KIT_INFRAME\.lsp$/, `only the new kit: ${row}`);
+  assert.equal(lispFingerprint(), LISP_BASE_FINGERPRINT, 'every other file of reference/lisp is the base\'s, byte for byte, and none was added');
+  // ...and git agrees, where git can answer (a one-commit checkout has no base: the fingerprint is the proof there).
+  const base = baseCommit();
+  if (base) {
+    const moved = spawnSync('git', ['diff', '--name-status', base, '--', 'reference/lisp'], { cwd: ROOT, encoding: 'utf8' })
+      .stdout.split('\n').filter(Boolean);
+    for (const row of moved) assert.match(row, /^A\treference\/lisp\/KIT_INFRAME\.lsp$/, `only the new kit: ${row}`);
+  }
 });
 
 test('F1 · the owner\'s words of 21.10.2026 are its D-notes, folded to ASCII', () => {

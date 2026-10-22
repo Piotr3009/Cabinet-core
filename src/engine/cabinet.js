@@ -57,8 +57,11 @@ import {
 // Chat-fix 15.10.2026 (the evening) · the recess extension, KIT_RECESS.lsp's
 // mirror: the notch's reverse (the carcass grows backward over a band), asked
 // of the parent's own cut, a pass before the drilling and a pass after it.
-// T80 F5 · the fronts set in the frame: KIT_INFRAME.lsp (c), mirrored.
-import { inframeSpec, insetFronts, openingOf as inframeOpeningOf } from './inframe.js';
+// T80 F5 · the fronts set in the frame: KIT_INFRAME.lsp (c), mirrored; F7 · the end panel (e).
+import {
+  endPanelDepth as inframeEndPanelDepth, endPanelGrow as inframeEndPanelGrow, inframeSpec, insetFronts,
+  openingOf as inframeOpeningOf,
+} from './inframe.js';
 // T80 F6 · the inset hinge: its numbers from reference/hardware/blum-inframe-hinge.json only.
 import { insetCupFromEdge, insetHingeSpec, insetPlateSetback } from './hingeLadder.js';
 // T80 F3 · and RECESS_WINDOW_LAYER: the in-frame frame's openings go on the
@@ -7192,7 +7195,18 @@ export function computeCabinet(params, profileOverride) {
   // The PROBE (verify/t79/f09-probe.md row 12): 596 at z 0..596 beside a
   // carcass at z 18..858. With no recess_mm (every golden) nothing moves.
   const endBack = wallGap + Math.max(0, Number(params?.recess_mm) || 0) + insetBack;
-  const endPanelDepth = endBack + D + P.doors.gap + frontT;
+  // ─── T80 F7 · UNDER IN-FRAME THE END PANEL REACHES THE FRAME ─────────────
+  // The owner, 21.10.2026 (22:40): *"2 na styk"*: the panel stays butted to
+  // the side; it is as deep as the carcass plus the frame (to the frame's
+  // face, D + 25) and as tall as the frame (KIT_INFRAME.lsp D14,
+  // inframe-end-panel-depth / -grow: 19 above the carcass top, a wall unit's
+  // also 19 below its bottom). The site trim of 19.10 is added after, as
+  // today. Lay-on (every golden): the panel is what it was, to the byte.
+  const inframeEnd = params?.inframe === true ? inframeSpec(P) : null;
+  const endPanelDepth = inframeEnd
+    ? endBack + inframeEndPanelDepth(D, inframeEnd)
+    : endBack + D + P.doors.gap + frontT;
+  const [endGrowTop, endGrowBottom] = inframeEnd ? inframeEndPanelGrow(G, type.mount === 'wall', inframeEnd) : [0, 0];
   // ─── Turn 13 (CLAUDE.md F4): A WALL UNIT'S PANEL ENDS WITH THE CABINET ───
   //
   // "To the floor" means down to the floor for something STANDING on it: past
@@ -7221,8 +7235,11 @@ export function computeCabinet(params, profileOverride) {
     // How far it runs ABOVE the carcass — dragged there, or sent to the ceiling
     // with a double click (CLAUDE.md F3). The room's ceiling is not the
     // engine's business; the store clamps it and passes the answer down.
-    const top = Math.max(0, Number(ep?.top_mm) || 0);
-    const panelH = H + drop + top;
+    // T80 F7 · in a frame it reaches at least the frame's top (19 over the
+    // carcass), and a wall unit's at least the frame's bottom (19 under it).
+    const top = Math.max(Math.max(0, Number(ep?.top_mm) || 0), endGrowTop);
+    const dropAll = Math.max(drop, endGrowBottom);
+    const panelH = H + dropAll + top;
     if (panelH <= 0 || t <= 0) continue;
     // ─── TURN 50 (CLAUDE.md F5): AN END PANEL STOPS AT THE SLOPE ────────────
     //
@@ -7245,7 +7262,7 @@ export function computeCabinet(params, profileOverride) {
     // board. Gated on `cutLine` like every other line in this file, so a flat
     // room's end panel is byte-identical.
     const epFrom = side === 'L' ? -t : W;
-    const epY = drop > 0 ? -drop : 0;
+    const epY = dropAll > 0 ? -dropAll : 0;
     // T54-F1: the CEILING line — an end panel scribes to the plaster, so it is
     // one of the two pieces (with the side infill) that keep `ceilLine` when
     // the carcass moved down to `cutReach`.
@@ -7285,7 +7302,7 @@ export function computeCabinet(params, profileOverride) {
         top_mm: top,
         // Turn 16 (F4.3): the panel's own drop, as CUT — so the properties
         // block shows what the piece is rather than what was asked for.
-        below_mm: drop,
+        below_mm: dropAll,
         panelId: ep?.id || null,
         // ─── TURN 50 (CLAUDE.md F5): …AND WHERE THE CEILING CUT IT ─────────
         //

@@ -189,6 +189,9 @@ export const NEW_FILES = [
   // T80 F6 (22.10.2026): the inset hinge
   'scripts/t78-classify.d/f40-t80-f06.mjs',
   'test/turn80-f06-hinge.test.js',
+  // T80 F7 (22.10.2026): the end panel reaches the frame
+  'scripts/t78-classify.d/f40-t80-f07.mjs',
+  'test/turn80-f07-end-panel.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

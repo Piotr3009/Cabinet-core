@@ -1,0 +1,14 @@
+# T80 · DECISIONS TAKEN (the overnight run of 22.10.2026)
+
+Each line: what was decided, why, and the owner's words it follows. Every line
+is repeated in the PR body under "DECISIONS TAKEN".
+
+1. Branch: the work is on `claude/t80-in-frame-xjudwo`, not `claude/t80-in-frame`: the session's harness designates that branch and allows pushes only there; the PR names it. (CLAUDE.md: "Branch claude/t80-in-frame ... PR at the end; the owner merges".)
+2. The clone arrived shallow (50 commits): `test/turn78-classify.test.js` reads `git log` back to T78's commits and failed on the fresh clone (7046 of 7047). Fixed locally, no repo change: `git fetch --unshallow` and `git config core.abbrev 7` (the test pins 7-hex hashes). The suite is 7047 / 7047 green at the start.
+3. The open end of a run (no end panel, no neighbour): the frame runs `lip` (1) past the carcass's outer face, the outer stile lip + t + lip = 20. Why: the walk's own numbers (WUD 600 frame 602, the run 1920 = 1900 + 19 + 1) and the mockup script (`fx1 = x1 + lip`). (CLAUDE.md F1 (a): "the first carcass's outer face plus 1 when there is no panel".)
+4. The end at an end panel: the outer stile is 38 from the opening's edge whatever the panel, so the frame's edge stands 38 - t - lip = 19 past the carcass's outer face; its overhang past the panel is 19 - panel (1 for 18; negative for a thicker panel, the panel's edge then proud). Why: "38 everywhere" and "na styk"; the run is 1920 for any panel. (KIT_INFRAME.lsp D6, PROPOSED.)
+5. The end at a unit the frame stops at (Check #42's split): the frame ends flush with the carcass's outer face, the stile lip + t = 19. Why: CLAUDE.md F3, "each segment its own frame with 19 outer stiles at the split". (D8.)
+6. The join chooses, among the joins with the fewest pieces, the one whose longest piece is shortest, then the first from the left. Why: CLAUDE.md F1 (b) says "the fewest pieces with every piece within boardMax" and nothing about equal choices; the most even pieces are the easiest boards to handle. The worked example: five BUD 600 (3002) cut at 1201. (D9, PROPOSED.)
+7. The LISP's worked examples are RUN by the suite: `test/lisp-mini.js` reads and evaluates the subset of AutoLISP the kit writes, so the kit's own answers (not a prose copy) are held to the owner's numbers. Why: "LISP IS LAW", and a law that is executed cannot drift from its prose.
+8. BUDR2 500's inset fronts are 456 x 360 and 456 x 363 (not equal): the lay-on fronts are 382 and 382 with the 3 mm top gap above F2, so the midline 383.5 stays where it is and the top front gains the lay-on's top gap. Why: CLAUDE.md F1 (c): "the midline between two neighbouring fronts stays the midline".
+9. The hinge clearance (Check #44): the cup's edge stands K + gap off the lip; red under 3. Why: CLAUDE.md F6 "a cup would land within 3 of the lip"; the 3 is the owner's "3 mm zawsze".

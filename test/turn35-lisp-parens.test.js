@@ -369,3 +369,21 @@ test('T79 F14 · SKYLON_JOINTS_CABINEO.lsp balances 0/0 and carries D.2c and its
   assert.match(text, /H\.1 THE DRAWER BOX/);
   assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
 });
+
+// ─── T80 F1 · THE BRITISH FRAME: KIT_INFRAME.lsp ────────────────────────────
+// CLAUDE.md T80 PART A: *"New file reference/lisp/KIT_INFRAME.lsp, the Skylon
+// header, the owner's quotes of 21.10 as its D-notes, parens balanced (the
+// parens test grows with it)."*  The walk above balances it; this names it.
+test('T80 F1 · KIT_INFRAME.lsp balances 0/0 and carries its three laws and its NUMBERS', () => {
+  assert.ok(KITS.includes('KIT_INFRAME.lsp'), 'KIT_INFRAME.lsp is missing');
+  const text = readFileSync(join(LISP_DIR, 'KIT_INFRAME.lsp'), 'utf8');
+  const { balance, min, open } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.ok(open > 100, 'a kit, not a stub');
+  assert.match(text, /\(defun inframe-frame \(cabs leftEnd rightEnd/);
+  assert.match(text, /\(defun inframe-join \(frame lmax\)/);
+  assert.match(text, /\(defun inframe-fronts \(o fronts g/);
+  assert.match(text, /;;; 5\. NUMBERS/);
+  assert.doesNotMatch(text, /[–—]/, 'no em or en dash');
+});

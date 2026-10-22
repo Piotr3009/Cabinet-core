@@ -170,6 +170,9 @@ export const NEW_FILES = [
   'scripts/chatfix-2110-mockup-inframe.mjs',
   'scripts/chatfix-2110-mockup-inframe-final.mjs',
   'test/chatfix-2110-gloss.test.js',
+  // T80 F1 (22.10.2026): the in-frame LISP, run by the suite
+  'test/lisp-mini.js',
+  'test/turn80-f01-lisp.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

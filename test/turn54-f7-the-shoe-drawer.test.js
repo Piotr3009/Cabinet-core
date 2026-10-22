@@ -227,7 +227,8 @@ test('F7.1 · the graves: the old world is gone, file by file', () => {
   // (KIT_CORNER_L_DRAWERS.lsp, KIT_CORNER_L_BIFOLD.lsp): the walk ends between 16 and 23.
   // CHAT FIX 19.10.2026 AMENDED: the second hanging rod is a kit of its own (KIT_HANGER_TWO.lsp, *"lisp najpierw"*): the walk ends between 16 and 24.
   // CHAT FIX 19.10.2026 AMENDED AGAIN: the site-trim allowance is a modifier file of its own (KIT_SITE_TRIM.lsp; the owner: *"side panele powinny byc wieksze o 20 mm, to samo z plinth"*): the walk ends between 16 and 25.
-  assert.ok([16, 17, 18, 19, 20, 21, 22, 23, 24, 25].includes(kits.length), `the paren walk ends at ${kits.length}, derived, never typed`);
+  // T80 F1 AMENDED (22.10.2026): the British frame is a kit of its own (KIT_INFRAME.lsp; the owner, 21.10.2026: *"raczej plyta"*, *"wszedzie ramke 38 mm"*, LISP first): the walk ends between 16 and 26.
+  assert.ok([16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26].includes(kits.length), `the paren walk ends at ${kits.length}, derived, never typed`);
   assert.equal(kits.includes('KIT_SHOE_BOX.lsp'), false, 'and the grave is still a grave');
   const engine = readFileSync(new URL('../src/engine/cabinet.js', import.meta.url), 'utf8');
   assert.doesNotMatch(engine, /shoeBoxPlan|shoeBoxBoxFor|SHOEBOX-/,

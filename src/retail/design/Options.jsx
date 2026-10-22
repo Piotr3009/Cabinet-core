@@ -1061,6 +1061,18 @@ function FrontsPanel({ design, project, unit }) {
         />
       </Field>
 
+      {/* T80 F2 · LAY-ON OR IN-FRAME, PER PROJECT. The owner, 21.10.2026: *"3 per
+          projekt."*  PRO's row by retail's own chips: the engine's words, its
+          hint (the profile's numbers, never typed here) and PRO's one write. */}
+      <Field label="FRONTS" note={A.inframeWords()}>
+        <ChipRow
+          testid="fronts-inframe"
+          value={A.inframeOf(project)}
+          options={A.inframeChoices().map((c) => ({ id: c.id, label: c.label, title: c.hint }))}
+          onPick={(id) => setSaid(A.setInframe(id))}
+        />
+      </Field>
+
       {/* ─── T68 F8 · TOMBSTONES: `MORE OPTIONS` AND THE TWO BLOCKS IN IT ──
           The owner: *"z menu front usuń COLLECTION proszę, i MORE OPTIONS —
           po co mi dwa razy ta sama opcja."*

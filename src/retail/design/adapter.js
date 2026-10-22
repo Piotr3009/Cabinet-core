@@ -51,6 +51,8 @@ import {
   hasTopInfill, unitTop, wallGapOf,
 } from '../../engine/runs.js';
 import { FRONT_STYLE_OPTIONS, elementMaterialChoices, frontStyleSelection, normaliseScope } from '../../engine/design.js';
+// T80 F2 · the FRONTS row's words, hint and switch, the engine's own.
+import { INFRAME_CHOICES, inframeHint, inframeOn, inframeTooltip } from '../../engine/design.js';
 import { carcassSources, frontSources, projectFrontThickness } from '../../engine/projectSettings.js';
 // T76 F7 · the walk's finding: a style these doors are too thin to route.
 import { boardRefusal } from '../../engine/frontDecoration.js';
@@ -4450,6 +4452,34 @@ export function setSheen(id) {
   if (!wanted) return '';
   S().setDesign({ sheen: clampSheen(wanted.value, profile) });
   return sheenWords(S().project);
+}
+
+/**
+ * ─── T80 F2 · THE FRONTS ROW: LAY-ON OR IN-FRAME, PER PROJECT ─────────────
+ *
+ * The owner, 21.10.2026 (22:40): *"3 per projekt."*  PRO's row (SettingsPanel
+ * `InframeRow`) is not copied: retail draws its own chip row, and the WORDS,
+ * the HINT and the ONE WRITE are PRO's, `setDesign({ inframe })` with the
+ * engine's own INFRAME_CHOICES and inframeHint / inframeTooltip off the
+ * profile. One law, two doors, as the sheen above.
+ */
+export function inframeChoices() {
+  const profile = P();
+  return INFRAME_CHOICES.map((c) => ({ id: c.id, label: c.label.toUpperCase(), hint: inframeTooltip(profile) }));
+}
+
+/** Which chip is lit: 'inframe' or 'layon'. */
+export const inframeOf = (project) => (inframeOn(project?.design) ? 'inframe' : 'layon');
+
+/** The line under the row, the engine's words. */
+export const inframeWords = () => inframeHint(P());
+
+/** Press a chip: the one write PRO's row makes. A chip already lit is left alone. */
+export function setInframe(id) {
+  const wanted = INFRAME_CHOICES.find((c) => c.id === id);
+  if (!wanted) return '';
+  if (inframeOf(S().project) !== id) S().setDesign({ inframe: wanted.on });
+  return inframeWords();
 }
 
 /**

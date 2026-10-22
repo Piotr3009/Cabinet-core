@@ -7,6 +7,7 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { isJcMaterial, materialSlotState, useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import {
   FRONT_STYLE_OPTIONS, colourLabel, finishById, frontStyleSelection, migrateDesign, projectHeights, resolveJoinery,
+  INFRAME_CHOICES, inframeHint, inframeTooltip,
 } from '../engine/design.js';
 import { RUN_MATERIAL_GROUPS, runMaterialSetting } from '../engine/materials.js';
 import {
@@ -1080,6 +1081,11 @@ export default function SettingsPanel({ onRoomSetup = null }) {
 
       <div className="cc-divider" />
 
+      {/* ── T80 F2 · the fronts: lay-on or in-frame, per project ── */}
+      <InframeRow design={design} setDesign={setDesign} profile={profile} />
+
+      <div className="cc-divider" />
+
       {/* ── how the carcass is held together ── */}
       <section className="space-y-2">
         <span className="text-xs uppercase tracking-wide text-ink-200">Joinery type</span>
@@ -1617,6 +1623,44 @@ function FinishSwatch({ finish }) {
 // a board nobody can buy.
 // TURN 36 (CLAUDE.md F1): exported — the unified panel shows THIS row rather
 // than a copy of it. Nothing else about it changed.
+/**
+ * ─── T80 F2 · FRONTS: LAY-ON OR IN-FRAME (BRITISH), PER PROJECT ─────────────
+ *
+ * The owner, 21.10.2026 (22:40): *"3 per projekt."*  One row, two buttons, the
+ * chosen one lit; one write, `setDesign({ inframe })` (one undo step, saved
+ * with the project). The line under it and its tooltip are the engine's
+ * (engine/design.js inframeHint / inframeTooltip, from profile.inframe): no
+ * number is typed here, and none can be edited here. WizardSettings draws the
+ * same row (it imports this one), so the two surfaces cannot disagree.
+ */
+export function InframeRow({ design, setDesign, profile }) {
+  const on = design?.inframe === true;
+  return (
+    <section className="space-y-2" data-inframe-row="1">
+      <span className="text-xs uppercase tracking-wide text-ink-200">Fronts</span>
+      <div className="flex flex-wrap gap-2">
+        {INFRAME_CHOICES.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            data-inframe-option={c.id}
+            aria-pressed={on === c.on}
+            className={`border rounded px-3 py-2 text-left transition-colors ${on === c.on
+              ? 'border-gold bg-shell-700'
+              : 'border-shell-600 hover:bg-shell-700'}`}
+            onClick={() => { if (on !== c.on) setDesign({ inframe: c.on }); }}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <p className="text-[11px] text-ink-400" data-inframe-hint="1" title={inframeTooltip(profile)}>
+        {inframeHint(profile)}
+      </p>
+    </section>
+  );
+}
+
 export function SheetSizeRow({
   family, label, hint, profile, onChange,
 }) {

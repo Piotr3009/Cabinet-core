@@ -173,6 +173,9 @@ export const NEW_FILES = [
   // T80 F1 (22.10.2026): the in-frame LISP, run by the suite
   'test/lisp-mini.js',
   'test/turn80-f01-lisp.test.js',
+  // T80 F2 (22.10.2026): in-frame per project
+  'scripts/t78-classify.d/f40-t80-f02.mjs',
+  'test/turn80-f02-switch.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

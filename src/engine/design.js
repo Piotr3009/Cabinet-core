@@ -391,6 +391,12 @@ export const DEFAULT_DESIGN = {
   // ordered (profile.appearance.sheenScale). null = the profile's default,
   // exactly like every other null in this object.
   sheen: null,
+  // ─── T80 F2 · IN-FRAME, PER PROJECT ─────────────────────────────────────
+  // The owner, 21.10.2026 (22:40): *"3 per projekt."*  `design.inframe` is
+  // true for an in-frame project and ABSENT otherwise (read: false, lay-on),
+  // so a lay-on project's design, saved or reloaded, is the bytes main wrote
+  // (the T75 set fixtures hold it). The engine hears it ONLY through
+  // paramsForEngine; `inframeOn(design)` is the one boolean reader.
 };
 
 export const HEIGHT_KEYS = ['base', 'wall', 'tall', 'wallMount', 'toeKick'];
@@ -570,7 +576,45 @@ function migrateDesignFresh(design) {
     // `== null` and not a truthiness test: Number(null) is 0, and a shortcut
     // that treats 0 as "not set" would also treat a real stored 0 that way.
     sheen: migrateSheen(d),
+    // T80 F2: only a stored true is in-frame; anything else (an old project,
+    // a hand-written payload, a switch back to lay-on) is lay-on and leaves no
+    // key behind, which is what main saved.
+    ...(d.inframe === true ? { inframe: true } : {}),
   };
+}
+
+// ─── T80 F2 · THE FRONTS ROW: LAY-ON OR IN-FRAME, PER PROJECT ─────────────
+// The owner, 21.10.2026 (22:40): *"3 per projekt."*  One row, two buttons,
+// the same words in PRO (SettingsPanel, WizardSettings) and in retail
+// (Options.jsx through the adapter). The hint and its tooltip are built from
+// profile.inframe, so no number is typed in a component: the UI shows the
+// owner's numbers and never edits them.
+
+/** The two answers, in the row's order. `on` is what design.inframe holds. */
+export const INFRAME_CHOICES = [
+  { id: 'layon', label: 'Lay-on', on: false },
+  { id: 'inframe', label: 'In-frame (British)', on: true },
+];
+
+/** Is this project's fronts row on In-frame? A stored true only. */
+export function inframeOn(design) {
+  return migrateDesign(design).inframe === true;
+}
+
+/** The line under the row. */
+export function inframeHint(profile) {
+  const F = profile?.inframe || {};
+  return `In-frame: one routed frame per run, ${F.stile} mm, fronts set in it with ${F.gap} mm, hinges on the side.`;
+}
+
+/** The hint's tooltip: every number of the frame, read off the profile. */
+export function inframeTooltip(profile) {
+  const F = profile?.inframe || {};
+  const lip18 = (F.stile - 18 - 18) / 2;
+  return `Stiles and rails ${F.stile} mm; frame ${F.frameT} mm thick; fronts ${F.frontT} mm, flush with the frame, `
+    + `${F.frameT - F.frontT} mm of air behind them; ${F.gap} mm to the frame and between fronts; the lip into the `
+    + `opening (${F.stile} - 2t) / 2, ${lip18} mm on 18 mm boards; rails ${F.outside} mm above and below the carcass; `
+    + `one board up to ${F.boardMax} mm, a longer run joined at a stile.`;
 }
 
 // ─── TURN 33 (CLAUDE.md F1): THE LIGHTING FIELD, NORMALISED ─────────────────

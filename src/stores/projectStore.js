@@ -1079,6 +1079,18 @@ function unitSetbackOr(params, fallback) {
     : fallback;
 }
 
+// ─── T80 F2 · IN-FRAME REACHES THE ENGINE THROUGH THIS DOOR ONLY ────────────
+// The owner, 21.10.2026 (22:40): *"3 per projekt."*  The decision is the
+// project's (design.inframe); a unit hears it only when the project says so
+// AND its type is one a frame stands on this turn (profile.inframe.unitTypes;
+// the frame STOPS at every other unit, Check #42). The numbers are the
+// profile's, which computeCabinet is handed beside the params. A bare
+// `computeCabinet()` (every golden fixture) is handed nothing and cuts lay-on.
+function inframeFor(unit, design, profile) {
+  if (!design || migrateDesign(design).inframe !== true) return false;
+  return (profile?.inframe?.unitTypes || []).includes(unit?.type);
+}
+
 function paramsForEngine(unit, design = null) {
   // ─── T55 ("tnij"): THE FOSSIL HAS NO ROAD ────────────────────────────────
   // run_* are destructured OUT of the saved params before anything spreads,
@@ -1122,6 +1134,9 @@ function paramsForEngine(unit, design = null) {
     } : {}),
     type: unit.type,
     items,
+    // T80 F2 · in-frame, the key ABSENT on a lay-on project (the house idiom), so
+    // a lay-on project hands the engine exactly the params it handed it on main.
+    ...(inframeFor(unit, design, profile) ? { inframe: true } : {}),
     // ─── TURN 46 (CLAUDE.md F3): THE SLOPE CUT ────────────────────────────
     // On the override channel, exactly as the plinth, the hinge standard, the
     // shaker frame and the shelf-pin setback travel — an INPUT in the design

@@ -2810,6 +2810,43 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── T80 · THE BRITISH FRAME (reference/lisp/KIT_INFRAME.lsp) ───────────
+  //
+  // The owner, 21.10.2026: *"a co z british style kitchen z ramkami?"*, then
+  // the numbers at 22:03 and 22:14, approved point by point at 22:40. ONE
+  // routed MDF frame per run on the carcass faces, the fronts set in its
+  // openings. Every number here is the LISP's constant of the same name
+  // (inframeStile 38 ...), held to it by test/turn80-f02-switch.test.js; the
+  // UI shows them (the FRONTS row's tooltip) and never edits them. Read by
+  // the engine ONLY when a project has switched in-frame on (design.inframe,
+  // handed through paramsForEngine): with the switch off not one of them is
+  // read, so every golden is what main cuts.
+  inframe: {
+    // *"wszedzie ramke 38 mm"* (22:03, CONFIRMED 22:40 "1 tak"): every stile
+    // and every rail of the frame. The lip is never a number here: it is what
+    // 38 leaves after two sides, (38 - t - t) / 2 (KIT_INFRAME.lsp D2).
+    stile: 38,
+    rail: 38,
+    // *"ramka 25, drzwi 22 i jest idealnie, 3 mm gap pomiedzy carcasem a
+    // drzwiami"* (22:03, CONFIRMED): the frame's thickness and the front's;
+    // the air behind the front is frameT - frontT, never a third number.
+    frameT: 25,
+    frontT: 22,
+    // *"3 mm zawsze"* (22:03, CONFIRMED): a front to the frame, and between two fronts.
+    gap: 3,
+    // *"wariant C"*, *"gora ... tak samo jak dol"* (22:14, CONFIRMED): what a
+    // rail stands outside the carcass, top and bottom (38 - t - lip).
+    outside: 19,
+    // *"malo kiedy bedzie jeden ciag dluzszy jak 2800, a jak bedzie to bedziemy
+    // laczyc"* (22:03, CONFIRMED): the longest frame one board gives; a wider
+    // one is joined at the centre line of a stile between two cabinets.
+    boardMax: 2800,
+    // The units a frame stands on this turn (CLAUDE.md T80 F3, T80 PROPOSED
+    // scope). A run splits into frame segments at any other unit (Check #42).
+    unitTypes: ['BUD', 'BUD_INT', 'BUDR', 'BUDR2', 'BUDR4', 'BUDTALL', 'SINK', 'WUD', 'WUD_GLASS',
+      'LOW_CABINET', 'WARDROBE', 'WARDROBE_LOW'],
+  },
+
   // ─── Appearance (turn 4, BACKLOG #4–#6) ───
   // What the furniture LOOKS like. Not one number of it reaches the cut list —
   // but it is still workshop configuration ("our carcass board is broken
@@ -5820,6 +5857,9 @@ export function migrateCabinetProfile(profile) {
   return {
     ...D, ...profile,
     schema: PROFILE_SCHEMA,
+    // T80 · the in-frame numbers, key by key: a profile saved before tonight
+    // comes back with all of them, one that tuned a single number keeps it.
+    inframe: { ...D.inframe, ...profile.inframe },
     board: {
       ...D.board,
       ...profile.board,

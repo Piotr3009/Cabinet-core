@@ -780,6 +780,9 @@ export function MovingPanel({
   // the J is the board's own shape, not a joint, so it does not wait for the
   // joint system's layers (the contour view hands none).
   const jpullCut = Boolean(p?.cnc?.jpull?.edge);
+  // T80 F9 · ...and a run's FRAME, whose openings are its shape (KIT_INFRAME.lsp
+  // D10): a slab in the contour view would hide the inset fronts behind it.
+  const frameCut = p?.part === 'FRAME';
   const frontBores = useMemo(() => {
     if (mitre || !(p.meta?.frontDecoration || isShakerFront(p))
       || !profile?.appearance?.cuts?.enabled) return EMPTY_DRILLS;
@@ -791,8 +794,8 @@ export function MovingPanel({
   const decoration = useMemo(() => (mitre ? null : frontDecorationGeometry(p, frontBores)),
     [p, mitre, frontBores]);
   const built = useMemo(
-    () => ((layers || jpullCut) && !mitre && !decoration ? panelSolids(p, layers, profile, boredDrills) : null),
-    [p, layers, profile, mitre, boredDrills, jpullCut, decoration],
+    () => ((layers || jpullCut || frameCut) && !mitre && !decoration ? panelSolids(p, layers, profile, boredDrills) : null),
+    [p, layers, profile, mitre, boredDrills, jpullCut, frameCut, decoration],
   );
   // ─── Turn 25 (CLAUDE.md F3): THE SHAKER IS A TRAY, NOT A SLAB ───────────
   // A recess in the face, leaving the frame standing — one solid, so the

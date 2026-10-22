@@ -9,17 +9,19 @@
 // section a fitter reads the heights off. And a second cut, through the sink.
 //
 // So a sheet carries the stations `sectionStations()` names, A-A and B-B, side
-// by side at one scale, each with its own chains. Everything drawn is
-// `cutCabinet`'s, the design layer's worktop, the room's ceiling, and the same
-// leg the scene draws.
+// by side at one scale, each with its own chains. T81 F6: what a station
+// shows is the projector's (`projector.js`): the boards the knife meets CUT,
+// and beyond the plane, as far as the cut cabinets reach, what the room shows
+// there (the drawer boxes on their runners, the legs, the shelves, the
+// plates, the knob), each from the same solid the room draws.
 //
 // Pure functions: no React, no store imports.
 
-import { cutCabinet, cutMembers } from './section.js';
+import { cutMembers } from './section.js';
 import { mountingBands } from './wallElevation.js';
 import { boundsOf, entLine as line, entRect as rect, entText as text, moveEntities } from './primitives.js';
 import { chainH, chainV } from './setChains.js';
-import { legHardware } from './setElevation.js';
+import { projectRun, unitNumbers } from './projector.js';
 // T72 F14 · how far THIS unit stands off its wall — the one helper.
 import { wallGapOf } from '../runs.js';
 
@@ -68,7 +70,9 @@ function wallBand(ctx, { top, profile }) {
  * ONE STATION, cut: every member the knife passes through, the worktop over
  * the run, the wall band, the floor and the ceiling, and its chains.
  */
-export function buildStation(group, station, { room = null, worktops = [], profile, ctx }) {
+export function buildStation(group, station, {
+  room = null, worktops = [], profile, ctx, frontTypeOf = null, shakerFrame = null,
+}) {
   const members = cutMembers(group, station.x);
   const entities = [];
   const ceiling = Number(room?.height) || 0;
@@ -80,40 +84,27 @@ export function buildStation(group, station, { room = null, worktops = [], profi
   // before tonight: the sheet is unchanged unless a client typed a gap.
   const gapOf = (m) => wallGapOf(m.unit, profile);
 
-  for (const m of members) {
-    // `cutCabinet` draws the carcass at z = 0 at the wall; every unit stands
-    // its own clearance off it, and its legs are added here as the scene draws
-    // them (the grammar's three lines are replaced by plate, stem and foot).
-    const clearance = gapOf(m);
-    const cut = cutCabinet(m, profile).filter((e) => e.layer !== 'LEG_BLOCK');
-    entities.push(...moveEntities(cut, clearance, 0));
-    const legs = m.result.assemblies?.legs;
-    const legH = Number(m.result.assemblies?.carcass?.legHeight) || 0;
-    if (legs && legH > 0) {
-      const zs = [...new Set(legs.positions.map((p) => Math.round(Number(p.z) || 0)))];
-      for (const z of zs) entities.push(...legHardware({ x: z }, { width: legs.width, height: legH, profile, dx: clearance, dy: m.base }));
-    }
-  }
-  // ─── T80 F8 · THE FRAME AND THE FILLER ON THE SECTION ──────────────────
+  // ─── T81 F6 · THE KNIFE THROUGH THE ROOM ──────────────────────────────
+  // The plane at the station, looking along the wall towards its end; beyond
+  // it, as far as the cut cabinets reach. The frame of an in-frame run is the
+  // FRAME board itself: the knife through a cabinet's opening cuts its two
+  // rails and sees the stile beyond, as T80 F8 drew it, now from the board.
+  const far = Math.max(station.x, ...members.map((m) => m.x + (Number(m.width) || 0)));
+  const drawn = projectRun(group, {
+    view: 'section', cut: station.x, beyond: [station.x, far], mode: 'fronts', profile, worktops, frontTypeOf, shakerFrame,
+    minEdge: ctx.mm(0.25),
+  });
+  entities.push(...drawn.entities);
+  // ─── T80 F8 · THE FILLER ON THE SECTION ────────────────────────────────
   // The owner, 21.10.2026 (22:40): *"6 informacja i na pdf na przekroju pokaz
-  // kawalek timber"*. A knife through a framed cabinet's centre passes through
-  // the frame's opening: it CUTS the two rails (38, 19 of each outside the
-  // carcass, KIT_INFRAME.lsp D3) and SEES the stile beyond (25 x the frame's
-  // height); the inset door is drawn where the engine put it (22, flush with
-  // the frame's face, 3 of air behind it). Over a base carcass, behind the top
-  // rail, the joiner's 19 of timber, hatched and named: a note, never a board.
-  // Every number is the cabinet's own (`derived.inframe`). Lay-on: nothing.
+  // kawalek timber"*. Over a base carcass, behind the top rail, the joiner's
+  // 19 of timber, hatched and named: a note, never a board. Every number is
+  // the cabinet's own (`derived.inframe`). Lay-on: nothing.
   for (const m of members) {
     const fr = m.result.derived?.inframe;
     if (!fr) continue;
     const clearance = gapOf(m);
-    const D = Number(m.result.params.depth) || 0;
     const H = Number(m.result.params.height) || 0;
-    const z = clearance + D;
-    const inner = fr.boardT + fr.lip;
-    entities.push({ ...rect('DOORS', z, m.base - fr.outside, fr.frameT, H + 2 * fr.outside), pen: 'VISIBLE', meta: { inframe: 'stile' } });
-    entities.push({ ...rect('DOORS', z, m.base - fr.outside, fr.frameT, fr.outside + inner), pen: 'CUT', solid: true, meta: { inframe: 'rail-bottom' } });
-    entities.push({ ...rect('DOORS', z, m.base + H - inner, fr.frameT, inner + fr.outside), pen: 'CUT', solid: true, meta: { inframe: 'rail-top' } });
     if (fr.filler) {
       const x0 = clearance + fr.filler.z0;
       const x1 = clearance + fr.filler.z1;
@@ -136,22 +127,13 @@ export function buildStation(group, station, { room = null, worktops = [], profi
       });
     }
   }
-  for (const w of worktops) {
-    if (w.x <= station.x && station.x <= w.x + w.w) {
-      entities.push({ ...rect('CARCASE', 0, w.y, w.d, w.h), pen: 'CUT', fill: '#d9d9d9', solid: true });
-    }
-  }
   const deepest = Math.max(0, ...members.map((m) => gapOf(m) + (Number(m.result.params.depth) || 0) + (Number(profile.doors?.gap) || 0) + (Number(m.result.params.front_t) || 0)), ...worktops.map((w) => w.d));
   entities.push(...wallBand(ctx, { top, profile }));
   entities.push({ ...line('BUILDING', -ctx.mm(6), 0, deepest + ctx.mm(12), 0), pen: 'VISIBLE' });
   if (ceiling > 0) entities.push({ ...line('BUILDING', -ctx.mm(6), ceiling, deepest + ctx.mm(12), ceiling), pen: 'VISIBLE' });
 
   // Unit numbers, on white, in the carcass.
-  for (const m of members) {
-    const D = Number(m.result.params.depth) || 0;
-    const H = Number(m.result.params.height) || 0;
-    entities.push({ ...text('UNIT_NUMBER', gapOf(m) + D * 0.55, m.base + H * 0.12, String(m.unit.params?.unit_num ?? ''), ctx.unitNumberHeight), paperHeight: ctx.unitNumberHeight / ctx.scale, mask: true, weight: 'bold' });
-  }
+  entities.push(...unitNumbers(group, { view: 'section', profile, ctx, only: (m) => members.includes(m) }));
 
   // ── chains: heights up the right, depths along the bottom, the wall run's depth on top ──
   const chains = [];
@@ -187,7 +169,7 @@ export function buildStation(group, station, { room = null, worktops = [], profi
   // The caption sits in the bottom band, under the depth chain and its lifted
   // figures, and never lower: the band is what the sheet reserved for it.
   entities.push({ ...text('VIEW_TITLE', deepest / 2, -ctx.mm(19.5), caption, ctx.mm(2.8)), paperHeight: 2.8, weight: 'bold' });
-  entities.push({ ...text('SHEET_MUTED', deepest / 2, -ctx.mm(23), 'looking along the wall, towards its start', ctx.mm(1.9)), paperHeight: 1.9 });
+  entities.push({ ...text('SHEET_MUTED', deepest / 2, -ctx.mm(23), 'looking along the wall, towards its end', ctx.mm(1.9)), paperHeight: 1.9 });
 
   return { entities, chains, members, bounds: boundsOf(entities.filter((e) => e.layer !== 'DIMENSIONS')) };
 }

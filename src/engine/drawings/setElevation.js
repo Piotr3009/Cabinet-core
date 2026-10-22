@@ -13,7 +13,7 @@
 // Pure functions: no React, no store imports.
 
 import {
-  boundsOf, entLine as line, entRect as rect, entText as text,
+  boundsOf, entLine as line, entText as text,
 } from './primitives.js';
 import { heightChains, mountingBands, widthChains } from './wallElevation.js';
 import { chainH, chainV } from './setChains.js';
@@ -60,21 +60,8 @@ function wallEnds(group, wall) {
   return [];
 }
 
-/** The 3D scene's leg, in elevation: plate, stem, foot, from the same profile. */
-export function legHardware(leg, { width, height, profile, dx = 0, dy = 0 }) {
-  const L = profile.hardware.leg;
-  const plateT = Math.min(L.plateThickness, height);
-  const footH = Math.min(L.footHeight, Math.max(0, height - plateT));
-  const stem = Math.max(0, height - plateT - footH);
-  const mid = dx + leg.x + width / 2;
-  const y0 = dy - height;
-  return [
-    { ...rect('LEG_BLOCK', dx + leg.x, dy - plateT, width, plateT), pen: 'THIN', solid: true },
-    { ...rect('LEG_BLOCK', mid - L.stemDiameter / 2, y0 + footH, L.stemDiameter, stem), pen: 'THIN', solid: true },
-    { ...rect('LEG_BLOCK', mid - L.footDiameter / 2, y0, L.footDiameter, footH), pen: 'THIN', solid: true },
-  ];
-}
-
+// T81 F6: legHardware is retired with the composers that called it (kasacja); every
+// sheet's leg is the projector's solid of the room's leg.
 // T81 F4: hingePlateMarks, maskNumbers, numberSlot and the composed applianceMarks are retired;
 // the projector draws the plates, the numbers and the appliances (kasacja).
 

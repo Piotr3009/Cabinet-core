@@ -90,8 +90,10 @@ export function applianceLabel(unit) {
 // ═══ SMALL VECTOR AND POLYGON HELPERS ══════════════════════════════════════
 
 // The worktop's face on an elevation, tinted as the set has always tinted its
-// slab (T71, setElevation's run elevation: `fill: '#f3f3f3'`).
+// slab (T71, setElevation's run elevation: `fill: '#f3f3f3'`), and its cut on
+// a section as the section has always filled it (T71 setSection: '#d9d9d9').
 const SLAB_FILL = '#f3f3f3';
+const SLAB_CUT_FILL = '#d9d9d9';
 const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
@@ -1226,12 +1228,14 @@ function renderScene(scene, V, {
     census.masks = masks.length;
   }
 
-  // ── a front seen whole is one rectangle ──
+  // ── a front seen whole is one rectangle; so is a cut ──
   // In an orthographic view a front whose face toward the viewer is a
   // rectangle and is seen all round (tested a hair inside its outline, so a
   // nearer edge lying ON the outline, the worktop's over a lay-on door, is
   // no cover) is written as ONE rect: the leaf the owner counts, the field of
   // a shaker measured against it, as the single front elevation writes it.
+  // A cut face that is a rectangle is one rect too, in the cut's pen: the
+  // bar a plan and a section have always drawn for a board the knife meets.
   const emptySet = new Set();
   const wholeFronts = [];
   if (V.ortho) {
@@ -1239,7 +1243,7 @@ function renderScene(scene, V, {
     for (const f of faces) {
       const s = f.solid;
       const leaf = s.front && s.kind === 'board';
-      if ((!leaf && s.kind !== 'worktop') || f.cut || !isFacing.get(f.id) || (f.holes && f.holes.length) || f.pts.length !== 4) continue;
+      if ((!leaf && s.kind !== 'worktop' && !f.cut) || !isFacing.get(f.id) || (f.holes && f.holes.length) || f.pts.length !== 4) continue;
       const sc = f.pts.map((P) => V.screen(P));
       const x0 = Math.min(...sc.map((q) => q[0])); const x1 = Math.max(...sc.map((q) => q[0]));
       const y0 = Math.min(...sc.map((q) => q[1])); const y1 = Math.max(...sc.map((q) => q[1]));
@@ -1259,7 +1263,7 @@ function renderScene(scene, V, {
           if (got < Math.hypot(sB[0] - sA[0], sB[1] - sA[1]) - 1e-6) seen = false;
         }
       }
-      if (seen) wholeFronts.push({ s, x0, y0, x1, y1 });
+      if (seen) wholeFronts.push({ s, x0, y0, x1, y1, cut: Boolean(f.cut) });
     }
   }
 
@@ -1336,16 +1340,19 @@ function renderScene(scene, V, {
   // The painter's white first, then everything that is drawn on it; a line the
   // pass cut into pieces at every crossing is one line again where it runs on.
   let merged = mergeCollinear(entities);
-  for (const { s, x0, y0, x1, y1 } of wholeFronts) {
-    const on = (e) => e.kind === 'line' && e.src === s.key && !e.cut && !e.hidden && (
+  for (const { s, x0, y0, x1, y1, cut } of wholeFronts) {
+    const on = (e) => e.kind === 'line' && e.src === s.key && Boolean(e.cut) === cut && !e.hidden && (
       (Math.abs(e.y1 - e.y2) < 1e-6 && (Math.abs(e.y1 - y0) < 1e-6 || Math.abs(e.y1 - y1) < 1e-6)
         && Math.min(e.x1, e.x2) >= x0 - 1e-6 && Math.max(e.x1, e.x2) <= x1 + 1e-6)
       || (Math.abs(e.x1 - e.x2) < 1e-6 && (Math.abs(e.x1 - x0) < 1e-6 || Math.abs(e.x1 - x1) < 1e-6)
         && Math.min(e.y1, e.y2) >= y0 - 1e-6 && Math.max(e.y1, e.y2) <= y1 + 1e-6));
     merged = merged.filter((e) => !on(e));
+    // eslint-disable-next-line no-nested-ternary
+    const fill = xray || s.kind !== 'worktop' ? null : (cut ? SLAB_CUT_FILL : SLAB_FILL);
     merged.push({
-      kind: 'rect', layer: s.ink, pen: xray ? 'THIN' : 'VISIBLE', solid: true, src: s.key, ...(s.panelId ? { part: s.panelId } : {}),
-      x: x0, y: y0, w: x1 - x0, h: y1 - y0, ...(s.kind === 'worktop' && !xray ? { fill: SLAB_FILL } : {}),
+      kind: 'rect', layer: s.ink, pen: xray ? 'THIN' : (cut ? 'CUT' : 'VISIBLE'), solid: true, src: s.key,
+      ...(s.panelId ? { part: s.panelId } : {}), ...(s.family ? { family: s.family } : {}), ...(cut ? { cut: true } : {}),
+      x: x0, y: y0, w: x1 - x0, h: y1 - y0, ...(fill ? { fill } : {}),
     });
   }
   // The painter's white first, then a slab's own tint, then every stroke; on

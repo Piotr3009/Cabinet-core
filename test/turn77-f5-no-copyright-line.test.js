@@ -227,6 +227,9 @@ export const NEW_FILES = [
   // T81 F5 (22.10.2026): the X-ray sheet
   'scripts/t78-classify.d/f41-t81-f05.mjs',
   'test/turn81-f05-xray.test.js',
+  // T81 F6 (22.10.2026): the plans and the sections
+  'scripts/t78-classify.d/f41-t81-f06.mjs',
+  'test/turn81-f06-plan-section.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

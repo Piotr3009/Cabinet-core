@@ -153,7 +153,9 @@ test('F1 · the views: a front looks along -z, a plan down, a section along the 
 test('F1 · a cut plane: the plan cuts the boards it meets and keeps what lies below', () => {
   const { group, worktops } = stage(true);
   const r = projectRun(group, { view: 'plan', cut: P().drawings.set.planCut.base, mode: 'fronts', profile: P(), worktops });
-  const cut = new Set(lines(r, (e) => e.cut).map((e) => e.part));
+  // A cut face that is a rectangle is one bar (T81 F6), any other its edges.
+  const cut = new Set(r.entities.filter((e) => e.cut).map((e) => e.part));
+  assert.ok(r.entities.some((e) => e.kind === 'rect' && e.cut && e.pen === 'CUT'), 'the bars of the cut');
   for (const id of ['BUL', 'BUR', 'BACK', 'FRAME', 'END-L']) assert.ok(cut.has(id), `${id} is cut`);
   assert.ok(!cut.has('TOP') && !cut.has('BOTTOM'), 'the top and the bottom are not met at 400');
   assert.ok(!lines(r).some((e) => e.layer === 'WORKTOP'), 'the worktop lies above the base cut');

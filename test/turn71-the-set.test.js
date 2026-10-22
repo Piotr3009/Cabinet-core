@@ -30,7 +30,7 @@ import {
 } from '../src/engine/drawings/setSheet.js';
 import { chainH, chainV, figureCollisions, figureWidth } from '../src/engine/drawings/setChains.js';
 import {
-  buildRunElevation, legHardware, measureRun, worktopsOnWall,
+  buildRunElevation, measureRun, worktopsOnWall,
 } from '../src/engine/drawings/setElevation.js';
 // AMENDED 22.10.2026 (T81 F4): one law, one path: the appliance's name is the
 // projector's (`applianceLabel`), the sheet's own copy of its table is deleted.
@@ -255,17 +255,11 @@ test('T71 · the legs on the internal layout are the scene\'s leg: plate, stem, 
   const legs = bud.assemblies.legs;
   const legH = bud.assemblies.carcass.legHeight;
   assert.ok(legs.positions.length >= 2 && legH > 0, 'the engine publishes the legs');
-  const one = legHardware(legs.positions[0], { width: legs.width, height: legH, profile: P });
-  assert.equal(one.length, 3, 'plate, stem, foot');
-  const [plate, stem, foot] = one;
-  assert.equal(plate.w, legs.width, 'the plate is as wide as the engine\'s leg');
-  assert.equal(plate.h, L.plateThickness);
-  assert.equal(stem.w, L.stemDiameter);
-  assert.equal(foot.w, L.footDiameter);
-  assert.equal(foot.h, L.footHeight);
-  assert.equal(plate.h + stem.h + foot.h, legH, 'the three add up to the leg height');
-  assert.equal(foot.y, -legH, 'the foot stands on the floor');
-  assert.ok(one.every((e) => e.layer === 'LEG_BLOCK' && e.solid));
+  // AMENDED 22.10.2026 (T81 F6): `legHardware` is retired with the composers
+  // that called it; every sheet's leg is the projector's solid of the room's
+  // leg (*"zalezy mi zebys rysowal w pdf 1 do 1 co mamy na cabinet core"*):
+  // read off the X-ray below, plate, stem and foot, the plate as wide as the
+  // engine's leg and as thick as the profile's, the foot on the floor.
   // AMENDED 22.10.2026 (T81 F4): the sheets are the projector's, and a leg is
   // drawn where the room shows it (*"zalezy mi zebys rysowal w pdf 1 do 1 co
   // mamy na cabinet core"*): his units stand on plinths, so on the fronts and
@@ -280,6 +274,17 @@ test('T71 · the legs on the internal layout are the scene\'s leg: plate, stem, 
     assert.equal(sheet.entities.filter((e) => e.layer === 'LEG_BLOCK').length, 0, `${mode}: the plinth hides them`);
   }
   const xray = buildRunElevation(group, { mode: 'xray', room: HH_ROOM, profile: P, ctx });
+  {
+    const m01 = group.members.find((m) => m.unit.params.unit_num === '01');
+    const one = xray.entities.filter((e) => e.kind === 'line' && e.layer === 'LEG_BLOCK' && e.solid && e.src === `${m01.unit.id}:hw:leg:0`);
+    const flat = one.filter((e) => Math.abs(e.y1 - e.y2) < 1e-6);
+    const widest = Math.max(...flat.map((e) => Math.abs(e.x2 - e.x1)));
+    assert.ok(Math.abs(widest - legs.width) < 0.01, `the plate is as wide as the engine's leg: ${widest}`);
+    assert.ok(flat.some((e) => Math.abs(e.y1 - (m01.base - L.plateThickness)) < 0.01), 'the plate as thick as the profile\'s');
+    assert.ok(flat.some((e) => Math.abs(e.y1 - (m01.base - legH + L.footHeight)) < 0.01), 'the foot as tall as the profile\'s');
+    const ys = one.flatMap((e) => [e.y1, e.y2]);
+    assert.deepEqual([Math.min(...ys), Math.max(...ys)], [m01.base - legH, m01.base], 'from the floor to the carcass');
+  }
   for (const m of legged) {
     const mine = xray.entities.filter((e) => e.kind === 'line' && e.layer === 'LEG_BLOCK' && e.src.startsWith(`${m.unit.id}:hw:leg:`));
     for (const leg of hardwareInstances(m.result, P).legs) {

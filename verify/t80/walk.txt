@@ -1,0 +1,49 @@
+T80 WALK: THE BRITISH FRAME, ONE BOARD PER RUN (scripts/t80-walk.mjs)
+walked 2026-10-22 09:32 UTC, HEAD 82253dc, http://127.0.0.1:4173/
+Every line: PASS or FAIL (the gesture, what was expected, what was read), NOTE (a reading), FRAME (the file beside this one).
+The gestures this turn adds are real clicks; the stage is the mockup script's own, through the store; the cameras are its numbers.
+
+NOTE   the build under the mouse | the repo's HEAD 82253dc; url http://127.0.0.1:4173/
+NOTE   THE STAGE (scripts/chatfix-2110-mockup-inframe-final.mjs, through the store's own actions) | BUD 600 one door, BUD 800 a pair, BUDR2 500, WUD 600 one door over the BUD 600; END-L 18 on the BUD 600; plinth; worktop true; front type f1 spray, board generic-22, F&B Card Room Green, sheen 30
+NOTE   the units | [["BUD","01",1000,600,770],["BUD","02",1600,800,770],["BUDR2","DR01",2400,500,770],["WUD","WU01",1000,600,720]]
+PASS   the stage, lay-on (in-frame OFF) | expect: no frame, the design lay-on | observed: inframe false; frames [null,null]; BUD 600 door [{"id":"01-F","w":595.5,"h":770,"t":22,"z":561,"d":22}]
+PASS   Settings > Settings...: the FRONTS row, Lay-on lit | expect: the row present, Lay-on pressed | observed: row true; lit ["layon"]
+PASS   the hint under it (CLAUDE.md F2's words) | expect: In-frame: one routed frame per run, 38 mm, fronts set in it with 3 mm, hinges on the side. | observed: In-frame: one routed frame per run, 38 mm, fronts set in it with 3 mm, hinges on the side.; tooltip Stiles and rails 38 mm; frame 25 mm thick; fronts 22 mm, flush with the frame, 3 mm of air behind them; 3 mm to the frame and between fronts; the lip into the opening (38 - 2t) / 2, 1 mm on 18 mm boards; rails 19 mm above and below the carcass; one board up to 2800 mm, a longer run joined at a stile.
+PASS   In-frame (British) pressed (a real click) | expect: In-frame lit | observed: lit ["inframe"]
+NOTE   the engine under in-frame | {"run":{"w":1920,"h":808,"openings":[[562,732],[762,732],[462,732]],"stiles":[38,38,38,20]},"wud":{"w":602,"h":758},"fronts":{"a":[{"id":"01-F","w":556,"h":726,"t":22,"z":561,"d":22}],"b":[{"id":"02-FL","w":376.5,"h":726,"t":22,"z":561,"d":22},{"id":"02-FR","w":376.5,"h":726,"t":22,"z":561,"d":22}],"c":[{"id":"DR01-F1","w":456,"h":360,"t":22,"z":561,"d":22},{"id":"DR01-F2","w":456,"h":363,"t":22,"z":561,"d":22}],"w":[{"id":"WU01-F","w":556,"h":676,"t":22,"z":403,"d":22}]}}
+PASS   the run's frame (BUD 600 + 800 + 500 + END-L 18 + 1: the width the run reports) | expect: 1920 x 808, 25 thick | observed: 1920 x 808, 25 thick, at {"x":-19,"y":-19,"z":558,"w":1920,"h":808,"d":25}
+PASS   one board for the run: the members carry none | expect: BUD 800 and BUDR2 500 carry no frame of their own | observed: [0,0]
+PASS   the stile between A and B | expect: 38 | observed: [38,38,38,20]
+PASS   the openings | expect: 562 x 732 / 762 x 732 / 462 x 732 | observed: [[562,732],[762,732],[462,732]]
+PASS   the doors | expect: 556 x 726 and two of 376.5 x 726 | observed: [[556,726]] [[376.5,726],[376.5,726]]
+PASS   the fronts 22, their face on the frame's face, 3 of air behind | expect: t 22, z 558 + 3, face 558 + 25 | observed: [["01-F",22,561,22],["02-FL",22,561,22],["02-FR",22,561,22],["DR01-F1",22,561,22],["DR01-F2",22,561,22]]
+PASS   the WUD's frame | expect: 602 x 758 | observed: 602 x 758
+PASS   the filler, a note on the run | expect: Site filler 19 mm x 1900 under the worktop (joiner, not supplied) | observed: Site filler 19 mm x 1900 under the worktop (joiner, not supplied)
+PASS   the worktop on the frame (19 higher than lay-on) | expect: lay-on y + 19 (870 + 19) | observed: {"layon":{"y":870,"h":38,"d":606},"inframe":{"y":889,"h":38,"d":606}}
+PASS   the end panel to the frame: its face on the frame's face (D + 25), 19 taller | expect: face at 558 + 25, height lay-on + 19 | observed: {"layon":{"face":583,"h":910},"inframe":{"face":583,"h":929}}
+PASS   the frame in 3D: ONE mesh (the board, its openings cut) | expect: a FRAME mesh in the room | observed: {"n":2,"holes":96}
+FRAME  f12-01-three-quarter.png
+FRAME  f12-02-elevation.png
+FRAME  f12-03-junction-low.png
+FRAME  f12-04-top-filler.png
+FRAME  f12-05-wall-unit.png
+PASS   CNC (the toolbar's own button): the FRAME on the sheet, its label, its EDGE arrow | expect: the FRAME part, labelled, the arrow down (the bottom rail) | observed: {"label":"#09 01 FRAME 1920x808","arrow":"down","note":null}
+FRAME  f12-06-cnc-frame.png
+PASS   BOM: the frame's line and the filler note | expect: In-frame frames listed; the note | observed: {"frame":true,"note":"Site filler 19 mm x 1900 under the worktop (joiner, not supplied)"}
+FRAME  f12-07-bom.png
+PASS   the BOM shut by its own x | expect: the panel gone | observed: false
+NOTE   One more section through: 01 (the native select, a real click, the arrows, Enter) | {"ok":true,"label":"01 (Wall A)","after":"u_dixqamj","num01":"01"}
+NOTE   the sheet with the section | Wall A \u00b7 Sections A-A and B-B
+PASS   the section: a piece of timber over the carcass, named "site filler 19 (timber)" | expect: the label on the sheet | observed: true; sheets ["Cover, index and revisions","Plan \u00b7 base units","Plan \u00b7 wall units","Wall A \u00b7 Front view","Wall A \u00b7 Internal layout","Wall A \u00b7 Sections A-A and B-B","Wall A \u00b7 Perspective view","Visualisation","Cut list and materials"]
+FRAME  f12-08-section.png
+PASS   Check: #40 red, in CLAUDE.md's words | expect: #40 red: In-frame fronts are 22 mm: front type f1 is 18 mm. Change the front material or switch back to lay-on. | observed: {"n":40,"level":"red","text":"#40 \u00b7 In-frame front is not 22 mmIn-frame fronts are 22 mm: front type f1 is 18 mm. Change the front material or switch back to lay-on."}
+PASS   the same in the left column (InframeWarnings) | expect: 40 red | observed: ["40 red"]
+FRAME  f12-09-check.png
+PASS   Settings: Lay-on pressed | expect: Lay-on lit | observed: ["layon"]
+PASS   in-frame OFF is today: no frame, the lay-on doors | expect: no frame; every front as before the switch | observed: {"run":null,"fronts":[{"id":"01-F","w":595.5,"h":770,"t":22,"z":561,"d":22}]}
+PASS   the worktop and the end panel back where they were | expect: {"worktop":{"y":870,"h":38,"d":606},"endPanel":{"x":-18,"y":-100,"z":-10,"w":18,"h":870,"d":593}} | observed: {"worktop":{"y":870,"h":38,"d":606},"endPanel":{"x":-18,"y":-100,"z":-10,"w":18,"h":870,"d":593}}
+FRAME  f12-10-off.png
+NOTE   console errors on the page | none
+
+FRAMES (10): f12-01-three-quarter.png, f12-02-elevation.png, f12-03-junction-low.png, f12-04-top-filler.png, f12-05-wall-unit.png, f12-06-cnc-frame.png, f12-07-bom.png, f12-08-section.png, f12-09-check.png, f12-10-off.png
+T80: 24 steps, 24 pass, 0 fail

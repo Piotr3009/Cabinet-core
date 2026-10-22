@@ -206,6 +206,8 @@ export const NEW_FILES = [
   // T80 F11 (22.10.2026): the two in-frame goldens
   'scripts/t78-classify.d/f40-t80-f11.mjs',
   'test/turn80-f11-goldens.test.js',
+  // T80 F12 (22.10.2026): the walk
+  'scripts/t80-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

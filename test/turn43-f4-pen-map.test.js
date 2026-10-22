@@ -73,8 +73,8 @@ test('F4 — every weight on every sheet is a rung of the ISO ladder', () => {
   }
 });
 
-/** T71: the sheets that are ELEVATIONS of a wall. T81: the fronts and X-ray sheets, the projector's. */
-const ELEVATIONS = new Set(['fronts', 'xray']);
+/** T71: the sheets that are ELEVATIONS of a wall. T81: the fronts, without fronts and X-ray sheets, the projector's. */
+const ELEVATIONS = new Set(['fronts', 'no-fronts', 'xray']);
 
 // AMENDED 22.10.2026 (T81 F3): the elevations are the projector's, every board
 // drawn where the room puts it and nothing drawn over the fronts
@@ -91,7 +91,7 @@ test('F4 · the 0.50 GEOMETRY rects on an elevation: none, the boards are the dr
       .filter((e) => e.kind === 'rect' && !SHEET_LAYERS.has(e.layer) && e.width === PEN.OUTLINE);
     assert.equal(heavy.length, 0, `${s.name}: ${heavy.length} rects at 0.50`);
   }
-  assert.deepEqual([...seen].sort(), ['fronts', 'xray']);
+  assert.deepEqual([...seen].sort(), ['fronts', 'no-fronts', 'xray']);
 });
 
 test('F4 — no geometry on an elevation is heavier than an outline', () => {

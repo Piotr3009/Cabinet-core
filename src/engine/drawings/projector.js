@@ -979,8 +979,14 @@ function keeps(solid, mode) {
   return true;
 }
 
-/** The ink of a solid in a mode: the X-ray's two greys for the shell and the fronts. */
+/**
+ * The ink of a solid in a mode: the X-ray's two greys for the shell and the
+ * fronts. With the fronts off, the front-material boards the room keeps (an
+ * end panel, an infill, the cornice) are drawn in the carcass's ink: the
+ * magenta is the fronts', and they are off.
+ */
 function inkOf(solid, mode) {
+  if (mode === 'no-fronts' && solid.layer === 'DOORS') return 'CARCASE';
   if (mode !== 'xray') return solid.layer;
   if (solid.front) return 'XRAY_FRONT';
   if (solid.kind === 'board' && solid.shell) return 'XRAY_CARCASE';

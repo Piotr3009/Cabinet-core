@@ -30,8 +30,12 @@ import {
 } from '../src/engine/drawings/setSheet.js';
 import { chainH, chainV, figureCollisions, figureWidth } from '../src/engine/drawings/setChains.js';
 import {
-  applianceLabel, buildRunElevation, hingePlateMarks, legHardware, measureRun, worktopsOnWall,
+  buildRunElevation, legHardware, measureRun, worktopsOnWall,
 } from '../src/engine/drawings/setElevation.js';
+// AMENDED 22.10.2026 (T81 F4): one law, one path: the appliance's name is the
+// projector's (`applianceLabel`), the sheet's own copy of its table is deleted.
+import { applianceLabel } from '../src/engine/drawings/projector.js';
+import { hardwareInstances } from '../src/engine/hardware3d.js';
 import { buildPlan, cutEntries, cutHeight, measurePlan } from '../src/engine/drawings/setPlan.js';
 import { buildStation, sectionStations } from '../src/engine/drawings/setSection.js';
 import { buildRoom3d } from '../src/engine/drawings/setPerspective.js';
@@ -262,35 +266,58 @@ test('T71 · the legs on the internal layout are the scene\'s leg: plate, stem, 
   assert.equal(plate.h + stem.h + foot.h, legH, 'the three add up to the leg height');
   assert.equal(foot.y, -legH, 'the foot stands on the floor');
   assert.ok(one.every((e) => e.layer === 'LEG_BLOCK' && e.solid));
-  // On the sheet: three rects per leg per unit, and the front view has none.
+  // AMENDED 22.10.2026 (T81 F4): the sheets are the projector's, and a leg is
+  // drawn where the room shows it (*"zalezy mi zebys rysowal w pdf 1 do 1 co
+  // mamy na cabinet core"*): his units stand on plinths, so on the fronts and
+  // on the sheet without fronts the plinth hides every leg, as in the room;
+  // the X-ray shows each one through it, at the engine's own x.
   const group = wallA();
   const ctx = drawingContext(20, P);
-  const internal = buildRunElevation(group, { withFronts: false, room: HH_ROOM, profile: P, ctx });
-  // One leg per x on an elevation: the back leg of a pair stands behind the front one.
-  const uniqueXs = (m) => new Set((m.result.assemblies?.legs?.positions || []).map((p) => Math.round(p.x))).size;
-  const expected = group.members.reduce((a, m) => a + ((m.result.assemblies?.carcass?.legHeight || 0) > 0 ? 3 * uniqueXs(m) : 0), 0);
-  assert.ok(expected >= 3 * 2 * 6, 'his six legged base units, two legs each in elevation');
-  assert.equal(internal.entities.filter((e) => e.layer === 'LEG_BLOCK').length, expected);
-  const fronts = buildRunElevation(group, { withFronts: true, room: HH_ROOM, profile: P, ctx });
-  assert.equal(fronts.entities.filter((e) => e.layer === 'LEG_BLOCK').length, 0, 'the plinth hides them on the front view');
-  // Where they stand, in x, is the engine's own list, moved by the unit's x.
-  const m = group.members[0];
-  const plates = internal.entities.filter((e) => e.layer === 'LEG_BLOCK' && e.h === L.plateThickness && e.x >= m.x && e.x < m.x + m.width);
-  assert.deepEqual(plates.map((e) => Math.round(e.x - m.x)).sort((a, b) => a - b), [...new Set(legs.positions.map((p) => Math.round(p.x)))].sort((a, b) => a - b));
+  const legged = group.members.filter((m) => hardwareInstances(m.result, P).legs.length > 0);
+  assert.ok(legged.length >= 6, 'his six legged base units');
+  for (const mode of ['fronts', 'no-fronts']) {
+    const sheet = buildRunElevation(group, { mode, room: HH_ROOM, profile: P, ctx });
+    assert.equal(sheet.entities.filter((e) => e.layer === 'LEG_BLOCK').length, 0, `${mode}: the plinth hides them`);
+  }
+  const xray = buildRunElevation(group, { mode: 'xray', room: HH_ROOM, profile: P, ctx });
+  for (const m of legged) {
+    const mine = xray.entities.filter((e) => e.kind === 'line' && e.layer === 'LEG_BLOCK' && e.src.startsWith(`${m.unit.id}:hw:leg:`));
+    for (const leg of hardwareInstances(m.result, P).legs) {
+      const x = m.x + leg.x;
+      assert.ok(mine.some((e) => Math.min(e.x1, e.x2) <= x + 0.01 && Math.max(e.x1, e.x2) >= x - 0.01 && Math.abs(e.y1 - e.y2) < 1e-6),
+        `${m.unit.params.unit_num}: the leg at ${x} on the X-ray`);
+    }
+    // From the floor to the carcass: the leg is as tall as the engine says.
+    const ys = mine.flatMap((e) => [e.y1, e.y2]);
+    assert.ok(Math.abs(Math.min(...ys) - (m.base - m.result.assemblies.carcass.legHeight)) < 0.01, 'the foot stands on the floor');
+  }
 });
 
 test('T71 · the hinge plates are the side\'s own drilling: three per door on his 720 doors, six on the two-door sink', () => {
+  // AMENDED 22.10.2026 (T81 F4): the plates on the sheet without fronts are the
+  // projector's, one per hinge the room hangs (`hardwareInstances`), drawn where
+  // the room puts them (*"tak jakbysmy ukryli albo sciagneli fronty"*); the
+  // composer `hingePlateMarks` is retired (kasacja).
   const r = (num) => entries.find((e) => e.unit.params.unit_num === num).result;
-  const plates = (num) => hingePlateMarks(r(num), P);
+  const group = wallA();
+  const sheet = buildRunElevation(group, { mode: 'no-fronts', room: HH_ROOM, profile: P, ctx: drawingContext(20, P) });
+  const memberOf = (num) => group.members.find((m) => m.unit.params.unit_num === num);
+  const plates = (num) => new Set(sheet.entities.filter((e) => e.family === 'plate' && e.src.startsWith(`${memberOf(num).unit.id}:`)).map((e) => e.src));
   const pairs = r('01').drillSummary.side_hinge_holes_y.length;
-  assert.equal(plates('01').length, pairs * r('01').drillSummary.hinged_sides.length);
-  assert.equal(plates('01').length, 3, 'a 770 door: three hinges');
-  assert.equal(plates('05').length, 6, 'the sink\'s two doors: three each side');
-  assert.equal(plates('04').length, 0, 'a drawer unit has no plates');
-  assert.ok(plates('01').every((e) => e.layer === 'HINGES' && e.h === P.hardware.hinge.plateLength));
-  // On the LEFT side for an L door, at the board's inner face.
+  assert.equal(plates('01').size, pairs * r('01').drillSummary.hinged_sides.length);
+  assert.equal(plates('01').size, 3, 'a 770 door: three hinges');
+  assert.equal(plates('05').size, 6, 'the sink\'s two doors: three each side');
+  assert.equal(plates('04').size, 0, 'a drawer unit has no plates');
+  // On the LEFT side for an L door, at the board's inner face, a plate long.
   const G = Number(r('01').params.board_t) || 18;
-  assert.ok(plates('01').every((e) => e.x === G));
+  const m = memberOf('01');
+  const lines = sheet.entities.filter((e) => e.kind === 'line' && e.family === 'plate' && e.src.startsWith(`${m.unit.id}:`));
+  assert.ok(lines.length > 0 && lines.every((e) => e.layer === 'HINGES'));
+  assert.equal(Math.min(...lines.flatMap((e) => [e.x1, e.x2])), m.x + G, 'from the side\'s inner face');
+  for (const src of plates('01')) {
+    const ys = lines.filter((e) => e.src === src).flatMap((e) => [e.y1, e.y2]);
+    assert.ok(Math.abs(Math.max(...ys) - Math.min(...ys) - P.hardware.hinge.plateLength) < 0.01, 'a plate long');
+  }
 });
 
 test('T71 · the worktop is the design layer\'s slab, and the set resolves it itself when nobody hands it in', () => {

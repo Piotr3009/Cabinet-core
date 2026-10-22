@@ -1,51 +1,25 @@
-// ─── T71 · THE WALL ELEVATION OF THE SET: FRONTS, AND INTERNAL LAYOUT ────────
+// ─── T71 · THE WALL ELEVATION OF THE SET. T81: THREE SHEETS PER WALL ────────
 //
-// Two sheets per wall, exactly the Skylon pair: `Front view` (fronts on) and
-// `Internal layout` (fronts off). Every rectangle is the engine's own: the
-// per-unit views this app has drawn since turn 6 and 7, composed at each
-// unit's `position.x_mm` and at the height it stands or hangs. What this file
-// adds is what the owner's set has and ours did not:
+// The fronts, the wall without its fronts and the X-ray (T81 F2 to F5), each
+// drawn by the one projector from the boards and the hardware the room draws
+// (`projector.js`). What this file adds is what T71 hung around them:
 //
 //   · the WORKTOP, from the design layer's own records (`worktopsFor`);
-//   · the LEGS as the 3D scene draws them, plate, stem and foot, from
-//     `profile.hardware.leg` and `assemblies.legs` (the owner: *"nóżki żeby
-//     były takie jak wszędzie"*);
-//   · the HINGE PLATES on the internal layout, from `drillSummary`, so a
-//     770 door shows the three plates the side is drilled for;
-//   · the APPLIANCE a unit is built around, named (D/W, FRIDGE, SINK), read
-//     off the unit's TYPE and never guessed;
-//   · a unit number that stands on a white mask, so 05 and 12 read on the
-//     meeting line of a pair of doors;
+//   · the BUILDING: the floor, the ceiling and the wall's two ends;
 //   · chains with ONE home each: wall run widths above, base run widths and
 //     the overall below, heights on the left, fronts (or shelves) on the
 //     right. No figure appears twice.
 //
 // Pure functions: no React, no store imports.
 
-import { buildFrontElevation } from './frontElevation.js';
-import { buildCarcassElevation } from './views.js';
 import {
-  boundsOf, entLine as line, entRect as rect, entText as text, moveEntities as translate,
+  boundsOf, entLine as line, entRect as rect, entText as text,
 } from './primitives.js';
-import { handleMarks, heightChains, mountingBands, widthChains } from './wallElevation.js';
+import { heightChains, mountingBands, widthChains } from './wallElevation.js';
 import { chainH, chainV } from './setChains.js';
 import { roomWalls } from '../room.js';
 // T81 · the sheets draw what the room draws, through the one projector.
 import { applianceMarks as projectedAppliances, projectRun, unitNumbers } from './projector.js';
-
-/** What a unit is built around, by TYPE. Nothing here is guessed off a size. */
-const APPLIANCE_OF = {
-  DW_PANEL: 'D/W',
-  FRIDGE: 'FRIDGE',
-  FRIDGE_US: 'FRIDGE',
-  SINK: 'SINK',
-  OVEN_BASE: 'OVEN',
-  WUD_HOOD: 'HOOD',
-};
-
-export function applianceLabel(unit) {
-  return APPLIANCE_OF[unit?.type] || null;
-}
 
 /** The wall this group stands on, with its width, when the room knows it. */
 function wallOf(group, room) {
@@ -101,96 +75,8 @@ export function legHardware(leg, { width, height, profile, dx = 0, dy = 0 }) {
   ];
 }
 
-/**
- * The hinge plates the side is drilled for, on the internal layout. Read off
- * `drillSummary.side_hinge_holes_y` (the pairs of screw holes up the side) and
- * `hinged_sides`; drawn as the plate's footprint on the side's inner face.
- */
-export function hingePlateMarks(result, profile, { dx = 0, dy = 0 } = {}) {
-  const out = [];
-  const ds = result.drillSummary || {};
-  const pairs = Array.isArray(ds.side_hinge_holes_y) ? ds.side_hinge_holes_y : [];
-  const sides = Array.isArray(ds.hinged_sides) ? ds.hinged_sides : [];
-  if (!pairs.length || !sides.length) return out;
-  const W = Number(result.params.width) || 0;
-  const G = Number(result.params.board_t) || 18;
-  const HW = profile.hardware.hinge;
-  const len = HW.plateLength;
-  const wide = Math.max(8, Math.round(HW.plateThickness * 1.2));
-  for (const side of sides) {
-    for (const pair of pairs) {
-      const cy = (Number(pair[0]) + Number(pair[1])) / 2;
-      const x = side === 'BUR' ? W - G - wide : G;
-      out.push({ ...rect('HINGES', dx + x, dy + cy - len / 2, wide, len), pen: 'THIN', solid: true });
-    }
-  }
-  // A split pair on one wide carcass: the engine names both sides; a single
-  // door names one, and the other side carries nothing, exactly as drilled.
-  return out;
-}
-
-/** The unit number, standing on white and set at the paper size. */
-function maskNumbers(entities, ctx) {
-  return entities.map((e) => (e.kind === 'text' && e.layer === 'UNIT_NUMBER'
-    ? { ...e, mask: true, weight: 'bold', paperHeight: ctx.unitNumberHeight / ctx.scale }
-    : e));
-}
-
-/**
- * Where the number goes on the INTERNAL view: the widest clear band between
- * the horizontal pieces inside the carcass (shelves, drawer boxes), so it
- * never sits on a shelf line. On a unit with nothing inside, the middle.
- */
-function numberSlot(result) {
-  const H = Number(result.params.height) || 0;
-  const G = Number(result.params.board_t) || 18;
-  const spans = [];
-  for (const p of result.panels || []) {
-    if (!p.box) continue;
-    if (p.role === 'shelf' || p.part === 'DRAWER-SIDE' || p.role === 'partition' || p.role === 'fixed') {
-      spans.push([p.box.y, p.box.y + p.box.h]);
-    }
-  }
-  spans.sort((a, b) => a[0] - b[0]);
-  let cursor = G;
-  let best = { y: H / 2, size: 0 };
-  for (const [a, b] of spans) {
-    if (a - cursor > best.size) best = { y: (cursor + a) / 2, size: a - cursor };
-    cursor = Math.max(cursor, b);
-  }
-  if (H - G - cursor > best.size) best = { y: (cursor + H - G) / 2, size: H - G - cursor };
-  return best.size > 120 ? best.y : H / 2;
-}
-
-/**
- * The appliance a unit is built around, drawn where it lives: a dashed space
- * on the internal layout (the whole opening, or the fridge's aperture under
- * its fixed panel), and the word on both sheets.
- */
-function applianceMarks(member, { withFronts, ctx }) {
-  const out = [];
-  const name = applianceLabel(member.unit);
-  if (!name) return out;
-  const r = member.result;
-  const W = Number(r.params.width) || 0;
-  const H = Number(r.params.height) || 0;
-  const G = Number(r.params.board_t) || 18;
-  const fixed = (r.panels || []).find((p) => p.box && (p.role === 'fixed' || p.id === 'FIXED'));
-  const top = fixed ? fixed.box.y : H - G;
-  const x0 = member.x; const y0 = member.base;
-  if (!withFronts) {
-    if (member.unit.type !== 'SINK') {
-      out.push({ ...rect('APPLIANCE', x0 + G, y0 + G, W - G * 2, Math.max(0, top - G)), pen: 'HIDDEN', hidden: true });
-    }
-    out.push({ ...text('APPLIANCE', x0 + W / 2, y0 + Math.min(top, H) * 0.62, name, ctx.labelHeight), paperHeight: ctx.labelHeight / ctx.scale, mask: true });
-    if (fixed) {
-      out.push({ ...text('APPLIANCE', x0 + W / 2, y0 + top * 0.52, `aperture ${Math.round(top - G)}`, ctx.labelHeight * 0.85), paperHeight: (ctx.labelHeight * 0.85) / ctx.scale, mask: true });
-    }
-  } else {
-    out.push({ ...text('APPLIANCE', x0 + W / 2, y0 + Math.min(top, H) * 0.3, `${name} behind`, ctx.labelHeight * 0.9), paperHeight: (ctx.labelHeight * 0.9) / ctx.scale, mask: true });
-  }
-  return out;
-}
+// T81 F4: hingePlateMarks, maskNumbers, numberSlot and the composed applianceMarks are retired;
+// the projector draws the plates, the numbers and the appliances (kasacja).
 
 /**
  * ─── T81 · ONE WALL THROUGH THE PROJECTOR ──────────────────────────────────
@@ -243,80 +129,10 @@ function projectedRun(group, {
 export function buildRunElevation(group, {
   withFronts = true, mode = null, room = null, worktops = [], frontTypeOf = null, shakerFrame = null, profile, ctx,
 }) {
-  const sheetMode = mode || (withFronts ? 'fronts' : 'no-fronts');
-  // T81 F3 · the fronts sheet is the projector's: only what the eye sees.
-  if (sheetMode === 'xray' || sheetMode === 'fronts') {
-    return projectedRun(group, {
-      mode: sheetMode, room, worktops, frontTypeOf, shakerFrame, profile, ctx,
-    });
-  }
-  // eslint-disable-next-line no-param-reassign
-  withFronts = sheetMode === 'fronts';
-  const W = profile.drawings.wallDrawing;
-  const entities = [];
-  const wall = wallOf(group, room);
-  const ends = wallEnds(group, wall);
-  const pad = W.fabricOverhang;
-  const ceiling = Number(room?.height) || 0;
-
-  // ── the units, composed ──
-  for (const m of group.members) {
-    const view = withFronts
-      ? buildFrontElevation(m.result, {
-        unitNum: m.unit.params?.unit_num, frontType: frontTypeOf ? frontTypeOf(m.unit) : null, profile,
-        overallDims: false, unitNumberHeight: ctx.unitNumberHeight, frontsOnly: true, shakerFrame,
-      })
-      : buildCarcassElevation(m.result, {
-        unitNum: m.unit.params?.unit_num, profile, unitNumberHeight: ctx.unitNumberHeight, drawerBoxes: true, legSymbol: 'none',
-      });
-    let ents = view.entities;
-    if (!withFronts) {
-      // The number in the clear band, and the plates the side is drilled for.
-      const slotY = applianceLabel(m.unit) ? (Number(m.result.params.height) || 0) * 0.3 : numberSlot(m.result);
-      ents = ents.map((e) => (e.kind === 'text' && e.layer === 'UNIT_NUMBER' ? { ...e, y: slotY } : e));
-      ents.push(...hingePlateMarks(m.result, profile));
-      // Legs, as the scene draws them: one per x on an elevation, since the
-      // front and the back leg of a pair stand behind each other.
-      const legs = m.result.assemblies?.legs;
-      const legH = Number(m.result.assemblies?.carcass?.legHeight) || 0;
-      if (legs && legH > 0) {
-        const seen = new Set();
-        for (const leg of legs.positions) {
-          const key = Math.round(Number(leg.x) || 0);
-          if (seen.has(key)) continue;
-          seen.add(key);
-          ents.push(...legHardware(leg, { width: legs.width, height: legH, profile }));
-        }
-      }
-    }
-    entities.push(...translate(maskNumbers(ents, ctx), m.x, m.base));
-    if (withFronts) entities.push(...handleMarks(m.result, profile, { dx: m.x, dy: m.base }));
-    entities.push(...applianceMarks(m, { withFronts, ctx }));
-  }
-
-  // ── the worktop(s) on this wall, from the design layer ──
-  // (VISIBLE, not OUTLINE: the 0.50 rects on an elevation are the unit
-  // silhouettes and nothing else, T43 F4's census.)
-  for (const w of worktops) {
-    entities.push({ ...rect('CARCASE', w.x, w.y, w.w, w.h), pen: 'VISIBLE', fill: '#f3f3f3' });
-  }
-
-  // ── the building: floor, ceiling, and the wall's ends ──
-  const x0 = Math.min(group.from - pad, ...ends);
-  const x1 = Math.max(group.to + pad, ...ends);
-  entities.push({ ...line('BUILDING', x0, 0, x1, 0), pen: 'VISIBLE' });
-  if (ceiling > group.top) {
-    entities.push({ ...line('BUILDING', x0, ceiling, x1, ceiling), pen: 'VISIBLE' });
-    entities.push({ ...text('BUILDING', (x0 + x1) / 2, ceiling + ctx.labelHeight, `CEILING ${Math.round(ceiling)}`, ctx.labelHeight * 0.85), paperHeight: (ctx.labelHeight * 0.85) / ctx.scale });
-  }
-  for (const e of ends) entities.push({ ...line('BUILDING', e, 0, e, ceiling > group.top ? ceiling : group.top), pen: 'VISIBLE' });
-  entities.push({ ...text('BUILDING', (x0 + x1) / 2, -ctx.labelHeight, 'FFL', ctx.labelHeight * 0.85), paperHeight: (ctx.labelHeight * 0.85) / ctx.scale });
-
-  // ── the chains, each in its home ──
-  const chains = runChains(group, { withFronts, ends, worktops, ceiling, profile, ctx });
-  entities.push(...chains.flat());
-
-  return { entities, chains, solid: boundsOf(entities.filter((e) => e.layer !== 'DIMENSIONS')) };
+  // T81 F3 to F5 · every sheet of a wall is the projector's: only what the eye sees.
+  return projectedRun(group, {
+    mode: mode || (withFronts ? 'fronts' : 'no-fronts'), room, worktops, frontTypeOf, shakerFrame, profile, ctx,
+  });
 }
 
 /**

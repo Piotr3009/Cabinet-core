@@ -1348,8 +1348,11 @@ function renderScene(scene, V, {
       x: x0, y: y0, w: x1 - x0, h: y1 - y0, ...(s.kind === 'worktop' && !xray ? { fill: SLAB_FILL } : {}),
     });
   }
-  // The painter's white first, then a slab's own tint, then every stroke.
-  const rank = (e) => (e.layer === 'MASK' ? 0 : (e.fill ? 1 : 2));
+  // The painter's white first, then a slab's own tint, then every stroke; on
+  // the X-ray the faded shell and fronts first, so the internals are drawn
+  // over them in their own inks, as the room's X-ray shows them.
+  const ORDER = { MASK: 0, XRAY_CARCASE: 2, XRAY_FRONT: 3 };
+  const rank = (e) => (e.fill && e.layer !== 'MASK' ? 1 : (ORDER[e.layer] ?? 4));
   merged.sort((a, b) => rank(a) - rank(b));
   census.lines = merged.filter((e) => e.kind === 'line').length;
   return { entities: merged, census };

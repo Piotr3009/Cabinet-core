@@ -62,6 +62,8 @@ export const NEIGHBOUR = Object.freeze({
   CORNER_OVERLAP: 'cornerOverlap',
   // 15.10.2026: the bi-fold pair's leaf B, hung on leaf A's free edge (T78 F8; the default since the owner's proposal).
   CORNER_BIFOLD: 'cornerBifold',
+  // T80 F10: a front set IN a frame meets the frame's stile (KIT_INFRAME.lsp D12, "3 mm zawsze").
+  FRAME: 'frame',
 });
 
 /** Section A, as data. `null` is PARKED — never a guess. */
@@ -199,6 +201,13 @@ export function frontsInRoom(entries, baseOf) {
         cornerEdge: p.meta?.cornerEdge || null,   // T75 F4: an L door's inner edge
         openAngleDeg: Number(p.meta?.openAngleDeg) > 0 ? Number(p.meta.openAngleDeg) : null, // T78 F13: a wide family's swing
         hingeFamily: p.meta?.hingeFamily || null,
+        // T80 F10 · a front set in a frame: its opening, in the room (meta.inset, KIT_INFRAME.lsp D11).
+        ...(p.meta?.inset?.opening ? {
+          opening: {
+            from: originX + p.meta.inset.opening.x,
+            to: originX + p.meta.inset.opening.x + p.meta.inset.opening.w,
+          },
+        } : {}),
       });
     }
   }
@@ -259,6 +268,11 @@ function neighbourOn(front, side, {
       { of: { unitId: other.unitId, unitNum: other.unitNum, panelId: other.panelId } },
     );
   }
+
+  // ── the frame a set-in front stands in (T80 F10) ──
+  // Its stile stands at the opening's edge, nearer than anything outside the
+  // frame; another leaf in the same opening (a pair) is nearer still.
+  if (front.opening) consider(NEIGHBOUR.FRAME, dir > 0 ? front.opening.to : front.opening.from);
 
   // ── an end panel or an infill (rules 2 and 3) ──
   for (const v of verticals) {
@@ -369,12 +383,14 @@ export function frontClearances({
       const n = neighbourOn(front, side, {
         fronts, verticals, units: list, wallWidth, profile,
       });
-      const want = clearanceFor(n.kind, profile);
       // What this front's edge ACTUALLY has: how far it stands inside its own
       // carcass end on this side.
       const have = round2(side === 'left'
         ? front.x - front.carcassFrom
         : front.carcassTo - (front.x + front.w));
+      // T80 F10 · in a frame a front stands where KIT_INFRAME.lsp (c) puts it,
+      // 3 off the frame: the matrix has nothing to correct at that edge.
+      const want = n.kind === NEIGHBOUR.FRAME ? have : clearanceFor(n.kind, profile);
       row.edges[side] = {
         ...n,
         side,
@@ -644,6 +660,7 @@ export function labelOf(kind) {
     [NEIGHBOUR.CORNER_BIFOLD]: 'the L corner (bi-fold, hung on leaf A)', // 15.10.2026
     [NEIGHBOUR.NONE]: 'the end of the run',
     [NEIGHBOUR.CORNER]: 'an L-shape corner',
+    [NEIGHBOUR.FRAME]: 'the frame', // T80 F10
   }[kind] || kind;
 }
 

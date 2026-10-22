@@ -150,7 +150,9 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // #35 the lift-up leaf at full opening (F18). Twenty-nine became thirty-two.
   // AMENDED BY T79 F8 (18.10.2026): #36 the recess extension refused, the owner:
   // *"dlaczego cut the corner likwiduje nam wcięcie do recess?"* Thirty-three.
-  assert.equal(CHECKS.length, 33);
+  // AMENDED BY T80 F10 (22.10.2026): #40 to #44, the in-frame project's five, appended
+  // at the end. Rule 15 is still the fifteenth and still says what it said. Thirty-eight.
+  assert.equal(CHECKS.length, 38);
   assert.equal(CHECKS[14].n, 15);
 });
 

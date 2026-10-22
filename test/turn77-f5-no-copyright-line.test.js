@@ -198,6 +198,11 @@ export const NEW_FILES = [
   // T80 F9 (22.10.2026): the frame in 3D
   'scripts/t78-classify.d/f40-t80-f09.mjs',
   'test/turn80-f09-3d.test.js',
+  // T80 F10 (22.10.2026): the in-frame checks, #40 to #44
+  'src/engine/inframeChecks.js',
+  'src/components/InframeWarnings.jsx',
+  'scripts/t78-classify.d/f40-t80-f10.mjs',
+  'test/turn80-f10-checks.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

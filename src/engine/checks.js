@@ -71,6 +71,8 @@ import { panelWeight } from './lifts.js';
 // T78 F18 · Check #35: a lift leaf at full opening against the ceiling, a
 // cornice and the unit above; said in words, never clipped.
 import { liftClearanceFindings } from './liftChecks.js';
+// T80 F10 · Checks #40 to #44: the in-frame project's own (KIT_INFRAME.lsp).
+import { inframeFindings } from './inframeChecks.js';
 // Turn 38 (CLAUDE.md F9): the two guards on what a hand has drawn on a print.
 import { manualGeometryFaults } from './partEdits.js';
 import { resolvePanelMaterial } from './materials.js';
@@ -289,6 +291,17 @@ export const CHECKS = Object.freeze([
   // reached no screen. #28's twin, RED: a person decides. CLAUDE.md names it
   // #32, which T76 F4 holds (the front's decoration board); it is the next free.
   { n: 36, level: 'red', label: 'Recess extension refused' },
+  // ─── T80 F10 · THE IN-FRAME CHECKS (engine/inframeChecks.js) ─────────────
+  // CLAUDE.md T80 F10 names them #40 to #44, and the probe found them free
+  // (verify/t80/f10-probe.md: 37 to 39 stay unused, so nobody reads them as a
+  // hole). The owner, 21.10.2026: *"drzwi 22 i jest idealnie"*, *"wszedzie
+  // ramke 38"*, *"a jak bedzie to bedziemy laczyc"*, *"3 mm zawsze"*. Asked
+  // only of an in-frame project; a lay-on project never hears of them.
+  { n: 40, level: 'red', label: 'In-frame front is not 22 mm' },
+  { n: 41, level: 'yellow', label: 'In-frame cabinets not butted (the stile grows)' },
+  { n: 42, level: 'yellow', label: 'Unit the in-frame frame stops at' },
+  { n: 43, level: 'yellow', label: 'In-frame frame joined (wider than the board)' },
+  { n: 44, level: 'red', label: 'In-frame hinge cup within 3 mm of the lip' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -1376,6 +1389,13 @@ export function runChecks({
   // Never a cut: the leaf is cut as asked and the sentence names the way out.
   out.push(...liftClearanceFindings({
     entries, units: list, room, profile,
+  }));
+
+  // ── #40 to #44 the in-frame project (T80 F10) ───────────────────────────
+  // The frames re-derived through the store's own `runFrameParams`, the
+  // fronts and the hinge the engine's; nothing for a lay-on project.
+  out.push(...inframeFindings({
+    entries, units: list, design, profile,
   }));
 
   const seen = new Set();

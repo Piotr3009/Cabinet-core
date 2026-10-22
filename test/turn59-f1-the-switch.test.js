@@ -253,7 +253,8 @@ const EXEMPT = {
     + ' T78 F21 · the Spraying page is mounted beside the other output windows (the modal layer\'s spraying entry). *"cale sprayowanie jako osobne menu Cabinet Core."*'
     + ' Chat fix 17.10.2026 \u00b7 onExportLabels writes the sticker sheets (lib/labelsPdf.js) from the project\'s part number plan; the Output menu\'s DXF ZIP takes the cabinet\'s labels slice. *"naklejki 44 na A4 ... ponumerujemy wszystkie elementy ... ok koduj"*'
     + ' T79 F1 . the messages and the front-gap rows stand in ONE bottom-left column (components/Messages.jsx, the rows as its top slot through a wrapper, FrontGapWarnings.jsx untouched); the lone Messages mount after the context menu is gone. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
-    + ' T79 F18 · onExportLabels takes { sheet } from the two Output entries (21 per sheet, Avery L7160; 44 per sheet) and hands that preset of profile.labels.sheets to exportLabelsPdf; the default stays L7160. *"przełącznik 21/44 naklejek w oknie eksportu"* (the handover), the owner 14:55: *"ok daj"*',
+    + ' T79 F18 · onExportLabels takes { sheet } from the two Output entries (21 per sheet, Avery L7160; 44 per sheet) and hands that preset of profile.labels.sheets to exportLabelsPdf; the default stays L7160. *"przełącznik 21/44 naklejek w oknie eksportu"* (the handover), the owner 14:55: *"ok daj"*'
+    + ' T80 F10 · the in-frame checks #40 to #44 stand in the left column beside the front-gap rows (components/InframeWarnings.jsx, the same findings the Check panel reads, the same fly-to). *"Each in the left messages and in the Check panel."* (CLAUDE.md T80 F10); the owner: *"3 mm zawsze."* (21.10.2026, 22:03)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -296,6 +297,10 @@ const EXEMPT = {
     'T78 F19 · the Joints choice on the company defaults screen: the owner\'s four joint systems, Cabineo in its two variants, as ids (puzzle | dowel | biscuit | cabineo8 | cabineo12) through the same Choice select every other preference uses, written as joints_system; never a number (the validator refuses a typed pitch or diameter as it refuses the hinge angle, T22). *"mamy puzzle i dogbones w systemie i niech tak bedzie ale tez trzeba zrobic wybor laczenia i mamy 4: puzzle, dowels, Cabineo, ciastka"*; *"Cabineo 8 AND 12, chosen in the company\'s default settings."*',
   // CLAUDE.md T78 F21: *"cale sprayowanie jako osobne menu Cabinet Core"*: a
   // NEW PRO surface, licensed the night it is born and frozen at its hash.
+  // CLAUDE.md T80 F10: *"Each in the left messages and in the Check panel."*
+  // A NEW PRO surface, licensed the night it is born and frozen at its hash.
+  'src/components/InframeWarnings.jsx':
+    'T80 F10 · the in-frame checks (#40 front not 22, #41 not butted, #42 the frame stops, #43 joined, #44 the cup and the lip) as rows in the bottom-left column, read from useCheckFindings (nothing computed here), a click flies by useGoToSubject. *"Each in the left messages and in the Check panel."* (CLAUDE.md T80 F10); the owner: *"drzwi 22 i jest idealnie"*, *"3 mm zawsze."* (21.10.2026, 22:03)',
   'src/components/SprayingPanel.jsx':
     'T78 F21 · Output > Spraying, one page on the Production Core pattern (mockup v2 of 11.10): the SPRAYING INFORMATION card, PART A ELEMENTS by colour, PART B CARDS open, PART C PAINT, Export PDF; every number the engine\'s (engine/spray.js off profile.spray), a typed note per line printed. *"cale sprayowanie jako osobne menu Cabinet Core"*; *"edges in m2 for the paint and in lm beside it; waste 10 percent."*',
   // CLAUDE.md T79 F1, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
@@ -372,6 +377,8 @@ const FROZEN = {
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',
   'src/components/HandEditsModal.jsx': '8b2f61eead0bcc9f47aab78cadb7a6627a73885fd8e1b2e7ac8ac6ebf30025b0',
+  // T80 F10 · a new PRO file, frozen at its first hash; EXEMPT above carries the reason.
+  'src/components/InframeWarnings.jsx': 'f661f733fb63d046163e40639b45637d3a44cd40ffc74169c220a4752eb30581',
   'src/components/JoineryPreview.jsx': '4313bbe216ce87f80ab6ee1b4d1e8e288465e5b2ef2bedbba1167346508add0a',
   // T72 F4 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/JpullRunModal.jsx': '652b4f701a455134eb2571565f03dc6fca89c273f4041ad9eb66d8b0c7bd6aa7',
@@ -434,7 +441,7 @@ const FROZEN = {
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F18 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '2428d870109acd46ff4051b6a6b2c585f6f0c8dfc015555f5350cb1fd395466f',
+  'src/pages/ConfiguratorPage.jsx': '654f82638286e4d6cd1fa4d1069d7057cc35e39b2ece198a4b07f3415da72f58',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -557,7 +564,7 @@ const show = (abs) => relative(ROOT, abs);
 
 // ─── 1. THE PRO FROZEN-FILES ASSERTION ─────────────────────────────────────
 
-test('F1: the frozen surface, 68 files of PRO, byte for byte (T78 F21: the Spraying page joined)', () => {
+test('F1: the frozen surface, 69 files of PRO, byte for byte (T78 F21: the Spraying page joined; T80 F10: the in-frame rows)', () => {
   const moved = [];
   for (const [rel, want] of Object.entries(FROZEN)) {
     const path = join(ROOT, rel);
@@ -630,6 +637,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',
     'src/components/FrontDecorationControls.jsx',
+    // T80 F10 · *"Each in the left messages and in the Check panel"*: the in-frame rows, a new PRO surface.
+    'src/components/InframeWarnings.jsx',
     'src/components/JpullRunModal.jsx',
     // T75 F15 · *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet"*.
     'src/components/LibraryPanel.jsx',
@@ -674,7 +683,7 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // A tarball or a clone with no such ref. The manifest above already
     // answered; this assertion has nothing to add and says so out loud
     // rather than passing in silence.
-    assert.ok(Object.keys(FROZEN).length === 68, 'no base ref: the manifest is the whole proof here');
+    assert.ok(Object.keys(FROZEN).length === 69, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

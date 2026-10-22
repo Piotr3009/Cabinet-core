@@ -287,7 +287,9 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
   // 15.10.2026 · the recess extension's BITE out of one edge of the BACK
   // (`cnc.bite`, the engine's own rectangle in the board's drawn frame).
   const bite = panel?.cnc?.bite && Number(panel.cnc.bite.x1) > Number(panel.cnc.bite.x0) ? panel.cnc.bite : null;
-  const recesses = profile?.appearance?.cuts?.enabled
+  // T80 F9 · a frame's openings are its SHAPE (KIT_INFRAME.lsp D10), not a
+  // machining: the board is cut through whether or not the scene bores the rest.
+  const recesses = profile?.appearance?.cuts?.enabled || panel.part === 'FRAME'
     ? panelRecesses(panel, notch ? drills.filter((d) => d.kind !== 'notch_dogbone') : drills, {
       thickness,
       // Turn 46 (F6a): …and the SHAKER rebate on a CUT leaf. Its pocket is a

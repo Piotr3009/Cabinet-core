@@ -126,8 +126,12 @@ test('the rules, each with the owner’s colour', () => {
   // AMENDED BY T79 F8 (18.10.2026): #36 the recess extension refused, red (#28's
   // twin), the owner: *"dlaczego cut the corner likwiduje nam wcięcie do recess?"*
   // Thirty-two became thirty-three.
-  assert.equal(CHECKS.length, 33);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36]);
+  // AMENDED BY T80 F10 (22.10.2026): the in-frame project's five, numbered as
+  // CLAUDE.md names them (#37 to #39 stay unused, verify/t80/f10-probe.md):
+  // #40 red (the owner: *"drzwi 22 i jest idealnie"*), #41, #42, #43 yellow,
+  // #44 red (*"3 mm zawsze"*). Thirty-three became thirty-eight.
+  assert.equal(CHECKS.length, 38);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -174,6 +178,13 @@ test('the rules, each with the owner’s colour', () => {
     35: 'yellow',
     // T79 F8 · the recess the carcass cannot grow into: #28's twin, a person decides.
     36: 'red',
+    // T80 F10 · in-frame: the 22 front and the cup at the lip are red, the stile, the
+    // split and the join are yellow (the app did what the law says and says so).
+    40: 'red',
+    41: 'yellow',
+    42: 'yellow',
+    43: 'yellow',
+    44: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

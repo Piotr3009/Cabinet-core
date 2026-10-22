@@ -291,12 +291,20 @@ export function panelNoteBlock(panel, {
   // rectangle (every other board) is sized exactly as before.
   const rect = labelBox(panel);
   const ol = panel?.cnc?.outline;
-  const box = Array.isArray(ol) && ol.length >= 3
+  const box0 = Array.isArray(ol) && ol.length >= 3
     ? (() => {
       const [x0, y0, x1, y1] = outlineBox(ol);
       return { w: Math.min(rect.w, x1 - x0), h: Math.min(rect.h, y1 - y0) };
     })()
     : rect;
+  // T80 F4 · an in-frame frame's middle is its openings: its note is laid out
+  // in HALF its TOP RAIL (the board over the highest opening), so under the
+  // house's anchor (the first line at h - size x 1.2) the words stand in the
+  // rail's own middle, on the board, never over a cut-out.
+  const topRail = panel?.meta?.inframe && Array.isArray(panel?.cnc?.pockets) && panel.cnc.pockets.length
+    ? rect.h - Math.max(...panel.cnc.pockets.map((k) => Math.max(Number(k.y1) || 0, Number(k.y2) || 0)))
+    : null;
+  const box = topRail != null && topRail > 0 ? { w: box0.w, h: Math.min(box0.h, topRail / 2) } : box0;
   const text = slopeNoteText(panel, { ascii });
   const ellipsis = ascii ? '~' : '…';
   const at = (sizeMm) => labelBlock({

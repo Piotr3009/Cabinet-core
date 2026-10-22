@@ -36,6 +36,8 @@ import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
 import FrontGapWarnings from '../components/FrontGapWarnings.jsx';
+// T80 F10 · Checks #40 to #44 in the left column, beside the front-gap rows.
+import InframeWarnings from '../components/InframeWarnings.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 // T54-F6: the dimensions' sleep clock — a lib module so fake timers can test it.
 import { createDimensionSleep, dimensionsIdleMs } from '../lib/dimensionSleep.js';
@@ -650,6 +652,7 @@ export default function ConfiguratorPage() {
           {viewMode === '3d' && (
             <div className="contents pointer-events-auto [&>*]:!static">
               <FrontGapWarnings />
+              <InframeWarnings />
             </div>
           )}
         </Messages>

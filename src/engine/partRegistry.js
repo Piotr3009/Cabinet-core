@@ -179,6 +179,13 @@ export const PART_REGISTRY = {
     id: 'mask', name: 'Bottom mask', group: G('front'), unit: 'm²', materialType: 'front',
     note: 'The board under a run of wall units, hiding the standoff',
   },
+  // T80 F3 · the in-frame frame: ONE routed MDF board per run, sprayed with the
+  // fronts (the owner, 21.10.2026: *"raczej plyta"*). Its own row: it is 25 and
+  // the doors in it are 22, so it is not bought as a door.
+  frame: {
+    id: 'frame', name: 'In-frame frames', group: G('front'), unit: 'm²', materialType: 'front',
+    note: 'One routed frame per run, the openings cut through (T80); no banding, the edges are painted',
+  },
   // T75 F10 · the back panel on an island's empty long face, front material.
   back_panel: {
     id: 'back_panel', name: 'Back panels', group: G('front'), unit: 'm²', materialType: 'front',
@@ -580,6 +587,9 @@ export const ELEMENT_TO_PART_ID = {
 
   PLINTH: 'plinth',
 
+  // T80 F3 · the in-frame frame of a run (FRAME, or FRAME-1 .. FRAME-n when joined).
+  FRAME: 'frame',
+
   // Fronts.
   FRONT: 'door',
   'DRAWER-FRONT': 'drawer_front',
@@ -760,6 +770,9 @@ const EDGE_OF_PART = {
   corner_post: 'edge_front',
   upstand: 'edge_carcase',
   back_panel: 'edge_front',
+  // T80 F3 · the in-frame frame is never banded (its edges are painted); the
+  // row is here so a frame that ever were would pay for it as a front does.
+  frame: 'edge_front',
 };
 
 /** Which edging part pays for this part's banding, or null when none does. */

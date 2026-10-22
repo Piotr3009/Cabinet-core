@@ -148,6 +148,8 @@ import {
   runMemberIds, runPlinthParams, runUpstandParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
   verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
+// T80 F3 · the in-frame frame of a run (KIT_INFRAME.lsp's mirror).
+import { runFrameParams } from '../engine/inframe.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
 import {
   runFor as shareOutRunFor, shareOutGapSpan, shareOutOffered, shareOutPlan,
@@ -1079,6 +1081,25 @@ function unitSetbackOr(params, fallback) {
     : fallback;
 }
 
+// ─── T80 F2 · IN-FRAME REACHES THE ENGINE THROUGH THIS DOOR ONLY ────────────
+// The owner, 21.10.2026 (22:40): *"3 per projekt."*  The decision is the
+// project's (design.inframe); a unit hears it only when the project says so
+// AND its type is one a frame stands on this turn (profile.inframe.unitTypes;
+// the frame STOPS at every other unit, Check #42). The numbers are the
+// profile's, which computeCabinet is handed beside the params. A bare
+// `computeCabinet()` (every golden fixture) is handed nothing and cuts lay-on.
+//
+// T80 F3: and the unit stands in a FRAME (its run element names one): a framed
+// type that is turned, or that no run holds, keeps its lay-on fronts. A call
+// with no design in hand (the shelf bands, the hanger's room) reads the run
+// element alone, which the settle pass derives from design.inframe and from
+// nothing else, so the two roads cannot disagree.
+function inframeFor(unit, design, profile, elements = useProjectStore.getState().runElements?.[unit?.id]) {
+  if (design && migrateDesign(design).inframe !== true) return false;
+  if (!(profile?.inframe?.unitTypes || []).includes(unit?.type)) return false;
+  return Boolean(elements?.frame);
+}
+
 function paramsForEngine(unit, design = null) {
   // ─── T55 ("tnij"): THE FOSSIL HAS NO ROAD ────────────────────────────────
   // run_* are destructured OUT of the saved params before anything spreads,
@@ -1119,9 +1140,14 @@ function paramsForEngine(unit, design = null) {
       ...(elements.upstand ? { run_upstand: elements.upstand } : {}),
       // T75 F15 · …and the pelmet, the same way.
       ...(elements.pelmet ? { run_pelmet: elements.pelmet } : {}),
+      // T80 F3 · …and the in-frame frame, where the project is in-frame.
+      ...(elements.frame && inframeFor(unit, design, profile, elements) ? { run_frame: elements.frame } : {}),
     } : {}),
     type: unit.type,
     items,
+    // T80 F2 · in-frame, the key ABSENT on a lay-on project (the house idiom), so
+    // a lay-on project hands the engine exactly the params it handed it on main.
+    ...(inframeFor(unit, design, profile, elements) ? { inframe: true } : {}),
     // ─── TURN 46 (CLAUDE.md F3): THE SLOPE CUT ────────────────────────────
     // On the override channel, exactly as the plinth, the hinge standard, the
     // shaker frame and the shelf-pin setback travel — an INPUT in the design
@@ -3143,6 +3169,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // adjacency the plinth's are: docking a cabinet extends it, an end panel or
     // a gap ends it.
     const maskParams = runMaskParams(next, profile);
+    // T80 F3 · …and the FRAME of an in-frame project, the plinth's grammar on
+    // the plinth's own runs (engine/inframe.js, KIT_INFRAME.lsp (a) (b)). A
+    // lay-on project asks nothing: no element, no frame, not one params key.
+    const frameParams = design.inframe === true ? runFrameParams(next, profile) : new Map();
+    // How far a unit's frame stands over its carcass top: 19 on a framed unit (the rail outside, KIT_INFRAME.lsp D3), else 0.
+    const frameLiftOf = (u) => {
+      if (!frameParams.get(u.id)) return 0;
+      const t = Number(u.params?.board_t) > 0 ? Number(u.params.board_t) : Number(profile.board?.thickness) || 18;
+      return Number(profile.inframe.rail) - t - (Number(profile.inframe.stile) - 2 * t) / 2;
+    };
     // ─── …and the CORNICE, the same way again (turn 22, CLAUDE.md F1.3) ─────
     // One moulding across horizontally adjacent cornice-bearing units. It is
     // computed after the top infill because the piece it is FIXED TO is the
@@ -3160,6 +3196,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         + profile.doors.gap
         + (Number(u.params?.front_t) || profile.front.thickness),
       infillHeightOf: (u) => Number(u.params?.top_infill_mm) || 0,
+      // T80 F8 · the cornice stands on the frame's top edge (T80 PROPOSED).
+      topLiftOf: (u) => frameLiftOf(u),
     }, profile);
     // T75 F15 · …and the PELMET, the cornice's segments and mitres on the
     // bottom edge of a run of wall units (engine/pelmet.js).
@@ -3178,7 +3216,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // specified finishes above his ceiling.
     for (const u of next) {
       const notice = corniceCeilingNotice({
-        unitTop: unitTop(u, profile),
+        // T80 F8 · on a framed unit the stack starts on the frame's top edge.
+        unitTop: unitTop(u, profile) + frameLiftOf(u),
         infillHeight: Number(u.params?.top_infill_mm) || 0,
         height: takesCornice(u.type) ? u.params?.cornice : 0,
         roomHeight,
@@ -3215,9 +3254,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ...(upstandParams.get(u.id) ? { upstand: upstandParams.get(u.id) } : {}),
         // T75 F15 · …and the pelmet, likewise.
         ...(pelmetParams.get(u.id) ? { pelmet: pelmetParams.get(u.id) } : {}),
+        // T80 F3 · …and the in-frame frame, likewise.
+        ...(frameParams.get(u.id) ? { frame: frameParams.get(u.id) } : {}),
       };
       if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice && !entry.upstand
-        && !entry.pelmet) continue;
+        && !entry.pelmet && !entry.frame) continue;
       const prev = prevElements[u.id];
       // Reference equality matters (drag frames), and the test is BYTE
       // equality of the WHOLE element — a field list here rotted twice
@@ -9955,6 +9996,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       profile: getCabinetProfile(),
       // T75 F5 · a slab that turns a corner is resolved in both walls' frames.
       walls: roomWalls(s.project.room),
+      // T80 F8 · under in-frame the slab sits on the frame (19 higher).
+      inframe: migrateDesign(s.project.design).inframe === true,
     });
   },
 

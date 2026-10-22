@@ -513,6 +513,19 @@ export function panelPlacement(panel) {
         n: [0, 0, -1],
       };
 
+    // T80 F9 · THE FRAME OF A RUN (KIT_INFRAME.lsp D10): drawn as the sheet
+    // draws it, x from the run's left outer edge, y up from the bottom rail,
+    // seen from the room. Its openings are RECESS_WINDOW cut-outs through the
+    // 25, so the scene's board loses them as holes by the window's own path.
+    // Right-handed (u x v = -n), the machined face at the back.
+    case 'FRAME':
+      return {
+        origin: [box.x, box.y, box.z],
+        u: [1, 0, 0],
+        v: [0, 1, 0],
+        n: [0, 0, -1],
+      };
+
     default:
       return null;
   }

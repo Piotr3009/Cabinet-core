@@ -57,9 +57,18 @@ import {
 // Chat-fix 15.10.2026 (the evening) · the recess extension, KIT_RECESS.lsp's
 // mirror: the notch's reverse (the carcass grows backward over a band), asked
 // of the parent's own cut, a pass before the drilling and a pass after it.
+// T80 F5 · the fronts set in the frame: KIT_INFRAME.lsp (c), mirrored; F7 · the end panel (e).
+import {
+  endPanelDepth as inframeEndPanelDepth, endPanelGrow as inframeEndPanelGrow, fillerNote as inframeFillerNote,
+  inframeSpec, insetFronts, openingOf as inframeOpeningOf,
+} from './inframe.js';
+// T80 F6 · the inset hinge: its numbers from reference/hardware/blum-inframe-hinge.json only.
+import { insetCupFromEdge, insetHingeSpec, insetPlateSetback } from './hingeLadder.js';
+// T80 F3 · and RECESS_WINDOW_LAYER: the in-frame frame's openings go on the
+// layer the back's window uses (T25 F1.2's cut-out).
 import {
   extensionCarcass, extensionDrills, extensionSummary, extensionVerdict, withExtensionRefusal,
-  endPanelsFollowSides,
+  endPanelsFollowSides, RECESS_WINDOW_LAYER,
 } from './extension.js';
 import { applySiteTrim } from './siteTrim.js';
 // T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
@@ -1482,7 +1491,8 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
 // T75 F14 · …and `false_front`, the hob unit's fixed dummy, the blank's sibling.
 // T75 F15 · …and `pelmet`, the strip under a run of wall units, front material.
 // T78 F15 · `drawer_front` is the INNER front of a drawer behind doors (meta.inner).
-const FINISH_EXPOSED_ROLES = new Set(['front', 'drawer_front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
+// T80 F3 · 'frame': the in-frame frame is sprayed with the fronts (the owner's green frame in the mockup).
+const FINISH_EXPOSED_ROLES = new Set(['front', 'drawer_front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1512,7 +1522,8 @@ export function isFinishExposed(role) {
 // under the doors, in the plane the eye reads as the front of the run — so it
 // goes through the FRONT pipeline exactly as the plinth was given in turn 11.
 // FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
-const FRONT_MATERIAL_ROLES = new Set(['front', 'drawer_front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
+// T80 F3 · 'frame': material from the FRONT type of the project (CLAUDE.md T80 F3).
+const FRONT_MATERIAL_ROLES = new Set(['front', 'drawer_front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -6319,6 +6330,79 @@ export function computeCabinet(params, profileOverride) {
       } : {}),
     }));
   }
+  // ─── T80 F3 · THE FRAME OF A RUN (KIT_INFRAME.lsp (a) and (b)) ────────────
+  //
+  // The owner, 21.10.2026: *"raczej plyta, malo kiedy bedzie jeden ciag
+  // dluzszy jak 2800, a jak bedzie to bedziemy laczyc"*; *"cnc blum in
+  // frame"*. ONE MDF board per run, routed on the CNC with the openings cut
+  // through (the window mechanism of T25 F1.2: a cut-out pocket, clockwise,
+  // on the layer the back's window uses), never a frame glued from strips. A
+  // RUN element like the plinth: engine/inframe.js works out the segments
+  // from buildRuns and writes the geometry onto the first unit of each; the
+  // owner cuts it here, in its own frame (x from its left side's outer face,
+  // y from its carcass bottom, z from its back: the frame stands on the
+  // carcass face, D to D + 25). Wider than the board: FRAME-1 .. FRAME-n, cut
+  // at a stile's centre line. No in-frame (every lay-on project, every bare
+  // kit, every golden): not one line below runs.
+  const runFrame = params?.inframe === true && params?.run_frame?.role === 'owner' ? params.run_frame : null;
+  if (runFrame) {
+    const ft = Number(runFrame.frameT) || 25;
+    const of = runFrame.pieces.length;
+    runFrame.pieces.forEach((piece, i) => {
+      const pw = roundTo(piece.to - piece.from, 4);
+      const holes = runFrame.openings.filter((o) => o.x0 >= piece.from - 1e-6 && o.x1 <= piece.to + 1e-6);
+      panels.push(panel({
+        id: piece.name,
+        part: 'FRAME',
+        role: 'frame',
+        w: pw,
+        h: runFrame.height,
+        thickness: ft,
+        // The face is sprayed and the edges are inside the paint: no banding.
+        edgeCode: codes.none,
+        edgeLen: 0,
+        box: {
+          x: roundTo(runFrame.offset + piece.from, 4), y: roundTo(runFrame.dy, 4), z: D, w: pw, h: runFrame.height, d: ft,
+        },
+        cnc: {
+          ...rectGeometry(pw, runFrame.height),
+          pockets: holes.map((o) => ({
+            layer: RECESS_WINDOW_LAYER,
+            x1: roundTo(o.x0 - piece.from, 4),
+            y1: roundTo(o.y0, 4),
+            x2: roundTo(o.x1 - piece.from, 4),
+            y2: roundTo(o.y1, 4),
+            depth: ft,
+            cutout: true,
+          })),
+        },
+        meta: {
+          run: true,
+          unitIds: runFrame.unitIds,
+          inframe: {
+            piece: i + 1,
+            of,
+            from: piece.from,
+            to: piece.to,
+            frameW: runFrame.width,
+            // T80 F4 · the run's name and the bottom rail, for the label and the EDGE arrow.
+            unitNums: runFrame.unitNums || [],
+            // T80 F8 · the carcasses' span and the mount, and over a base run the joiner's filler note
+            // (KIT_INFRAME.lsp D15: a NOTE on the run, never a board).
+            runWidth: runFrame.runWidth,
+            mount: runFrame.mount,
+            ...(i === 0 && runFrame.mount !== 'wall' ? { fillerNote: inframeFillerNote(runFrame.runWidth, inframeSpec(P)) } : {}),
+            rail: holes.length ? roundTo(Math.min(...holes.map((o) => o.y0)), 4) : null,
+            openings: holes.map((o) => ({ unitId: o.unitId, w: roundTo(o.x1 - o.x0, 4), h: roundTo(o.y1 - o.y0, 4) })),
+            stiles: runFrame.stiles,
+            ends: runFrame.ends,
+            ...(runFrame.joinRefused ? { joinRefused: true } : {}),
+          },
+        },
+      }));
+    });
+  }
+
   // ─── T75 F4 · THE L's OWN PLINTH: TWO BOARDS, SQUARE BUTT ────────────────
   //
   // CLAUDE.md T75 F4: *"Plinth: two boards meeting at the inner corner, square
@@ -7116,7 +7200,18 @@ export function computeCabinet(params, profileOverride) {
   // The PROBE (verify/t79/f09-probe.md row 12): 596 at z 0..596 beside a
   // carcass at z 18..858. With no recess_mm (every golden) nothing moves.
   const endBack = wallGap + Math.max(0, Number(params?.recess_mm) || 0) + insetBack;
-  const endPanelDepth = endBack + D + P.doors.gap + frontT;
+  // ─── T80 F7 · UNDER IN-FRAME THE END PANEL REACHES THE FRAME ─────────────
+  // The owner, 21.10.2026 (22:40): *"2 na styk"*: the panel stays butted to
+  // the side; it is as deep as the carcass plus the frame (to the frame's
+  // face, D + 25) and as tall as the frame (KIT_INFRAME.lsp D14,
+  // inframe-end-panel-depth / -grow: 19 above the carcass top, a wall unit's
+  // also 19 below its bottom). The site trim of 19.10 is added after, as
+  // today. Lay-on (every golden): the panel is what it was, to the byte.
+  const inframeEnd = params?.inframe === true ? inframeSpec(P) : null;
+  const endPanelDepth = inframeEnd
+    ? endBack + inframeEndPanelDepth(D, inframeEnd)
+    : endBack + D + P.doors.gap + frontT;
+  const [endGrowTop, endGrowBottom] = inframeEnd ? inframeEndPanelGrow(G, type.mount === 'wall', inframeEnd) : [0, 0];
   // ─── Turn 13 (CLAUDE.md F4): A WALL UNIT'S PANEL ENDS WITH THE CABINET ───
   //
   // "To the floor" means down to the floor for something STANDING on it: past
@@ -7145,8 +7240,11 @@ export function computeCabinet(params, profileOverride) {
     // How far it runs ABOVE the carcass — dragged there, or sent to the ceiling
     // with a double click (CLAUDE.md F3). The room's ceiling is not the
     // engine's business; the store clamps it and passes the answer down.
-    const top = Math.max(0, Number(ep?.top_mm) || 0);
-    const panelH = H + drop + top;
+    // T80 F7 · in a frame it reaches at least the frame's top (19 over the
+    // carcass), and a wall unit's at least the frame's bottom (19 under it).
+    const top = Math.max(Math.max(0, Number(ep?.top_mm) || 0), endGrowTop);
+    const dropAll = Math.max(drop, endGrowBottom);
+    const panelH = H + dropAll + top;
     if (panelH <= 0 || t <= 0) continue;
     // ─── TURN 50 (CLAUDE.md F5): AN END PANEL STOPS AT THE SLOPE ────────────
     //
@@ -7169,7 +7267,7 @@ export function computeCabinet(params, profileOverride) {
     // board. Gated on `cutLine` like every other line in this file, so a flat
     // room's end panel is byte-identical.
     const epFrom = side === 'L' ? -t : W;
-    const epY = drop > 0 ? -drop : 0;
+    const epY = dropAll > 0 ? -dropAll : 0;
     // T54-F1: the CEILING line — an end panel scribes to the plaster, so it is
     // one of the two pieces (with the side infill) that keep `ceilLine` when
     // the carcass moved down to `cutReach`.
@@ -7209,7 +7307,7 @@ export function computeCabinet(params, profileOverride) {
         top_mm: top,
         // Turn 16 (F4.3): the panel's own drop, as CUT — so the properties
         // block shows what the piece is rather than what was asked for.
-        below_mm: drop,
+        below_mm: dropAll,
         panelId: ep?.id || null,
         // ─── TURN 50 (CLAUDE.md F5): …AND WHERE THE CEILING CUT IT ─────────
         //
@@ -8441,6 +8539,80 @@ export function computeCabinet(params, profileOverride) {
     }));
   });
 
+  // ─── T80 F5 · THE FRONTS SET IN THE FRAME (KIT_INFRAME.lsp (c)) ───────────
+  //
+  // The owner, 21.10.2026: *"3 mm zawsze"*; *"ramka 25, drzwi 22 i jest
+  // idealnie, 3 mm gap pomiedzy carcasem a drzwiami"*; *"jak podwojne drzwi to
+  // miedzy drzwiami nie ma ramki, tylko miedzy szafkami"*. Behind
+  // `params.inframe` only (paramsForEngine hands it to a unit of an in-frame
+  // project that stands in a frame): every front this cabinet laid ON its
+  // carcass face is set IN the frame's opening. Its cell is the lay-on board
+  // the kit already cut, mapped into the opening (the outer edges become the
+  // opening's, the midline between two fronts stays), less 3 to the frame and
+  // 1.5 to a neighbour; its face on the frame's face (D + 25), its own
+  // thickness behind it (the project's front: 22, or Check #40 says not). One
+  // pass, here, before anything reads a front for machining (the shaker, the
+  // glass, the cups, the handles, the decoration), so each of them follows
+  // the inset board by construction. The cups follow the hinge rows down the
+  // door (meta.cupY in the door's own frame); a leaf hung on a carcass side
+  // names it (meta.hingeOn), its edge being 22 off the side's face now. A
+  // drawer front's screws keep the box's pilots (the box does not move,
+  // FROZEN 6). Lay-on, a bare kit, every golden: not one line here runs.
+  const inframeInset = [];
+  if (params?.inframe === true) {
+    const IFS = inframeSpec(P);
+    const opening = inframeOpeningOf({ w: W, h: H, bt: G }, IFS);
+    const setIn = panels.filter((p) => p.role === 'front' && (p.part === 'FRONT' || p.part === 'DRAWER-FRONT')
+      && !p.meta?.inner && !p.meta?.appliance && !p.meta?.lift && p.box && Number(p.box.z) >= D - 1e-6);
+    const cells = setIn.map((p) => [p.box.x, p.box.y, p.box.x + p.box.w, p.box.y + p.box.h]);
+    const inset = insetFronts(opening, cells, IFS.gap);
+    setIn.forEach((pnl, i) => {
+      const [x0, y0, x1, y1] = inset[i];
+      const w = roundTo(x1 - x0, 4);
+      const h = roundTo(y1 - y0, 4);
+      const dx = roundTo(pnl.box.x - x0, 4);
+      const dy = roundTo(pnl.box.y - y0, 4);
+      const t = Number(pnl.thickness) || frontT;
+      const code = String(pnl.edging?.code || '');
+      const banded = (code.includes('<') ? h : 0) + (code.includes('>') ? h : 0)
+        + (code.includes('^') ? w : 0) + (code.includes('v') ? w : 0);
+      const cell = { x: pnl.box.x, y: pnl.box.y, w: pnl.box.w, h: pnl.box.h };
+      pnl.w = w;
+      pnl.h = h;
+      pnl.box = { x: x0, y: y0, z: roundTo(D + IFS.frameT - t, 4), w, h, d: t };
+      pnl.area_m2 = areaM2(w, h);
+      pnl.edging = { ...pnl.edging, len_m: roundTo(metres(banded), 6) };
+      pnl.cnc = {
+        ...pnl.cnc,
+        outline: rectGeometry(w, h).outline,
+        holes: (pnl.cnc?.holes || []).map((hole) => ({ ...hole, x: roundTo(hole.x + dx, 4), y: roundTo(hole.y + dy, 4) })),
+      };
+      const hand = pnl.meta?.hinge;
+      const hung = pnl.part === 'FRONT' && (hand === 'L' || hand === 'R');
+      const onSide = hung && (hand === 'L' ? Math.abs(x0 - (opening[0] + IFS.gap)) < 1e-6 : Math.abs(x1 - (opening[2] - IFS.gap)) < 1e-6);
+      // T80 F6 · the hinge it hangs on is the Blum INSET hinge of the reference
+      // file: its plate column set back from the carcass front by the file's
+      // rule (20.5 for a 22 door), its cup the file's K from the hinge edge.
+      const insetSpec = hung ? insetHingeSpec() : null;
+      pnl.meta = {
+        ...(pnl.meta || {}),
+        ...(hung ? { cupY: (Array.isArray(pnl.meta?.cupY) ? pnl.meta.cupY : cupY).map((c) => roundTo(c + dy, 4)) } : {}),
+        ...(onSide && !pnl.meta?.hingeOn ? { hingeOn: hand === 'L' ? 'BUL' : 'BUR' } : {}),
+        ...(hung ? {
+          insetHinge: {
+            plateSetback: insetPlateSetback(t, IFS.frameT),
+            cupFromEdge: insetCupFromEdge(),
+            article: insetSpec.article,
+            angle: insetSpec.angle,
+            systemLabel: insetSpec.systemLabel,
+          },
+        } : {}),
+        inset: { cell, opening: { x: opening[0], y: opening[1], w: opening[2] - opening[0], h: opening[3] - opening[1] } },
+      };
+      inframeInset.push(pnl.id);
+    });
+  }
+
   // ─── TURN 31 (CLAUDE.md F4.8): THE ASYMMETRY LAW, AS ONE PASS ────────────
   //
   // The owner's rule 8, verbatim: "A width correction acts ONLY on the edge
@@ -8558,7 +8730,9 @@ export function computeCabinet(params, profileOverride) {
           + Math.hypot(q.x - sl.roomPts[i].x, q.y - sl.roomPts[i].y), 0)),
     };
   };
-  const edgeTrim = params?.front_edge_trim || null;
+  // T80 F5 · in a frame a front meets the frame or its neighbour at 3, always:
+  // the store's lay-on clearance trims never reach an inset front.
+  const edgeTrim = params?.inframe === true ? null : (params?.front_edge_trim || null);
   if (edgeTrim) {
     for (const pnl of panels.filter((x) => x.role === 'front')) {
       const trim = edgeTrim[pnl.id];
@@ -9012,8 +9186,15 @@ export function computeCabinet(params, profileOverride) {
   const platedSides = bayDoors.length
     ? [...new Set(bayDoors.filter((l) => !l.onPartition).map((l) => l.hingeOn))]
     : hingedSidesOf(faceLeavesCut, { panels });
+  // T80 F6 · a side an INSET leaf hangs on is drilled at that leaf's plate
+  // column (meta.insetHinge.plateSetback), not at the lay-on 37: the rows, the
+  // pair and the pilot are today's. A lay-on cabinet has no inset leaf.
+  const insetColumn = new Map(faceLeavesCut
+    .filter((p) => p.meta?.insetHinge && Number.isFinite(Number(p.meta.insetHinge.plateSetback)))
+    .map((p) => [p.meta.hingeOn || (p.meta.hinge === 'R' ? 'BUR' : 'BUL'), Number(p.meta.insetHinge.plateSetback)]));
   for (const sideId of platedSides) {
-    const x = sideId === 'BUR' ? sideW - P.hinges.xFromFrontEdge : P.hinges.xFromFrontEdge;
+    const fromFront = insetColumn.has(sideId) ? insetColumn.get(sideId) : P.hinges.xFromFrontEdge;
+    const x = sideId === 'BUR' ? sideW - fromFront : fromFront;
     const own = platedRowsFor(sideId);
     const pairs = own
       ? own.map((c) => [c - P.hinges.holePairOffset, c + P.hinges.holePairOffset])
@@ -9383,7 +9564,9 @@ export function computeCabinet(params, profileOverride) {
   // screw, said on the piece (`meta.lift`) exactly as the appliance face is.
   for (const pnl of panels.filter((x) => x.part === 'FRONT' && !x.meta?.appliance && !x.meta?.lift)) {
     const hingeSide = pnl.meta?.hinge || cfg.hinge;
-    const cupX = hingeSide === 'L' ? pnl.w - cups.xFromHingeEdge : cups.xFromHingeEdge;
+    // T80 F6 · an inset leaf's cup stands the reference file's K + half the cup from its hinge edge (21.5 today).
+    const fromEdge = Number(pnl.meta?.insetHinge?.cupFromEdge) > 0 ? Number(pnl.meta.insetHinge.cupFromEdge) : cups.xFromHingeEdge;
+    const cupX = hingeSide === 'L' ? pnl.w - fromEdge : fromEdge;
     const holeX = hingeSide === 'L' ? cupX - cups.screwOffsetX : cupX + cups.screwOffsetX;
     // Turn 26 (CLAUDE.md F1.4): the cup is the ONE hole in these kits that does
     // not go through, and this is where the sheet says so. The number is the
@@ -10837,6 +11020,12 @@ export function computeCabinet(params, profileOverride) {
     // An L's leaves were decided by their arms' virtual parents (the bi-fold's
     // leaf A takes the wide family there): their word stands.
     if (lCorner && pnl.meta?.arm && pnl.meta?.hingeFamily) continue;
+    // T80 F6 · an inset leaf hangs on the reference file's inset hinge: its
+    // angle (110) is the file's, and no family ladder is asked of it.
+    if (pnl.meta?.insetHinge) {
+      if (pnl.meta.insetHinge.angle != null) pnl.meta.openAngleDeg = pnl.meta.insetHinge.angle;
+      continue;
+    }
     const fam = hingeFamilyOf(pnl.id);
     // The standard family leaves no FAMILY mark on a leaf nobody chose for (the
     // goldens hold: they read no meta but readiness); a choice, or the wide
@@ -10881,7 +11070,7 @@ export function computeCabinet(params, profileOverride) {
     const doors = doorPanels.length === hingedPanelCount ? doorPanels : [];
     const keys = doors.length ? doors : Array.from({ length: hingedLeafCount }, () => null);
     for (const pnl of keys) {
-      const spec = resolveDoorHinge({
+      const resolvedSpec = resolveDoorHinge({
         assigned: pnl ? doorHingeAssignment({ door_hinges: cfg.doorHinges }, pnl.id) : null,
         frontThickness: frontT,
         innerDrawer,
@@ -10889,6 +11078,15 @@ export function computeCabinet(params, profileOverride) {
         // T78 F13 · the leaf's family.
         family: pnl ? hingeFamilyOf(pnl.id) : 'standard',
       });
+      // T80 F6 · an inset leaf buys the reference file's inset hinge (its
+      // article and angle, PROPOSED); the finish is the project's, as ever.
+      const ih = pnl?.meta?.insetHinge || null;
+      const spec = ih
+        ? {
+          ...resolvedSpec, angle: ih.angle, family: 'inframe', article: ih.article, articles: ih.article ? [ih.article] : [],
+          assigned: false, systemLabel: ih.systemLabel,
+        }
+        : resolvedSpec;
       // ─── TURN 36 (CLAUDE.md F6): PER-SEGMENT HINGE SETS ──────────────────
       // "A split is two doors, not one door with a line drawn on it." Each
       // segment carries its own ladder, so the ORDER is grouped by that count
@@ -10914,7 +11112,7 @@ export function computeCabinet(params, profileOverride) {
         article: spec.article,
         articles: spec.articles,
         finish: spec.finish,
-        system: cfg.hingeSystemLabel,
+        system: spec.systemLabel || cfg.hingeSystemLabel,
         assigned: spec.assigned,
       },
       hingeSpecLabel({
@@ -10925,7 +11123,8 @@ export function computeCabinet(params, profileOverride) {
         angle: spec.angle,
         finish: spec.finish,
         article: spec.article,
-        systemLabel: cfg.hingeSystemLabel,
+        // T80 F6 · an inset group names the inset hinge's own system.
+        systemLabel: spec.systemLabel || cfg.hingeSystemLabel,
         assigned: spec.assigned,
       }));
   }
@@ -11338,7 +11537,8 @@ export function computeCabinet(params, profileOverride) {
         .map((p) => [p.id, p.meta.plateY]),
     ),
     side_hinge_holes_y: hingedLeafCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
-    side_hinge_holes_x: P.hinges.xFromFrontEdge,
+    // T80 F6 · an in-frame cabinet's plates stand at the inset column.
+    side_hinge_holes_x: insetColumn.size ? [...insetColumn.values()][0] : P.hinges.xFromFrontEdge,
     hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSidesOf(
       panels.filter((p) => p.part === 'FRONT' && p.role === 'front'), { panels },
     ),
@@ -11674,8 +11874,11 @@ export function computeCabinet(params, profileOverride) {
       ...corniceElement,
       // Where the piece lives in this unit's own frame: its bottom edge at
       // door-top level (the carcass top), its back face in the door plane.
-      carcassTop: H,
-      doorPlane: D + P.doors.gap + frontT,
+      // T80 F8 · in a frame the cornice stands on the frame's top edge (19 over
+      // the carcass, KIT_INFRAME.lsp D3) and its face meets the frame's face
+      // (D + 25): T80 PROPOSED. Lay-on: the carcass top and the door plane.
+      carcassTop: params?.inframe === true ? H + inframeSpec(P).outside : H,
+      doorPlane: params?.inframe === true ? D + inframeSpec(P).frameT : D + P.doors.gap + frontT,
       // T73 F8 · the return's far end is the wall behind THIS unit.
       backZ: -wallGapOf({ params }, P),
       order: corniceOrderRow,
@@ -11908,6 +12111,56 @@ export function computeCabinet(params, profileOverride) {
     const topOf = new Map(panels.map((p) => [p.id, Number(p.cnc?.drawn_h) || Number(p.h) || 0]));
     return drills.filter((d) => !(topOf.has(d.panel) && Number(d.y) > topOf.get(d.panel) + 1e-6));
   })();
+
+  // ─── T80 F8 · WHAT THE DRAWINGS NEED OF THE FRAME, ONCE ──────────────────
+  // A section cuts a cabinet at its centre, through the frame's opening: it
+  // cuts the two RAILS and sees the stile beyond. Every number of that is the
+  // cabinet's own (its board, the lip 38 leaves it, 19 outside, 25 deep), so
+  // it is said here once for the drawings (engine/drawings/setSection.js) and
+  // not re-derived there. Present only under params.inframe.
+  if (params?.inframe === true) {
+    const IFD = inframeSpec(P);
+    const lipD = (IFD.stile - G - G) / 2;
+    derived.inframe = {
+      frameT: IFD.frameT,
+      outside: IFD.rail - G - lipD,
+      lip: lipD,
+      rail: IFD.rail,
+      boardT: G,
+      frontT: inframeInset.length ? (panels.find((p) => p.id === inframeInset[0])?.thickness ?? frontT) : frontT,
+      // The filler the joiner fits over a base carcass (D15): 19 high, from the TOP's back to the carcass front.
+      filler: type.mount === 'wall' ? null : { h: IFD.rail - G - lipD, z0: G, z1: D },
+    };
+  }
+
+  // ─── T80 F5 · THE NUMBERS THE INSET FRONTS MOVED ─────────────────────────
+  // `derived`, `drillSummary` and `assemblies` state the lay-on fronts from the
+  // kit's own locals; under in-frame the boards moved (the pass above), so the
+  // figures the drawings, the readouts and the 3-D read say the board that is
+  // cut. Every other figure (the hinge rows in the carcass, the boxes, their
+  // runners) is the kit's and stays. Lay-on: inframeInset is empty, nothing here.
+  if (inframeInset.length) {
+    const moved = panels.filter((p) => inframeInset.includes(p.id));
+    const leaves = moved.filter((p) => p.part === 'FRONT');
+    const drawerFronts = moved.filter((p) => p.part === 'DRAWER-FRONT').sort((a, b) => a.box.y - b.box.y);
+    if (leaves.length) {
+      if ('door_width' in derived) derived.door_width = leaves[0].w;
+      if (Array.isArray(leaves[0].meta?.cupY)) drillSummary.front_cup_y = leaves[0].meta.cupY.map((v) => roundTo(v, 4));
+    }
+    if (budr && drawerFronts.length) {
+      derived.front_heights = drawerFronts.map((p) => p.h);
+      derived.drawer_front_w = drawerFronts[0].w;
+      derived.drawer_front_y = drawerFronts.map((p) => p.box.y);
+      const screws = (p) => (p.cnc?.holes || []).filter((hole) => hole.kind === 'front_screw');
+      if (screws(drawerFronts[0]).length) {
+        drillSummary.drawer_front_screw_x = screws(drawerFronts[0]).map((hole) => hole.x);
+        drillSummary.drawer_front_screw_y_per_drawer = drawerFronts.map((p) => screws(p)[0]?.y ?? null);
+      }
+      assemblies.drawerFronts = (assemblies.drawerFronts || []).map((f, i) => (drawerFronts[i]
+        ? { ...f, y: drawerFronts[i].box.y, h: drawerFronts[i].h, w: drawerFronts[i].w, x: drawerFronts[i].box.x }
+        : f));
+    }
+  }
 
   return {
     type: type.id,

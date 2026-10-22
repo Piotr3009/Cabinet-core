@@ -213,7 +213,10 @@ export const T78_RETAIL_EDITS = [
       + 'CLAUDE.md T79 F5: *"Retail the same through the copy script or by hand (name it)."*',
     // T79 F5 (by hand, Options.jsx is retail's own): the SIZE step's CutEdgeRow under CUT CORNER, CUT EDGE lights the four
     // horizontal side edges (A.toggleCutEdge) and REMOVE takes an edge notch off (A.removeEdgeCut); the hunks at 354 and 396.
-    hunks: ['@@ -353,0 +354,5 @@', '@@ -390,0 +396,24 @@', '@@ -783,0 +813,24 @@'],
+    // T80 F2 (by hand, Options.jsx is retail's own): the FRONTS row under SHEEN, LAY-ON or IN-FRAME (BRITISH), one
+    // chip row through A.setInframe (PRO's one write, setDesign({ inframe })), the engine's hint as its note; the
+    // owner, 21.10.2026: *"3 per projekt."*; the hunk at 1064.
+    hunks: ['@@ -353,0 +354,5 @@', '@@ -390,0 +396,24 @@', '@@ -783,0 +813,24 @@', '@@ -1010,0 +1064,12 @@'],
   },
   {
     retail: 'src/retail/design/adapter.js',
@@ -238,7 +241,10 @@ export const T78_RETAIL_EDITS = [
       + 'przesuwaniu zaproponuj 50 mm poniżej półki."*',
     // CHAT FIX 19.10.2026 (by hand, adapter.js is retail's own): interiorRefusals' hanger row reads the store's own
     // sentence (hangerRailRefusal: a third rod, or no room under the first), the second rod allowed; the hunk at 2282.
-    hunks: ['@@ -39 +39 @@', '@@ -1819,0 +1820,9 @@', '@@ -1918,0 +1928,25 @@', '@@ -2248,4 +2282,4 @@', '@@ -2666 +2700,3 @@', '@@ -3562,13 +3598,2 @@', '@@ -3576,9 +3600,0 @@', '@@ -3595 +3611 @@', '@@ -4713,0 +4730,61 @@'],
+    // T80 F2 (by hand, adapter.js is retail's own): inframeChoices, inframeOf, inframeWords, setInframe, the engine's
+    // INFRAME_CHOICES and hint off the profile, one write setDesign({ inframe }); the owner, 21.10.2026: *"3 per
+    // projekt."*; the hunks at 54 and 4457.
+    hunks: ['@@ -39 +39 @@', '@@ -53,0 +54,2 @@', '@@ -1819,0 +1822,9 @@', '@@ -1918,0 +1930,25 @@', '@@ -2248,4 +2284,4 @@', '@@ -2666 +2702,3 @@', '@@ -3562,13 +3600,2 @@', '@@ -3576,9 +3602,0 @@', '@@ -3595 +3613 @@', '@@ -4438,0 +4457,28 @@', '@@ -4713,0 +4760,61 @@'],
   },
   {
     retail: 'src/retail/styles/roomeditor.css',

@@ -36,6 +36,8 @@ import NumberField from './NumberField.jsx';
 // from it rather than copied — one implementation, two surfaces, so the sheet
 // buttons and the hinge block cannot drift between the doors.
 import { HingeHardware, SheetSizeRow } from './SettingsPanel.jsx';
+// T80 F2 · the FRONTS row, SettingsPanel's own (one row, two surfaces).
+import { InframeRow } from './SettingsPanel.jsx';
 // Turn 33 (CLAUDE.md F8): the shaker frame's one resolver — the same number
 // the engine cuts pockets to and the settings panel edits.
 import { shakerFrameMm } from '../engine/shaker.js';
@@ -1951,6 +1953,8 @@ export default function WizardSettings({
                 <div data-wizard-node="fronts.shine" data-front-shine="1">
                         {/* ── 10 · Sheen, after the colours — the owner's order. ── */}
                         <SheenSlider design={design} setDesign={setDesign} profile={profile} />
+                        {/* ── T80 F2 · the fronts: lay-on or in-frame, per project (SettingsPanel's own row). ── */}
+                        <InframeRow design={design} setDesign={setDesign} profile={profile} />
                   <p className="text-[10px] text-ink-400">
                     The shine reaches the 3D material: `roughness = 1 − sheen ÷ 100`, on every sprayed
                     AND VENEERED surface in the scene (src/3d/materials.js, T49 F9 — a veneer is a

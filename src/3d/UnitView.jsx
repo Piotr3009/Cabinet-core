@@ -2747,6 +2747,14 @@ export default function UnitView({
     () => (contour ? null : resolveJoineryLayers(profile, unitDesign?.joinery || null)),
     [profile, unitDesign, contour],
   );
+  // T80 F9 · a run's FRAME is built from its own outline in every view: its
+  // openings are its shape (KIT_INFRAME.lsp D10), and a slab in the contour
+  // view would stand over the inset fronts. So it is handed the layers the
+  // contour view withholds from the joints.
+  const frameLayers = useMemo(
+    () => resolveJoineryLayers(profile, unitDesign?.joinery || null),
+    [profile, unitDesign],
+  );
 
   return (
     <group
@@ -2969,7 +2977,7 @@ export default function UnitView({
             depth={D}
             profile={profile}
             swing={front === 'door' ? swingFor(p) : null}
-            joineryLayers={jointLayers}
+            joineryLayers={p.part === 'FRAME' ? frameLayers : jointLayers}
             onPointerDown={(e) => {
               // ─── Turn 13 (CLAUDE.md F5.1/F5.3): THE LEFT BUTTON ONLY ───
               // A pointer-down fires for every button, so a RIGHT press on a

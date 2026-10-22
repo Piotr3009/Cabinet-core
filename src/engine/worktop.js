@@ -239,6 +239,36 @@ export function worktopGeometry({ units, record = null, profile }) {
 }
 
 /**
+ * T80 F8 · a slab over a FRAMED unit (a type the frame stands on this turn:
+ * profile.inframe.unitTypes) stands on the frame: lifted by the rail's 19
+ * outside the carcass, its depth over the frame's face (D + 25) plus the
+ * overhang where the doors' plane stood. An L slab and an island are never
+ * framed this turn (their kits are not), so they are left as they are.
+ */
+function liftForFrames(slabs, units, profile) {
+  const F = profile?.inframe || {};
+  const types = new Set(F.unitTypes || []);
+  const byId = new Map((units || []).map((u) => [u.id, u]));
+  const spec = worktopSpec(profile);
+  return slabs.map((slab) => {
+    const g = slab.geometry;
+    if (!g || g.shape === 'L' || g.shape === 'island' || slab.island) return slab;
+    const under = (g.unitIds || slab.unitIds || []).map((id) => byId.get(id)).filter(Boolean);
+    const framed = under.filter((u) => types.has(u.type));
+    if (!framed.length) return slab;
+    const board = (u) => (Number(u.params?.board_t) > 0 ? Number(u.params.board_t) : Number(profile?.board?.thickness) || 18);
+    const lift = Math.max(...framed.map((u) => Number(F.rail) - board(u) - (Number(F.stile) - 2 * board(u)) / 2));
+    const reachFramed = Math.max(...framed.map((u) => (Number(u.params?.depth) || 0) + Number(F.frameT)));
+    const ext = Math.max(0, Number(slab.extendFront ?? g.extensions?.front) || 0);
+    const d = Math.max(Number(g.d) || 0, reachFramed + spec.frontOverhang + ext);
+    return {
+      ...slab,
+      geometry: { ...g, y: g.y + lift, d, depth: d, inframe: { lift } },
+    };
+  });
+}
+
+/**
  * Every worktop a project carries, resolved against the units that exist.
  *
  * A record naming a cabinet somebody has since deleted is DROPPED rather than
@@ -246,8 +276,16 @@ export function worktopGeometry({ units, record = null, profile }) {
  * follows.
  */
 export function worktopsFor({
-  records = [], units = [], profile, walls = null,
+  records = [], units = [], profile, walls = null, inframe = false,
 }) {
+  // ─── T80 F8 · THE WORKTOP SITS ON THE FRAME ───────────────────────────────
+  // The owner, 21.10.2026 (22:14): *"stolarz wypelni ta dziure i blat pojdzie
+  // na wierzch"*. Under in-frame (the project's design.inframe, handed by the
+  // caller) a slab over a run with a frame stands 19 higher, on the frame's
+  // top edge (KIT_INFRAME.lsp D15, inframe-worktop-lift), and reaches over the
+  // frame's face (D + 25) as it reached over the doors. The 19 under it is the
+  // joiner's filler, a note, never a board. Lay-on: not one slab moves.
+  if (inframe) return liftForFrames(worktopsFor({ records, units, profile, walls }), units, profile);
   const byId = new Map((units || []).map((u) => [u.id, u]));
   const out = [];
   for (const record of records || []) {

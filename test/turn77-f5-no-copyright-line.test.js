@@ -170,6 +170,44 @@ export const NEW_FILES = [
   'scripts/chatfix-2110-mockup-inframe.mjs',
   'scripts/chatfix-2110-mockup-inframe-final.mjs',
   'test/chatfix-2110-gloss.test.js',
+  // T80 F1 (22.10.2026): the in-frame LISP, run by the suite
+  'test/lisp-mini.js',
+  'test/turn80-f01-lisp.test.js',
+  // T80 F2 (22.10.2026): in-frame per project
+  'scripts/t78-classify.d/f40-t80-f02.mjs',
+  'test/turn80-f02-switch.test.js',
+  // T80 F3 (22.10.2026): the run gets its frame
+  'src/engine/inframe.js',
+  'scripts/t78-classify.d/f40-t80-f03.mjs',
+  'test/turn80-f03-frame.test.js',
+  // T80 F4 (22.10.2026): the frame on the CNC
+  'scripts/t78-classify.d/f40-t80-f04.mjs',
+  'test/turn80-f04-cnc.test.js',
+  // T80 F5 (22.10.2026): the fronts set in the opening
+  'scripts/t78-classify.d/f40-t80-f05.mjs',
+  'test/turn80-f05-fronts.test.js',
+  // T80 F6 (22.10.2026): the inset hinge
+  'scripts/t78-classify.d/f40-t80-f06.mjs',
+  'test/turn80-f06-hinge.test.js',
+  // T80 F7 (22.10.2026): the end panel reaches the frame
+  'scripts/t78-classify.d/f40-t80-f07.mjs',
+  'test/turn80-f07-end-panel.test.js',
+  // T80 F8 (22.10.2026): the worktop on the frame, the filler a note and timber
+  'scripts/t78-classify.d/f40-t80-f08.mjs',
+  'test/turn80-f08-filler.test.js',
+  // T80 F9 (22.10.2026): the frame in 3D
+  'scripts/t78-classify.d/f40-t80-f09.mjs',
+  'test/turn80-f09-3d.test.js',
+  // T80 F10 (22.10.2026): the in-frame checks, #40 to #44
+  'src/engine/inframeChecks.js',
+  'src/components/InframeWarnings.jsx',
+  'scripts/t78-classify.d/f40-t80-f10.mjs',
+  'test/turn80-f10-checks.test.js',
+  // T80 F11 (22.10.2026): the two in-frame goldens
+  'scripts/t78-classify.d/f40-t80-f11.mjs',
+  'test/turn80-f11-goldens.test.js',
+  // T80 F12 (22.10.2026): the walk
+  'scripts/t80-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

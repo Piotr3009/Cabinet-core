@@ -26,7 +26,7 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { wallGroups } from '../src/engine/drawings/wallElevation.js';
 import {
-  chooseSetScale, drawingContext, fitEntities, keyPlan, layoutSetSheet, setPage, setZones, titleStrip, wrapWords,
+  chooseSetScale, drawingContext, keyPlan, layoutSetSheet, setPage, setZones, titleStrip, wrapWords,
 } from '../src/engine/drawings/setSheet.js';
 import { chainH, chainV, figureCollisions, figureWidth } from '../src/engine/drawings/setChains.js';
 import {
@@ -34,7 +34,7 @@ import {
 } from '../src/engine/drawings/setElevation.js';
 import { buildPlan, cutEntries, cutHeight, measurePlan } from '../src/engine/drawings/setPlan.js';
 import { buildStation, sectionStations } from '../src/engine/drawings/setSection.js';
-import { buildPerspective, makeCamera, runBoxes } from '../src/engine/drawings/setPerspective.js';
+import { buildRoom3d } from '../src/engine/drawings/setPerspective.js';
 import { buildCutList, buildVisual, cutListPages, cutRows, visualPictureBox } from '../src/engine/drawings/setPaper.js';
 import { titleFor, visualAspect, wallDrawingSheets } from '../src/engine/drawings/wallSheets.js';
 import { sheetToSvg } from '../src/engine/drawings/svg.js';
@@ -91,7 +91,8 @@ test('T71 · the scale is a rung of the ladder and says so; a picture is NTS', (
   // Every scaled sheet of the proof set prints its rung; the strip repeats it.
   for (const s of setOf()) {
     if (['cover', 'cutlist'].includes(s.variant)) { assert.equal(s.sheet.scaleLabel, 'n/a'); continue; }
-    if (['perspective', 'visual'].includes(s.variant)) { assert.equal(s.sheet.scaleLabel, 'NTS'); continue; }
+    // T81 F2: the 3D sheet is the picture now, and NTS.
+    if (['perspective', 'visual', '3d'].includes(s.variant)) { assert.equal(s.sheet.scaleLabel, 'NTS'); continue; }
     assert.ok(P.drawings.set.scales.includes(s.sheet.scale), `${s.name}: 1:${s.sheet.scale} is a rung`);
     assert.equal(s.sheet.scaleLabel, `1:${s.sheet.scale} @ A3`);
     assert.ok(textsOf(s.sheet).includes(s.sheet.scaleLabel), `${s.name}: printed in the strip`);
@@ -160,14 +161,13 @@ test('T71 · an appliance space is named on the sheet by the engine\'s own type,
   assert.ok(labels.some((t) => /D\/W/.test(t)) && labels.some((t) => /FRIDGE/.test(t)), 'the dishwasher and the fridge are named on the front view');
 });
 
-test('T71 · `wrapWords` and `fitEntities`: the small helpers do what the sheets lean on', () => {
+test('T71 · `wrapWords`: the small helper the sheets lean on', () => {
   assert.deepEqual(wrapWords('one two three four', 9), ['one two', 'three', 'four']);
   assert.deepEqual(wrapWords('averyveryverylongword x', 5), ['averyveryverylongword', 'x'], 'a word longer than the row stands alone');
-  const fitted = fitEntities([entPoly('CARCASE', [[0, 0], [1000, 0], [1000, 500]]), { kind: 'text', layer: 'UNIT_NUMBER', x: 500, y: 250, text: '01', height: 120, paperHeight: 3 }], { x: 10, y: 10, w: 100, h: 100 }, { textHeight: 2 });
-  const b = boundsOf(fitted.filter((e) => e.kind === 'poly'));
-  assert.ok(b.w <= 96.01 && b.x >= 10 && b.x + b.w <= 110, 'scaled into the box');
-  assert.equal(fitted[1].height, 2, 'every word at one paper height');
-  assert.equal(fitted[1].paperHeight, undefined);
+  // AMENDED 22.10.2026 (T81 F2): `fitEntities` fitted the perspective into the
+  // cover's frame; the cover is folded into the 3D sheet (*"najpierw chce
+  // widziec 3d jak zrobiles pierwsza strona"*) and the helper is deleted.
+  void entPoly;
 });
 
 // ═══ 2. THE CHAINS ═════════════════════════════════════════════════════════
@@ -352,34 +352,40 @@ test('T71 · the sections: A-A through the drawer unit, B-B through the sink, a 
 });
 
 test('T71 · the perspective: the engine\'s boxes through a pinhole, painted far to near, numbered, NTS', () => {
+  // ─── AMENDED 22.10.2026 (T81 F2): THE 3D, FROM THE ROOM'S OWN BOARDS ─────
+  // The owner: *"najpierw chce widziec 3d jak zrobiles pierwsza strona"*, and
+  // *"zalezy mi zebys rysowal w pdf 1 do 1 co mamy na cabinet core"*. The
+  // picture is no longer T71's boxes painted far to near: it is every board
+  // the room draws through the projector, hidden lines removed by depth, the
+  // painter's white on MASK under the lines. Every unit numbered, NTS, and a
+  // picture is still not dimensioned.
   const group = wallA();
-  const boxes = runBoxes(group, { worktops: worktops.map((w) => w.geometry || w), profile: P });
-  assert.equal(boxes.filter((b) => b.tag === 'unit').length, group.members.length);
-  assert.equal(boxes.filter((b) => b.tag === 'worktop').length, 1);
-  assert.ok(boxes.filter((b) => b.tag === 'plinth').length >= 6);
-  const cam = makeCamera([0, 1650, 5000], [2000, 1200, 0]);
-  const near = cam.project([2000, 1200, 1000]); const far = cam.project([2000, 1200, 0]);
-  assert.ok(near[2] < far[2], 'distance is a distance');
   const ctx = drawingContext(1, P);
-  const pic = buildPerspective(group, { room: HH_ROOM, worktops: worktops.map((w) => w.geometry || w), profile: P, ctx });
-  const faces = pic.entities.filter((e) => e.kind === 'poly' && e.fill === 'white');
-  assert.ok(faces.length > 20, 'faces, painted');
-  assert.ok(pic.entities.filter((e) => e.layer === 'DOORS').length >= 13, 'every front is a box on the picture');
+  const pic = buildRoom3d([group], { room: HH_ROOM, worktops, profile: P, ctx });
+  const masks = pic.entities.filter((e) => e.kind === 'poly' && e.layer === 'MASK' && e.fill === '#ffffff');
+  assert.ok(masks.length > 20, 'faces, painted white under the lines');
+  assert.ok(pic.entities.filter((e) => e.layer === 'DOORS').length >= 13, 'every front is on the picture');
   const numbers = pic.entities.filter((e) => e.kind === 'text' && e.layer === 'UNIT_NUMBER').map((e) => e.text);
   assert.deepEqual(numbers.sort(), group.members.map((m) => m.unit.params.unit_num).sort());
   assert.ok(pic.entities.every((e) => e.layer !== 'DIMENSIONS'), 'a picture is not dimensioned');
-  const sheet = setOf().find((s) => s.variant === 'perspective');
+  const sheet = setOf().find((s) => s.variant === '3d');
   assert.equal(sheet.sheet.scaleLabel, 'NTS');
 });
 
 // ═══ 5. THE SET, BOUND ═════════════════════════════════════════════════════
 
 test('T71 · the order and the numbering of his set, the cover last with the index of the others', () => {
+  // ─── AMENDED 22.10.2026 (T81 F2): THE OWNER'S ORDER ──────────────────────
+  // *"najpierw chce widziec 3d jak zrobiles pierwsza strona, pozniej chce
+  // widziec wszystkie fronty ... nastepnie widok wszystkich scian bez frontow
+  // ... pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu
+  // wizualizacja"*, and the X-ray. The cover's index and revisions stand in
+  // the 3D sheet's column, built last because it lists the others.
   const set = setOf();
   assert.deepEqual(set.map((s) => `${s.no} ${s.name}`), [
-    '00 Cover, index and revisions', '01 Plan · base units', '02 Plan · wall units',
-    '03 Wall A · Front view', '04 Wall A · Internal layout', '05 Wall A · Sections A-A and B-B',
-    '06 Wall A · Perspective view', '07 Visualisation', '08 Cut list and materials',
+    '01 3D', '02 Wall A · Fronts', '03 Wall A · Without fronts', '04 Wall A · X-ray',
+    '05 Plan · base units', '06 Plan · wall units', '07 Wall A · Sections A-A and B-B',
+    '08 Visualisation', '09 Cut list and materials',
   ]);
   for (const s of set) {
     assert.equal(s.sheet.sheetNo, s.no);
@@ -387,13 +393,13 @@ test('T71 · the order and the numbering of his set, the cover last with the ind
     assert.ok(textsOf(s.sheet).includes(`${s.no} / 09`), `${s.name} is numbered on its strip`);
     assert.ok(textsOf(s.sheet).includes(`032-2026-${s.no}`), `${s.name} carries its drawing number`);
   }
-  const cover = textsOf(set[0].sheet);
+  const index = textsOf(set[0].sheet);
   for (const s of set.slice(1)) {
-    assert.ok(cover.includes(s.no) && cover.includes(s.name), `the index lists ${s.no} ${s.name}`);
-    assert.ok(cover.includes(s.sheet.scaleLabel), `…with its scale ${s.sheet.scaleLabel}`);
+    assert.ok(index.includes(s.no) && index.includes(s.name), `the index lists ${s.no} ${s.name}`);
+    assert.ok(index.includes(s.sheet.scaleLabel), `…with its scale ${s.sheet.scaleLabel}`);
   }
-  assert.ok(cover.includes('First issue') && cover.includes('PT'), 'the revision table');
-  assert.ok(set[0].sheet.entities.some((e) => e.kind === 'poly' && e.fill === 'white'), 'the cover carries the perspective, fitted');
+  assert.ok(index.includes('First issue') && index.includes('PT'), 'the revision table');
+  assert.ok(set[0].sheet.entities.some((e) => e.kind === 'poly' && e.layer === 'MASK'), 'the 3D sheet carries the room in perspective');
   assert.deepEqual(wallDrawingSheets({ entries: [], project: HH_PROJECT, room: HH_ROOM, profile: P }), [], 'no cabinet, no set');
 });
 

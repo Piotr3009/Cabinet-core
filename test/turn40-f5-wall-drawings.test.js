@@ -80,20 +80,29 @@ test('F5 — the sheet list is HIS: /1, /2 per wall, and one horizontal section'
   // /1 is now the wall's FRONT VIEW, /2 its INTERNAL LAYOUT, /3 its SECTIONS;
   // the horizontal section became the two plans; a cover, the perspectives,
   // the visualisation and the cut list join, and every sheet is numbered.
+  // ─── AMENDED 22.10.2026 (T81 F2): THE OWNER'S ORDER ─────────────────────
+  // *"najpierw chce widziec 3d jak zrobiles pierwsza strona, pozniej chce
+  // widziec wszystkie fronty ... nastepnie widok wszystkich scian bez frontow
+  // ... pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu
+  // wizualizacja"*, and *"to tez mozna zrobic x-ray"*. The 3D first (the
+  // cover folded into its column), every wall's fronts, every wall without
+  // fronts, every wall in X-ray, the plans, every wall's sections, the
+  // visualisation, the cut list; numbered from 01.
   const sheets = sheetsOf(kitchen());
   assert.deepEqual(sheets.map((s) => s.name), [
-    'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
-    'Wall A · Front view', 'Wall A · Internal layout', 'Wall A · Sections A-A',
-    'Wall B · Front view', 'Wall B · Internal layout', 'Wall B · Sections A-A',
-    'Wall A · Perspective view', 'Wall B · Perspective view',
+    '3D',
+    'Wall A · Fronts', 'Wall B · Fronts',
+    'Wall A · Without fronts', 'Wall B · Without fronts',
+    'Wall A · X-ray', 'Wall B · X-ray',
+    'Plan · base units', 'Plan · wall units',
+    'Wall A · Sections A-A', 'Wall B · Sections A-A',
     'Visualisation', 'Cut list and materials',
   ]);
   assert.deepEqual(sheets.map((s) => s.variant), [
-    'cover', 'plan-base', 'plan-wall',
-    'fronts', 'carcass', 'sections', 'fronts', 'carcass', 'sections',
-    'perspective', 'perspective', 'visual', 'cutlist',
+    '3d', 'fronts', 'fronts', 'no-fronts', 'no-fronts', 'xray', 'xray',
+    'plan-base', 'plan-wall', 'sections', 'sections', 'visual', 'cutlist',
   ]);
-  assert.deepEqual(sheets.map((s) => s.no), ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']);
+  assert.deepEqual(sheets.map((s) => s.no), ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13']);
   assert.equal(wallLabel(0), 'A');
   assert.equal(wallLabel(1), 'B');
   assert.equal(wallLabel(25), 'Z');
@@ -101,8 +110,10 @@ test('F5 — the sheet list is HIS: /1, /2 per wall, and one horizontal section'
 
 test('F5 — /1 HAS the fronts and /2 does NOT, which is the whole split', () => {
   // T71: /1 is the front view, /2 the internal layout; the split is the same.
+  // T81 F2: the fronts sheet and the sheet without fronts (*"tak jakbysmy
+  // ukryli albo sciagneli fronty"*), the same split.
   const one = sheetsOf(kitchen()).find((s) => s.variant === 'fronts' && s.wall === 0);
-  const two = sheetsOf(kitchen()).find((s) => s.variant === 'carcass' && s.wall === 0);
+  const two = sheetsOf(kitchen()).find((s) => s.variant === 'no-fronts' && s.wall === 0);
   // Counted inside the drawing box: the side column's legend and key plan
   // wear the DOORS colour on every sheet, and they are not fronts.
   const inBox = (e, b) => { const x = e.x ?? e.x1 ?? e.cx ?? e.pts?.[0]?.[0]; return x != null && x < b.x + b.w; };
@@ -148,6 +159,8 @@ test('F5 — a WALL WITH NO CABINETS produces NO SHEET rather than an empty one'
   const sheets = sheetsOf(kitchen());
   // T43-F5a: THREE sheets per wall now — /1, /2 and the section /3.
   // T71: FOUR per wall: front view, internal layout, sections, perspective.
+  // T81 F2: FOUR per wall still: fronts, without fronts, X-ray, sections (the
+  // perspective is the one 3D sheet of the room, *"najpierw chce widziec 3d"*).
   assert.equal(sheets.filter((s) => s.wall != null).length, 8, 'two walls, four sheets each');
   assert.equal(new Set(sheets.filter((s) => s.wall != null).map((s) => s.wall)).size, 2);
   // Nothing at all: no elevation, and no set (a cover of nothing is not a set).
@@ -156,8 +169,8 @@ test('F5 — a WALL WITH NO CABINETS produces NO SHEET rather than an empty one'
   // …and one cabinet on wall 3 alone gets wall D and nothing else.
   const lonely = sheetsOf([entry('BUD', { unit_num: '09', width: 600 }, { wall: 3, x_mm: 100, rotation_deg: 0 })]);
   assert.deepEqual(lonely.map((s) => s.name), [
-    'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
-    'Wall D · Front view', 'Wall D · Internal layout', 'Wall D · Sections A-A', 'Wall D · Perspective view',
+    '3D', 'Wall D · Fronts', 'Wall D · Without fronts', 'Wall D · X-ray',
+    'Plan · base units', 'Plan · wall units', 'Wall D · Sections A-A',
     'Visualisation', 'Cut list and materials',
   ]);
   assert.ok(lonely.every((s) => s.wall == null || s.wall === 3));
@@ -283,7 +296,8 @@ test('F5 — "No Scale", and no scale label invented', () => {
   assert.match(one.sheet.scaleLabel, /^1:\d+ @ A3$/, 'the title block names the rung');
   assert.ok(texts.includes(one.sheet.scaleLabel), 'and it is printed in the strip');
   assert.equal(one.sheet.scaleLabel, `1:${one.sheet.scale} @ A3`, 'the label is the layout scale, not a second number');
-  const picture = sheets.find((s) => s.variant === 'perspective');
+  // T81 F2: the picture is the 3D sheet now, and it is NTS as the perspective was.
+  const picture = sheets.find((s) => s.variant === '3d');
   assert.equal(picture.sheet.scaleLabel, 'NTS', 'a perspective has no scale to print');
   assert.ok(textsOf(picture.sheet).includes('NTS'));
 });
@@ -297,7 +311,8 @@ test('F5 — his title block: Client, Address, Project, Drawing, Job No, Scale, 
   for (const label of ['CLIENT', 'SITE ADDRESS', 'PROJECT', 'DRAWING', 'DRAWING No', 'JOB No', 'SCALE', 'REV', 'DATE', 'DRAWN', 'CHECKED', 'PAPER', 'SHEET', 'STATUS']) {
     assert.ok(texts.includes(label), `the block carries a ${label} cell`);
   }
-  for (const value of ['Mr Anderson', '14 Anderson Way', 'Anderson Kitchen', '03 · Wall A · Front view', 'J-1042', 'B', '18/08/2026', 'PT', '03 / 13']) {
+  // T81 F2: the fronts sheet is 02 of 13 now, named as the owner orders the set.
+  for (const value of ['Mr Anderson', '14 Anderson Way', 'Anderson Kitchen', '02 · Wall A · Fronts', 'J-1042', 'B', '18/08/2026', 'PT', '02 / 13']) {
     assert.ok(texts.some((t) => t.includes(value)), `…and its value: ${value}`);
   }
 });
@@ -394,7 +409,8 @@ test('F5 — the wall DXF carries TEXT: dimensions, labels and the title block',
   assert.ok(texts.length > 10, `a drawing is nothing without its numbers: ${texts.length}`);
   assert.ok(texts.includes(one.sheet.scaleLabel), 'the title block is in the file');
   // (the R12 writer keeps ASCII: the middle dot becomes a hyphen)
-  assert.ok(texts.includes('03 - Wall A - Front view'), 'and the drawing name');
+  // T81 F2: the fronts sheet's own name (*"pozniej chce widziec wszystkie fronty"*).
+  assert.ok(texts.includes('02 - Wall A - Fronts'), 'and the drawing name');
   assert.ok(texts.some((t) => /^\d/.test(t)), 'and the dimensions');
 });
 

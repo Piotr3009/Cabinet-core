@@ -1056,7 +1056,7 @@ function moveScene(scene, T) {
 
 /** Stage 3: the occluders, the hidden-line pass, the painter's white and the marks. */
 function renderScene(scene, V, {
-  mode = 'fronts', hiddenAs = null, minEdge = 0, profile,
+  mode = 'fronts', hiddenAs = null, minEdge = 0, profile, extras = [],
 }) {
   const xray = mode === 'xray';
   const faceOn = V.name === 'front' || V.name === 'perspective';
@@ -1125,9 +1125,12 @@ function renderScene(scene, V, {
     // A curved side (a cylinder's facets) shows only its silhouette.
     if (e.smooth && adj.filter((f) => isFacing.get(f.id)).length !== 1) continue;
     const cutEdge = Boolean(e.cut) || adj.some((f) => f.cut);
+    // The X-ray's two greys are drawn thin, as the room fades them; every other
+    // ink keeps its sheet's weight (T41 F5a: weight is a role).
+    const xrayInk = s.ink === 'XRAY_FRONT' || s.ink === 'XRAY_CARCASE';
     const props = {
       layer: s.ink,
-      ...(xray ? {} : { pen: cutEdge ? 'CUT' : (s.kind === 'hw' ? 'THIN' : 'VISIBLE') }),
+      pen: xrayInk ? 'THIN' : (cutEdge ? 'CUT' : (s.kind === 'hw' ? 'THIN' : 'VISIBLE')),
       solid: true,
       src: s.key,
       ...(s.panelId ? { part: s.panelId } : {}),
@@ -1168,6 +1171,15 @@ function renderScene(scene, V, {
       census.shown += 1;
     }
   }
+  // Lines that are not a solid's (the building behind a picture): hidden by
+  // the solids in front of them like any edge.
+  for (const x of extras) {
+    const pieces = xray ? { shown: [[V.screen(x.a), V.screen(x.b)]] } : visibleParts(V, index, x.a, x.b, {});
+    for (const [a, b] of pieces.shown) {
+      if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1e-9) continue;
+      entities.push(line(a, b, { ...x.props }));
+    }
+  }
   // The silhouettes traced from the GLB, hidden behind the boards in front.
   for (const sp of sils) {
     const s = sp.solid;
@@ -1176,7 +1188,7 @@ function renderScene(scene, V, {
       const pieces = xray ? { shown: [[V.screen(A), V.screen(B)]] } : visibleParts(V, index, A, B, { inner: true });
       for (const [a, b] of pieces.shown) {
         if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1e-9) continue;
-        entities.push(line(a, b, { layer: s.ink, ...(xray ? {} : { pen: 'THIN' }), solid: true, src: s.key, family: s.family, silhouette: true }));
+        entities.push(line(a, b, { layer: s.ink, pen: 'THIN', solid: true, src: s.key, family: s.family, silhouette: true }));
       }
     }
   }
@@ -1212,7 +1224,7 @@ function renderScene(scene, V, {
         const pieces = xray ? { shown: [[V.screen(A), V.screen(B)]] } : visibleParts(V, index, A, B, { skip });
         for (const [a, b] of pieces.shown) {
           if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1e-9) continue;
-          entities.push(line(a, b, { layer, ...(xray ? {} : { pen: mk.pen }), meta: mk.meta, src: mk.host }));
+          entities.push(line(a, b, { layer, pen: layer === 'XRAY_FRONT' ? 'THIN' : mk.pen, meta: mk.meta, src: mk.host }));
         }
       }
     } else if (mk.kind === 'handle') {
@@ -1302,7 +1314,7 @@ export function projectRun(group, {
  * @param {Array<{group, wall, worktops}>} runs  each run with its wall (`roomWalls()` entry)
  */
 export function projectRoom(runs, {
-  camera, mode = 'fronts', profile, frontTypeOf = null, shakerFrame = null, near = 150,
+  camera, mode = 'fronts', profile, frontTypeOf = null, shakerFrame = null, near = 150, extras = [],
 } = {}) {
   const V = perspectiveView(camera.P, camera.T);
   const merged = { live: [], faces: [], edges: [], sils: [], marks: [] };
@@ -1325,7 +1337,7 @@ export function projectRoom(runs, {
     merged.sils.push(...scene.sils.filter((s) => !behind.has(s.solid.key)));
     merged.marks.push(...scene.marks.filter((mk) => !behind.has(mk.host)));
   }
-  const { entities, census } = renderScene(merged, V, { mode, profile });
+  const { entities, census } = renderScene(merged, V, { mode, profile, extras: typeof extras === 'function' ? extras(merged) : extras });
   return { entities, solids: merged.live, census, view: V };
 }
 

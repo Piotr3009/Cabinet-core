@@ -259,7 +259,9 @@ test('F5d — a sheet that prints "No Scale" fills the paper', () => {
   for (const s of sheets()) {
     const sheet = sheetOf(s);
     if (['cover', 'visual', 'cutlist'].includes(s.variant)) continue;
-    if (s.variant === 'perspective') {
+    // AMENDED 22.10.2026 (T81 F2): the picture is the 3D sheet, first in the
+    // set (*"najpierw chce widziec 3d jak zrobiles pierwsza strona"*), NTS.
+    if (s.variant === 'perspective' || s.variant === '3d') {
       assert.equal(sheet.scaleLabel, 'NTS');
       assert.ok(sheet.scale > 0, 'a picture still has a fitting ratio');
       continue;

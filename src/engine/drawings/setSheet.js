@@ -132,25 +132,8 @@ function placeEntity(e, place, scale, minText) {
   return e;
 }
 
-/**
- * FIT A BUILT DRAWING INTO A PAPER BOX: the cover's picture is the perspective
- * built once more and shrunk into its frame. Geometry scales to fit and is
- * centred; every word is set at one paper height so the small picture stays
- * legible. Returns paper-mm entities.
- */
-export function fitEntities(entities, box, { textHeight = 2.2, fill = 0.96 } = {}) {
-  const b = geometryBounds(entities);
-  const scale = Math.max(b.w / (box.w * fill), b.h / (box.h * fill), 1e-9);
-  const ox = box.x + (box.w - b.w / scale) / 2 - b.x / scale;
-  const oy = box.y + (box.h - b.h / scale) / 2 - b.y / scale;
-  const place = (x, y) => [ox + x / scale, oy + y / scale];
-  return entities.map((e) => {
-    const p = placeEntity(e, place, scale, textHeight);
-    if (p.kind !== 'text') return p;
-    const { paperHeight, ...rest } = p;
-    return { ...rest, height: textHeight };
-  });
-}
+// T81 F2 · `fitEntities` fitted the perspective into the cover's frame; the
+// cover is retired into the 3D sheet, which is laid by `layoutSetSheet` as NTS.
 
 /**
  * LAY ONE DRAWING ON A SET SHEET.
@@ -466,9 +449,64 @@ function notesBlock(zones, lines, y0, heading = 'NOTES') {
   return out;
 }
 
+/**
+ * ─── T81 F2 · THE COVER, FOLDED INTO THE 3D SHEET'S COLUMN ─────────────────
+ *
+ * The owner, 22.10.2026 (21:23): *"najpierw chce widziec 3d jak zrobiles
+ * pierwsza strona"*. The 3D is sheet 01 now, and what the cover carried
+ * besides its picture (the job, the sheet index, the revisions) stands in
+ * its right-hand column (T81 PROPOSED). Every word is read from the project
+ * and the set; nothing is typed here.
+ */
+function indexColumn(zones, { project = {}, title = {}, sheets = [], revisions = [] }) {
+  const out = [];
+  const c = zones.column;
+  const x = c.x + 4;
+  const w = c.w - 8;
+  let y = c.y + c.h - 8;
+  const heading = (s) => {
+    out.push({ ...text('SHEET_MUTED', x, y, s, 2, 'left'), tracking: 0.3 });
+    out.push({ ...line('SHEET_MUTED', x, y - 1.8, x + w, y - 1.8), pen: 'FINE' });
+    y -= 5.2;
+  };
+  heading('PROJECT');
+  for (const row of wrapWords(String(project.name || 'Untitled project'), Math.floor(w / (3.4 * 0.6)))) {
+    out.push({ ...text('FRAME', x, y, row, 3.4, 'left'), weight: 'bold' });
+    y -= 4.4;
+  }
+  const meta = [
+    title.client ? `Client ${title.client}` : null,
+    title.job ? `Job ${title.job}` : null,
+    title.rev ? `Rev ${title.rev}` : null,
+    title.date ? `Issued ${title.date}` : null,
+    title.statusName ? `Status ${title.status}, ${title.statusName}` : null,
+  ].filter(Boolean);
+  for (const m of meta) { out.push(text('SHEET_MUTED', x, y, m, 2, 'left')); y -= 3.2; }
+  y -= 4;
+  heading('SHEET INDEX');
+  for (const sh of sheets) {
+    out.push({ ...text('FRAME', x, y, sh.no, 2, 'left'), weight: 'bold' });
+    out.push(text('FRAME', x + 7, y, sh.name, 2, 'left'));
+    out.push(text('SHEET_MUTED', x + w, y, sh.scale || '', 1.7, 'right'));
+    y -= 3.6;
+  }
+  y -= 4;
+  heading('REVISIONS');
+  const revs = revisions.length ? revisions : [{ rev: title.rev || 'A', date: title.date || '', description: 'First issue', by: title.drawn || '' }];
+  for (const r of revs) {
+    out.push({ ...text('FRAME', x, y, String(r.rev || ''), 2, 'left'), weight: 'bold' });
+    out.push(text('FRAME', x + 7, y, String(r.date || ''), 2, 'left'));
+    out.push(text('FRAME', x + 26, y, String(r.description || ''), 2, 'left'));
+    out.push(text('SHEET_MUTED', x + w, y, String(r.by || ''), 1.7, 'right'));
+    y -= 3.6;
+  }
+  return out;
+}
+
 function sideColumn(zones, column, profile) {
   const out = [];
   const c = zones.column;
+  if (column.index) return indexColumn(zones, column.index);
   out.push(...keyPlan(zones, column, profile));
   let y = c.y + c.h - 8 - 34 - 10;
   if (column.legend !== false) {

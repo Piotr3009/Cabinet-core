@@ -215,6 +215,9 @@ export const NEW_FILES = [
   'scripts/t81-f01-probe.mjs',
   'scripts/t78-classify.d/f41-t81-f01.mjs',
   'test/turn81-f01-projector.test.js',
+  // T81 F2 (22.10.2026): the sheet list in the owner's order
+  'scripts/t78-classify.d/f41-t81-f02.mjs',
+  'test/turn81-f02-order.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

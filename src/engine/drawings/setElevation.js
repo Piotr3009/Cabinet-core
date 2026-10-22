@@ -30,6 +30,8 @@ import {
 import { handleMarks, heightChains, mountingBands, widthChains } from './wallElevation.js';
 import { chainH, chainV } from './setChains.js';
 import { roomWalls } from '../room.js';
+// T81 · the sheets draw what the room draws, through the one projector.
+import { applianceMarks as projectedAppliances, projectRun, unitNumbers } from './projector.js';
 
 /** What a unit is built around, by TYPE. Nothing here is guessed off a size. */
 const APPLIANCE_OF = {
@@ -191,13 +193,64 @@ function applianceMarks(member, { withFronts, ctx }) {
 }
 
 /**
- * BUILD ONE WALL, one sheet. `withFronts` picks the pair.
+ * ─── T81 · ONE WALL THROUGH THE PROJECTOR ──────────────────────────────────
+ *
+ * The owner, 22.10.2026: *"zalezy mi zebys rysowal w pdf 1 do 1 co mamy na
+ * cabinet core, a przeciez mamy x-ray, to tez mozna zrobic x-ray prosze."*
+ * The geometry is the projector's (the boards, the hardware and the handles
+ * the room draws, visibility by depth); this adds the words (the unit
+ * numbers, the appliance a unit is built around), the building and the
+ * chains, each in its home as T71 hung them.
+ */
+function projectedRun(group, {
+  mode, room, worktops, frontTypeOf, shakerFrame, profile, ctx,
+}) {
+  const W = profile.drawings.wallDrawing;
+  const entities = [];
+  const wall = wallOf(group, room);
+  const ends = wallEnds(group, wall);
+  const pad = W.fabricOverhang;
+  const ceiling = Number(room?.height) || 0;
+  const drawn = projectRun(group, {
+    view: 'front', mode, profile, worktops, frontTypeOf, shakerFrame,
+    // A piece shorter than a quarter of a paper millimetre is not a line a
+    // printer can draw: what a 3 mm slot leaves of a board behind it.
+    minEdge: ctx ? ctx.mm(0.25) : 0,
+  });
+  entities.push(...drawn.entities);
+  entities.push(...unitNumbers(group, { view: 'front', mode, profile, ctx }));
+  entities.push(...projectedAppliances(group, { mode, profile, ctx }));
+  const x0 = Math.min(group.from - pad, ...ends);
+  const x1 = Math.max(group.to + pad, ...ends);
+  entities.push({ ...line('BUILDING', x0, 0, x1, 0), pen: 'VISIBLE' });
+  if (ceiling > group.top) {
+    entities.push({ ...line('BUILDING', x0, ceiling, x1, ceiling), pen: 'VISIBLE' });
+    entities.push({ ...text('BUILDING', (x0 + x1) / 2, ceiling + ctx.labelHeight, `CEILING ${Math.round(ceiling)}`, ctx.labelHeight * 0.85), paperHeight: (ctx.labelHeight * 0.85) / ctx.scale });
+  }
+  for (const e of ends) entities.push({ ...line('BUILDING', e, 0, e, ceiling > group.top ? ceiling : group.top), pen: 'VISIBLE' });
+  entities.push({ ...text('BUILDING', (x0 + x1) / 2, -ctx.labelHeight, 'FFL', ctx.labelHeight * 0.85), paperHeight: (ctx.labelHeight * 0.85) / ctx.scale });
+  const chains = runChains(group, { withFronts: mode !== 'no-fronts', ends, worktops, ceiling, profile, ctx });
+  entities.push(...chains.flat());
+  return { entities, chains, census: drawn.census, solid: boundsOf(entities.filter((e) => e.layer !== 'DIMENSIONS')) };
+}
+
+/**
+ * BUILD ONE WALL, one sheet. `mode` picks the sheet: 'fronts', 'no-fronts'
+ * or 'xray' (T81); `withFronts` is the T71 pair's own word for the first two.
  *
  * @returns {{entities, chains}} in drawing mm, Y up, in the wall frame
  */
 export function buildRunElevation(group, {
-  withFronts = true, room = null, worktops = [], frontTypeOf = null, shakerFrame = null, profile, ctx,
+  withFronts = true, mode = null, room = null, worktops = [], frontTypeOf = null, shakerFrame = null, profile, ctx,
 }) {
+  const sheetMode = mode || (withFronts ? 'fronts' : 'no-fronts');
+  if (sheetMode === 'xray') {
+    return projectedRun(group, {
+      mode: sheetMode, room, worktops, frontTypeOf, shakerFrame, profile, ctx,
+    });
+  }
+  // eslint-disable-next-line no-param-reassign
+  withFronts = sheetMode === 'fronts';
   const W = profile.drawings.wallDrawing;
   const entities = [];
   const wall = wallOf(group, room);

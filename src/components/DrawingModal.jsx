@@ -29,6 +29,10 @@ import { wallDrawingSheets, wallSectionUnits, wallSetReport, visualAspect } from
 // and cut list (`wallDrawingSheets`), on one A3 law. This window walks it,
 // carries the title block's words (who drew it, status, revision) and asks
 // the scene for the render the visualisation sheet frames.
+// T81 F2 · and the set is the OWNER'S order now (22.10.2026, 21:23): the 3D
+// first, every wall's fronts, every wall without fronts, every wall in X-ray,
+// the plans, the sections, the visualisation, the cut list. The buttons walk
+// the list the engine returns, so they follow it with no list of their own.
 import { renderJob } from '../engine/render.js';
 import { PAGE_FORMATS, layoutSheet, scaleLabel } from '../engine/drawings/sheet.js';
 import { sheetToSvg } from '../engine/drawings/svg.js';
@@ -333,7 +337,7 @@ export default function DrawingModal({ rig = null }) {
             className="cc-btn"
             data-wall-drawings-pdf="1"
             disabled={!wallSheetList.length}
-            title="The whole set: cover, plans, per wall the front view, internal layout and sections, perspective, visualisation, cut list"
+            title="The whole set: the 3D, every wall's fronts, every wall without fronts, every wall in X-ray, the plans, the sections, the visualisation, the cut list"
             onClick={() => save('walls-pdf')}
           >
             Drawing set (PDF)
@@ -571,11 +575,15 @@ export default function DrawingModal({ rig = null }) {
           </p>
           {kind === 'walls' ? (
             <p className="text-[11px] text-ink-400" data-wall-note="1">
-              One view per A3 sheet, every sheet with the same title strip: <b>00</b> cover with the index and
-              revisions, <b>01</b> and <b>02</b> the plans cut through the base and the wall units, then per wall
-              the <b>front view</b>, the <b>internal layout</b> (fronts off: shelves, drawer boxes, hinge plates, legs)
-              and the <b>sections</b> A-A through the drawer unit and B-B through the sink, the <b>perspective</b>,
-              the <b>visualisation</b> rendered from the scene, and the <b>cut list</b>. Every dimension appears once,
+              {/* T81 F2 · the owner's order, 22.10.2026: *"najpierw chce widziec 3d jak zrobiles pierwsza
+                  strona, pozniej chce widziec wszystkie fronty ... nastepnie widok wszystkich scian bez
+                  frontow ... pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu wizualizacja"*. */}
+              One view per A3 sheet, every sheet with the same title strip, in the owner&apos;s order: <b>01</b> the
+              room in <b>3D</b> with the index and the revisions, then every wall&apos;s <b>fronts</b> (only what the eye
+              sees), every wall <b>without fronts</b> (the fronts lifted off), every wall in <b>X-ray</b>, the two
+              <b> plans</b> cut through the base and the wall units, every wall&apos;s <b>sections</b>, the
+              <b> visualisation</b> rendered from the scene, and the <b>cut list</b>. Every sheet is drawn from the
+              boards and the hardware the room draws, and every unit carries its number. Every dimension appears once,
               in its own band. Fronts are magenta, handles green, the building fabric red. The DXF carries
               text and is <b>AutoCAD only, do NOT open it in VCarve</b>; the CNC export is a separate path
               and still ships no text of any kind.

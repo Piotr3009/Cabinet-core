@@ -60,6 +60,8 @@ import {
 import {
   extensionCarcass, extensionDrills, extensionSummary, extensionVerdict, withExtensionRefusal,
   endPanelsFollowSides,
+  // T80 F3 · the in-frame frame's openings go on the layer the back's window uses (T25 F1.2's cut-out).
+  RECESS_WINDOW_LAYER,
 } from './extension.js';
 import { applySiteTrim } from './siteTrim.js';
 // T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
@@ -1482,7 +1484,8 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
 // T75 F14 · …and `false_front`, the hob unit's fixed dummy, the blank's sibling.
 // T75 F15 · …and `pelmet`, the strip under a run of wall units, front material.
 // T78 F15 · `drawer_front` is the INNER front of a drawer behind doors (meta.inner).
-const FINISH_EXPOSED_ROLES = new Set(['front', 'drawer_front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
+// T80 F3 · 'frame': the in-frame frame is sprayed with the fronts (the owner's green frame in the mockup).
+const FINISH_EXPOSED_ROLES = new Set(['front', 'drawer_front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1512,7 +1515,8 @@ export function isFinishExposed(role) {
 // under the doors, in the plane the eye reads as the front of the run — so it
 // goes through the FRONT pipeline exactly as the plinth was given in turn 11.
 // FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
-const FRONT_MATERIAL_ROLES = new Set(['front', 'drawer_front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
+// T80 F3 · 'frame': material from the FRONT type of the project (CLAUDE.md T80 F3).
+const FRONT_MATERIAL_ROLES = new Set(['front', 'drawer_front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -6319,6 +6323,71 @@ export function computeCabinet(params, profileOverride) {
       } : {}),
     }));
   }
+  // ─── T80 F3 · THE FRAME OF A RUN (KIT_INFRAME.lsp (a) and (b)) ────────────
+  //
+  // The owner, 21.10.2026: *"raczej plyta, malo kiedy bedzie jeden ciag
+  // dluzszy jak 2800, a jak bedzie to bedziemy laczyc"*; *"cnc blum in
+  // frame"*. ONE MDF board per run, routed on the CNC with the openings cut
+  // through (the window mechanism of T25 F1.2: a cut-out pocket, clockwise,
+  // on the layer the back's window uses), never a frame glued from strips. A
+  // RUN element like the plinth: engine/inframe.js works out the segments
+  // from buildRuns and writes the geometry onto the first unit of each; the
+  // owner cuts it here, in its own frame (x from its left side's outer face,
+  // y from its carcass bottom, z from its back: the frame stands on the
+  // carcass face, D to D + 25). Wider than the board: FRAME-1 .. FRAME-n, cut
+  // at a stile's centre line. No in-frame (every lay-on project, every bare
+  // kit, every golden): not one line below runs.
+  const runFrame = params?.inframe === true && params?.run_frame?.role === 'owner' ? params.run_frame : null;
+  if (runFrame) {
+    const ft = Number(runFrame.frameT) || 25;
+    const of = runFrame.pieces.length;
+    runFrame.pieces.forEach((piece, i) => {
+      const pw = roundTo(piece.to - piece.from, 4);
+      const holes = runFrame.openings.filter((o) => o.x0 >= piece.from - 1e-6 && o.x1 <= piece.to + 1e-6);
+      panels.push(panel({
+        id: piece.name,
+        part: 'FRAME',
+        role: 'frame',
+        w: pw,
+        h: runFrame.height,
+        thickness: ft,
+        // The face is sprayed and the edges are inside the paint: no banding.
+        edgeCode: codes.none,
+        edgeLen: 0,
+        box: {
+          x: roundTo(runFrame.offset + piece.from, 4), y: roundTo(runFrame.dy, 4), z: D, w: pw, h: runFrame.height, d: ft,
+        },
+        cnc: {
+          ...rectGeometry(pw, runFrame.height),
+          pockets: holes.map((o) => ({
+            layer: RECESS_WINDOW_LAYER,
+            x1: roundTo(o.x0 - piece.from, 4),
+            y1: roundTo(o.y0, 4),
+            x2: roundTo(o.x1 - piece.from, 4),
+            y2: roundTo(o.y1, 4),
+            depth: ft,
+            cutout: true,
+          })),
+        },
+        meta: {
+          run: true,
+          unitIds: runFrame.unitIds,
+          inframe: {
+            piece: i + 1,
+            of,
+            from: piece.from,
+            to: piece.to,
+            frameW: runFrame.width,
+            openings: holes.map((o) => ({ unitId: o.unitId, w: roundTo(o.x1 - o.x0, 4), h: roundTo(o.y1 - o.y0, 4) })),
+            stiles: runFrame.stiles,
+            ends: runFrame.ends,
+            ...(runFrame.joinRefused ? { joinRefused: true } : {}),
+          },
+        },
+      }));
+    });
+  }
+
   // ─── T75 F4 · THE L's OWN PLINTH: TWO BOARDS, SQUARE BUTT ────────────────
   //
   // CLAUDE.md T75 F4: *"Plinth: two boards meeting at the inner corner, square

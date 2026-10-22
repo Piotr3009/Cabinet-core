@@ -107,19 +107,31 @@ test('F2 · the switch is saved and reloaded with the project, and is ONE undo s
 // ═══ THE ONE DOOR ════════════════════════════════════════════════════════
 
 test('F2 · the engine hears in-frame ONLY through paramsForEngine, and only on a unit a frame stands on', () => {
-  const unit = (type) => ({ id: `u-${type}`, type, params: { ...defaultParamsFor(type, P), unit_num: '01' }, position: { wall: 0, x_mm: 0 } });
-  const on = migrateDesign({ inframe: true });
-  const off = migrateDesign({});
-  for (const type of P.inframe.unitTypes) {
-    assert.equal(paramsForEngine(unit(type), on).inframe, true, `${type} is framed`);
-    assert.equal('inframe' in paramsForEngine(unit(type), off), false, `${type} lay-on: the key is absent`);
-    assert.equal('inframe' in paramsForEngine(unit(type)), false, `${type} with no design: absent`);
+  // T80 F3 AMENDED: the unit must stand in a frame segment (its run element names one, DECISIONS 12), so the units
+  // are placed in a real project, one per wall slot, and asked through the store's own paramsForEngine.
+  const placed = (types) => {
+    fresh();
+    S().setRoom({ corners: rectCorners(30000, 3000), height: 2600 });
+    let x = 500;
+    const ids = types.map((type) => { const id = S().addUnit(type, { wall: 0, x }).id; x += 1600; return id; });
+    return ids.map((id) => S().units.find((u) => u.id === id));
+  };
+  const on = (u) => paramsForEngine(u, S().project.design);
+  for (const u of placed(P.inframe.unitTypes)) {
+    assert.equal('inframe' in on(u), false, `${u.type} lay-on: the key is absent`);
+    assert.equal('inframe' in paramsForEngine(u), false, `${u.type} with no design and no frame: absent`);
   }
-  for (const type of ['OVEN_BASE', 'FRIDGE', 'APPLIANCE_TALL2', 'DW_PANEL', 'CORNER_L_BASE', 'BLIND_BASE', 'WUD_HOOD',
-    'WARDROBE_TOP', 'WARDROBE_DESK', 'FREE_PANEL']) {
-    assert.equal('inframe' in paramsForEngine(unit(type), on), false, `the frame stops at ${type}`);
+  S().setDesign({ inframe: true });
+  for (const u of S().units) {
+    assert.equal(on(u).inframe, true, `${u.type} is framed`);
+    assert.ok(on(u).run_frame, `${u.type} carries its frame element`);
   }
+  const stops = ['OVEN_BASE', 'FRIDGE', 'APPLIANCE_TALL2', 'DW_PANEL', 'BLIND_BASE', 'WUD_HOOD', 'WARDROBE_DESK'];
+  placed(stops);
+  S().setDesign({ inframe: true });
+  for (const u of S().units) assert.equal('inframe' in on(u), false, `the frame stops at ${u.type}`);
   // In-frame OFF is main: a lay-on project hands the engine exactly what an old project (no key) hands it.
+  const unit = (type) => ({ id: `u-${type}`, type, params: { ...defaultParamsFor(type, P), unit_num: '01' }, position: { wall: 0, x_mm: 0 } });
   const old = migrateDesign({ sheen: 30 });
   const layon = migrateDesign({ sheen: 30, inframe: false });
   for (const type of ['BUD', 'BUDR2', 'WUD', 'WARDROBE']) {

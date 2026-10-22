@@ -148,6 +148,8 @@ import {
   runMemberIds, runPlinthParams, runUpstandParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
   verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
+// T80 F3 · the in-frame frame of a run (KIT_INFRAME.lsp's mirror).
+import { runFrameParams } from '../engine/inframe.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
 import {
   runFor as shareOutRunFor, shareOutGapSpan, shareOutOffered, shareOutPlan,
@@ -1086,9 +1088,16 @@ function unitSetbackOr(params, fallback) {
 // the frame STOPS at every other unit, Check #42). The numbers are the
 // profile's, which computeCabinet is handed beside the params. A bare
 // `computeCabinet()` (every golden fixture) is handed nothing and cuts lay-on.
-function inframeFor(unit, design, profile) {
-  if (!design || migrateDesign(design).inframe !== true) return false;
-  return (profile?.inframe?.unitTypes || []).includes(unit?.type);
+//
+// T80 F3: and the unit stands in a FRAME (its run element names one): a framed
+// type that is turned, or that no run holds, keeps its lay-on fronts. A call
+// with no design in hand (the shelf bands, the hanger's room) reads the run
+// element alone, which the settle pass derives from design.inframe and from
+// nothing else, so the two roads cannot disagree.
+function inframeFor(unit, design, profile, elements = useProjectStore.getState().runElements?.[unit?.id]) {
+  if (design && migrateDesign(design).inframe !== true) return false;
+  if (!(profile?.inframe?.unitTypes || []).includes(unit?.type)) return false;
+  return Boolean(elements?.frame);
 }
 
 function paramsForEngine(unit, design = null) {
@@ -1131,12 +1140,14 @@ function paramsForEngine(unit, design = null) {
       ...(elements.upstand ? { run_upstand: elements.upstand } : {}),
       // T75 F15 · …and the pelmet, the same way.
       ...(elements.pelmet ? { run_pelmet: elements.pelmet } : {}),
+      // T80 F3 · …and the in-frame frame, where the project is in-frame.
+      ...(elements.frame && inframeFor(unit, design, profile, elements) ? { run_frame: elements.frame } : {}),
     } : {}),
     type: unit.type,
     items,
     // T80 F2 · in-frame, the key ABSENT on a lay-on project (the house idiom), so
     // a lay-on project hands the engine exactly the params it handed it on main.
-    ...(inframeFor(unit, design, profile) ? { inframe: true } : {}),
+    ...(inframeFor(unit, design, profile, elements) ? { inframe: true } : {}),
     // ─── TURN 46 (CLAUDE.md F3): THE SLOPE CUT ────────────────────────────
     // On the override channel, exactly as the plinth, the hinge standard, the
     // shaker frame and the shelf-pin setback travel — an INPUT in the design
@@ -3176,6 +3187,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         + (Number(u.params?.front_t) || profile.front.thickness),
       infillHeightOf: (u) => Number(u.params?.top_infill_mm) || 0,
     }, profile);
+    // T80 F3 · …and the FRAME of an in-frame project, the plinth's grammar on
+    // the plinth's own runs (engine/inframe.js, KIT_INFRAME.lsp (a) (b)). A
+    // lay-on project asks nothing: no element, no frame, not one params key.
+    const frameParams = design.inframe === true ? runFrameParams(next, profile) : new Map();
     // T75 F15 · …and the PELMET, the cornice's segments and mitres on the
     // bottom edge of a run of wall units (engine/pelmet.js).
     const pelmetParams = runPelmetParams(next, {
@@ -3230,9 +3245,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ...(upstandParams.get(u.id) ? { upstand: upstandParams.get(u.id) } : {}),
         // T75 F15 · …and the pelmet, likewise.
         ...(pelmetParams.get(u.id) ? { pelmet: pelmetParams.get(u.id) } : {}),
+        // T80 F3 · …and the in-frame frame, likewise.
+        ...(frameParams.get(u.id) ? { frame: frameParams.get(u.id) } : {}),
       };
       if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice && !entry.upstand
-        && !entry.pelmet) continue;
+        && !entry.pelmet && !entry.frame) continue;
       const prev = prevElements[u.id];
       // Reference equality matters (drag frames), and the test is BYTE
       // equality of the WHOLE element — a field list here rotted twice

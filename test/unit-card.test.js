@@ -24,7 +24,9 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { DRAWING_LAYERS } from '../src/engine/drawings/layers.js';
 import { boundsOf } from '../src/engine/drawings/primitives.js';
 import { baselineDimensions, chainDimensions, dimensionEntities } from '../src/engine/drawings/frontElevation.js';
-import { buildCarcassElevation, buildTopView, planBox } from '../src/engine/drawings/views.js';
+import { buildCarcassElevation } from '../src/engine/drawings/views.js';
+import { projectRun } from '../src/engine/drawings/projector.js';
+import { wallGapOf } from '../src/engine/runs.js';
 import { CARD_ARRANGEMENTS, buildUnitCard } from '../src/engine/drawings/unitCard.js';
 import { projectBookletSheets, unitCardSheet } from '../src/engine/drawings/card.js';
 import { buildCoverSheet } from '../src/engine/drawings/cover.js';
@@ -134,65 +136,50 @@ test('the carcass view draws the runners, at the rows the engine drills', () => 
 });
 
 // ─── the plan ───────────────────────────────────────────────────────────────
-
-test('the plan is the engine’s boxes projected, the way the AutoLISP holds them', () => {
-  // depth − z − d: z = 0 is the wall, and the LISP's plan has the FRONT of the
-  // cabinet at the bottom of the sheet.
-  assert.deepEqual(planBox({ x: 0, y: 0, z: 0, w: 600, h: 770, d: 18 }, 558), { x: 0, y: 540, w: 600, h: 18 });
-  assert.deepEqual(planBox({ x: 0, y: 0, z: 540, w: 600, h: 770, d: 18 }, 558), { x: 0, y: 0, w: 600, h: 18 });
-});
+//
+// AMENDED 22.10.2026 (T81 F9): the card's TOP view is the projector's, the room
+// seen from above (*"zalezy mi zebys rysowal w pdf 1 do 1 co mamy na cabinet
+// core"*); `buildTopView`, its `planBox` and its hinge sign are retired with it
+// (kasacja). Three tests read only that composer and go with it, by name:
+// "the plan is the engine's boxes projected" (planBox's own arithmetic), "in
+// plan, what is under the top panel is dashed" (the room shows nothing under
+// the top panel from above, and the card draws no line through it), "the hinge
+// is drawn to the profile's catalogue size" (the hinge's solid is the
+// projector's, from profile.hardware.hinge: test/turn81-f01-projector.test.js).
 
 test('the front stands the profile’s own gap off the carcass, and the plan shows it', () => {
+  // The projector's plan of one cabinet: the door's top face lies the overlay
+  // gap in front of the carcass, a profile number and not one this file chose.
   const result = base();
-  const top = buildTopView(result, { unitNum: '01', frontType: 'S', profile: P });
-  const fronts = onLayer(top.entities, 'DOORS').filter((e) => e.kind === 'rect');
-  assert.ok(fronts.length >= 1);
-
-  // The carcass runs 0 … depth in the plan; a front sits below zero by exactly
-  // the overlay gap, which is a profile number and not one this file chose.
-  const nearest = Math.max(...fronts.map((f) => f.y + f.h));
-  assert.equal(Number(nearest.toFixed(6)), -P.doors.gap,
-    `the door face is ${P.doors.gap} mm off the carcass — the profile's gap, unchanged`);
+  const unit = { id: 'plan', type: result.type, params: result.params, position: { wall: 0, x_mm: 0 } };
+  const group = { wall: 0, members: [{ unit, result, x: 0, base: 0, top: result.params.height, width: result.params.width }] };
+  const plan = projectRun(group, { view: 'top-of-card', mode: 'fronts', profile: P });
+  const door = result.panels.find((p) => p.part === 'FRONT');
+  const leaf = plan.entities.find((e) => e.kind === 'rect' && e.layer === 'DOORS' && e.src === `plan:${door.id}`);
+  assert.ok(leaf, 'the door, seen from above');
+  const back = wallGapOf(unit, P);
+  assert.equal(Number((leaf.y - (back + result.params.depth)).toFixed(6)), P.doors.gap,
+    `the door face is ${P.doors.gap} mm off the carcass, the profile's gap, unchanged`);
 });
 
-test('in plan, what is under the top panel is dashed and what you can see is not', () => {
-  const top = buildTopView(base(), { unitNum: '01', frontType: 'S', profile: P });
-  const carcase = onLayer(top.entities, 'CARCASE').filter((e) => e.kind === 'rect');
-  assert.ok(carcase.some((e) => e.hidden), 'the shelves are under the top panel');
-  assert.ok(carcase.some((e) => !e.hidden), 'the sides, the back and the top panel are not');
-  for (const front of onLayer(top.entities, 'DOORS')) {
-    assert.ok(!front.hidden, 'nothing is over a door');
+test('the plan is seen from above: the top panel covers what is under it, and the card draws no line through it', () => {
+  const card = buildUnitCard(base(), { unitNum: '01', frontType: 'S', profile: P });
+  assert.equal(card.entities.filter((e) => e.hidden && e.layer !== 'DIMENSIONS').length, 0);
+});
+
+test('a hinge seen from above is under the top panel; the plans of the set draw it below their cut', () => {
+  for (const hinge of ['L', 'R']) {
+    const result = computeCabinet({ type: 'BUD', width: 600, height: 770, depth: 558, unit_num: '01', doors: { count: 1, hinge } }, P);
+    const unit = { id: 'h', type: result.type, params: result.params, position: { wall: 0, x_mm: 0 } };
+    const group = { wall: 0, members: [{ unit, result, x: 0, base: 0, top: 770, width: 600 }] };
+    // Uncut, from above: the top panel hides every hinge.
+    assert.equal(projectRun(group, { view: 'top-of-card', mode: 'fronts', profile: P }).entities.filter((e) => e.layer === 'HINGES').length, 0);
+    // Cut under the top panel, as a plan is: the hinge, on the side the door is hung from.
+    const cut = projectRun(group, { view: 'plan', cut: 700, mode: 'fronts', profile: P }).entities.filter((e) => e.layer === 'HINGES' && e.kind === 'line');
+    assert.ok(cut.length > 0, `hung ${hinge}: the hinge in plan`);
+    const xs = cut.flatMap((e) => [e.x1, e.x2]);
+    assert.ok(hinge === 'L' ? Math.max(...xs) < 300 : Math.min(...xs) > 300, `hung ${hinge}: on its own side`);
   }
-});
-
-test('one hinge per door in plan, on the side the door is hung from', () => {
-  const left = buildTopView(base(), { unitNum: '01', frontType: 'S', profile: P });
-  const hinges = onLayer(left.entities, 'HINGES');
-  assert.equal(hinges.length, 3, 'a cup, an arm and a plate — one hinge, not three stacked on one spot');
-  // Hung on the left: everything about it is in the left-hand half.
-  for (const h of hinges) assert.ok(h.x < 300, `${h.x} is on the hinge side`);
-
-  const right = buildTopView(
-    computeCabinet({ type: 'BUD', width: 600, height: 770, depth: 558, unit_num: '01', doors: { count: 1, hinge: 'R' } }, P),
-    { unitNum: '01', frontType: 'S', profile: P },
-  );
-  for (const h of onLayer(right.entities, 'HINGES')) {
-    assert.ok(h.x + h.w > 300, 'a right-hung door puts its hinge on the right');
-  }
-
-  // Two doors: two hinges, one each side.
-  const both = buildTopView(
-    computeCabinet({ type: 'BUD', width: 1200, height: 770, depth: 558, unit_num: '02', doors: true }, P),
-    { unitNum: '02', frontType: 'S', profile: P },
-  );
-  assert.equal(onLayer(both.entities, 'HINGES').length, 6);
-});
-
-test('the hinge is drawn to the profile’s catalogue size, not to a number in the drawing', () => {
-  const top = buildTopView(base(), { unitNum: '01', frontType: 'S', profile: P });
-  const cup = onLayer(top.entities, 'HINGES').find((e) => e.w === P.hardware.hinge.cupDiameter);
-  assert.ok(cup, `the cup is ${P.hardware.hinge.cupDiameter} mm across — profile.hardware.hinge`);
-  assert.equal(cup.h, P.hardware.hinge.cupDepth);
 });
 
 // ─── the dimensions ─────────────────────────────────────────────────────────
@@ -346,14 +333,18 @@ test('the card SVG parses, says what it is, and closes every tag', () => {
   assert.match(svg, /<\/svg>$/);
   assert.match(svg, new RegExp(`width="${sheet.width}mm" height="${sheet.height}mm"`), 'a real paper size');
   assert.equal(svg.split('data-cc="door-swing"').length - 1, 2, 'the door diagonals are findable');
-  assert.match(svg, /stroke-dasharray/, 'and the hidden lines are dashed');
+  // AMENDED 22.10.2026 (T81 F9): the card is the projector's; its front shows the
+  // fronts and nothing behind them (*"bez przebijania carcasow"*), and its inside
+  // is on the carcass view, solid. A card with no line through a front:
+  assert.doesNotMatch(svg.replace(/<g data-layer="DIMENSIONS">[\s\S]*?<\/g>/g, ''), /stroke-dasharray/, 'no hidden line through a front');
 
   // Three views: the green number appears once per view. (It is on the sheet a
   // fourth time, as the Unit row of the title block — which is why this counts
   // the LAYER and not the string.)
   assert.equal(svg.split('data-layer="UNIT_NUMBER">01<').length - 1, 3);
 
-  const opens = (svg.match(/<(line|rect|text|circle)\b/g) || []).length;
+  // T81 F8: the painter's white is a <path>, one more self-closing kind.
+  const opens = (svg.match(/<(line|rect|text|circle|path)\b/g) || []).length;
   const closes = (svg.match(/(\/>|<\/text>)/g) || []).length;
   assert.equal(opens, closes, 'every element is closed');
 });

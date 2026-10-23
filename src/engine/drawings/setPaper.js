@@ -13,102 +13,13 @@ import { entLine as line, entRect as rect, entText as text } from './primitives.
 // T75 F22 · the state of every part on the parts card.
 import { readinessOf } from '../readiness.js';
 import { formatMm } from '../format.js';
-import { SET_LEGEND, SET_NOTES, wrapWords } from './setSheet.js';
+import { wrapWords } from './setSheet.js';
 
 const muted = (x, y, s, h = 2, align = 'left', extra = {}) => ({ ...text('SHEET_MUTED', x, y, s, h, align), ...extra });
 const ink = (x, y, s, h = 2.4, align = 'left', extra = {}) => ({ ...text('FRAME', x, y, s, h, align), ...extra });
 
-/**
- * THE COVER: title, the job in one line, the sheet index, the revisions, the
- * conventions and the general notes. The picture is handed in by the set as
- * a builder `(box) => entities` in paper mm (the first wall's perspective,
- * fitted), as ready entities, or left empty.
- */
-export function buildCover(zones, {
-  project = {}, title = {}, sheets = [], revisions = [], picture = null, notes = SET_NOTES,
-}) {
-  const b = zones.box;
-  const top = b.y + b.h;
-  const left = b.x + 6;
-  const right = b.x + b.w - 6;
-  const out = [];
-  const name = String(project.name || 'Untitled project');
-  out.push(muted(left, top - 30, String(title.kicker || '').toUpperCase(), 4, 'left', { tracking: 0.6 }));
-  out.push(ink(left, top - 42, name, 12, 'left', { weight: 'bold' }));
-  const meta = [
-    title.client ? `Client ${title.client}` : null,
-    title.job ? `Job ${title.job}` : null,
-    title.rev ? `Rev ${title.rev}` : null,
-    title.date ? `Issued ${title.date}` : null,
-    title.statusName ? `Status ${title.status}, ${title.statusName}` : null,
-  ].filter(Boolean).join(' · ');
-  out.push(muted(left, top - 52, meta, 3));
-  out.push({ ...line('FRAME', left, top - 58, right, top - 58), pen: 'VISIBLE' });
-
-  // The picture, in the left two thirds: the set hands in a builder that
-  // lays the perspective into this box (`fitEntities`), or nothing.
-  const pic = { x: left, y: b.y + 60, w: Math.min(200, b.w * 0.5), h: 118 };
-  const drawn = typeof picture === 'function' ? (picture(pic) || []) : (Array.isArray(picture) ? picture : []);
-  if (drawn.length) {
-    out.push(...drawn);
-  } else {
-    out.push({ ...rect('SHEET_MUTED', pic.x, pic.y, pic.w, pic.h), pen: 'FINE', hidden: true });
-    out.push(muted(pic.x + pic.w / 2, pic.y + pic.h / 2, 'perspective, sheet 06', 2.4, 'centre'));
-  }
-  out.push(muted(left, pic.y - 4, 'Perspective as on its own sheet. The visualisation sheet carries the render.', 2));
-
-  // The index, on the right.
-  const ix = left + 212;
-  const iw = right - ix;
-  let y = top - 66;
-  out.push(muted(ix, y, 'SHEET INDEX', 2.4, 'left', { tracking: 0.4 }));
-  y -= 3;
-  out.push({ ...line('FRAME', ix, y, ix + iw, y), pen: 'THIN' });
-  const cols = [ix, ix + 12, ix + iw - 56, ix + iw - 22];
-  y -= 4;
-  ['No', 'Drawing', 'Scale', 'Rev'].forEach((h, i) => out.push(muted(cols[i], y, h, 2)));
-  for (const s of sheets) {
-    y -= 5.2;
-    out.push(ink(cols[0], y, s.no, 2.4, 'left', { weight: 'bold' }));
-    out.push(ink(cols[1], y, s.name, 2.4));
-    out.push(muted(cols[2], y, s.scale || '', 2.2));
-    out.push(muted(cols[3], y, s.rev || title.rev || '', 2.2));
-    out.push({ ...line('SHEET_MUTED', ix, y - 2.6, ix + iw, y - 2.6), pen: 'FINE' });
-  }
-  y -= 10;
-  out.push(muted(ix, y, 'REVISIONS', 2.4, 'left', { tracking: 0.4 }));
-  y -= 3;
-  out.push({ ...line('FRAME', ix, y, ix + iw, y), pen: 'THIN' });
-  const rc = [ix, ix + 12, ix + 36, ix + iw - 22];
-  y -= 4;
-  ['Rev', 'Date', 'Description', 'By'].forEach((h, i) => out.push(muted(rc[i], y, h, 2)));
-  const revs = revisions.length ? revisions : [{ rev: title.rev || 'A', date: title.date || '', description: 'First issue', by: title.drawn || '' }];
-  for (const r of revs) {
-    y -= 5.2;
-    out.push(ink(rc[0], y, String(r.rev || ''), 2.3, 'left', { weight: 'bold' }));
-    out.push(ink(rc[1], y, String(r.date || ''), 2.3));
-    out.push(ink(rc[2], y, String(r.description || ''), 2.3));
-    out.push(ink(rc[3], y, String(r.by || ''), 2.3));
-    out.push({ ...line('SHEET_MUTED', ix, y - 2.6, ix + iw, y - 2.6), pen: 'FINE' });
-  }
-
-  // Conventions and notes along the bottom.
-  const cy = b.y + 46;
-  out.push(muted(left, cy, 'DRAWING CONVENTIONS', 2.4, 'left', { tracking: 0.4 }));
-  SET_LEGEND.forEach(([kind, layer, label], i) => {
-    const yy = cy - 6 - i * 4.2;
-    if (kind === 'line') out.push({ ...line(layer, left, yy, left + 8, yy), pen: 'VISIBLE' });
-    if (kind === 'dash') out.push({ ...line(layer, left, yy, left + 8, yy), pen: 'HIDDEN', hidden: true });
-    if (kind === 'text') out.push({ ...text(layer, left + 4, yy, '01', 2.4), weight: 'bold' });
-    if (kind === 'box') out.push({ ...rect(layer, left, yy - 1.5, 8, 3), pen: 'THIN' });
-    out.push(ink(left + 10.5, yy, label, 2));
-  });
-  const nx = left + 96;
-  out.push(muted(nx, cy, 'GENERAL NOTES', 2.4, 'left', { tracking: 0.4 }));
-  let ny = cy - 6;
-  notes.forEach((n, i) => { out.push(ink(nx, ny, `${i + 1}. ${n}`, 2)); ny -= 3.6; });
-  return out;
-}
+// T81 F2 · the cover as a page of its own is retired: its index and revisions
+// stand in the 3D sheet's column (setSheet.js indexColumn), its picture is the 3D.
 
 /** One unit's rows for the cut list: the carcass panels, then the fronts. */
 export function cutRows(result) {

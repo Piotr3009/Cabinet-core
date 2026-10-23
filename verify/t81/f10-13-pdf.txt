@@ -1,0 +1,22 @@
+T81 F10 . the set's PDF, exported by a real click on the window's "Drawing set (PDF)" button and read back
+bytes: 12553373
+pages: 9 (the sheet buttons: 9)
+layers (optional content groups): MASK, WORKTOP, BUILDING, CARCASE, FRAME_BOARD, DOORS, DOOR_SWING, HANDLES, SHEET_MUTED, FRAME_LIGHT, FRAME, UNIT_NUMBER, XRAY_CARCASE, XRAY_FRONT, SHELVES, HINGES, HINGE_MARK, DIMENSIONS, RUNNERS, LEG_BLOCK, VIEW_TITLE
+
+pdfinfo:
+Producer:        jsPDF 2.5.2
+CreationDate:    Fri Oct 23 00:45:36 2026 UTC
+Custom Metadata: no
+Metadata Stream: no
+Tagged:          no
+UserProperties:  no
+Suspects:        no
+Form:            none
+JavaScript:      no
+Pages:           9
+Encrypted:       no
+Page size:       1190.55 x 841.89 pts (A3)
+Page rot:        0
+File size:       12553373 bytes
+Optimized:       no
+PDF version:     1.3

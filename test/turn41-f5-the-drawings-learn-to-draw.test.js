@@ -40,7 +40,6 @@ import { sheetToDxf } from '../src/engine/drawings/dxf.js';
 import { buildUnitDxfFiles } from '../src/engine/cnc/dxf.js';
 // T43-F1: the hidden-line law moved to the sheet that still carries hidden
 // lines — the unit card (T43 iron rule 4 pins it for exactly that reason).
-import { unitCardSheet } from '../src/engine/drawings/card.js';
 
 const ROOM = { height: 2500, corners: [{ x: 0, y: 0 }, { x: 5000, y: 0 }, { x: 5000, y: 3000 }, { x: 0, y: 3000 }] };
 const unit = (type, over, pos) => ({
@@ -155,13 +154,15 @@ test('F5b — …and a hidden line is DASHED in CAD, as it already is on screen'
   // the sheet where hidden lines now live and are meant to: the UNIT CARD,
   // which T43 iron rule 4 pins precisely BECAUSE *"its hidden lines are its
   // value"*. Same wardrobe, same three shelves, same two assertions.
-  const u = {
-    id: 'u-card', type: 'WARDROBE', params: { ...defaultParamsFor('WARDROBE', P), unit_num: '01', width: 900, shelves: 3 },
-  };
-  const card = unitCardSheet({
-    result: computeCabinet({ ...u.params }, P), unit: u, project: { name: 'T41' }, profile: P, date: '19/08/2026',
-  });
-  const dxf = sheetToDxf(card);
+  //
+  // AMENDED 22.10.2026 (T81 F9): the card is the projector's and draws no line
+  // through a front (*"bez przebijania carcasow, tylko to co widac za
+  // frontami"*); the hidden lines the set still draws, and is meant to, are
+  // the BASE PLAN's: the plinth under the knife's plane and the worktop over
+  // it. So the law is asked of that sheet: same two assertions.
+  const plan = sheets().find((s) => s.variant === 'plan-base');
+  assert.ok(sheetOf(plan).entities.some((e) => e.hidden && e.layer !== 'DIMENSIONS'), 'the base plan carries hidden lines');
+  const dxf = sheetToDxf(sheetOf(plan));
   assert.match(dxf, /[\r\n]+2[\r\n]+LTYPE[\r\n]/, 'an LTYPE table is written');
   assert.ok(dxf.includes('CC_DASHED'), 'and a hidden layer names it');
 
@@ -259,7 +260,9 @@ test('F5d — a sheet that prints "No Scale" fills the paper', () => {
   for (const s of sheets()) {
     const sheet = sheetOf(s);
     if (['cover', 'visual', 'cutlist'].includes(s.variant)) continue;
-    if (s.variant === 'perspective') {
+    // AMENDED 22.10.2026 (T81 F2): the picture is the 3D sheet, first in the
+    // set (*"najpierw chce widziec 3d jak zrobiles pierwsza strona"*), NTS.
+    if (s.variant === 'perspective' || s.variant === '3d') {
       assert.equal(sheet.scaleLabel, 'NTS');
       assert.ok(sheet.scale > 0, 'a picture still has a fitting ratio');
       continue;

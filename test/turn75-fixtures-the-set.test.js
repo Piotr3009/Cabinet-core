@@ -19,6 +19,7 @@
 // feature of the part is read off the sheets against the engine's own cut.
 
 import test from 'node:test';
+import { DRAWING_LAYERS } from '../src/engine/drawings/layers.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
@@ -108,7 +109,9 @@ function assertCutRow(texts, unit, panelId) {
 }
 
 /** The plan's filled slabs (the worktop seen below the wall cut). */
-const slabPolys = (sheet) => sheet.entities.filter((e) => e.kind === 'poly' && e.fill === '#f6f6f6' && e.solid);
+// AMENDED 22.10.2026 (T81 F8): the slab on the wall plan is on its own ink, the
+// WORKTOP layer, its fill the layer's (*"kazdy kolor zrob inny layer"*).
+const slabPolys = (sheet) => sheet.entities.filter((e) => e.kind === 'poly' && e.layer === 'WORKTOP' && e.fill === DRAWING_LAYERS.WORKTOP.fill && e.solid);
 
 /** A poly's size in the room's millimetres, at its sheet's scale. */
 function worldSize(e, sheet) {
@@ -160,7 +163,9 @@ for (const [name, make] of PROJECTS) {
     open(make);
     const set = theSet();
     assert.ok(set.length >= 5, `a set, not ${set.length} sheets`);
-    assert.equal(set[0].variant, 'cover');
+    // AMENDED 22.10.2026 (T81 F2): the set opens on the 3D, the cover folded
+    // into its column (*"najpierw chce widziec 3d jak zrobiles pierwsza strona"*).
+    assert.equal(set[0].variant, '3d');
     assert.ok(set.some((s) => s.variant === 'cutlist'), 'the cut list is bound');
     for (const s of set) {
       assert.ok(s.sheet && Array.isArray(s.sheet.entities) && s.sheet.entities.length > 0, `${s.no} ${s.name} is empty`);
@@ -213,13 +218,17 @@ for (const [name, make] of PROJECTS) {
 test('T75 set · Herbal Hill through the store: his nine sheets, his slab on the front view', () => {
   open(herbalHill);
   const set = theSet();
+  // AMENDED 22.10.2026 (T81 F2): nine sheets still, in the owner's order
+  // (*"najpierw ... 3d ... wszystkie fronty ... bez frontow ... przekroj z gory
+  // ... przekroje pionowe, a na koncu wizualizacja"*), the X-ray among them.
   assert.deepEqual(set.map((s) => `${s.no} ${s.name}`), [
-    '00 Cover, index and revisions', '01 Plan · base units', '02 Plan · wall units',
-    '03 Wall A · Front view', '04 Wall A · Internal layout', '05 Wall A · Sections A-A and B-B',
-    '06 Wall A · Perspective view', '07 Visualisation', '08 Cut list and materials',
+    '01 3D', '02 Wall A · Fronts', '03 Wall A · Without fronts', '04 Wall A · X-ray',
+    '05 Plan · base units', '06 Plan · wall units', '07 Wall A · Sections A-A and B-B',
+    '08 Visualisation', '09 Cut list and materials',
   ]);
   const fronts = sheetOf(set, 'fronts');
-  assert.equal(fronts.sheet.entities.filter((e) => e.kind === 'rect' && e.fill === '#f3f3f3').length, 1, 'one slab on the front view');
+  // AMENDED 22.10.2026 (T81 F8): the legend's WORKTOP swatch wears the slab's tint (`meta: 'legend'`) and is not a slab.
+  assert.equal(fronts.sheet.entities.filter((e) => e.kind === 'rect' && e.fill === '#f3f3f3' && e.meta !== 'legend').length, 1, 'one slab on the front view');
 });
 
 test('T75 set · the corner kitchen: the corners the engine solved, the joints and the cut-out on the plan, the post on the cut list', () => {

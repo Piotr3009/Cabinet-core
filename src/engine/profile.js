@@ -4909,6 +4909,27 @@ export const DEFAULT_CABINET_PROFILE = {
       // Two columns once the list is longer than this.
       rowsPerColumn: 24,
     },
+
+    // ─── T81 · THE DRAWINGS ARE THE MODEL (CLAUDE.md T81, THE NUMBERS) ───
+    // The hinge on the fronts sheet: a solid black bar on the leaf's hinge
+    // edge, centred on each cup the engine's ladder bores. The owner's DXF
+    // (338 bars) and his words, 22.10.2026 22:56: *"zawiasy na elewacji wedlug
+    // silnika i podobnie jak na moim dxf"*. CONFIRMED.
+    hingeBar: { width: 6, height: 70 },
+    // The knob on a sheet: a circle of 30 at the project's own handle point.
+    // The owner, 22:56: *"galki 30 mm, wysokosc wedlug silnika (pozycja jak
+    // kto ustawi)"*. CONFIRMED.
+    knobDiameter: 30,
+    // The unit card draws its OWN unit: the run parts (plinth, frame,
+    // worktop, cornice) clipped to the unit's width plus this margin each
+    // side (the audit of 22.10, finding 2). T81 PROPOSED.
+    card: { runMargin: 50 },
+    // The projector's two drawing numbers. A visible piece shorter than a
+    // quarter of a paper millimetre is not a line a printer can draw (what a
+    // 3 mm slot leaves of a board behind it); a face is "seen whole" when its
+    // outline is seen a hair (0.05 mm) inside, so a nearer edge lying ON the
+    // outline is no cover. T81 PROPOSED (verify/t81/DECISIONS.md 16).
+    projector: { minEdgePaperMm: 0.25, wholeFaceHairMm: 0.05 },
   },
 
   // ─── CNC sheet + DXF output ───
@@ -6483,6 +6504,12 @@ export function migrateCabinetProfile(profile) {
         ...D.drawings.set,
         company: { ...D.drawings.set.company, ...profile.drawings?.set?.company },
       },
+      // T81 · the drawings' own numbers are the APP'S, as the set's law is: a
+      // stored profile cannot outvote the owner's bar, knob and card margin.
+      hingeBar: { ...D.drawings.hingeBar },
+      knobDiameter: D.drawings.knobDiameter,
+      card: { ...D.drawings.card },
+      projector: { ...D.drawings.projector },
       // T78 F20 · the Cabineo choices and the gate, key by key, so a profile
       // saved before tonight cuts the puzzle and holds this gate shut too; the
       // layer names nested one level deeper (the pocket's by machining option).

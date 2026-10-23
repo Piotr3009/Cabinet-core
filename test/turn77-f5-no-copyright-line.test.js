@@ -208,6 +208,41 @@ export const NEW_FILES = [
   'test/turn80-f11-goldens.test.js',
   // T80 F12 (22.10.2026): the walk
   'scripts/t80-walk.mjs',
+  // T81 F1 (22.10.2026): the projector, its probe and its stage
+  'src/engine/drawings/projector.js',
+  'src/engine/drawings/silhouettes.js',
+  'scripts/t81-kitchen.mjs',
+  'scripts/t81-f01-probe.mjs',
+  'scripts/t78-classify.d/f41-t81-f01.mjs',
+  'test/turn81-f01-projector.test.js',
+  // T81 F2 (22.10.2026): the sheet list in the owner's order
+  'scripts/t78-classify.d/f41-t81-f02.mjs',
+  'test/turn81-f02-order.test.js',
+  // T81 F3 (22.10.2026): the fronts sheet
+  'scripts/t78-classify.d/f41-t81-f03.mjs',
+  'test/turn81-f03-fronts.test.js',
+  // T81 F4 (22.10.2026): the sheet without fronts
+  'scripts/t78-classify.d/f41-t81-f04.mjs',
+  'test/turn81-f04-no-fronts.test.js',
+  // T81 F5 (22.10.2026): the X-ray sheet
+  'scripts/t78-classify.d/f41-t81-f05.mjs',
+  'test/turn81-f05-xray.test.js',
+  // T81 F6 (22.10.2026): the plans and the sections
+  'scripts/t78-classify.d/f41-t81-f06.mjs',
+  'test/turn81-f06-plan-section.test.js',
+  // T81 F7 (22.10.2026): the silhouettes from the models
+  'scripts/t81-silhouettes.mjs',
+  'scripts/t78-classify.d/f41-t81-f07.mjs',
+  'test/turn81-f07-silhouettes.test.js',
+  // T81 F8 (22.10.2026): one ink, one layer
+  'scripts/t78-classify.d/f41-t81-f08.mjs',
+  'test/turn81-f08-layers.test.js',
+  // T81 F9 (22.10.2026): the card draws its own unit
+  'scripts/t78-classify.d/f41-t81-f09.mjs',
+  'test/turn81-f09-card.test.js',
+  // T81 F10 (22.10.2026): the walk
+  'scripts/t81-walk.mjs',
+  'scripts/t78-classify.d/f41-t81-f10.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

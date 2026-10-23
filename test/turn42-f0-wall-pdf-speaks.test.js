@@ -87,13 +87,15 @@ test('F0 — THE PAGE COUNT EQUALS THE SHEET COUNT, on a seven-sheet set', () =>
   // ─── RE-PINNED 21.09.2026 (T71) ─────────────────────────────────────────
   // Seven became thirteen: the set (cover, two plans, four sheets per wall,
   // the visualisation, the cut list). The law is still a page per sheet.
+  // ─── AMENDED 22.10.2026 (T81 F2) ────────────────────────────────────────
+  // Thirteen still, in the owner's order: *"najpierw chce widziec 3d ...
+  // pozniej ... wszystkie fronty ... bez frontow ... przekroj z gory ...
+  // przekroje pionowe, a na koncu wizualizacja"*, and the X-ray per wall.
   const sheets = sheetsOf(kitchen());
   assert.deepEqual(sheets.map((s) => s.name), [
-    'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
-    'Wall A · Front view', 'Wall A · Internal layout', 'Wall A · Sections A-A',
-    'Wall B · Front view', 'Wall B · Internal layout', 'Wall B · Sections A-A',
-    'Wall A · Perspective view', 'Wall B · Perspective view',
-    'Visualisation', 'Cut list and materials',
+    '3D', 'Wall A · Fronts', 'Wall B · Fronts', 'Wall A · Without fronts', 'Wall B · Without fronts',
+    'Wall A · X-ray', 'Wall B · X-ray', 'Plan · base units', 'Plan · wall units',
+    'Wall A · Sections A-A', 'Wall B · Sections A-A', 'Visualisation', 'Cut list and materials',
   ]);
   const doc = bookletDoc(sheets.map((s) => s.sheet));
   assert.equal(doc.getNumberOfPages(), sheets.length, 'a page per sheet, in the order they were built');
@@ -268,12 +270,15 @@ test('F0 — `wallSetReport` is a READER: the sheet list is what it always was',
   const sheets = sheetsOf(kitchen());
   // T43-F5a: and the `/3` sections, which the census still does not touch.
   // T71: the set, which the census still does not touch.
+  // T81 F2: the set in the owner's order (*"najpierw chce widziec 3d"*), which
+  // the census still does not touch.
   assert.deepEqual(sheets.map((s) => [s.name, s.variant, s.wall]), [
-    ['Cover, index and revisions', 'cover', null],
+    ['3D', '3d', null],
+    ['Wall A · Fronts', 'fronts', 0], ['Wall B · Fronts', 'fronts', 1],
+    ['Wall A · Without fronts', 'no-fronts', 0], ['Wall B · Without fronts', 'no-fronts', 1],
+    ['Wall A · X-ray', 'xray', 0], ['Wall B · X-ray', 'xray', 1],
     ['Plan · base units', 'plan-base', null], ['Plan · wall units', 'plan-wall', null],
-    ['Wall A · Front view', 'fronts', 0], ['Wall A · Internal layout', 'carcass', 0], ['Wall A · Sections A-A', 'sections', 0],
-    ['Wall B · Front view', 'fronts', 1], ['Wall B · Internal layout', 'carcass', 1], ['Wall B · Sections A-A', 'sections', 1],
-    ['Wall A · Perspective view', 'perspective', 0], ['Wall B · Perspective view', 'perspective', 1],
+    ['Wall A · Sections A-A', 'sections', 0], ['Wall B · Sections A-A', 'sections', 1],
     ['Visualisation', 'visual', null], ['Cut list and materials', 'cutlist', null],
   ]);
 });

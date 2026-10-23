@@ -10,12 +10,15 @@
 // The room is `roomWalls(room)`: every wall, every opening, in the room's own
 // frame, so an L-shaped room draws as an L and a door on wall B swings on wall
 // B. Every cabinet is placed through its wall's frame, the way
-// `buildHorizontalSection` has placed them since T40, and every rectangle of a
-// cabinet is `buildTopView`'s, which is the engine's plan of that cabinet.
+// `buildHorizontalSection` has placed them since T40. T81 F6: what a cabinet
+// shows on a plan is the projector's (`projector.js`): the boards and the
+// hardware the room draws, cut by the knife's plane and seen from above it
+// (*"zalezy mi zebys rysowal w pdf 1 do 1 co mamy na cabinet core"*).
 //
 // Pure functions: no React, no store imports.
 
-import { buildTopView } from './views.js';
+import { projectRun, unitNumbers } from './projector.js';
+import { drawingLayer } from './layers.js';
 import { entLine as line, entPoly as poly, entText as text } from './primitives.js';
 import { realWalls, roomWalls, openingsOnWall } from '../room.js';
 import { wallGroups, wallLabel } from './wallElevation.js';
@@ -57,28 +60,54 @@ export function measurePlan({ room, profile }) {
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
 }
 
-/** A unit's plan (buildTopView, in its own frame) turned into the room's. */
-function throughWall(entities, wall, u0, depth) {
-  const out = [];
-  const T = (x, y) => at(wall, u0 + x, depth - y);
-  for (const e of entities) {
-    if (e.kind === 'rect') {
-      const q = [T(e.x, e.y), T(e.x + e.w, e.y), T(e.x + e.w, e.y + e.h), T(e.x, e.y + e.h)];
-      out.push({ ...poly(e.layer, q), pen: e.pen, hidden: e.hidden, solid: e.solid, meta: e.meta });
-    } else if (e.kind === 'line') {
-      const [x1, y1] = T(e.x1, e.y1); const [x2, y2] = T(e.x2, e.y2);
-      out.push({ ...e, x1, y1, x2, y2 });
-    } else if (e.kind === 'circle') {
-      const [cx, cy] = T(e.cx, e.cy);
-      out.push({ ...e, cx, cy });
-    } else if (e.kind === 'text') {
-      const [x, y] = T(e.x, e.y);
-      out.push({ ...e, x, y });
-    } else if (e.kind === 'poly') {
-      out.push({ ...e, pts: (e.pts || []).map((p) => T(p[0], p[1])) });
-    }
+/**
+ * One entity of a wall's plan (the projector's, `x` along the wall and `y`
+ * the distance off it) in the room's frame. A rect stays a rect where the
+ * wall is square to the room's axes, and becomes its four corners elsewhere.
+ */
+function throughWall(e, wall) {
+  const T = (x, y) => at(wall, x, y);
+  if (e.kind === 'rect') {
+    const q = [T(e.x, e.y), T(e.x + e.w, e.y), T(e.x + e.w, e.y + e.h), T(e.x, e.y + e.h)];
+    const xs = q.map((p) => p[0]); const ys = q.map((p) => p[1]);
+    const square = q.every((p) => (Math.abs(p[0] - Math.min(...xs)) < AXIS || Math.abs(p[0] - Math.max(...xs)) < AXIS)
+      && (Math.abs(p[1] - Math.min(...ys)) < AXIS || Math.abs(p[1] - Math.max(...ys)) < AXIS));
+    if (square) return { ...e, x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+    const { x: _x, y: _y, w: _w, h: _h, ...rest } = e;
+    return { ...rest, kind: 'poly', pts: q };
   }
-  return out;
+  if (e.kind === 'line') {
+    const [x1, y1] = T(e.x1, e.y1); const [x2, y2] = T(e.x2, e.y2);
+    return { ...e, x1, y1, x2, y2 };
+  }
+  if (e.kind === 'circle') { const [cx, cy] = T(e.cx, e.cy); return { ...e, cx, cy }; }
+  if (e.kind === 'text') { const [x, y] = T(e.x, e.y); return { ...e, x, y }; }
+  if (e.kind === 'poly') {
+    return { ...e, pts: (e.pts || []).map((p) => T(p[0], p[1])), ...(e.holes ? { holes: e.holes.map((h) => h.map((p) => T(p[0], p[1]))) } : {}) };
+  }
+  return e;
+}
+
+/**
+ * The cut units of one plan, by the wall they stand against, as the groups
+ * the projector draws. A TURNED unit is on the plan as it has always been
+ * (where it stands along its wall); the elevations leave it out.
+ */
+function planGroups(cutList, profile) {
+  const byWall = new Map();
+  for (const e of cutList) {
+    const wall = Math.max(0, Math.trunc(Number(e.unit.position?.wall ?? 0)));
+    if (!byWall.has(wall)) byWall.set(wall, []);
+    byWall.get(wall).push({
+      unit: e.unit,
+      result: e.result,
+      x: Number(e.unit.position?.x_mm) || 0,
+      base: unitBase(e.unit, profile),
+      top: unitTop(e.unit, profile),
+      width: Number(e.unit.params?.width) || 0,
+    });
+  }
+  return [...byWall.entries()].sort((a, b) => a[0] - b[0]).map(([wall, members]) => ({ wall, members }));
 }
 
 /** The room: walls as the cut line, openings, and a label outside each wall. */
@@ -156,9 +185,11 @@ export function buildPlan(entries, {
     const q = Array.isArray(w.outline) && w.outline.length >= 3
       ? w.outline.map(([x, z]) => at(wall, x, z))
       : [at(wall, w.x, 0), at(wall, w.x + w.w, 0), at(wall, w.x + w.w, w.d), at(wall, w.x, w.d)];
+    // T81 F8 (*"kazdy kolor zrob inny layer"*): the slab on its own layer,
+    // its outline and its fill the WORKTOP layer's.
     entities.push(which === 'wall'
-      ? { ...poly('CARCASE', q, { fill: '#f6f6f6' }), pen: 'THIN', solid: true }
-      : { ...poly('SHELVES', q), pen: 'HIDDEN', hidden: true });
+      ? { ...poly('WORKTOP', q, { fill: drawingLayer('WORKTOP').fill }), pen: 'THIN', solid: true }
+      : { ...poly('WORKTOP', q), pen: 'HIDDEN', hidden: true });
     // ─── T75 F5 · THE CUT-OUTS AND THE JOINT, ON THE SHEET ────────────────
     // *"A record is drawn on the worktop sheet of the T71 set"*: the plan seen
     // from above the worktop is where the slab is drawn, so each cut-out is a
@@ -210,33 +241,22 @@ export function buildPlan(entries, {
     }
   }
 
-  // ── the units the knife passes through ──
+  // ── the units the knife passes through, as the projector cuts them ──
+  // T81 F6: the boards the plane meets are CUT (one bar each), the boards and
+  // the hardware below it are seen from above in painter's order, and the
+  // plinth, under the carcass and below either cut, is a dashed line, never
+  // a solid outline (the audit of 22.10, finding 3).
   const cutList = cutEntries(entries, cut, profile);
-  for (const e of cutList) {
-    const wall = walls[Math.max(0, Math.trunc(Number(e.unit.position?.wall ?? 0)))] || walls[0];
+  for (const group of planGroups(cutList, profile)) {
+    const wall = walls[group.wall] || walls[0];
     if (!wall) continue;
-    const u0 = (Number(e.unit.position?.x_mm) || 0);
-    const depth = Number(e.result.params.depth) || 0;
-    const view = buildTopView(e.result, {
-      unitNum: e.unit.params?.unit_num, frontType: frontTypeOf ? frontTypeOf(e.unit) : null, profile,
-      unitNumberHeight: ctx.unitNumberHeight, shakerFrame,
+    const drawn = projectRun(group, {
+      view: 'plan', cut, mode: 'fronts', profile, frontTypeOf, shakerFrame,
+      hiddenAs: (s) => s.role === 'plinth',
+      minEdge: ctx.mm(profile.drawings.projector.minEdgePaperMm),
     });
-    // The footprint is CUT on a plan; the number stands on white at paper size.
-    const ents = view.entities.map((x) => {
-      if (x.kind === 'text' && x.layer === 'UNIT_NUMBER') return { ...x, mask: true, weight: 'bold', paperHeight: ctx.unitNumberHeight / ctx.scale };
-      if (x.kind === 'rect' && x.layer === 'CARCASE' && x.pen === 'OUTLINE') return { ...x, pen: 'CUT' };
-      return x;
-    });
-    // Off the wall by the clearance the engine stands THIS unit at.
-    const clearance = gapOf(e.unit);
-    entities.push(...throughWall(ents, wall, u0, depth + clearance));
-    // The plinth lies below either cut: dashed, where the engine puts it.
-    const plinth = (e.result.panels || []).find((p) => p.role === 'plinth' && p.box);
-    if (plinth && which === 'base') {
-      const v0 = clearance + plinth.box.z; const v1 = v0 + plinth.box.d;
-      const q = [at(wall, u0 + plinth.box.x, v0), at(wall, u0 + plinth.box.x + plinth.box.w, v0), at(wall, u0 + plinth.box.x + plinth.box.w, v1), at(wall, u0 + plinth.box.x, v1)];
-      entities.push({ ...poly('SHELVES', q), pen: 'HIDDEN', hidden: true });
-    }
+    for (const e of drawn.entities) entities.push(throughWall(e, wall));
+    for (const e of unitNumbers(group, { view: 'plan', profile, ctx })) entities.push(throughWall(e, wall));
   }
 
   // ── chains: along each run, outside its wall; the depth beside wall A's start ──

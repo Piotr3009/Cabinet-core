@@ -45,13 +45,25 @@ import { shakerFrameMm } from '../shaker.js';
 // The sheet law (`setSheet.js`) lays every one of them; the builders draw the
 // engine's own boxes; this file only binds them in order and numbers them.
 // The unit card and the booklet are untouched (iron rule 4).
+//
+// ─── T81 F2 · THE OWNER'S ORDER ─────────────────────────────────────────────
+//
+//   01  3D (the room in perspective; the index and revisions in its column)
+//   NN  Wall A · Fronts ...            (every wall)
+//   NN  Wall A · Without fronts ...    (every wall)
+//   NN  Wall A · X-ray ...             (every wall)
+//   NN  Plan · base units              NN  Plan · wall units
+//   NN  Wall A · Sections ...          (every wall)
+//   NN  Visualisation                  NN  Cut list and materials
+//
+// The owner, 22.10.2026 (21:23 and 22:57); see `wallDrawingSheets` below.
 
-import { SET_NOTES, drawingContext, fitEntities, layoutSetSheet, setZones } from './setSheet.js';
+import { SET_NOTES, layoutSetSheet, setZones } from './setSheet.js';
 import { buildRunElevation, measureRun, worktopsOnWall } from './setElevation.js';
 import { buildPlan, measurePlan } from './setPlan.js';
 import { sectionStations, stationSet } from './setSection.js';
-import { buildPerspective } from './setPerspective.js';
-import { buildCover, buildCutList, buildVisual, cutListPages, visualPictureBox } from './setPaper.js';
+import { buildRoom3d } from './setPerspective.js';
+import { buildCutList, buildVisual, cutListPages, visualPictureBox } from './setPaper.js';
 import { decorById, decorIdFromFinishId, decorLabel } from '../decors.js';
 import { worktopsFor } from '../worktop.js';
 
@@ -150,8 +162,41 @@ export function wallDrawingSheets({
   const plan = [];
   const push = (name, variant, wall, make) => plan.push({ name, variant, wall, make });
 
-  // ── the order ──
-  push('Cover, index and revisions', 'cover', null, null);
+  // ── T81 F2 · THE ORDER, THE OWNER'S ──
+  // 22.10.2026 (21:23): *"najpierw chce widziec 3d jak zrobiles pierwsza
+  // strona, pozniej chce widziec wszystkie fronty, bez przebijania carcasow,
+  // tylko to co widac za frontami, i tyle, fronty magenta, nastepnie widok
+  // wszystkich scian bez frontow, tak jakbysmy ukryli albo sciagneli fronty,
+  // pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu
+  // wizualizacja"*; and (22:57) *"a przeciez mamy x-ray, to tez mozna zrobic
+  // x-ray prosze"*. The 3D first (the cover's index and revisions in its
+  // column: the cover as a page of its own is retired, T81 PROPOSED), every
+  // wall's fronts, every wall without fronts, every wall in X-ray, the two
+  // plans, every wall's sections, the visualisation, the cut list.
+  push('3D', '3d', null, null);
+  const elevation = (group, mode, name, sub) => {
+    const onWall = worktopsOnWall(slabs, group.wall);
+    const label = `Wall ${group.label}`;
+    push(`${label} · ${name}`, mode, group.wall, (no) => layoutSetSheet({
+      profile,
+      drawing: {
+        measure: () => measureRun(group, { room: theRoom, worktops: onWall, profile }),
+        build: (ctx) => buildRunElevation(group, { mode, room: theRoom, worktops: onWall, frontTypeOf, shakerFrame, profile, ctx }),
+      },
+      caption: { title: `${no} · ${label.toUpperCase()} · ${name.toUpperCase()}`, sub },
+      column: { room: theRoom, highlight: group.wall, arrow: true, notes: SET_NOTES },
+      title: titleFor({ project, profile, no, name: `${label} · ${name}`, date }),
+    }));
+  };
+  for (const group of groups) {
+    elevation(group, 'fronts', 'Fronts', 'Fronts on, looking at the wall from the room: what the eye sees and nothing behind a front. Panel sizes: see the cut list.');
+  }
+  for (const group of groups) {
+    elevation(group, 'no-fronts', 'Without fronts', 'The fronts lifted off: carcasses, shelves, drawer boxes, runners, hinge plates, legs and appliance spaces.');
+  }
+  for (const group of groups) {
+    elevation(group, 'xray', 'X-ray', 'As the room\'s X-ray: fronts and carcass seen through, the drawer boxes, runners, hinges and legs inside them.');
+  }
   if (entries.length && theRoom) {
     push('Plan · base units', 'plan-base', null, (no) => layoutSetSheet({
       profile,
@@ -171,47 +216,15 @@ export function wallDrawingSheets({
   for (const group of groups) {
     const onWall = worktopsOnWall(slabs, group.wall);
     const label = `Wall ${group.label}`;
-    push(`${label} · Front view`, 'fronts', group.wall, (no) => layoutSetSheet({
-      profile,
-      drawing: {
-        measure: () => measureRun(group, { room: theRoom, worktops: onWall, profile }),
-        build: (ctx) => buildRunElevation(group, { withFronts: true, room: theRoom, worktops: onWall, frontTypeOf, shakerFrame, profile, ctx }),
-      },
-      caption: { title: `${no} · ${label.toUpperCase()} · FRONT VIEW`, sub: 'Fronts on, looking at the wall from the room. Panel sizes: see the cut list.' },
-      column: { room: theRoom, highlight: group.wall, arrow: true, notes: SET_NOTES },
-      title: titleFor({ project, profile, no, name: `${label} · Front view`, date }),
-    }));
-    push(`${label} · Internal layout`, 'carcass', group.wall, (no) => layoutSetSheet({
-      profile,
-      drawing: {
-        measure: () => measureRun(group, { room: theRoom, worktops: onWall, profile }),
-        build: (ctx) => buildRunElevation(group, { withFronts: false, room: theRoom, worktops: onWall, frontTypeOf, shakerFrame, profile, ctx }),
-      },
-      caption: { title: `${no} · ${label.toUpperCase()} · INTERNAL LAYOUT`, sub: 'Fronts removed: carcasses, shelves, drawer boxes, hinge plates, legs and appliance spaces.' },
-      column: { room: theRoom, highlight: group.wall, arrow: true, notes: SET_NOTES },
-      title: titleFor({ project, profile, no, name: `${label} · Internal layout`, date }),
-    }));
     const stations = sectionStations(group, { chosenId: sectionUnitId });
-    if (stations.length) {
-      const letters = stations.map((s) => `${s.letter}-${s.letter}`).join(' and ');
-      push(`${label} · Sections ${letters}`, 'sections', group.wall, (no) => layoutSetSheet({
-        profile,
-        drawing: stationSet(group, stations, { room: theRoom, worktops: onWall, profile }),
-        caption: { title: `${no} · ${label.toUpperCase()} · SECTIONS ${letters.toUpperCase()}`, sub: 'Vertical sections marked on the plans. One cut shows plinth, base unit, worktop, wall unit, wall and ceiling together.' },
-        column: { room: theRoom, highlight: group.wall, arrow: false, notes: SET_NOTES },
-        title: titleFor({ project, profile, no, name: `${label} · Sections ${letters}`, date }),
-      }));
-    }
-  }
-  for (const group of groups) {
-    const onWall = worktopsOnWall(slabs, group.wall);
-    const label = `Wall ${group.label}`;
-    push(`${label} · Perspective view`, 'perspective', group.wall, (no) => layoutSetSheet({
+    if (!stations.length) continue;
+    const letters = stations.map((st) => `${st.letter}-${st.letter}`).join(' and ');
+    push(`${label} · Sections ${letters}`, 'sections', group.wall, (no) => layoutSetSheet({
       profile,
-      drawing: { nts: true, build: (ctx) => buildPerspective(group, { room: theRoom, worktops: onWall, profile, ctx }) },
-      caption: { title: `${no} · ${label.toUpperCase()} · PERSPECTIVE VIEW`, sub: `Line perspective from the room, eye height ${profile.drawings.set.perspective.eyeHeight}. Not to scale; for orientation only.` },
-      column: { room: theRoom, highlight: group.wall, arrow: true, legend: false, notes: ['Unit numbers as on the elevations.', 'Drawn from the same model as every other sheet; it cannot disagree with them.'] },
-      title: { ...titleFor({ project, profile, no, name: `${label} · Perspective view`, date }), scale: 'NTS' },
+      drawing: stationSet(group, stations, { room: theRoom, worktops: onWall, profile }),
+      caption: { title: `${no} · ${label.toUpperCase()} · SECTIONS ${letters.toUpperCase()}`, sub: 'Vertical sections marked on the plans. One cut shows plinth, base unit, worktop, wall unit, wall and ceiling together.' },
+      column: { room: theRoom, highlight: group.wall, arrow: false, notes: SET_NOTES },
+      title: titleFor({ project, profile, no, name: `${label} · Sections ${letters}`, date }),
     }));
   }
   if (entries.length) {
@@ -236,34 +249,28 @@ export function wallDrawingSheets({
     });
   }
 
-  // ── number and build, the cover last because it lists the others ──
+  // ── number from 01 and build, the 3D last because its column lists the others ──
   const of = String(plan.length).padStart(2, '0');
-  const out = plan.map((p, i) => ({ no: String(i).padStart(2, '0'), name: p.name, variant: p.variant, wall: p.wall, make: p.make }));
-  for (const s of out) {
-    if (!s.make) continue;
-    s.sheet = s.make(s.no);
-    delete s.make;
-    stamp(s.sheet, s.no, of);
+  const out = plan.map((p, i) => ({ no: String(i + 1).padStart(2, '0'), name: p.name, variant: p.variant, wall: p.wall, make: p.make }));
+  for (const sh of out) {
+    if (!sh.make) continue;
+    sh.sheet = sh.make(sh.no);
+    delete sh.make;
+    stamp(sh.sheet, sh.no, of);
   }
-  const cover = out[0];
-  if (cover && cover.make === null) {
-    const index = out.map((s) => ({ no: s.no, name: s.name, scale: s.sheet ? s.sheet.scaleLabel : 'n/a' }));
-    const t = titleFor({ project, profile, no: '00', name: 'Cover, index and revisions', date });
-    // The cover's picture is the first wall's perspective, built once more
-    // and fitted into the cover's frame; a job with no run has no picture.
-    const first = groups[0];
-    const picture = first
-      ? (box) => fitEntities(buildPerspective(first, { room: theRoom, worktops: worktopsOnWall(slabs, first.wall), profile, ctx: drawingContext(1, profile) }).entities, box)
-      : null;
-    cover.sheet = layoutSetSheet({
+  const first = out[0];
+  if (first && first.make === null) {
+    const index = out.map((sh) => ({ no: sh.no, name: sh.name, scale: sh.sheet ? sh.sheet.scaleLabel : 'NTS' }));
+    const t = titleFor({ project, profile, no: first.no, name: '3D', date });
+    first.sheet = layoutSetSheet({
       profile,
-      drawing: { paper: true, build: (zones) => buildCover(zones, { project, title: { ...t, kicker: project.titleBlock?.kicker || 'Fitted furniture' }, sheets: index, revisions: project.titleBlock?.revisions || [], picture }) },
-      caption: { title: '00 · COVER, INDEX AND REVISIONS', sub: '' },
-      column: false,
-      title: { ...t, scale: 'n/a' },
+      drawing: { nts: true, build: (ctx) => buildRoom3d(groups, { room: theRoom, worktops: slabs, profile, ctx, frontTypeOf, shakerFrame }) },
+      caption: { title: `${first.no} · 3D`, sub: `The room in perspective from eye height ${profile.drawings.set.perspective.eyeHeight}, drawn from the same boards and hardware as every other sheet. Not to scale.` },
+      column: { index: { project, title: t, sheets: index, revisions: project.titleBlock?.revisions || [] } },
+      title: { ...t, scale: 'NTS' },
     });
-    delete cover.make;
-    stamp(cover.sheet, '00', of);
+    delete first.make;
+    stamp(first.sheet, first.no, of);
   }
   return out;
 }

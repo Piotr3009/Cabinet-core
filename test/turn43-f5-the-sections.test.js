@@ -49,11 +49,13 @@ const groups = () => wallGroups(t43Entries(P), P);
 
 // ═══ THE SHEET LIST ════════════════════════════════════════════════════════
 
+// AMENDED 22.10.2026 (T81 F2): the owner's order, *"najpierw chce widziec 3d
+// ... wszystkie fronty ... bez frontow ... przekroj z gory ... przekroje
+// pionowe, a na koncu wizualizacja"*, and every wall's X-ray.
 const SET_NAMES = [
-  'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
-  'Wall A · Front view', 'Wall A · Internal layout', 'Wall A · Sections A-A',
-  'Wall B · Front view', 'Wall B · Internal layout', 'Wall B · Sections A-A',
-  'Wall A · Perspective view', 'Wall B · Perspective view',
+  '3D', 'Wall A · Fronts', 'Wall B · Fronts', 'Wall A · Without fronts', 'Wall B · Without fronts',
+  'Wall A · X-ray', 'Wall B · X-ray', 'Plan · base units', 'Plan · wall units',
+  'Wall A · Sections A-A', 'Wall B · Sections A-A',
   'Visualisation', 'Cut list and materials',
 ];
 
@@ -136,7 +138,8 @@ test('F5a — the sheet says WHERE the knife went', () => {
   const three = setOf().find((s) => s.variant === 'sections' && s.wall === 0);
   const svg = sheetToSvg(three.sheet, { kind: 'section' });
   assert.match(svg, /SECTION A-A · through unit 02/, 'the station, under the title');
-  assert.match(svg, /05 · Wall A · Sections A-A/, 'and the title block names the sheet');
+  // T81 F2: the sections follow the plans, sheet 10 of the owner's order.
+  assert.match(svg, /10 · Wall A · Sections A-A/, 'and the title block names the sheet');
 });
 
 test('F5a — the section is drawn from PUBLISHED panel boxes, in the ZY frame', () => {

@@ -26,15 +26,19 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { wallGroups } from '../src/engine/drawings/wallElevation.js';
 import {
-  chooseSetScale, drawingContext, fitEntities, keyPlan, layoutSetSheet, setPage, setZones, titleStrip, wrapWords,
+  chooseSetScale, drawingContext, keyPlan, layoutSetSheet, setPage, setZones, titleStrip, wrapWords,
 } from '../src/engine/drawings/setSheet.js';
 import { chainH, chainV, figureCollisions, figureWidth } from '../src/engine/drawings/setChains.js';
 import {
-  applianceLabel, buildRunElevation, hingePlateMarks, legHardware, measureRun, worktopsOnWall,
+  buildRunElevation, measureRun, worktopsOnWall,
 } from '../src/engine/drawings/setElevation.js';
+// AMENDED 22.10.2026 (T81 F4): one law, one path: the appliance's name is the
+// projector's (`applianceLabel`), the sheet's own copy of its table is deleted.
+import { applianceLabel } from '../src/engine/drawings/projector.js';
+import { hardwareInstances } from '../src/engine/hardware3d.js';
 import { buildPlan, cutEntries, cutHeight, measurePlan } from '../src/engine/drawings/setPlan.js';
 import { buildStation, sectionStations } from '../src/engine/drawings/setSection.js';
-import { buildPerspective, makeCamera, runBoxes } from '../src/engine/drawings/setPerspective.js';
+import { buildRoom3d } from '../src/engine/drawings/setPerspective.js';
 import { buildCutList, buildVisual, cutListPages, cutRows, visualPictureBox } from '../src/engine/drawings/setPaper.js';
 import { titleFor, visualAspect, wallDrawingSheets } from '../src/engine/drawings/wallSheets.js';
 import { sheetToSvg } from '../src/engine/drawings/svg.js';
@@ -91,7 +95,8 @@ test('T71 · the scale is a rung of the ladder and says so; a picture is NTS', (
   // Every scaled sheet of the proof set prints its rung; the strip repeats it.
   for (const s of setOf()) {
     if (['cover', 'cutlist'].includes(s.variant)) { assert.equal(s.sheet.scaleLabel, 'n/a'); continue; }
-    if (['perspective', 'visual'].includes(s.variant)) { assert.equal(s.sheet.scaleLabel, 'NTS'); continue; }
+    // T81 F2: the 3D sheet is the picture now, and NTS.
+    if (['perspective', 'visual', '3d'].includes(s.variant)) { assert.equal(s.sheet.scaleLabel, 'NTS'); continue; }
     assert.ok(P.drawings.set.scales.includes(s.sheet.scale), `${s.name}: 1:${s.sheet.scale} is a rung`);
     assert.equal(s.sheet.scaleLabel, `1:${s.sheet.scale} @ A3`);
     assert.ok(textsOf(s.sheet).includes(s.sheet.scaleLabel), `${s.name}: printed in the strip`);
@@ -160,14 +165,13 @@ test('T71 · an appliance space is named on the sheet by the engine\'s own type,
   assert.ok(labels.some((t) => /D\/W/.test(t)) && labels.some((t) => /FRIDGE/.test(t)), 'the dishwasher and the fridge are named on the front view');
 });
 
-test('T71 · `wrapWords` and `fitEntities`: the small helpers do what the sheets lean on', () => {
+test('T71 · `wrapWords`: the small helper the sheets lean on', () => {
   assert.deepEqual(wrapWords('one two three four', 9), ['one two', 'three', 'four']);
   assert.deepEqual(wrapWords('averyveryverylongword x', 5), ['averyveryverylongword', 'x'], 'a word longer than the row stands alone');
-  const fitted = fitEntities([entPoly('CARCASE', [[0, 0], [1000, 0], [1000, 500]]), { kind: 'text', layer: 'UNIT_NUMBER', x: 500, y: 250, text: '01', height: 120, paperHeight: 3 }], { x: 10, y: 10, w: 100, h: 100 }, { textHeight: 2 });
-  const b = boundsOf(fitted.filter((e) => e.kind === 'poly'));
-  assert.ok(b.w <= 96.01 && b.x >= 10 && b.x + b.w <= 110, 'scaled into the box');
-  assert.equal(fitted[1].height, 2, 'every word at one paper height');
-  assert.equal(fitted[1].paperHeight, undefined);
+  // AMENDED 22.10.2026 (T81 F2): `fitEntities` fitted the perspective into the
+  // cover's frame; the cover is folded into the 3D sheet (*"najpierw chce
+  // widziec 3d jak zrobiles pierwsza strona"*) and the helper is deleted.
+  void entPoly;
 });
 
 // ═══ 2. THE CHAINS ═════════════════════════════════════════════════════════
@@ -251,53 +255,82 @@ test('T71 · the legs on the internal layout are the scene\'s leg: plate, stem, 
   const legs = bud.assemblies.legs;
   const legH = bud.assemblies.carcass.legHeight;
   assert.ok(legs.positions.length >= 2 && legH > 0, 'the engine publishes the legs');
-  const one = legHardware(legs.positions[0], { width: legs.width, height: legH, profile: P });
-  assert.equal(one.length, 3, 'plate, stem, foot');
-  const [plate, stem, foot] = one;
-  assert.equal(plate.w, legs.width, 'the plate is as wide as the engine\'s leg');
-  assert.equal(plate.h, L.plateThickness);
-  assert.equal(stem.w, L.stemDiameter);
-  assert.equal(foot.w, L.footDiameter);
-  assert.equal(foot.h, L.footHeight);
-  assert.equal(plate.h + stem.h + foot.h, legH, 'the three add up to the leg height');
-  assert.equal(foot.y, -legH, 'the foot stands on the floor');
-  assert.ok(one.every((e) => e.layer === 'LEG_BLOCK' && e.solid));
-  // On the sheet: three rects per leg per unit, and the front view has none.
+  // AMENDED 22.10.2026 (T81 F6): `legHardware` is retired with the composers
+  // that called it; every sheet's leg is the projector's solid of the room's
+  // leg (*"zalezy mi zebys rysowal w pdf 1 do 1 co mamy na cabinet core"*):
+  // read off the X-ray below, plate, stem and foot, the plate as wide as the
+  // engine's leg and as thick as the profile's, the foot on the floor.
+  // AMENDED 22.10.2026 (T81 F4): the sheets are the projector's, and a leg is
+  // drawn where the room shows it (*"zalezy mi zebys rysowal w pdf 1 do 1 co
+  // mamy na cabinet core"*): his units stand on plinths, so on the fronts and
+  // on the sheet without fronts the plinth hides every leg, as in the room;
+  // the X-ray shows each one through it, at the engine's own x.
   const group = wallA();
   const ctx = drawingContext(20, P);
-  const internal = buildRunElevation(group, { withFronts: false, room: HH_ROOM, profile: P, ctx });
-  // One leg per x on an elevation: the back leg of a pair stands behind the front one.
-  const uniqueXs = (m) => new Set((m.result.assemblies?.legs?.positions || []).map((p) => Math.round(p.x))).size;
-  const expected = group.members.reduce((a, m) => a + ((m.result.assemblies?.carcass?.legHeight || 0) > 0 ? 3 * uniqueXs(m) : 0), 0);
-  assert.ok(expected >= 3 * 2 * 6, 'his six legged base units, two legs each in elevation');
-  assert.equal(internal.entities.filter((e) => e.layer === 'LEG_BLOCK').length, expected);
-  const fronts = buildRunElevation(group, { withFronts: true, room: HH_ROOM, profile: P, ctx });
-  assert.equal(fronts.entities.filter((e) => e.layer === 'LEG_BLOCK').length, 0, 'the plinth hides them on the front view');
-  // Where they stand, in x, is the engine's own list, moved by the unit's x.
-  const m = group.members[0];
-  const plates = internal.entities.filter((e) => e.layer === 'LEG_BLOCK' && e.h === L.plateThickness && e.x >= m.x && e.x < m.x + m.width);
-  assert.deepEqual(plates.map((e) => Math.round(e.x - m.x)).sort((a, b) => a - b), [...new Set(legs.positions.map((p) => Math.round(p.x)))].sort((a, b) => a - b));
+  const legged = group.members.filter((m) => hardwareInstances(m.result, P).legs.length > 0);
+  assert.ok(legged.length >= 6, 'his six legged base units');
+  for (const mode of ['fronts', 'no-fronts']) {
+    const sheet = buildRunElevation(group, { mode, room: HH_ROOM, profile: P, ctx });
+    assert.equal(sheet.entities.filter((e) => e.layer === 'LEG_BLOCK').length, 0, `${mode}: the plinth hides them`);
+  }
+  const xray = buildRunElevation(group, { mode: 'xray', room: HH_ROOM, profile: P, ctx });
+  {
+    const m01 = group.members.find((m) => m.unit.params.unit_num === '01');
+    const one = xray.entities.filter((e) => e.kind === 'line' && e.layer === 'LEG_BLOCK' && e.solid && e.src === `${m01.unit.id}:hw:leg:0`);
+    const flat = one.filter((e) => Math.abs(e.y1 - e.y2) < 1e-6);
+    const widest = Math.max(...flat.map((e) => Math.abs(e.x2 - e.x1)));
+    assert.ok(Math.abs(widest - legs.width) < 0.01, `the plate is as wide as the engine's leg: ${widest}`);
+    assert.ok(flat.some((e) => Math.abs(e.y1 - (m01.base - L.plateThickness)) < 0.01), 'the plate as thick as the profile\'s');
+    assert.ok(flat.some((e) => Math.abs(e.y1 - (m01.base - legH + L.footHeight)) < 0.01), 'the foot as tall as the profile\'s');
+    const ys = one.flatMap((e) => [e.y1, e.y2]);
+    assert.deepEqual([Math.min(...ys), Math.max(...ys)], [m01.base - legH, m01.base], 'from the floor to the carcass');
+  }
+  for (const m of legged) {
+    const mine = xray.entities.filter((e) => e.kind === 'line' && e.layer === 'LEG_BLOCK' && e.src.startsWith(`${m.unit.id}:hw:leg:`));
+    for (const leg of hardwareInstances(m.result, P).legs) {
+      const x = m.x + leg.x;
+      assert.ok(mine.some((e) => Math.min(e.x1, e.x2) <= x + 0.01 && Math.max(e.x1, e.x2) >= x - 0.01 && Math.abs(e.y1 - e.y2) < 1e-6),
+        `${m.unit.params.unit_num}: the leg at ${x} on the X-ray`);
+    }
+    // From the floor to the carcass: the leg is as tall as the engine says.
+    const ys = mine.flatMap((e) => [e.y1, e.y2]);
+    assert.ok(Math.abs(Math.min(...ys) - (m.base - m.result.assemblies.carcass.legHeight)) < 0.01, 'the foot stands on the floor');
+  }
 });
 
 test('T71 · the hinge plates are the side\'s own drilling: three per door on his 720 doors, six on the two-door sink', () => {
+  // AMENDED 22.10.2026 (T81 F4): the plates on the sheet without fronts are the
+  // projector's, one per hinge the room hangs (`hardwareInstances`), drawn where
+  // the room puts them (*"tak jakbysmy ukryli albo sciagneli fronty"*); the
+  // composer `hingePlateMarks` is retired (kasacja).
   const r = (num) => entries.find((e) => e.unit.params.unit_num === num).result;
-  const plates = (num) => hingePlateMarks(r(num), P);
+  const group = wallA();
+  const sheet = buildRunElevation(group, { mode: 'no-fronts', room: HH_ROOM, profile: P, ctx: drawingContext(20, P) });
+  const memberOf = (num) => group.members.find((m) => m.unit.params.unit_num === num);
+  const plates = (num) => new Set(sheet.entities.filter((e) => e.family === 'plate' && e.src.startsWith(`${memberOf(num).unit.id}:`)).map((e) => e.src));
   const pairs = r('01').drillSummary.side_hinge_holes_y.length;
-  assert.equal(plates('01').length, pairs * r('01').drillSummary.hinged_sides.length);
-  assert.equal(plates('01').length, 3, 'a 770 door: three hinges');
-  assert.equal(plates('05').length, 6, 'the sink\'s two doors: three each side');
-  assert.equal(plates('04').length, 0, 'a drawer unit has no plates');
-  assert.ok(plates('01').every((e) => e.layer === 'HINGES' && e.h === P.hardware.hinge.plateLength));
-  // On the LEFT side for an L door, at the board's inner face.
+  assert.equal(plates('01').size, pairs * r('01').drillSummary.hinged_sides.length);
+  assert.equal(plates('01').size, 3, 'a 770 door: three hinges');
+  assert.equal(plates('05').size, 6, 'the sink\'s two doors: three each side');
+  assert.equal(plates('04').size, 0, 'a drawer unit has no plates');
+  // On the LEFT side for an L door, at the board's inner face, a plate long.
   const G = Number(r('01').params.board_t) || 18;
-  assert.ok(plates('01').every((e) => e.x === G));
+  const m = memberOf('01');
+  const lines = sheet.entities.filter((e) => e.kind === 'line' && e.family === 'plate' && e.src.startsWith(`${m.unit.id}:`));
+  assert.ok(lines.length > 0 && lines.every((e) => e.layer === 'HINGES'));
+  assert.equal(Math.min(...lines.flatMap((e) => [e.x1, e.x2])), m.x + G, 'from the side\'s inner face');
+  for (const src of plates('01')) {
+    const ys = lines.filter((e) => e.src === src).flatMap((e) => [e.y1, e.y2]);
+    assert.ok(Math.abs(Math.max(...ys) - Math.min(...ys) - P.hardware.hinge.plateLength) < 0.01, 'a plate long');
+  }
 });
 
 test('T71 · the worktop is the design layer\'s slab, and the set resolves it itself when nobody hands it in', () => {
   const [slab] = worktops.map((w) => w.geometry || w);
   assert.ok(slab && slab.w > 3000, 'one slab over the six base units');
   const withSlab = setOf().find((s) => s.variant === 'fronts');
-  const slabs = (s) => s.sheet.entities.filter((e) => e.kind === 'rect' && e.fill === '#f3f3f3');
+  // AMENDED 22.10.2026 (T81 F8): the legend's WORKTOP swatch wears the slab's tint (`meta: 'legend'`) and is not a slab.
+  const slabs = (s) => s.sheet.entities.filter((e) => e.kind === 'rect' && e.fill === '#f3f3f3' && e.meta !== 'legend');
   assert.equal(slabs(withSlab).length, 1, 'the front view draws the worktop');
   // The same set, with the records on the design and no `worktops` argument.
   const resolved = wallDrawingSheets({
@@ -352,34 +385,40 @@ test('T71 · the sections: A-A through the drawer unit, B-B through the sink, a 
 });
 
 test('T71 · the perspective: the engine\'s boxes through a pinhole, painted far to near, numbered, NTS', () => {
+  // ─── AMENDED 22.10.2026 (T81 F2): THE 3D, FROM THE ROOM'S OWN BOARDS ─────
+  // The owner: *"najpierw chce widziec 3d jak zrobiles pierwsza strona"*, and
+  // *"zalezy mi zebys rysowal w pdf 1 do 1 co mamy na cabinet core"*. The
+  // picture is no longer T71's boxes painted far to near: it is every board
+  // the room draws through the projector, hidden lines removed by depth, the
+  // painter's white on MASK under the lines. Every unit numbered, NTS, and a
+  // picture is still not dimensioned.
   const group = wallA();
-  const boxes = runBoxes(group, { worktops: worktops.map((w) => w.geometry || w), profile: P });
-  assert.equal(boxes.filter((b) => b.tag === 'unit').length, group.members.length);
-  assert.equal(boxes.filter((b) => b.tag === 'worktop').length, 1);
-  assert.ok(boxes.filter((b) => b.tag === 'plinth').length >= 6);
-  const cam = makeCamera([0, 1650, 5000], [2000, 1200, 0]);
-  const near = cam.project([2000, 1200, 1000]); const far = cam.project([2000, 1200, 0]);
-  assert.ok(near[2] < far[2], 'distance is a distance');
   const ctx = drawingContext(1, P);
-  const pic = buildPerspective(group, { room: HH_ROOM, worktops: worktops.map((w) => w.geometry || w), profile: P, ctx });
-  const faces = pic.entities.filter((e) => e.kind === 'poly' && e.fill === 'white');
-  assert.ok(faces.length > 20, 'faces, painted');
-  assert.ok(pic.entities.filter((e) => e.layer === 'DOORS').length >= 13, 'every front is a box on the picture');
+  const pic = buildRoom3d([group], { room: HH_ROOM, worktops, profile: P, ctx });
+  const masks = pic.entities.filter((e) => e.kind === 'poly' && e.layer === 'MASK' && e.fill === '#ffffff');
+  assert.ok(masks.length > 20, 'faces, painted white under the lines');
+  assert.ok(pic.entities.filter((e) => e.layer === 'DOORS').length >= 13, 'every front is on the picture');
   const numbers = pic.entities.filter((e) => e.kind === 'text' && e.layer === 'UNIT_NUMBER').map((e) => e.text);
   assert.deepEqual(numbers.sort(), group.members.map((m) => m.unit.params.unit_num).sort());
   assert.ok(pic.entities.every((e) => e.layer !== 'DIMENSIONS'), 'a picture is not dimensioned');
-  const sheet = setOf().find((s) => s.variant === 'perspective');
+  const sheet = setOf().find((s) => s.variant === '3d');
   assert.equal(sheet.sheet.scaleLabel, 'NTS');
 });
 
 // ═══ 5. THE SET, BOUND ═════════════════════════════════════════════════════
 
 test('T71 · the order and the numbering of his set, the cover last with the index of the others', () => {
+  // ─── AMENDED 22.10.2026 (T81 F2): THE OWNER'S ORDER ──────────────────────
+  // *"najpierw chce widziec 3d jak zrobiles pierwsza strona, pozniej chce
+  // widziec wszystkie fronty ... nastepnie widok wszystkich scian bez frontow
+  // ... pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu
+  // wizualizacja"*, and the X-ray. The cover's index and revisions stand in
+  // the 3D sheet's column, built last because it lists the others.
   const set = setOf();
   assert.deepEqual(set.map((s) => `${s.no} ${s.name}`), [
-    '00 Cover, index and revisions', '01 Plan · base units', '02 Plan · wall units',
-    '03 Wall A · Front view', '04 Wall A · Internal layout', '05 Wall A · Sections A-A and B-B',
-    '06 Wall A · Perspective view', '07 Visualisation', '08 Cut list and materials',
+    '01 3D', '02 Wall A · Fronts', '03 Wall A · Without fronts', '04 Wall A · X-ray',
+    '05 Plan · base units', '06 Plan · wall units', '07 Wall A · Sections A-A and B-B',
+    '08 Visualisation', '09 Cut list and materials',
   ]);
   for (const s of set) {
     assert.equal(s.sheet.sheetNo, s.no);
@@ -387,13 +426,13 @@ test('T71 · the order and the numbering of his set, the cover last with the ind
     assert.ok(textsOf(s.sheet).includes(`${s.no} / 09`), `${s.name} is numbered on its strip`);
     assert.ok(textsOf(s.sheet).includes(`032-2026-${s.no}`), `${s.name} carries its drawing number`);
   }
-  const cover = textsOf(set[0].sheet);
+  const index = textsOf(set[0].sheet);
   for (const s of set.slice(1)) {
-    assert.ok(cover.includes(s.no) && cover.includes(s.name), `the index lists ${s.no} ${s.name}`);
-    assert.ok(cover.includes(s.sheet.scaleLabel), `…with its scale ${s.sheet.scaleLabel}`);
+    assert.ok(index.includes(s.no) && index.includes(s.name), `the index lists ${s.no} ${s.name}`);
+    assert.ok(index.includes(s.sheet.scaleLabel), `…with its scale ${s.sheet.scaleLabel}`);
   }
-  assert.ok(cover.includes('First issue') && cover.includes('PT'), 'the revision table');
-  assert.ok(set[0].sheet.entities.some((e) => e.kind === 'poly' && e.fill === 'white'), 'the cover carries the perspective, fitted');
+  assert.ok(index.includes('First issue') && index.includes('PT'), 'the revision table');
+  assert.ok(set[0].sheet.entities.some((e) => e.kind === 'poly' && e.layer === 'MASK'), 'the 3D sheet carries the room in perspective');
   assert.deepEqual(wallDrawingSheets({ entries: [], project: HH_PROJECT, room: HH_ROOM, profile: P }), [], 'no cabinet, no set');
 });
 

@@ -22,7 +22,6 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engine/profile.js';
 import { backStandoff, unitPlanSpan, wallClearance } from '../src/engine/collision.js';
 import { migrateRoom, rectCorners, roomWalls } from '../src/engine/room.js';
-import { buildTopView } from '../src/engine/drawings/views.js';
 import { buildUnitCard } from '../src/engine/drawings/unitCard.js';
 // CHAT FIX 19.10.2026 (KIT_SITE_TRIM.lsp): an END panel and a PLINTH are CUT
 // `siteTrim` bigger for the joiner to scribe on site (the owner: *"side panele
@@ -158,16 +157,18 @@ test('a mitred return runs to the wall, not to the back of the carcass', () => {
 
 // ─── the drawing says so ────────────────────────────────────────────────────
 
+// AMENDED 22.10.2026 (T81 F9): the card's plan is the projector's and the
+// card draws the wall behind it (`buildTopView` retired, kasacja): the same
+// wall, the gap's width beyond the back, as wide as the unit and its gap.
 test('the top view draws the wall, with the gap to it', () => {
   const r = computeCabinet({
     type: 'BUD', width: 600, height: 770, depth: 558, unit_num: '01', doors: { count: 1, hinge: 'L' },
   }, P);
-  const view = buildTopView(r, { unitNum: '01', profile: P });
-  // In the plan the back of the carcass is at y = depth; the wall is one
-  // clearance beyond it.
-  const wall = view.entities.find((e) => e.kind === 'line' && Math.abs(e.y1 - (558 + GAP)) < 1e-9);
+  const card = buildUnitCard(r, { profile: P, unitNum: '01' });
+  const wall = card.entities.find((e) => e.kind === 'line' && e.layer === 'BUILDING');
   assert.ok(wall, 'no wall line — the plan would show the cabinet standing on nothing');
   assert.equal(wall.y1, wall.y2, 'and it is a wall, not a diagonal');
+  assert.equal(Math.abs(wall.x2 - wall.x1), 600 + 2 * GAP, 'as wide as the unit and its gap either side');
 });
 
 test('the production card puts a NUMBER on the gap', () => {

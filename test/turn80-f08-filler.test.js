@@ -99,18 +99,26 @@ test('F8 · the PDF section: the frame\'s rails cut and its stile seen, 19 above
   const st = buildStation(group, at, { room: S().project.room, worktops: S().worktopsOf().map((w) => w.geometry), profile: P(), ctx });
   const of = (k) => st.entities.filter((e) => e.meta?.inframe === k);
   const base = 100;
-  const [stile] = of('stile');
-  assert.deepEqual([stile.x, stile.y, stile.w, stile.h], [10 + 558, base - 19, 25, 770 + 38], 'the frame 25 x 808 beside the carcass face');
-  const [bottom] = of('rail-bottom');
+  // AMENDED 22.10.2026 (T81 F6): the frame on the section is the FRAME board
+  // itself, through the projector (*"zalezy mi zebys rysowal w pdf 1 do 1 co
+  // mamy na cabinet core"*): the knife cuts its two rails, one bar each, and
+  // sees its stile beyond the opening. T80's numbers hold.
+  const frame = st.entities.filter((e) => e.src === `${ids.a}:FRAME` && (e.kind === 'rect' || e.kind === 'line'));
+  const xs = frame.flatMap((e) => (e.kind === 'rect' ? [e.x, e.x + e.w] : [e.x1, e.x2]));
+  const ys = frame.flatMap((e) => (e.kind === 'rect' ? [e.y, e.y + e.h] : [e.y1, e.y2]));
+  assert.deepEqual([Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)],
+    [10 + 558, base - 19, 25, 770 + 38], 'the frame 25 x 808 beside the carcass face');
+  assert.ok(frame.some((e) => e.kind === 'line' && !e.cut), 'the stile, seen beyond the opening');
+  const [bottom, top] = frame.filter((e) => e.kind === 'rect' && e.cut && e.pen === 'CUT').sort((p, q) => p.y - q.y);
   assert.deepEqual([bottom.y, bottom.h], [base - 19, 38], 'the bottom rail: 19 under the carcass, its lip and the bottom board');
-  const [top] = of('rail-top');
   assert.deepEqual([top.y, top.h], [base + 770 - 19, 38]);
   const [filler] = of('filler');
   assert.deepEqual([filler.x, filler.y, filler.w, filler.h], [10 + 18, base + 770, 558 - 18, 19], 'behind the top rail, over the carcass top');
   assert.ok(of('filler-hatch').length > 5, 'hatched');
   assert.equal(of('filler-label')[0].value ?? of('filler-label')[0].text, 'site filler 19 (timber)');
   // The inset door is drawn where the engine put it: 22, flush with the frame's face, 3 of air behind.
-  const door = st.entities.find((e) => e.layer === 'DOORS' && !e.meta?.inframe && e.kind === 'rect');
+  // AMENDED 22.10.2026 (T81 F6): the knife through the run cuts the wall unit's door too, so the base door is named by its unit.
+  const door = st.entities.find((e) => e.layer === 'DOORS' && !e.meta?.inframe && e.kind === 'rect' && e.src?.startsWith(`${ids.a}:`));
   assert.ok(door);
   assert.equal(door.x + door.w, 10 + 558 + 25, 'flush with the frame\'s face');
   assert.equal(door.x, 10 + 558 + 3, '3 of air behind it');
@@ -128,10 +136,13 @@ test('F8 · the wall unit\'s section: its frame, 19 above and 19 below, no timbe
   const st = buildStation(group, { letter: 'A', x: m.x + 300, member: m }, { room: S().project.room, worktops: [], profile: P(), ctx });
   const wallMember = st.members.find((x) => x.unit.id === ids.w);
   assert.ok(wallMember, 'the knife cuts the wall unit above');
-  const stiles = st.entities.filter((e) => e.meta?.inframe === 'stile');
-  assert.equal(stiles.length, 2);
-  const wallStile = stiles.find((e) => e.y > 1000);
-  assert.deepEqual([wallStile.y, wallStile.h], [wallMember.base - 19, 720 + 38]);
+  // AMENDED 22.10.2026 (T81 F6): each frame is its FRAME board, cut by the
+  // knife (*"zalezy mi zebys rysowal w pdf 1 do 1 co mamy na cabinet core"*).
+  const frames = [...new Set(st.entities.filter((e) => e.src?.endsWith(':FRAME') && e.cut).map((e) => e.src))];
+  assert.equal(frames.length, 2, 'the base run\'s frame and the wall unit\'s');
+  const wallFrame = st.entities.filter((e) => e.src === `${ids.w}:FRAME` && (e.kind === 'rect' || e.kind === 'line'));
+  const ys = wallFrame.flatMap((e) => (e.kind === 'rect' ? [e.y, e.y + e.h] : [e.y1, e.y2]));
+  assert.deepEqual([Math.min(...ys), Math.max(...ys) - Math.min(...ys)], [wallMember.base - 19, 720 + 38]);
   assert.equal(st.entities.filter((e) => e.meta?.inframe === 'filler').length, 1, 'the timber only over the base unit');
 });
 

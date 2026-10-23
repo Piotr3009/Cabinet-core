@@ -4924,6 +4924,12 @@ export const DEFAULT_CABINET_PROFILE = {
     // worktop, cornice) clipped to the unit's width plus this margin each
     // side (the audit of 22.10, finding 2). T81 PROPOSED.
     card: { runMargin: 50 },
+    // The projector's two drawing numbers. A visible piece shorter than a
+    // quarter of a paper millimetre is not a line a printer can draw (what a
+    // 3 mm slot leaves of a board behind it); a face is "seen whole" when its
+    // outline is seen a hair (0.05 mm) inside, so a nearer edge lying ON the
+    // outline is no cover. T81 PROPOSED (verify/t81/DECISIONS.md 16).
+    projector: { minEdgePaperMm: 0.25, wholeFaceHairMm: 0.05 },
   },
 
   // ─── CNC sheet + DXF output ───
@@ -6503,6 +6509,7 @@ export function migrateCabinetProfile(profile) {
       hingeBar: { ...D.drawings.hingeBar },
       knobDiameter: D.drawings.knobDiameter,
       card: { ...D.drawings.card },
+      projector: { ...D.drawings.projector },
       // T78 F20 · the Cabineo choices and the gate, key by key, so a profile
       // saved before tonight cuts the puzzle and holds this gate shut too; the
       // layer names nested one level deeper (the pocket's by machining option).

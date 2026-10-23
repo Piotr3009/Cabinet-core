@@ -253,7 +253,7 @@ export function buildPlan(entries, {
     const drawn = projectRun(group, {
       view: 'plan', cut, mode: 'fronts', profile, frontTypeOf, shakerFrame,
       hiddenAs: (s) => s.role === 'plinth',
-      minEdge: ctx.mm(0.25),
+      minEdge: ctx.mm(profile.drawings.projector.minEdgePaperMm),
     });
     for (const e of drawn.entities) entities.push(throughWall(e, wall));
     for (const e of unitNumbers(group, { view: 'plan', profile, ctx })) entities.push(throughWall(e, wall));

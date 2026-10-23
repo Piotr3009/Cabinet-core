@@ -92,7 +92,7 @@ export function buildStation(group, station, {
   const far = Math.max(station.x, ...members.map((m) => m.x + (Number(m.width) || 0)));
   const drawn = projectRun(group, {
     view: 'section', cut: station.x, beyond: [station.x, far], mode: 'fronts', profile, worktops, frontTypeOf, shakerFrame,
-    minEdge: ctx.mm(0.25),
+    minEdge: ctx.mm(profile.drawings.projector.minEdgePaperMm),
   });
   entities.push(...drawn.entities);
   // ─── T80 F8 · THE FILLER ON THE SECTION ────────────────────────────────

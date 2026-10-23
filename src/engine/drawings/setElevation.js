@@ -88,7 +88,7 @@ function projectedRun(group, {
     view: 'front', mode, profile, worktops, frontTypeOf, shakerFrame,
     // A piece shorter than a quarter of a paper millimetre is not a line a
     // printer can draw: what a 3 mm slot leaves of a board behind it.
-    minEdge: ctx ? ctx.mm(0.25) : 0,
+    minEdge: ctx ? ctx.mm(profile.drawings.projector.minEdgePaperMm) : 0,
   });
   entities.push(...drawn.entities);
   entities.push(...unitNumbers(group, { view: 'front', mode, profile, ctx }));

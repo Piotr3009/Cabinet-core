@@ -31,6 +31,17 @@ export const LICENSED = {
   },
 };
 
+// After the gates, the fronts sheet's two drawing numbers (the 0.25 paper mm a printed piece needs, the 0.05 mm hair
+// a face is seen whole by) moved from the code into the profile, values unchanged (the run's rule 3: a new number
+// goes into profile.js under drawings with a source line).
+LICENSED['src/engine/profile.js'] = {
+  why: `T81 F3: profile.drawings.projector { minEdgePaperMm 0.25, wholeFaceHairMm 0.05 }, T81 PROPOSED, merged from the `
+    + `code's defaults; computeCabinet reads no drawings key. ${OWNER}`,
+  gates: [],
+};
+LICENSED['src/engine/drawings/setPlan.js'] = { why: `T81 F3: the plan reads minEdgePaperMm from the profile. ${OWNER}`, gates: [] };
+LICENSED['src/engine/drawings/setSection.js'] = { why: `T81 F3: a section reads minEdgePaperMm from the profile. ${OWNER}`, gates: [] };
+
 export const LIVENESS = {};
 
 export const GOLDENS = [];

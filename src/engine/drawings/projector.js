@@ -1227,7 +1227,7 @@ function renderScene(scene, V, {
   const emptySet = new Set();
   const wholeFronts = [];
   if (V.ortho) {
-    const HAIR = 0.05;
+    const HAIR = profile.drawings.projector.wholeFaceHairMm;
     for (const f of faces) {
       const s = f.solid;
       const leaf = s.front && s.kind === 'board';

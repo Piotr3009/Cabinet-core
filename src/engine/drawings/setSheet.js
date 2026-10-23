@@ -375,7 +375,9 @@ export function keyPlan(zones, { room = null, highlight = null, arrow = true }, 
         P(wl.end.x + wl.inward.x * depth, wl.end.y + wl.inward.y * depth),
         P(wl.start.x + wl.inward.x * depth, wl.start.y + wl.inward.y * depth),
       ];
-      out.push({ ...poly('DOORS', q, { fill: '#f4e6f4' }), pen: 'THIN' });
+      // T81 F10: the band is the key plan's convention, not a front: named as
+      // the legend's swatches are, so a census of a sheet leaves it out by name.
+      out.push({ ...poly('DOORS', q, { fill: '#f4e6f4' }), pen: 'THIN', meta: 'key-plan' });
       if (arrow) {
         const mx = (wl.start.x + wl.end.x) / 2; const my = (wl.start.y + wl.end.y) / 2;
         const a0 = P(mx + wl.inward.x * s * 16, my + wl.inward.y * s * 16);

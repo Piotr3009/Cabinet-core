@@ -1,0 +1,65 @@
+T81 WALK: THE DRAWINGS ARE THE MODEL (scripts/t81-walk.mjs)
+walked 2026-10-23 00:46 UTC, HEAD e2428d5, http://127.0.0.1:4173/
+Every line: PASS or FAIL (the gesture, what was expected, what was read), NOTE (a reading), FRAME (the file beside this one).
+The gestures are real clicks; every sheet is read off the glass and framed from that very SVG at 4 px per paper mm.
+
+NOTE   the build under the mouse | the repo's HEAD e2428d5; url http://127.0.0.1:4173/
+NOTE   THE STAGE (the T80 walk's kitchen and the project's knob, through the store) | [["BUD","01",1000,600],["BUD","02",1600,800],["BUDR2","DR01",2400,500],["WUD","WU01",1000,600]]
+PASS   Settings > Settings...: FRONTS, In-frame pressed (a real click) | expect: In-frame lit | observed: ["inframe"]
+NOTE   the engine's own counts for wall A (node, the same stage): leaves, hinges the ladder hangs on doors, knob holes | {"hinges":12,"leaves":6,"knobs":6}
+NOTE   the drill summary's handles on the page | 6
+PASS   the sheet buttons, in the owner's order (*"najpierw 3d ... a na koncu wizualizacja"*) | expect: ["3D","Wall A . Fronts","Wall A . Without fronts","Wall A . X-ray","Plan . base units","Plan . wall units","Wall A . Sections A-A","Visualisation","Cut list and materials"] | observed: ["3D","Wall A . Fronts","Wall A . Without fronts","Wall A . X-ray","Plan . base units","Plan . wall units","Wall A . Sections A-A","Visualisation","Cut list and materials"]
+PASS   sheet 01 pressed: 3D | expect: its SVG on the glass | observed: 70971 chars
+FRAME  f10-01-3d.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   sheet 02 pressed: Wall A . Fronts | expect: its SVG on the glass | observed: 56747 chars
+FRAME  f10-02-fronts.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   sheet 03 pressed: Wall A . Without fronts | expect: its SVG on the glass | observed: 58154 chars
+FRAME  f10-03-no-fronts.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   sheet 04 pressed: Wall A . X-ray | expect: its SVG on the glass | observed: 115740 chars
+FRAME  f10-04-xray.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   sheet 05 pressed: Plan . base units | expect: its SVG on the glass | observed: 48751 chars
+FRAME  f10-05-plan-base.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   sheet 06 pressed: Plan . wall units | expect: its SVG on the glass | observed: 36433 chars
+FRAME  f10-06-plan-wall.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   sheet 07 pressed: Wall A . Sections A-A | expect: its SVG on the glass | observed: 57118 chars
+FRAME  f10-07-sections.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   sheet 08 pressed: Visualisation | expect: its SVG on the glass | observed: 690476 chars
+FRAME  f10-08-visualisation.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   sheet 09 pressed: Cut list and materials | expect: its SVG on the glass | observed: 67741 chars
+FRAME  f10-09-cut-list.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   fronts: one door rectangle per leaf | expect: 6 leaves | observed: 6 rects
+PASS   fronts: no carcass line inside any leaf (*"bez przebijania carcasow"*) | expect: none | observed: 0 leaves with a carcass line inside
+PASS   fronts: the hinge bars, one per hinge the engine hangs | expect: 12 | observed: 12
+PASS   fronts: the knob circles, one per drilled handle | expect: 6 | observed: 6
+PASS   fronts: the frame under in-frame | expect: FRAME_BOARD on the sheet | observed: 23 entities
+PASS   without fronts: no DOORS entity | expect: 0 | observed: 0
+PASS   without fronts: the drawer boxes | expect: SHELVES on the sheet | observed: 34
+PASS   X-ray: XRAY_FRONT and XRAY_CARCASE, and no painter's white | expect: both greys, no MASK | observed: {"front":12,"carcass":102,"mask":0}
+PASS   base plan: the plinth a dashed line, never solid | expect: its dashed edges | observed: 4 dashed SHELVES lines
+PASS   base plan: the knife's bars | expect: cut bars at 0.7 | observed: true
+PASS   sections: the runners beyond the cut | expect: RUNNERS on the sheet | observed: 3
+PASS   sections: the timber filler of T80 | expect: site filler 19 (timber) | observed: true
+PASS   unit numbers on 3D | expect: the units it shows numbered | observed: ["01","02","DR01","WU01"]
+PASS   unit numbers on Wall A . Fronts | expect: the units it shows numbered | observed: ["01","02","DR01","WU01"]
+PASS   unit numbers on Wall A . Without fronts | expect: the units it shows numbered | observed: ["01","02","DR01","WU01"]
+PASS   unit numbers on Wall A . X-ray | expect: the units it shows numbered | observed: ["01","02","DR01","WU01"]
+PASS   unit numbers on Plan . base units | expect: the units it shows numbered | observed: ["01","02","DR01"]
+PASS   unit numbers on Plan . wall units | expect: the units it shows numbered | observed: ["WU01"]
+PASS   unit numbers on Wall A . Sections A-A | expect: the units it shows numbered | observed: ["DR01"]
+PASS   the SVG is one group per layer (*"kazdy kolor zrob inny layer"*) | expect: one <g> per layer | observed: ["MASK","WORKTOP","BUILDING","CARCASE","FRAME_BOARD","XRAY_CARCASE","XRAY_FRONT","SHELVES","HINGES","DOORS","DOOR_SWING","HANDLES","HINGE_MARK","DIMENSIONS","SHEET_MUTED","FRAME_LIGHT","FRAME","UNIT_NUMBER"]
+PASS   the PDF: one page per sheet | expect: 9 | observed: 9
+PASS   the PDF: the layers a reader can switch | expect: an OCG per ink | observed: ["MASK","WORKTOP","BUILDING","CARCASE","FRAME_BOARD","DOORS","DOOR_SWING","HANDLES","SHEET_MUTED","FRAME_LIGHT","FRAME","UNIT_NUMBER","XRAY_CARCASE","XRAY_FRONT","SHELVES","HINGES","HINGE_MARK","DIMENSIONS","RUNNERS","LEG_BLOCK","VIEW_TITLE"]
+PASS   the card of 01: the Fronts row says the colour once | expect: F&B Card Room Green spray | observed: F&amp;B Card Room Green spray
+PASS   the card of 01: the frame clipped, the hinge bars, the knob | expect: FRAME_BOARD, HINGE_MARK, a knob | observed: {"frame":26,"bars":3,"knobs":1}
+FRAME  f10-12-card.png (297 x 420 mm at 4 px per mm: 1188 x 1680)
+PASS   Settings: Lay-on pressed (a real click) | expect: Lay-on lit | observed: ["layon"]
+PASS   lay-on fronts: no frame | expect: 0 FRAME_BOARD | observed: 0
+PASS   lay-on fronts: one door rectangle per leaf | expect: 6 | observed: 6
+PASS   lay-on fronts: the hinge bars | expect: 12 | observed: 12
+FRAME  f10-10-fronts-layon.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   lay-on sections: no frame, no timber | expect: neither | observed: {"frame":0,"timber":false}
+FRAME  f10-11-sections-layon.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+NOTE   console errors on the page | none
+
+FRAMES (13): f10-01-3d.png, f10-02-fronts.png, f10-03-no-fronts.png, f10-04-xray.png, f10-05-plan-base.png, f10-06-plan-wall.png, f10-07-sections.png, f10-08-visualisation.png, f10-09-cut-list.png, f10-13-pdf.txt, f10-12-card.png, f10-10-fronts-layon.png, f10-11-sections-layon.png
+T81: 40 steps, 40 pass, 0 fail

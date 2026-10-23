@@ -18,6 +18,7 @@
 // Pure functions: no React, no store imports.
 
 import { projectRun, unitNumbers } from './projector.js';
+import { drawingLayer } from './layers.js';
 import { entLine as line, entPoly as poly, entText as text } from './primitives.js';
 import { realWalls, roomWalls, openingsOnWall } from '../room.js';
 import { wallGroups, wallLabel } from './wallElevation.js';
@@ -184,9 +185,11 @@ export function buildPlan(entries, {
     const q = Array.isArray(w.outline) && w.outline.length >= 3
       ? w.outline.map(([x, z]) => at(wall, x, z))
       : [at(wall, w.x, 0), at(wall, w.x + w.w, 0), at(wall, w.x + w.w, w.d), at(wall, w.x, w.d)];
+    // T81 F8 (*"kazdy kolor zrob inny layer"*): the slab on its own layer,
+    // its outline and its fill the WORKTOP layer's.
     entities.push(which === 'wall'
-      ? { ...poly('CARCASE', q, { fill: '#f6f6f6' }), pen: 'THIN', solid: true }
-      : { ...poly('SHELVES', q), pen: 'HIDDEN', hidden: true });
+      ? { ...poly('WORKTOP', q, { fill: drawingLayer('WORKTOP').fill }), pen: 'THIN', solid: true }
+      : { ...poly('WORKTOP', q), pen: 'HIDDEN', hidden: true });
     // ─── T75 F5 · THE CUT-OUTS AND THE JOINT, ON THE SHEET ────────────────
     // *"A record is drawn on the worktop sheet of the T71 set"*: the plan seen
     // from above the worktop is where the slab is drawn, so each cut-out is a

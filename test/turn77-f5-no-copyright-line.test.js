@@ -234,6 +234,9 @@ export const NEW_FILES = [
   'scripts/t81-silhouettes.mjs',
   'scripts/t78-classify.d/f41-t81-f07.mjs',
   'test/turn81-f07-silhouettes.test.js',
+  // T81 F8 (22.10.2026): one ink, one layer
+  'scripts/t78-classify.d/f41-t81-f08.mjs',
+  'test/turn81-f08-layers.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

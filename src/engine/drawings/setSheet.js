@@ -25,6 +25,7 @@ import {
 } from './primitives.js';
 import { realWalls } from '../room.js';
 import { wallLabel } from './wallElevation.js';
+import { drawingLayer } from './layers.js';
 
 /** The A3 landscape every set sheet is printed on. */
 export function setPage(profile) {
@@ -400,6 +401,12 @@ export const SET_LEGEND = [
   ['box', 'HINGES', 'Hardware, appliance space'],
   ['line', 'BUILDING', 'Building (walls, floor, ceiling)'],
   ['line', 'DIMENSIONS', 'Dimensions in mm'],
+  // T81 F8: the inks the projector's sheets added (*"zostaw nasze, tylko dodaj brakujace"*).
+  ['bar', 'HINGE_MARK', 'Hinge, on the hinge edge'],
+  ['slab', 'WORKTOP', 'Worktop'],
+  ['line', 'FRAME_BOARD', 'Frame (in-frame)'],
+  ['line', 'XRAY_FRONT', 'Fronts, X-ray'],
+  ['line', 'XRAY_CARCASE', 'Carcass, X-ray'],
 ];
 
 function legendBlock(zones, rows, y0) {
@@ -416,6 +423,8 @@ function legendBlock(zones, rows, y0) {
     if (kind === 'dash') out.push({ ...line(layer, x, yy, x + 8, yy), pen: 'HIDDEN', hidden: true, meta: 'legend' });
     if (kind === 'text') out.push({ ...text(layer, x + 4, yy, '01', 2.4), weight: 'bold', meta: 'legend' });
     if (kind === 'box') out.push({ ...rect(layer, x, yy - 1.5, 8, 3), pen: 'THIN', meta: 'legend' });
+    if (kind === 'bar') out.push({ ...rect(layer, x + 3.6, yy - 1.5, 0.8, 3), fill: drawingLayer(layer).fill, noStroke: true, meta: 'legend' });
+    if (kind === 'slab') out.push({ ...rect(layer, x, yy - 1, 8, 2), pen: 'THIN', fill: drawingLayer(layer).fill, meta: 'legend' });
     out.push(text('FRAME', x + 10.5, yy, name, 2, 'left'));
   });
   return { entities: out, bottom: y0 - 1.5 - rows.length * 4.2 };

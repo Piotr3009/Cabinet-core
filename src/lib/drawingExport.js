@@ -3,7 +3,7 @@ import jsPDFDefault from 'jspdf';
 // turn 3) and it lives in src/lib/ for the same reason jsPDF does: the drawing
 // ENGINE stays dependency-free and testable in node (CLAUDE.md rule 2).
 import JSZip from 'jszip';
-import { drawingLayer, penWidth } from '../engine/drawings/layers.js';
+import { drawingLayer, layerGroups, penWidth } from '../engine/drawings/layers.js';
 import { sheetToSvg } from '../engine/drawings/svg.js';
 // TURN 40 (CLAUDE.md F5): the wall set's DXF, which is the ONE drawing path in
 // this app that ships text — see engine/drawings/dxf.js for why it is a
@@ -128,6 +128,64 @@ function newDoc(sheet) {
   });
 }
 
+// ─── T81 F8 · THE LAYERS, AS THE PDF'S OWN ───────────────────────────────
+// The owner, 22.10.2026 (22:56): *"6 nie export do dxf, zrob layery wedlug
+// cabinet core"*. Every layer a sheet draws becomes one named optional content
+// group, the layers a PDF reader lists and switches. jsPDF 2.5 has no public
+// call for them, so they are written through its own document events: one
+// /OCG object per layer before the resource dictionary, the /Properties that
+// names them in it, the catalog's /OCProperties, and each layer's drawing
+// marked `/OC /<tag> BDC ... EMC` on the page.
+const OCG = new WeakMap();
+
+function optionalContent(doc) {
+  if (OCG.has(doc)) return OCG.get(doc);
+  const api = doc.internal;
+  if (!api?.events?.subscribe || typeof api.newObject !== 'function' || typeof api.write !== 'function') {
+    OCG.set(doc, null);
+    return null;
+  }
+  const names = [];
+  const objs = new Map();
+  const tag = (name) => `CC${names.indexOf(name) + 1}`;
+  const refs = () => names.map((name) => `${objs.get(name)} 0 R`).join(' ');
+  api.events.subscribe('putResources', () => {
+    for (const name of names) {
+      objs.set(name, api.newObject());
+      api.write(`<< /Type /OCG /Name (${name}) >>`);
+      api.write('endobj');
+    }
+  });
+  // Written inside jsPDF's own /XObject dictionary, after every image it
+  // lists: that dictionary is closed, the layers' /Properties stand beside it,
+  // and an empty dictionary under a key no reader asks for takes jsPDF's own
+  // closing bracket. The image writer subscribes when the first picture is
+  // drawn, so this one is subscribed again as each build begins, to run last.
+  const properties = () => {
+    if (!names.length) return;
+    api.write(`>> /Properties << ${names.map((name) => `/${tag(name)} ${objs.get(name)} 0 R`).join(' ')} >> /CCLayers <<`);
+  };
+  let token = null;
+  api.events.subscribe('buildDocument', () => {
+    if (token) api.events.unsubscribe(token);
+    token = api.events.subscribe('putXobjectDict', properties);
+  });
+  api.events.subscribe('putCatalog', () => {
+    if (!names.length) return;
+    api.write(`/OCProperties << /OCGs [${refs()}] /D << /Name (Cabinet Core) /Order [${refs()}] /ON [${refs()}] /OFF [] >> >>`);
+  });
+  const oc = {
+    names,
+    begin(name) {
+      if (!names.includes(name)) names.push(name);
+      api.write(`/OC /${tag(name)} BDC`);
+    },
+    end() { api.write('EMC'); },
+  };
+  OCG.set(doc, oc);
+  return oc;
+}
+
 /** One laid-out sheet onto the CURRENT page of a jsPDF document. */
 function drawSheet(doc, sheet) {
   const { width, height } = sheet;
@@ -136,75 +194,81 @@ function drawSheet(doc, sheet) {
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, width, height, 'F');
 
-  for (const e of sheet.entities) {
-    const L = drawingLayer(e.layer);
-    const [r, g, b] = hexToRgb(L.colour);
-    doc.setDrawColor(r, g, b);
-    doc.setTextColor(r, g, b);
-    // T41-F5a: the same single resolver the SVG uses, so the PDF and the
-    // screen cannot disagree about how heavy a line is.
-    doc.setLineWidth(penWidth(e));
-    const dash = !e.solid && (e.hidden || L.dash) ? (L.dash || [5, 3]) : null;
-    // setLineDashPattern is jsPDF 2.x; guarded because a dashed line that
-    // throws would cost the whole document.
-    if (typeof doc.setLineDashPattern === 'function') doc.setLineDashPattern(dash || [], 0);
+  // T81 F8: the layers in the pen order the table gives, each one group.
+  const oc = optionalContent(doc);
+  for (const [layer, ents] of layerGroups(sheet.entities)) {
+    if (oc) oc.begin(layer);
+    for (const e of ents) {
+      const L = drawingLayer(e.layer);
+      const [r, g, b] = hexToRgb(L.colour);
+      doc.setDrawColor(r, g, b);
+      doc.setTextColor(r, g, b);
+      // T41-F5a: the same single resolver the SVG uses, so the PDF and the
+      // screen cannot disagree about how heavy a line is.
+      doc.setLineWidth(penWidth(e));
+      const dash = !e.solid && (e.hidden || L.dash) ? (L.dash || [5, 3]) : null;
+      // setLineDashPattern is jsPDF 2.x; guarded because a dashed line that
+      // throws would cost the whole document.
+      if (typeof doc.setLineDashPattern === 'function') doc.setLineDashPattern(dash || [], 0);
 
-    if (e.kind === 'line') {
-      doc.line(e.x1, flip(e.y1), e.x2, flip(e.y2));
-    } else if (e.kind === 'rect') {
-      // T71: a filled rect fills; everything older strokes exactly as before.
-      if (e.fill) {
-        const [fr, fg, fb] = e.fill === 'white' ? [255, 255, 255] : hexToRgb(e.fill);
-        doc.setFillColor(fr, fg, fb);
-        doc.rect(e.x, flip(e.y + e.h), e.w, e.h, e.noStroke ? 'F' : 'FD');
-      } else {
-        doc.rect(e.x, flip(e.y + e.h), e.w, e.h, 'S');
-      }
-    } else if (e.kind === 'circle') {
-      doc.circle(e.cx, flip(e.cy), e.r, 'S');
-    } else if (e.kind === 'poly') {
-      // T71: a closed run of points; filled where the sheet says so (the
-      // perspective's faces, the arrowheads). `lines` takes deltas.
-      const pts = e.pts || [];
-      if (pts.length >= 2) {
-        const [x0, y0] = pts[0];
-        const deltas = [];
-        for (let i = 1; i < pts.length; i += 1) deltas.push([pts[i][0] - pts[i - 1][0], -(pts[i][1] - pts[i - 1][1])]);
-        let style = 'S';
+      if (e.kind === 'line') {
+        doc.line(e.x1, flip(e.y1), e.x2, flip(e.y2));
+      } else if (e.kind === 'rect') {
+        // T71: a filled rect fills; everything older strokes exactly as before.
         if (e.fill) {
           const [fr, fg, fb] = e.fill === 'white' ? [255, 255, 255] : hexToRgb(e.fill);
           doc.setFillColor(fr, fg, fb);
-          style = e.noStroke ? 'F' : 'FD';
+          doc.rect(e.x, flip(e.y + e.h), e.w, e.h, e.noStroke ? 'F' : 'FD');
+        } else {
+          doc.rect(e.x, flip(e.y + e.h), e.w, e.h, 'S');
         }
-        doc.lines(deltas, x0, flip(y0), [1, 1], style, !e.open);
+      } else if (e.kind === 'circle') {
+        doc.circle(e.cx, flip(e.cy), e.r, 'S');
+      } else if (e.kind === 'poly') {
+        // T71: a closed run of points; filled where the sheet says so (the
+        // perspective's faces, the arrowheads). `lines` takes deltas.
+        const pts = e.pts || [];
+        if (pts.length >= 2) {
+          const [x0, y0] = pts[0];
+          const deltas = [];
+          for (let i = 1; i < pts.length; i += 1) deltas.push([pts[i][0] - pts[i - 1][0], -(pts[i][1] - pts[i - 1][1])]);
+          let style = 'S';
+          if (e.fill) {
+            const [fr, fg, fb] = e.fill === 'white' ? [255, 255, 255] : hexToRgb(e.fill);
+            doc.setFillColor(fr, fg, fb);
+            style = e.noStroke ? 'F' : 'FD';
+          }
+          doc.lines(deltas, x0, flip(y0), [1, 1], style, !e.open);
+        }
+      } else if (e.kind === 'image' && e.href) {
+        // T71: the render on the visualisation sheet. A data URL from the scene;
+        // anything jsPDF cannot read is skipped rather than failing the booklet.
+        try {
+          doc.addImage(e.href, e.x, flip(e.y + e.h), e.w, e.h);
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.warn('[drawings] image skipped', err);
+        }
+      } else if (e.kind === 'text') {
+        if (typeof doc.setLineDashPattern === 'function') doc.setLineDashPattern([], 0);
+        // jsPDF sizes text in POINTS whatever the document unit is.
+        doc.setFontSize(e.height * 2.8346);
+        const opts = { align: e.align === 'left' ? 'left' : (e.align === 'right' ? 'right' : 'center'), baseline: 'middle' };
+        if (e.rotate) opts.angle = -e.rotate;
+        // T71: a masked text stands on white, so a number can sit on a line.
+        if (e.mask && !e.rotate) {
+          const mw = String(e.text).length * e.height * 0.62 + e.height * 0.6;
+          const mh = e.height * 1.3;
+          const mx = e.align === 'left' ? e.x - e.height * 0.3 : (e.align === 'right' ? e.x - mw + e.height * 0.3 : e.x - mw / 2);
+          doc.setFillColor(255, 255, 255);
+          doc.rect(mx, flip(e.y) - mh / 2, mw, mh, 'F');
+        }
+        if (e.colour) { const [cr, cg, cb] = hexToRgb(e.colour); doc.setTextColor(cr, cg, cb); }
+        doc.setFont(undefined, e.weight === 'bold' ? 'bold' : 'normal');
+        doc.text(String(e.text), e.x, flip(e.y), opts);
       }
-    } else if (e.kind === 'image' && e.href) {
-      // T71: the render on the visualisation sheet. A data URL from the scene;
-      // anything jsPDF cannot read is skipped rather than failing the booklet.
-      try {
-        doc.addImage(e.href, e.x, flip(e.y + e.h), e.w, e.h);
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.warn('[drawings] image skipped', err);
-      }
-    } else if (e.kind === 'text') {
-      if (typeof doc.setLineDashPattern === 'function') doc.setLineDashPattern([], 0);
-      // jsPDF sizes text in POINTS whatever the document unit is.
-      doc.setFontSize(e.height * 2.8346);
-      const opts = { align: e.align === 'left' ? 'left' : (e.align === 'right' ? 'right' : 'center'), baseline: 'middle' };
-      if (e.rotate) opts.angle = -e.rotate;
-      // T71: a masked text stands on white, so a number can sit on a line.
-      if (e.mask && !e.rotate) {
-        const mw = String(e.text).length * e.height * 0.62 + e.height * 0.6;
-        const mh = e.height * 1.3;
-        const mx = e.align === 'left' ? e.x - e.height * 0.3 : (e.align === 'right' ? e.x - mw + e.height * 0.3 : e.x - mw / 2);
-        doc.setFillColor(255, 255, 255);
-        doc.rect(mx, flip(e.y) - mh / 2, mw, mh, 'F');
-      }
-      if (e.colour) { const [cr, cg, cb] = hexToRgb(e.colour); doc.setTextColor(cr, cg, cb); }
-      doc.setFont(undefined, e.weight === 'bold' ? 'bold' : 'normal');
-      doc.text(String(e.text), e.x, flip(e.y), opts);
     }
+    if (oc) oc.end();
   }
   return doc;
 }
@@ -339,7 +403,9 @@ export async function exportWallDrawingsDxf(sheets, { project }) {
   for (const page of pages) {
     const name = `${slug(page.name, 'sheet')}-autocad-only.dxf`;
     names.push(name);
-    zip.file(name, sheetToDxf(page.sheet));
+    // T81 F8: the painter's white is a fill with no stroke; R12 has no word for
+    // a fill, so it leaves the file as dxf.js leaves every fill (no outline).
+    zip.file(name, sheetToDxf({ ...page.sheet, entities: (page.sheet.entities || []).filter((e) => e.layer !== 'MASK') }));
   }
   // The warning travels with the files as well as ON them, because the person
   // who unzips this is not always the person who opens a sheet.

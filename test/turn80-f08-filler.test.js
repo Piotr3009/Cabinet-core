@@ -117,7 +117,8 @@ test('F8 · the PDF section: the frame\'s rails cut and its stile seen, 19 above
   assert.ok(of('filler-hatch').length > 5, 'hatched');
   assert.equal(of('filler-label')[0].value ?? of('filler-label')[0].text, 'site filler 19 (timber)');
   // The inset door is drawn where the engine put it: 22, flush with the frame's face, 3 of air behind.
-  const door = st.entities.find((e) => e.layer === 'DOORS' && !e.meta?.inframe && e.kind === 'rect');
+  // AMENDED 22.10.2026 (T81 F6): the knife through the run cuts the wall unit's door too, so the base door is named by its unit.
+  const door = st.entities.find((e) => e.layer === 'DOORS' && !e.meta?.inframe && e.kind === 'rect' && e.src?.startsWith(`${ids.a}:`));
   assert.ok(door);
   assert.equal(door.x + door.w, 10 + 558 + 25, 'flush with the frame\'s face');
   assert.equal(door.x, 10 + 558 + 3, '3 of air behind it');

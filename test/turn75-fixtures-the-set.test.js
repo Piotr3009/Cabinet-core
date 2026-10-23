@@ -19,6 +19,7 @@
 // feature of the part is read off the sheets against the engine's own cut.
 
 import test from 'node:test';
+import { DRAWING_LAYERS } from '../src/engine/drawings/layers.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
@@ -108,7 +109,9 @@ function assertCutRow(texts, unit, panelId) {
 }
 
 /** The plan's filled slabs (the worktop seen below the wall cut). */
-const slabPolys = (sheet) => sheet.entities.filter((e) => e.kind === 'poly' && e.fill === '#f6f6f6' && e.solid);
+// AMENDED 22.10.2026 (T81 F8): the slab on the wall plan is on its own ink, the
+// WORKTOP layer, its fill the layer's (*"kazdy kolor zrob inny layer"*).
+const slabPolys = (sheet) => sheet.entities.filter((e) => e.kind === 'poly' && e.layer === 'WORKTOP' && e.fill === DRAWING_LAYERS.WORKTOP.fill && e.solid);
 
 /** A poly's size in the room's millimetres, at its sheet's scale. */
 function worldSize(e, sheet) {
@@ -224,7 +227,8 @@ test('T75 set · Herbal Hill through the store: his nine sheets, his slab on the
     '08 Visualisation', '09 Cut list and materials',
   ]);
   const fronts = sheetOf(set, 'fronts');
-  assert.equal(fronts.sheet.entities.filter((e) => e.kind === 'rect' && e.fill === '#f3f3f3').length, 1, 'one slab on the front view');
+  // AMENDED 22.10.2026 (T81 F8): the legend's WORKTOP swatch wears the slab's tint (`meta: 'legend'`) and is not a slab.
+  assert.equal(fronts.sheet.entities.filter((e) => e.kind === 'rect' && e.fill === '#f3f3f3' && e.meta !== 'legend').length, 1, 'one slab on the front view');
 });
 
 test('T75 set · the corner kitchen: the corners the engine solved, the joints and the cut-out on the plan, the post on the cut list', () => {

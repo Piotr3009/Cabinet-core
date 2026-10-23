@@ -83,10 +83,64 @@ export const DRAWING_LAYERS = {
   // What the client supplies and the workshop builds around: the dishwasher,
   // the fridge, the sink. Blue, as the owner's set draws them (ACI 5).
   APPLIANCE: { aci: 5, colour: '#1A3CE6', width: 0.18, pen: 'THIN', dash: [4, 3] },
+  // ─── T81 F8: ONE INK, ONE LAYER ─────────────────────────────────────────
+  // The owner, 22.10.2026 (22:56): *"5 zostaw nasze, tylko dodaj brakujace
+  // (kazdy kolor zrob inny layer)"*. Every layer above keeps its colour and its
+  // pen; these are the inks the projector's sheets carry that no layer named.
+  // A layer that fills says with what (`fill`), so no entity carries a colour
+  // of its own. The colours are T81 PROPOSED, as CLAUDE.md T81 F8 lists them.
+  // The hinge on the fronts sheet: a solid black bar, 6 x 70, on the hinge
+  // edge at the cup, as the owner's DXF draws it (*"podobnie jak na moim dxf"*).
+  HINGE_MARK: { aci: 250, colour: '#111111', fill: '#111111', width: 0.13, pen: 'FINE' },
+  // The worktop's outline and its fill: green, and not the handles' green. The
+  // tint is the slab's as the set has always drawn it on an elevation (T71,
+  // '#f3f3f3') and its cut the section's (T71, '#d9d9d9').
+  WORKTOP: { aci: 92, colour: '#2E8B57', fill: '#f3f3f3', cutFill: '#d9d9d9', width: 0.25, pen: 'VISIBLE' },
+  // The X-ray's two greys, from the room's fades over white
+  // (`appearance.xray.front` 0.42 and `.carcass` 0.2, 3d/UnitView.jsx).
+  XRAY_FRONT: { aci: 252, colour: '#9A9A9A', width: 0.18, pen: 'THIN' },
+  XRAY_CARCASE: { aci: 254, colour: '#C9C9C9', width: 0.18, pen: 'THIN' },
+  // The painter's white under every solid of a sheet: a fill, never a stroke.
+  MASK: { aci: 7, colour: '#ffffff', fill: '#ffffff', width: 0, pen: 'FINE' },
+  // The frame of an in-frame run: front material, a darker front ink, so the
+  // frame and the fronts set in it can be told apart in a legend.
+  FRAME_BOARD: { aci: 216, colour: '#5A2D5A', width: 0.35, pen: 'VISIBLE' },
 };
 
 export function drawingLayer(name) {
   return DRAWING_LAYERS[name] || DRAWING_LAYERS.CARCASE;
+}
+
+/**
+ * THE PEN ORDER (T81 F8): the order a sheet's layers are painted in, one group
+ * each, in the SVG and in the PDF. The painter's white first, the slab's tint
+ * on it, the building and the boards, the X-ray's greys under the internals,
+ * the fronts and what rides on them, the measurements, the sheet's own
+ * furniture, and the words last so their white stands over every line. A layer
+ * not in this list paints after it, in the order the sheet first uses it.
+ */
+export const LAYER_ORDER = Object.freeze([
+  'MASK', 'WORKTOP', 'BUILDING', 'CARCASE', 'FRAME_BOARD', 'XRAY_CARCASE', 'XRAY_FRONT',
+  'SHELVES', 'RUNNERS', 'HINGES', 'LEG_BLOCK', 'DOORS', 'DOOR_SWING', 'HANDLES', 'HINGE_MARK',
+  'DIMENSIONS', 'SHEET_MUTED', 'FRAME_LIGHT', 'SHEET_CUT', 'FRAME', 'UNIT_NUMBER', 'APPLIANCE', 'VIEW_TITLE',
+]);
+
+/**
+ * A sheet's entities by layer, in the pen order: [[layer, entities], ...],
+ * each group in the order the sheet drew it. Every renderer paints from this.
+ */
+export function layerGroups(entities) {
+  const groups = new Map();
+  for (const e of entities || []) {
+    const name = e?.layer || 'FRAME';
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(e);
+  }
+  const rank = (name) => {
+    const i = LAYER_ORDER.indexOf(name);
+    return i < 0 ? LAYER_ORDER.length : i;
+  };
+  return [...groups.entries()].sort((a, b) => rank(a[0]) - rank(b[0]));
 }
 
 // ─── TURN 41 (F5a): THE PEN TABLE — WEIGHT IS A ROLE, NOT A NAME ────────────

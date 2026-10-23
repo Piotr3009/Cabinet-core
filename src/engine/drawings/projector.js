@@ -61,6 +61,7 @@ import { corniceSolids } from '../cornice.js';
 import { doorSwing, elevationOutline, frontDetail, panelStyle } from './frontElevation.js';
 import { frontDecorationElevation } from './frontDecorationDrawing.js';
 import { silhouetteMark } from './silhouettes.js';
+import { drawingLayer } from './layers.js';
 
 // ═══ THE NUMBERS OF THE KERNEL ═════════════════════════════════════════════
 
@@ -89,11 +90,6 @@ export function applianceLabel(unit) {
 
 // ═══ SMALL VECTOR AND POLYGON HELPERS ══════════════════════════════════════
 
-// The worktop's face on an elevation, tinted as the set has always tinted its
-// slab (T71, setElevation's run elevation: `fill: '#f3f3f3'`), and its cut on
-// a section as the section has always filled it (T71 setSection: '#d9d9d9').
-const SLAB_FILL = '#f3f3f3';
-const SLAB_CUT_FILL = '#d9d9d9';
 const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
@@ -1216,18 +1212,6 @@ function renderScene(scene, V, {
     }
   }
 
-  // ── the painter's white, under every line (CLAUDE.md F1 (c)); never on an X-ray ──
-  if (!xray) {
-    const masks = occluders.filter((o) => !o.reveal).map((o) => ({
-      kind: 'poly', layer: 'MASK', pts: o.p.ring, ...(o.p.holes.length ? { holes: o.p.holes } : {}),
-      fill: '#ffffff', noStroke: true, fillRole: 'mask', src: o.solid.key,
-      depth: Math.max(...o.p.ring.map((q) => o.p.depthAt(q)).filter(Number.isFinite)),
-    }));
-    masks.sort((a, b) => b.depth - a.depth);
-    for (const mk of masks) { delete mk.depth; entities.push(mk); }
-    census.masks = masks.length;
-  }
-
   // ── a front seen whole is one rectangle; so is a cut ──
   // In an orthographic view a front whose face toward the viewer is a
   // rectangle and is seen all round (tested a hair inside its outline, so a
@@ -1263,8 +1247,24 @@ function renderScene(scene, V, {
           if (got < Math.hypot(sB[0] - sA[0], sB[1] - sA[1]) - 1e-6) seen = false;
         }
       }
-      if (seen) wholeFronts.push({ s, x0, y0, x1, y1, cut: Boolean(f.cut) });
+      if (seen) wholeFronts.push({ s, x0, y0, x1, y1, cut: Boolean(f.cut), fid: f.id });
     }
+  }
+
+  // ── the painter's white, under every line (CLAUDE.md F1 (c)); never on an X-ray ──
+  // A slab written as its tinted rect is its own painter's fill (T81 F8: the
+  // WORKTOP layer's outline and fill), so it takes no white of its own.
+  if (!xray) {
+    const tinted = new Set(wholeFronts.filter((w) => w.s.kind === 'worktop').map((w) => w.fid));
+    const white = drawingLayer('MASK').fill;
+    const masks = occluders.filter((o) => !o.reveal && !tinted.has(o.id)).map((o) => ({
+      kind: 'poly', layer: 'MASK', pts: o.p.ring, ...(o.p.holes.length ? { holes: o.p.holes } : {}),
+      fill: white, noStroke: true, fillRole: 'mask', src: o.solid.key,
+      depth: Math.max(...o.p.ring.map((q) => o.p.depthAt(q)).filter(Number.isFinite)),
+    }));
+    masks.sort((a, b) => b.depth - a.depth);
+    for (const mk of masks) { delete mk.depth; entities.push(mk); }
+    census.masks = masks.length;
   }
 
   // ── the marks that ride on the fronts ──
@@ -1333,7 +1333,7 @@ function renderScene(scene, V, {
     } else if (mk.kind === 'bar') {
       if (pointCovered(V, index, [mk.x + mk.w / 2, mk.y + mk.h / 2, mk.z], skip)) continue;
       entities.push({
-        kind: 'rect', layer: 'HINGE_MARK', x: mk.x, y: mk.y, w: mk.w, h: mk.h, fill: '#111111', noStroke: true, src: mk.host, cupY: mk.cupY,
+        kind: 'rect', layer: 'HINGE_MARK', x: mk.x, y: mk.y, w: mk.w, h: mk.h, fill: drawingLayer('HINGE_MARK').fill, noStroke: true, src: mk.host, cupY: mk.cupY,
       });
     }
   }
@@ -1347,8 +1347,9 @@ function renderScene(scene, V, {
       || (Math.abs(e.x1 - e.x2) < 1e-6 && (Math.abs(e.x1 - x0) < 1e-6 || Math.abs(e.x1 - x1) < 1e-6)
         && Math.min(e.y1, e.y2) >= y0 - 1e-6 && Math.max(e.y1, e.y2) <= y1 + 1e-6));
     merged = merged.filter((e) => !on(e));
+    const W = drawingLayer('WORKTOP');
     // eslint-disable-next-line no-nested-ternary
-    const fill = xray || s.kind !== 'worktop' ? null : (cut ? SLAB_CUT_FILL : SLAB_FILL);
+    const fill = xray || s.kind !== 'worktop' ? null : (cut ? W.cutFill : W.fill);
     merged.push({
       kind: 'rect', layer: s.ink, pen: xray ? 'THIN' : (cut ? 'CUT' : 'VISIBLE'), solid: true, src: s.key,
       ...(s.panelId ? { part: s.panelId } : {}), ...(s.family ? { family: s.family } : {}), ...(cut ? { cut: true } : {}),

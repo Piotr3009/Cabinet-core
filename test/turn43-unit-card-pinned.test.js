@@ -38,19 +38,28 @@ const withoutWeights = (svg) => svg.replace(/stroke-width="[\d.]+"/g, 'stroke-wi
 /** Every weight in the file, in document order. */
 const weightsOf = (svg) => [...svg.matchAll(/stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
 
+// AMENDED 22.10.2026 (T81 F8): the SVG is one group per layer, in the pen order
+// the table gives (*"kazdy kolor zrob inny layer"*). The same elements, each one
+// character for character, regrouped: the pin reads the card's elements as a
+// sorted list, and the group tags are not geometry.
+const elementsOf = (svg) => svg.split('\n').filter((l) => !/^<\/?g\b/.test(l)).sort();
+/** The elements in that order, each with its own weight, keyed by its geometry. */
+const ordered = (svg) => svg.split('\n').filter((l) => !/^<\/?g\b/.test(l))
+  .map((l) => [withoutWeights(l), l]).sort((a, b) => (a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0))).map(([, l]) => l).join('\n');
+
 test('iron rule 4 — the card\'s GEOMETRY is byte-identical to the branch point', () => {
   const after = t43CardSvg();
   // Not "the same number of rectangles" and not "the same bounds": the same
   // STRING, with the one licensed channel masked out. Anything at all that
   // moved a coordinate, dropped an entity, added one, or changed a colour or a
   // dash fails here and names itself in the diff.
-  assert.equal(withoutWeights(after), withoutWeights(BEFORE),
+  assert.deepEqual(elementsOf(withoutWeights(after)), elementsOf(withoutWeights(BEFORE)),
     'the unit card does not move (delta (b) — stroke width — is masked; nothing else may differ)');
 });
 
 test('iron rule 4, DELTA (b) — the only thing that changed is the pen weight', () => {
-  const before = weightsOf(BEFORE);
-  const after = weightsOf(t43CardSvg());
+  const before = weightsOf(ordered(BEFORE));
+  const after = weightsOf(ordered(t43CardSvg()));
   assert.equal(before.length, after.length, 'the same number of strokes, in the same order');
   const ladder = new Set(Object.values(PEN));
   const moved = [];

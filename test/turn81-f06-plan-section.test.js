@@ -73,8 +73,8 @@ for (const inframe of [true, false]) {
     assert.ok(plinth.length >= 4, 'the plinth is on the plan');
     assert.ok(plinth.every((e) => e.kind === 'line' && e.hidden && e.pen === 'HIDDEN' && e.layer === 'SHELVES'), 'dashed, in the hidden pen');
     assert.equal(plan.entities.filter((e) => e.layer === 'MASK' && e.src === `${ids.a}:PLINTH`).length, 0, 'and it hides nothing');
-    // The worktop over the base run is above the base cut: today's hidden outline.
-    assert.ok(plan.entities.some((e) => e.kind === 'poly' && e.hidden && e.layer === 'SHELVES'), 'the worktop, dashed');
+    // The worktop over the base run is above the base cut: today's hidden outline (on its own ink since F8).
+    assert.ok(plan.entities.some((e) => e.kind === 'poly' && e.hidden && e.layer === 'WORKTOP'), 'the worktop, dashed');
     // The words: every cut unit numbered.
     const nums = plan.entities.filter((e) => e.kind === 'text' && e.layer === 'UNIT_NUMBER').map((e) => e.text).sort();
     assert.deepEqual(nums, ['01', '02', 'DR01']);

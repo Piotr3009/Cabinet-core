@@ -329,7 +329,8 @@ test('T71 · the worktop is the design layer\'s slab, and the set resolves it it
   const [slab] = worktops.map((w) => w.geometry || w);
   assert.ok(slab && slab.w > 3000, 'one slab over the six base units');
   const withSlab = setOf().find((s) => s.variant === 'fronts');
-  const slabs = (s) => s.sheet.entities.filter((e) => e.kind === 'rect' && e.fill === '#f3f3f3');
+  // AMENDED 22.10.2026 (T81 F8): the legend's WORKTOP swatch wears the slab's tint (`meta: 'legend'`) and is not a slab.
+  const slabs = (s) => s.sheet.entities.filter((e) => e.kind === 'rect' && e.fill === '#f3f3f3' && e.meta !== 'legend');
   assert.equal(slabs(withSlab).length, 1, 'the front view draws the worktop');
   // The same set, with the records on the design and no `worktops` argument.
   const resolved = wallDrawingSheets({

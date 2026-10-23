@@ -28,7 +28,8 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { PEN } from '../src/engine/drawings/layers.js';
 import { shakerSpec } from '../src/engine/shaker.js';
 import { buildUnitCard } from '../src/engine/drawings/unitCard.js';
-import { T43_CARD_RESULT, t43CardSvg } from './fixtures/t43-unit-card.mjs';
+import { projectRun } from '../src/engine/drawings/projector.js';
+import { T43_CARD_RESULT, T43_CARD_UNIT, t43CardSvg } from './fixtures/t43-unit-card.mjs';
 
 const BEFORE = readFileSync(new URL('./fixtures/t43-unit-card-before.svg', import.meta.url), 'utf8');
 
@@ -38,40 +39,30 @@ const withoutWeights = (svg) => svg.replace(/stroke-width="[\d.]+"/g, 'stroke-wi
 /** Every weight in the file, in document order. */
 const weightsOf = (svg) => [...svg.matchAll(/stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
 
-// AMENDED 22.10.2026 (T81 F8): the SVG is one group per layer, in the pen order
-// the table gives (*"kazdy kolor zrob inny layer"*). The same elements, each one
-// character for character, regrouped: the pin reads the card's elements as a
-// sorted list, and the group tags are not geometry.
-const elementsOf = (svg) => svg.split('\n').filter((l) => !/^<\/?g\b/.test(l)).sort();
-/** The elements in that order, each with its own weight, keyed by its geometry. */
-const ordered = (svg) => svg.split('\n').filter((l) => !/^<\/?g\b/.test(l))
-  .map((l) => [withoutWeights(l), l]).sort((a, b) => (a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0))).map(([, l]) => l).join('\n');
-
-test('iron rule 4 — the card\'s GEOMETRY is byte-identical to the branch point', () => {
-  const after = t43CardSvg();
-  // Not "the same number of rectangles" and not "the same bounds": the same
-  // STRING, with the one licensed channel masked out. Anything at all that
-  // moved a coordinate, dropped an entity, added one, or changed a colour or a
-  // dash fails here and names itself in the diff.
-  assert.deepEqual(elementsOf(withoutWeights(after)), elementsOf(withoutWeights(BEFORE)),
-    'the unit card does not move (delta (b) — stroke width — is masked; nothing else may differ)');
+test('iron rule 4 (T81 F9) · the card\'s GEOMETRY is the projector\'s, for this one cabinet, and nothing of its own', () => {
+  const W = Number(T43_CARD_RESULT.params.width);
+  const member = { unit: T43_CARD_UNIT, result: T43_CARD_RESULT, x: 0, base: 0, top: Number(T43_CARD_RESULT.params.height), width: W };
+  const group = { wall: 0, members: [member] };
+  const m = P.drawings.card.runMargin;
+  const of = (view, mode) => projectRun(group, { view, mode, profile: P, clipX: [-m, W + m], frontTypeOf: () => 'S' }).entities
+    .filter((e) => e.kind !== 'text').length;
+  const projected = of('front', 'fronts') + of('front', 'no-fronts') + of('top-of-card', 'fronts');
+  const card = buildUnitCard(T43_CARD_RESULT, { unitNum: '01', frontType: 'S', profile: P, arrangement: 'projection', unit: T43_CARD_UNIT });
+  // The building is the card's own context, as a sheet's floor is: the wall behind the plan, one line.
+  const geometry = card.entities.filter((e) => e.kind !== 'text' && e.layer !== 'DIMENSIONS' && e.layer !== 'VIEW_TITLE' && e.layer !== 'BUILDING');
+  assert.equal(card.entities.filter((e) => e.layer === 'BUILDING').length, 1, 'the wall behind the plan');
+  assert.equal(geometry.length, projected, 'the three views, stroke for stroke, and no composer\'s rectangle beside them');
+  assert.notEqual(withoutWeights(t43CardSvg()), withoutWeights(BEFORE), 'and the branch point\'s card is history');
 });
 
-test('iron rule 4, DELTA (b) — the only thing that changed is the pen weight', () => {
-  const before = weightsOf(ordered(BEFORE));
-  const after = weightsOf(ordered(t43CardSvg()));
-  assert.equal(before.length, after.length, 'the same number of strokes, in the same order');
+test('iron rule 4, DELTA (b) · every weight on the card is a rung of the ISO pen ladder', () => {
   const ladder = new Set(Object.values(PEN));
-  const moved = [];
-  for (let i = 0; i < before.length; i += 1) {
-    if (before[i] === after[i]) continue;
-    moved.push(`${before[i]} → ${after[i]}`);
-    assert.ok(ladder.has(after[i]), `${after[i]} is a rung of the ISO pen ladder`);
-  }
-  // Printed rather than counted: the audit reads this list by hand, and a
-  // silent count would be exactly the kind of claim this turn is about.
+  const after = weightsOf(t43CardSvg());
+  assert.ok(after.length > 0);
+  for (const w of after) assert.ok(ladder.has(w), `${w} is a rung of the ISO pen ladder`);
+  // The branch point's weights, for the record the audit reads.
   // eslint-disable-next-line no-console
-  if (moved.length) console.log(`      card stroke deltas: ${[...new Set(moved)].join(', ')}`);
+  console.log(`      card weights: ${[...new Set(after)].sort((a, b) => a - b).join(', ')} (branch point: ${[...new Set(weightsOf(BEFORE))].sort((a, b) => a - b).join(', ')})`);
 });
 
 test('iron rule 4, DELTA (a) — the card\'s shaker inset moves to the PROJECT', () => {
@@ -103,10 +94,18 @@ test('iron rule 4, DELTA (a) — the card\'s shaker inset moves to the PROJECT',
   assert.deepEqual(inner(85), [85]);
 });
 
-test('iron rule 4 — and the card still carries its HIDDEN LINES, which are its value', () => {
-  const after = t43CardSvg();
-  const dashed = [...after.matchAll(/<[a-z]+[^>]*stroke-dasharray[^>]*>/g)];
-  assert.ok(dashed.length > 0, 'a card without hidden lines is not a workshop sheet');
-  assert.equal(dashed.length, [...BEFORE.matchAll(/<[a-z]+[^>]*stroke-dasharray[^>]*>/g)].length,
-    'and exactly as many of them as before');
+// AMENDED 22.10.2026 (T81 F9): the card's FRONT is the fronts the room shows
+// and nothing behind them (*"bez przebijania carcasow, tylko to co widac za
+// frontami"*); what the hidden lines said is on the CARCASS view, solid, the
+// boards themselves, where the room shows them with the fronts off.
+test('iron rule 4 (T81 F9) · what the hidden lines said, the CARCASS view draws solid', () => {
+  const card = buildUnitCard(T43_CARD_RESULT, { unitNum: '01', frontType: 'S', profile: P, arrangement: 'projection', unit: T43_CARD_UNIT });
+  const inside = T43_CARD_RESULT.panels.filter((p) => p.box && (p.part === 'DRAWER-SIDE' || p.role === 'shelf'));
+  assert.ok(inside.length > 0, 'the fixture has an inside to show');
+  for (const p of inside) {
+    assert.ok(card.entities.some((e) => e.src === `${T43_CARD_UNIT.id}:${p.id}` && e.solid && !e.hidden), `${p.id}, solid`);
+  }
+  assert.equal(card.entities.filter((e) => e.hidden && e.layer !== 'DIMENSIONS').length, 0, 'no line through a front');
+  // The branch point's card drew them dashed behind its fronts.
+  assert.ok([...BEFORE.matchAll(/<[a-z]+[^>]*stroke-dasharray[^>]*>/g)].length > 0);
 });

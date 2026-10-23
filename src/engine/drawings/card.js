@@ -22,6 +22,11 @@ import { shakerFrameMm } from '../shaker.js';
 import { getUnitType } from '../types.js';
 import { formatMm } from '../format.js';
 
+/** "F&B F&B Card Room Green spray" said once: a word the label repeats at its start, dropped. */
+function systemOnce(label) {
+  return label ? String(label).replace(/^(\S+) \1 /, '$1 ') : label;
+}
+
 /**
  * A unit's production card, ready to render or to export.
  *
@@ -57,7 +62,9 @@ export function unitCardSheet({ result, unit, project = {}, profile, format = 'a
       // the board finish and the colour side by side because the two were kept
       // apart, which on a decor-carcass job read as "EGGER H1180 … / Hague" —
       // a decor the doors were not made of, next to the colour they were.
-      Fronts: finishes.front?.label || '-',
+      // T81 F9 (the audit of 22.10, finding 4): a colour's name often carries
+      // its system already ("F&B Card Room Green"), and the row said it twice.
+      Fronts: systemOnce(finishes.front?.label) || '-',
     },
   };
 
@@ -75,7 +82,7 @@ export function unitCardSheet({ result, unit, project = {}, profile, format = 'a
     for (const arrangement of CARD_ARRANGEMENTS) {
       laid.push(layoutSheet({
         drawing: buildUnitCard(result, {
-          unitNum, frontType: resolved.frontType, profile, arrangement, shakerFrame: shakerFrameMm(design, profile),
+          unitNum, frontType: resolved.frontType, profile, arrangement, shakerFrame: shakerFrameMm(design, profile), unit,
         }),
         format: paper,
         profile,

@@ -6,7 +6,7 @@ import { defaultParamsFor } from '../src/engine/types.js';
 import { buildFrontDecoration, DECORATIVE_FRONT_STYLES, defaultFrontDecoration } from '../src/engine/frontDecoration.js';
 import { frontDecorationLayers } from '../src/engine/cnc/frontOperations.js';
 import { buildFrontElevation } from '../src/engine/drawings/frontElevation.js';
-import { buildTopView } from '../src/engine/drawings/views.js';
+import { projectRun } from '../src/engine/drawings/projector.js';
 import { frontDecorationElevation, frontDecorationMachinings } from '../src/engine/drawings/frontDecorationDrawing.js';
 import { partDetailDrawing } from '../src/engine/drawings/partDetail.js';
 import { wallDrawingSheets } from '../src/engine/drawings/wallSheets.js';
@@ -40,13 +40,20 @@ test('decorative drawing reflects CNC X once for elevation, retains every polygo
   assert.deepEqual(panel.meta.frontDecoration.operations[0].points, POINTS, 'drawing leaves production geometry intact');
 });
 
+// AMENDED 22.10.2026 (T81 F9): the plan of a unit is the projector's
+// (`buildTopView` retired, kasacja); a face motif is still the elevation's only.
 test('decorative face reaches the elevation but not the plan projection', () => {
   const result = cabinet();
-  const before = buildTopView(result, { profile: P });
+  const unit = { id: 'deco', type: result.type, params: result.params, position: { wall: 0, x_mm: 0 } };
+  const group = { wall: 0, members: [{ unit, result, x: 0, base: 0, top: result.params.height, width: result.params.width }] };
+  const plan = () => projectRun(group, { view: 'top-of-card', mode: 'fronts', profile: P }).entities;
+  const before = plan();
   decorate(frontOf(result));
   const elevation = buildFrontElevation(result, { profile: P });
   assert.equal(elevation.entities.filter((e) => e.meta === 'front-decoration').length, 1);
-  assert.deepEqual(buildTopView(result, { profile: P }), before, 'a face motif is not a plan section');
+  assert.equal(projectRun(group, { view: 'front', mode: 'fronts', profile: P }).entities.filter((e) => e.meta === 'front-decoration').length, 1,
+    'the projector\'s front view carries it too');
+  assert.deepEqual(plan(), before, 'a face motif is not a plan section');
 });
 
 test('part detail uses the CNC back datum and explains face, absolute depth, start depth and cutter', () => {

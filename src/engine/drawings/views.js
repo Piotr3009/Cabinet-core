@@ -17,10 +17,10 @@
 //
 // Pure functions — no React, no store imports, no jsPDF.
 
-import { dimensionEntities, frontDetail, isFront, panelStyle } from './frontElevation.js';
+import { dimensionEntities, isFront, panelStyle } from './frontElevation.js';
 // Aliased on the way in — see the note at the top of primitives.js.
 import {
-  boundsOf, entCircle as circle, entLine as line, entRect as rect, entText as text,
+  boundsOf, entLine as line, entRect as rect, entText as text,
 } from './primitives.js';
 
 // ─── Front, carcass only ────────────────────────────────────────────────────
@@ -214,152 +214,8 @@ export function legMark(leg, { width, height }) {
 
 // ─── Top view ───────────────────────────────────────────────────────────────
 
-/**
- * Where a panel lands on the PLAN.
- *
- * The engine holds z = 0 at the wall and z = depth at the front face. The
- * AutoLISP's top view is the other way up — its y0 is the FRONT of the cabinet,
- * the back panel sits at y0 + depth, and the doors are drawn BELOW y0 at
- * `(- y0 doorGap gruboscDrzwi)`. That is the convention a joiner reads (the
- * face you stand at is nearest the bottom of the sheet), so the projection
- * flips: plan y = depth − z − d.
- *
- * A front at z = depth + gap therefore lands at y = −gap − thickness, exactly
- * where the LISP draws it, and the 3 mm CLAUDE.md asks to see is the gap
- * between the two rectangles rather than a number this file made up.
- */
-export function planBox(box, depth) {
-  return { x: box.x, y: depth - box.z - box.d, w: box.w, h: box.d };
-}
-
-/**
- * Build the plan of one unit.
- *
- * Looking DOWN: what you see is the top of the cabinet, so a piece is drawn
- * solid when its top face is up there with the top panel, and dashed when
- * something is over it. Fronts are always solid — they stand outside the
- * carcass and nothing covers them.
- */
-export function buildTopView(result, {
-  unitNum, frontType, profile, unitNumberHeight = null, shakerFrame = null,
-} = {}) {
-  const DR = profile.drawings;
-  const entities = [];
-  const W = result.params.width;
-  const H = result.params.height;
-  const D = result.params.depth;
-  const style = frontType || profile.front.defaultType;
-  const tol = 1;
-
-  const seen = new Set();
-  const push = (layer, box, hidden) => {
-    // Several pieces at the same height coincide exactly in plan — the partition
-    // under the top panel, three drawer fronts in one plane. Drawing each of
-    // them puts three identical rectangles on one line, which prints heavier
-    // than everything around it for no information at all.
-    const key = `${layer}|${hidden ? 'h' : 's'}|${box.x.toFixed(3)}|${box.y.toFixed(3)}|${box.w.toFixed(3)}|${box.h.toFixed(3)}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    // T43-F4: a panel in plan is a panel edge, exactly as it is in elevation.
-    entities.push({
-      ...rect(layer, box.x, box.y, box.w, box.h), hidden, pen: hidden ? 'HIDDEN' : 'VISIBLE',
-    });
-  };
-
-  for (const p of result.panels) {
-    if (!p.box || p.role === 'drawer_box') continue;
-    const plan = planBox(p.box, D);
-    // A front, an end panel and an infill all stand OUTSIDE the carcass in the
-    // plane of the doors: nothing is over them, and they are magenta.
-    if (isFront(p) || p.material_role === 'front' || p.role === 'end_panel' || p.role === 'infill') {
-      push('DOORS', plan, false);
-      continue;
-    }
-    push('CARCASE', plan, p.box.y + p.box.h < H - tol);
-  }
-
-  // The footprint, over everything — the same job drawFrontCarcaseOutline does
-  // on the elevation, and (T43-F4) the same weight.
-  entities.push({ ...rect('CARCASE', 0, 0, W, D), pen: 'OUTLINE' });
-
-  // ─── The wall, and the gap to it (turn 8, CLAUDE.md F3) ───
-  // Every unit stands `room.wallBackClearance` off the wall behind it, and a
-  // plan that draws the carcass hard against nothing does not say so. The line
-  // IS the wall; the gap between it and the back of the carcass is the 10 mm,
-  // at whatever scale the card came out at, and `topDimensions` puts a number
-  // on it.
-  const clearance = Math.max(0, Number(profile.room?.wallBackClearance) || 0);
-  if (clearance > 0) {
-    entities.push(line('CARCASE', -clearance, D + clearance, W + clearance, D + clearance));
-  }
-
-  // ── the face detail of a front, in section ──
-  for (const p of result.panels) {
-    if (!p.box || !isFront(p)) continue;
-    const plan = planBox(p.box, D);
-    // T43-F2: the PROJECT's own millimetres, threaded from the sheet. The plan
-    // told the same lie the elevation did — `frontDetail` with no frame
-    // resolves the profile default, whatever the job was quoted at.
-    entities.push(...frontDetail(plan, p.meta?.frontType || style, profile, shakerFrame));
-  }
-
-  // ── hinges, on the side the door is hung from (LISP drawHinge) ──
-  entities.push(...planHinges(result, profile));
-
-  // ── the rail, if this unit has one: a tube seen end-on ──
-  const rail = result.assemblies.rail;
-  if (rail) {
-    const r = profile.hardware.rail.diameter / 2;
-    entities.push(circle('LEG_BLOCK', (rail.x1 + rail.x2) / 2, D - rail.z, r));
-  }
-
-  entities.push(text('UNIT_NUMBER', W / 2, D / 2, String(unitNum ?? result.unitNum ?? ''),
-    unitNumberHeight || DR.unitNumberHeight));
-
-  return { entities, bounds: boundsOf(entities), solid: { x: 0, y: 0, w: W, h: D } };
-}
-
-/**
- * A hinge on the plan, drawn to catalogue size from `profile.hardware.hinge`.
- *
- * The AutoLISP carries a traced outline of a real Blum hinge — seventy lines
- * and thirty arcs of it, twice, once mirrored. What that block SAYS is: a cup
- * bored into the door, a body standing off its back, an arm reaching across to
- * a plate on the carcass side. This draws that, to the catalogue millimetres in
- * the profile, and stays one function instead of two mirrored copies — the side
- * is a sign, not a second drawing.
- *
- * One per door, not one per hinge: in plan the three hinges of a door stack on
- * exactly the same spot.
- */
-function planHinges(result, profile) {
-  const out = [];
-  const HW = profile.hardware.hinge;
-  const cups = profile.hinges.cups;
-  const D = result.params.depth;
-  const fronts = result.panels.filter((p) => p.part === 'FRONT' && p.box);
-
-  for (const p of fronts) {
-    const plan = planBox(p.box, D);
-    const hingeRight = p.meta?.hinge === 'R';
-    const dir = hingeRight ? -1 : 1;
-    const edgeX = hingeRight ? plan.x + plan.w : plan.x;
-    const cupX = edgeX + dir * cups.xFromHingeEdge;
-    // The door's back face — where the cup is bored from, and where everything
-    // behind the door starts.
-    const backY = plan.y + plan.h;
-
-    // The cup: a ⌀35 bore, seen from above as the width of the bore across the
-    // door and its depth into it.
-    out.push(rect('HINGES', cupX - HW.cupDiameter / 2, backY - HW.cupDepth, HW.cupDiameter, HW.cupDepth));
-    // The body and the arm, reaching back to the carcass side.
-    out.push(rect('HINGES', cupX - HW.armWidth / 2, backY, HW.armWidth, HW.armLength));
-    // The mounting plate, on the side panel.
-    const plateX = hingeRight ? edgeX - HW.plateThickness : edgeX;
-    out.push(rect('HINGES', plateX, backY + HW.armLength - HW.plateLength, HW.plateThickness, HW.plateLength));
-  }
-  return out;
-}
+// T81 F9: planBox, buildTopView and planHinges are retired (kasacja): the plans of the set and
+// the card's TOP view are the projector's (projector.js, 'plan' and 'top-of-card').
 
 // ─── Shared: the caption under a view ───────────────────────────────────────
 

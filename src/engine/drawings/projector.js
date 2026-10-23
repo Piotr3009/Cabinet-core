@@ -1103,15 +1103,19 @@ function renderScene(scene, V, {
   // lay-on doors): the hinge plate, the rod, the drawer box seen through a 3 mm
   // slot are no part of a front elevation (*"bez przebijania carcasow"*). The
   // carcass's own edges in that slot stay: they are the joints of the run.
-  if (!xray && mode === 'fronts' && V.name === 'front') {
+  // T81 F9: the card's plan, seen from above, is read the same way: the hinge
+  // arm in a leaf's 3 mm slot is no part of a TOP view either.
+  if (!xray && mode === 'fronts' && (V.name === 'front' || V.name === 'top-of-card')) {
     const gap = Math.max(Number(profile?.doors?.gap) || 0, Number(profile?.inframe?.gap) || 0);
+    const above = V.name === 'top-of-card';
     for (const s of live) {
       if (!s.front || !(gap > 0)) continue;
       s.prisms.forEach((pr, i) => {
         if (pr.axis !== 2 || pr.outline.length !== 4) return;
         const b = prismBounds(pr);
-        const ring = [[b.lo[0] - gap, b.lo[1] - gap], [b.hi[0] + gap, b.lo[1] - gap], [b.hi[0] + gap, b.hi[1] + gap], [b.lo[0] - gap, b.hi[1] + gap]];
-        const back = V.depth([0, 0, b.lo[2]]);
+        const [u, v] = above ? [0, 2] : [0, 1];
+        const ring = [[b.lo[u] - gap, b.lo[v] - gap], [b.hi[u] + gap, b.lo[v] - gap], [b.hi[u] + gap, b.hi[v] + gap], [b.lo[u] - gap, b.hi[v] + gap]];
+        const back = above ? V.depth([0, b.hi[1], 0]) : V.depth([0, 0, b.lo[2]]);
         occluders.push({
           id: `${s.key}~${i}#reveal`, reveal: true, solid: s,
           p: { ring, holes: [], rings: [ring], x0: ring[0][0], y0: ring[0][1], x1: ring[2][0], y1: ring[2][1], depthAt: () => back },

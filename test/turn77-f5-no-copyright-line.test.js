@@ -237,6 +237,9 @@ export const NEW_FILES = [
   // T81 F8 (22.10.2026): one ink, one layer
   'scripts/t78-classify.d/f41-t81-f08.mjs',
   'test/turn81-f08-layers.test.js',
+  // T81 F9 (22.10.2026): the card draws its own unit
+  'scripts/t78-classify.d/f41-t81-f09.mjs',
+  'test/turn81-f09-card.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

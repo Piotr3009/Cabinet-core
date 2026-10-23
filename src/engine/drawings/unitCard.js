@@ -25,10 +25,14 @@
 // Pure functions — no React, no store imports, no jsPDF.
 
 import {
-  baselineDimensions, buildFrontElevation, chainDimensions, dimensionEntities,
+  baselineDimensions, chainDimensions, dimensionEntities,
 } from './frontElevation.js';
-import { boundsOf, entText as text, moveEntities as translate } from './primitives.js';
-import { buildCarcassElevation, buildTopView, viewLabel } from './views.js';
+import {
+  boundsOf, entLine as line, entText as text, moveEntities as translate,
+} from './primitives.js';
+import { viewLabel } from './views.js';
+import { projectRun } from './projector.js';
+import { wallGapOf } from '../runs.js';
 import { formatMm } from '../format.js';
 
 /**
@@ -57,29 +61,52 @@ export const CARD_ARRANGEMENTS = ['projection', 'row'];
  * @returns {{entities:Array, bounds:object, views:object}}
  */
 export function buildUnitCard(result, {
-  unitNum, frontType, profile, arrangement = 'projection', shakerFrame = null,
+  unitNum, frontType, profile, arrangement = 'projection', shakerFrame = null, unit = null,
 } = {}) {
   const C = profile.drawings.unitCard;
   const num = String(unitNum ?? result.unitNum ?? '');
 
-  // ── the three views, each built at its own origin ──
-  const front = buildFrontElevation(result, {
-    unitNum: num, frontType, profile, overallDims: false, unitNumberHeight: C.unitNumberHeight,
-    // ─── TURN 43 (CLAUDE.md F2) ────────────────────────────────────────────
-    // The card told the same lie the wall sheet did: a project set to an 80 mm
-    // shaker frame was DRAWN at 60, because nobody handed `frontDetail` the
-    // project. `null` here is still the profile default, so a card built with
-    // no design behind it is byte-for-byte the card it was (iron rule 4).
-    shakerFrame,
-  });
+  // ── the three views, each drawn by the projector for this one cabinet ──
+  // T81 F9: the card draws its own unit as the room draws it (*"zalezy mi
+  // zebys rysowal w pdf 1 do 1 co mamy na cabinet core"*): the fronts, the
+  // carcass with the fronts off, and the plan, in the unit's own frame (x
+  // across the width, y up from the carcass base). The run's parts this unit
+  // owns (its plinth, its frame) are CLIPPED to the unit and the profile's
+  // margin either side: a 600 card drew a 1920 frame (the audit of 22.10,
+  // finding 2). The project's shaker frame reaches the fronts (T43 F2).
+  const W = Number(result.params.width) || 0;
+  const H = Number(result.params.height) || 0;
+  const D = Number(result.params.depth) || 0;
+  const member = {
+    unit: unit || { id: `card-${num}`, type: result.type, params: result.params, position: { wall: 0, x_mm: 0, rotation_deg: 0 } },
+    result,
+    x: 0,
+    base: 0,
+    top: H,
+    width: W,
+  };
+  const group = { wall: 0, members: [member], from: 0, to: W, top: H };
+  const margin = Number(profile.drawings.card?.runMargin) || 0;
+  const drawn = (view, mode) => projectRun(group, {
+    view, mode, profile, clipX: [-margin, W + margin], frontTypeOf: () => frontType, shakerFrame,
+  }).entities;
+  const number = (x, y) => text('UNIT_NUMBER', x, y, num, C.unitNumberHeight);
+
+  const front = { entities: [...drawn('front', 'fronts'), number(W / 2, H / 2)] };
   front.entities.push(...frontDimensions(result, profile));
 
-  const carcass = buildCarcassElevation(result, { unitNum: num, profile, unitNumberHeight: C.unitNumberHeight });
+  const carcass = { entities: [...drawn('front', 'no-fronts'), number(W / 2, H / 2)] };
   carcass.entities.push(...carcassDimensions(result, profile));
 
-  const top = buildTopView(result, {
-    unitNum: num, frontType, profile, unitNumberHeight: C.unitNumberHeight, shakerFrame,
-  });
+  // The plan as the card has always set it out: the carcass front at 0, its
+  // back at the depth, the wall beyond it (the projector's plan runs from the
+  // wall out into the room).
+  const gap = wallGapOf(member.unit, profile);
+  const back = gap + D;
+  const top = { entities: [...drawn('top-of-card', 'fronts').map((e) => fromTheFront(e, back)), number(W / 2, D / 2)] };
+  // The wall behind it, the gap's own width beyond the back (turn 8, F3): the
+  // building, as the sheets draw it.
+  if (gap > 0) top.entities.push({ ...line('BUILDING', -gap, D + gap, W + gap, D + gap), pen: 'THIN' });
   top.entities.push(...topDimensions(result, profile));
 
   // ── captions, under each view and under its dimensions ──
@@ -141,6 +168,19 @@ export function buildUnitCard(result, {
     arrangement,
     views: { front: fb, carcass: cb, top: tb },
   };
+}
+
+/** A plan entity turned from the wall's frame (y off the wall) to the card's (y from the carcass front). */
+function fromTheFront(e, back) {
+  if (e.kind === 'line') return { ...e, y1: back - e.y1, y2: back - e.y2 };
+  if (e.kind === 'rect') return { ...e, y: back - (e.y + e.h) };
+  if (e.kind === 'circle') return { ...e, cy: back - e.cy };
+  if (e.kind === 'text') return { ...e, y: back - e.y };
+  if (e.kind === 'poly') {
+    const flip = (ring) => ring.map(([x, y]) => [x, back - y]);
+    return { ...e, pts: flip(e.pts || []), ...(e.holes ? { holes: e.holes.map(flip) } : {}) };
+  }
+  return e;
 }
 
 // ─── What each view says ────────────────────────────────────────────────────

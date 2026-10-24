@@ -183,21 +183,25 @@ export function layerGroups(entities) {
 // what this app drew before tonight.
 
 /** The ISO pen ladder, in millimetres, keyed by the role an entity plays. */
+// THE OWNER, 24.10.2026 (19:34): "zakoduj te cienkie linie". The PDF is A3 at
+// 1:1 and the ladder above was the A1 ladder: 0.70 and 0.50 printed heavy on
+// A3. Every role halved, floor 0.13 (the thinnest ISO pen, prints on any
+// laser). Was CUT .70 OUTLINE .50 VISIBLE .35 HIDDEN .25 THIN .18 ANN .18 FINE .13.
 export const PEN = Object.freeze({
   // The plane the drawing is cut through — the heaviest line on any sheet.
-  CUT: 0.70,
+  CUT: 0.35,
   // The outside of a solid object, and the sheet's own frame.
-  OUTLINE: 0.50,
+  OUTLINE: 0.25,
   // An edge you can see, inside an outline.
-  VISIBLE: 0.35,
+  VISIBLE: 0.18,
   // Behind something: a shelf through a door, a carcass behind a front.
-  HIDDEN: 0.25,
+  HIDDEN: 0.13,
   // Hardware, legs, secondary furniture — present, not the subject.
-  THIN: 0.18,
+  THIN: 0.13,
   // Every measurement, every label. Deliberately the same weight as THIN and
   // deliberately LIGHTER than any geometry: a dimension must never compete
   // with the thing it is measuring.
-  ANNOTATION: 0.18,
+  ANNOTATION: 0.13,
   // Swing arcs, sheet rules, anything that is a hint rather than a fact.
   FINE: 0.13,
 });

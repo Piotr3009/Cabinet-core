@@ -72,9 +72,14 @@ test('F5a — the pen ladder is ISO, and it is a real hierarchy', () => {
   assert.ok(PEN.CUT > PEN.OUTLINE);
   assert.ok(PEN.OUTLINE > PEN.VISIBLE);
   assert.ok(PEN.VISIBLE > PEN.HIDDEN);
-  assert.ok(PEN.HIDDEN > PEN.ANNOTATION, 'a measurement never competes with the thing it measures');
+  // THE OWNER, 24.10.2026 (19:50), option A: the PDF is A3 at 1:1, so the
+  // ladder tops out at 0.35 and floors at 0.13, the thinnest ISO pen, which
+  // prints on any laser. A shelf and a dimension share that floor; the layer's
+  // colour and the hidden dash tell them apart.
+  for (const v of Object.values(PEN)) assert.ok(v >= 0.13 && v <= 0.35, `${v} is inside the A3 ladder`);
+  assert.ok(PEN.HIDDEN >= PEN.ANNOTATION, 'a measurement never outweighs the thing it measures');
   assert.ok(PEN.ANNOTATION >= PEN.FINE);
-  assert.ok(PEN.CUT / PEN.FINE > 5, `a real range, not 2.5:1 — ${PEN.CUT / PEN.FINE}`);
+  assert.ok(PEN.CUT / PEN.FINE > 2.5, `a real range, wider than T40's 2.5:1, ${PEN.CUT / PEN.FINE}`);
 });
 
 test('F5a — weight is resolved in ONE function, and the entity\'s own role wins', () => {
@@ -92,12 +97,17 @@ test('F5a — weight is resolved in ONE function, and the entity\'s own role win
   assert.equal(penWidth({ layer: 'X' , pen: null }, ), PEN[DRAWING_LAYERS.CARCASE.pen]);
 });
 
-test('F5a — the DIMENSION is now LIGHTER than any geometry it measures', () => {
+test('F5a, the DIMENSION never outweighs the geometry it measures', () => {
   // The inversion, named. T40 drew a dimension at 0.25 and a door swing at 0.20.
-  for (const layer of ['CARCASE', 'DOORS', 'SHELVES']) {
+  for (const layer of ['CARCASE', 'DOORS']) {
     assert.ok(penWidth({ layer }) > penWidth({ layer: 'DIMENSIONS' }),
       `${layer} must outweigh a dimension`);
   }
+  // Owner's option A, 24.10.2026: a shelf sits on the 0.13 floor with the
+  // dimension, never under it, and is told apart by colour and by its dash.
+  assert.ok(penWidth({ layer: 'SHELVES' }) >= penWidth({ layer: 'DIMENSIONS' }), 'a shelf is never lighter than a dimension');
+  assert.notEqual(DRAWING_LAYERS.SHELVES.colour, DRAWING_LAYERS.DIMENSIONS.colour, 'a shelf and a dimension differ in colour');
+  assert.ok(DRAWING_LAYERS.SHELVES.dash && !DRAWING_LAYERS.DIMENSIONS.dash, 'a shelf is dashed, a dimension is not');
 });
 
 test('F5a — a real sheet carries a real spread of weights', () => {
@@ -107,7 +117,9 @@ test('F5a — a real sheet carries a real spread of weights', () => {
     const distinct = new Set(widths);
     assert.ok(distinct.size >= 3, `at least three weights on the sheet: ${[...distinct]}`);
     const ratio = Math.max(...widths) / Math.min(...widths);
-    assert.ok(ratio > 2.5, `a wider range than T40's 2.50:1 — ${ratio.toFixed(2)}:1`);
+    // Owner's A3 ladder, 24.10.2026: every sheet spans at least the floor pen
+    // to the outline pen (0.13 to 0.25); a section adds the 0.35 cut on top.
+    assert.ok(ratio >= PEN.OUTLINE / PEN.FINE - 1e-9, `the floor to the outline at least, ${ratio.toFixed(2)}:1`);
   }
 });
 

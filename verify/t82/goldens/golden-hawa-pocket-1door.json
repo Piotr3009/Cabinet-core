@@ -1,0 +1,912 @@
+{
+  "meta": {
+    "name": "../verify/t82/goldens/golden-hawa-pocket-1door.json",
+    "turn": "T78",
+    "F": "F43",
+    "source": "T82 F2, F3: KIT_HAWA.lsp EXAMPLE 1 (hawa-cut, hawa-door-open, hawa-b-holes, hawa-a-holes, hawa-foot, hawa-door-holes): one door, hand R, front 18 (the panels 22, #47), H 2100, a 500 cabinet on a 580 run, far 1.5: W 99, EH 2057.5, TH 2051.5, TB 572.5, T1 567, M 100.5, E1 472, KT 580, III/25, TA 28, A 601 deep, the boards 99 x 601, the door closed at x 25, z 583, open at x 42, z 108. *\"raczej zawsze wystaja troche wiec nie ma problemu\"*, *\"3 tak moga\"*, *\"4 - tak, 5 - tak\"* (25.10.2026, 13:46); *\"jesli jest 18 mm to daj zawsze 22 mm automatycznie, i napisz informacje minimum 19 mm\"*",
+    "computed_by": "scripts/t78-goldens.mjs hawaPocketOneDoor()",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "scene": "hawaPocketOneDoor: KIT_HAWA.lsp EXAMPLE 1",
+    "type": "HAWA_POCKET",
+    "unit": {
+      "type": "HAWA_POCKET",
+      "width": 105,
+      "height": 2100,
+      "depth": 580,
+      "board_t": 18,
+      "front_t": 18,
+      "front_type": "S",
+      "shelves": 0,
+      "drawers": 0,
+      "rail": false,
+      "rail_offset": null,
+      "hinge": "L",
+      "doors": null,
+      "pocket": {
+        "doors": 1,
+        "hand": "R",
+        "push": true,
+        "cls": null,
+        "covers": [
+          "b"
+        ]
+      },
+      "unit_num": "HP01",
+      "pocket_cover": {
+        "doors": [
+          {
+            "side": "R",
+            "units": [
+              "b"
+            ],
+            "spanMm": 500,
+            "KT1": 580,
+            "freeEndClearanceMm": 1.5
+          }
+        ]
+      }
+    }
+  },
+  "expected": {
+    "summary": {
+      "csvLines": [
+        "HP01,POCKET-BOTTOM,99,601,>,0.10,0.059",
+        "HP01,POCKET-A,601,2058,<>^v,5.32,1.237",
+        "HP01,POCKET-B,580,2058,<>^v,5.28,1.193",
+        "HP01,POCKET-TOP,99,601,>,0.10,0.059",
+        "HP01,POCKET-DOOR,573,2052,<>^v,5.25,1.174"
+      ],
+      "panels": [
+        {
+          "id": "POCKET-BOTTOM",
+          "part": "POCKET-BOTTOM",
+          "role": "pocket_board",
+          "w": 99,
+          "h": 601,
+          "thickness": 18,
+          "box": {
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "w": 99,
+            "h": 18,
+            "d": 601
+          },
+          "outline": 4,
+          "holes": 0,
+          "pockets": 0,
+          "readiness": null
+        },
+        {
+          "id": "POCKET-A",
+          "part": "POCKET-A",
+          "role": "pocket_panel",
+          "w": 601,
+          "h": 2057.5,
+          "thickness": 22,
+          "box": {
+            "x": 0,
+            "y": 18,
+            "z": 0,
+            "w": 22,
+            "h": 2057.5,
+            "d": 601
+          },
+          "outline": 4,
+          "holes": 0,
+          "pockets": 0,
+          "readiness": null
+        },
+        {
+          "id": "POCKET-B",
+          "part": "POCKET-B",
+          "role": "pocket_panel",
+          "w": 580,
+          "h": 2057.5,
+          "thickness": 22,
+          "box": {
+            "x": 77,
+            "y": 18,
+            "z": 0,
+            "w": 22,
+            "h": 2057.5,
+            "d": 580
+          },
+          "outline": 4,
+          "holes": 0,
+          "pockets": 0,
+          "readiness": null
+        },
+        {
+          "id": "POCKET-TOP",
+          "part": "POCKET-TOP",
+          "role": "pocket_board",
+          "w": 99,
+          "h": 601,
+          "thickness": 18,
+          "box": {
+            "x": 0,
+            "y": 2082,
+            "z": 0,
+            "w": 99,
+            "h": 18,
+            "d": 601
+          },
+          "outline": 4,
+          "holes": 0,
+          "pockets": 0,
+          "readiness": null
+        },
+        {
+          "id": "POCKET-DOOR",
+          "part": "POCKET-DOOR",
+          "role": "pocket_door",
+          "w": 572.5,
+          "h": 2051.5,
+          "thickness": 18,
+          "box": {
+            "x": 25,
+            "y": 21,
+            "z": 583,
+            "w": 572.5,
+            "h": 2051.5,
+            "d": 18
+          },
+          "outline": 4,
+          "holes": 0,
+          "pockets": 0,
+          "readiness": null
+        }
+      ],
+      "drills": [],
+      "hardware": [
+        {
+          "role": "legs",
+          "qty": 4,
+          "label": "Legs"
+        }
+      ]
+    },
+    "hawa": {
+      "count": 1,
+      "hand": "R",
+      "push": true,
+      "clsAsked": null,
+      "covers": [
+        "b"
+      ],
+      "frontT": 18,
+      "S": 18,
+      "panel": {
+        "t": 22,
+        "swapped": true
+      },
+      "clearMm": 55,
+      "widthMm": 99,
+      "H": 2100,
+      "EH": 2057.5,
+      "TH": 2051.5,
+      "KT": 580,
+      "KT1": 580,
+      "frontAlignMm": 0,
+      "connectorName": "Hawa Connector 55",
+      "zones": {
+        "top": 63,
+        "bottom": 50,
+        "hardware": 17
+      },
+      "parts": [
+        {
+          "part": "POCKET-BOTTOM",
+          "id": "POCKET-BOTTOM",
+          "kind": "bottom",
+          "side": null,
+          "w": 99,
+          "h": 601,
+          "t": 18,
+          "box": {
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "w": 99,
+            "h": 18,
+            "d": 601
+          },
+          "holes": [
+            [
+              "HAWA_FOOT_35MM",
+              49.5,
+              39,
+              35,
+              18
+            ]
+          ]
+        },
+        {
+          "part": "POCKET-A",
+          "id": "POCKET-A",
+          "kind": "A",
+          "side": "R",
+          "w": 601,
+          "h": 2057.5,
+          "t": 22,
+          "box": {
+            "x": 0,
+            "y": 18,
+            "z": 0,
+            "w": 22,
+            "h": 2057.5,
+            "d": 601
+          },
+          "holes": [
+            [
+              "HAWA_3MM",
+              66,
+              2047.5,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              226,
+              2047.5,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              386,
+              2047.5,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              546,
+              2047.5,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              41,
+              22,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              105,
+              22,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              301,
+              22,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              365,
+              22,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              61,
+              1997.5,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              61,
+              60,
+              3,
+              10
+            ]
+          ]
+        },
+        {
+          "part": "POCKET-B",
+          "id": "POCKET-B",
+          "kind": "B",
+          "side": "R",
+          "w": 580,
+          "h": 2057.5,
+          "t": 22,
+          "box": {
+            "x": 77,
+            "y": 18,
+            "z": 0,
+            "w": 22,
+            "h": 2057.5,
+            "d": 580
+          },
+          "holes": [
+            [
+              "HAWA_3MM",
+              32,
+              2035.5,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              192,
+              2035.5,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              352,
+              2035.5,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              512,
+              2035.5,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              60,
+              41,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              220,
+              41,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              380,
+              41,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              540,
+              41,
+              3,
+              10
+            ],
+            [
+              "HAWA_3MM",
+              523,
+              1063.75,
+              3,
+              10
+            ]
+          ]
+        },
+        {
+          "part": "POCKET-TOP",
+          "id": "POCKET-TOP",
+          "kind": "top",
+          "side": null,
+          "w": 99,
+          "h": 601,
+          "t": 18,
+          "box": {
+            "x": 0,
+            "y": 2082,
+            "z": 0,
+            "w": 99,
+            "h": 18,
+            "d": 601
+          },
+          "holes": []
+        },
+        {
+          "part": "POCKET-DOOR",
+          "id": "POCKET-DOOR",
+          "kind": "door",
+          "side": "R",
+          "w": 572.5,
+          "h": 2051.5,
+          "t": 18,
+          "box": {
+            "x": 25,
+            "y": 21,
+            "z": 583,
+            "w": 572.5,
+            "h": 2051.5,
+            "d": 18
+          },
+          "holes": [
+            [
+              "FRONT_HINGES_35MM",
+              28,
+              200,
+              35,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              226,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              174,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_35MM",
+              28,
+              1025.75,
+              35,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              1051.75,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              999.75,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_35MM",
+              28,
+              1851.5,
+              35,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              1877.5,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              1825.5,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_8MM",
+              28,
+              22,
+              8,
+              13
+            ],
+            [
+              "FRONT_HINGES_8MM",
+              28,
+              2029.5,
+              8,
+              13
+            ]
+          ],
+          "grooves": []
+        }
+      ],
+      "doors": [
+        {
+          "id": "POCKET-DOOR",
+          "side": "R",
+          "covers": [
+            "b"
+          ],
+          "unitNums": [],
+          "hawaHand": "left",
+          "setName": "Hawa Concepta III 25 Push, left",
+          "push": true,
+          "spanMm": 500,
+          "far": null,
+          "freeEndClearanceMm": 1.5,
+          "TB": 572.5,
+          "TH": 2051.5,
+          "S": 18,
+          "cls": 25,
+          "clsAsked": null,
+          "clsAuto": true,
+          "hinges": 3,
+          "TA": 28,
+          "Zhinge": 3,
+          "Z1": 3,
+          "Z2": 3,
+          "proud": 3,
+          "T1": 567,
+          "M": 100.5,
+          "E1": 472,
+          "KT1": 580,
+          "trackMm": 560,
+          "steelMm": null,
+          "weightKg": 14.798495249999998,
+          "maxKg": 25,
+          "hingeEdge": "L",
+          "cupY": [
+            200,
+            1025.75,
+            1851.5
+          ],
+          "holes": [
+            [
+              "FRONT_HINGES_35MM",
+              28,
+              200,
+              35,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              226,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              174,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_35MM",
+              28,
+              1025.75,
+              35,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              1051.75,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              999.75,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_35MM",
+              28,
+              1851.5,
+              35,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              1877.5,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_5MM",
+              37,
+              1825.5,
+              5,
+              13
+            ],
+            [
+              "FRONT_HINGES_8MM",
+              28,
+              22,
+              8,
+              13
+            ],
+            [
+              "FRONT_HINGES_8MM",
+              28,
+              2029.5,
+              8,
+              13
+            ]
+          ],
+          "grooves": [],
+          "closed": {
+            "x": 25,
+            "y": 21,
+            "z": 583,
+            "w": 572.5,
+            "h": 2051.5,
+            "d": 18
+          },
+          "open": {
+            "x": 42,
+            "y": 21,
+            "z": 108,
+            "w": 18,
+            "h": 2051.5,
+            "d": 572.5
+          }
+        }
+      ],
+      "refusals": [],
+      "notes": [
+        {
+          "n": 47,
+          "code": "HAWA_PANEL_22",
+          "message": "#47 HAWA pocket panels 22: the hardware panel needs 19 mm minimum"
+        }
+      ],
+      "ok": true
+    },
+    "holes": [
+      {
+        "id": "POCKET-BOTTOM",
+        "holes": [
+          [
+            "HAWA_FOOT_35MM",
+            49.5,
+            39,
+            35,
+            18
+          ]
+        ],
+        "grooves": null
+      },
+      {
+        "id": "POCKET-A",
+        "holes": [
+          [
+            "HAWA_3MM",
+            66,
+            2047.5,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            226,
+            2047.5,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            386,
+            2047.5,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            546,
+            2047.5,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            41,
+            22,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            105,
+            22,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            301,
+            22,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            365,
+            22,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            61,
+            1997.5,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            61,
+            60,
+            3,
+            10
+          ]
+        ],
+        "grooves": null
+      },
+      {
+        "id": "POCKET-B",
+        "holes": [
+          [
+            "HAWA_3MM",
+            32,
+            2035.5,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            192,
+            2035.5,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            352,
+            2035.5,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            512,
+            2035.5,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            60,
+            41,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            220,
+            41,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            380,
+            41,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            540,
+            41,
+            3,
+            10
+          ],
+          [
+            "HAWA_3MM",
+            523,
+            1063.75,
+            3,
+            10
+          ]
+        ],
+        "grooves": null
+      },
+      {
+        "id": "POCKET-TOP",
+        "holes": [],
+        "grooves": null
+      },
+      {
+        "id": "POCKET-DOOR",
+        "holes": [
+          [
+            "FRONT_HINGES_35MM",
+            28,
+            200,
+            35,
+            13
+          ],
+          [
+            "FRONT_HINGES_5MM",
+            37,
+            226,
+            5,
+            13
+          ],
+          [
+            "FRONT_HINGES_5MM",
+            37,
+            174,
+            5,
+            13
+          ],
+          [
+            "FRONT_HINGES_35MM",
+            28,
+            1025.75,
+            35,
+            13
+          ],
+          [
+            "FRONT_HINGES_5MM",
+            37,
+            1051.75,
+            5,
+            13
+          ],
+          [
+            "FRONT_HINGES_5MM",
+            37,
+            999.75,
+            5,
+            13
+          ],
+          [
+            "FRONT_HINGES_35MM",
+            28,
+            1851.5,
+            35,
+            13
+          ],
+          [
+            "FRONT_HINGES_5MM",
+            37,
+            1877.5,
+            5,
+            13
+          ],
+          [
+            "FRONT_HINGES_5MM",
+            37,
+            1825.5,
+            5,
+            13
+          ],
+          [
+            "FRONT_HINGES_8MM",
+            28,
+            22,
+            8,
+            13
+          ],
+          [
+            "FRONT_HINGES_8MM",
+            28,
+            2029.5,
+            8,
+            13
+          ]
+        ],
+        "grooves": []
+      }
+    ]
+  }
+}

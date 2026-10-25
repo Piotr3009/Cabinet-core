@@ -954,6 +954,12 @@ function normalizeParams(raw, profile) {
     // exactly as it always has, so no fixture can move.
     doorCount = Number(type.doorCount) > 0 ? Number(type.doorCount) : doorCountFor(p.width, profile);
   }
+  // ─── T82 F3 · A UNIT A HAWA POCKET DOOR COVERS (KIT_HAWA.lsp D17) ───────
+  // *"wysuwasz pocket door i zakrywasz szafke lub szafki"*: the pocket's door
+  // IS this unit's door, closed 3 in front of its carcass, so its own leaves
+  // go. `pocket_covered` is handed by paramsForEngine only to a unit a pocket
+  // covers; absent (a bare kit, every golden) this line does nothing.
+  if (p.pocket_covered && doorCount > 0) doorCount = 0;
 
   // ─── T75 F3 · THE BLIND KIT'S BLANK ─────────────────────────────────────
   //

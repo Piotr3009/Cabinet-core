@@ -130,8 +130,14 @@ test('the rules, each with the owner’s colour', () => {
   // CLAUDE.md names them (#37 to #39 stay unused, verify/t80/f10-probe.md):
   // #40 red (the owner: *"drzwi 22 i jest idealnie"*), #41, #42, #43 yellow,
   // #44 red (*"3 mm zawsze"*). Thirty-three became thirty-eight.
-  assert.equal(CHECKS.length, 38);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44]);
+  // AMENDED BY T82 F3 (25.10.2026): the HAWA pocket's three (KIT_HAWA.lsp section 4
+  // (i)): #37 the door out of HAWA's range and #38 the pocket too shallow for it, red,
+  // beside #36; #47 the pocket panels 22 on an 18 front, yellow (CLAUDE.md's #42,
+  // which the in-frame row holds; the night's brief gives it #47). The owner: *"jesli
+  // jest 18 mm to daj zawsze 22 mm automatycznie, i napisz informacje minimum 19 mm"*.
+  // Thirty-eight became forty-one.
+  assert.equal(CHECKS.length, 41);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 47]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -185,6 +191,10 @@ test('the rules, each with the owner’s colour', () => {
     42: 'yellow',
     43: 'yellow',
     44: 'red',
+    // T82 F3 · the HAWA pocket: the room refuses in words (red), the panels' note (yellow).
+    37: 'red',
+    38: 'red',
+    47: 'yellow',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

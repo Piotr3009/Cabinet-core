@@ -152,7 +152,10 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // *"dlaczego cut the corner likwiduje nam wcięcie do recess?"* Thirty-three.
   // AMENDED BY T80 F10 (22.10.2026): #40 to #44, the in-frame project's five, appended
   // at the end. Rule 15 is still the fifteenth and still says what it said. Thirty-eight.
-  assert.equal(CHECKS.length, 38);
+  // AMENDED BY T82 F3 (25.10.2026): the HAWA pocket's #37 and #38 beside #36 and its
+  // #47 at the end (*"wysuwasz pocket door i zakrywasz szafke lub szafki"*). Rule 15 is
+  // still the fifteenth. Forty-one.
+  assert.equal(CHECKS.length, 41);
   assert.equal(CHECKS[14].n, 15);
 });
 

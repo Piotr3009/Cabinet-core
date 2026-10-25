@@ -375,6 +375,19 @@ test('F5 hand-off · the holes are the LISP\'s, in its face frames, on meta.pock
   assert.deepEqual(by('POCKET-TOP'), []);
 });
 
+test('F3 · a covered unit loses its own doors (D17), only when the pocket says so', () => {
+  const bud = { ...defaultParamsFor('BUDTALL', P), unit_num: '01', width: 500, depth: 580, doors: { count: 1, hinge: 'L' } };
+  const own = computeCabinet(bud, P);
+  assert.ok(own.panels.some((p) => p.part === 'FRONT'), 'a tall unit with its door');
+  const covered = computeCabinet({ ...bud, pocket_covered: { pocketId: 'p', unitNum: 'HP01' } }, P);
+  assert.equal(covered.panels.filter((p) => p.part === 'FRONT').length, 0, 'the HAWA door is its door');
+  assert.deepEqual(
+    covered.panels.filter((p) => p.role !== 'front').map((p) => [p.id, p.w, p.h]),
+    own.panels.filter((p) => p.role !== 'front').map((p) => [p.id, p.w, p.h]),
+    'its carcass is untouched',
+  );
+});
+
 test('F3 · pocketCoverOf: the covered units in order become the kit\'s span, KT1 and far', () => {
   const pocketUnit = { id: 'p', type: 'HAWA_POCKET', position: { wall: 0, x_mm: 0 }, params: { ...pocket(), width: 99 } };
   const b = { id: 'b', type: 'BUDTALL', position: { wall: 0, x_mm: 99 }, params: { width: 300, depth: 580, unit_num: '01' } };
@@ -402,6 +415,22 @@ test('F2 · a bare kit (no unit to cover) cuts the pocket and no door, and does 
   const r = computeCabinet(defaultParamsFor('HAWA_POCKET', P), P);
   assert.deepEqual(r.panels.map((p) => p.part), ['POCKET-BOTTOM', 'POCKET-A', 'POCKET-B', 'POCKET-TOP']);
   assert.deepEqual(r.hawa.doors, []);
+});
+
+// ═══ THE CHECKS (#37 #38 red, #47 yellow) ══════════════════════════════════
+
+test('F3 · the Check rows: #37 and #38 red in the kit\'s sentences, #47 yellow', () => {
+  assert.deepEqual(CHECKS.filter((c) => [37, 38, 47].includes(c.n)).map((c) => [c.n, c.level]), [[37, 'red'], [38, 'red'], [47, 'yellow']]);
+  const params = pocket({ frontT: 18, depth: 350, cover: coverOne(900, 350) });
+  const result = computeCabinet(params, P);
+  const found = runChecks({ entries: [{ unit: { id: 'p', type: 'HAWA_POCKET', params }, result }], profile: P });
+  const row = (n) => found.find((x) => x.check === n);
+  assert.equal(row(37).level, 'red');
+  assert.equal(row(37).message, 'HP01: HAWA door out of range: TB 972.5 (440 to 750)');
+  assert.equal(row(38).level, 'red');
+  assert.match(row(38).message, /^HP01: HAWA: the door 972.5 needs a pocket 415 deep on a 350 cabinet/);
+  assert.equal(row(47).level, 'yellow');
+  assert.equal(row(47).message, 'HP01: HAWA pocket panels 22: the hardware panel needs 19 mm minimum');
 });
 
 // ═══ LISP IS LAW: THE MIRROR, ROUTINE FOR ROUTINE, ON A GRID ═══════════════

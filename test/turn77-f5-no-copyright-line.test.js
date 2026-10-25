@@ -251,6 +251,8 @@ export const NEW_FILES = [
   'test/turn82-f02-hawa-run.test.js',
   'test/turn82-f03-hawa-door.test.js',
   'scripts/t78-classify.d/f43-t82-f02.mjs',
+  // T82 F3 (25.10.2026): the door, its width, its depth, the refusals in words
+  'scripts/t78-classify.d/f43-t82-f03.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

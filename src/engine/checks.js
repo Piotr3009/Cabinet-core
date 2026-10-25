@@ -291,6 +291,15 @@ export const CHECKS = Object.freeze([
   // reached no screen. #28's twin, RED: a person decides. CLAUDE.md names it
   // #32, which T76 F4 holds (the front's decoration board); it is the next free.
   { n: 36, level: 'red', label: 'Recess extension refused' },
+  // ─── T82 F3 · THE HAWA POCKET (KIT_HAWA.lsp section 4 (i)) ──────────────
+  // The owner, 25.10.2026: *"wysuwasz pocket door i zakrywasz szafke lub
+  // szafki"*; 13:46 *"raczej zawsze wystaja troche wiec nie ma problemu"*.
+  // CLAUDE.md T82: "The room refuses in words, the engine never squashes": a
+  // door outside HAWA's sheet (#37) and a pocket too shallow for its door
+  // (#38) are RED, in the kit's own sentences (`hawa-check-37`,
+  // `hawa-check-38`); the door is cut as asked and nothing is clamped.
+  { n: 37, level: 'red', label: 'HAWA door out of range' },
+  { n: 38, level: 'red', label: 'HAWA pocket too shallow for the door' },
   // ─── T80 F10 · THE IN-FRAME CHECKS (engine/inframeChecks.js) ─────────────
   // CLAUDE.md T80 F10 names them #40 to #44, and the probe found them free
   // (verify/t80/f10-probe.md: 37 to 39 stay unused, so nobody reads them as a
@@ -302,6 +311,12 @@ export const CHECKS = Object.freeze([
   { n: 42, level: 'yellow', label: 'Unit the in-frame frame stops at' },
   { n: 43, level: 'yellow', label: 'In-frame frame joined (wider than the board)' },
   { n: 44, level: 'red', label: 'In-frame hinge cup within 3 mm of the lip' },
+  // T82 F3 · the owner, 13:46: *"jesli jest 18 mm to daj zawsze 22 mm
+  // automatycznie, i napisz informacje minimum 19 mm"* (KIT_HAWA.lsp D3,
+  // `hawa-check-47`). CLAUDE.md names it #42, which the in-frame project holds;
+  // #45 and #46 are the vanity's and the reeds' (BRIEF section 6). YELLOW: a
+  // note, the panels are cut 22.
+  { n: 47, level: 'yellow', label: 'HAWA pocket panels 22 on an 18 front' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -690,8 +705,21 @@ export function runChecks({
         CABINEO_GATE: 31,
         FRONT_DECORATION_BOARD: 32,
         EXTENSION_REFUSED: 36,
+        // T82 F3 · the HAWA pocket, in the kit's own words (engine/hawaPocket.js HAWA_CODES).
+        HAWA_OUT_OF_RANGE: 37,
+        HAWA_POCKET_DEPTH: 38,
+        HAWA_PANEL_22: 47,
       }[wn.code];
       if (!n) continue;
+      if (n === 37 || n === 38 || n === 47) {
+        // The sentence carries its own number (`#37 HAWA door out of range:
+        // ...`); the row names it once.
+        out.push(finding(n, n === 47 ? 'yellow' : 'red', at(null, {
+          message: `${unitNum}: ${String(wn.message).replace(/^#\d+ /, '')}`,
+          subject: { unitId, editor: 'cabinet' },
+        })));
+        continue;
+      }
       if (n === 32) {
         out.push(finding(32, 'yellow', at(wn.panel || null, {
           message: `${unitNum} ${wn.message}`,

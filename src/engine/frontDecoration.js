@@ -510,6 +510,32 @@ function polygonsOverlap(a, b) {
   return true;
 }
 
+/**
+ * T82 F15, after the review (reeds:0) · the deepest a reed valley cuts over
+ * a bore's disc (from the face), or null where the disc misses its strip.
+ * Across the valley line the reed falls as d(u) = r - sqrt(r^2 - (r - |u|)^2)
+ * for |u| < r (the valley at u = 0, the crests at r), and it does not vary
+ * along the line; the strip is [-r, r] (one side only at a field edge). So
+ * the deepest point over the disc is at the |u| nearest the valley.
+ */
+function reedDepthOverDisc(op, centre, radius) {
+  const [a, b] = op.centreline || [];
+  const r = Number(op.crossSection?.radius);
+  if (!a || !b || !(r > 0)) return Number(op.depth);
+  const vertical = Math.abs(a[0] - b[0]) < EPS;
+  const u0 = vertical ? centre[0] - a[0] : centre[1] - a[1];
+  const edge = op.crossSection?.edge || null;
+  // The strip in u: a field edge keeps the one flank on the field's side.
+  // Which side that is: the strip's points tell (the valley line is one of its edges).
+  const across = (op.points || []).map((p) => (vertical ? p[0] - a[0] : p[1] - a[1]));
+  const lo = edge ? Math.min(0, ...across) : -r; const hi = edge ? Math.max(0, ...across) : r;
+  const from = Math.max(lo, u0 - radius); const to = Math.min(hi, u0 + radius);
+  if (from > to + EPS) return null;
+  const nearest = from <= 0 && to >= 0 ? 0 : Math.min(Math.abs(from), Math.abs(to));
+  const t = r - nearest;
+  return (Number(op.startDepth) || 0) + (nearest >= r ? 0 : r - Math.sqrt(Math.max(0, r * r - t * t)));
+}
+
 /** Validate opposing machining after the cabinet has placed its hardware. */
 export function validateFrontDecoration({ panel, decoration, drills = [], profile = getCabinetProfile() }) {
   if (!decoration || decoration.status === 'blocked') return decoration?.problems || [];
@@ -539,6 +565,17 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
       if (!(depth > 0) || !Number.isFinite(depth) || depth >= thickness - EPS) continue;
       const radius = Number(drill.d ?? drill.diameter) / 2;
       if (!(radius > 0) || !Number.isFinite(radius)) continue;
+      if (op.kind === 'reed') {
+        // T82 F15, after the review (reeds:0): a reed is not a flat pocket.
+        // Its own depth over the bore's disc, never the valley's everywhere.
+        const cut = reedDepthOverDisc(op, [Number(drill.x), Number(drill.y)], radius);
+        if (cut === null || !skinShort(thickness - depth, cut, profile)) continue;
+        if (!circleTouchesPolygon([Number(drill.x), Number(drill.y)], radius, op.points)) continue;
+        problems.push(problem('FRONT_DECORATION_BACK_BORE', `${op.id} cuts ${round(cut)} mm deep over the back `
+          + `${drill.kind || 'bore'} and leaves ${round(thickness - depth - cut)} mm between them, less than ${MIN_SKIN} mm. `
+          + 'Choose a thicker front, smaller reeds or another width, so the bore sits under a crest.'));
+        continue;
+      }
       if (!skinShort(thickness - depth, op.depth, profile)) continue;
       if (circleTouchesPolygon([Number(drill.x), Number(drill.y)], radius, op.points)) {
         problems.push(problem('FRONT_DECORATION_BACK_BORE', `${op.id} conflicts with the back ${drill.kind || 'bore'} or leaves less than ${MIN_SKIN} mm between cuts.`));

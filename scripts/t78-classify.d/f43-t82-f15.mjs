@@ -79,7 +79,8 @@ export const LICENSED = {
       + `fluteProfile and reedDiameterMm for FL only when the record names them; buildFrontDecoration refuses an unknown `
       + `profile in words, cuts makeReeds (one valley per operation, kind reed, FRONT_REED layer) for a reed record, and `
       + `adds the two reed advisories (FRONT_DECORATION_REED_SKIN, _REMAINDER); boardRefusal asks FL what a pick gives. `
-      + `Without the gate the code is what T78 F14 cut. ${OWNER}`,
+      + `Without the gate the code is what T78 F14 cut. ${OWNER}`
+      + ' After the review (reeds:0): reedDepthOverDisc measures the reed\'s own depth over a bore\'s disc, so a screw under a crest is not a screw under a valley; one under a valley is still refused in words with the depth and the board left.',
     gates: ['flReed'],
   },
   'src/engine/frontBoard.js': {

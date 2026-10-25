@@ -326,3 +326,49 @@ test('F15 · the PRO Settings controls: the profile, the reed diameter with its 
   }
   assert.doesNotMatch(controls, /\[16, 20, 25\]/, 'the ladder is the profile\'s, never typed into the UI');
 });
+
+// ─── T82 F15, AFTER THE REVIEW (a) · THE SCREW UNDER A CREST ───────────────
+// The review of 25.10.2026 (reeds:0): every reeded drawer front of BUDR2 and
+// BUDR4 on an 18 or 22 front was refused (FRONT_DECORATION_BACK_BORE), the
+// back-bore rule reading each valley's strip as a flat pocket as deep as the
+// valley. The screw at 89.5 sits 1 mm off a crest: the reed cuts 0.3 mm over
+// it and 10.7 mm of board stays. The rule now measures the reed's own depth
+// over the bore's disc; a screw under a valley is still refused in words.
+
+test('F15 after the review (a) · a reeded drawer front whose screws sit under the crests is cut, on 18 and on 22', () => {
+  for (const t of [18, 22]) {
+    const params = { ...defaultParamsFor('BUDR2', P), unit_num: 'DR01', width: 600, front_type: 'FL', front_decoration: reed(), front_t: t };
+    const result = computeCabinet(params, P);
+    const fronts = result.panels.filter((p) => p.part === 'DRAWER-FRONT');
+    assert.equal(fronts.length, 2);
+    for (const f of fronts) {
+      const d = f.meta.frontDecoration;
+      assert.equal(f.w, 597);
+      assert.equal(d.status, 'ready', `${t}: ${f.id} ${JSON.stringify(d.problems)}`);
+      assert.equal(d.operations.length, 25);
+      assert.ok(!d.problems.some((p) => p.code === 'FRONT_DECORATION_BACK_BORE'));
+    }
+    const screws = result.drills.filter((x) => x.kind === 'front_screw');
+    assert.ok(screws.length >= 4, 'the drawer boxes are screwed to their fronts from the back');
+    const unit = { id: 'u1', type: 'BUDR2', params, position: { wall: 0, x_mm: 0 } };
+    assert.deepEqual(runChecks({ entries: [{ unit, result }], profile: P }).filter((x) => x.check === 9), [], `${t}: no red #9`);
+  }
+});
+
+test('F15 after the review (a) · a screw under a valley is still refused in words, with the board it would leave', () => {
+  // A 603 unit gives a 600 front: its 500 field divides, the valleys stand at 50 + 20 k, and the screws at 89.5 and
+  // 510.5 sit 0.5 mm off the valleys at 90 and 510: the valley cuts 10 deep over them, 11 - 10 = 1 mm under 3 on 22.
+  const params = { ...defaultParamsFor('BUDR2', P), unit_num: 'DR01', width: 603, front_type: 'FL', front_decoration: reed(), front_t: 22 };
+  const result = computeCabinet(params, P);
+  const front = result.panels.find((p) => p.part === 'DRAWER-FRONT');
+  assert.equal(front.w, 600);
+  const d = front.meta.frontDecoration;
+  assert.equal(d.status, 'blocked');
+  const said = d.problems.filter((p) => p.code === 'FRONT_DECORATION_BACK_BORE');
+  assert.ok(said.length >= 1);
+  assert.match(said[0].message, /reed-valley-\d+ cuts 10 mm deep over the back front_screw and leaves 1 mm between them, less than 3 mm/);
+  // The same 600 front at reeds of 16 puts the screws off the valleys: it is cut.
+  const small = computeCabinet({ ...params, front_decoration: reed({ reedDiameterMm: 16 }) }, P)
+    .panels.find((p) => p.part === 'DRAWER-FRONT').meta.frontDecoration;
+  assert.equal(small.status, 'ready', JSON.stringify(small.problems));
+});

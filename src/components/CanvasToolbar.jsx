@@ -10,6 +10,8 @@ import { LAYER_CLASS } from '../lib/modalLayer.js';
 // button could be stale for exactly the reasons F1a names (the profile's hinge
 // ladders, the room, the material assignments). One reader now, shared.
 import { useCheckFindings } from '../lib/checkFindings.js';
+// T82 F12, after the review · the badge counts what asks something of a person.
+import { findingsToAct } from '../engine/checks.js';
 
 // ─── Canvas toolbar ───
 // The controls that act on the DRAWING, sitting on the drawing (CLAUDE.md turn
@@ -65,7 +67,7 @@ export default function CanvasToolbar() {
   // through eleven rules, and doing that sixty times a second is a frame rate
   // spent on a question nobody has asked.
   const checkFindings = useCheckFindings();
-  const checkCount = checkFindings.length;
+  const checkCount = findingsToAct(checkFindings).length;
   const checkReds = checkFindings.some((f) => f.level === 'red');
   // ─── TURN 27 (CLAUDE.md F2.1): EVERY FRONT ANSWERS ───────────────────────
   //

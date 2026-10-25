@@ -526,6 +526,27 @@ test('F12 · Check #45 lists the void as a NOTE, never a fault: "Service void 80
   assert.equal(checkSummary(found), checkSummary([]));
 });
 
+test('F12 · review 6: a NOTE is never a thing to look at: not in the export preflight, not on the toolbar, not in the summary', async () => {
+  const C = await import('../src/engine/checks.js');
+  assert.equal(typeof C.findingsToAct, 'function', 'one reading of what asks something of a person');
+  vanity('VANITY3', { sinks: 0 });
+  // #18 is the node run's own (no hardware catalogue): the job's findings are the rest.
+  const found = S().runChecks().filter((f) => f.check !== 18);
+  assert.deepEqual(found.map((f) => [f.check, f.level]), [[45, 'note']]);
+  assert.deepEqual(C.findingsToAct(found), [], 'nothing to act on');
+  assert.equal(checkSummary(found), checkSummary([]));
+  // The three places that count findings as work count through it.
+  const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
+  const tree = read('src/components/CncTree.jsx');
+  const at = tree.indexOf('const found = runChecks();');
+  assert.ok(at > 0);
+  assert.match(tree.slice(at, at + 400), /findingsToAct\(found\)/, 'the CNC export preflight');
+  const page = read('src/pages/ConfiguratorPage.jsx');
+  const pre = page.slice(page.indexOf('const checkBeforeExport'), page.indexOf('const checkBeforeExport') + 1200);
+  assert.match(pre, /findingsToAct\(found\)/, 'the page\'s export preflight');
+  assert.match(read('src/components/CanvasToolbar.jsx'), /const checkCount = findingsToAct\(checkFindings\)\.length;/, 'the toolbar\'s badge');
+});
+
 test('F12 · no vanity, no #45', () => {
   room();
   S().addUnit('BUD', { wall: 0, x: 1000 });

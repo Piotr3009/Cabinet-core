@@ -21,7 +21,9 @@ export const GATES = {};
 export const LICENSED = {
   'src/engine/checks.js': {
     why: 'T82 F12: Check #45 "Service void 80 behind the vanity for the pipes." at the level \'note\' (sorted after '
-      + `the yellows, never a fault, never a gate), read from worktop.js serviceVoidOf. ${OWNER}`,
+      + 'the yellows, never a fault, never a gate), read from worktop.js serviceVoidOf. After the review (topbasin '
+      + '6): findingsToAct, the findings that ask something of a person (every one but a note), read by checkSummary, '
+      + `the export preflights and the toolbar's count. ${OWNER}`,
     gates: [],
   },
   'src/engine/drawings/setSection.js': {

@@ -77,7 +77,8 @@ const EXEMPT = {
     'T75 F22 · after an export the CNC view says how many parts the machine does not finish (the export\'s readiness banner), one line beside the gate\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."*'
     + ' DECOR F3: await packaged front/back CNC exports. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T77 F3 · the two levels of the Ornate reference files: one select, shown only to a job that carries an Ornate leaf, read by every download. *"The CNC export offers two levels in the existing export options (no new numeric field): `Reference (default)` at `sampleMm` and `Full resolution` at `fullSampleMm`; the manifest records which one was written."*'
-    + ' Chat fix 17.10.2026 \u00b7 the three downloads hand each cabinet its slice of the project\'s part number plan (lib/partLabels.js): the label text on LABEL_<cabinet> in the cabinet\'s colour, numbered. *"naklejki 44 na A4 ... kolorami ... przynajmniej kolory napisow pod kolory szafki ... ponumerujemy wszystkie elementy ... ok koduj"*',
+    + ' Chat fix 17.10.2026 \u00b7 the three downloads hand each cabinet its slice of the project\'s part number plan (lib/partLabels.js): the label text on LABEL_<cabinet> in the cabinet\'s colour, numbered. *"naklejki 44 na A4 ... kolorami ... przynajmniej kolory napisow pod kolory szafki ... ponumerujemy wszystkie elementy ... ok koduj"*'
+    + ' T82 F12, after the review · the CNC export\'s preflight counts what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)',
   'src/components/SaveTemplateModal.jsx':
     'T75 F20 · right-clicked inside a selection of two or more, the modal saves a SET (templateStore.saveSet): the units left to right with the gaps between them. *"`lib/templates.js` grows `kind: \'set\'`: an ORDERED list of units (type + params, positions stripped as today) with the gaps between them."*',
   'src/components/TopBar.jsx':
@@ -266,7 +267,8 @@ const EXEMPT = {
     + ' Chat fix 17.10.2026 \u00b7 onExportLabels writes the sticker sheets (lib/labelsPdf.js) from the project\'s part number plan; the Output menu\'s DXF ZIP takes the cabinet\'s labels slice. *"naklejki 44 na A4 ... ponumerujemy wszystkie elementy ... ok koduj"*'
     + ' T79 F1 . the messages and the front-gap rows stand in ONE bottom-left column (components/Messages.jsx, the rows as its top slot through a wrapper, FrontGapWarnings.jsx untouched); the lone Messages mount after the context menu is gone. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
     + ' T79 F18 · onExportLabels takes { sheet } from the two Output entries (21 per sheet, Avery L7160; 44 per sheet) and hands that preset of profile.labels.sheets to exportLabelsPdf; the default stays L7160. *"przełącznik 21/44 naklejek w oknie eksportu"* (the handover), the owner 14:55: *"ok daj"*'
-    + ' T80 F10 · the in-frame checks #40 to #44 stand in the left column beside the front-gap rows (components/InframeWarnings.jsx, the same findings the Check panel reads, the same fly-to). *"Each in the left messages and in the Check panel."* (CLAUDE.md T80 F10); the owner: *"3 mm zawsze."* (21.10.2026, 22:03)',
+    + ' T80 F10 · the in-frame checks #40 to #44 stand in the left column beside the front-gap rows (components/InframeWarnings.jsx, the same findings the Check panel reads, the same fly-to). *"Each in the left messages and in the Check panel."* (CLAUDE.md T80 F10); the owner: *"3 mm zawsze."* (21.10.2026, 22:03)'
+    + ' T82 F12, after the review · the page\'s export preflight counts what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -333,7 +335,8 @@ const EXEMPT = {
   // CLAUDE.md T82 FROZEN 4: *"every PRO file edited is licensed in `EXEMPT` with the owner's words from this
   // file and re-frozen in the same commit."*  T82 F6: the canvas toolbar's Open all takes the HAWA door.
   'src/components/CanvasToolbar.jsx':
-    'T82 F6 · Open all takes the HAWA pocket door with every other door. *"A toggle on the pocket (right panel: Door closed / open; the same in the viewer\'s "Open all" of T69) slides the door into the pocket"*',
+    'T82 F6 · Open all takes the HAWA pocket door with every other door. *"A toggle on the pocket (right panel: Door closed / open; the same in the viewer\'s "Open all" of T69) slides the door into the pocket"*'
+    + ' T82 F12, after the review · the Check button\'s count is what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)',
   // T82 F12: the Check panel draws the note level (TONE.note), the service void behind a vanity.
   'src/components/CheckPanel.jsx':
     'T82 F12 · the Check\'s note level drawn grey (TONE.note): #45, the service void behind a vanity, is a note, never a fault. *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"*',
@@ -368,12 +371,14 @@ const FROZEN = {
   // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/CabinetEditorModal.jsx': '3f080e23b09ce5c5018f89649264e77cb85e5f5594dafecd839673d6db9fd066',
   // T82 F6 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/CanvasToolbar.jsx': 'd7686d45b88c7a4121b2838e3bdbc5e128b38afd1608f2000ace8733677d4cbc',
+  // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CanvasToolbar.jsx': '4348532ae83ff7f113980edacae7fe37afe497ab48c15d8d7e00226084e0f6f0',
   // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/CheckPanel.jsx': '8f1dfc8c0670aebddd6d23ea11465168cc7d61ca95a6c5b9e173ec9992c8f168',
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
   // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
-  'src/components/CncTree.jsx': '68aa1ffd5f8c07525c34b7b242c3adc387bc70157a38ae5bd07d0f257691d8e0',
+  // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CncTree.jsx': 'a814c546318362c1310280917bd05ba962d705715688c7768d4101a5f58a37a3',
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 (the afternoon) re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F15 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -474,7 +479,8 @@ const FROZEN = {
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F18 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '654f82638286e4d6cd1fa4d1069d7057cc35e39b2ece198a4b07f3415da72f58',
+  // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': 'c9ae6cf622068e116c55dcfd1c762ada19652a6c55b6b7855d53b1392a5dfdff',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────

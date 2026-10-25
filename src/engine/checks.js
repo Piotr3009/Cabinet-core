@@ -1570,10 +1570,21 @@ export function runnerRowsOf(result) {
   return [...rows.values()].sort((a, b) => a.drawer - b.drawer);
 }
 
+/**
+ * T82 F12, after the review (topbasin 6) · the findings that ask something of
+ * a person: every one but a NOTE. A note (#45, the vanity's service void)
+ * informs and is listed, and is never "to look at": the export preflight, the
+ * toolbar's count and this summary all read it here, one reading.
+ */
+export function findingsToAct(findings) {
+  return (findings || []).filter((f) => f && f.level !== 'note');
+}
+
 /** How the panel's header reads: what was found, in one sentence. */
 export function checkSummary(findings) {
-  const reds = (findings || []).filter((f) => f.level === 'red').length;
-  const yellows = (findings || []).filter((f) => f.level === 'yellow').length;
+  const work = findingsToAct(findings);
+  const reds = work.filter((f) => f.level === 'red').length;
+  const yellows = work.filter((f) => f.level === 'yellow').length;
   if (!reds && !yellows) return 'Nothing to fix — the job is ready to cut.';
   const parts = [];
   if (reds) parts.push(`${reds} fault${reds === 1 ? '' : 's'}`);

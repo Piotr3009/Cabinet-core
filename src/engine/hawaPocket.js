@@ -568,6 +568,33 @@ export function check38(doors, tb, kt1, s, K) {
     + 'cabinet; make the cabinet deeper or the door narrower';
 }
 
+/**
+ * #38 again, the house's side of D8 (after the review of 25.10.2026): the
+ * pocket has ONE front plane, the plane of the cabinets it covers ("the
+ * pocket's and the cabinets' front edges in one plane", CLAUDE.md F3), and its
+ * door closes 3 in front of it. Covered cabinets whose fronts are not in one
+ * line cannot all be closed by it: the pocket stands on the foremost, the
+ * room says so, naming each depth and front, and the cure. `planes` is
+ * [{ unitNum, depth, frontMm }] (frontMm from the wall); null when they agree.
+ */
+export function checkPlanes(planes, K) {
+  const list = (planes || []).filter((q) => Number.isFinite(q?.frontMm));
+  if (list.length < 2) return null;
+  const front = Math.max(...list.map((q) => q.frontMm));
+  const back = Math.min(...list.map((q) => q.frontMm));
+  if (front - back <= PLANE_TOLERANCE_MM) return null;
+  const name = (q) => (q.unitNum ? `${q.unitNum}: ` : '');
+  const said = list.map((q, i) => `${name(q)}${hawaMm(q.depth)} deep, its front ${hawaMm(q.frontMm)}${i === 0 ? ' from the wall' : ''}`);
+  const behind = list.filter((q) => front - q.frontMm > PLANE_TOLERANCE_MM);
+  const cure = behind.map((q) => `${q.unitNum || `the ${hawaMm(q.depth)} deep one`} ${hawaMm(front - q.frontMm)} forward`);
+  return `#38 HAWA: the pocket covers cabinets whose fronts are not in one line (${said.join('; ')}); the door closes `
+    + `${hawaMm(K.hawaZFront)} in front of the foremost and ${hawaMm(K.hawaZFront + front - back)} off the other`
+    + `${behind.length > 1 ? 's' : ''}: give them one depth or stand ${cure.join(' and ')}`;
+}
+
+/** Fronts nearer than this are one plane: a floating sum's noise, never a millimetre a joiner sees. */
+const PLANE_TOLERANCE_MM = 0.01;
+
 /** hawa-check-47: the 22 in place of an 18 front (D3). */
 export function check47(frontT, K) {
   if (!panelSwapP(frontT, K)) return null;
@@ -740,13 +767,33 @@ export function hawaPocketFigures(params, profile) {
   const n47 = check47(frontT, K);
   if (n47) notes.push({ n: HAWA_CHECKS.PANEL_22, code: HAWA_CODES.PANEL_22, message: n47 });
 
+  // ─── ONE KT1 PER POCKET (KIT_HAWA.lsp D8; the review of 25.10.2026) ─────
+  // The kit takes one cabinet depth for the pocket, and every door in it is
+  // figured on that one: the shallowest covered cabinet, so no door's T1, no
+  // track and no pilot passes the pocket's own panels. Where the covered
+  // cabinets' fronts are not in one line, the door cannot close 3 in front of
+  // all of them: #38 says so (checkPlanes), the door is never cut into one.
+  const entries = sides
+    .map((side) => ({ side, c: cover.find((e) => e && (e.side === side || (doors === 1 && e.side == null))) }))
+    .filter((e) => e.c);
+  const coverKT1 = (c) => Number(c.KT1) || Number(params?.depth) || 0;
+  const pocketKT1 = entries.length ? Math.min(...entries.map((e) => coverKT1(e.c))) : null;
+  const clearance = Math.max(0, Number(profile?.room?.wallBackClearance) || 0);
+  // Each covered cabinet's front plane from the wall: the cover's own (its
+  // units' backs and depths), else the house's: its back on the wall clearance.
+  const planes = entries.flatMap((e) => (Array.isArray(e.c.frontPlanes) && e.c.frontPlanes.length
+    ? e.c.frontPlanes.map((q) => ({ unitNum: q.unitNum ?? null, depth: Number(q.depth), frontMm: Number(q.frontMm) }))
+    : [{
+      unitNum: (e.c.unitNums || []).join(' and ') || null, depth: coverKT1(e.c), frontMm: clearance + coverKT1(e.c),
+    }]));
+  const rPlanes = checkPlanes(planes, K);
+  if (rPlanes) refusals.push({ n: HAWA_CHECKS.POCKET_DEPTH, code: HAWA_CODES.POCKET_DEPTH, side: null, message: rPlanes });
+
   const doorsOut = [];
-  for (const side of sides) {
-    const c = cover.find((e) => e && (e.side === side || (doors === 1 && e.side == null)));
-    if (!c) continue;
+  for (const { side, c } of entries) {
     const span = Number(c.spanMm) || 0;
     const far = c.freeEndClearanceMm != null ? Number(c.freeEndClearanceMm) : farClearanceMm(c.far || 'none', profile);
-    const KT1 = Number(c.KT1) || Number(params?.depth) || 0;
+    const KT1 = pocketKT1;
     const TB = tbOf(doors, frontT, span, far, K);
     const [T1, M, E1, kt] = depthOf(doors, TB, KT1, S, K);
     const cls = classOf(TH, TB, S, dens, choice.cls, K);
@@ -788,6 +835,7 @@ export function hawaPocketFigures(params, profile) {
       M,
       E1,
       KT1,
+      coverKT1: coverKT1(c),
       ktOwn: kt,
       trackMm: trackLength(T1, K),
       steelMm: cls === 35 ? steelLength(TB, M, K) : null,
@@ -802,14 +850,12 @@ export function hawaPocketFigures(params, profile) {
   }
 
   // The pocket's depth: the LISP's min(T1 + RE, KT1) for its door; with two
-  // doors, the deeper door's T1 + RE, never past the shallower cabinet.
+  // doors on the one KT1, the deeper T1 + RE, never past that KT1 (so every
+  // door's T1 is within it).
   let KT;
   if (!doorsOut.length) KT = Number(params?.depth) || 0;
-  else if (doorsOut.length === 1) KT = doorsOut[0].ktOwn;
-  else {
-    KT = Math.min(Math.max(...doorsOut.map((d) => d.T1)) + K.hawaRear, Math.min(...doorsOut.map((d) => d.KT1)));
-  }
-  const KT1 = doorsOut.length ? Math.min(...doorsOut.map((d) => d.KT1)) : null;
+  else KT = Math.max(...doorsOut.map((d) => d.ktOwn));
+  const KT1 = pocketKT1;
 
   const tbs = doors === 2
     ? Object.fromEntries(doorsOut.map((d) => [d.side, d.TB]))

@@ -538,3 +538,46 @@ test('F1 mirror · the engine\'s figures are the LISP\'s for every door of the g
     }
   }
 });
+
+// ═══ AFTER THE REVIEW OF PART A (25.10.2026) ═══════════════════════════════
+//
+// Each finding reproduced first: the test below FAILED on the integrated F14
+// (cb3ca7cc) and holds the fix.
+
+test('F3 review (a) · a two-door pocket between a 600 and a 500 cabinet: both doors on the pocket\'s ONE KT1 (KIT_HAWA.lsp D8), the hardware inside the pocket, #38 in words', () => {
+  const cover = {
+    doors: [
+      { side: 'L', units: ['a'], unitNums: ['01'], spanMm: 450, KT1: 600, freeEndClearanceMm: 1.5 },
+      { side: 'R', units: ['b'], unitNums: ['03'], spanMm: 450, KT1: 500, freeEndClearanceMm: 1.5 },
+    ],
+  };
+  const params = pocket({
+    doors: 2, frontT: 19, height: 2400, depth: 500, cover,
+  });
+  const r = computeCabinet(params, P);
+  const f = r.hawa;
+  assert.equal(f.KT1, 500, 'one KT1 per pocket: the shallower cabinet');
+  for (const d of f.doors) {
+    assert.equal(d.KT1, 500, `door ${d.side} figured on the pocket's KT1`);
+    assert.deepEqual([d.T1, d.M, d.E1], L.call('hawa-depth', 2, d.TB, 500, 19).slice(0, 3), 'the LISP at the pocket\'s KT1');
+    assert.ok(d.T1 <= f.KT, `door ${d.side}: T1 ${d.T1} within the pocket ${f.KT}`);
+    assert.ok(5 + d.trackMm <= f.KT, `door ${d.side}: the ${d.trackMm} track on its panel B`);
+    assert.ok(d.open.z >= 0, `door ${d.side}: open, it stays in the pocket (z ${d.open.z})`);
+  }
+  for (const b of r.panels.filter((x) => x.part === 'POCKET-B')) {
+    for (const hole of b.meta.pocket.holes) assert.ok(hole[1] <= b.w, `${b.id}: a pilot at u ${hole[1]} on a ${b.w} board`);
+  }
+  // The deeper cabinet's front stands 100 past the pocket's: the room says so.
+  const words = f.refusals.find((x) => x.n === 38 && x.code === 'HAWA_POCKET_DEPTH' && /one line/.test(x.message));
+  assert.ok(words, '#38 in words');
+  assert.equal(words.message, '#38 HAWA: the pocket covers cabinets whose fronts are not in one line (01: 600 deep, '
+    + 'its front 610 from the wall; 03: 500 deep, its front 510); the door closes 3 in front of the foremost and 103 '
+    + 'off the other: give them one depth or stand 03 100 forward');
+  assert.ok(r.warnings.some((w) => w.code === 'HAWA_POCKET_DEPTH' && w.message === words.message));
+  assert.equal(f.ok, false);
+  // Equal sides: the LISP's pocket, no word.
+  const even = fig(pocket({
+    doors: 2, frontT: 19, height: 2400, depth: 600, cover: coverTwo(450, 600),
+  }));
+  assert.deepEqual(even.refusals, []);
+});

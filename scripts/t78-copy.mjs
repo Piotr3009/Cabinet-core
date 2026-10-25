@@ -165,6 +165,14 @@ export const T78_PRO_EDITS = [
     words: 'the owner, 25.10.2026: *"fluted teraz to sa rowki a ja potrzebuje chmurke"*, *"daj wariant b czyli na styk '
       + 'narazie"*, *"do tego daj ustawienie srednicy walkow tez"*.',
   },
+  {
+    pro: 'src/components/ElementProperties.jsx',
+    by: 'T82 F18',
+    why: 'the free panel\'s Thickness field gains the ladder 18, 22, 25, 30, 36 (`profile.freePanel.thicknessLadder`, '
+      + 'PROPOSED) beside the free number, each chip `put({ board_t })` through `updateUnitParams`; the number stays the '
+      + 'typed road, and the engine cuts the board at it (cabinet.js `fpT`).',
+    words: 'the owner, 25.10.2026 13:36: *"nie moge wizualnie zwiekszyc tez grubosci tego panela"*.',
+  },
 ];
 
 /**

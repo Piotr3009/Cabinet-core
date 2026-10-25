@@ -2288,6 +2288,10 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: {
       length: 800, width: 400, tilt: 0, mountHeight: 0,
     },
+    // T82 F18 · the Thickness field's ladder beside its free number
+    // (*"nie moge wizualnie zwiekszyc tez grubosci tego panela"*): PROPOSED
+    // (CLAUDE.md T82 THE NUMBERS), the owner confirms or changes it.
+    thicknessLadder: [18, 22, 25, 30, 36],
   },
 
   // ─── T74 F7 · THE WARDROBE'S WALL UNIT ────────────────────────────────────

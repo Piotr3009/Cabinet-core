@@ -3769,7 +3769,15 @@ export function computeCabinet(params, profileOverride) {
   // what the piece editor draws on it (an arc, a drill) is added the way it is
   // added to any board (`applyPartEdits`).
   if (type.carcass.top === 'free') {
-    const fpT = G;
+    // ─── T82 F18 · THE THICKNESS SHOWS ─────────────────────────────────────
+    // *"nie moge wizualnie zwiekszyc tez grubosci tego panela"*. The board is
+    // the panel's own `board_t` (the kit's field since T74), read BEFORE the
+    // carcass slot: `G` is the project's carcass 1, which the store always
+    // hands down, and it cut an 18 board into the 36 box the room drew
+    // (verify/t82/f18-probe.md). Only this branch reads it: a cabinet's own
+    // `board_t` (every unit is born with one) never reaches here, so the
+    // carcass slot keeps ruling every cabinet.
+    const fpT = Number(params?.board_t) > 0 ? Number(params.board_t) : G;
     const fp = freePanelOf({ ...params, width: W, height: H, depth: D, board_t: fpT }, P);
     const at = freePanelPlacement(fp);
     panels.push(panel({

@@ -297,6 +297,9 @@ export const NEW_FILES = [
   // T82 F17 (25.10.2026): the panel in front of a chimney can grow; F17's probe
   'scripts/t82-probe-f17.mjs',
   'scripts/t78-classify.d/f43-t82-f17.mjs',
+  // T82 F18 (25.10.2026): the thickness shows, the panel's own board; F18's probe
+  'scripts/t82-probe-f18.mjs',
+  'scripts/t78-classify.d/f43-t82-f18.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -47,6 +47,17 @@ LICENSED['src/engine/drawings/setChains.js'] = {
   gates: [],
 };
 
+// E1's half after the review (its draft f43-t82-f21.E1.mjs, merged here): the renderer. A turned figure prints where the
+// drawing puts it: the PDF writer turns a rotated text's anchor itself, because jsPDF applies `align` and `baseline`
+// along the page's axes before it turns the text. Flat text, the SVG and every cut untouched.
+LICENSED['src/lib/drawingExport.js'] = {
+  why: `T82 F21, after the review: a rotated text is handed to jsPDF at its turned baseline origin (turnedTextOrigin: `
+    + `the alignment's share of getTextWidth back along the line, jsPDF's own middle offset across it), so a figure up a `
+    + `vertical chain prints centred on its anchor (it printed 2.97 mm across and 1.26 mm along). Flat text byte for byte. `
+    + `*"musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)`,
+  gates: [],
+};
+
 export const LIVENESS = {};
 
 export const GOLDENS = [];

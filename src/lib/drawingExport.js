@@ -269,12 +269,46 @@ function drawSheet(doc, sheet) {
         }
         if (e.colour) { const [cr, cg, cb] = hexToRgb(e.colour); doc.setTextColor(cr, cg, cb); }
         doc.setFont(undefined, e.weight === 'bold' ? 'bold' : 'normal');
-        doc.text(String(e.text), e.x, flip(e.y), opts);
+        if (opts.angle) {
+          // T82 F21, after the review: a turned text is anchored here, not by jsPDF (below).
+          const [ox, oy] = turnedTextOrigin(doc, String(e.text), e.x, flip(e.y), opts.angle, opts.align);
+          doc.text(String(e.text), ox, oy, { angle: opts.angle });
+        } else {
+          doc.text(String(e.text), e.x, flip(e.y), opts);
+        }
       }
     }
     if (oc) oc.end();
   }
   return doc;
+}
+
+/**
+ * ─── T82 F21, AFTER THE REVIEW · A TURNED FIGURE PRINTS WHERE THE DRAWING PUTS IT
+ *
+ * The owner, 25.10.2026, 11:40: *"musze miec dzisiaj profesjonalne rysunki
+ * dla klientow"*, and the drawings are the model. jsPDF applies `align` and
+ * `baseline` along the PAGE's axes and only then turns the text about the
+ * point it reached, so every figure up a vertical chain printed about 3 mm
+ * across its line and 1.3 mm along it from where the sheet (and its collision
+ * law) put it. So the anchor is turned here: back along the text's own line
+ * by its alignment's share of the width (jsPDF's own getTextWidth), and
+ * across it by jsPDF's own 'middle' offset (half the size, less the
+ * line-height descent), then jsPDF is handed the baseline origin with the
+ * angle and no alignment. A flat text never comes here and prints as before.
+ *
+ * @param {number} angle  jsPDF's degrees, counter-clockwise on the paper
+ * @returns {[number, number]} the baseline origin, jsPDF's frame (Y down)
+ */
+export function turnedTextOrigin(doc, s, x, y, angle, align) {
+  const a = (angle * Math.PI) / 180;
+  const along = [Math.cos(a), -Math.sin(a)];
+  const down = [Math.sin(a), Math.cos(a)];
+  const share = align === 'center' ? 0.5 : (align === 'right' ? 1 : 0);
+  const w = doc.getTextWidth(s) * share;
+  const h = doc.getFontSize() / doc.internal.scaleFactor;
+  const lift = h / 2 - h * (doc.getLineHeightFactor() - 1);
+  return [x - along[0] * w + down[0] * lift, y - along[1] * w + down[1] * lift];
 }
 
 function hexToRgb(hex) {

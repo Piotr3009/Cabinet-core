@@ -329,6 +329,8 @@ export const NEW_FILES = [
   'test/turn82-f15-reed-jpull-room.test.js',
   // T82 F16 (25.10.2026): off the wall, where asked, every time (after the review)
   'test/turn82-f16-panel-recess.test.js',
+  // T82 F21 (25.10.2026): a vertical figure prints where the drawing puts it (after the review)
+  'test/turn82-f21-rotated-figures.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

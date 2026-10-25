@@ -65,6 +65,18 @@
 // workshop's default. A rung the shop has no article for is a fallback entry:
 // the room draws no runner there (T43 F7) and the sheet draws today's symbol.
 //
+// T82 F23 . WHAT A HEADLESS CALLER SEES. The owner, 24.10.2026 (19:34):
+// *"narysowane zawiasy to jakas karykatura"*. The door's file is the room's
+// own resolution, and that reads the engine's hinge catalogue, which the app
+// hands over at start (App.jsx: lib/hardwareCatalogue.js
+// loadHardwareCatalogues). A node script that renders the set without that
+// call resolves no file, by the engine's law "no catalogue, null all the way
+// down" (engine/hinges.js), as the room mounts no hinge model there: the
+// sheet draws today's symbol. That, and the NL500 T the T81 kitchen's BUDR2
+// orders (no GLB in the bucket), is why the nine pages of 25.10 did not move
+// with the traced file (verify/t82/f23-probe.md): call it first to see what
+// the app draws.
+//
 // Pure: no React, no three.js, no store, no fetch.
 
 import DATA from '../../../reference/hardware/silhouettes.json' with { type: 'json' };

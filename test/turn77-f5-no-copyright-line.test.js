@@ -313,6 +313,9 @@ export const NEW_FILES = [
   'scripts/t82-probe-f22.mjs',
   'test/turn82-f22-f24-sheets.test.js',
   'scripts/t78-classify.d/f43-t82-f22.mjs',
+  // T82 F23 (25.10.2026): the hinges and the runners from the models; F23's probe
+  'scripts/t82-probe-f23.mjs',
+  'scripts/t78-classify.d/f43-t82-f23.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

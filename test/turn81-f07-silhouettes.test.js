@@ -29,6 +29,22 @@
 // the shop stocks (the side silhouette is as long as the runner; NL450 the
 // longest), and NL500 is asserted to be a named fallback, never an invented
 // file.
+//
+// T82 F23 (25.10.2026). The owner, 24.10.2026 (19:34): *"narysowane zawiasy
+// to jakas karykatura, dalem ci przeciez dxf z dokladnymi rysunkami"*; and of
+// the elevation, 22.10.2026 (22:56): *"2 zawiasy na elewacji wedlug silnika i
+// podobnie jak na moim dxf"*. The committed file is now the tracer's own
+// output against the live bucket of 25.10 (verify/t82/silhouettes-live.json,
+// byte for byte: this session's proxy refuses the bucket's host): 24 traced
+// of 45, six hinges, two plates, fifteen runners and the CONERO. The probe
+// (verify/t82/f23-probe.md, scripts/t82-probe-f23.mjs) found why the nine
+// pages did not move with it: a headless render never hands the engine the
+// hinge catalogue (App.jsx does, through lib/hardwareCatalogue.js), so a door
+// resolves no file, as the room mounts no model with no catalogue; and the
+// section A-A cuts the BUDR2, whose 490 box orders the NL500 T, a rung with
+// no GLB. Section 8 holds the three: the real rows, the runner's side
+// silhouette on the section where the rung has a model, the fronts sheet's
+// bar of 6 x 70 beside the traced shapes of the plan and the section.
 
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -53,7 +69,10 @@ import {
 } from '../src/engine/runners.js';
 import { resolveHardwareCatalogue } from '../src/lib/hardwareSource.js';
 import { wallGroups } from '../src/engine/drawings/wallElevation.js';
-import { worktopsOnWall } from '../src/engine/drawings/setElevation.js';
+import { buildRunElevation, worktopsOnWall } from '../src/engine/drawings/setElevation.js';
+import { buildStation, sectionStations } from '../src/engine/drawings/setSection.js';
+import { buildPlan } from '../src/engine/drawings/setPlan.js';
+import { drawingContext } from '../src/engine/drawings/setSheet.js';
 import { projectRun } from '../src/engine/drawings/projector.js';
 import {
   silhouetteEntries, silhouetteMark, silhouetteReader, silhouetteSource,
@@ -66,7 +85,7 @@ import { coneroClone } from '../src/3d/coneroModels.js';
 import {
   RASTER, makeFetcher, resolveBase, serialise, traceRings,
 } from '../scripts/t81-silhouettes.mjs';
-import { t81Kitchen, setArgs } from '../scripts/t81-kitchen.mjs';
+import { S as store, t81Kitchen, setArgs } from '../scripts/t81-kitchen.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const SCRIPT = join(ROOT, 'scripts', 't81-silhouettes.mjs');
@@ -729,4 +748,179 @@ test('F7 . the four files: ASCII, no em or en dash, the owner\'s header on the c
   const imports = read('src/engine/drawings/silhouettes.js').split('\n').filter((l) => /^import\b/.test(l));
   assert.ok(imports.length > 0);
   for (const l of imports) assert.doesNotMatch(l, /'(react|three)['/]|\/stores\/|\/3d\//, l);
+});
+
+// === 8. T82 F23 . THE TRACED FILE ON THE SHEETS ============================
+//
+// The owner, 24.10.2026 (19:34): *"narysowane zawiasy to jakas karykatura,
+// dalem ci przeciez dxf z dokladnymi rysunkami"*. CLAUDE.md T82 F23: the
+// section through the BUDR2 draws the MOVENTO runner's side silhouette, the
+// fronts sheet keeps the solid bars of 6 x 70 (*"2 zawiasy na elewacji wedlug
+// silnika i podobnie jak na moim dxf"*), the section and the plan draw the
+// traced shapes.
+
+test('T82 F23 . the committed file is the tracer\'s live output: 24 real rows, six hinges, two plates, fifteen runners, the CONERO', () => {
+  const traced = COMMITTED.entries.filter(isTraced);
+  const count = (f) => traced.filter((e) => e.family === f).length;
+  assert.equal(COMMITTED.entries.length, 45, 'every family the room draws, as T81 named them');
+  assert.equal(traced.length, 24, 'traced from the files the room loads');
+  assert.deepEqual({
+    hinge: count('hinge'), plate: count('plate'), runner: count('runner'), kit: count('kit'),
+  }, {
+    hinge: 6, plate: 2, runner: 15, kit: 1,
+  });
+  // Byte for byte the tracer's own output of 25.10 (the bucket answered that
+  // session; this one's proxy refuses the host), never a hand edit.
+  assert.equal(COMMITTED_TEXT, read('verify/t82/silhouettes-live.json'));
+  assert.match(COMMITTED.source, /^the hardware bucket at https:\/\//, 'the live bucket, not a mirror');
+  assert.deepEqual([COMMITTED.catalogues.hinges.source, COMMITTED.catalogues.hinges.rows], ['bucket', 19], 'the bucket\'s own hinge manifest answered');
+  assert.deepEqual([COMMITTED.catalogues.runners.source, COMMITTED.catalogues.runners.rows], ['bucket', 40], 'the bucket\'s own runner manifest answered');
+  assert.deepEqual(entriesOf(COMMITTED, 'hinge').filter(isTraced).map((e) => e.key).sort(),
+    ['71B3550', '71B3590', '71B7550', '71B7590', '71B9550', '71B9590'], 'the six CLIP top hinges');
+  assert.deepEqual(entriesOf(COMMITTED, 'plate').filter(isTraced).map((e) => e.key).sort(), ['174E6100.01', '174E6130.01'], 'the two knock-in plates');
+  assert.ok(isTraced(entriesOf(COMMITTED, 'kit').find((e) => e.key === 'pulldown_rail')), 'the CONERO pull-down');
+  // A rung is traced exactly where the shop stocks its article (the manifest
+  // the room reads); every other rung is named, never invented.
+  const shop = JSON.parse(read('reference/hardware/movento.json')).items;
+  const M = P().hardware.runner.movento;
+  for (const e of entriesOf(COMMITTED, 'runner')) {
+    const stocked = shop.some((r) => Number(r.nl) === e.nl && String(r.variant) === e.variant);
+    assert.equal(isTraced(e), stocked, `${e.key}: traced ${isTraced(e)}, stocked ${stocked}`);
+    if (!stocked) {
+      assert.match(e.reason, /no NL\d+ [A-Z]+ article in the runner manifest/, `${e.key} says why`);
+      continue;
+    }
+    // runnerModelFits: the side silhouette is as long as the rung.
+    const [z0, z1] = span(flat(e.views.side), 0);
+    assert.ok(Math.abs((z1 - z0) - e.nl) <= M.lengthTolerance + TOL_SIZE, `${e.key}: ${z1 - z0} long`);
+  }
+});
+
+/** A section station of the T81 kitchen through the BUDR2, at its own depth or another, in model millimetres. */
+function budr2Section(depth = null) {
+  const prof = P();
+  const ids = t81Kitchen({ inframe: true });
+  if (depth) store().updateUnitParams(ids.c, { depth });
+  const a = setArgs();
+  const group = wallGroups(a.entries, prof)[0];
+  const [A] = sectionStations(group);
+  assert.equal(A.member.unit.id, ids.c, 'A-A cuts the drawer unit');
+  const st = buildStation(group, A, {
+    room: a.room, worktops: worktopsOnWall(a.worktops, 0), profile: prof, ctx: drawingContext(1, prof), frontTypeOf: a.frontTypeOf,
+  });
+  const mine = st.entities.filter((e) => e.kind === 'line' && String(e.src || '').startsWith(`${ids.c}:hw:runner:`));
+  return {
+    ids, member: A.member, st, mine, runners: hardwareInstances(A.member.result, prof).runners,
+  };
+}
+
+test('T82 F23 . the section through the BUDR2 draws the MOVENTO side silhouette where its rung has a model; the NL500 T stays named', () => {
+  const prof = P();
+  const M = prof.hardware.runner.movento;
+  // THE T81 KITCHEN: a 558 carcass, a 490 box, the NL500 the BOM orders. No
+  // article in the bucket's manifest, so no GLB: the room draws no runner
+  // (T43 F7) and the section the BOM's runner, today's symbol (T81 decision 26).
+  {
+    const { mine, runners } = budr2Section();
+    assert.ok(runners.length > 0);
+    for (const rn of runners) {
+      const nominal = runnerAskFor(rn.length, prof);
+      assert.equal(nominal, 500, 'a 490 box asks NL500');
+      assert.equal(silhouetteMark('runner', { ...rn, nominal }), null);
+    }
+    const e = entriesOf(COMMITTED, 'runner').find((x) => x.nl === 500 && x.variant === M.defaultVariant);
+    assert.equal(e.fallback, 'symbol');
+    assert.match(e.reason, new RegExp(`no NL500 ${M.defaultVariant} article in the runner manifest`));
+    assert.ok(mine.length > 0, 'the symbol is drawn');
+    assert.ok(mine.every((x) => !x.silhouette), 'and no shape is invented for a runner nobody stocks');
+  }
+  // THE SAME BUDR2 AT 460: a 390 box asks the NL400 T, which the bucket has.
+  // The section draws the traced side silhouette, never the symbol, under the
+  // box it carries and as long as the model.
+  {
+    const { member, mine, runners } = budr2Section(460);
+    assert.equal(runners[0].length, 390);
+    assert.equal(runnerAskFor(runners[0].length, prof), 400);
+    const e = entriesOf(COMMITTED, 'runner').find((x) => x.key === `NL400-${M.defaultVariant}`);
+    assert.ok(isTraced(e), 'the NL400 T is traced');
+    assert.ok(mine.length > 0, 'the runners beyond the knife are drawn');
+    assert.ok(mine.every((x) => x.silhouette === true && x.family === 'runner' && x.layer === 'RUNNERS'), 'the traced shape on RUNNERS, not the symbol');
+    const [z0, z1] = span(flat(e.views.side), 0);
+    const [v0, v1] = span(flat(e.views.side), 1);
+    const bySrc = new Map();
+    for (const x of mine) bySrc.set(x.src, [...(bySrc.get(x.src) || []), x]);
+    assert.equal(bySrc.size, runners.filter((r) => r.side === 'R').length, 'the right-hand runners stand beyond the knife, one per drawer');
+    for (const [src, ls] of bySrc) {
+      const xs = ls.flatMap((x) => [x.x1, x.x2]);
+      const ys = ls.flatMap((x) => [x.y1, x.y2]);
+      assert.ok(near(Math.max(...xs) - Math.min(...xs), z1 - z0, TOL_SIZE), `${src}: ${Math.max(...xs) - Math.min(...xs)} deep, the model's ${z1 - z0}`);
+      assert.ok(Math.max(...ys) - Math.min(...ys) <= (v1 - v0) + TOL_SIZE, `${src}: no taller than the model`);
+      // On its drawer's runner row: the model's underside on the runner's own.
+      const rn = runners.find((r) => r.side === 'R' && Math.abs(member.base + r.y - Math.min(...ys)) < 1);
+      assert.ok(rn, `${src}: on a runner row (${Math.min(...ys)})`);
+    }
+  }
+});
+
+test('T82 F23 . with the catalogue the app hands the engine, the fronts keep the bar of 6 x 70; the plan and the section draw the traced hinge', () => {
+  const prof = P();
+  // App.jsx at start: lib/hardwareCatalogue.js loadHardwareCatalogues hands the
+  // engine the CLIP top catalogue of record; a headless caller that does not
+  // gets null all the way down (the probe's finding, R1 against R2).
+  setHingeCatalogue(JSON.parse(read('reference/hardware/cliptop-hinges.json')));
+  try {
+    const ids = t81Kitchen({ inframe: true });
+    const a = setArgs();
+    const group = wallGroups(a.entries, prof)[0];
+    const ctx = drawingContext(15, prof);
+    const onWall = worktopsOnWall(a.worktops, 0);
+    let hinges = 0;
+    for (const m of group.members) {
+      for (const hg of hardwareInstances(m.result, prof).hinges) {
+        hinges += 1;
+        assert.equal(typeof silhouetteMark('hinge', hg), 'function', `${m.unit.params.unit_num}: the traced hinge`);
+        assert.equal(typeof silhouetteMark('plate', hg), 'function', `${m.unit.params.unit_num}: the traced plate`);
+      }
+    }
+    assert.ok(hinges >= 12, `the wall's hinges (${hinges})`);
+    // THE FRONTS: one solid bar per cup, 6 x 70, and no traced hinge or plate
+    // (the cups are behind the leaves; the elevation's convention is the bar).
+    const fronts = buildRunElevation(group, {
+      mode: 'fronts', room: a.room, worktops: onWall, frontTypeOf: a.frontTypeOf, profile: prof, ctx,
+    });
+    const bars = fronts.entities.filter((e) => e.layer === 'HINGE_MARK' && e.kind === 'rect');
+    assert.equal(bars.length, hinges, 'one bar per hinge the engine hangs');
+    const { width, height } = prof.drawings.hingeBar;
+    for (const b of bars) assert.deepEqual([b.w, b.h], [width, height], 'a bar of 6 x 70');
+    assert.equal(fronts.entities.filter((e) => e.silhouette && (e.family === 'hinge' || e.family === 'plate')).length, 0,
+      'the fronts sheet draws the bar, not the model');
+    // THE PLAN: the hinges and plates under the cut are the traced shapes.
+    const plan = buildPlan(a.entries, {
+      which: 'base', room: a.room, worktops: a.worktops.map((w) => w.geometry || w), profile: prof, ctx: drawingContext(25, prof), frontTypeOf: a.frontTypeOf,
+    });
+    const planSil = (f) => plan.entities.filter((e) => e.silhouette && e.family === f && e.layer === 'HINGES').length;
+    assert.ok(planSil('hinge') > 0 && planSil('plate') > 0, `the plan's hinges ${planSil('hinge')}, plates ${planSil('plate')}`);
+    // THE SECTION through the pair (the dropdown's C-C): the right leaf's
+    // hinges stand beyond the knife, traced, and no symbol stands in for them.
+    const station = sectionStations(group, { chosenId: ids.b }).find((s) => s.member.unit.id === ids.b);
+    assert.ok(station, 'a station through the BUD 800');
+    const st = buildStation(group, station, {
+      room: a.room, worktops: onWall, profile: prof, ctx: drawingContext(1, prof), frontTypeOf: a.frontTypeOf,
+    });
+    const hingeLines = st.entities.filter((e) => e.kind === 'line' && String(e.src || '').startsWith(`${ids.b}:hw:hinge:`));
+    const plateLines = st.entities.filter((e) => e.kind === 'line' && String(e.src || '').startsWith(`${ids.b}:hw:plate:`));
+    assert.ok(hingeLines.length > 0 && plateLines.length > 0, `the section's hinges ${hingeLines.length}, plates ${plateLines.length}`);
+    assert.ok([...hingeLines, ...plateLines].every((e) => e.silhouette === true), 'the traced shapes, never the cup-and-arm symbol');
+  } finally {
+    clearHingeCatalogue();
+  }
+  // Headless, the catalogue never handed over: the door resolves no file, the
+  // sheet today's symbol, as the room mounts no model (null all the way down).
+  t81Kitchen({ inframe: true });
+  for (const { result } of setArgs().entries) {
+    for (const hg of hardwareInstances(result, prof).hinges) {
+      assert.equal(silhouetteMark('hinge', hg), null);
+      assert.equal(silhouetteMark('plate', hg), null);
+    }
+  }
 });

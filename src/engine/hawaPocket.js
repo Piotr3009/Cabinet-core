@@ -587,9 +587,11 @@ export function checkPlanes(planes, K) {
   const said = list.map((q, i) => `${name(q)}${hawaMm(q.depth)} deep, its front ${hawaMm(q.frontMm)}${i === 0 ? ' from the wall' : ''}`);
   const behind = list.filter((q) => front - q.frontMm >= PLANE_TOLERANCE_MM);
   const cure = behind.map((q) => `${q.unitNum || `the ${hawaMm(q.depth)} deep one`} ${hawaMm(front - q.frontMm)} forward`);
+  // Cabinets of one depth stood off their wall unequally: the cure is the stand-off alone.
+  const oneDepth = new Set(list.map((q) => q.depth)).size === 1;
   return `#38 HAWA: the pocket covers cabinets whose fronts are not in one line (${said.join('; ')}); the door closes `
     + `${hawaMm(K.hawaZFront)} in front of the foremost and ${hawaMm(K.hawaZFront + front - back)} off the other`
-    + `${behind.length > 1 ? 's' : ''}: give them one depth or stand ${cure.join(' and ')}`;
+    + `${behind.length > 1 ? 's' : ''}: ${oneDepth ? '' : 'give them one depth or '}stand ${cure.join(' and ')}`;
 }
 
 /**

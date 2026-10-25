@@ -91,7 +91,8 @@ export const LICENSED = {
       + `check47 in the kit\'s words, pocketCoverOf (span, KT1, the house\'s far clearance, drawer fronts refused). ${OWNER}`
       + ' T82 F3, after the review: ONE KT1 per pocket (KIT_HAWA.lsp D8, the shallowest covered cabinet) for every door, KT the deeper door\'s T1 + RE capped at it; covered fronts out of one line refused in #38\'s words, each door\'s own depth as coverKT1.'
       + ' After the review (the front plane): pocketCoverOf gives each covered cabinet\'s front plane from the wall (frontPlanes), hawaPocketFigures publishes frontPlaneMm and backFromWallMm, so the store stands the pocket on that plane.'
-      + ' After the review: the front plane is read from the store\'s fronts (pocket_cover doors[].fronts, A3\'s), one reader.',
+      + ' After the review: the front plane is read from the store\'s fronts (pocket_cover doors[].fronts, A3\'s), one reader.'
+      + ' After the review: #38\'s cure names the stand-off alone where the covered depths agree.',
     gates: ['hawaPocket'],
   },
 };

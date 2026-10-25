@@ -624,6 +624,11 @@ test('F2/F3 review (b) · the pocket stands ON the covered cabinets\' front plan
   assert.deepEqual(two.refusals.map((x) => x.message), ['#38 HAWA: the pocket covers cabinets whose fronts are not in one line '
     + '(T01: 600 deep, its front 610 from the wall; T02: 580 deep, its front 590); the door closes 3 in front of the '
     + 'foremost and 23 off the other: give them one depth or stand T02 20 forward']);
+  // Two of one depth stood off the wall unequally: the cure is the stand-off alone.
+  assert.equal(H.checkPlanes([{ unitNum: 'W01', depth: 558, frontMm: 568 }, { unitNum: 'W02', depth: 558, frontMm: 608 }], H.hawaSpec(P)),
+    '#38 HAWA: the pocket covers cabinets whose fronts are not in one line (W01: 558 deep, its front 568 from the wall; '
+    + 'W02: 558 deep, its front 608); the door closes 3 in front of the foremost and 43 off the other: stand W01 40 forward');
+  assert.equal(H.checkPlanes([{ depth: 558, frontMm: 568 }, { depth: 558, frontMm: 568.4 }], H.hawaSpec(P)), null, 'under 0.5: one plane, as the store says');
   // A cover handed in with no planes (a bare kit, a golden): the house's clearance behind each cabinet.
   assert.equal(fig(pocket({ cover: coverOne(500, 580) })).frontPlaneMm, (Number(P.room.wallBackClearance) || 0) + 580);
 });

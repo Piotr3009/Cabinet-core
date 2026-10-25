@@ -323,6 +323,8 @@ export const NEW_FILES = [
   'test/turn82-f06-door-rings.test.js',
   // T82 F7 (after the review) (25.10.2026): the HAWA door's finish and handle on the sheets
   'test/turn82-f07-hawa-door-sheets.test.js',
+  // T82 F11 (25.10.2026): the basin is seen through the vanity's top (after the review)
+  'test/turn82-f11-basin-top-room.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

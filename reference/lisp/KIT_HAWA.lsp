@@ -262,14 +262,20 @@
 ;;;     and CNC slice; the diameters and depths CONFIRMED except the pilot's).
 ;;;     HAWA_3MM: the panels' screw pilots, fi 3 x 10 (PROPOSED, CLAUDE.md
 ;;;     F5: HAWA screws 4.5 x 16 and 4.5 x 20 into the panel face).
-;;;     FRONT_HINGES_35MM: the cups, the house's layer, the depth 13 stated
-;;;     on every hole (the house's default is 11). FRONT_HINGES_5MM: fi 5 x
-;;;     13. FRONT_HINGES_8MM: fi 8 x 13, the sleeve holes and the III/35
-;;;     profile's holes. HAWA_FOOT_35MM: the foot hole, through.
+;;;     FRONT_HINGES_35MM_D13: the cups, fi 35 x 13. FRONT_HINGES_5MM_D13:
+;;;     fi 5 x 13. FRONT_HINGES_8MM_D13: fi 8 x 13, the sleeve holes and the
+;;;     III/35 profile's holes. HAWA_FOOT_35MM: the foot hole, through.
 ;;;     HAWA_GROOVE_12MM: the III/35 groove, a pocket 12 deep. Their ACI
-;;;     colours 54 to 58 are the next free after RECESS_WINDOW 52 and
-;;;     CORNER_4MM 53 (engine/cnc/layers.js). No existing layer or record
-;;;     moves: every other kit drills what it drilled.
+;;;     colours 54 to 58 (the cup's 59) are the next free after
+;;;     RECESS_WINDOW 52 and CORNER_4MM 53 (engine/cnc/layers.js). No
+;;;     existing layer or record moves: every other kit drills what it drilled.
+;;;     AMENDED AFTER THE REVIEW (T82 F5, 25.10.2026): the cup stood on the
+;;;     house's FRONT_HINGES_35MM, and a DXF circle carries no depth: the
+;;;     shop sets one depth per layer, and that layer's is the house's 11
+;;;     (the owner's measured cup), so a HAWA cup and a house cup on one
+;;;     sheet could not both be right. The door's three holes take layers
+;;;     of their own whose NAMES carry their depth, the house's grammar for
+;;;     a depth-bearing layer (FRONT_{KIND}_D{depth}): one layer, one depth.
 ;;;
 ;;; D16 THE HAND (CONFIRMED by the drawings). The one-door pocket takes
 ;;;     hand "R" when its door covers the units on its RIGHT (the pocket at
@@ -677,15 +683,15 @@
   (setq ta (hawa-ta doors)
         out nil)
   (foreach v (hawa-cup-vs cls th)
-    (setq out (cons (list "FRONT_HINGES_35MM" ta v (hawaCupD) (hawaCupDepth)) out)
-          out (cons (list "FRONT_HINGES_5MM" (+ ta (hawaScrewIn)) (+ v (hawaScrewPitch)) (hawaScrewD) (hawaScrewDepth)) out)
-          out (cons (list "FRONT_HINGES_5MM" (+ ta (hawaScrewIn)) (- v (hawaScrewPitch)) (hawaScrewD) (hawaScrewDepth)) out)))
-  (setq out (cons (list "FRONT_HINGES_8MM" ta (hawaSleeveFromEnd) (hawaSleeveD) (hawaSleeveDepth)) out)
-        out (cons (list "FRONT_HINGES_8MM" ta (- th (hawaSleeveFromEnd)) (hawaSleeveD) (hawaSleeveDepth)) out))
+    (setq out (cons (list "FRONT_HINGES_35MM_D13" ta v (hawaCupD) (hawaCupDepth)) out)
+          out (cons (list "FRONT_HINGES_5MM_D13" (+ ta (hawaScrewIn)) (+ v (hawaScrewPitch)) (hawaScrewD) (hawaScrewDepth)) out)
+          out (cons (list "FRONT_HINGES_5MM_D13" (+ ta (hawaScrewIn)) (- v (hawaScrewPitch)) (hawaScrewD) (hawaScrewDepth)) out)))
+  (setq out (cons (list "FRONT_HINGES_8MM_D13" ta (hawaSleeveFromEnd) (hawaSleeveD) (hawaSleeveDepth)) out)
+        out (cons (list "FRONT_HINGES_8MM_D13" ta (- th (hawaSleeveFromEnd)) (hawaSleeveD) (hawaSleeveDepth)) out))
   (if (= cls 35)
     (foreach v (hawa-steel-rows th)
       (foreach u (hawa-steel-us tb m)
-        (setq out (cons (list "FRONT_HINGES_8MM" u v (hawaSleeveD) (hawaSleeveDepth)) out)))))
+        (setq out (cons (list "FRONT_HINGES_8MM_D13" u v (hawaSleeveD) (hawaSleeveDepth)) out)))))
   (reverse out))
 
 ;;; ---- (e) THE PANELS' HOLES (D12 D13 D14) ----
@@ -937,9 +943,9 @@
 ;;; SKYLON_COMMON's createCNCLayers.
 (defun createHawaLayers ()
   (command "._LAYER" "_N" "HAWA_3MM" "_C" "54" "HAWA_3MM" "")
-  (command "._LAYER" "_N" "FRONT_HINGES_35MM" "_C" "3" "FRONT_HINGES_35MM" "")
-  (command "._LAYER" "_N" "FRONT_HINGES_5MM" "_C" "55" "FRONT_HINGES_5MM" "")
-  (command "._LAYER" "_N" "FRONT_HINGES_8MM" "_C" "56" "FRONT_HINGES_8MM" "")
+  (command "._LAYER" "_N" "FRONT_HINGES_35MM_D13" "_C" "59" "FRONT_HINGES_35MM_D13" "")
+  (command "._LAYER" "_N" "FRONT_HINGES_5MM_D13" "_C" "55" "FRONT_HINGES_5MM_D13" "")
+  (command "._LAYER" "_N" "FRONT_HINGES_8MM_D13" "_C" "56" "FRONT_HINGES_8MM_D13" "")
   (command "._LAYER" "_N" "HAWA_FOOT_35MM" "_C" "57" "HAWA_FOOT_35MM" "")
   (command "._LAYER" "_N" "HAWA_GROOVE_12MM" "_C" "58" "HAWA_GROOVE_12MM" ""))
 

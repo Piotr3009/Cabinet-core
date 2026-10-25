@@ -304,7 +304,7 @@ test('F5 · EXAMPLE 1: every LISP hole is a drill record, the kit\'s own routine
 test('F5 · the diameters and the depths: pilots dia 3 x 10, cups dia 35 x 13, dia 5 x 13, dia 8 x 13, the foot through; no kind says screw', () => {
   const L5 = hawaLayers(P);
   assert.deepEqual(L5, {
-    pilot: 'HAWA_3MM', cup: 'FRONT_HINGES_35MM', screw: 'FRONT_HINGES_5MM', sleeve: 'FRONT_HINGES_8MM', foot: 'HAWA_FOOT_35MM', groove: 'HAWA_GROOVE_12MM',
+    pilot: 'HAWA_3MM', cup: 'FRONT_HINGES_35MM_D13', screw: 'FRONT_HINGES_5MM_D13', sleeve: 'FRONT_HINGES_8MM_D13', foot: 'HAWA_FOOT_35MM', groove: 'HAWA_GROOVE_12MM',
   });
   const want = {
     hawa_pilot: [L5.pilot, 3, 10], hawa_cup: [L5.cup, 35, 13], hawa_cup_hole: [L5.screw, 5, 13], hawa_sleeve: [L5.sleeve, 8, 13], hawa_foot: [L5.foot, 35, undefined],
@@ -372,7 +372,7 @@ test('F5 · hand L is hand R mirrored: B on the left in BUL\'s frame, A on the r
   assert.equal(r.drills.find((x) => x.panel === 'POCKET-DOOR' && x.kind === 'hawa_cup').x, 28);
 });
 
-test('F5 · the DXF: one file per part, the holes on their layers, the five layers declared with ACI 54 to 58, the guards green', () => {
+test('F5 · the DXF: one file per part, the holes on their layers, the six layers declared with ACI 54 to 59, the guards green', () => {
   for (const make of [ONE_DOOR, TWO_DOORS]) {
     const r = computeCabinet(make(), P);
     const files = buildUnitDxfFiles(r, P);
@@ -389,8 +389,8 @@ test('F5 · the DXF: one file per part, the holes on their layers, the five laye
     assert.deepEqual(unitFindings(r, { profile: P }), [], 'the off-board, edge and drill guards hold on every pocket board');
   }
   const aci = Object.fromEntries(CNC_LAYERS.map((l) => [l.name, l.aci]));
-  assert.deepEqual(['HAWA_3MM', 'FRONT_HINGES_5MM', 'FRONT_HINGES_8MM', 'HAWA_FOOT_35MM', 'HAWA_GROOVE_12MM'].map((n) => aci[n]), [54, 55, 56, 57, 58]);
-  assert.equal(aci.FRONT_HINGES_35MM, 3, 'the cup keeps the house\'s layer');
+  assert.deepEqual(['HAWA_3MM', 'FRONT_HINGES_5MM_D13', 'FRONT_HINGES_8MM_D13', 'HAWA_FOOT_35MM', 'HAWA_GROOVE_12MM', 'FRONT_HINGES_35MM_D13'].map((n) => aci[n]), [54, 55, 56, 57, 58, 59]);
+  assert.equal(aci.FRONT_HINGES_35MM, 3, 'the house\'s cup layer is the house\'s, untouched');
   const policy = new Map(machiningClasses().map((c) => [c.layer, c]));
   const doc = read('verify/t26/sheet-vs-scene.md');
   for (const layer of Object.values(hawaLayers(P))) {
@@ -428,8 +428,49 @@ test('F5 · the room and the sheets seat every hole where the CNC drew it (engin
   }
 });
 
+// ─── AFTER THE REVIEW (verify:bomcnc:1): ONE LAYER, ONE DEPTH ──────────────
+// The DXF carries a circle and its layer, never a depth (engine/cnc/dxf.js);
+// the shop sets the depth per layer. The house's cup layer FRONT_HINGES_35MM
+// is 11 deep (profile.editor.drillDefaults, the owner's measured cup), and the
+// HAWA cup is 13 (160704 section C - C): on one layer one of the two was bored
+// wrong. So the HAWA door's three holes take layers of their own whose NAMES
+// carry their depth, the house's grammar for a depth-bearing layer
+// (engine/frontDecoration.js `FRONT_{KIND}_D{depth}`): FRONT_HINGES_35MM_D13,
+// FRONT_HINGES_5MM_D13, FRONT_HINGES_8MM_D13 (KIT_HAWA.lsp D15).
+test('F5 · after the review: every layer of a front sheet with a house door and a HAWA door carries ONE depth, and the door\'s say it', () => {
+  const pocket = computeCabinet(ONE_DOOR(), P);
+  const bud = computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: '01', doors: true, hinge: 'L' }, P);
+  const L5 = hawaLayers(P);
+  for (const [key, layer, depth] of [['cup', 'FRONT_HINGES_35MM_D13', 13], ['screw', 'FRONT_HINGES_5MM_D13', 13], ['sleeve', 'FRONT_HINGES_8MM_D13', 13]]) {
+    assert.equal(L5[key], layer);
+    assert.match(layer, new RegExp(`_D${depth}$`), `${layer}: the name carries the ${depth}`);
+    assert.notEqual(cncLayer(layer).label, 'Other', `${layer} is in the CNC layer table`);
+    assert.ok(machiningClasses().some((c) => c.layer === layer && c.draw), `${layer} has its machining class`);
+    assert.ok(read('verify/t26/sheet-vs-scene.md').includes(`\`${layer}\``), `${layer} in verify/t26/sheet-vs-scene.md`);
+  }
+  // The pocket door drills nothing on a house layer; the house door drills nothing on a HAWA one.
+  const door = pocket.drills.filter((x) => x.panel === 'POCKET-DOOR');
+  assert.ok(door.length > 0);
+  assert.ok(door.every((x) => /_D13$/.test(x.layer) && x.depth === 13), 'every hole of the door on a layer named for its 13');
+  assert.ok(!pocket.drills.some((x) => ['FRONT_HINGES_35MM', 'FRONT_HINGES_3MM', 'FRONT_HINGES_5MM', 'FRONT_HINGES_8MM'].includes(x.layer)));
+  const budCups = bud.drills.filter((x) => x.kind === 'cup');
+  assert.ok(budCups.length > 0 && budCups.every((x) => x.layer === 'FRONT_HINGES_35MM' && x.depth === 11), 'the house cups: FRONT_HINGES_35MM, 11, as they were');
+  // One front sheet: every layer one depth, so the shop's per-layer depth is right for every hole on it.
+  const depths = new Map();
+  for (const x of [...pocket.drills, ...bud.drills]) {
+    if (!depths.has(x.layer)) depths.set(x.layer, new Set());
+    depths.get(x.layer).add(x.depth ?? 'through');
+  }
+  for (const [layer, set] of depths) assert.equal(set.size, 1, `${layer} carries ${[...set].join(' and ')}`);
+  // The file the machine gets: the HAWA door's circles on the D13 layers, declared with their own colours.
+  const file = buildUnitDxfFiles(pocket, P).find((f) => f.panelId === 'POCKET-DOOR');
+  const circleLayers = new Set(file.entities.filter((e) => e.type === 'circle').map((e) => e.layer));
+  assert.deepEqual([...circleLayers].sort(), ['FRONT_HINGES_35MM_D13', 'FRONT_HINGES_5MM_D13', 'FRONT_HINGES_8MM_D13']);
+  assert.doesNotMatch(file.dxf, /\r\nFRONT_HINGES_35MM\r\n/, 'the house\'s cup layer is not in the HAWA door\'s file');
+});
+
 test('F5 · FROZEN 2: no existing case drills a HAWA layer or kind, routes a HAWA groove, or seats a pocket board', () => {
-  const own = new Set(['HAWA_3MM', 'FRONT_HINGES_5MM', 'FRONT_HINGES_8MM', 'HAWA_FOOT_35MM', 'HAWA_GROOVE_12MM']);
+  const own = new Set(['HAWA_3MM', 'FRONT_HINGES_5MM_D13', 'FRONT_HINGES_8MM_D13', 'HAWA_FOOT_35MM', 'HAWA_GROOVE_12MM', 'FRONT_HINGES_35MM_D13']);
   for (const c of cases().filter((x) => !String(x.id).startsWith('HAWA_POCKET'))) {
     const r = computeCabinet(c.params, P);
     assert.ok(!r.drills.some((x) => own.has(x.layer) || /^hawa_/.test(x.kind)), `${c.id} carries a HAWA hole`);

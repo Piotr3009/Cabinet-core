@@ -12,7 +12,7 @@
 // fi 8 x 13). The CNC export fingerprint of every EXISTING fixture is unchanged (FROZEN 2)."*  engine/cnc/hawa.js
 // seats every part's own LISP holes (meta.pocket.holes, KIT_HAWA.lsp D10 to D14) in the house's frame for that board
 // (a panel left of the pocket as BUL, right as BUR, the door as a FRONT, the bottom across and back), the III/35
-// grooves as pockets on the door; five CNC layers (ACI 54 to 58, KIT_HAWA.lsp createHawaLayers), their machining
+// grooves as pockets on the door; six CNC layers (ACI 54 to 59, KIT_HAWA.lsp createHawaLayers), their machining
 // policy, and the boards' placements for the room and the sheets. Reached only by a HAWA_POCKET (A2's gate). The
 // fingerprint of every existing case is unchanged (scripts/cnc-fingerprint.mjs base d0f84ebe to head: HAWA rows
 // added, none moved). A2's two NEW goldens carry the drills and the grooves: written again in this F.
@@ -34,8 +34,10 @@ export const LICENSED = {
     gates: ['hawaPocket'],
   },
   'src/engine/cnc/layers.js': {
-    why: `T82 F5: five rows, HAWA_3MM 54, FRONT_HINGES_5MM 55, FRONT_HINGES_8MM 56, HAWA_FOOT_35MM 57, `
-      + `HAWA_GROOVE_12MM 58; a file declares only the layers it uses, so no existing file changes. ${OWNER}`,
+    why: `T82 F5: six rows, HAWA_3MM 54, FRONT_HINGES_5MM_D13 55, FRONT_HINGES_8MM_D13 56, HAWA_FOOT_35MM 57, `
+      + `HAWA_GROOVE_12MM 58, FRONT_HINGES_35MM_D13 59; after the review (verify:bomcnc:1) the door's three carry `
+      + `their 13 in the name, one layer one depth (a DXF circle carries none, the house's FRONT_HINGES_35MM is 11); `
+      + `a file declares only the layers it uses, so no existing file changes. ${OWNER}`,
     gates: ['hawaPocket'],
   },
   'src/engine/machining.js': {

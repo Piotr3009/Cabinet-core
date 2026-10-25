@@ -196,7 +196,8 @@ test('F1 · the profile names the article, the layers, Push and the tables the L
   for (const layer of Object.values(H.layers)) {
     assert.ok(TEXT.includes(`"${layer}"`), `${layer} is a layer the LISP draws on`);
   }
-  for (const layer of ['HAWA_3MM', 'FRONT_HINGES_5MM', 'FRONT_HINGES_8MM', 'HAWA_FOOT_35MM', 'HAWA_GROOVE_12MM', 'FRONT_HINGES_35MM']) {
+  // AMENDED AFTER THE REVIEW (T82 F5, KIT_HAWA.lsp D15): the door's three carry their 13 in the name, one layer one depth.
+  for (const layer of ['HAWA_3MM', 'FRONT_HINGES_5MM_D13', 'FRONT_HINGES_8MM_D13', 'HAWA_FOOT_35MM', 'HAWA_GROOVE_12MM', 'FRONT_HINGES_35MM_D13']) {
     assert.match(TEXT, new RegExp(`\\(command "\\._LAYER" "_N" "${layer}" "_C" "\\d+" "${layer}" ""\\)`), `createHawaLayers makes ${layer}`);
   }
   assert.equal(H.defaults.push, true, '"5 - tak"');
@@ -297,11 +298,11 @@ test('F1 · EXAMPLE 1, one door hand R on an 18 front beside a BUD 500 on a 580 
   assert.equal(call('hawa-hinges', 25), 3);
   assert.deepEqual(call('hawa-cup-vs', 25, th), [200, 1025.75, 1851.5]);
   const holes = call('hawa-door-holes', 1, 25, tb, th, d[1]);
-  assert.deepEqual(holes.filter((h) => h[0] === 'FRONT_HINGES_35MM').map((h) => [h[1], h[2], h[3], h[4]]),
+  assert.deepEqual(holes.filter((h) => h[0] === 'FRONT_HINGES_35MM_D13').map((h) => [h[1], h[2], h[3], h[4]]),
     [[28, 200, 35, 13], [28, 1025.75, 35, 13], [28, 1851.5, 35, 13]]);
-  assert.deepEqual(holes.filter((h) => h[0] === 'FRONT_HINGES_5MM').map((h) => [h[1], h[2]]),
+  assert.deepEqual(holes.filter((h) => h[0] === 'FRONT_HINGES_5MM_D13').map((h) => [h[1], h[2]]),
     [[37, 226], [37, 174], [37, 1051.75], [37, 999.75], [37, 1877.5], [37, 1825.5]]);
-  assert.deepEqual(holes.filter((h) => h[0] === 'FRONT_HINGES_8MM').map((h) => [h[1], h[2], h[3], h[4]]), [[28, 22, 8, 13], [28, 2029.5, 8, 13]]);
+  assert.deepEqual(holes.filter((h) => h[0] === 'FRONT_HINGES_8MM_D13').map((h) => [h[1], h[2], h[3], h[4]]), [[28, 22, 8, 13], [28, 2029.5, 8, 13]]);
   // Panel B.
   const b = call('hawa-b-holes', d[0], eh);
   assert.deepEqual(b.filter((h) => h[2] === 2035.5).map((h) => h[1]), [32, 192, 352, 512]);
@@ -359,9 +360,9 @@ test('F1 · EXAMPLE 2, two doors on a 19 front, H 2400: TB 521 each, III/35 abov
   assert.equal(call('hawa-steel-length', tb, d[1]), 475, 'TB - M + 3');
   assert.deepEqual(call('hawa-steel-grooves', tb, th, d[1]), [[0, 2255, 475, 2267], [0, 15, 475, 27]]);
   const holes = call('hawa-door-holes', 2, 35, tb, th, d[1]);
-  assert.equal(holes.filter((h) => h[0] === 'FRONT_HINGES_35MM').length, 4);
-  assert.ok(holes.filter((h) => h[0] === 'FRONT_HINGES_35MM').every((h) => h[1] === 29.5), 'TA2 29.5');
-  assert.equal(holes.filter((h) => h[0] === 'FRONT_HINGES_8MM').length, 2 + 4, 'two sleeves and two holes on each profile');
+  assert.equal(holes.filter((h) => h[0] === 'FRONT_HINGES_35MM_D13').length, 4);
+  assert.ok(holes.filter((h) => h[0] === 'FRONT_HINGES_35MM_D13').every((h) => h[1] === 29.5), 'TA2 29.5');
+  assert.equal(holes.filter((h) => h[0] === 'FRONT_HINGES_8MM_D13').length, 2 + 4, 'two sleeves and two holes on each profile');
   const cut = call('hawa-cut', 2, null, 19, 2400, 600, 450, 1.5);
   assert.deepEqual(cut.map((p) => [p[0], p[1]]), [['POCKET-BOTTOM', 'POCKET-BOTTOM'], ['POCKET-B', 'POCKET-B-L'], ['POCKET-B', 'POCKET-B-R'],
     ['POCKET-TOP', 'POCKET-TOP'], ['POCKET-DOOR', 'POCKET-DOOR-L'], ['POCKET-DOOR', 'POCKET-DOOR-R']], 'both panels are B (D20)');

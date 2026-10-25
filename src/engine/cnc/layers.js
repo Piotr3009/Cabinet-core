@@ -116,16 +116,25 @@ export const CNC_LAYERS = [
   // layer grammar the CNC already has for hinge plates; the door's cups and
   // holes as the hinge drilling is done today (fi 35 x 13, fi 5 x 13, fi 8 x
   // 13)"*. The house grammar `{FEATURE}_{DIAMETER}MM`, one tool each: the
-  // panels' pilots; the door's two fixing holes and its sleeve holes, the
-  // FRONT_HINGES family at their own diameters (the cup is FRONT_HINGES_35MM,
-  // the existing row, its 13 stated on the hole); the foot's hole through the
-  // bottom board; the III/35 steel profile's groove, a pocket. ACI 54 to 58,
-  // the next free after CORNER_4MM's 53 (KIT_HAWA.lsp createHawaLayers).
+  // panels' pilots; the door's cups, its two fixing holes and its sleeve
+  // holes, the FRONT_HINGES family at their own diameters; the foot's hole
+  // through the bottom board; the III/35 steel profile's groove, a pocket.
+  // ACI 54 to 59, the next free after CORNER_4MM's 53 (KIT_HAWA.lsp
+  // createHawaLayers).
+  //
+  // AFTER THE REVIEW (T82 F5): a DXF circle carries no depth, so the shop sets
+  // ONE depth per layer, and the house's FRONT_HINGES_35MM is the owner's 11.
+  // The HAWA cup is 13 (160704 section C - C): on the house's layer either the
+  // HAWA cup or the house cup on the same sheet would be bored wrong. So the
+  // door's three take layers of their own whose NAMES carry their depth, the
+  // house's grammar for a depth-bearing layer (engine/frontDecoration.js
+  // `FRONT_{KIND}_D{depth}`): one layer, one depth, said in the name.
   { name: 'HAWA_3MM',           aci: 54, screen: '#e8590c', label: 'HAWA pilots ⌀3', kind: 'hole' },
-  { name: 'FRONT_HINGES_5MM',   aci: 55, screen: '#20c997', label: 'Hinge screws ⌀5 (HAWA)', kind: 'hole' },
-  { name: 'FRONT_HINGES_8MM',   aci: 56, screen: '#0ca678', label: 'Sleeves ⌀8 (HAWA)', kind: 'hole' },
+  { name: 'FRONT_HINGES_5MM_D13', aci: 55, screen: '#20c997', label: 'Hinge screws ⌀5 x 13 (HAWA)', kind: 'hole' },
+  { name: 'FRONT_HINGES_8MM_D13', aci: 56, screen: '#0ca678', label: 'Sleeves ⌀8 x 13 (HAWA)', kind: 'hole' },
   { name: 'HAWA_FOOT_35MM',     aci: 57, screen: '#a61e4d', label: 'HAWA foot ⌀35 (through)', kind: 'hole' },
   { name: 'HAWA_GROOVE_12MM',   aci: 58, screen: '#845ef7', label: 'HAWA steel profile groove', kind: 'pocket' },
+  { name: 'FRONT_HINGES_35MM_D13', aci: 59, screen: '#66a80f', label: 'Hinge cups ⌀35 x 13 (HAWA)', kind: 'hole' },
   { name: 'SHELVES_7_5MM',      aci: 6,  screen: '#e599f7', label: 'Shelf pins ⌀7.5', kind: 'hole' },
   { name: 'RUNNERS_3MM',        aci: 5,  screen: '#ff922b', label: 'Runners ⌀3',     kind: 'hole' },
   { name: 'FRONT_HINGES_35MM',  aci: 3,  screen: '#38d9a9', label: 'Hinge cups ⌀35', kind: 'hole' },

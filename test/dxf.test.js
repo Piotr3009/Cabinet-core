@@ -352,14 +352,18 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     // pocket panels ... on the layer grammar the CNC already has for hinge
     // plates; the door's cups and holes as the hinge drilling is done today
     // (fi 35 x 13, fi 5 x 13, fi 8 x 13)"*. The panels' dia 3 pilots, the
-    // door's dia 5 and dia 8 (the cup keeps FRONT_HINGES_35MM), the foot's
-    // dia 35 through the bottom board, the III/35 groove. ACI 54 to 58, the
-    // next free after 53 (KIT_HAWA.lsp createHawaLayers).
+    // door's dia 5 and dia 8, the foot's dia 35 through the bottom board, the
+    // III/35 groove. ACI 54 to 58, the next free after 53 (KIT_HAWA.lsp
+    // createHawaLayers). AMENDED AFTER THE REVIEW (T82 F5): a DXF circle
+    // carries no depth and the house's FRONT_HINGES_35MM is the owner's 11, so
+    // the door's three take layers whose names carry their 13 (one layer, one
+    // depth), the cup its own at ACI 59.
     HAWA_3MM: 54,
-    FRONT_HINGES_5MM: 55,
-    FRONT_HINGES_8MM: 56,
+    FRONT_HINGES_5MM_D13: 55,
+    FRONT_HINGES_8MM_D13: 56,
     HAWA_FOOT_35MM: 57,
     HAWA_GROOVE_12MM: 58,
+    FRONT_HINGES_35MM_D13: 59,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

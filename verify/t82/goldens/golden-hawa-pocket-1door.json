@@ -163,15 +163,15 @@
       ],
       "drills": [
         [
-          "FRONT_HINGES_35MM|POCKET-DOOR",
+          "FRONT_HINGES_35MM_D13|POCKET-DOOR",
           3
         ],
         [
-          "FRONT_HINGES_5MM|POCKET-DOOR",
+          "FRONT_HINGES_5MM_D13|POCKET-DOOR",
           6
         ],
         [
-          "FRONT_HINGES_8MM|POCKET-DOOR",
+          "FRONT_HINGES_8MM_D13|POCKET-DOOR",
           2
         ],
         [
@@ -484,77 +484,77 @@
           },
           "holes": [
             [
-              "FRONT_HINGES_35MM",
+              "FRONT_HINGES_35MM_D13",
               28,
               200,
               35,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               226,
               5,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               174,
               5,
               13
             ],
             [
-              "FRONT_HINGES_35MM",
+              "FRONT_HINGES_35MM_D13",
               28,
               1025.75,
               35,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               1051.75,
               5,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               999.75,
               5,
               13
             ],
             [
-              "FRONT_HINGES_35MM",
+              "FRONT_HINGES_35MM_D13",
               28,
               1851.5,
               35,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               1877.5,
               5,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               1825.5,
               5,
               13
             ],
             [
-              "FRONT_HINGES_8MM",
+              "FRONT_HINGES_8MM_D13",
               28,
               22,
               8,
               13
             ],
             [
-              "FRONT_HINGES_8MM",
+              "FRONT_HINGES_8MM_D13",
               28,
               2029.5,
               8,
@@ -607,77 +607,77 @@
           ],
           "holes": [
             [
-              "FRONT_HINGES_35MM",
+              "FRONT_HINGES_35MM_D13",
               28,
               200,
               35,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               226,
               5,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               174,
               5,
               13
             ],
             [
-              "FRONT_HINGES_35MM",
+              "FRONT_HINGES_35MM_D13",
               28,
               1025.75,
               35,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               1051.75,
               5,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               999.75,
               5,
               13
             ],
             [
-              "FRONT_HINGES_35MM",
+              "FRONT_HINGES_35MM_D13",
               28,
               1851.5,
               35,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               1877.5,
               5,
               13
             ],
             [
-              "FRONT_HINGES_5MM",
+              "FRONT_HINGES_5MM_D13",
               37,
               1825.5,
               5,
               13
             ],
             [
-              "FRONT_HINGES_8MM",
+              "FRONT_HINGES_8MM_D13",
               28,
               22,
               8,
               13
             ],
             [
-              "FRONT_HINGES_8MM",
+              "FRONT_HINGES_8MM_D13",
               28,
               2029.5,
               8,
@@ -881,77 +881,77 @@
         "id": "POCKET-DOOR",
         "holes": [
           [
-            "FRONT_HINGES_35MM",
+            "FRONT_HINGES_35MM_D13",
             28,
             200,
             35,
             13
           ],
           [
-            "FRONT_HINGES_5MM",
+            "FRONT_HINGES_5MM_D13",
             37,
             226,
             5,
             13
           ],
           [
-            "FRONT_HINGES_5MM",
+            "FRONT_HINGES_5MM_D13",
             37,
             174,
             5,
             13
           ],
           [
-            "FRONT_HINGES_35MM",
+            "FRONT_HINGES_35MM_D13",
             28,
             1025.75,
             35,
             13
           ],
           [
-            "FRONT_HINGES_5MM",
+            "FRONT_HINGES_5MM_D13",
             37,
             1051.75,
             5,
             13
           ],
           [
-            "FRONT_HINGES_5MM",
+            "FRONT_HINGES_5MM_D13",
             37,
             999.75,
             5,
             13
           ],
           [
-            "FRONT_HINGES_35MM",
+            "FRONT_HINGES_35MM_D13",
             28,
             1851.5,
             35,
             13
           ],
           [
-            "FRONT_HINGES_5MM",
+            "FRONT_HINGES_5MM_D13",
             37,
             1877.5,
             5,
             13
           ],
           [
-            "FRONT_HINGES_5MM",
+            "FRONT_HINGES_5MM_D13",
             37,
             1825.5,
             5,
             13
           ],
           [
-            "FRONT_HINGES_8MM",
+            "FRONT_HINGES_8MM_D13",
             28,
             22,
             8,
             13
           ],
           [
-            "FRONT_HINGES_8MM",
+            "FRONT_HINGES_8MM_D13",
             28,
             2029.5,
             8,

@@ -3050,12 +3050,15 @@ export const DEFAULT_CABINET_PROFILE = {
     // view bottom). CONFIRMED. [hawaFootD hawaFootFrom]
     foot: { diaMm: 35, fromMm: 21 },
     // D15 · the CNC layers (the names PROPOSED, agreed with the BOM and CNC
-    // slice; their colours ACI 54 to 58 in KIT_HAWA.lsp createHawaLayers).
+    // slice; their colours ACI 54 to 59 in KIT_HAWA.lsp createHawaLayers).
+    // After the review (T82 F5): the door's three carry their depth in the
+    // name, one layer one depth (a DXF circle carries none; the house's cup
+    // layer FRONT_HINGES_35MM is 11 deep).
     layers: {
       pilot: 'HAWA_3MM',
-      cup: 'FRONT_HINGES_35MM',
-      screw: 'FRONT_HINGES_5MM',
-      sleeve: 'FRONT_HINGES_8MM',
+      cup: 'FRONT_HINGES_35MM_D13',
+      screw: 'FRONT_HINGES_5MM_D13',
+      sleeve: 'FRONT_HINGES_8MM_D13',
       foot: 'HAWA_FOOT_35MM',
       groove: 'HAWA_GROOVE_12MM',
     },

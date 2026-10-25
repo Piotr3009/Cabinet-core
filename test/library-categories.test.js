@@ -19,7 +19,13 @@ test('every unit type is reachable from exactly one category', () => {
   // kitchen job and a wardrobe job both take. Its two homes are named here, so a
   // third (or a second for anything else) is still the lie this test catches;
   // `categoryOf` answers the first, the Kitchen.
-  const TWO_HOMES = { HAWA_POCKET: ['kitchen', 'wardrobe'] };
+  // AMENDED BY T82 F9: *"new library group "Bathroom" in the Kitchen library and in the wardrobe library"* (CLAUDE.md T82 F9).
+  // And the vanity, a bathroom piece a kitchen job and a wardrobe job both take, in its
+  // two homes the same way (one map: every kit with two homes is named in it).
+  const TWO_HOMES = {
+    HAWA_POCKET: ['kitchen', 'wardrobe'],
+    VANITY2: ['kitchen', 'wardrobe'], VANITY3: ['kitchen', 'wardrobe'], VANITY4: ['kitchen', 'wardrobe'],
+  };
   for (const id of UNIT_TYPE_ORDER) {
     const homes = UNIT_CATEGORIES.filter((c) => c.types.includes(id));
     if (TWO_HOMES[id]) {
@@ -57,7 +63,8 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // AMENDED BY T75 F17: + the floating desk (*"`WARDROBE_DESK`: a wall-hung carcass"*).
   // AMENDED BY T75 F18: + the low unit (*"`WARDROBE_LOW` copied from `LOW_CABINET`"*).
   // AMENDED BY T82 F2: + the HAWA pocket, *"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2).
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
+  // AMENDED BY T82 F9: + the Bathroom group's three vanity units, *"new library group "Bathroom" in the Kitchen library and in the wardrobe library"* (CLAUDE.md T82 F9).
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET', 'VANITY2', 'VANITY3', 'VANITY4'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
   // Turn 15 (CLAUDE.md F5.2): the same nine kits, in the order the owner's
   // CATALOGUE puts them in — base units, then talls, then walls.
   assert.deepEqual(getCategory('kitchen').types, [
@@ -74,6 +81,8 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
     // AMENDED BY T78 F17: the canopy hood and the short hood, beside the hood unit.
     // AMENDED BY T82 F2: the HAWA pocket in Tall units, after Standard (*"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2)).
     'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDR2_HOB', 'BUDR_HOB', 'BUD_INT', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'HAWA_POCKET', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'BLIND_WALL', 'CORNER_L_WALL',
+    // AMENDED BY T82 F9: the Bathroom group's three vanity units, before Extras.
+    'VANITY2', 'VANITY3', 'VANITY4',
     // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
     'FREE_PANEL',
   ]);
@@ -84,7 +93,8 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // AMENDED BY T75 F17: + the floating desk (*"`WARDROBE_DESK`: a wall-hung carcass"*).
   // AMENDED BY T75 F18: + the low unit (*"`WARDROBE_LOW` copied from `LOW_CABINET`"*).
   // AMENDED BY T82 F2: + the HAWA pocket, *"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2).
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
+  // AMENDED BY T82 F9: + the Bathroom group's three vanity units, *"new library group "Bathroom" in the Kitchen library and in the wardrobe library"* (CLAUDE.md T82 F9).
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET', 'VANITY2', 'VANITY3', 'VANITY4'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
 
   // Turn 5 (BACKLOG #30): Saved sets is real. It holds the workshop's OWN units
   // rather than kits, so it lists no types and is marked `saved` — the panel

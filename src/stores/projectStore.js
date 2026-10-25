@@ -398,6 +398,15 @@ function newUnit(typeId, profile, index, design) {
       // refused it a plinth. A LOADED project never comes through here: it opens
       // exactly as it was saved.
       ...(takesPlinth(type.id, profile) ? { plinth: true } : {}),
+      // ─── T82 F9 · A DRAWER-COLUMN KIT IS BORN EQUAL, IN ONE COLUMN ────────
+      // The owner, 25.10.2026 (12:57): *"w vanity default to sa rowne"*, and
+      // of the chest (13:03): *"7 - tak"* (KIT_VANITY.lsp D8, D20). Written
+      // HERE for the plinth's reason above: a bare kit (`defaultParamsFor`)
+      // is its golden's contract, and WARDROBE_CHEST3's golden is the kit's
+      // 4:3:2. A loaded project never comes through here, so a chest saved
+      // before tonight opens at the split it was cut to. Asked by the type's
+      // key, never by its id.
+      ...(type.drawerColumns ? { drawer_split: 'equal', columns: 1 } : {}),
       sections: [{ width_mm: params.width, items }],
       materials: {},
       // T74 F13 · a free panel's box is its board's: it is cut from the job's

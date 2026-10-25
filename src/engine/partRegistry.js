@@ -591,6 +591,12 @@ export const ELEMENT_TO_PART_ID = {
   TOP: 'carcase_horizontal',
   BOTTOM: 'carcase_horizontal',
   HOLDER: 'carcase_horizontal',
+  // T82 F9 · the vanity's two rails (KIT_VANITY.lsp D2): what is left of its
+  // back, but in the CARCASS board (the owner: *"4 - 100 na material carcasa
+  // grubosc"*), so they are bought with the carcass horizontals, as the sink's
+  // holders are, never with the back.
+  'RAIL-BOTTOM': 'carcase_horizontal',
+  'RAIL-TOP': 'carcase_horizontal',
 
   // Backs — SEPARATE, because a back is 6 mm and a side is 18. A fridge
   // housing's back RAILS are back material too: they are what closes it.

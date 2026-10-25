@@ -247,6 +247,10 @@ export function panelPlacement(panel) {
     // a back drilled with its dia 3 rows, drawn upright: the BACK's own frame.
     case 'RECESS-BACK':
     case 'BACK':
+    // T82 F9 · the vanity's two rails are the back with its middle cut out
+    // (KIT_VANITY.lsp D2), drawn in the back's own frame: they stand where it stood.
+    case 'RAIL-BOTTOM':
+    case 'RAIL-TOP':
       // ─── Turn 12 (CLAUDE.md F10): A BACK MAY BE DRAWN ROTATED ───
       //
       // Owner: the FRIDGE housing's back panel renders turned 90°, and it was

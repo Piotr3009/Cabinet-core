@@ -135,9 +135,12 @@ test('the rules, each with the owner’s colour', () => {
   // beside #36; #47 the pocket panels 22 on an 18 front, yellow (CLAUDE.md's #42,
   // which the in-frame row holds; the night's brief gives it #47). The owner: *"jesli
   // jest 18 mm to daj zawsze 22 mm automatycznie, i napisz informacje minimum 19 mm"*.
-  // Thirty-eight became forty-one.
-  assert.equal(CHECKS.length, 41);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 47]);
+  // AMENDED BY T82 F9 (25.10.2026): #39 the vanity's trap, yellow, in KIT_VANITY.lsp's
+  // sentences, the owner: *"w razie czego jak nie bedzie miejsca to zostawimy informacje
+  // prosze uzyc shallow trap"*.
+  // Thirty-eight became forty-two (#37, #38, #39, #47).
+  assert.equal(CHECKS.length, 42);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 47]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -195,6 +198,8 @@ test('the rules, each with the owner’s colour', () => {
     37: 'red',
     38: 'red',
     47: 'yellow',
+    // T82 F9 · the vanity's trap: the information the owner asked to leave.
+    39: 'yellow',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

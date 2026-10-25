@@ -269,6 +269,12 @@ export const NEW_FILES = [
   // T82 F8 (25.10.2026): the LISP of the vanity, first
   'test/turn82-f08-vanity-lisp.test.js',
   'scripts/t78-classify.d/f43-t82-f08.mjs',
+  // T82 F9 (25.10.2026): the vanity kits and the chest, two columns and equal drawers
+  'src/engine/vanity.js',
+  'test/turn82-f09-chest-columns.test.js',
+  'test/turn82-f09-vanity-kit.test.js',
+  'test/turn82-f09-trap-room.test.js',
+  'scripts/t78-classify.d/f43-t82-f09.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

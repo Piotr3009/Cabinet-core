@@ -300,6 +300,15 @@ export const CHECKS = Object.freeze([
   // `hawa-check-38`); the door is cut as asked and nothing is clamped.
   { n: 37, level: 'red', label: 'HAWA door out of range' },
   { n: 38, level: 'red', label: 'HAWA pocket too shallow for the door' },
+  // ─── T82 F9 · THE VANITY'S TRAP (KIT_VANITY.lsp D15 to D17, D21) ──────────
+  // The owner, 25.10.2026: *"musimy miec tez wyciecie na trap, w razie czego
+  // jak nie bedzie miejsca to zostawimy informacje prosze uzyc shallow trap"*.
+  // The engine cuts the U it was asked for and never squashes it; where the
+  // trap has no room this row says so in the LISP's sentences (the trap beyond
+  // the U, the shallow trap, the waste over the divider, the U that does not
+  // fit), read off the engine's own warning (`VANITY_TRAP`). YELLOW: the
+  // information the owner asked to leave; a person decides.
+  { n: 39, level: 'yellow', label: 'Use a shallow trap (the vanity\'s trap and its U)' },
   // ─── T80 F10 · THE IN-FRAME CHECKS (engine/inframeChecks.js) ─────────────
   // CLAUDE.md T80 F10 names them #40 to #44, and the probe found them free
   // (verify/t80/f10-probe.md: 37 to 39 stay unused, so nobody reads them as a
@@ -699,6 +708,7 @@ export function runChecks({
       // T75 F23 · #31: the dowel gate, and a joint system refused, likewise.
       // T76 F4 · #32: the board the decoration was drawn for, yellow.
       // T79 F8 · #36: the recess extension the engine refused, in its own words.
+      // T82 F9 · #39: the vanity's trap (KIT_VANITY.lsp D15 to D17), yellow.
       const n = {
         SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21, NOTCH_REFUSED: 28, DOWEL_GATE: 31, JOINTS_REFUSED: 31,
         // T78 F20 · #31 again: the Cabineo gate (engine/cabineo.js CABINEO_GATE_CODE), the same law as the dowel's.
@@ -709,6 +719,8 @@ export function runChecks({
         HAWA_OUT_OF_RANGE: 37,
         HAWA_POCKET_DEPTH: 38,
         HAWA_PANEL_22: 47,
+        // T82 F9 · #39: the vanity's trap, in the LISP's sentences, yellow.
+        VANITY_TRAP: 39,
       }[wn.code];
       if (!n) continue;
       if (n === 37 || n === 38 || n === 47) {
@@ -717,6 +729,14 @@ export function runChecks({
         out.push(finding(n, n === 47 ? 'yellow' : 'red', at(null, {
           message: `${unitNum}: ${String(wn.message).replace(/^#\d+ /, '')}`,
           subject: { unitId, editor: 'cabinet' },
+        })));
+        continue;
+      }
+      if (n === 39) {
+        out.push(finding(39, 'yellow', at(null, {
+          message: `${unitNum}: ${wn.message}`,
+          subject: { unitId, editor: 'cabinet' },
+          trap: wn.kind || null,
         })));
         continue;
       }

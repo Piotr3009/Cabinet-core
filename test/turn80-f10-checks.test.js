@@ -78,7 +78,9 @@ test('F10 probe · #40 to #44 are the next rows of the registry, in CLAUDE.md\'s
   // `hawa-check-37`, `hawa-check-38`; the owner: *"wysuwasz pocket door i zakrywasz
   // szafke lub szafki"*) and #47 its panels' note; this probe reads the in-frame band.
   assert.deepEqual(CHECKS.filter((c) => c.n === 37 || c.n === 38 || c.n === 47).map((c) => c.label.slice(0, 4)), ['HAWA', 'HAWA', 'HAWA']);
-  const rows = CHECKS.filter((c) => c.n >= 39 && c.n <= 44);
+  // AMENDED BY T82 F9 (25.10.2026): T82 fills #39 (the vanity's trap, the owner: *"prosze
+  // uzyc shallow trap"*) and #45 on; this probe reads the in-frame band, #40 to #44.
+  const rows = CHECKS.filter((c) => c.n >= 40 && c.n <= 44);
   assert.deepEqual(rows.map((c) => [c.n, c.level]), [[40, 'red'], [41, 'yellow'], [42, 'yellow'], [43, 'yellow'], [44, 'red']]);
   for (const c of rows) assert.match(c.label, /in-frame/i, `#${c.n} says what it is about`);
   assert.deepEqual(Object.values(INFRAME_CHECKS), OURS);

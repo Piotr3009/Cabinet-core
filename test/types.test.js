@@ -293,7 +293,9 @@ test('every library type is configured, available and buildable', () => {
   // AMENDED BY T78 F17 (12.10.2026): the canopy hood and the short hood, 39 became 41.
   // AMENDED BY T82 F2 (25.10.2026): the HAWA pocket, KIT_HAWA.lsp (the owner: *"wstawienie
   // pomiedzy 2 panele 110 mm przestrzen pomiedzy, wysuwasz pocket door"*), 41 became 42.
-  assert.equal(UNIT_TYPE_ORDER.length, 42, 'every kit in the order, the free panel last');
+  // AMENDED BY T82 F9 (25.10.2026): the three vanity kits, VANITY2 / VANITY3 /
+  // VANITY4 after the drawer units (the owner: *"wybor jak zawsze 2 3 i 4"*), and with the HAWA pocket 42 became 45.
+  assert.equal(UNIT_TYPE_ORDER.length, 45, 'every kit in the order, the free panel last');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

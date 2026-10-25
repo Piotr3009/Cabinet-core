@@ -123,6 +123,9 @@ import { lightingSpec } from './ledStrips.js';
 // T78 F17 . the canopy hood's boards (KIT_WUD_HOOD_CANOPY.lsp), applied on the
 // carcass cut as a WUD; a one-way read, nothing in there reaches back here.
 import { applyCanopy } from './hoodCanopy.js';
+// T82 F9 · the vanity's own boards (KIT_VANITY.lsp part 5): the back cut out to
+// two rails, the trap's U and Check #39; a one-way read, as the canopy's.
+import { applyVanityTrap, vanityRailGeometry, vanityRails } from './vanity.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
 // `trimOutlineOnSlope` are turn 46's (CLAUDE.md F3): the slope cut, ported 1:1
 // from SKYLON_COMMON's `SKY:slopeCutPts` — iron rule 3, the LISP states the
@@ -692,10 +695,118 @@ export function drawerSplitFor(type, profile) {
   const variant = type?.drawerVariant
     ? (B.variants || []).find((v) => v.id === type.drawerVariant)
     : null;
+  // ─── T82 F9 · THE VANITY'S FRONTS ARE EQUAL (KIT_VANITY.lsp D8) ──────────
+  // *"pamietaj ze w vanity default to sa rowne"*: the variant's count, every
+  // front one part of the face, exact (the top one takes the rounding, as
+  // every equal variant since turn 12; the LISP's `vanity-front-heights`).
+  // Read only where the kit declares `equalDrawers`: no kit before tonight.
+  if (type?.equalDrawers) {
+    const count = (variant?.ratio || B.ratio).length;
+    return { ratio: Array.from({ length: count }, () => 1), exact: true };
+  }
   return {
     ratio: variant?.ratio || B.ratio,
     exact: Boolean(variant?.exact),
   };
+}
+
+// ─── T82 F9 · THE TWO RULES OF KIT_VANITY.lsp: EQUAL DRAWERS, TWO COLUMNS ───
+//
+// The owner, 25.10.2026 (12:57): *"vanity unit (podobna zasada bedzie do chest
+// drawers) ... wybor jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa
+// rowne, do tego prosze external drawers ale wybor 2 rows, patrz szafa"*; and
+// of the chest (13:03): *"7 - tak"*. LISP FIRST: reference/lisp/KIT_VANITY.lsp
+// D8 (the equal fronts, `vanity-front-heights`), D10 to D12 and section 5(c2)
+// THE TWO COLUMNS (`vanity-openings`, `vanity-divider`, `vanity-fronts` and
+// `vanity-boxes` at columns 2), D20 (the chest takes D8 and 5(c2) whole).
+//
+// ONE LAW, ONE PATH: everything here is keyed on the TYPE's `drawerColumns`
+// (WARDROBE_CHEST2 / 3 / 4 tonight, VANITY2 / 3 / 4 beside them) and on the
+// unit's own params, never on a kit's id. A kit without the key reads
+// neither param, so every kit that exists today cuts what it cut.
+
+/**
+ * How many drawer columns this unit is cut in (KIT_VANITY.lsp D10): 2 only
+ * where the kit takes the two columns AND the unit asks for them.
+ */
+function drawerColumnsOf(type, params) {
+  return type?.drawerColumns && Math.trunc(Number(params?.columns)) === 2 ? 2 : 1;
+}
+
+/**
+ * The split a drawer-column kit's fronts are cut to (KIT_VANITY.lsp D8,
+ * `vanity-front-heights`): `params.drawer_split === 'equal'` is n ones, exact
+ * (each front fix(available / n + 0.5), the top one taking the rounding,
+ * which is `budrFrontHeights` with an exact ratio of ones). The param is read
+ * ONLY when present: a chest born in a project carries it (projectStore
+ * `newUnit`, D20's "a birth answer"); a bare kit, its golden and every saved
+ * project keep the kit's own variant (WARDROBE_CHEST3's 4:3:2).
+ */
+function drawerSplitOf(type, profile, params) {
+  const kit = drawerSplitFor(type, profile);
+  if (!type?.drawerColumns || params?.drawer_split !== 'equal') return kit;
+  return { ratio: kit.ratio.map(() => 1), exact: true };
+}
+
+/**
+ * KIT_VANITY.lsp 5(c2) THE TWO COLUMNS, as the engine cuts them: each
+ * column's clear opening (`vanity-openings`: G .. (W - G) / 2 and
+ * (W + G) / 2 .. W - G), its box (`vanity-boxes`: x0 the opening + 5, width
+ * the opening less 10, walls the box less 2 GB, the bottom 13 longer), its
+ * front (`vanity-fronts` at columns 2, D12: the house pair, (W - 6) / 2 at
+ * 1.5 and W - 1.5 - that), the wardrobe's column tag Z1D{i} / Z2D{i} (D13),
+ * and which walls carry its runners (D11: BUL and the divider's left face for
+ * column 1, the divider's right face and BUR for column 2, as the wardrobe's
+ * divider between two drawer columns carries them).
+ *
+ * The front screws stand `frontScrewFromSide` from the BOX's own side (turn
+ * 24, F3.2); a column's front is not centred on its box (the pair meets on
+ * the divider's centre line), so each screw keeps that distance from its own
+ * box side: `screwShift` is how far the box side moved against the one-column
+ * law (0 at a carcass side, -9 at the divider on 18 board).
+ */
+function drawerColumnsPlan({ W, G, GB, unitNum, profile }) {
+  const B = profile.baseDrawerUnit;
+  const halfDeduction = B.frontWidthDeduction / 2;
+  const frontW = (W - profile.doors.doubleTotalGap) / 2;
+  const openings = [[G, (W - G) / 2], [(W + G) / 2, W - G]];
+  const frontXs = [halfDeduction, W - halfDeduction - frontW];
+  // The one-column law's distance from the front's edge to the box's outer side.
+  const lawInset = G + B.boxWidthClearance / 2 - halfDeduction;
+  return openings.map(([x0, x1], k) => {
+    const col = k + 1;
+    const boxLeftX = x0 + B.boxWidthClearance / 2;
+    const boxW = x1 - x0 - B.boxWidthClearance;
+    const boxLen = boxW - 2 * GB;
+    const frontX = frontXs[k];
+    return {
+      col,
+      opening: { from: x0, to: x1, w: x1 - x0 },
+      boxLeftX,
+      boxW,
+      boxLen,
+      bottomW: boxLen + B.bottomOversize,
+      frontX,
+      frontWidth: frontW,
+      tag: (i) => `Z${col}D${i}`,
+      frontId: (i) => `${unitNum}-Z${col}D${i}-F`,
+      screwShift: {
+        left: (boxLeftX - frontX) - lawInset,
+        right: ((frontX + frontW) - (boxLeftX + boxW)) - lawInset,
+      },
+      walls: col === 1 ? { left: 'BUL', right: 'DIVIDER' } : { left: 'DIVIDER', right: 'BUR' },
+    };
+  });
+}
+
+/**
+ * The DIVIDER of two drawer columns (KIT_VANITY.lsp `vanity-divider`, D11):
+ * at x (W - G) / 2, standing on the BOTTOM (y G) and under the TOP (H - G),
+ * from the back's inside face (z G) to the carcass front, D - G deep: the
+ * sides' depth, the runners' full-depth wall (T32 F4).
+ */
+function drawerColumnsDivider({ W, H, D, G }) {
+  return { id: 'DIVIDER', x: (W - G) / 2, y: G, z: G, w: G, h: H - G - G, d: D - G };
 }
 
 // ─── Parameter normalisation ───
@@ -879,7 +990,9 @@ function normalizeParams(raw, profile) {
 
   // Which split this kit's fronts are cut to. Turn 12: a drawer unit's VARIANT
   // is a ratio and nothing else (CLAUDE.md F3.2), so the count follows from it.
-  const budrSplit = drawerSplitFor(type, profile);
+  // T82 F9 · a drawer-column kit born equal (KIT_VANITY.lsp D8) says so on its
+  // params; every other kit reads its variant exactly as before.
+  const budrSplit = drawerSplitOf(type, profile, p);
 
   let drawers = 0;
   if (type.drawerStyle === 'budr') {
@@ -2748,6 +2861,41 @@ export function computeCabinet(params, profileOverride) {
       - B.boxFrontCarcassBoards * G
       - Math.max(0, B.boxFrontBoards - B.boxFrontCarcassBoards) * GB
       - B.boxFrontClearance;
+    // ─── T82 F9 · THE TWO COLUMNS (KIT_VANITY.lsp 5(c2), D10 to D12) ────────
+    // `cols` is the stack's columns, left to right. One column is the kit as
+    // it always was: the box, the front and the ids below are the very values
+    // this block has always cut with, so a unit that asks for nothing (every
+    // kit, every golden) runs the same lines to the same bytes. Two columns
+    // (`drawerColumnsOf`: a `drawerColumns` kit asked for 2) are
+    // `drawerColumnsPlan`'s, each column the same stack over its own opening.
+    // A box with no room for its walls is refused in words, never squashed.
+    let columns = overlay ? 1 : drawerColumnsOf(type, params);
+    let cols = columns === 2 ? drawerColumnsPlan({ W, G, GB, unitNum, profile: P }) : null;
+    if (cols && cols.some((c) => !(c.boxLen > 0))) {
+      warnings.push({
+        code: 'DRAWER_COLUMNS_REFUSED',
+        level: 'warn',
+        message: `No room for two drawer columns in a ${roundTo(W, 0)} mm unit: each column's box would be `
+          + `${roundTo(cols[0].boxW, 1)} mm wide, less than its own two walls. One column is cut.`,
+      });
+      columns = 1;
+      cols = null;
+    }
+    if (!cols) {
+      cols = [{
+        col: null,
+        boxLeftX: G + B.boxWidthClearance / 2,
+        boxW,
+        boxLen,
+        bottomW: boxLen + B.bottomOversize,
+        frontX: B.frontWidthDeduction / 2,
+        frontWidth,
+        tag: (i) => `D${i}`,
+        frontId: (i) => `${unitNum}-F${i}`,
+        screwShift: { left: 0, right: 0 },
+        walls: { left: 'BUL', right: 'BUR' },
+      }];
+    }
     // Front i's base above the carcass floor: the fronts overlay the base panel,
     // so front 1 starts at 0 while its RUNNER row still clears the base by G
     // (KIT_BUDR_FULL L712-714).
@@ -2838,6 +2986,16 @@ export function computeCabinet(params, profileOverride) {
     for (let i = 0; i < heights.length; i += 1) {
       const row = i + 1;
       if (doubleAsked[row] !== true || overlay || (dummy && row === dummy)) continue;
+      // T82 F9 · KIT_VANITY.lsp 5(c2) writes no inner drawer in a column: the
+      // row is refused in words and cut as one box, as a row too short is.
+      if (columns === 2) {
+        warnings.push({
+          code: 'DOUBLE_DRAWER_REFUSED',
+          level: 'warn',
+          message: `Drawer ${row}: a double drawer is not cut in two drawer columns (KIT_VANITY.lsp writes none). One box is cut in each column.`,
+        });
+        continue;
+      }
       if (!ID.loaded || ID.deepSpaceMm == null || ID.innerSpaceMm == null || ID.stackMinMm == null || ID.innerSideMm == null) {
         warnings.push({
           code: 'DOUBLE_DRAWER_REFUSED',
@@ -2977,6 +3135,10 @@ export function computeCabinet(params, profileOverride) {
       overlay: Boolean(overlay),
       // T75 F14 · the index of the fixed dummy front (1-based), or null.
       dummy,
+      // T82 F9 · the stack's columns (one: the kit as it always was) and, on
+      // two, the DIVIDER between them (KIT_VANITY.lsp 5(c2)).
+      cols,
+      divider: columns === 2 ? drawerColumnsDivider({ W, H, D, G }) : null,
     };
     // T75 F14 · a dummy is not a drawer: no box, no runner pair, no rod.
     numDrawers = heights.length - (dummy ? 1 : 0);
@@ -3299,7 +3461,10 @@ export function computeCabinet(params, profileOverride) {
     ? { backTabs: false, topSocket: false, topScrews: false }
     : (oven
       ? { topSocket: false, topScrews: false, backTabsBelow: oven.backH }
-      : undefined);
+      // T82 F9 · the vanity's back is cut out (KIT_VANITY.lsp D4): a back tab's
+      // dog bone reaches 125 past a 100 rail, the middle one stands in the open
+      // back, so no side tab survives; the sides' back edges are straight.
+      : (backStyle === 'cut' ? { backTabs: false } : undefined));
 
   // ─── TURN 28 (CLAUDE.md F1): THE KIT SAYS WHAT IT IS MADE OF ─────────────
   //
@@ -3764,6 +3929,30 @@ export function computeCabinet(params, profileOverride) {
         },
       } : {}),
     }));
+  }
+  // ─── T82 F9 · THE BACK CUT OUT: RAIL-BOTTOM AND RAIL-TOP ──────────────────
+  // The owner: *"nie ma plecow na vanity unit tylko sa poziome poprzeczki na
+  // dole i na gorze, plecy sa jakby wyciete"*; *"4 - 100 na material carcasa
+  // grubosc"*. KIT_VANITY.lsp D2 to D4: what is left of the back, W x 100 in
+  // the carcass board, in the back's own plane (z 0 to G, behind the sides'
+  // back edges), each keeping the back's joint where it lands wholly inside it
+  // (`engine/vanity.js vanityRailGeometry`): the TOP's and BOTTOM's back tenons
+  // in its long edge's sockets, the back's end screws and its screw row; no
+  // side socket (the sides keep no back tab, above). Drawn in the back's own
+  // frame. Between the rails the back is open. Only a kit whose back is `cut`.
+  if (backStyle === 'cut') {
+    const railGeom = vanityRailGeometry({ W, H, G, puzzle: pz }, P);
+    // Each rail is its own part on the cut list, named as the LISP names it.
+    const vanityRailPart = { 'RAIL-BOTTOM': { part: 'RAIL-BOTTOM' }, 'RAIL-TOP': { part: 'RAIL-TOP' } };
+    for (const rail of vanityRails({ W, H, G }, P)) {
+      panels.push(panel({
+        id: rail.name, ...vanityRailPart[rail.name], role: 'back', w: rail.length, h: rail.height, thickness: G,
+        edgeCode: codes.none, edgeLen: 0,
+        box: { x: rail.x0, y: rail.y0, z: rail.z0, w: rail.length, h: rail.height, d: G },
+        cnc: { rotated: false, drawn_w: rail.length, drawn_h: rail.height, ...railGeom[rail.name] },
+        meta: { vanity: true, rail: rail.name === 'RAIL-TOP' ? 'top' : 'bottom' },
+      }));
+    }
   }
 
   // ─── TURN 17 (CLAUDE.md F10): THE OVEN BASE UNIT ─────────────────────────
@@ -5904,72 +6093,110 @@ export function computeCabinet(params, profileOverride) {
     // where a MOVENTO puts a drawer bottom. Turn 20 wrote `runnerRows` here,
     // which is the SCREW row 38 mm higher, so every box hung 38 mm high and the
     // façade's pilots missed the box front's by exactly that.
-    for (let i = 1; i <= budr.count; i += 1) {
-      if (i === budr.dummy) continue;   // T75 F14 · no box behind the hob's dummy
-      const sh = budr.sideHs[i - 1];
-      const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
-      for (const [suffix, x] of [['SL', boxLeftX], ['SR', boxLeftX + budr.boxW - GB]]) {
-        panels.push(panel({
-          id: `D${i}-${suffix}`, part: 'DRAWER-SIDE', role: 'drawer_box', w: budr.depth, h: sh, ...common,
-          box: { x, y: boxY, z: boxZFront - budr.depth, w: GB, h: sh, d: budr.depth },
-          // Drawn rotated: the LISP lays the side out running along the height.
-          cnc: { rotated: true, drawn_w: sh, drawn_h: budr.depth, ...pocketedRect(sh, budr.depth, sidePockets(budr.depth)) },
-          meta: {
-            drawer: i,
-            side: suffix === 'SL' ? 'L' : 'R',
-            ...(budr.overlay && overlay.ids[i - 1] ? { itemId: overlay.ids[i - 1] } : {}),
-          },
-        }));
-      }
-    }
-    for (let i = 1; i <= budr.count; i += 1) {
-      if (i === budr.dummy) continue;
-      const bfH = budr.boxFrontH[i - 1];
-      const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
-      for (const suffix of ['BF', 'BB']) {
-        const isFront = suffix === 'BF';
-        const geom = { rotated: true, drawn_w: bfH, drawn_h: budr.boxLen, ...rectGeometry(bfH, budr.boxLen) };
-        if (isFront) {
-          geom.holes = [
-            { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: B.boxScrewFromEdge, d: pz.screwDiameter },
-            { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: budr.boxLen - B.boxScrewFromEdge, d: pz.screwDiameter },
-          ];
-        }
-        panels.push(panel({
-          id: `D${i}-${suffix}`, part: isFront ? 'DRAWER-BOX-FRONT' : 'DRAWER-BOX-BACK', role: 'drawer_box',
-          w: budr.boxLen, h: bfH, ...common,
-          box: {
-            // Turn 18 (CLAUDE.md F3.4): standing ON the bottom, which stands in
-            // the groove — the same correction the wardrobe's box gets above,
-            // because it is the same box.
-            x: boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB,
-            z: isFront ? boxZFront - GB : boxZFront - budr.depth,
-            w: budr.boxLen, h: bfH, d: GB,
-          },
-          cnc: geom,
-          meta: { drawer: i },
-        }));
-      }
-      joinBoxWithCabineo(`D${i}`);
-    }
-    for (let i = 1; i <= budr.count; i += 1) {
-      if (i === budr.dummy) continue;
-      const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
-      const geom = rectGeometry(budr.bottomW, budr.depth);
-      geom.holes = [];
-      for (const x of [B.bottomScrewFromSide, budr.bottomW - B.bottomScrewFromSide]) {
-        for (const y of [B.bottomScrewFromEnd, budr.depth - B.bottomScrewFromEnd]) {
-          geom.holes.push({ layer: pz.layers.screw, kind: 'screw', x, y, d: pz.screwDiameter });
-        }
-      }
+    // ─── T82 F9 · THE DIVIDER OF TWO DRAWER COLUMNS (KIT_VANITY.lsp D11) ────
+    // A vertical partition (the house's VPART, so the room, the CNC frame,
+    // the sticker "DIVIDER", its head and foot joint, CHAT FIX 17.10.2026, and
+    // its back screws come from the roads every divider takes), cut in the
+    // carcass board: on the BOTTOM, under the TOP, the sides' depth. Not an
+    // item: it belongs to the two columns and goes with them (`locked`).
+    if (budr.divider) {
+      const dv = budr.divider;
       panels.push(panel({
-        id: `D${i}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: budr.bottomW, h: budr.depth, ...common,
-        // Centred in its box, as in the wardrobe: the bottom sits in the side
-        // grooves — and since turn 18 (F3.4) it sits at the HEIGHT of them,
-        // `runnerPocketWidth` above the sides' bottom edge.
-        box: { x: boxLeftX + (budr.boxW - budr.bottomW) / 2, y: boxY + B.runnerPocketWidth, z: boxZFront - budr.depth, w: budr.bottomW, h: GB, d: budr.depth },
-        cnc: geom, meta: { drawer: i },
+        id: dv.id, part: 'VPART', role: 'shelf', w: dv.h, h: dv.d, thickness: G,
+        edgeCode: codes.right,
+        edgeLen: metres(dv.h),
+        box: { x: dv.x, y: dv.y, z: dv.z, w: dv.w, h: dv.h, d: dv.d },
+        cnc: { rotated: true, drawn_w: dv.d, drawn_h: dv.h, ...rectGeometry(dv.d, dv.h) },
+        meta: {
+          index: 1,
+          vertical: true,
+          fullHeight: true,
+          itemId: null,
+          x_mm: dv.x,
+          front_mm: 0,
+          setback: 0,
+          drillFace: String(P.shelfHoles?.partitionFace || 'L').toUpperCase() === 'R' ? 'R' : 'L',
+          terminatesOn: null,
+          locked: true,
+          drawerColumns: 2,
+        },
       }));
+    }
+    // T82 F9 · each column's own stack (one column: the kit as it always was).
+    const colMeta = (c) => (c.col == null ? {} : { column: c.col });
+    for (const c of budr.cols) {
+      for (let i = 1; i <= budr.count; i += 1) {
+        if (i === budr.dummy) continue;   // T75 F14 · no box behind the hob's dummy
+        const sh = budr.sideHs[i - 1];
+        const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
+        for (const [suffix, x] of [['SL', c.boxLeftX], ['SR', c.boxLeftX + c.boxW - GB]]) {
+          panels.push(panel({
+            id: `${c.tag(i)}-${suffix}`, part: 'DRAWER-SIDE', role: 'drawer_box', w: budr.depth, h: sh, ...common,
+            box: { x, y: boxY, z: boxZFront - budr.depth, w: GB, h: sh, d: budr.depth },
+            // Drawn rotated: the LISP lays the side out running along the height.
+            cnc: { rotated: true, drawn_w: sh, drawn_h: budr.depth, ...pocketedRect(sh, budr.depth, sidePockets(budr.depth)) },
+            meta: {
+              drawer: i,
+              side: suffix === 'SL' ? 'L' : 'R',
+              ...colMeta(c),
+              ...(budr.overlay && overlay.ids[i - 1] ? { itemId: overlay.ids[i - 1] } : {}),
+            },
+          }));
+        }
+      }
+    }
+    for (const c of budr.cols) {
+      for (let i = 1; i <= budr.count; i += 1) {
+        if (i === budr.dummy) continue;
+        const bfH = budr.boxFrontH[i - 1];
+        const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
+        for (const suffix of ['BF', 'BB']) {
+          const isFront = suffix === 'BF';
+          const geom = { rotated: true, drawn_w: bfH, drawn_h: c.boxLen, ...rectGeometry(bfH, c.boxLen) };
+          if (isFront) {
+            geom.holes = [
+              { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: B.boxScrewFromEdge, d: pz.screwDiameter },
+              { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: c.boxLen - B.boxScrewFromEdge, d: pz.screwDiameter },
+            ];
+          }
+          panels.push(panel({
+            id: `${c.tag(i)}-${suffix}`, part: isFront ? 'DRAWER-BOX-FRONT' : 'DRAWER-BOX-BACK', role: 'drawer_box',
+            w: c.boxLen, h: bfH, ...common,
+            box: {
+              // Turn 18 (CLAUDE.md F3.4): standing ON the bottom, which stands in
+              // the groove: the same correction the wardrobe's box gets above,
+              // because it is the same box.
+              x: c.boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB,
+              z: isFront ? boxZFront - GB : boxZFront - budr.depth,
+              w: c.boxLen, h: bfH, d: GB,
+            },
+            cnc: geom,
+            meta: { drawer: i, ...colMeta(c) },
+          }));
+        }
+        joinBoxWithCabineo(c.tag(i));
+      }
+    }
+    for (const c of budr.cols) {
+      for (let i = 1; i <= budr.count; i += 1) {
+        if (i === budr.dummy) continue;
+        const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
+        const geom = rectGeometry(c.bottomW, budr.depth);
+        geom.holes = [];
+        for (const x of [B.bottomScrewFromSide, c.bottomW - B.bottomScrewFromSide]) {
+          for (const y of [B.bottomScrewFromEnd, budr.depth - B.bottomScrewFromEnd]) {
+            geom.holes.push({ layer: pz.layers.screw, kind: 'screw', x, y, d: pz.screwDiameter });
+          }
+        }
+        panels.push(panel({
+          id: `${c.tag(i)}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: c.bottomW, h: budr.depth, ...common,
+          // Centred in its box, as in the wardrobe: the bottom sits in the side
+          // grooves, and since turn 18 (F3.4) it sits at the HEIGHT of them,
+          // `runnerPocketWidth` above the sides' bottom edge.
+          box: { x: c.boxLeftX + (c.boxW - c.bottomW) / 2, y: boxY + B.runnerPocketWidth, z: boxZFront - budr.depth, w: c.bottomW, h: GB, d: budr.depth },
+          cnc: geom, meta: { drawer: i, ...colMeta(c) },
+        }));
+      }
     }
     // ─── T78 F16 · THE INNER DRAWER OF A DOUBLE ROW ──────────────────────────
     // The same box (the house's wooden box on its own MOVENTO pair) at the
@@ -6049,99 +6276,104 @@ export function computeCabinet(params, profileOverride) {
     // run — the boxes, their runners and the carcass are exactly what they were.
     // Turn 30 (CLAUDE.md F20): …and ONE of them can come off on its own, which
     // is the two-drawer front with a hidden drawer behind it.
-    for (let i = 1; i <= budr.count; i += 1) {
-      if (cfg.internalDrawers.has(i)) {
-        if (!cfg.innerFrontDrawers.has(i)) continue;
-        // T78 F15 · the inner front of a drawer-unit row behind doors (see the
-        // wardrobe machine above): the box's width, the box side's height, on
-        // the box front, with the box's own front fixing screws.
-        const IF = P.wardrobe.drawers.innerFront || {};
-        const over = Number(IF.overhangMm) || 0;
-        const w = budr.boxW + over;
-        const h = budr.sideHs[i - 1];
-        const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
-        const id = `${unitNum}-IF${i}`;
-        // The box's own front fixing (the overlay front's pattern, measured from the box side).
-        const sx = B.frontScrewFromSide + GB;
-        const geom = rectGeometry(w, h);
-        geom.holes = [sx, w - sx].map((x) => ({
-          layer: B.frontScrewLayer, kind: 'front_screw', x: roundTo(x, 4), y: roundTo(B.frontScrewFromBottom, 4), d: B.frontScrewDiameter,
+    for (const c of budr.cols) {
+      for (let i = 1; i <= budr.count; i += 1) {
+        if (cfg.internalDrawers.has(i)) {
+          if (!cfg.innerFrontDrawers.has(i)) continue;
+          // T78 F15 · the inner front of a drawer-unit row behind doors (see the
+          // wardrobe machine above): the box's width, the box side's height, on
+          // the box front, with the box's own front fixing screws.
+          const IF = P.wardrobe.drawers.innerFront || {};
+          const over = Number(IF.overhangMm) || 0;
+          const w = c.boxW + over;
+          const h = budr.sideHs[i - 1];
+          const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
+          const id = c.col == null ? `${unitNum}-IF${i}` : `${unitNum}-${c.tag(i)}-IF`;
+          // The box's own front fixing (the overlay front's pattern, measured from the box side).
+          const sx = B.frontScrewFromSide + GB;
+          const geom = rectGeometry(w, h);
+          geom.holes = [sx, w - sx].map((x) => ({
+            layer: B.frontScrewLayer, kind: 'front_screw', x: roundTo(x, 4), y: roundTo(B.frontScrewFromBottom, 4), d: B.frontScrewDiameter,
+          }));
+          panels.push(panel({
+            id, part: 'DRAWER-FRONT', role: 'drawer_front', w, h, thickness: frontT,
+            edgeCode: codes.all, edgeLen: metres(2 * w + 2 * h),
+            box: { x: (c.col == null ? (W - budr.boxW) / 2 : c.boxLeftX) - over / 2, y: boxY, z: boxZFront, w, h, d: frontT },
+            cnc: geom,
+            meta: { drawer: i, inner: true, frontType: cfg.frontType, fixing: 'box front screws (T34)', ...colMeta(c) },
+          }));
+          continue;
+        }
+        // ─── TURN 30 (CLAUDE.md F20): THE FRONT ABOVE COVERS IT ───────────────
+        // The two-drawer front with one hidden drawer behind it: this façade
+        // takes in the run of internal drawers immediately below, and the gaps
+        // between them, off the kit's own `frontY` table.
+        let bottom = i;
+        while (bottom > 1 && cfg.internalDrawers.has(bottom - 1)) bottom -= 1;
+        // How much lower this façade now starts. Zero on every unit that has no
+        // internal drawer, which is every unit written before tonight.
+        const drop = budr.frontY[i - 1] - budr.frontY[bottom - 1];
+        const fh = budr.heights[i - 1] + drop;
+        // ─── T75 F14 · THE HOB'S DUMMY, A FIXED FRONT PIECE ───────────────────
+        // Emitted as F3's blank is: front material, front thickness, its own
+        // role (`false_front`, the FIX fronts row), the drawer front's size and
+        // plane, and NO hole: no box, no runner, no screw. It is not a drawer and
+        // does not open; its fixing is the joiner's.
+        if (i === budr.dummy) {
+          panels.push(panel({
+            id: c.frontId(i),
+            part: 'FALSE-FRONT',
+            role: 'false_front',
+            w: c.frontWidth,
+            h: fh,
+            thickness: frontT,
+            edgeCode: codes.all,
+            edgeLen: metres(2 * c.frontWidth + 2 * fh),
+            box: { x: c.frontX, y: budr.frontY[bottom - 1], z: D + P.doors.gap, w: c.frontWidth, h: fh, d: frontT },
+            cnc: rectGeometry(c.frontWidth, fh),
+            meta: {
+              hob: true,
+              frontType: cfg.frontType,
+              readiness: 'geometry',
+              fixing: 'manual',
+            },
+          }));
+          continue;
+        }
+        const geom = rectGeometry(c.frontWidth, fh);
+        // The bottom façade runs one CARCASS board lower to cover the floor, so
+        // its screw line rises by that board (turn 24, F3.2: the carcass's).
+        // …and a façade that has GROWN downward keeps its screws on its own box,
+        // which is `drop` higher up the board than its new bottom edge.
+        const screwY = B.frontScrewFromBottom + (i === 1 ? G : 0) + drop;
+        // …and the 50 is measured from the BOX's own side, which stands one
+        // CARCASS board and one BOX board in from the façade's edge. Two boards,
+        // two slots: the LISP's `2×G` collapsed them because both measured 18.
+        const screwX = B.frontScrewFromSide + G + GB + B.frontScrewExtra;
+        // T82 F9 · in a column each screw keeps that distance from its OWN box
+        // side (`screwShift`, drawerColumnsPlan); one column shifts nothing.
+        geom.holes = [screwX + c.screwShift.left, c.frontWidth - (screwX + c.screwShift.right)].map((x) => ({
+          layer: B.frontScrewLayer, kind: 'front_screw', x, y: screwY, d: B.frontScrewDiameter,
         }));
         panels.push(panel({
-          id, part: 'DRAWER-FRONT', role: 'drawer_front', w, h, thickness: frontT,
-          edgeCode: codes.all, edgeLen: metres(2 * w + 2 * h),
-          box: { x: (W - budr.boxW) / 2 - over / 2, y: boxY, z: boxZFront, w, h, d: frontT },
+          id: c.frontId(i), part: 'DRAWER-FRONT', role: 'front', w: c.frontWidth, h: fh, thickness: frontT,
+          edgeCode: codes.all, edgeLen: metres(2 * c.frontWidth + 2 * fh),
+          box: { x: c.frontX, y: budr.frontY[bottom - 1], z: D + P.doors.gap, w: c.frontWidth, h: fh, d: frontT },
           cnc: geom,
-          meta: { drawer: i, inner: true, frontType: cfg.frontType, fixing: 'box front screws (T34)' },
-        }));
-        continue;
-      }
-      // ─── TURN 30 (CLAUDE.md F20): THE FRONT ABOVE COVERS IT ───────────────
-      // The two-drawer front with one hidden drawer behind it: this façade
-      // takes in the run of internal drawers immediately below, and the gaps
-      // between them, off the kit's own `frontY` table.
-      let bottom = i;
-      while (bottom > 1 && cfg.internalDrawers.has(bottom - 1)) bottom -= 1;
-      // How much lower this façade now starts. Zero on every unit that has no
-      // internal drawer, which is every unit written before tonight.
-      const drop = budr.frontY[i - 1] - budr.frontY[bottom - 1];
-      const fh = budr.heights[i - 1] + drop;
-      // ─── T75 F14 · THE HOB'S DUMMY, A FIXED FRONT PIECE ───────────────────
-      // Emitted as F3's blank is: front material, front thickness, its own
-      // role (`false_front`, the FIX fronts row), the drawer front's size and
-      // plane, and NO hole: no box, no runner, no screw. It is not a drawer and
-      // does not open; its fixing is the joiner's.
-      if (i === budr.dummy) {
-        panels.push(panel({
-          id: `${unitNum}-F${i}`,
-          part: 'FALSE-FRONT',
-          role: 'false_front',
-          w: budr.frontWidth,
-          h: fh,
-          thickness: frontT,
-          edgeCode: codes.all,
-          edgeLen: metres(2 * budr.frontWidth + 2 * fh),
-          box: { x: B.frontWidthDeduction / 2, y: budr.frontY[bottom - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
-          cnc: rectGeometry(budr.frontWidth, fh),
           meta: {
-            hob: true,
+            drawer: i,
             frontType: cfg.frontType,
-            readiness: 'geometry',
-            fixing: 'manual',
+            // TURN 40 (F3b): an overlay drawer IS an item, so its front carries
+            // the item's id and the per-drawer height slider reaches it through
+            // exactly the path every other wardrobe drawer's does
+            // (`setDrawerHeight` → `updateItem` → `height_mm`). A BUDR's fronts
+            // are the kit's own ratio and carry none, as before.
+            ...(budr.overlay && overlay.ids[i - 1] ? { itemId: overlay.ids[i - 1] } : {}),
+            ...(budr.overlay ? { overlay: true } : {}),
+            ...colMeta(c),
           },
         }));
-        continue;
       }
-      const geom = rectGeometry(budr.frontWidth, fh);
-      // The bottom façade runs one CARCASS board lower to cover the floor, so
-      // its screw line rises by that board (turn 24, F3.2: the carcass's).
-      // …and a façade that has GROWN downward keeps its screws on its own box,
-      // which is `drop` higher up the board than its new bottom edge.
-      const screwY = B.frontScrewFromBottom + (i === 1 ? G : 0) + drop;
-      // …and the 50 is measured from the BOX's own side, which stands one
-      // CARCASS board and one BOX board in from the façade's edge. Two boards,
-      // two slots — the LISP's `2×G` collapsed them because both measured 18.
-      const screwX = B.frontScrewFromSide + G + GB + B.frontScrewExtra;
-      geom.holes = [screwX, budr.frontWidth - screwX].map((x) => ({
-        layer: B.frontScrewLayer, kind: 'front_screw', x, y: screwY, d: B.frontScrewDiameter,
-      }));
-      panels.push(panel({
-        id: `${unitNum}-F${i}`, part: 'DRAWER-FRONT', role: 'front', w: budr.frontWidth, h: fh, thickness: frontT,
-        edgeCode: codes.all, edgeLen: metres(2 * budr.frontWidth + 2 * fh),
-        box: { x: B.frontWidthDeduction / 2, y: budr.frontY[bottom - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
-        cnc: geom,
-        meta: {
-          drawer: i,
-          frontType: cfg.frontType,
-          // TURN 40 (F3b): an overlay drawer IS an item, so its front carries
-          // the item's id and the per-drawer height slider reaches it through
-          // exactly the path every other wardrobe drawer's does
-          // (`setDrawerHeight` → `updateItem` → `height_mm`). A BUDR's fronts
-          // are the kit's own ratio and carry none, as before.
-          ...(budr.overlay && overlay.ids[i - 1] ? { itemId: overlay.ids[i - 1] } : {}),
-          ...(budr.overlay ? { overlay: true } : {}),
-        },
-      }));
     }
 
     // ─── TURN 40 (CLAUDE.md F3b): THE FIXED SHELF OVER AN OVERLAY STACK ────
@@ -9886,6 +10118,24 @@ export function computeCabinet(params, profileOverride) {
         }
       }
     }
+    // ─── T82 F9 · THE DIVIDER CARRIES BOTH COLUMNS' RUNNERS (KIT_VANITY.lsp D11)
+    // "the runner rows of both columns on its two faces, as the wardrobe's
+    // divider between two drawer columns carries them": the same rows and
+    // the same pattern as the carcass sides, in the divider's own frame (the
+    // VPART's: x along its depth, y above its own foot). Its LEFT face is
+    // column 1's right wall and is drilled as BUL is; its RIGHT face is
+    // column 2's left wall, the same part turned over, drilled as BUR is
+    // (T21 F12.2's mirror rule for a partition's two faces).
+    if (budr.divider) {
+      const dv = budr.divider;
+      for (const face of ['L', 'R']) {
+        for (const rowY of budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy)) {
+          for (const px of RN.holeXPattern) {
+            addDrill(dv.id, 'runner', RN.layer, face === 'R' ? dv.d - px : px, rowY - dv.y, RN.holeDiameter);
+          }
+        }
+      }
+    }
   }
 
   // Wall-unit hangers: two holes per side panel, measured off the back edge.
@@ -10746,6 +10996,26 @@ export function computeCabinet(params, profileOverride) {
       codes, mkPanel: panel, rect: rectGeometry,
     })
     : null;
+  // ─── T82 F9 · THE TRAP'S U AND CHECK #39 (KIT_VANITY.lsp 5(d)) ────────────
+  // The owner: *"musimy miec tez wyciecie na trap, w razie czego jak nie bedzie
+  // miejsca to zostawimy informacje prosze uzyc shallow trap"*; *"2 wyciecie u
+  // dookola zeby sie szuflada otwierala"*; *"6 - tak"*. On the boards and the
+  // drilling above, as the canopy's: under each basin's waste the TOP drawer's
+  // box takes a U 160 x 120, R 20, from its back face (D13), its back wall cut
+  // into boards {tag}-BB-1.. and its bottom notched; the engine never squashes
+  // what was asked, the room says what does not fit in #39's sentences (D15 to
+  // D17). The boxes are read as the stack was cut, columns as the engine cut
+  // them (`budr.divider`: two, B5's cut of D10 to D12, the boxes tagged Z1D{i}
+  // and Z2D{i}). After the box's Cabineo (T79 F14 joins the whole wall by its
+  // tag), so each board keeps the joint at its own end. Guarded by the KIT.
+  const vanityTrap = type.vanity
+    ? applyVanityTrap({
+      panels, drills, warnings, W, GB, profile: P, mkPanel: panel,
+      n: budr ? budr.count : 0,
+      columns: budr?.divider ? 2 : 1,
+      sinks: Number.isFinite(Number(params?.sinks)) ? Math.trunc(Number(params.sinks)) : 0,
+    })
+    : null;
   applyGrainAxis(panels);
 
   // ── Totals ─────────────────────────────────────────────────────────────────
@@ -11246,7 +11516,10 @@ export function computeCabinet(params, profileOverride) {
   const runnerDesign = { runners: { variant: params?.project_runner_variant ?? null } };
   const byVariant = new Map();
   // T78 F16 · each double row's inner drawer runs on a pair of its own.
-  for (let i = 1; i <= numDrawers + columnDrawerCount + Object.keys(budr?.doubles || {}).length; i += 1) {
+  // T82 F9 · two drawer columns (KIT_VANITY.lsp 5(c2)) are the same stack
+  // twice: a pair per box, the second column's counted after the first's.
+  const budrColumns = budr ? budr.cols.length : 1;
+  for (let i = 1; i <= numDrawers * budrColumns + columnDrawerCount + Object.keys(budr?.doubles || {}).length; i += 1) {
     // Turn 32 (CLAUDE.md F4): a column drawer buys a pair exactly as a
     // full-width one does — same ladder, same variant resolution, counted
     // after the default stack so per-drawer overrides keep their indices.
@@ -11282,15 +11555,18 @@ export function computeCabinet(params, profileOverride) {
   // A wide drawer's two runners are tied together so the box cannot rack.
   // Blum's thresholds are on the cabinet OPENING width and the rod's own length
   // is parametric — the box, less the ends its adapters take up.
+  // T82 F9 · in two drawer columns Blum's threshold is asked with a COLUMN's
+  // opening and box (the two are the same), and every box takes its rod.
+  const rodOpening = budrColumns === 2 ? budr.cols[0].opening.w : internalWidth;
   const rod = numDrawers > 0
     ? syncRodFor({
-      openingWidth: internalWidth,
-      boxWidth: budr ? budr.boxW : szufSzer,
+      openingWidth: rodOpening,
+      boxWidth: budr ? budr.cols[0].boxW : szufSzer,
       profile: P,
     })
     : { fitted: false, kind: 'none', length: null };
-  hw('runner_sync_rods', 'Runner synchronisation rods', rod.fitted ? numDrawers : 0, 'pcs',
-    { kind: rod.kind, length_mm: rod.length, opening_mm: internalWidth },
+  hw('runner_sync_rods', 'Runner synchronisation rods', rod.fitted ? numDrawers * budrColumns : 0, 'pcs',
+    { kind: rod.kind, length_mm: rod.length, opening_mm: rodOpening },
     rod.fitted ? `${roundTo(rod.length, 0)} mm · ${rod.kind === 'narrow' ? 'narrow' : 'with adapters'}` : '');
   // Turn 32 (CLAUDE.md F4): each column asks the same Blum threshold with its
   // OWN opening — a wide column's drawers take rods, a narrow one's do not.
@@ -11599,6 +11875,18 @@ export function computeCabinet(params, profileOverride) {
       drawer_front_y: [...budr.frontY],
       drawer_heights: [...budr.heights],
     } : {}),
+    // T82 F9 · two drawer columns: the box and the front are a COLUMN's, the
+    // rows are the same in both; the keys appear only on two columns.
+    ...(budr && budr.divider ? {
+      columns: 2,
+      szufSzer: budr.cols[0].boxW,
+      drawer_front_w: budr.cols[0].frontWidth,
+      boxFrontLen: budr.cols[0].boxLen,
+      bottom_w: budr.cols[0].bottomW,
+      drawer_front_x: budr.cols.map((c) => c.frontX),
+      column_openings: budr.cols.map((c) => ({ from: c.opening.from, to: c.opening.to, w: c.opening.w })),
+      divider_x: budr.divider.x,
+    } : {}),
     // T42-F1: `rail_partition_y` is deleted with the board it located.
     ...(hasRail ? { rail_y: railY, rail_support_y: railSupportY } : {}),
     ...(sinkBack ? { back_w: sinkBack.w, back_h: sinkBack.h, holder_w: internalWidth, holder_h: SK.railHeight } : {}),
@@ -11696,6 +11984,14 @@ export function computeCabinet(params, profileOverride) {
         budr.frontWidth - (B.frontScrewFromSide + 2 * G + B.frontScrewExtra),
       ],
       drawer_front_screw_y_per_drawer: budr.heights.map((_, i) => B.frontScrewFromBottom + (i === 0 ? G : 0)),
+    } : {}),
+    // T82 F9 · two drawer columns: column 1's front, each screw off its own box side.
+    ...(budr && budr.divider ? {
+      drawer_front_screw_x: [
+        B.frontScrewFromSide + 2 * G + B.frontScrewExtra + budr.cols[0].screwShift.left,
+        budr.cols[0].frontWidth - (B.frontScrewFromSide + 2 * G + B.frontScrewExtra + budr.cols[0].screwShift.right),
+      ],
+      divider_runner_rows_y: budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy).map((y) => y - budr.divider.y),
     } : {}),
     ...(type.hangers ? {
       hanger_holes_bul: P.wallUnit.hangers.fromBackEdge.map((f) => [sideW - f, H - P.wallUnit.hangers.fromTop]),
@@ -11936,7 +12232,8 @@ export function computeCabinet(params, profileOverride) {
     ...(columnCap ? { columnCap: { top: columnCap.y, zones: columnDrawerSets.map((set) => set.zone) } } : {}),
     drawerFronts: budr
       ? budr.heights.map((h, i) => ({
-        index: i + 1, y: budr.frontY[i], h, w: budr.frontWidth, ...(i + 1 === budr.dummy ? { fixed: true } : {}),
+        // T82 F9 · one row per height: two drawer columns share their rows, a column's front its width.
+        index: i + 1, y: budr.frontY[i], h, w: budr.cols[0].frontWidth, ...(i + 1 === budr.dummy ? { fixed: true } : {}),
       }))
       : (hasDrawers
         ? drawerHeights.map((h, i) => ({
@@ -12183,6 +12480,15 @@ export function computeCabinet(params, profileOverride) {
   // CHAT FIX 17.10.2026 . the divider's head and foot joints, for the tests and
   // the sheet: which board each end landed on, the overlap and the set count.
   if (dividerJoints.joints.length) derived.dividerJoints = dividerJoints.joints;
+  // T82 F9 · what the vanity is, for the room, the sheets and the tests: the
+  // rails (the back's window between them) and the trap's record.
+  if (type.vanity) {
+    derived.vanity = {
+      rails: vanityRails({ W, H, G }, P),
+      columns: budr?.divider ? 2 : 1,
+      trap: vanityTrap,
+    };
+  }
   // T78 F17 . what the canopy is, for the drawing and the tests; BUL's hanger
   // summary follows its drilling, which moved with the frame.
   if (canopy) {
@@ -12238,7 +12544,8 @@ export function computeCabinet(params, profileOverride) {
   if (inframeInset.length) {
     const moved = panels.filter((p) => inframeInset.includes(p.id));
     const leaves = moved.filter((p) => p.part === 'FRONT');
-    const drawerFronts = moved.filter((p) => p.part === 'DRAWER-FRONT').sort((a, b) => a.box.y - b.box.y);
+    // T82 F9 · two drawer columns share their rows: the figures are column 1's.
+    const drawerFronts = moved.filter((p) => p.part === 'DRAWER-FRONT' && !(p.meta?.column > 1)).sort((a, b) => a.box.y - b.box.y);
     if (leaves.length) {
       if ('door_width' in derived) derived.door_width = leaves[0].w;
       if (Array.isArray(leaves[0].meta?.cupY)) drillSummary.front_cup_y = leaves[0].meta.cupY.map((v) => roundTo(v, 4));

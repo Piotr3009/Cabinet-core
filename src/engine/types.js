@@ -24,6 +24,8 @@ import { KITCHEN_LIBRARY, WARDROBE_LIBRARY, libraryTypeIds } from './library.js'
  *                    | 'rail' (DW_PANEL, turn 28 F1: ONE plain board across the
  *                      opening, at the unit's own width — see below)
  * carcass.back     — 'full' | 'inset' (SINK) | 'rails' (FRIDGE) | 'none'
+ *                    | 'cut' (T82 F9, the VANITY: the back cut out to two rails,
+ *                      KIT_VANITY.lsp D2; RAIL-BOTTOM and RAIL-TOP where it stood)
  * carcass.sides    — 'panel' (default, when the key is absent) | 'none'
  * carcass.bottom   — 'panel' (default, when the key is absent) | 'none'
  *
@@ -429,6 +431,116 @@ export const UNIT_TYPES = {
     available: true,
   },
 
+  // ─── T82 F9 · THE VANITY UNIT (reference/lisp/KIT_VANITY.lsp) ─────────────
+  //
+  // The owner, 25.10.2026 (12:57): *"vanity unit (podobna zasada bedzie do
+  // chest drawers) vanity unit potrzebuje z szufladami nawierzchniowymi, wybor
+  // jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa rowne ... nie ma
+  // plecow na vanity unit tylko sa poziome poprzeczki na dole i na gorze,
+  // plecy sa jakby wyciete"*; over the mockup (13:03): *"3 - 80, 4 - 100 na
+  // material carcasa grubosc"*.
+  //
+  // KIT_BUDR_FULL is the parent (D1): each is its drawer unit of the same count
+  // to the letter (the variant, so the same runner ladder, boxes, fronts, legs
+  // and hinge rules) with what the LISP changes: `equalDrawers` (D8, the
+  // fronts equal, exact, by `cabinet.js drawerSplitFor`), the back `cut` to
+  // two rails (D2 to D4, `engine/vanity.js`), `vanity` (the trap's U and Check
+  // #39, D13 to D17), `drawerColumns` (D10, the two columns the chest takes
+  // too, cut ONCE for every kit that declares it), the bathroom family, its own
+  // LISP and defaults block. `heightGroup: null` and `ownDepth: true`: its 600
+  // and its 500 are its own (a basin's height, the bathroom's depth over the
+  // 80 void), the project's base height and 558 must not replace them
+  // (projectStore projectHeightParams). `topInfill: false`: what goes
+  // on it is a worktop (D7, `worktop.js takesWorktop`). Floating (D19) is a
+  // parameter the room reads (F13), never a second type.
+  VANITY2: {
+    id: 'VANITY2',
+    heightGroup: null,
+    label: 'Vanity unit, 2 drawers',
+    drawerVariant: 'x2',
+    equalDrawers: true,
+    drawerColumns: true,
+    vanity: true,
+    ownDepth: true,
+    family: 'bathroom',
+    lisp: 'KIT_VANITY.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'cut' },
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'vanity.defaults',
+    supports: {
+      drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
+      cornice: false,
+    },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  VANITY3: {
+    id: 'VANITY3',
+    heightGroup: null,
+    label: 'Vanity unit, 3 drawers',
+    drawerVariant: 'x3',
+    equalDrawers: true,
+    drawerColumns: true,
+    vanity: true,
+    ownDepth: true,
+    family: 'bathroom',
+    lisp: 'KIT_VANITY.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'cut' },
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'vanity.defaults',
+    supports: {
+      drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
+      cornice: false,
+    },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  VANITY4: {
+    id: 'VANITY4',
+    heightGroup: null,
+    label: 'Vanity unit, 4 drawers',
+    drawerVariant: 'x4',
+    equalDrawers: true,
+    drawerColumns: true,
+    vanity: true,
+    ownDepth: true,
+    family: 'bathroom',
+    lisp: 'KIT_VANITY.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'cut' },
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'vanity.defaults',
+    supports: {
+      drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
+      cornice: false,
+    },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+
   // ─── T75 F16 · THE CHEST OF DRAWERS BETWEEN WARDROBES ─────────────────────
   //
   // CLAUDE.md T75 F16: *"`WARDROBE_CHEST2 / 3 / 4` copied from `BUDR2 / BUDR /
@@ -448,6 +560,15 @@ export const UNIT_TYPES = {
   // wardrobe and is not one. No top box rides it (`topBox.hostsRidersOf`), it
   // is never "the wardrobe" the retail columns are about, and a wardrobe's
   // hanging kits (trouser pull-out, tie rack) are not offered in it.
+  //
+  // T82 F9 · `drawerColumns: true`: the chest takes KIT_VANITY.lsp's two
+  // drawer rules (D20; the owner, 25.10.2026, 13:03: *"7 - tak"*): equal
+  // fronts by default (`params.drawer_split: 'equal'`, written where a chest
+  // is BORN, projectStore `newUnit`, so the bare kit and its golden keep the
+  // kit's own split) and two columns (`params.columns: 2`, section 5(c2): a
+  // DIVIDER mid-width, the same stack in each column, its TOP over both). Its
+  // back stays: no rails, no void, no basin. cabinet.js `drawerColumnsOf`,
+  // `drawerSplitOf` and `drawerColumnsPlan` read the key, never the id.
   WARDROBE_CHEST2: {
     id: 'WARDROBE_CHEST2',
     heightGroup: null,
@@ -465,6 +586,7 @@ export const UNIT_TYPES = {
     carcass: { top: 'panel', back: 'full' },
     drawerStyle: 'budr',
     besideWardrobe: true,
+    drawerColumns: true,
     minHeightKey: null,
     defaultsKey: 'wardrobeChest.defaults',
     supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
@@ -488,6 +610,7 @@ export const UNIT_TYPES = {
     carcass: { top: 'panel', back: 'full' },
     drawerStyle: 'budr',
     besideWardrobe: true,
+    drawerColumns: true,
     minHeightKey: null,
     defaultsKey: 'wardrobeChest.defaults',
     supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
@@ -511,6 +634,7 @@ export const UNIT_TYPES = {
     carcass: { top: 'panel', back: 'full' },
     drawerStyle: 'budr',
     besideWardrobe: true,
+    drawerColumns: true,
     minHeightKey: null,
     defaultsKey: 'wardrobeChest.defaults',
     supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
@@ -1662,7 +1786,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'HAWA_POCKET', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'VANITY2', 'VANITY3', 'VANITY4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'HAWA_POCKET', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1733,6 +1857,11 @@ export function isBesideWardrobe(typeId) {
 /** T75 F17 · is this a desk: a wall-hung kit that takes a worktop of its own? */
 export function isDeskKit(typeId) {
   return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.desk);
+}
+
+/** T82 F9 · is this a vanity kit (KIT_VANITY.lsp: the drawer base with its back cut out)? */
+export function isVanityKit(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.vanity);
 }
 
 /** T75 F3 · is this a blind corner kit (a blank beside one leaf)? */
@@ -1893,6 +2022,19 @@ export function defaultParamsFor(typeId, profile) {
     // (`params.pocket`: one door, hand R, Push, the class by F3, nothing
     // covered yet). Spread, so no other kit carries a key it did not.
     ...(type.hawaPocket ? hawaPocketDefaultParams(profile) : {}),
+    // ─── T82 F9 · THE VANITY'S OWN ANSWERS (KIT_VANITY.lsp) ──────────────────
+    // One column (D10), one basin (the LISP's worked example and its command's
+    // default, D14), on the floor (D19, the room's, F13), and THE SERVICE VOID
+    // in the unit's own wall gap: the project's clearance + 80 (D6,
+    // `vanity-wall-gap`), written here and never typed, so every reader of
+    // `runs.js wallGapOf` sees it. Spread, so no other kit carries a key.
+    ...(type.vanity ? {
+      columns: 1,
+      sinks: 1,
+      floating: false,
+      float_height_mm: Number(d.floatHeightMm) || 0,
+      wall_gap: Math.max(0, Number(profile.room?.wallBackClearance) || 0) + (Number(profile.vanity?.serviceVoidMm) || 0),
+    } : {}),
     unit_num: '01',
   };
 }
@@ -1927,4 +2069,6 @@ export const UNIT_NUM_PREFIX = {
   WUD_HOOD_CANOPY: 'HD', WUD_HOOD_SHORT: 'HD',
   // T82 F2 · the HAWA pocket: HP01.
   HAWA_POCKET: 'HP',
+  // T82 F9 · the vanity: VU01, whatever its count (KIT_VANITY.lsp D22), as DR is the drawer base's.
+  VANITY2: 'VU', VANITY3: 'VU', VANITY4: 'VU',
 };

@@ -43,6 +43,40 @@ const CACHE_LIMIT = 240;
 const cache = new Map();
 
 /**
+ * T82 F9 · THE TRAP'S U, AS IT IS CUT (KIT_VANITY.lsp D13, D14).
+ *
+ * The owner: *"wyciecie u dookola zeby sie szuflada otwierala"*, *"6 - tak"*
+ * (R 20). The bottom of the vanity's top drawer box is notched from its back
+ * edge round the trap: the engine records the U in the board's own frame
+ * (`meta.vanityTrap.notches`, [from, to, depth, r]) and cuts the outline from
+ * it with `socketFace.js notchedOutline` at the trap's radius
+ * (`engine/vanity.js applyVanityTrap`). The room hands the SAME numbers to the
+ * SAME function (the socket notch's road, T11), so the U in the room is the U
+ * on the CNC sheet: one law, nothing re-derived.
+ *
+ * The gate is the RECORD (as the side's wedge is gated on its record): every
+ * other board keeps its socket notches and its cutter radius, byte for byte.
+ * The back wall's pieces carry the trap's record without `notches` and stay
+ * boxes (they are cut apart, not notched). The engine's outline is the U
+ * alone, so a board cut round a trap takes no socket notch either.
+ *
+ * @returns {{notches:Array<{edge:'bottom',from:number,to:number,depth:number}>, radius:number}|null}
+ */
+export function trapCutNotches(panel) {
+  const rows = panel?.meta?.vanityTrap?.notches;
+  if (!Array.isArray(rows) || !rows.length) return null;
+  const notches = [];
+  let radius = 0;
+  for (const row of rows) {
+    const [from, to, depth, r] = (Array.isArray(row) ? row : []).map(Number);
+    if (![from, to, depth].every(Number.isFinite) || !(to > from) || !(depth > 0)) return null;
+    notches.push({ edge: 'bottom', from, to, depth });
+    radius = Math.max(radius, Number.isFinite(r) && r > 0 ? r : 0);
+  }
+  return { notches, radius };
+}
+
+/**
  * The machined solid for one panel, or null when the panel is a plain box.
  *
  * Returned geometry is centred on the panel's own box, exactly as a
@@ -194,7 +228,9 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
   // (the strip is an INFILL and `panelPlacement` has no seat for it), grew the
   // strip and the shelf, and reads its shear sign from the SIGNED `tilt_deg`.
   // The words above stay as the law's history; the code lives at the top.
-  const notches = socketNotches(panel, layers);
+  // T82 F9 · …or the trap's U, on a bottom the engine cut round one.
+  const trap = trapCutNotches(panel);
+  const notches = trap ? trap.notches : socketNotches(panel, layers);
   // ─── Turn 12 (CLAUDE.md F6.2): the OTHER half of the joint ───
   // A socket is a POCKET and a TAB is part of the OUTLINE, and turn 11 only
   // read the pockets — so a side panel came out a rectangle and its three tabs
@@ -204,7 +240,8 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
   const { w, h } = cncRect(panel);
   const thickness = thicknessOf(panel, placement);
   if (!(w > 0) || !(h > 0) || !(thickness > 0)) return NOTHING;
-  const radius = Math.max(0, (Number(profile?.cnc?.toolDiameter) || 0) / 2);
+  // The cutter's radius at a socket's corners; the trap's own R at its U's.
+  const radius = trap ? trap.radius : Math.max(0, (Number(profile?.cnc?.toolDiameter) || 0) / 2);
   // Turn 46 (F6a): the engine's own cut, or null on every panel that has none.
   // Turn 47 (F1): …and that cut is a LINE now, so the scene clips on the line.
   // `slopeCutActive` reads `pts` where the engine published them and the two

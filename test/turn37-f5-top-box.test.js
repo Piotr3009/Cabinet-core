@@ -154,8 +154,10 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // at the end. Rule 15 is still the fifteenth and still says what it said. Thirty-eight.
   // AMENDED BY T82 F3 (25.10.2026): the HAWA pocket's #37 and #38 beside #36 and its
   // #47 at the end (*"wysuwasz pocket door i zakrywasz szafke lub szafki"*). Rule 15 is
-  // still the fifteenth. Forty-one.
-  assert.equal(CHECKS.length, 41);
+  // still the fifteenth.
+  // AMENDED BY T82 F9 (25.10.2026): #39 the vanity's trap (*"prosze uzyc shallow trap"*),
+  // after #36. Rule 15 is still the fifteenth. Forty-two.
+  assert.equal(CHECKS.length, 42);
   assert.equal(CHECKS[14].n, 15);
 });
 

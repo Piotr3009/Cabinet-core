@@ -555,6 +555,9 @@ test('T82 F17 . the room refuses in words a surface that would stand the panel p
 
 const BUD_FRONT = CLEARANCE + 558 + P.doors.gap + 25;   // 596: the BUD's door face off the wall
 const WUD_FRONT = CLEARANCE + 400 + P.doors.gap + 25;   // 438: the WUD's
+// (After the review of 25.10: a unit is born with no doors, `doors: false`,
+// and its front line is then its carcass face; the rows below hang its doors
+// first, `addDoors`, where they mean the door face.)
 
 test('T82 F19 . the stage\'s front lines: the BUD\'s door face 596 off the wall, the WUD\'s 438', () => {
   const { bud, wud } = stage();
@@ -586,6 +589,8 @@ test('T82 F19 . standsInFrontOf: a free panel whose back is at or past a unit\'s
 
 test('T82 F19 . Attach "Unit 01, front": along, upright, its left on the unit\'s left, its back on the door face plus the gap, on the floor', () => {
   const { bud, wud, panel } = stage();
+  S().addDoors(bud);
+  S().addDoors(wud);
   const res = S().attachFreePanel(panel, `unit:${bud}:front`, { gap: 0 });
   assert.deepEqual(res, { ok: true, label: 'Unit 01, front', clamped: 0, error: null });
   assert.deepEqual(stanceOf(panel), {
@@ -602,10 +607,16 @@ test('T82 F19 . Attach "Unit 01, front": along, upright, its left on the unit\'s
   assert.equal(s.x, 1600);
   assert.equal(s.mount, 1500);
   assert.equal(s.inset, WUD_FRONT - CLEARANCE);
+  // After the review: a BUD with no doors hung yet stands to its carcass face.
+  const bare = stage();
+  assert.equal(unit(bare.bud).params.doors, false, 'the stage: the BUD is born with no doors');
+  S().attachFreePanel(bare.panel, `unit:${bare.bud}:front`, { gap: 0 });
+  assert.equal(stanceOf(bare.panel).inset, 558, 'the panel stands a door gap and a front off a carcass with no door');
 });
 
 test('T82 F19 . the panel on the BUD\'s front slides across it, the BUD slides behind it, and the Check finds no overlap', () => {
   const { bud, panel } = stage();
+  S().addDoors(bud);
   S().attachFreePanel(panel, `unit:${bud}:front`, { gap: 0 });
   assert.equal(S().moveUnit(panel, 1700, 0.5, { magnet: false }).x, 1700);
   // Back across the BUD's span: the cabinet it stands in front of is not in its way.
@@ -725,4 +736,47 @@ test('T82 F17 after the review . a corner BUD entirely BEHIND a panel 1000 off t
   // Across the wall, 1000 out, it slides over the BUD's stretch of wall.
   const across = fresh({ panel_facing: 'across' });
   assert.equal(S().moveUnit(across.panel, 4500, 0.5, { magnet: false }).x, 4500, 'the BUD behind the panel stopped it');
+});
+
+// === 13 . T82 F19, AFTER THE REVIEW . THE FRONT LINE IS WHAT STANDS THERE ====
+//
+// The review of 25.10 (C/D/E, panel 4): Attach "Unit FP01, front" put panel
+// B's back 28 mm off panel A's face at gap 0. `unitFrontLine` added the door
+// gap (3) and `front_t` (25, which every unit is born with) to a unit with no
+// door. The front line of a unit with no front (a free panel, a wine rack, a
+// hood canopy, a cabinet whose doors were taken off) is its carcass face.
+
+test('T82 F19 after the review . unitFrontLine reads what stands there: the doors\' face, the drawer fronts\' face, else the carcass face', () => {
+  const { unitFrontLine, standsInFrontOf } = COLLISION;
+  const at = (type, params = {}) => ({ type, position: { wall: 0, x_mm: 600 }, params: { width: 600, depth: 558, front_t: 25, ...params } });
+  assert.equal(unitFrontLine(at('BUD'), P), BUD_FRONT, 'a cabinet with doors: 10 + 558 + 3 + 25');
+  assert.equal(unitFrontLine(at('BUDR'), P), BUD_FRONT, 'a drawer unit: its drawer fronts are its face');
+  assert.equal(unitFrontLine(at('BUD', { doors: false }), P), CLEARANCE + 558, 'its doors taken off: the carcass face');
+  assert.equal(unitFrontLine(at('BUD', { doors: { count: 0 } }), P), CLEARANCE + 558);
+  assert.equal(unitFrontLine(at('WINE', { depth: 300 }), P), CLEARANCE + 300, 'a wine rack has no door');
+  assert.equal(unitFrontLine(at('FREE_PANEL', { depth: 18 }), P), CLEARANCE + 18, 'a free panel: its own face');
+  assert.equal(unitFrontLine(at('FREE_PANEL', { depth: 18, inset_back_mm: 40 }), P), CLEARANCE + 40 + 18);
+  // A panel against a wine rack's face stands in front of it.
+  const fp = { type: 'FREE_PANEL', position: { wall: 0, x_mm: 600 }, params: { width: 800, depth: 18, inset_back_mm: 300 } };
+  assert.equal(standsInFrontOf(fp, at('WINE', { depth: 300 }), P), true);
+});
+
+test('T82 F19 after the review . Attach "Unit FP01, front" at gap 0: panel B\'s back on panel A\'s face, upright or across, no air between', () => {
+  S().newProject();
+  S().setRoom({ corners: rectCorners(5000, 3000), height: ROOM_H });
+  const a = S().addUnit('FREE_PANEL', { wall: 0, x: 1000 }).id;
+  const b = S().addUnit('FREE_PANEL', { wall: 0, x: 3000 }).id;
+  const res = S().attachFreePanel(b, `unit:${a}:front`, { gap: 0 });
+  assert.deepEqual(res, { ok: true, label: 'Unit FP01, front', clamped: 0, error: null });
+  const faceOfA = COLLISION.backStandoff(unit(a), P) + unit(a).params.depth;
+  assert.equal(faceOfA, CLEARANCE + BOARD);
+  assert.equal(COLLISION.backStandoff(unit(b), P), faceOfA, 'air between the two boards');
+  assert.equal(stanceOf(b).inset, BOARD);
+  // With a gap, the gap and nothing more.
+  S().attachFreePanel(b, `unit:${a}:front`, { gap: 5 });
+  assert.equal(COLLISION.backStandoff(unit(b), P), faceOfA + 5);
+  // A across the wall: its front is its far end, 10 + 800.
+  S().updateUnitParams(a, { panel_facing: 'across' });
+  S().attachFreePanel(b, `unit:${a}:front`, { gap: 0 });
+  assert.equal(COLLISION.backStandoff(unit(b), P), CLEARANCE + 800);
 });

@@ -18,7 +18,7 @@ import { boxCorners } from './room.js';
 import { wallGapOf } from './runs.js';
 // T82 F19 · whether a unit is a free panel (types.js is a leaf `runs.js`
 // already imports: no cycle).
-import { isFreePanel } from './types.js';
+import { getUnitType, isFreePanel } from './types.js';
 
 /** Clamp that survives a reversed range: never returns a value outside [lo,hi]. */
 function clampTo(value, lo, hi) {
@@ -314,12 +314,35 @@ export function backStandoff(unit, profile) {
  * door gap and its front. The house's sum for the plane of the doors
  * (`projectStore refreshAutoParts frontFaceDepthOf`, `corners.js
  * cornerFaceMm`), read from where the unit really stands.
+ *
+ * T82 F19, after the review: a unit with NO front stands to its carcass face,
+ * no door gap and no front board (`front_t` is on every unit, a free panel's
+ * too): Attach "Unit FP01, front" left 28 mm of air at gap 0.
  */
 export function unitFrontLine(unit, profile) {
   const depth = Math.max(0, Number(unit?.params?.depth) || 0);
+  const carcass = backStandoff(unit, profile) + depth;
+  if (!unitHasFront(unit)) return carcass;
   const gap = Math.max(0, Number(profile?.doors?.gap) || 0);
   const front = Number(unit?.params?.front_t) > 0 ? Number(unit.params.front_t) : Math.max(0, Number(profile?.front?.thickness) || 0);
-  return backStandoff(unit, profile) + depth + gap + front;
+  return carcass + gap + front;
+}
+
+/**
+ * T82 F19, after the review · does a front board stand before this unit's
+ * carcass? Its doors (the engine's own reading of `params.doors`: `false`, 0
+ * or a count of 0 is none, `cabinet.js normalizeParams`), else its drawer
+ * fronts where they are its face (a drawer unit, a chest, a vanity); never a
+ * free panel, a wine rack, a hood canopy or a pocket.
+ */
+export function unitHasFront(unit) {
+  if (!unit || isFreePanel(unit.type)) return false;
+  const supports = getUnitType(unit.type)?.supports || {};
+  if (!supports.doors) return Boolean(supports.drawers);
+  const doors = unit.params?.doors;
+  if (doors === false || doors === 0) return false;
+  if (doors && typeof doors === 'object' && Number.isFinite(Number(doors.count)) && Number(doors.count) === 0) return false;
+  return true;
 }
 
 /**

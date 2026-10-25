@@ -20,7 +20,8 @@ export const GATES = {};
 export const LICENSED = {
   'src/engine/collision.js': {
     why: `T82 F19: unitFrontLine (the unit's own back line, its carcass, the door gap and its front) and `
-      + `standsInFrontOf (a free panel at or past that line, same wall, the unit square to it). Placement only. ${WHY}`,
+      + `standsInFrontOf (a free panel at or past that line, same wall, the unit square to it). Placement only. ${WHY}`
+      + ' After the review of 25.10 (panel 4): unitHasFront (its doors as the engine reads params.doors, else its drawer fronts where they are its face; never a free panel, a wine rack, a hood canopy or a pocket), and unitFrontLine adds the door gap and the front only where one stands, so a panel against a doorless carcass touches it at gap 0.',
     gates: [],
   },
   'src/engine/attachPanel.js': {

@@ -49,7 +49,7 @@ import { drawingContext } from '../src/engine/drawings/setSheet.js';
 import { buildPlan } from '../src/engine/drawings/setPlan.js';
 import { wallGroups } from '../src/engine/drawings/wallElevation.js';
 import { worktopsOnWall } from '../src/engine/drawings/setElevation.js';
-import { buildStation, sectionStations } from '../src/engine/drawings/setSection.js';
+import { buildStation, hatchLines, sectionStations } from '../src/engine/drawings/setSection.js';
 import { confirmDrawerBox } from './drawer-box-gate.js';
 
 const S = () => useProjectStore.getState();
@@ -404,6 +404,61 @@ test('F11 · on an island the basin\'s centre rides into the slab\'s frame with 
   assertBasinsFit(slab);
 });
 
+// ─── F12 · THE SERVICE VOID AS A NOTE ──────────────────────────────────────
+
+test('F12 · Check #45 lists the void as a NOTE, never a fault: "Service void 80 behind the vanity for the pipes"', () => {
+  const id = vanity('VANITY3');
+  const row = CHECKS.find((c) => c.n === 45);
+  assert.ok(row, '#45 is in the list');
+  assert.equal(row.level, 'note');
+  const found = S().runChecks().filter((f) => f.check === 45);
+  assert.equal(found.length, 1);
+  assert.equal(found[0].unitId, id);
+  assert.equal(found[0].level, 'note');
+  assert.match(found[0].message, new RegExp(`Service void ${VOID()} behind the vanity for the pipes`));
+  // A note is not counted as a fault nor as something to look at.
+  assert.equal(checkSummary(found), checkSummary([]));
+});
+
+test('F12 · no vanity, no #45', () => {
+  room();
+  S().addUnit('BUD', { wall: 0, x: 1000 });
+  assert.equal(S().runChecks().filter((f) => f.check === 45).length, 0);
+});
+
+test('F12 · SHEETS · the section through the vanity: the two rails cut at the back, the void band hatched and named', () => {
+  const id = vanity('VANITY3', { sinks: 1 });
+  const u = unitOf(id);
+  const sec = sectionOf(id);
+  for (const rail of ['RAIL-TOP', 'RAIL-BOTTOM']) {
+    assert.ok(sec.entities.some((e) => e.cut && String(e.src || '').endsWith(`:${rail}`)), `${rail} is cut`);
+  }
+  // The band: from the wall (0) to the carcass back, over the carcass's height, on its own ink.
+  const band = sec.entities.filter((e) => e.layer === 'SERVICE_VOID' && e.meta === 'service-void');
+  assert.ok(band.length >= 3, 'hatched');
+  const gap = wallGapOf(u, P());
+  for (const e of band) {
+    for (const x of [e.x1, e.x2]) assert.ok(x >= -0.01 && x <= gap + 0.01, `hatch at ${x} inside the void`);
+  }
+  const label = sec.entities.find((e) => e.kind === 'text' && e.meta === 'service-void-label');
+  assert.ok(label, 'named');
+  assert.equal(label.text, `SERVICE VOID ${VOID()}`);
+  // No vanity, no band.
+  room();
+  const b = S().addUnit('BUDR2', { wall: 0, x: 1000 }).id;
+  assert.equal(sectionOf(b).entities.filter((e) => e.layer === 'SERVICE_VOID').length, 0);
+});
+
+test('F12 · the hatch is one law: 45 degree lines on the pitch, clipped to the rectangle', () => {
+  const lines = hatchLines(0, 0, 90, 600, 10);
+  assert.ok(lines.length > 0);
+  for (const [ax, ay, bx, by] of lines) {
+    assert.ok(near(by - ay, bx - ax), 'at 45 degrees');
+    for (const [x, y] of [[ax, ay], [bx, by]]) assert.ok(x >= -1e-6 && x <= 90 + 1e-6 && y >= -1e-6 && y <= 600 + 1e-6);
+  }
+  assert.deepEqual(hatchLines(0, 0, 0, 600, 10), [], 'no width, no hatch');
+});
+
 // ─── F11 / F12 ON E3's SHEETS ───────────────────────────────────────────────
 //
 // The plan's oval cut-out on the APPLIANCE ink (blue, dashed: what the client
@@ -414,6 +469,12 @@ test('F11 · on an island the basin\'s centre rides into the slab\'s frame with 
 
 const E3 = DRAWING_LAYERS.SERVICE_VOID ? false : 'awaits E3: the B3 patches to layers.js, setPlan.js and projector.js';
 
+test('F12 · E3 · SERVICE_VOID is an ink of its own, in the pen order', { skip: E3 }, () => {
+  assert.ok(LAYER_ORDER.includes('SERVICE_VOID'));
+  const others = Object.entries(DRAWING_LAYERS).filter(([k]) => k !== 'SERVICE_VOID').map(([, L]) => L.colour);
+  assert.ok(!others.includes(DRAWING_LAYERS.SERVICE_VOID.colour), 'one ink, one layer: a grey nobody else wears');
+});
+
 test('F11 · E3 · the wall plan draws the basin as an oval on the APPLIANCE ink with its size', { skip: E3 }, () => {
   vanity('VANITY3', { sinks: 1 });
   const plan = planOf('wall');
@@ -423,6 +484,25 @@ test('F11 · E3 · the wall plan draws the basin as an oval on the APPLIANCE ink
   assert.ok(oval[0].kind === 'poly' && oval[0].pts.length >= 24, 'an oval, not a rectangle');
   assert.ok(plan.entities.some((e) => e.kind === 'text' && e.text === `BASIN ${BASIN().w} x ${BASIN().d}`));
   assert.ok(!plan.entities.some((e) => e.kind === 'text' && /^BASIN .* R/.test(e.text)), 'never named as a radiused rectangle');
+});
+
+test('F12 · E3 · the base plan hatches the void on SERVICE_VOID, between the wall and the carcass back', { skip: E3 }, () => {
+  const id = vanity('VANITY3');
+  const u = unitOf(id);
+  const hatch = planOf('base').entities.filter((e) => e.layer === 'SERVICE_VOID');
+  assert.ok(hatch.length >= 3, 'hatched');
+  // Wall A runs along x from the room's corner, the room inward along +y.
+  const x0 = Number(u.position.x_mm); const x1 = x0 + Number(u.params.width);
+  const gap = wallGapOf(u, P());
+  for (const e of hatch) {
+    for (const [x, y] of [[e.x1, e.y1], [e.x2, e.y2]]) {
+      assert.ok(x >= x0 - 0.01 && x <= x1 + 0.01, `hatch x ${x} inside the unit's span`);
+      assert.ok(y >= -0.01 && y <= gap + 0.01, `hatch y ${y} inside the void`);
+    }
+  }
+  room();
+  S().addUnit('BUDR2', { wall: 0, x: 1000 });
+  assert.equal(planOf('base').entities.filter((e) => e.layer === 'SERVICE_VOID').length, 0, 'no vanity, no hatch');
 });
 
 test('F11 · E3 · the section draws the basin\'s bowl, hung from the slab\'s top by its depth', { skip: E3 }, () => {

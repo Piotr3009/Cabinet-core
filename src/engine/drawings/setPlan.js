@@ -23,10 +23,12 @@ import { entLine as line, entPoly as poly, entText as text } from './primitives.
 import { realWalls, roomWalls, openingsOnWall } from '../room.js';
 import { wallGroups, wallLabel } from './wallElevation.js';
 import { chainH, chainV } from './setChains.js';
-import { sectionStations } from './setSection.js';
+import { hatchLines, sectionStations } from './setSection.js';
 import { unitBase, unitTop, wallGapOf } from '../runs.js';
 // T82 F7 · the HAWA pocket's own words on the plan: the open door dashed, TB and M.
 import { pocketPlanEntities } from '../pocketDoorPose.js';
+// T82 F12 · the vanity's service void: the one number the slab and the Check read.
+import { serviceVoidOf } from '../worktop.js';
 
 const AXIS = 1e-6;
 
@@ -271,6 +273,24 @@ export function buildPlan(entries, {
   // plinth, under the carcass and below either cut, is a dashed line, never
   // a solid outline (the audit of 22.10, finding 3).
   const cutList = cutEntries(entries, cut, profile);
+  // ─── T82 F12 · THE SERVICE VOID, HATCHED ───────────────────────────────
+  // CLAUDE.md T82 F12: "the plan draws the void hatched (a new ink
+  // SERVICE_VOID, grey hatch)". The base cut passes through it: the space
+  // from the wall to the vanity's carcass back, along the vanity's width, on
+  // its own ink, drawn before the carcass so the boards stand over it.
+  if (which === 'base') {
+    for (const e of cutList) {
+      if (!(serviceVoidOf(e.unit, profile) > 0)) continue;
+      const wall = walls[Math.max(0, Math.trunc(Number(e.unit.position?.wall ?? 0)))] || walls[0];
+      if (!wall) continue;
+      const x0 = Number(e.unit.position?.x_mm) || 0;
+      const x1 = x0 + (Number(e.unit.params?.width) || 0);
+      for (const [ax, ay, bx, by] of hatchLines(x0, 0, x1, gapOf(e.unit), ctx.mm(profile.drawings.set.hatchPitch))) {
+        const a = at(wall, ax, ay); const b = at(wall, bx, by);
+        entities.push({ ...line('SERVICE_VOID', a[0], a[1], b[0], b[1]), pen: 'FINE', meta: 'service-void' });
+      }
+    }
+  }
   for (const group of planGroups(cutList, profile)) {
     const wall = walls[group.wall] || walls[0];
     if (!wall) continue;

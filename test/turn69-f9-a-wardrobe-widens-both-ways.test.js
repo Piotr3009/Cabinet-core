@@ -202,6 +202,9 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
     // AMENDED BY T82 F6 (25.10.2026): `CanvasToolbar` (Open all takes the HAWA pocket door, *"the same in the
     // viewer's "Open all" of T69"*), argued in the manifest, re-frozen. Not a widening file.
     'CanvasToolbar',
+    // AMENDED BY T82 F12 (25.10.2026): `CheckPanel` (the note level, TONE.note, for the service void behind a vanity,
+    // *"miejsce z tylu na rurki"*), argued in the manifest, re-frozen. Not a widening file.
+    'CheckPanel',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');

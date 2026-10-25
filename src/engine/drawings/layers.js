@@ -105,6 +105,15 @@ export const DRAWING_LAYERS = {
   // The frame of an in-frame run: front material, a darker front ink, so the
   // frame and the fronts set in it can be told apart in a legend.
   FRAME_BOARD: { aci: 216, colour: '#5A2D5A', width: 0.35, pen: 'VISIBLE' },
+  // ─── T82 F12 · THE SERVICE VOID BEHIND A VANITY ────────────────────────
+  // The owner, 25.10.2026 (12:57): *"nastepnie to bedzie miejsce z tylu na
+  // rurki minimum potrzebujemy okolo 80 mm do 100 mm"*. CLAUDE.md T82 F12:
+  // "the plan draws the void hatched (a new ink SERVICE_VOID, grey hatch,
+  // T81's one-ink-one-layer law)". A grey of its own (between
+  // the X-ray's two greys), the finest pen: a hatch is a hint about a space, never
+  // an edge. ACI 9 (light grey), no other layer's index: ACI 253 is F24's
+  // PLINTH_HIDDEN (E3, the layer table's owner, on review).
+  SERVICE_VOID: { aci: 9, colour: '#ADADAD', width: 0.13, pen: 'FINE' },
 };
 
 export function drawingLayer(name) {
@@ -120,7 +129,7 @@ export function drawingLayer(name) {
  * not in this list paints after it, in the order the sheet first uses it.
  */
 export const LAYER_ORDER = Object.freeze([
-  'MASK', 'WORKTOP', 'BUILDING', 'CARCASE', 'FRAME_BOARD', 'XRAY_CARCASE', 'XRAY_FRONT',
+  'MASK', 'WORKTOP', 'SERVICE_VOID', 'BUILDING', 'CARCASE', 'FRAME_BOARD', 'XRAY_CARCASE', 'XRAY_FRONT',
   'SHELVES', 'RUNNERS', 'HINGES', 'LEG_BLOCK', 'DOORS', 'DOOR_SWING', 'HANDLES', 'HINGE_MARK',
   'DIMENSIONS', 'SHEET_MUTED', 'FRAME_LIGHT', 'SHEET_CUT', 'FRAME', 'UNIT_NUMBER', 'APPLIANCE', 'VIEW_TITLE',
 ]);

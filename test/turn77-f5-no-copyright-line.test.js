@@ -281,6 +281,8 @@ export const NEW_FILES = [
   // T82 F11 (25.10.2026): the basin, only to the eye, on the LISP's wastes
   'src/3d/Basin.jsx',
   'scripts/t78-classify.d/f43-t82-f11.mjs',
+  // T82 F12 (25.10.2026): the service void, a note in the Check and a hatch on the sheets
+  'scripts/t78-classify.d/f43-t82-f12.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

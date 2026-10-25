@@ -327,6 +327,9 @@ const EXEMPT = {
   // file and re-frozen in the same commit."*  T82 F6: the canvas toolbar's Open all takes the HAWA door.
   'src/components/CanvasToolbar.jsx':
     'T82 F6 · Open all takes the HAWA pocket door with every other door. *"A toggle on the pocket (right panel: Door closed / open; the same in the viewer\'s "Open all" of T69) slides the door into the pocket"*',
+  // T82 F12: the Check panel draws the note level (TONE.note), the service void behind a vanity.
+  'src/components/CheckPanel.jsx':
+    'T82 F12 · the Check\'s note level drawn grey (TONE.note): #45, the service void behind a vanity, is a note, never a fault. *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"*',
 };
 
 /**
@@ -358,7 +361,8 @@ const FROZEN = {
   'src/components/CabinetEditorModal.jsx': '3f080e23b09ce5c5018f89649264e77cb85e5f5594dafecd839673d6db9fd066',
   // T82 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/CanvasToolbar.jsx': 'd7686d45b88c7a4121b2838e3bdbc5e128b38afd1608f2000ace8733677d4cbc',
-  'src/components/CheckPanel.jsx': '65a991cbc4aed29b3c9a49ed613e715dd3d033106f8e5e9ded45e8125a8dc014',
+  // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CheckPanel.jsx': '8f1dfc8c0670aebddd6d23ea11465168cc7d61ca95a6c5b9e173ec9992c8f168',
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
   // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
   'src/components/CncTree.jsx': '68aa1ffd5f8c07525c34b7b242c3adc387bc70157a38ae5bd07d0f257691d8e0',
@@ -643,6 +647,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/CabinetEditorModal.jsx',
     // T82 F6 · *"the same in the viewer's "Open all" of T69"*: Open all takes the HAWA door.
     'src/components/CanvasToolbar.jsx',
+    // T82 F12 · *"miejsce z tylu na rurki"*: the Check panel's note level, the service void.
+    'src/components/CheckPanel.jsx',
     // T75 F22 · *"the CNC export carries a banner counting the lines that are not 'cut'"*.
     'src/components/CncTree.jsx',
     'src/components/CncView.jsx',

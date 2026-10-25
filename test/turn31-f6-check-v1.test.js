@@ -141,9 +141,12 @@ test('the rules, each with the owner’s colour', () => {
   // AMENDED BY T82 F11 (25.10.2026): #48 the basins a vanity's top cannot take, yellow, said in
   // words and never squashed (CLAUDE.md T82: *"The room refuses in words, the engine never
   // squashes"*; the owner: *"dodanie 1 sink or 2 sink?"*).
-  // Thirty-eight became forty-three (#37, #38, #39, #47, #48).
-  assert.equal(CHECKS.length, 43);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 47, 48]);
+  // AMENDED BY T82 F12 (25.10.2026): #45 the service void behind a vanity, a NOTE (the
+  // third level: it informs, never a fault), the owner: *"nastepnie to bedzie miejsce z
+  // tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"*.
+  // Thirty-eight became forty-four (#37, #38, #39, #45, #47, #48).
+  assert.equal(CHECKS.length, 44);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 47, 48]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -205,6 +208,8 @@ test('the rules, each with the owner’s colour', () => {
     39: 'yellow',
     // T82 F11 · basins the top cannot take: said, never squashed; a person decides.
     48: 'yellow',
+    // T82 F12 · the vanity's service void: a note, never a fault.
+    45: 'note',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

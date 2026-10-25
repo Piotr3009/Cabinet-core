@@ -158,8 +158,10 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // AMENDED BY T82 F9 (25.10.2026): #39 the vanity's trap (*"prosze uzyc shallow trap"*),
   // after #36. Rule 15 is still the fifteenth.
   // AMENDED BY T82 F11 (25.10.2026): #48 the basins a vanity's top cannot take (*"The room
-  // refuses in words, the engine never squashes"*), at the end. Forty-three.
-  assert.equal(CHECKS.length, 43);
+  // refuses in words, the engine never squashes"*), at the end.
+  // AMENDED BY T82 F12 (25.10.2026): #45 the vanity's service void, a note (*"miejsce z
+  // tylu na rurki"*), appended at the end. Rule 15 is still the fifteenth. Forty-four.
+  assert.equal(CHECKS.length, 44);
   assert.equal(CHECKS[14].n, 15);
 });
 

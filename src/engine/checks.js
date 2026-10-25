@@ -52,7 +52,7 @@ import {
 import { roomWalls } from './room.js';
 // T75 F22 · what the machine does not finish, by unit.
 import { notCutParts, readinessCheckMessage, readinessOf } from './readiness.js';
-import { worktopsFor } from './worktop.js';
+import { serviceVoidOf, worktopsFor } from './worktop.js';
 // T78 F17 . the hood's clearance over the hob: the one measure the store's
 // proposal reads too (Check #34 says it, the store's button fixes it).
 import { hoodClearanceMessage, hoodClearanceShortfalls } from './hoodClearance.js';
@@ -320,6 +320,16 @@ export const CHECKS = Object.freeze([
   { n: 42, level: 'yellow', label: 'Unit the in-frame frame stops at' },
   { n: 43, level: 'yellow', label: 'In-frame frame joined (wider than the board)' },
   { n: 44, level: 'red', label: 'In-frame hinge cup within 3 mm of the lip' },
+  // ─── T82 F12 · THE SERVICE VOID BEHIND A VANITY, A NOTE ──────────────────
+  // CLAUDE.md T82 F12: *"The Check lists the void as a note (#40 "Service
+  // void 80 behind the vanity for the pipes"), never as a fault"*; #40 is the
+  // in-frame project's, so the note takes the next free number (T82 BRIEF 6).
+  // The owner, 25.10.2026 (12:57): *"nastepnie to bedzie miejsce z tylu na
+  // rurki minimum potrzebujemy okolo 80 mm do 100 mm"*. A NOTE is the third
+  // level: grey, sorted after the yellows, counted by `checkSummary` as
+  // neither a fault nor a thing to look at, and never a gate. Generic: any
+  // later rule that only informs takes the same level.
+  { n: 45, level: 'note', label: 'Service void behind a vanity' },
   // T82 F3 · the owner, 13:46: *"jesli jest 18 mm to daj zawsze 22 mm
   // automatycznie, i napisz informacje minimum 19 mm"* (KIT_HAWA.lsp D3,
   // `hawa-check-47`). CLAUDE.md names it #42, which the in-frame project holds;
@@ -1469,6 +1479,20 @@ export function runChecks({
     entries, units: list, design, profile,
   }));
 
+  // ── #45 the service void behind a vanity (T82 F12), a NOTE ──────────────
+  // The one number the slab, the plan and the section read
+  // (`engine/worktop.js serviceVoidOf`): the carcass's stand-off beyond the
+  // house's clearance, 80 by the kit's own wall gap.
+  for (const { unit, result } of entries) {
+    const v = unit ? serviceVoidOf(unit, profile) : 0;
+    if (!(v > 0)) continue;
+    out.push(finding(45, 'note', {
+      unitId: unit.id,
+      unitNum: result?.unitNum ?? unit.params?.unit_num ?? '',
+      message: `Service void ${round2(v)} behind the vanity for the pipes.`,
+    }));
+  }
+
   const seen = new Set();
   const once = out.filter((f) => {
     const key = `${f.check}|${f.unitId}|${f.panelId ?? ''}|${f.message}`;
@@ -1479,7 +1503,8 @@ export function runChecks({
 
   // Reds first, then yellows, then the checks in their own order — which is the
   // order a joiner works down a list in.
-  const rank = { red: 0, yellow: 1 };
+  // T82 F12 · a NOTE after the yellows: it informs and asks nothing.
+  const rank = { red: 0, yellow: 1, note: 2 };
   return once.sort((a, b) => (rank[a.level] - rank[b.level]) || (a.check - b.check)
     || String(a.unitNum).localeCompare(String(b.unitNum)));
 }

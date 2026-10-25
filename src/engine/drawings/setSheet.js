@@ -409,6 +409,8 @@ export const SET_LEGEND = [
   ['line', 'FRAME_BOARD', 'Frame (in-frame)'],
   ['line', 'XRAY_FRONT', 'Fronts, X-ray'],
   ['line', 'XRAY_CARCASE', 'Carcass, X-ray'],
+  // T82 F12: the vanity's service void, hatched (*"miejsce z tylu na rurki"*).
+  ['box', 'SERVICE_VOID', 'Service void (pipes)'],
 ];
 
 function legendBlock(zones, rows, y0) {

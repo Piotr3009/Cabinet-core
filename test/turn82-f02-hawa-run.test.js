@@ -405,3 +405,50 @@ test('T82 F2, after the review (store:0) . the share-out lays the run out AROUND
   assert.deepEqual(overlapsOnWall(), []);
   assert.deepEqual(pocketElement(p)?.covers, [w2], 'the covered wardrobe lost its door');
 });
+
+/** BUD 500 | pocket | BUD 500 at front `from`, the pocket's doors and hand as asked. */
+function frontStage(from, doors, hand = 'R', { leftAtWall = false } = {}) {
+  room();
+  S().setSlotThickness('front1', { measured: from });
+  const b1 = bud(500);
+  if (leftAtWall) S().moveUnit(b1, -1000, 0);
+  const p = S().addUnit(POCKET, { near: b1, side: 'R', params: { pocket: { doors, hand } } }).id;
+  const b2 = S().addUnit('BUD', { near: p, side: 'R' }).id;
+  S().updateUnitParams(b2, { width: 500 });
+  return { b1, p, b2 };
+}
+const runOf = (id) => runs.buildRuns(S().units, P).find((r) => r.units.some((u) => u.id === id)).units.map((u) => u.id);
+
+test('T82 F2, after the review (store:1) . a new front re-cuts the pocket through the room: the neighbours move, nothing overlaps, no gap opens, no door drops', () => {
+  for (const doors of [1, 2]) {
+    for (const [from, to] of [[18, 25], [25, 18]]) {
+      const { b1, p, b2 } = frontStage(from, doors);
+      const covers = pocketElement(p)?.covers;
+      const said = `doors ${doors}, front ${from} to ${to}`;
+      S().setSlotThickness('front1', { measured: to });
+      assert.equal(unit(p).params.width, pocketWidthFor(to, doors), `${said}: the pocket kept its old width`);
+      assert.deepEqual(overlapsOnWall(), [], `${said}: a cabinet stands in another`);
+      assert.deepEqual(runOf(p), [b1, p, b2], `${said}: the run broke at the pocket`);
+      assert.deepEqual(pocketElement(p)?.covers, covers, `${said}: a door dropped`);
+      assert.equal(S().pocketFiguresFor(p).doors.length, doors, `${said}: the engine cut ${S().pocketFiguresFor(p).doors.length} doors`);
+    }
+  }
+});
+
+test('T82 F2, after the review (store:1) . no room to re-cut: nothing overlaps, the width stays, and the Check says why in words', () => {
+  // BUD 01 pressed against the left wall's stop; the one-door pocket (hand R)
+  // keeps its right edge, so growing it has to push 01 into the wall.
+  const { b1, p, b2 } = frontStage(18, 1, 'R', { leftAtWall: true });
+  const before = unit(p).params.width;
+  S().setSlotThickness('front1', { measured: 25 });
+  assert.deepEqual(overlapsOnWall(), [], 'the re-cut drove the pocket into 01');
+  assert.equal(unit(p).params.width, before, 'refused, and still changed');
+  assert.deepEqual(runOf(p), [b1, p, b2]);
+  const said = S().runChecks().filter((f) => f.unitId === p && f.check === 37);
+  assert.ok(said.some((f) => /no room/i.test(f.message) && f.message.includes(unit(p).params.unit_num)),
+    `no Check sentence: ${JSON.stringify(said.map((f) => f.message))}`);
+  // Room made beside it: the pocket re-cuts itself on the next refresh.
+  S().updateUnitParams(b1, { width: 480 });
+  assert.equal(unit(p).params.width, pocketWidthFor(25, 1), 'room was made and the pocket did not follow');
+  assert.deepEqual(overlapsOnWall(), []);
+});

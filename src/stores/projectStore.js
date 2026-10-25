@@ -162,6 +162,8 @@ import {
 } from '../engine/runs.js';
 // T82 F2 · which units a HAWA pocket's door covers, decided from where they stand.
 import { pocketCoverSides, pocketNeighbours, runPocketParams } from '../engine/runs.js';
+// T82 F2, after the review · the run that moves with a re-cut pocket.
+import { buttedChainOf } from '../engine/runs.js';
 // T80 F3 · the in-frame frame of a run (KIT_INFRAME.lsp's mirror).
 import { runFrameParams } from '../engine/inframe.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
@@ -3149,6 +3151,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     let pocketParams = new Map();
     if (next.some((u) => isHawaPocket(u.type))) {
       const slots = projectThicknesses({ design, profile, materials: workshopMaterials() });
+      // T82 F2, after the review (store:1): a new front re-cuts the width by
+      // the ONE re-cut law (`pocketRecutPlan`): the run beside it moves with
+      // it, or, with no room, nothing moves and the Check says so (#37,
+      // `runs.js pocketRecutRefusal`); never an overlap, never a gap.
+      let recut = false;
       for (let i = 0; i < next.length; i += 1) {
         const u = next[i];
         if (!isHawaPocket(u.type)) continue;
@@ -3156,13 +3163,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         const width = hawaPocketWidth({ doors: choice.doors, frontT: frontTOf({ ...u.params, thickness_slots: slots }, profile) }, profile);
         const was = Number(u.params?.width) || 0;
         if (!(width > 0) || Math.abs(width - was) < 1e-6) continue;
-        const x = Number(u.position?.x_mm) || 0;
-        const keepRight = choice.doors === 1 && choice.hand === 'R';
-        next[i] = {
-          ...u,
-          position: { ...u.position, x_mm: keepRight ? Math.round((x + was - width) * 100) / 100 : x },
-          params: { ...u.params, width },
-        };
+        const plan = pocketRecutPlan({ ...s, units: next }, next, u, width, profile);
+        if (!plan.ok) continue;
+        next[i] = { ...u, position: { ...u.position, x_mm: plan.x }, params: { ...u.params, width: plan.width } };
+        for (const [id, x] of plan.moves) {
+          const j = next.findIndex((o) => o.id === id);
+          if (j >= 0) next[j] = { ...next[j], position: { ...next[j].position, x_mm: x } };
+        }
+        recut = recut || plan.moves.length > 0;
+      }
+      if (recut) {
+        // A wardrobe the re-cut moved carries its top boxes with it.
+        const settled = settleRiders(next, profile);
+        for (let i = 0; i < next.length; i += 1) next[i] = settled[i];
       }
       pocketParams = runPocketParams(next, profile, { walls });
       for (let i = 0; i < next.length; i += 1) {
@@ -7067,40 +7080,30 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const name = unit.params.unit_num || unit.id;
     let position = unit.position;
     let { width } = unit.params;
+    let moves = [];
     if (doors !== was.doors) {
       const slots = projectThicknesses({ design: migrateDesign(s.project.design), profile, materials: workshopMaterials() });
       const want = hawaPocketWidth({ doors, frontT: frontTOf({ ...unit.params, thickness_slots: slots }, profile) }, profile);
-      const x = Number(unit.position?.x_mm) || 0;
-      const delta = want - (Number(width) || 0);
-      const keepRight = doors === 1 && hand === 'R';
-      // Shrinking always fits, keeping the door's edge; growing tries to the
-      // right, to the left, then both ways at once.
-      const tries = delta <= 0 ? [keepRight ? x - delta : x] : [x, x - delta, x - delta / 2];
-      const walls = roomWalls(s.project.room);
-      const wall = walls[unit.position?.wall ?? 0] || walls[0];
-      const probe = { ...unit, params: { ...unit.params, width: want } };
-      const others = [
-        ...s.units
-          .filter((u) => u.id !== unit.id && (u.position?.wall ?? 0) === wall.index && obstructs(probe, u, profile))
-          .map(unitSpan),
-        ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes) }),
-      ];
-      const at = delta <= 0 ? tries[0] : tries.find((tx) => slotTakes({
-        x: tx, width: want, wallWidth: wall.width, others, wallMargin: wallMarginOf(s, unit, wall),
-      }, profile));
-      if (at == null) {
+      // T82 F2, after the review (store:1): the ONE re-cut law, the same one
+      // the front's re-cut takes (`pocketRecutPlan`): the door's edge stays,
+      // the run on the other side moves with the pocket, or nothing moves.
+      const plan = pocketRecutPlan(s, s.units, { ...unit, params: { ...unit.params, pocket } }, want, profile);
+      if (!plan.ok) {
         return {
           ok: false,
           error: `${name}: ${doors === 2 ? 'two doors take' : 'one door takes'} a pocket ${formatMm(want)} mm wide, and there is no room for one here: move a neighbour first.`,
         };
       }
-      position = { ...unit.position, x_mm: Math.round(at * 100) / 100 };
-      width = want;
+      position = { ...unit.position, x_mm: plan.x };
+      ({ width, moves } = plan);
     }
+    const movedTo = new Map(moves);
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId
-        ? { ...u, position, params: { ...u.params, width, pocket } }
-        : u)),
+      units: settleRiders(st.units.map((u) => {
+        if (u.id === unitId) return { ...u, position, params: { ...u.params, width, pocket } };
+        if (movedTo.has(u.id)) return { ...u, position: { ...u.position, x_mm: movedTo.get(u.id) } };
+        return u;
+      }), profile),
     }));
     if (resetCovers) {
       const moved = get().units.find((u) => u.id === unitId);
@@ -11985,6 +11988,68 @@ function obstructs(unit, other, profile = getCabinetProfile()) {
   // in FRONT of it (a cabinet's front clad): neither holds the other off.
   if (standsInFrontOf(unit, other, profile) || standsInFrontOf(other, unit, profile)) return false;
   return bandsOverlap(bandOf(unit, profile), bandOf(other, profile), profile.editor.levelOverlapMm);
+}
+
+/**
+ * ─── T82 F2, AFTER THE REVIEW (store:1) · THE POCKET RE-CUT, ONE LAW ───────
+ *
+ * A pocket's width is worked out (panel + 55 + panel, panel + 110 + panel at
+ * the project's front), so it changes when its doors change (`setPocket`) or
+ * when the front does (`refreshAutoParts`). Both roads ask HERE, and the answer
+ * is the one a joiner gives: the edge its one door covers stays where it is
+ * (the left edge for two doors), the other edge moves, and the cabinets butted
+ * one after another on that side move WITH it, pushed out when the pocket
+ * grows, pulled in when it shrinks, so the run stays one run and no door
+ * drops. Where pushing would drive any of them into a neighbour, a box, the
+ * corner or the wall's stop, nothing moves and the caller says so in words
+ * (*"the room refuses in words, the engine never squashes"*).
+ *
+ * @returns {{ok:boolean, x:number, width:number, moves:Array<[string, number]>}}
+ */
+function pocketRecutPlan(state, units, pocket, want, profile = getCabinetProfile()) {
+  const was = Number(pocket?.params?.width) || 0;
+  const x = Number(pocket?.position?.x_mm) || 0;
+  const delta = (Number(want) || 0) - was;
+  if (!(Number(want) > 0) || Math.abs(delta) < 1e-6) return { ok: true, x, width: was, moves: [] };
+  const choice = pocketChoiceOf(pocket.params, profile);
+  const keepRight = choice.doors === 1 && choice.hand === 'R';
+  const free = keepRight ? 'L' : 'R';
+  const round = (v) => Math.round(v * 100) / 100;
+  const shift = free === 'L' ? -delta : delta;
+  const chain = buttedChainOf(units, pocket, free, profile);
+  const plan = {
+    ok: true,
+    x: round(keepRight ? x - delta : x),
+    width: Number(want),
+    moves: chain.map((u) => [u.id, round((Number(u.position?.x_mm) || 0) + shift)]),
+  };
+  // Shrinking pulls the chain into the room the pocket gave up: it cannot hit
+  // anything it was not already touching.
+  if (delta < 0) return plan;
+  const walls = roomWalls(state.project.room);
+  const wall = walls[pocket.position?.wall ?? 0] || walls[0];
+  const moved = new Set([pocket.id, ...chain.map((u) => u.id)]);
+  const at = new Map(plan.moves);
+  const probes = [
+    { ...pocket, position: { ...pocket.position, x_mm: plan.x }, params: { ...pocket.params, width: plan.width } },
+    ...chain.map((u) => ({ ...u, position: { ...u.position, x_mm: at.get(u.id) } })),
+  ];
+  const boxes = planObstaclesOf(state.project.room, state.project.wallSlopes);
+  for (const probe of probes) {
+    const others = [
+      ...units
+        .filter((o) => !moved.has(o.id) && (o.position?.wall ?? 0) === wall.index && obstructs(probe, o, profile))
+        .map(unitSpan),
+      ...boxSpansOnWall({ wall, depth: probe.params.depth, boxes }),
+      ...cornerSpansFor({ ...state, units }, probe, wall, walls, profile),
+    ];
+    const span = unitSpan(probe);
+    const fits = slotTakes({
+      x: span.left, width: span.right - span.left, wallWidth: wall.width, others, wallMargin: wallMarginOf(state, probe, wall),
+    }, profile);
+    if (!fits) return { ok: false, x, width: was, moves: [] };
+  }
+  return plan;
 }
 
 /** T74 F13 · the keys a size edit of a free panel is read through (`freePanelPatch`). */

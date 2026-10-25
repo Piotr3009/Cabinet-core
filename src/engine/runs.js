@@ -1686,6 +1686,54 @@ export function pocketNeighbours(units, pocket, profile) {
 }
 
 /**
+ * T82 F2, after the review (store:1) · every unit butted one after another on
+ * `side` of `unit`, nearest first, whatever it is (a pocket, a cabinet a door
+ * cannot close): the units that move together when the pocket's width is
+ * re-cut and its free edge pushes or pulls the run (`projectStore
+ * pocketRecutPlan`).
+ *
+ * @returns {Array<object>}
+ */
+export function buttedChainOf(units, unit, side, profile) {
+  if (!unit) return [];
+  const tolerance = Math.max(0, Number(profile?.autoParts?.topInfill?.runGap) || 0) + 1e-6;
+  const list = pocketWallUnits(units, unit);
+  const out = [];
+  const seen = new Set([unit.id]);
+  let at = unit;
+  for (;;) {
+    const next = buttedOn(list, at, side, tolerance);
+    if (!next || seen.has(next.id)) break;
+    out.push(next);
+    seen.add(next.id);
+    at = next;
+  }
+  return out;
+}
+
+/**
+ * T82 F2, after the review (store:1) · the sentence when the room has no space
+ * to re-cut a pocket to the width its front makes it (the engine's
+ * `widthMm`), or null when the pocket stands at that width. Said by the Check
+ * (#37) and by the right panel, one sentence.
+ */
+export function pocketRecutRefusal(unit, figures) {
+  const want = Number(figures?.widthMm);
+  const have = Number(unit?.params?.width);
+  if (!Number.isFinite(want) || !Number.isFinite(have) || Math.abs(want - have) < 0.5) return null;
+  const num = unit?.params?.unit_num || unit?.id || 'The pocket';
+  return `${num}: at this front the pocket is ${hawaFigure(want)} mm wide (two ${hawaFigure(figures?.panel?.t)} mm panels `
+    + `and ${hawaFigure(figures?.clearMm)} clear), and there is no room to re-cut it from ${hawaFigure(have)}: `
+    + 'move the cabinet beside it, and the pocket follows.';
+}
+
+/** A millimetre figure in a sentence: whole, or to the half the kit rounds to. */
+function hawaFigure(n) {
+  const v = Math.round((Number(n) || 0) * 10) / 10;
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
+/**
  * The units each of the pocket's doors covers NOW, as ids nearest first.
  *
  * One door: its hand's side only. Two doors: one door each side. On a side,

@@ -45,6 +45,8 @@ import { groupOfPanel } from './cnc/groups.js';
 import { frontClearances, frontGapRows, carcassGaps } from './frontClearance.js';
 import { unitFindings } from './cnc/exportGate.js';
 import { unitBase, unitTop, hasTopInfill } from './runs.js';
+// T82 F2, after the review · the HAWA pocket in its run: the sentences are runs.js's.
+import { pocketRecutRefusal } from './runs.js';
 // T75 F1 · the corner rulebook, the one detection every consumer reads.
 import {
   blindClearanceView, cornersOf, cornerChecks, lClearanceView,
@@ -1107,6 +1109,25 @@ export function runChecks({
       unitNum: num,
       panelId: null,
       message: `${num}: this top box is standing on nothing — put a wardrobe under it, or delete it.`,
+      subject: { unitId: unit.id, editor: 'cabinet' },
+    }));
+  }
+
+  // ── #37 the HAWA pocket the room could not re-cut (T82 F2, after the review)
+  // A new front makes the pocket wider or narrower (panel + 55 + panel); the
+  // store re-cuts it by one law and moves the run beside it, and where the
+  // room has no space nothing moves: the engine cuts the pocket at its width
+  // and the room still holds it at the old one. Said here, red, in one
+  // sentence (`runs.js pocketRecutRefusal`), never left silent.
+  for (const { unit, result } of entries) {
+    if (!result?.hawa || !unit) continue;
+    const message = pocketRecutRefusal(unit, result.hawa);
+    if (!message) continue;
+    out.push(finding(37, 'red', {
+      unitId: unit.id,
+      unitNum: unit.params?.unit_num || unit.id,
+      panelId: null,
+      message,
       subject: { unitId: unit.id, editor: 'cabinet' },
     }));
   }

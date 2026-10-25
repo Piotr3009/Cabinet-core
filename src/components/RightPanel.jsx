@@ -9,7 +9,7 @@ import { floatHeightOf } from '../engine/types.js';
 import { doorCountFor, leafCountRefusal, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls, wallLabel } from '../engine/room.js';
-import { hasBottomMask, hasTopInfill, pocketNeighbours } from '../engine/runs.js';
+import { hasBottomMask, hasTopInfill, pocketNeighbours, pocketRecutRefusal } from '../engine/runs.js';
 // T82 F2 · the HAWA pocket's choices, read the one way (KIT_HAWA.lsp's mirror).
 import { pocketChoiceOf } from '../engine/hawaPocket.js';
 import { corniceOption } from '../engine/cornice.js';
@@ -2009,6 +2009,11 @@ function PocketDoorSection({ unit }) {
       {(fig?.refusals || []).map((r) => (
         <p key={`${r.n}-${r.side}-${r.unit || ''}`} className="text-[11px] text-red-400" data-pocket-refusal={r.n}>{r.message}</p>
       ))}
+      {/* T82 F2, after the review (store:1) · the room had no space to re-cut
+          the pocket to its front's width: the Check's #37 sentence, here too. */}
+      {pocketRecutRefusal(unit, fig) && (
+        <p className="text-[11px] text-red-400" data-pocket-refusal="recut">{pocketRecutRefusal(unit, fig)}</p>
+      )}
       {(fig?.notes || []).map((n) => (
         <p key={n.n} className="text-[11px] text-ink-400" data-pocket-note={n.n}>{n.message}</p>
       ))}

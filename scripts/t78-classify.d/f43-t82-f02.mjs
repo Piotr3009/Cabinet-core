@@ -85,7 +85,8 @@ export const LICENSED = {
       + 'unit); pocketCoverSides (the stored params.pocket.covers resolved as an unbroken chain, else the one nearest '
       + 'unit, on the hand\'s side or on both for two doors); runPocketParams (the pocket element: covers, sides, '
       + 'beyond kinds and hawaPocket.js pocketCoverOf\'s pocket_cover; and on a covered unit the pocket that closes '
-      + `it). One import of hawaPocket.js (pocketChoiceOf, pocketCoverOf). No cut reads them. ${OWNER_A3}`,
+      + `it). One import of hawaPocket.js (pocketChoiceOf, pocketCoverOf). No cut reads them. ${OWNER_A3}`
+      + ' T82 F2, after the review: buttedChainOf (the cabinets butted one after another beside the pocket, which move with it when a new front re-cuts its width) and pocketRecutRefusal (where they cannot move, the sentence).',
     gates: [],
   },
   'src/engine/library.js': {

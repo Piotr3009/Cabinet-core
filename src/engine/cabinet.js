@@ -25,7 +25,10 @@ import { freePanelOf, freePanelPlacement } from './freePanel.js';
 // T82 F2 F3 · the HAWA pocket, KIT_HAWA.lsp mirrored routine for routine.
 import { hawaPocketFigures } from './hawaPocket.js';
 // T82 F4 · the pocket's order lines, read off its figures (result.hawa).
-import { hawaHardwareLines } from './cnc/hawa.js';
+// T82 F5 · its holes and grooves, the LISP's own, seated in each board's CNC frame.
+import {
+  hawaDrills, hawaGroovesOnto, hawaHardwareLines, hawaSeatsOnto,
+} from './cnc/hawa.js';
 import { getCabinetProfile } from './profile.js';
 import { buildFrontDecoration } from './frontDecoration.js';
 import { getUnitType } from './types.js';
@@ -9158,6 +9161,18 @@ export function computeCabinet(params, profileOverride) {
   if (cabineoPlan) drills.push(...cabineoDrills(cabineoPlan));
   // T79 F14 · the box sides' dia 5 holes and, under drill15, the walls' dia 15.
   if (boxCabineoPlan) drills.push(...cabineoBoxDrills(boxCabineoPlan));
+  // ─── T82 F5 · THE HAWA POCKET'S HOLES AND GROOVES ────────────────────────
+  // *"the hole patterns of F1(d) as drill operations on the pocket panels ...
+  // the door's cups and holes as the hinge drilling is done today (fi 35 x 13,
+  // fi 5 x 13, fi 8 x 13)"* (CLAUDE.md T82 F5): every part's own LISP holes
+  // (`meta.pocket.holes`, KIT_HAWA.lsp D10 to D14) seated in its CNC frame by
+  // engine/cnc/hawa.js, the III/35 grooves as pockets on the door, and each
+  // panel's seat for the room. Only where the pocket's figures exist.
+  if (hawaFigures) {
+    drills.push(...hawaDrills(hawaFigures, panels, P));
+    hawaGroovesOnto({ panels, hawa: hawaFigures, profile: P });
+    hawaSeatsOnto({ panels, hawa: hawaFigures });
+  }
 
   // ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT, ⌀3 OR ⌀5 ─────────────
   //

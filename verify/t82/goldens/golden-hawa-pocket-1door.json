@@ -161,7 +161,32 @@
           "readiness": null
         }
       ],
-      "drills": [],
+      "drills": [
+        [
+          "FRONT_HINGES_35MM|POCKET-DOOR",
+          3
+        ],
+        [
+          "FRONT_HINGES_5MM|POCKET-DOOR",
+          6
+        ],
+        [
+          "FRONT_HINGES_8MM|POCKET-DOOR",
+          2
+        ],
+        [
+          "HAWA_3MM|POCKET-A",
+          10
+        ],
+        [
+          "HAWA_3MM|POCKET-B",
+          9
+        ],
+        [
+          "HAWA_FOOT_35MM|POCKET-BOTTOM",
+          1
+        ]
+      ],
       "hardware": [
         {
           "role": "hawa_set",

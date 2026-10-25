@@ -168,7 +168,7 @@
           },
           "outline": 4,
           "holes": 0,
-          "pockets": 0,
+          "pockets": 2,
           "readiness": null
         },
         {
@@ -188,11 +188,48 @@
           },
           "outline": 4,
           "holes": 0,
-          "pockets": 0,
+          "pockets": 2,
           "readiness": null
         }
       ],
-      "drills": [],
+      "drills": [
+        [
+          "FRONT_HINGES_35MM|POCKET-DOOR-L",
+          4
+        ],
+        [
+          "FRONT_HINGES_35MM|POCKET-DOOR-R",
+          4
+        ],
+        [
+          "FRONT_HINGES_5MM|POCKET-DOOR-L",
+          8
+        ],
+        [
+          "FRONT_HINGES_5MM|POCKET-DOOR-R",
+          8
+        ],
+        [
+          "FRONT_HINGES_8MM|POCKET-DOOR-L",
+          6
+        ],
+        [
+          "FRONT_HINGES_8MM|POCKET-DOOR-R",
+          6
+        ],
+        [
+          "HAWA_3MM|POCKET-B-L",
+          9
+        ],
+        [
+          "HAWA_3MM|POCKET-B-R",
+          9
+        ],
+        [
+          "HAWA_FOOT_35MM|POCKET-BOTTOM",
+          1
+        ]
+      ],
       "hardware": [
         {
           "role": "hawa_set",

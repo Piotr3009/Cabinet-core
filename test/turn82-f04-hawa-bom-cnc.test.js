@@ -40,7 +40,15 @@ import { HARDWARE_TO_PART_ID, PART_REGISTRY, partIdForElement } from '../src/eng
 import { groupOfPanel } from '../src/engine/cnc/groups.js';
 import { labelKindOf } from '../src/engine/partNumbers.js';
 import { sprayRuleFor } from '../src/engine/spray.js';
-import { HAWA_ROLES, hawaHardwareLines } from '../src/engine/cnc/hawa.js';
+import {
+  HAWA_ROLES, hawaDrills, hawaFacePoint, hawaHardwareLines, hawaKindOf, hawaLayers,
+} from '../src/engine/cnc/hawa.js';
+import { buildCabinetPartQtys } from '../src/engine/bom.js';
+import { buildUnitDxfFiles } from '../src/engine/cnc/dxf.js';
+import { unitFindings } from '../src/engine/cnc/exportGate.js';
+import { CNC_LAYERS, cncLayer } from '../src/engine/cnc/layers.js';
+import { machiningClasses } from '../src/engine/machining.js';
+import { panelPlacement } from '../src/engine/joinery.js';
 import { cases } from '../scripts/cnc-scenarios.mjs';
 import { loadLisp } from './lisp-mini.js';
 
@@ -238,6 +246,192 @@ test('F4 · FROZEN: no existing case orders a HAWA line or carries a pocket part
     assert.ok(!(r.hardware || []).some((h) => /^hawa_/.test(h.role)), `${c.id} orders HAWA hardware`);
     assert.ok(!r.panels.some((p) => /^pocket_/.test(String(p.role))), `${c.id} cuts a pocket part`);
     assert.equal(r.hawa, undefined, `${c.id} carries no pocket figures`);
+  }
+});
+
+// ═══ F5 · THE HOLES AND THE GROOVES ON THE MACHINE ══════════════════════════
+
+/** A drill's (x, y) back in the LISP's face frame (u, v), by the board's seat. */
+function backToFace(panel, hawa, d) {
+  const w = Number(panel.cnc?.drawn_w ?? panel.w);
+  const kind = panel.meta.pocket.kind;
+  if (kind === 'A' || kind === 'B') return [panel.meta.pocket.seat === 'R' ? w - d.x : d.x, d.y];
+  if (kind === 'door') return [hawa.doors.find((x) => x.id === panel.id).hingeEdge === 'L' ? w - d.x : d.x, d.y];
+  return [d.x, d.y];
+}
+const pocketPanels = (r) => r.panels.filter((p) => p.meta?.pocket);
+const near = (a, b) => Math.abs(a - b) <= 1e-6;
+
+test('F5 · EXAMPLE 1: every LISP hole is a drill record, the kit\'s own routine point for point, seated in its board\'s frame', () => {
+  const r = computeCabinet(ONE_DOOR(), P);
+  const h = r.hawa;
+  const d = h.doors[0];
+  const lispOf = {
+    'POCKET-B': L.call('hawa-b-holes', d.T1, h.EH),
+    'POCKET-A': L.call('hawa-a-holes', h.S, d.T1, d.E1, h.EH),
+    'POCKET-BOTTOM': [L.call('hawa-foot', 1, 18, h.S)],
+    'POCKET-DOOR': L.call('hawa-door-holes', 1, d.cls, d.TB, d.TH, d.M),
+    'POCKET-TOP': [],
+  };
+  for (const p of pocketPanels(r)) {
+    const drills = r.drills.filter((x) => x.panel === p.id);
+    const want = lispOf[p.part];
+    assert.equal(drills.length, want.length, `${p.id}: every hole, once`);
+    drills.forEach((x, i) => {
+      const [u, v] = backToFace(p, h, x);
+      const [layer, lu, lv, dia] = want[i];
+      assert.equal(x.layer, layer, `${p.id} hole ${i}`);
+      assert.ok(near(u, lu) && near(v, lv), `${p.id} hole ${i}: (${u}, ${v}) is the LISP's (${lu}, ${lv})`);
+      assert.equal(x.d, dia);
+    });
+  }
+  // The seats: A on the pocket's left (BUL's frame), B on its right (BUR's, the front at x = w).
+  const of = (part) => r.panels.find((p) => p.part === part);
+  assert.equal(of('POCKET-A').meta.pocket.seat, 'L');
+  assert.equal(of('POCKET-B').meta.pocket.seat, 'R');
+  const b0 = r.drills.find((x) => x.panel === 'POCKET-B');
+  assert.deepEqual([b0.x, b0.y], [580 - 32, 2057.5 - 22], 'B\'s first top pilot 32 from its front edge, the front at x = w');
+  const a0 = r.drills.find((x) => x.panel === 'POCKET-A');
+  assert.deepEqual([a0.x, a0.y], [18 + 48, 2057.5 - 10], 'A\'s first connector pilot S + 48 from its front edge, the front at x 0');
+  // The door's hinge edge is its LEFT seen from the room (the pocket's side): seen from its back, at x = w.
+  assert.equal(d.hingeEdge, 'L');
+  const cup = r.drills.find((x) => x.panel === 'POCKET-DOOR' && x.kind === 'hawa_cup');
+  assert.deepEqual([cup.x, cup.y], [572.5 - 28, 200]);
+  // The pure function is the engine's answer.
+  assert.deepEqual(r.drills.filter((x) => /^hawa_/.test(x.kind)), hawaDrills(h, r.panels, P));
+});
+
+test('F5 · the diameters and the depths: pilots dia 3 x 10, cups dia 35 x 13, dia 5 x 13, dia 8 x 13, the foot through; no kind says screw', () => {
+  const L5 = hawaLayers(P);
+  assert.deepEqual(L5, {
+    pilot: 'HAWA_3MM', cup: 'FRONT_HINGES_35MM', screw: 'FRONT_HINGES_5MM', sleeve: 'FRONT_HINGES_8MM', foot: 'HAWA_FOOT_35MM', groove: 'HAWA_GROOVE_12MM',
+  });
+  const want = {
+    hawa_pilot: [L5.pilot, 3, 10], hawa_cup: [L5.cup, 35, 13], hawa_cup_hole: [L5.screw, 5, 13], hawa_sleeve: [L5.sleeve, 8, 13], hawa_foot: [L5.foot, 35, undefined],
+  };
+  for (const make of [ONE_DOOR, TWO_DOORS]) {
+    const r = computeCabinet(make(), P);
+    const hawaHoles = r.drills.filter((x) => /^hawa_/.test(x.kind));
+    assert.ok(hawaHoles.length > 0);
+    for (const x of hawaHoles) {
+      assert.deepEqual([x.layer, x.d, x.depth], want[x.kind], `${x.panel} ${x.kind}`);
+      assert.equal(hawaKindOf(x.layer, P), x.kind);
+      assert.doesNotMatch(x.kind, /screw/);
+    }
+    // The set's screws are the set's: no confirmat, no screw line counted off these holes (bom.js, bomInvoice.js).
+    assert.equal(buildCabinetPartQtys(r, { type: 'HAWA_POCKET' }).screw_confirmat, undefined);
+  }
+});
+
+test('F5 · EXAMPLE 2: B-L and B-R mirrored, each door drilled from its own hinge edge, the III/35 grooves pockets 12 deep', () => {
+  const r = computeCabinet(TWO_DOORS(), P);
+  const h = r.hawa;
+  const of = (id) => r.panels.find((p) => p.id === id);
+  assert.equal(of('POCKET-B-L').meta.pocket.seat, 'L');
+  assert.equal(of('POCKET-B-R').meta.pocket.seat, 'R');
+  const left = r.drills.filter((x) => x.panel === 'POCKET-B-L');
+  const right = r.drills.filter((x) => x.panel === 'POCKET-B-R');
+  assert.equal(left.length, right.length);
+  left.forEach((x, i) => assert.deepEqual([of('POCKET-B-R').w - right[i].x, right[i].y], [x.x, x.y], `pilot ${i} mirrored`));
+  // KIT_HAWA.lsp EXAMPLE 2: TA 29.5, the steel profile 475, the grooves (0 2255 475 2267) and (0 15 475 27).
+  const dl = h.doors.find((d) => d.id === 'POCKET-DOOR-L');
+  const dr = h.doors.find((d) => d.id === 'POCKET-DOOR-R');
+  assert.deepEqual([dl.hingeEdge, dr.hingeEdge], ['R', 'L'], 'each door hinged on the pocket\'s side');
+  assert.equal(r.drills.find((x) => x.panel === 'POCKET-DOOR-L' && x.kind === 'hawa_cup').x, 29.5);
+  assert.equal(r.drills.find((x) => x.panel === 'POCKET-DOOR-R' && x.kind === 'hawa_cup').x, 521 - 29.5);
+  const grooves = (id) => of(id).cnc.pockets.filter((k) => k.layer === 'HAWA_GROOVE_12MM').map((k) => [k.x1, k.y1, k.x2, k.y2, k.depth]);
+  assert.deepEqual(grooves('POCKET-DOOR-L'), [[0, 2255, 475, 2267, 12], [0, 15, 475, 27, 12]]);
+  assert.deepEqual(grooves('POCKET-DOOR-R'), [[46, 2255, 521, 2267, 12], [46, 15, 521, 27, 12]]);
+  for (const id of ['POCKET-DOOR-L', 'POCKET-DOOR-R']) {
+    const lisp = L.call('hawa-steel-grooves', 521, 2358, 49);
+    const back = of(id).meta.pocket.grooves;
+    assert.deepEqual(back, lisp, `${id}: the LISP's grooves on the record`);
+    for (const [u0, v0, u1, v1] of back) {
+      const [xa] = hawaFacePoint(of(id), h, u0, v0);
+      const [xb] = hawaFacePoint(of(id), h, u1, v1);
+      assert.ok(of(id).cnc.pockets.some((k) => near(k.x1, Math.min(xa, xb)) && near(k.x2, Math.max(xa, xb)) && near(k.y1, v0) && near(k.y2, v1)));
+    }
+  }
+  // III/25 routes no groove.
+  assert.equal(computeCabinet(ONE_DOOR(), P).panels.find((p) => p.id === 'POCKET-DOOR').cnc.pockets?.length || 0, 0);
+});
+
+test('F5 · hand L is hand R mirrored: B on the left in BUL\'s frame, A on the right in BUR\'s, the door hinged on its right edge', () => {
+  const r = computeCabinet(ONE_DOOR({
+    pocket: { doors: 1, hand: 'L', push: true, cls: null, covers: ['b'] },
+    pocket_cover: { doors: [{ side: 'L', units: ['b'], spanMm: 500, KT1: 580, freeEndClearanceMm: 1.5 }] },
+  }), P);
+  const of = (part) => r.panels.find((p) => p.part === part);
+  assert.equal(of('POCKET-B').meta.pocket.seat, 'L');
+  assert.equal(of('POCKET-A').meta.pocket.seat, 'R');
+  assert.deepEqual(r.drills.filter((x) => x.panel === 'POCKET-B').slice(0, 1).map((x) => [x.x, x.y]), [[32, 2057.5 - 22]]);
+  assert.equal(r.hawa.doors[0].hingeEdge, 'R');
+  assert.equal(r.drills.find((x) => x.panel === 'POCKET-DOOR' && x.kind === 'hawa_cup').x, 28);
+});
+
+test('F5 · the DXF: one file per part, the holes on their layers, the five layers declared with ACI 54 to 58, the guards green', () => {
+  for (const make of [ONE_DOOR, TWO_DOORS]) {
+    const r = computeCabinet(make(), P);
+    const files = buildUnitDxfFiles(r, P);
+    for (const p of pocketPanels(r)) {
+      const f = files.find((x) => x.panelId === p.id);
+      assert.equal(f.name, `HP01-${p.id}.dxf`);
+      const circles = f.entities.filter((e) => e.type === 'circle');
+      const drills = r.drills.filter((x) => x.panel === p.id);
+      assert.equal(circles.length, drills.length, `${p.id}: one circle per hole`);
+      drills.forEach((x) => assert.ok(circles.some((c) => c.layer === x.layer && near(c.cx, x.x) && near(c.cy, x.y) && near(c.r, x.d / 2))));
+      for (const k of p.cnc.pockets || []) assert.ok(f.entities.some((e) => e.type === 'poly' && e.layer === k.layer && e.closed));
+      for (const layer of new Set(f.entities.map((e) => e.layer))) assert.match(f.dxf, new RegExp(`\r\n2\r\n${layer}\r\n70\r\n0\r\n62\r\n${cncLayer(layer).aci}\r\n`), `${f.name} declares ${layer}`);
+    }
+    assert.deepEqual(unitFindings(r, { profile: P }), [], 'the off-board, edge and drill guards hold on every pocket board');
+  }
+  const aci = Object.fromEntries(CNC_LAYERS.map((l) => [l.name, l.aci]));
+  assert.deepEqual(['HAWA_3MM', 'FRONT_HINGES_5MM', 'FRONT_HINGES_8MM', 'HAWA_FOOT_35MM', 'HAWA_GROOVE_12MM'].map((n) => aci[n]), [54, 55, 56, 57, 58]);
+  assert.equal(aci.FRONT_HINGES_35MM, 3, 'the cup keeps the house\'s layer');
+  const policy = new Map(machiningClasses().map((c) => [c.layer, c]));
+  const doc = read('verify/t26/sheet-vs-scene.md');
+  for (const layer of Object.values(hawaLayers(P))) {
+    assert.ok(policy.get(layer)?.draw, `${layer}: the room bores what the sheet drills (R10)`);
+    assert.ok(doc.includes(`\`${layer}\``), `${layer} in verify/t26/sheet-vs-scene.md`);
+  }
+});
+
+test('F5 · the room and the sheets seat every hole where the CNC drew it (engine/joinery.js panelPlacement)', () => {
+  for (const make of [ONE_DOOR, TWO_DOORS]) {
+    const r = computeCabinet(make(), P);
+    const h = r.hawa;
+    for (const p of pocketPanels(r)) {
+      const seat = panelPlacement(p);
+      assert.ok(seat, `${p.id} has a placement`);
+      const cross = [seat.u[1] * seat.v[2] - seat.u[2] * seat.v[1], seat.u[2] * seat.v[0] - seat.u[0] * seat.v[2], seat.u[0] * seat.v[1] - seat.u[1] * seat.v[0]];
+      const b = p.box;
+      for (const x of r.drills.filter((dd) => dd.panel === p.id)) {
+        const at = [0, 1, 2].map((k) => seat.origin[k] + seat.u[k] * x.x + seat.v[k] * x.y);
+        const [u, v] = backToFace(p, h, x);
+        const kind = p.meta.pocket.kind;
+        if (kind === 'A' || kind === 'B') {
+          assert.ok(near(b.z + b.d - at[2], u), `${p.id}: ${u} behind its front edge`);
+          assert.ok(near(at[1] - b.y, v), `${p.id}: ${v} up its height`);
+        } else if (kind === 'door') {
+          const hinge = h.doors.find((dd) => dd.id === p.id).hingeEdge;
+          assert.ok(near(hinge === 'L' ? at[0] - b.x : b.x + b.w - at[0], u), `${p.id}: ${u} in from its hinge edge`);
+          assert.ok(near(at[1] - b.y, v));
+        } else {
+          assert.ok(near(at[0] - b.x, u) && near(b.z + b.d - at[2], v), `${p.id}: the foot across and back`);
+        }
+      }
+      if (p.part !== 'POCKET-DOOR') assert.deepEqual(cross.map((c) => 0 - c + 0), seat.n.map((c) => c + 0), `${p.id}: u x v = -n, as the house's boards`);
+    }
+  }
+});
+
+test('F5 · FROZEN 2: no existing case drills a HAWA layer or kind, routes a HAWA groove, or seats a pocket board', () => {
+  const own = new Set(['HAWA_3MM', 'FRONT_HINGES_5MM', 'FRONT_HINGES_8MM', 'HAWA_FOOT_35MM', 'HAWA_GROOVE_12MM']);
+  for (const c of cases().filter((x) => !String(x.id).startsWith('HAWA_POCKET'))) {
+    const r = computeCabinet(c.params, P);
+    assert.ok(!r.drills.some((x) => own.has(x.layer) || /^hawa_/.test(x.kind)), `${c.id} carries a HAWA hole`);
+    assert.ok(!r.panels.some((p) => (p.cnc?.pockets || []).some((k) => own.has(k.layer))), `${c.id} carries a HAWA groove`);
+    assert.ok(!r.drills.some((x) => x.layer === 'FRONT_HINGES_35MM' && Number(x.depth) === 13), `${c.id}: the house's cups keep their own depth`);
   }
 });
 

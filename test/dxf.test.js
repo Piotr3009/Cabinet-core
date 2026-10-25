@@ -347,6 +347,19 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     // by the owner's 4 mm program (the dog bone that stood there is gone). A
     // MARK like BISCUIT_4MM; ACI 53, the next free number after 52.
     CORNER_4MM: 53,
+    // ─── AMENDED BY T82 F5 (KIT_HAWA.lsp D15): FIVE NEW NAMES, THE POCKET'S ─
+    // CLAUDE.md T82 F5: *"the hole patterns of F1(d) as drill operations on the
+    // pocket panels ... on the layer grammar the CNC already has for hinge
+    // plates; the door's cups and holes as the hinge drilling is done today
+    // (fi 35 x 13, fi 5 x 13, fi 8 x 13)"*. The panels' dia 3 pilots, the
+    // door's dia 5 and dia 8 (the cup keeps FRONT_HINGES_35MM), the foot's
+    // dia 35 through the bottom board, the III/35 groove. ACI 54 to 58, the
+    // next free after 53 (KIT_HAWA.lsp createHawaLayers).
+    HAWA_3MM: 54,
+    FRONT_HINGES_5MM: 55,
+    FRONT_HINGES_8MM: 56,
+    HAWA_FOOT_35MM: 57,
+    HAWA_GROOVE_12MM: 58,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

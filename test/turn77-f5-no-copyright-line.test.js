@@ -257,6 +257,8 @@ export const NEW_FILES = [
   'src/engine/cnc/hawa.js',
   'test/turn82-f04-hawa-bom-cnc.test.js',
   'scripts/t78-classify.d/f43-t82-f04.mjs',
+  // T82 F5 (25.10.2026): the pocket on the CNC, the panels' pilots and the door's cups
+  'scripts/t78-classify.d/f43-t82-f05.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

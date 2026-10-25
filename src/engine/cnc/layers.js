@@ -110,6 +110,22 @@ export const CNC_LAYERS = [
   // this day is gone (KIT_NOTCH.lsp D9, KIT_RECESS.lsp D18, KIT_CORNER_L.lsp
   // section 4). ACI 53: the next number after RECESS_WINDOW's 52.
   { name: 'CORNER_4MM',         aci: 53, screen: '#ff8787', label: 'Corner mark (4 mm cutter)', kind: 'mark' },
+  // ─── T82 F5 (KIT_HAWA.lsp D15): THE HAWA POCKET'S FIVE ───────────────────
+  // CLAUDE.md T82 F5: *"the hole patterns of F1(d) as drill operations on the
+  // pocket panels (fi 4.5 pilot PROPOSED 3 mm diameter 10 deep ...), on the
+  // layer grammar the CNC already has for hinge plates; the door's cups and
+  // holes as the hinge drilling is done today (fi 35 x 13, fi 5 x 13, fi 8 x
+  // 13)"*. The house grammar `{FEATURE}_{DIAMETER}MM`, one tool each: the
+  // panels' pilots; the door's two fixing holes and its sleeve holes, the
+  // FRONT_HINGES family at their own diameters (the cup is FRONT_HINGES_35MM,
+  // the existing row, its 13 stated on the hole); the foot's hole through the
+  // bottom board; the III/35 steel profile's groove, a pocket. ACI 54 to 58,
+  // the next free after CORNER_4MM's 53 (KIT_HAWA.lsp createHawaLayers).
+  { name: 'HAWA_3MM',           aci: 54, screen: '#e8590c', label: 'HAWA pilots ⌀3', kind: 'hole' },
+  { name: 'FRONT_HINGES_5MM',   aci: 55, screen: '#20c997', label: 'Hinge screws ⌀5 (HAWA)', kind: 'hole' },
+  { name: 'FRONT_HINGES_8MM',   aci: 56, screen: '#0ca678', label: 'Sleeves ⌀8 (HAWA)', kind: 'hole' },
+  { name: 'HAWA_FOOT_35MM',     aci: 57, screen: '#a61e4d', label: 'HAWA foot ⌀35 (through)', kind: 'hole' },
+  { name: 'HAWA_GROOVE_12MM',   aci: 58, screen: '#845ef7', label: 'HAWA steel profile groove', kind: 'pocket' },
   { name: 'SHELVES_7_5MM',      aci: 6,  screen: '#e599f7', label: 'Shelf pins ⌀7.5', kind: 'hole' },
   { name: 'RUNNERS_3MM',        aci: 5,  screen: '#ff922b', label: 'Runners ⌀3',     kind: 'hole' },
   { name: 'FRONT_HINGES_35MM',  aci: 3,  screen: '#38d9a9', label: 'Hinge cups ⌀35', kind: 'hole' },

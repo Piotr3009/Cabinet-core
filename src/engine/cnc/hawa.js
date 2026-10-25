@@ -25,10 +25,38 @@
 // partRegistry.js HARDWARE_TO_PART_ID) and the invoice (bomInvoice.js) read
 // them as they read every hardware line.
 //
+// F5: *"the hole patterns of F1(d) as drill operations on the pocket panels
+// (fi 4.5 pilot PROPOSED 3 mm diameter 10 deep ...), on the layer grammar the
+// CNC already has for hinge plates; the door's cups and holes as the hinge
+// drilling is done today (fi 35 x 13, fi 5 x 13, fi 8 x 13)."*  The holes are
+// the LISP's own (`meta.pocket.holes`, hawa-b-holes, hawa-a-holes, hawa-foot,
+// hawa-door-holes, in KIT_HAWA.lsp's FACE frames); this module only seats each
+// one in its board's CNC frame, the house's frame for the board it is:
+//
+//   a panel on the pocket's LEFT   x = u    (BUL's frame: its pocket face, the
+//                                            front edge at x 0)
+//   a panel on the pocket's RIGHT  x = w - u (BUR's frame: the front at x = w;
+//                                            KIT_HAWA.lsp D20 "their drilling
+//                                            is mirrored")
+//   the door                       x = w - u when its cups are on its LEFT
+//                                  edge seen from the room, u on the RIGHT
+//                                  (a FRONT's frame: seen from its back)
+//   the bottom board               x = u, y = v (across from its left edge,
+//                                  back from its front edge, the LISP's own)
+//
+// y is v throughout (up from the bottom edge, back from the front edge). Each
+// hole becomes a drill record with the house's grammar: a depth only where it
+// is blind (the foot goes through), a kind of its own that never says "screw"
+// (bom.js and bomInvoice.js count /screw/ kinds as confirmats). The III/35
+// grooves become pocket records on the door (HAWA_GROOVE_12MM, 12 deep).
+//
 // Pure functions: no store, no React. A bare computeCabinet() of any other
 // kit never reaches a line of this file (no `result.hawa`, no call).
 
+import { roundTo } from '../format.js';
 import { hawaMm, hawaSpec } from '../hawaPocket.js';
+
+const r4 = (v) => roundTo(v, 4);
 
 /** The order roles of a pocket, in the order the lines are written. */
 export const HAWA_ROLES = Object.freeze(['hawa_set', 'hawa_connector', 'hawa_hinges', 'hawa_tracks', 'hawa_stiffener', 'hawa_foot']);
@@ -135,4 +163,122 @@ export function hawaHardwareLines(hawa, profile) {
     }, labelled(`fi ${hawaMm(K.hawaFootD)} through the bottom board`, [article]));
   }
   return out;
+}
+
+// ═══ F5 · THE HOLES AND THE GROOVES ON THE MACHINE ══════════════════════════
+
+/** The CNC layers of the pocket (KIT_HAWA.lsp D15, profile.hawa.layers). */
+export function hawaLayers(profile) {
+  return { ...hawaSpec(profile).layers };
+}
+
+/**
+ * The drill kind of a hole, by the layer the LISP puts it on. None of them
+ * says "screw": the HAWA screws come with the set and are never a confirmat.
+ */
+export function hawaKindOf(layer, profile) {
+  const L = hawaLayers(profile);
+  if (layer === L.pilot) return 'hawa_pilot';
+  if (layer === L.cup) return 'hawa_cup';
+  if (layer === L.screw) return 'hawa_cup_hole';
+  if (layer === L.sleeve) return 'hawa_sleeve';
+  if (layer === L.foot) return 'hawa_foot';
+  return 'hawa_hole';
+}
+
+/** The door's figures by its panel id. */
+function doorOf(hawa, id) {
+  return (hawa?.doors || []).find((d) => d.id === id) || null;
+}
+
+/**
+ * Which side of the pocket a pocket panel stands on: 'L' (its pocket face
+ * looks right, BUL's frame) or 'R' (BUR's), off its box in the pocket's frame.
+ */
+function pocketSeat(panel, hawa) {
+  const b = panel?.box;
+  if (!b) return null;
+  return b.x + b.w / 2 < (Number(hawa?.widthMm) || 0) / 2 ? 'L' : 'R';
+}
+
+/** A point of the LISP's face frame (u, v) in the board's CNC frame (x, y). */
+export function hawaFacePoint(panel, hawa, u, v) {
+  const kind = panel?.meta?.pocket?.kind;
+  const w = Number(panel?.cnc?.drawn_w ?? panel?.w) || 0;
+  if (kind === 'A' || kind === 'B') return [pocketSeat(panel, hawa) === 'R' ? w - u : u, v];
+  if (kind === 'door') return [doorOf(hawa, panel.id)?.hingeEdge === 'L' ? w - u : u, v];
+  return [u, v];
+}
+
+/**
+ * EVERY HOLE OF THE POCKET, as the engine's drill records (F5): each part's
+ * own LISP holes seated in its CNC frame.
+ *
+ * @param {object} hawa     `result.hawa`
+ * @param {Array} panels    the unit's panels (the pocket's carry `meta.pocket`)
+ * @param {object} profile
+ * @returns {Array<{ panel, kind, layer, x, y, d, depth? }>}
+ */
+export function hawaDrills(hawa, panels, profile) {
+  if (!hawa) return [];
+  const out = [];
+  for (const p of panels || []) {
+    const holes = p?.meta?.pocket?.holes;
+    if (!Array.isArray(holes)) continue;
+    const thick = Number(p.thickness) || 0;
+    for (const [layer, u, v, d, depth] of holes) {
+      const [x, y] = hawaFacePoint(p, hawa, Number(u), Number(v));
+      const blind = Number(depth) > 0 && !(thick > 0 && Number(depth) >= thick - 1e-6);
+      out.push({
+        panel: p.id, kind: hawaKindOf(layer, profile), layer, x: r4(x), y: r4(y), d: Number(d),
+        ...(blind ? { depth: r4(Number(depth)) } : {}),
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * THE III/35 GROOVES, onto the door's CNC record (F5, KIT_HAWA.lsp D11): each
+ * [u0, v0, u1, v1] of `meta.pocket.grooves` a pocket on HAWA_GROOVE_12MM, cut
+ * to the groove's depth (profile.hawa.steel.grooveDepthMm, PROPOSED 12). The
+ * groove runs out of the hinge edge, so it is an ordinary pocket (it breaks
+ * the board's edge), never a cut-out. A door with no grooves is untouched.
+ */
+export function hawaGroovesOnto({ panels, hawa, profile }) {
+  if (!hawa) return;
+  const K = hawaSpec(profile);
+  for (const p of panels || []) {
+    const grooves = p?.meta?.pocket?.kind === 'door' ? p.meta.pocket.grooves : null;
+    if (!Array.isArray(grooves) || !grooves.length) continue;
+    p.cnc = p.cnc || {};
+    p.cnc.pockets = [
+      ...(p.cnc.pockets || []),
+      ...grooves.map(([u0, v0, u1, v1]) => {
+        const [xa] = hawaFacePoint(p, hawa, Number(u0), Number(v0));
+        const [xb] = hawaFacePoint(p, hawa, Number(u1), Number(v1));
+        return {
+          layer: K.layers.groove,
+          x1: r4(Math.min(xa, xb)),
+          y1: r4(Math.min(Number(v0), Number(v1))),
+          x2: r4(Math.max(xa, xb)),
+          y2: r4(Math.max(Number(v0), Number(v1))),
+          depth: K.hawaGrooveDepth,
+        };
+      }),
+    ];
+  }
+}
+
+/**
+ * The seat of every pocket panel on its record (`meta.pocket.seat`, 'L' or
+ * 'R'), so the room and the sheets place its face where the CNC drew it
+ * (engine/joinery.js panelPlacement, BUL's or BUR's frame).
+ */
+export function hawaSeatsOnto({ panels, hawa }) {
+  if (!hawa) return;
+  for (const p of panels || []) {
+    const pk = p?.meta?.pocket;
+    if (pk && (pk.kind === 'A' || pk.kind === 'B')) pk.seat = pocketSeat(p, hawa);
+  }
 }

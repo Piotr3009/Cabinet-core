@@ -1102,7 +1102,8 @@ export function MovingPanel({
   // Solid is opaque now, full stop. Translucency belongs to the two modes that
   // exist to be translucent.
   const X = profile.appearance.xray;
-  const faded = contour ? surface.opacity : (xray ? (front ? X.front : X.carcass) : 1);
+  // T82 F6, after the review: the HAWA door fades as the front it is (the sheets' X-ray inks it XRAY_FRONT).
+  const faded = contour ? surface.opacity : (xray ? ((front || p.role === 'pocket_door') ? X.front : X.carcass) : 1);
   const translucent = faded < 1;
 
   const body = (

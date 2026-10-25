@@ -387,3 +387,28 @@ test('T80 F1 · KIT_INFRAME.lsp balances 0/0 and carries its three laws and its 
   assert.match(text, /;;; 5\. NUMBERS/);
   assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
 });
+
+// ─── T82 F1 · THE POCKET DOOR: KIT_HAWA.lsp ─────────────────────────────────
+// CLAUDE.md T82 F1: *"A new kit in the house grammar (SKYLON_COMMON), named
+// sections D1 to Dn, every number with its HAWA page in a comment ... Paren
+// balance test; test/turn35-lisp-parens.test.js lists the file."*  The owner,
+// 25.10.2026: *"zaczniemy od hawa dodanie"*. The walk above balances it; this
+// names it, its twenty-two decisions and its sections.
+test('T82 F1 · KIT_HAWA.lsp balances 0/0 with D1 to D22, its CONSTANTS, its NUMBERS and HAWA_FULL', () => {
+  assert.ok(KITS.includes('KIT_HAWA.lsp'), 'KIT_HAWA.lsp is missing');
+  const text = readFileSync(join(LISP_DIR, 'KIT_HAWA.lsp'), 'utf8');
+  const { balance, min, open } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.ok(open > 100, 'a kit, not a stub');
+  for (let d = 1; d <= 22; d += 1) assert.match(text, new RegExp(`^;;; D${d} {1,2}[A-Z]`, 'm'), `D${d}`);
+  assert.match(text, /^;;; 3\. CONSTANTS/m);
+  assert.match(text, /^;;; 5\. NUMBERS/m);
+  assert.match(text, /\(defun hawa-tb \(doors frontT span far\)/);
+  assert.match(text, /\(defun hawa-depth \(doors tb kt1 s /);
+  assert.match(text, /\(defun hawa-cut \(doors hand frontT h kt1 span far /);
+  assert.match(text, /\(defun c:HAWA_FULL /);
+  assert.doesNotMatch(text, /\(defun (drawRect|drawCircle|drawText|inframe)/, 'COMMON\'s and KIT_INFRAME\'s routines are called, never redefined');
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+  assert.ok(/^[\x00-\x7F]*$/.test(text), 'ASCII');
+});

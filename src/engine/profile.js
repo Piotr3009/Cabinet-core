@@ -2847,6 +2847,163 @@ export const DEFAULT_CABINET_PROFILE = {
       'LOW_CABINET', 'WARDROBE', 'WARDROBE_LOW'],
   },
 
+  // ─── T82 · THE POCKET DOOR, HAWA CONCEPTA III 25 / 35 (KIT_HAWA.lsp) ────
+  //
+  // The owner, 25.10.2026, 11:40: *"musimy zrobic nowy projekt i zakodowac w
+  // kuchni nowy system to sie nazywa hawa III sa to drzwi ktore sa pocket
+  // doors ... wysuwasz pocket door i zakrywasz szafke lub szafki"*; 13:40
+  // *"zaczniemy od hawa dodanie"*. CLAUDE.md T82: *"The manufacturer's sheet
+  // is the law of the hardware"*: every number here is the LISP constant of
+  // KIT_HAWA.lsp named beside it, with the HAWA drawing and the place on the
+  // page (verify/t82/hawa/hawa-numbers.md, the crops in verify/t82/hawa/
+  // pages/), CONFIRMED where the sheet prints it, PROPOSED where the five
+  // documents are silent (the owner confirms or changes it after the merge).
+  // Held to the LISP by test/turn82-f01-hawa-lisp.test.js. Read by the
+  // engine ONLY for a HAWA_POCKET unit: no existing kit reads a hawa key, so
+  // every golden is what main cuts.
+  hawa: {
+    // D1 · the clear width between the pocket panels: one door 55 (160704 p1
+    // front view "55"; 31418 p1 Connector 55), two doors 110 (169313 p1 front
+    // view "110"; 31418 p2 step 1). CONFIRMED. [hawaPocketOne, hawaPocketTwo]
+    pocketClearMm: { one: 55, two: 110 },
+    // D3 · the panels are FRONT, never carcass (the owner 13:46: *"panele po
+    // bokach to jest nie carcas tylko front zawsze, wiec jesli jest 18 mm to
+    // daj zawsze 22 mm automatycznie, i napisz informacje minimum 19 mm"*):
+    // the front's thickness from 19 (panel B min, 160704 p1 and 169313 p1
+    // ">=19"), 22 below it, note #47. CONFIRMED. Panel A's own minimum 18
+    // (160704 p1 ">=18"). [hawaPanelMin, hawaPanelThinFront, hawaPanelAMin]
+    panelMinMm: 19,
+    panelThinFrontMm: 22,
+    panelAMinMm: 18,
+    // D4 · the bottom board under the panels and the top board over them,
+    // 18 both: PROPOSED (the minimums CONFIRMED: bottom >=18, top >=10,
+    // 160704 p1 front views). The one-door top rides the Connector 55 cap,
+    // 6.5 (160704 p1 front view top "6.5"). CONFIRMED.
+    // [hawaBoardT, hawaBottomMin, hawaTopMin, hawaCapOne]
+    topBottomMm: 18,
+    bottomMinMm: 18,
+    topMinMm: 10,
+    connectorCapMm: 6.5,
+    // D18 D21 · the hardware zone on panel B's pocket face 17 (160704 p1 and
+    // 169313 p1 front views "17"), the top zone 63, the bottom zone 50
+    // (160704 p1 front views): CONFIRMED. The room's profile symbol 17 x 60:
+    // PROPOSED (CLAUDE.md F6). [hawaHardwareZone, hawaZoneTop, hawaZoneBottom,
+    // hawaProfileW, hawaProfileD]
+    hardwareZoneMm: 17,
+    zoneTopMm: 63,
+    zoneBottomMm: 50,
+    profileSymbolMm: { w: 17, d: 60 },
+    // D9 · the gaps, nominal (CONFIRMED): Z1 top and Z2 bottom 3 (160704 p1
+    // "0 - 6", 169313 p1 "3 - 6"); Z3 the overlay door's hinge edge to panel
+    // A 3 (160704 p1 "2 - 5"); Z5 between the two inlaid doors 3 (169313 p1
+    // "3 - 6"); the closed door's back face 3 in front of the front edges
+    // (both top views "3 (2 - 4)"). [hawaZ1 hawaZ2 hawaZ3 hawaZ5 hawaZFront]
+    gaps: { z1: 3, z2: 3, z3: 3, z5: 3, front: 3 },
+    // D6 · the door: S 18 to 26, TB 440 to 750 (160704 p1 and 169313 p1
+    // tables), CONFIRMED; TB rounded to 0.5 (CLAUDE.md F3).
+    // [hawaSMin hawaSMax hawaTBMin hawaTBMax hawaRound]
+    door: { sMinMm: 18, sMaxMm: 26, tbMinMm: 440, tbMaxMm: 750, roundMm: 0.5 },
+    // D7 · the class by height and weight (the owner 13:46 *"4 - tak"*):
+    // III/25 TH 1200 to 2200, 25 kg, 3 hinges; III/35 TH 1900 to 2700, 35 kg,
+    // 4 hinges (160704 p1 tables; 52676 p1 parts list "[11] III 25 = 3x / 35
+    // = 4x"). CONFIRMED. The kg tables, cell for cell, in the two files
+    // (160704 p1; the same on 169313 p1), read by the engine.
+    // [hawaTH25Min hawaTH25Max hawaKg25 hawaHinges25, the same for 35;
+    // hawaWeight25, hawaWeight35, hawaWeightColumns]
+    classes: {
+      25: { thMinMm: 1200, thMaxMm: 2200, maxKg: 25, hinges: 3 },
+      35: { thMinMm: 1900, thMaxMm: 2700, maxKg: 35, hinges: 4 },
+    },
+    weightTables: { 25: 'reference/hawa/weight-25.json', 35: 'reference/hawa/weight-35.json' },
+    // D7 · the front board's density for the door's weight: PROPOSED 700 kg
+    // per m3 for MDF (CLAUDE.md F3). [hawaDensity]
+    doorDensityKgPerM3: 700,
+    // D8 · the depth (160704 p1 and 169313 p1 tables, CONFIRMED): T1 = TB +
+    // 92 + Z3 - M, M >= S + 3, M <= TB - 320, T1 >= 414; the bottom track at
+    // most 560 and cut to T1 - 7 ("<=560 = T1 - 7"), so T1 <= 567, derived;
+    // a track starts 5 behind panel B's front edge (52676 p1 step 2 "5").
+    // [hawaT1Plus hawaMPlus hawaMLess hawaT1Min hawaTrackMax hawaTrackLess
+    // hawaTrackStart]
+    depth: { t1PlusMm: 92, mPlusMm: 3, mLessMm: 320, t1MinMm: 414, trackMaxMm: 560, trackLessMm: 7, trackStartMm: 5 },
+    // D8 · RE, the allowance behind T1: PROPOSED 20 (169313 p1 "KT1 >= T1 +
+    // RE", RE not in the legend). [hawaRear]
+    rearAllowanceMm: 20,
+    // D10 · the door's drilling (160704 p1 doors III 25 / III 35 and section
+    // C - C; 169313 p1 B - B), CONFIRMED: cups fi 35 x 13 at 200 from the top
+    // and the bottom, the rest equal; fi 5 x 13 at +/- 26, TA + 9; fi 8 x 13
+    // sleeves 22 from the top and the bottom on the cup axis; TA1 by Z3
+    // (160704 p1 table), TA2 by Z5 (169313 p1 table). [hawaCupD hawaCupDepth
+    // hawaCupFromEnd hawaScrewD hawaScrewDepth hawaScrewPitch hawaScrewIn
+    // hawaSleeveD hawaSleeveDepth hawaSleeveFromEnd hawaTA1Table hawaTA2Table]
+    hinge: {
+      cupDiaMm: 35, cupDepthMm: 13, cupFromEndMm: 200,
+      screwDiaMm: 5, screwDepthMm: 13, screwPitchMm: 26, screwInMm: 9,
+      sleeveDiaMm: 8, sleeveDepthMm: 13, sleeveFromEndMm: 22,
+      ta1: { 2: 29, 3: 28, 4: 27, 5: 26 },
+      ta2: { 3: 29.5, 4: 29, 5: 28.5, 6: 28 },
+    },
+    // D11 · the III/35 steel profiles (160704 p1 door III 35 and
+    // "Stahlprofil"): rows 100 - Z1 below the top and 24 - Z2 above the
+    // bottom, holes M + 8 from the free edge then every 352, the profile TB
+    // - M + 3 long: CONFIRMED. The groove 12 wide and 12 deep, centred on the
+    // row: PROPOSED (hawa-numbers.md 9.10). [hawaSteelTop hawaSteelBottom
+    // hawaSteelFirst hawaSteelPitch hawaSteelPlus hawaGrooveW hawaGrooveDepth]
+    steel: { topMm: 100, bottomMm: 24, firstMm: 8, pitchMm: 352, plusMm: 3, grooveWidthMm: 12, grooveDepthMm: 12 },
+    // D12 D13 · the panels' rows (160704 p1 "Aussenseite A", "Beschlagseite
+    // B"; 31418 p1 step 1), CONFIRMED: every row every 160. B: top row 22
+    // below the top edge from 32, bottom row 41 above the bottom edge from 60,
+    // the catch bracket's 22 x 70 footprint at T1 - 55, from half of EH UP 70.
+    // A (one door): the connector row 10 below the top from S + 48, the
+    // brackets 22 above the bottom at S + 23, 64, (E1 - 80) / 2, 64, the pads
+    // at S + 43, 60 below the top and 38 above the bracket row. A hole of a
+    // track row at least 5 before the track's end: PROPOSED. The pilots fi 3 x
+    // 10: PROPOSED (CLAUDE.md F5). [hawaPitch hawaBTopAxis hawaBTopFirst
+    // hawaBBottomAxis hawaBBottomFirst hawaBracketLess hawaBracketW
+    // hawaBracketH hawaATopAxis hawaATopFirst hawaABottomAxis hawaABottomFirst
+    // hawaABracketPitch hawaABracketGapLess hawaAPadFrom hawaAPadTop
+    // hawaAPadBottom hawaTrackHoleEnd hawaPilotD hawaPilotDepth]
+    holes: {
+      pitchMm: 160,
+      b: { topAxisMm: 22, topFirstMm: 32, bottomAxisMm: 41, bottomFirstMm: 60, bracketLessMm: 55, bracketWidthMm: 22, bracketHeightMm: 70 },
+      a: { topAxisMm: 10, topFirstMm: 48, bottomAxisMm: 22, bottomFirstMm: 23, bracketPitchMm: 64, bracketGapLessMm: 80, padFromMm: 43, padTopMm: 60, padBottomMm: 38 },
+      trackHoleEndMm: 5,
+      pilotDiaMm: 3,
+      pilotDepthMm: 10,
+    },
+    // D14 · the adjustable foot's hole fi 35 through the bottom board,
+    // centred in the pocket, S + 21 behind its front edge (169313 p1 front
+    // view bottom). CONFIRMED. [hawaFootD hawaFootFrom]
+    foot: { diaMm: 35, fromMm: 21 },
+    // D15 · the CNC layers (the names PROPOSED, agreed with the BOM and CNC
+    // slice; their colours ACI 54 to 58 in KIT_HAWA.lsp createHawaLayers).
+    layers: {
+      pilot: 'HAWA_3MM',
+      cup: 'FRONT_HINGES_35MM',
+      screw: 'FRONT_HINGES_5MM',
+      sleeve: 'FRONT_HINGES_8MM',
+      foot: 'HAWA_FOOT_35MM',
+      groove: 'HAWA_GROOVE_12MM',
+    },
+    // D19 · Push by default (the owner 13:46 *"5 - tak"*). CONFIRMED.
+    defaults: { push: true },
+    // F4 · the article numbers: PROPOSED, the Haefele UK code of the NBS
+    // sheet for the III/25-35 Push left set; every other one empty for the
+    // owner to fill (an empty article prints the name alone). D16: the set
+    // "left" is HAWA's left-hand system, the pocket on the door's left.
+    articles: {
+      setPushLeft: '408.30.711',
+      setPushRight: '',
+      setPullLeft: '',
+      setPullRight: '',
+      connector55: '',
+      connector110: '',
+      trackTop: '',
+      trackBottom: '',
+      steelProfile: '',
+      foot: '',
+    },
+  },
+
   // ─── Appearance (turn 4, BACKLOG #4–#6) ───
   // What the furniture LOOKS like. Not one number of it reaches the cut list —
   // but it is still workshop configuration ("our carcass board is broken
@@ -5881,6 +6038,9 @@ export function migrateCabinetProfile(profile) {
     // T80 · the in-frame numbers, key by key: a profile saved before tonight
     // comes back with all of them, one that tuned a single number keeps it.
     inframe: { ...D.inframe, ...profile.inframe },
+    // T82 · the HAWA numbers, key by key, the same way: a profile saved
+    // before the pocket door comes back with all of them.
+    hawa: { ...D.hawa, ...profile.hawa },
     board: {
       ...D.board,
       ...profile.board,

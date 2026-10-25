@@ -1,0 +1,36 @@
+{
+  "system": "hawa_concepta_iii_35",
+  "class": 35,
+  "units": {
+    "th": "mm",
+    "tb": "mm",
+    "kg": "kg"
+  },
+  "status": "CONFIRMED: the manufacturer's table, cell for cell (CLAUDE.md T82: the manufacturer's sheet is the law of the hardware)",
+  "turn": "T82 F1, 25.10.2026",
+  "source": "HAWA planning drawing 160704 V07 (30.05.2024), p1, table \"Hawa Concepta III 35: Maximale Gewichte in kg / Maximum weights in kg\" (rows Tuerhoehe TH, columns Tuerbreite TB); the same table on HAWA planning drawing 169313 V06 p1; crop verify/t82/hawa/pages/160704-p01.png; transcribed in verify/t82/hawa/hawa-numbers.md section 1",
+  "lisp": "reference/lisp/KIT_HAWA.lsp hawaWeight35 (D7), row for row",
+  "reading": "the cell of a door: the largest tabulated TH at or below the door's TH and the smallest TB column at or above the door's TB (PROPOSED, KIT_HAWA.lsp D7: the table does not say how to read between rows and columns; the allowance rises with TH and falls with TB, so rounding TH down and TB up is the safe side)",
+  "thRange": [1900, 2700],
+  "maxKg": 35,
+  "columns": [440, 500, 550, 600, 650, 700, 750],
+  "rows": [
+    { "th": 2700, "kg": [35, 35, 35, 35, 35, 35, 35] },
+    { "th": 2650, "kg": [35, 35, 35, 35, 35, 35, 35] },
+    { "th": 2600, "kg": [35, 35, 35, 35, 35, 35, 35] },
+    { "th": 2550, "kg": [35, 35, 35, 35, 35, 35, 35] },
+    { "th": 2500, "kg": [35, 35, 35, 35, 35, 35, 35] },
+    { "th": 2450, "kg": [35, 35, 35, 35, 35, 35, 34] },
+    { "th": 2400, "kg": [35, 35, 35, 35, 35, 35, 33] },
+    { "th": 2350, "kg": [35, 35, 35, 35, 35, 34, 32] },
+    { "th": 2300, "kg": [35, 35, 35, 35, 35, 34, 31] },
+    { "th": 2250, "kg": [35, 35, 35, 35, 35, 33, 31] },
+    { "th": 2200, "kg": [35, 35, 35, 35, 34, 32, 30] },
+    { "th": 2150, "kg": [35, 35, 35, 35, 33, 31, 29] },
+    { "th": 2100, "kg": [35, 35, 35, 35, 32, 30, 28] },
+    { "th": 2050, "kg": [35, 35, 35, 34, 31, 29, 27] },
+    { "th": 2000, "kg": [35, 35, 35, 33, 30, 28, 26] },
+    { "th": 1950, "kg": [35, 35, 35, 32, 29, 27, 26] },
+    { "th": 1900, "kg": [35, 35, 34, 31, 29, 27, 25] }
+  ]
+}

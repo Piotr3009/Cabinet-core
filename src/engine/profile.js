@@ -2362,12 +2362,18 @@ export const DEFAULT_CABINET_PROFILE = {
     // bottom line (the top box's bottom underside), else Check #39 in the
     // owner's words *"prosze uzyc shallow trap"* (12:57).
     trapClearMm: 60,
+    // PROPOSED (KIT_VANITY.lsp D23, after the review of 25.10.2026): the
+    // shortest board a U may leave of the top box's back wall, against a box
+    // side or between two U's; a U that would leave less is not cut (#39).
+    backPieceMinMm: 30,
     // PROPOSED (CLAUDE.md F11): the waste's centre from the carcass back (the
     // rails' back face). KIT_VANITY.lsp D15: a 120 U on a 500 carcass reaches
     // 155, so the trap stands 45 beyond it and Check #39 says so.
     wasteFromBackMm: 200,
-    // PROPOSED, to the eye only (*"dodajesz tylko do widoku"*): no cut, no
-    // part, no CNC.
+    // PROPOSED, to the eye only (*"dodajesz tylko do widoku"*): no part, no
+    // CNC; its oval is cut on site in the worktop and in the carcass TOP
+    // (KIT_VANITY.lsp D18), and a bowl that meets the top drawer or RAIL-TOP
+    // is said in Check #48 (D25).
     basin: { shape: 'oval', widthMm: 520, depthMm: 400, heightMm: 150 },
     // PROPOSED (CLAUDE.md F9): the carcass 900 x 600 x 500 on a 100 plinth, a
     // 20 top, floating at 300 off the floor.

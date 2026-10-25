@@ -62,7 +62,9 @@
 ;;; basin (to the eye only) the top drawer's box takes a U 160 wide and 120
 ;;; deep round the trap ("wyciecie u dookola"), its sides kept; where the
 ;;; trap has no room the room says so in Check #39, it never re-cuts what the
-;;; owner asked for. It stands on the house plinth or floats on two hangers.
+;;; owner asked for. The carcass TOP takes each basin's oval as the worktop
+;;; does, cut on site, and a bowl that meets what stands under the tops is
+;;; said in Check #48. It stands on the house plinth or floats on two hangers.
 ;;;
 ;;;========================================
 ;;; 2. DECISIONS TAKEN FOR THE OWNER (each one line to veto)
@@ -126,10 +128,15 @@
 ;;;     sees the void behind the rails' back face. A note, never a fault:
 ;;;     Check #45 "Service void 80 behind the vanity for the pipes".
 ;;; D7  THE TOP IS THE WORKTOP, TO THE WALL (CONFIRMED 13:03 "5 - blat osobny
-;;;     element jak worktop"). Not a board of this kit: the house worktop, its
-;;;     thickness typed (vanityTop 20 the default), its depth from the WALL
-;;;     line: wall_gap + D + the door gap + the front + the worktop's front
-;;;     overhang (worktop.js's reach, plus the gap to the wall).
+;;;     element jak worktop"; AMENDED 25.10.2026 after the review: the house's
+;;;     own reach, one number for the LISP and the engine). Not a board of this
+;;;     kit: the house worktop (CLAUDE.md F10), its thickness typed (vanityTop
+;;;     20 the default), its depth from the wall line the house slab's own
+;;;     (worktop.js worktopGeometry): D + the door gap + the front + the front
+;;;     overhang, plus the service void, wall_gap less the clearance. Like
+;;;     every kitchen slab of the house it counts no clearance, so the fronts
+;;;     stand 10 under its edge: 500 + 3 + 25 + 20 + 80 = 628 on the default,
+;;;     as a BUD 558 kitchen's slab is 606 for fronts at 596.
 ;;; D8  EQUAL OVERLAY DRAWERS (CONFIRMED 12:57 "wybor jak zawsze 2 3 i 4 ale
 ;;;     pamietaj ze w vanity default to sa rowne"). n = 2, 3 or 4 (VANITY2,
 ;;;     VANITY3, VANITY4), by the parent's equal variant: available = H - 3n,
@@ -170,7 +177,9 @@
 ;;;     {tag}-BB-1 .. {tag}-BB-k+1 from the left ({tag} the parent's D3, or
 ;;;     Z1D3 / Z2D3 on two columns, the wardrobe's column tag); the bottom's
 ;;;     back edge takes the notch, traced as socketFace.js notchPoints traces
-;;;     a filleted notch. No drawer below the top one ever takes a U.
+;;;     a filleted notch. No drawer below the top one ever takes a U. A U is
+;;;     cut only where every board it leaves of the back wall keeps
+;;;     vanityBackPieceMin (D23).
 ;;; D14 THE WASTES (PROPOSED, CLAUDE.md F11): one basin at W / 2; two at the
 ;;;     fronts' centres of two columns (W / 4 and 3W / 4) or at W / 3 and 2W / 3
 ;;;     on one; the waste vanityWasteFromBack 200 from the carcass back (the
@@ -192,14 +201,24 @@
 ;;;     trap").
 ;;; D17 A WASTE OVER THE DIVIDER (DERIVED): one basin on two columns puts its
 ;;;     waste on the divider; no box takes it, no U is cut and Check #39 says
-;;;     "The trap stands over the divider". A U that would cross a box's side
-;;;     or meet the next U is not cut either: "The trap's U does not fit the
-;;;     top drawer's box".
-;;; D18 THE CARCASS TOP STAYS WHOLE (DERIVED, 12:57 "dodajesz tylko do
-;;;     widoku"). The basin is to the eye: nothing is cut for its bowl, in the
-;;;     TOP, the worktop or a box, and nothing of it is in the cut list; the
-;;;     waste's way through the TOP and the worktop is cut on site, as the
-;;;     worktop's own cut-outs are (autoParts.worktop.cnc false).
+;;;     "The trap stands over the divider". A U that would leave less than 30
+;;;     of the back wall against a box's side or the U before it is not cut
+;;;     either: "The trap's U does not fit the top drawer's box: every board of
+;;;     its back wall keeps 30".
+;;; D18 THE CARCASS TOP TAKES THE BASIN'S OVAL (AMENDED 25.10.2026 after the
+;;;     review; the house law: material never enters another material). The
+;;;     basin is to the eye (12:57 "dodajesz tylko do widoku"): nothing of it
+;;;     is a part and nothing of its hole is machined. But its bowl goes down
+;;;     through the worktop AND the carcass TOP under it (until tonight the
+;;;     TOP stayed whole and floored the worktop's oval 20 down, the bowl
+;;;     unseen and the board through it). So the TOP takes the same oval the
+;;;     worktop takes, for every basin the worktop takes (worktop.js fitBasins
+;;;     decides; a basin the stone refuses is cut in neither): vanity.basin's
+;;;     oval centred on the waste, a NOTE on the TOP and in the BOM, readiness
+;;;     manual, cut on site to the basin's template as the worktop's own, never
+;;;     on the CNC. A centred basin's oval reaches the carcass back (200 less
+;;;     half of 400), so the TOP's cut opens to its back edge. Its joint there
+;;;     is D26; what the bowl meets under the tops, D25.
 ;;; D19 PLINTH OR FLOATING (CONFIRMED 12:57 "plinth do zmiany wysokosc,
 ;;;     propozycja floating lub on the floor"; 13:03 "6 - do BOM tez"). On the
 ;;;     floor: the house plinth and legs, the height typed (vanityPlinth 100
@@ -212,11 +231,58 @@
 ;;;     take D8 (equal by default, a birth answer: the bare kit keeps its
 ;;;     golden split) and section 5(c2) THE TWO COLUMNS whole. Nothing else of
 ;;;     this file: its back stays, no rails, no void, no basin, no U.
-;;; D21 THE CHECKS. #39 is the trap's (D15, D16, D17), its sentences written
-;;;     by vanity-trap-verdict; the void is the note #45 (CLAUDE.md's #40: the
-;;;     in-frame project holds #40 to #44 since T80 F10).
+;;; D21 THE CHECKS. #39 is the trap's (D15, D16, D17, D23), its sentences
+;;;     written by vanity-trap-verdict; #48, the family of the basins a top
+;;;     cannot take, also says the bowl (D25, vanity-bowl-verdict); the void is
+;;;     the note #45 (CLAUDE.md's #40: the in-frame project holds #40 to #44
+;;;     since T80 F10); a double drawer under a basin is DOUBLE_DRAWER_REFUSED
+;;;     (D24).
 ;;; D22 THE UNIT NUMBER is VU (VU01, VU02), one prefix for the three counts, as
 ;;;     the drawer base's DR is.
+;;;
+;;; AFTER THE REVIEW OF 25.10.2026 (each finding reproduced on the integrated
+;;; tree; D7, D13, D17, D18 and D21 above are amended with them):
+;;;
+;;; D23 THE BACK WALL KEEPS 30 (PROPOSED vanityBackPieceMin 30). The review cut
+;;;     0 x 104 and 0.5 x 104 boards onto the cut list and the CNC (W 484 on two
+;;;     columns with two basins, W 242 with one): a U touching a box's side or
+;;;     the U before it left a board of nothing. Every board the U's leave of
+;;;     the box's back wall, against a side or between two U's, is at least 30
+;;;     long; the house has no smaller-strip number of its own (its minimum
+;;;     bridge, one board, is the web between two pockets of ONE board, not a
+;;;     board). A U that misses it is FIT: #39 says it and it is never cut.
+;;; D24 NO DOUBLE DRAWER UNDER A BASIN (DERIVED). The review put the trap
+;;;     through an inner drawer (T78 F16, drawer_double) this file never
+;;;     modelled: the U went into the deep box under it, and the shallow-trap
+;;;     air was measured past it. So with a basin (sinks 1 or 2) the top row
+;;;     and the row under it refuse a double in words, DOUBLE_DRAWER_REFUSED,
+;;;     and cut one box, as two columns refuse it: "Drawer 3: a double drawer
+;;;     is not cut under a basin: the trap's U is the top box's and its air is
+;;;     measured to the box under it. One box is cut." The U is then always in
+;;;     the top row's one box and D16's air is measured to the one box under
+;;;     it. Lower rows keep the parent's double.
+;;; D25 THE BOWL, AND CHECK #48 (DERIVED; the bowl's reading PROPOSED). The
+;;;     bowl is read as its rim's oval straight down to vanity.basin's depth
+;;;     below the worktop's top (150, PROPOSED), the eye's bowl being no wider
+;;;     than its rim. Through the worktop and the TOP it passes their holes
+;;;     (D18). Below them it meets the top drawer's box where its oval stands
+;;;     over the box and it is deeper than the worktop + G + the air from the
+;;;     TOP's underside to the box's top (the deepest bowl that clears the top
+;;;     drawer: 20 + 18 + 30.5 = 68.5 on the default), and RAIL-TOP where its
+;;;     oval stands over the rail (less than G from the carcass back: the
+;;;     default's stands at 0) and it is deeper than the worktop. Never a
+;;;     clamp: #48 says it, its sentence written by vanity-bowl-verdict with
+;;;     the unit's number, with the cure: a shallower or a vessel basin, a
+;;;     shallower top drawer; off the rail, a vessel basin, or the waste G +
+;;;     half the basin's depth from the carcass back.
+;;; D26 THE TOP'S BACK JOINT UNDER A BASIN (DERIVED from D3). A feature of the
+;;;     TOP's back joint (a tenon with RAIL-TOP's socket for it and its dog
+;;;     bone, the rail's screw into the TOP's back edge, a Cabineo pocket and
+;;;     hole) is cut only where the TOP's back edge is still there: one whose
+;;;     extent meets a basin's oval where the oval crosses that edge (z G)
+;;;     would stand in the hole, and is not cut. The default: the oval crosses
+;;;     the TOP's back edge from 342.2 to 557.8, so the rail's screw at W / 2 =
+;;;     450 goes and the tenons at 113 and 787 stay.
 ;;;
 ;;;========================================
 ;;; 3. CONSTANTS (the owner's numbers; profile.vanity mirrors them)
@@ -234,6 +300,8 @@
 (defun vanityTrapR ( / ) 20.0)
 ;; profile.vanity.trapClearMm        PROPOSED (the sentence is the owner's, 12:57: "prosze uzyc shallow trap")
 (defun vanityTrapClear ( / ) 60.0)
+;; profile.vanity.backPieceMinMm     PROPOSED (D23, the review of 25.10.2026: no 0 or sliver board for the saw)
+(defun vanityBackPieceMin ( / ) 30.0)
 ;; profile.vanity.wasteFromBackMm    PROPOSED (CLAUDE.md F11)
 (defun vanityWasteFromBack ( / ) 200.0)
 ;; profile.vanity.basin              PROPOSED, to the eye only (12:57 "dodajesz tylko do widoku")
@@ -278,6 +346,7 @@
 (defun vanityTabFromEnd ( / ) 95.0)        ;; puzzle.tabCentresFromEnd
 (defun vanityTabSingleAtOrBelow ( / ) 300.0)  ;; puzzle.singleTabAtOrBelow
 (defun vanityTabMiddleBelow ( / ) 600.0)   ;; puzzle.middleTabBelow (T52 F3, the owner's 600)
+(defun vanitySingleSocketBelow ( / ) 264.5)   ;; puzzle.singleSocketBelow: one socket on a shorter run
 (defun vanityDogboneHalf ( / ) 30.0)       ;; puzzle.dogboneHalfHeight
 (defun vanityBackScrewFromEnd ( / ) 50.0)  ;; puzzle.screwFromEnd: drawBACK's end screws
 ;; hardware.runner.movento.nominalLadder (T25 F9, CHAT FIX 17.10.2026)
@@ -366,9 +435,10 @@
 (defun vanity-wall-gap (clearance)
   (+ clearance (vanityServiceVoid)))
 
-;;; The worktop's depth from the wall line (D7).
-(defun vanity-top-depth (wallGap D doorGap frontT overhang)
-  (+ wallGap D doorGap frontT overhang))
+;;; The worktop's depth from the wall line (D7): the house slab's reach plus
+;;; the service void, never the clearance.
+(defun vanity-top-depth (D doorGap frontT overhang void)
+  (+ D doorGap frontT overhang void))
 
 ;;; The note (D6, D21).
 (defun vanity-void-note ( / )
@@ -535,11 +605,13 @@
   (setq half (/ (vanityTrapW) 2.0))
   (list (nth 0 b) (- xw half) (+ xw half) (vanityTrapD) (vanityTrapR)))
 
-;;; Does the U stand inside the box's sides, clear of the U before it?
-(defun vanity-u-fits-p (b u prev GB)
-  (and (>= (nth 1 u) (+ (nth 2 b) GB))
-       (<= (nth 2 u) (- (+ (nth 2 b) (nth 3 b)) GB))
-       (or (null prev) (/= (nth 0 prev) (nth 0 u)) (>= (nth 1 u) (nth 2 prev)))))
+;;; Does the U leave vanityBackPieceMin of the back wall against each of the
+;;; box's sides and after the U before it (D23)?
+(defun vanity-u-fits-p (b u prev GB / m)
+  (setq m (vanityBackPieceMin))
+  (and (>= (- (nth 1 u) (+ (nth 2 b) GB)) m)
+       (>= (- (- (+ (nth 2 b) (nth 3 b)) GB) (nth 2 u)) m)
+       (or (null prev) (/= (nth 0 prev) (nth 0 u)) (>= (- (nth 1 u) (nth 2 prev)) m))))
 
 ;;; Every waste's plan: ((xw box u status) ...), status "CUT", "DIVIDER" or
 ;;; "FIT" (D13, D17).
@@ -628,7 +700,10 @@
       ((= (nth 3 e) "DIVIDER")
         (setq out (cons (list "DIVIDER" (car e) "#39 The trap stands over the divider: no top drawer can take its U") out)))
       ((= (nth 3 e) "FIT")
-        (setq out (cons (list "FIT" (car e) "#39 The trap's U does not fit the top drawer's box") out)))
+        (setq out (cons (list "FIT" (car e)
+                              (strcat "#39 The trap's U does not fit the top drawer's box: every board of its back wall keeps "
+                                      (vanity-mm (vanityBackPieceMin))))
+                        out)))
       (T
         (setq reach (vanity-trap-reach b (vanityWasteFromBack)))
         (if (< reach 0.0)
@@ -656,6 +731,114 @@
 (defun vanity-base-y (floating floatH plinthH) (if floating floatH plinthH))
 (defun vanity-hangers (floating) (if floating (vanityHangersPerUnit) 0))
 
+;;; ---- (f) THE BASIN THROUGH THE TOPS ----
+
+;;; The oval of each basin the worktop takes (xs, its wastes' x), in the
+;;; carcass TOP's own frame (x from its left end at G, z from its back edge at
+;;; G): ((cx cz w d opens) ...), opens "EDGE" where the oval runs past the
+;;; TOP's back edge, else "HOLE" (D18).
+(defun vanity-top-cutouts (xs G / out xw w d zw)
+  (setq w (vanityBasinW)
+        d (vanityBasinD)
+        zw (vanityWasteFromBack)
+        out nil)
+  (foreach xw xs
+    (setq out (cons (list (- xw G) (- zw G) w d (if (< (- zw (/ d 2.0)) G) "EDGE" "HOLE")) out)))
+  (reverse out))
+
+;;; The note it is, on the TOP and in the BOM (D18).
+(defun vanity-top-cutout-note (num)
+  (strcat "Basin cut-out " (vanity-mm (vanityBasinW)) " x " (vanity-mm (vanityBasinD))
+          " oval in the carcass top of " num ": cut on site to the basin's template."))
+
+;;; Does the extent lo .. hi along the line z = zEdge meet the oval of the
+;;; basin at xw (D26)? Inside the ellipse, no square root asked.
+(defun vanity-oval-meets-p (lo hi xw zEdge / a c dz k dx)
+  (setq a (/ (vanityBasinW) 2.0)
+        c (/ (vanityBasinD) 2.0)
+        dz (/ (- zEdge (vanityWasteFromBack)) c)
+        k (- 1.0 (* dz dz)))
+  (if (<= k 0.0)
+    nil
+    (progn
+      (setq dx (max 0.0 (- lo xw) (- xw hi)))
+      (< (* (/ dx a) (/ dx a)) k))))
+
+;;; The socket centres along a run (puzzle.js socketCentres).
+(defun vanity-socket-centres (len)
+  (if (< len (vanitySingleSocketBelow))
+    (list (/ len 2.0))
+    (list (vanityTabFromEnd) (- len (vanityTabFromEnd)))))
+
+;;; The TOP's back joint along x: ((kind x lo hi) ...), its tenons with the
+;;; rail's sockets (G + the socket centres over W - 2G, the dog bone either
+;;; side) and the rail's screws into its back edge (G + 50, W / 2, W - G - 50).
+(defun vanity-top-back-features (W G / h out c)
+  (setq h (vanityDogboneHalf)
+        out nil)
+  (foreach c (vanity-socket-centres (- W G G))
+    (setq out (cons (list "TENON" (+ G c) (- (+ G c) h) (+ G c h)) out)))
+  (foreach c (list (+ G (vanityBackScrewFromEnd)) (/ W 2.0) (- W G (vanityBackScrewFromEnd)))
+    (setq out (cons (list "SCREW" c c c) out)))
+  (reverse out))
+
+;;; ...and those a basin takes away: ((kind x) ...) (D26).
+(defun vanity-top-back-dropped (W G xs / out f hit xw)
+  (setq out nil)
+  (foreach f (vanity-top-back-features W G)
+    (setq hit nil)
+    (foreach xw xs
+      (if (vanity-oval-meets-p (nth 2 f) (nth 3 f) xw G) (setq hit T)))
+    (if hit (setq out (cons (list (car f) (cadr f)) out))))
+  (reverse out))
+
+;;; Check #48 for the bowl (D25): the sentence, or nil. xs the wastes' x of
+;;; the basins the worktop takes, wt the worktop's thickness, bowlH the
+;;; bowl's depth below the worktop's top.
+(defun vanity-bowl-verdict (num W H D G GB frontT n columns xs wt bowlH / boxes a c zw zb rail box clear xw b cl)
+  (setq boxes (vanity-boxes W H D G GB frontT n columns)
+        a (/ (vanityBasinW) 2.0)
+        c (/ (vanityBasinD) 2.0)
+        zw (vanityWasteFromBack)
+        zb (- zw c)
+        rail nil
+        box nil
+        clear nil)
+  (foreach xw xs
+    (if (and (< zb G) (> bowlH wt)) (setq rail T))
+    (foreach b boxes
+      (if (and (= (nth 1 b) n)
+               (< (- xw a) (+ (nth 2 b) (nth 3 b))) (> (+ xw a) (nth 2 b))
+               (< zb (+ (nth 7 b) (nth 6 b))) (> (+ zw c) (nth 7 b)))
+        (progn
+          (setq cl (+ wt (- H (vanity-box-top b))))
+          (if (or (null clear) (< cl clear)) (setq clear cl))
+          (if (> bowlH cl) (setq box T))))))
+  (cond
+    ((and box rail)
+      (strcat num ": A bowl " (vanity-mm bowlH) " deep meets the top drawer's box and RAIL-TOP: the deepest bowl that clears the top drawer is "
+              (vanity-mm clear) ", and the oval stands over the rail (" (vanity-mm zb) " from the carcass back, the rail "
+              (vanity-mm G) "); take a shallower or a vessel basin, or a shallower top drawer."))
+    (box
+      (strcat num ": A bowl " (vanity-mm bowlH) " deep meets the top drawer's box: the deepest bowl that clears it is "
+              (vanity-mm clear) "; take a shallower or a vessel basin, or a shallower top drawer."))
+    (rail
+      (strcat num ": A bowl " (vanity-mm bowlH) " deep meets RAIL-TOP: the oval stands over the rail (" (vanity-mm zb)
+              " from the carcass back, the rail " (vanity-mm G) "); take a vessel basin, or set the waste "
+              (vanity-mm (+ G c)) " from the carcass back."))
+    (T nil)))
+
+;;; ---- (g) NO DOUBLE DRAWER UNDER A BASIN ----
+
+;;; Is a double asked on this row refused (D24)? The top row and the row
+;;; under it, with a basin.
+(defun vanity-double-refused-p (row n sinks)
+  (and (> sinks 0) (or (= row n) (= row (1- n)))))
+
+;;; ...in these words.
+(defun vanity-double-refusal (row)
+  (strcat "Drawer " (itoa row) ": a double drawer is not cut under a basin: the trap's U is the top box's and its air is measured to the box under it. One box is cut."))
+
 ;;;========================================
 ;;; 6. NUMBERS (the engine is held to these: test/turn82-f08-vanity-lisp.test.js
 ;;;    RUNS the routines above on these inputs and reads these lines back)
@@ -669,8 +852,8 @@
 ;;; side screws at 50 197.5 402.5 550: 50 kept in RAIL-BOTTOM and 550 in
 ;;; RAIL-TOP (50 down from its top), the two between the tabs gone. On Cabineo
 ;;; the sides' back pockets at 50 300 550: 50 and 550 kept.
-;;; THE VOID. wall_gap 90; the worktop 638 deep from the wall (90 + 500 + 3 +
-;;; 25 + 20).
+;;; THE VOID. wall_gap 90; the worktop 628 deep from the wall (500 + 3 + 25 +
+;;; 20 + 80), the fronts 10 under its edge.
 ;;; THE FRONTS. 197 197 197 at y 0 200 400, 897 wide at x 1.5.
 ;;; THE BOXES. 440 deep (the 450 runner), the back face at z 35; 854 wide at x
 ;;; 23, the walls 818 long and 104 high, the bottom 831; the sides 138, their
@@ -705,6 +888,23 @@
 ;;;
 ;;; FLOATING. mount "wall", no plinth, the carcass underside at 300, 2 hangers.
 ;;; On the floor: the plinth 100, no hanger.
+;;;
+;;; AFTER THE REVIEW. THE TOPS: the carcass TOP takes the oval 520 x 400 at 432,
+;;; 182 in its own frame, opening to its back edge; "Basin cut-out 520 x 400
+;;; oval in the carcass top of VU01: cut on site to the basin's template."; the
+;;; rail's screw at 450 into the TOP's back edge is not cut, the tenons at 113
+;;; and 787 stay. THE BOWL: "VU01: A bowl 150 deep meets the top drawer's box
+;;; and RAIL-TOP: the deepest bowl that clears the top drawer is 68.5, and the
+;;; oval stands over the rail (0 from the carcass back, the rail 18); take a
+;;; shallower or a vessel basin, or a shallower top drawer."
+;;; THE SMALLEST BOARD. W 484, columns 2, sinks 2: the U's would leave 0 and 9
+;;; of the two back walls: neither is cut, "#39 The trap's U does not fit the
+;;; top drawer's box: every board of its back wall keeps 30". W 242 with one
+;;; basin, and W 480 with two on one column: the same.
+;;; THE DOUBLE. VANITY3 with a basin: a double asked on drawer 3 or 2: "Drawer
+;;; 3: a double drawer is not cut under a basin: the trap's U is the top box's
+;;; and its air is measured to the box under it. One box is cut."; on drawer 1
+;;; the parent's double.
 
 ;;;========================================
 ;;; 7. THE COMMAND (prints and draws what part 5 returns, nothing more)
@@ -742,4 +942,10 @@
   (princ (strcat "\n" (vanity-void-note)))
   (foreach e (vanity-trap-verdict W H D G GB frontT n columns sinks)
     (princ (strcat "\n" (nth 2 e))))
+  ;; the basins through the tops (D18, D25): the worktop's fit is the room's,
+  ;; so the command takes every basin asked
+  (foreach e (vanity-top-cutouts (vanity-wastes W columns sinks) G)
+    (princ (strcat "\n" (vanity-top-cutout-note "VU01"))))
+  (setq e (vanity-bowl-verdict "VU01" W H D G GB frontT n columns (vanity-wastes W columns sinks) (vanityTop) (vanityBasinH)))
+  (if e (princ (strcat "\n" e)))
   (princ))

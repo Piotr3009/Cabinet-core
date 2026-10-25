@@ -25,7 +25,8 @@ export const LICENSED = {
       + `trapClearMm 60, wasteFromBackMm 200, basin, defaults, hangers }, each the constant of KIT_VANITY.lsp section 3 `
       + `(CONFIRMED in the owner's words or PROPOSED), and its key-by-key merge in migrateCabinetProfile. computeCabinet `
       + `reads no vanity key (test/turn82-f08-vanity-lisp.test.js cuts BUD, BUDR, BUDR2, BUDR4, SINK, WARDROBE and `
-      + `WARDROBE_CHEST3 with and without the block). ${OWNER}`,
+      + `WARDROBE_CHEST3 with and without the block). ${OWNER}`
+      + ' After the review (KIT_VANITY.lsp D23): profile.vanity.backPieceMinMm 30 PROPOSED, the shortest board a U may leave of the top box back wall, and the basin comment says the oval is cut on site in the worktop and the carcass TOP (D18) and a bowl that meets the top drawer is said in Check #48 (D25).',
     gates: [],
   },
 };

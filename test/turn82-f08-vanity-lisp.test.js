@@ -90,10 +90,12 @@ test('F8 . every routine is the kit\'s own: no name of another kit, no local tha
     'vanity-wastes', 'vanity-trap-u', 'vanity-trap-plan', 'vanity-trap-us', 'vanity-trap-verdict',
     'vanity-u-in-bottom', 'vanity-u-outline', 'vanity-back-pieces', 'vanity-piece-ids', 'vanity-wall-gap',
     'vanity-top-depth', 'vanity-void-note', 'vanity-side-tabs-kept', 'vanity-rail-side-screws',
-    'vanity-mount', 'vanity-base-y', 'vanity-hangers', 'c:vanity_full']) assert.ok(L.has(r), `${r} defined`);
+    'vanity-mount', 'vanity-base-y', 'vanity-hangers', 'vanity-top-cutouts', 'vanity-top-cutout-note',
+    'vanity-oval-meets-p', 'vanity-socket-centres', 'vanity-top-back-features', 'vanity-top-back-dropped',
+    'vanity-bowl-verdict', 'vanity-double-refused-p', 'vanity-double-refusal', 'c:vanity_full']) assert.ok(L.has(r), `${r} defined`);
 });
 
-test('F8 . the owner\'s words of 25.10.2026 are its D-notes, folded to ASCII, D1 to D22', () => {
+test('F8 . the owner\'s words of 25.10.2026 are its D-notes, folded to ASCII, D1 to D26', () => {
   for (const words of [
     'vanity unit (podobna zasada bedzie do chest drawers) vanity unit potrzebuje z szufladami nawierzchniowymi',
     'wybor jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa rowne',
@@ -106,7 +108,10 @@ test('F8 . the owner\'s words of 25.10.2026 are its D-notes, folded to ASCII, D1
     '"2 wyciecie u dookola zeby sie szuflada otwierala, 3 - 80, 4 - 100 na material carcasa grubosc, 5 - blat osobny element jak worktop, 6 - do BOM tez, 7 - tak"',
     '13:46 "6 - tak"',
   ]) say(words);
-  for (let d = 1; d <= 22; d += 1) assert.match(TEXT, new RegExp(`^;;; D${d} {1,2}[A-Z0-9]`, 'm'), `D${d}`);
+  for (let d = 1; d <= 26; d += 1) assert.match(TEXT, new RegExp(`^;;; D${d} {1,2}[A-Z0-9]`, 'm'), `D${d}`);
+  // The review of 25.10.2026: the amended notes say so, with their reason.
+  say('D7 THE TOP IS THE WORKTOP, TO THE WALL (CONFIRMED 13:03 "5 - blat osobny element jak worktop"; AMENDED 25.10.2026 after the review: the house\'s own reach, one number for the LISP and the engine).');
+  say('AFTER THE REVIEW OF 25.10.2026 (each finding reproduced on the integrated tree; D7, D13, D17, D18 and D21 above are amended with them):');
 });
 
 test('F8 . every difference is a named section, the two columns one of its own for the chest to cite', () => {
@@ -122,6 +127,8 @@ test('F8 . every difference is a named section, the two columns one of its own f
     /^;;; ---- \(c2\) THE TWO COLUMNS: THE VANITY AND THE CHEST ----$/m,
     /^;;; ---- \(d\) THE TRAP ----$/m,
     /^;;; ---- \(e\) PLINTH OR FLOATING ----$/m,
+    /^;;; ---- \(f\) THE BASIN THROUGH THE TOPS ----$/m,
+    /^;;; ---- \(g\) NO DOUBLE DRAWER UNDER A BASIN ----$/m,
     /^;;; 6\. NUMBERS/m,
     /^;;; 7\. THE COMMAND/m,
   ]) assert.match(TEXT, s);
@@ -139,6 +146,7 @@ const KEYS = {
   trapDepthMm: 'vanityTrapD',
   trapRadiusMm: 'vanityTrapR',
   trapClearMm: 'vanityTrapClear',
+  backPieceMinMm: 'vanityBackPieceMin',
   wasteFromBackMm: 'vanityWasteFromBack',
   'basin.shape': 'vanityBasinShape',
   'basin.widthMm': 'vanityBasinW',
@@ -186,12 +194,12 @@ test('F8 . every profile.vanity number is a LISP constant of the same value, und
   for (const name of ['vanityServiceVoid', 'vanityRailH', 'vanityTrapW', 'vanityTrapD', 'vanityTrapR']) {
     assert.match(sourceOf(name), /CONFIRMED/, name);
   }
-  for (const name of ['vanityTrapClear', 'vanityWasteFromBack', 'vanityBasinW', 'vanityWidth', 'vanityFloatHeight']) {
+  for (const name of ['vanityTrapClear', 'vanityBackPieceMin', 'vanityWasteFromBack', 'vanityBasinW', 'vanityWidth', 'vanityFloatHeight']) {
     assert.match(sourceOf(name), /PROPOSED/, name);
   }
   assert.deepEqual(V, {
     serviceVoidMm: 80, railHeightMm: 100, trapWidthMm: 160, trapDepthMm: 120, trapRadiusMm: 20, trapClearMm: 60,
-    wasteFromBackMm: 200,
+    backPieceMinMm: 30, wasteFromBackMm: 200,
     basin: { shape: 'oval', widthMm: 520, depthMm: 400, heightMm: 150 },
     defaults: { width: 900, height: 600, depth: 500, plinth: 100, top: 20, floatHeightMm: 300 },
     hangers: { perUnit: 2, name: 'Cabinet hanger 50 kg with wall plate', article: '' },
@@ -204,7 +212,8 @@ test('F8 . profile.js says each vanity number\'s source in the owner\'s words, b
   for (const s of ['*"3 - 80"* (CONFIRMED)', '*"4 - 100 na material carcasa grubosc"* (CONFIRMED)',
     '*"6 - tak"* (13:46), CONFIRMED', 'PROPOSED: the air the box under the top drawer keeps',
     'PROPOSED (CLAUDE.md F11)', 'PROPOSED, to the eye only', 'PROPOSED (CLAUDE.md F9)',
-    '*"6 - do BOM tez"* (CONFIRMED, in the BOM)', 'reference/lisp/KIT_VANITY.lsp']) {
+    '*"6 - do BOM tez"* (CONFIRMED, in the BOM)', 'reference/lisp/KIT_VANITY.lsp',
+    'PROPOSED (KIT_VANITY.lsp D23, after the review of 25.10.2026)', 'in the carcass TOP\n    // (KIT_VANITY.lsp D18)']) {
     assert.ok(block.includes(s), `profile.vanity says: ${s}`);
   }
 });
@@ -231,7 +240,7 @@ test('F8 . the parent\'s numbers the kit restates are the house\'s, number for n
     ['vanityBottomOversize', B.bottomOversize], ['vanityRunnerOverBox', P.hardware.runner.movento.nominalOverBoxMm],
     ['vanityTabFromEnd', P.puzzle.tabCentresFromEnd], ['vanityTabSingleAtOrBelow', P.puzzle.singleTabAtOrBelow],
     ['vanityTabMiddleBelow', P.puzzle.middleTabBelow], ['vanityDogboneHalf', P.puzzle.dogboneHalfHeight],
-    ['vanityBackScrewFromEnd', P.puzzle.screwFromEnd],
+    ['vanityBackScrewFromEnd', P.puzzle.screwFromEnd], ['vanitySingleSocketBelow', P.puzzle.singleSocketBelow],
   ];
   for (const [name, house] of pairs) assert.equal(K(name), house, `${name} is the house's ${house}`);
   assert.deepEqual(L.call('vanityRunnerLadder'), P.hardware.runner.movento.nominalLadder, 'the runner ladder');
@@ -296,14 +305,21 @@ test('F8 (a) . two rails W x 100 x G where the back stood; no side tab survives;
 
 // ═══ (b) THE VOID AND THE TOP ═════════════════════════════════════════════
 
-test('F8 (b) . wall_gap is the clearance + 80; the top reaches the wall; the void is a note, #45', () => {
+test('F8 (b) . wall_gap is the clearance + 80; the top is the house slab plus the void, 628; the void is a note, #45', () => {
   const clearance = P.room.wallBackClearance;
   assert.equal(clearance, 10);
-  assert.equal(L.call('vanity-wall-gap', clearance), 90);
-  const top = L.call('vanity-top-depth', 90, 500, P.doors.gap, P.front.thickness, P.autoParts.worktop.frontOverhang);
-  assert.equal(top, 638);
+  const wallGap = L.call('vanity-wall-gap', clearance);
+  assert.equal(wallGap, 90);
+  // AMENDED after the review of 25.10.2026 (D7): the house worktop's reach, worktop.js worktopGeometry,
+  // D + the door gap + the front + the front overhang, plus the void (wall_gap less the clearance).
+  const top = L.call('vanity-top-depth', 500, P.doors.gap, P.front.thickness, P.autoParts.worktop.frontOverhang, wallGap - clearance);
+  assert.equal(top, 628);
+  // The fronts stand 10 under the slab's edge, as every kitchen slab's: a BUD 558 slab is 606, its fronts at 596.
+  assert.equal(top - (wallGap + 500 + P.doors.gap + P.front.thickness), 10);
+  assert.equal(L.call('vanity-top-depth', 558, P.doors.gap, P.front.thickness, P.autoParts.worktop.frontOverhang, 0), 606);
   assert.equal(L.call('vanity-void-note'), '#45 Service void 80 behind the vanity for the pipes');
-  say('THE VOID. wall_gap 90; the worktop 638 deep from the wall (90 + 500 + 3 + 25 + 20).');
+  say('THE VOID. wall_gap 90; the worktop 628 deep from the wall (500 + 3 + 25 + 20 + 80), the fronts 10 under its edge.');
+  say('500 + 3 + 25 + 20 + 80 = 628 on the default, as a BUD 558 kitchen\'s slab is 606 for fronts at 596.');
 });
 
 // ═══ (c) THE EQUAL DRAWERS ═══════════════════════════════════════════════
@@ -421,12 +437,95 @@ test('F8 (d) . Check #39 in words: the waste beyond the U, the shallow trap, the
   assert.deepEqual(verdict(3, 2, 1), [['DIVIDER', 450, '#39 The trap stands over the divider: no top drawer can take its U']]);
   assert.equal(L.call('vanity-trap-us', ...EX, 3, 2, 1), null, 'no U is cut');
   say('ONE BASIN ON TWO COLUMNS. The waste at 450 stands on the divider: no U, "#39 The trap stands over the divider: no top drawer can take its U".');
-  // Two basins too close on a narrow carcass: the second U would meet the first.
-  const narrow = L.call('vanity-trap-plan', 450, 600, 500, 18, 18, 25, 3, 1, 2);
+  // Two basins too close on a narrow carcass: the second U would leave under 30 between them (D23).
+  const narrow = L.call('vanity-trap-plan', 480, 600, 500, 18, 18, 25, 3, 1, 2);
   assert.deepEqual(narrow.map((e) => e[3]), ['CUT', 'FIT']);
-  assert.ok(verdict(3, 1, 2, [450, 600, 500, 18, 18, 25]).some((e) => e[2] === '#39 The trap\'s U does not fit the top drawer\'s box'));
+  assert.ok(verdict(3, 1, 2, [480, 600, 500, 18, 18, 25]).some((e) => e[2] === FIT_SAID));
   // No basin: no trap, nothing said.
   assert.deepEqual(verdict(3, 1, 0), []);
+});
+
+// ═══ AFTER THE REVIEW: THE SMALLEST BOARD, THE TOPS, THE BOWL, THE DOUBLE ══
+
+const FIT_SAID = '#39 The trap\'s U does not fit the top drawer\'s box: every board of its back wall keeps 30';
+
+test('F8 D23 . no U leaves a back-wall board under 30: the review\'s 0 and sliver boards are FIT, never cut', () => {
+  assert.equal(K('vanityBackPieceMin'), 30);
+  // The review's cases: W 484 on two columns with two basins (0 and 9), W 242 with one (0 and 0),
+  // W 480 with two on one column (the two U's touched: 0 between them).
+  for (const [W, columns, sinks, plan] of [[484, 2, 2, ['FIT', 'FIT']], [242, 1, 1, ['FIT']], [480, 1, 2, ['CUT', 'FIT']],
+    [500, 2, 2, ['FIT', 'FIT']], [600, 2, 2, ['FIT', 'FIT']], [301, 1, 1, ['FIT']]]) {
+    const dims = [W, 600, 500, 18, 18, 25];
+    assert.deepEqual(L.call('vanity-trap-plan', ...dims, 3, columns, sinks).map((e) => e[3]), plan, `W ${W} columns ${columns} sinks ${sinks}`);
+    for (const e of verdict(3, columns, sinks, dims).filter((x) => x[0] === 'FIT')) assert.equal(e[2], FIT_SAID);
+  }
+  // Every board the cut U's leave keeps 30, over the widths a vanity is drawn at.
+  for (let W = 240; W <= 2400; W += 2) {
+    for (const [columns, sinks] of [[1, 1], [1, 2], [2, 2]]) {
+      const dims = [W, 600, 500, 18, 18, 25];
+      const bx = boxes(3, columns, dims);
+      const us = L.call('vanity-trap-us', ...dims, 3, columns, sinks) || [];
+      for (const col of [1, 2].slice(0, columns)) {
+        const mine = us.filter((x) => x[1][0] === col).map((x) => x[1]);
+        if (!mine.length) continue;
+        const b = bx.find((x) => x[0] === col && x[1] === 3);
+        for (const [a0, a1] of L.call('vanity-back-pieces', b, mine, 18)) {
+          assert.ok(a1 - a0 >= 30 - 1e-9, `W ${W} columns ${columns} sinks ${sinks}: a board of ${a1 - a0}`);
+        }
+      }
+    }
+  }
+  // The first widths that take the U's: one basin 302, two columns with two basins 604.
+  assert.deepEqual(L.call('vanity-trap-plan', 302, 600, 500, 18, 18, 25, 3, 1, 1).map((e) => e[3]), ['CUT']);
+  assert.deepEqual(L.call('vanity-trap-plan', 604, 600, 500, 18, 18, 25, 3, 2, 2).map((e) => e[3]), ['CUT', 'CUT']);
+  say('THE SMALLEST BOARD. W 484, columns 2, sinks 2: the U\'s would leave 0 and 9 of the two back walls: neither is cut, "#39 The trap\'s U does not fit the top drawer\'s box: every board of its back wall keeps 30". W 242 with one basin, and W 480 with two on one column: the same.');
+});
+
+test('F8 D18 D26 . the carcass TOP takes the worktop\'s oval, cut on site; the TOP\'s back joint under it is not cut', () => {
+  assert.deepEqual(L.call('vanity-top-cutouts', [450], 18), [[432, 182, 520, 400, 'EDGE']], 'centred on the waste, opening to the back edge');
+  assert.deepEqual(L.call('vanity-top-cutouts', [225, 675], 18).map((c) => c.slice(0, 2)), [[207, 182], [657, 182]]);
+  assert.equal(L.call('vanity-top-cutouts', null, 18), null, 'no basin the worktop takes, no cut');
+  assert.equal(L.call('vanity-top-cutout-note', 'VU01'), 'Basin cut-out 520 x 400 oval in the carcass top of VU01: cut on site to the basin\'s template.');
+  // The TOP's back joint: its two tenons with the rail's sockets (socketCentres over 864), the rail's three screws.
+  assert.deepEqual(L.call('vanity-top-back-features', 900, 18), [
+    ['TENON', 113, 83, 143], ['TENON', 787, 757, 817], ['SCREW', 68, 68, 68], ['SCREW', 450, 450, 450], ['SCREW', 832, 832, 832],
+  ]);
+  assert.deepEqual(L.call('vanity-top-back-dropped', 900, 18, [450]), [['SCREW', 450]], 'the screw at W / 2 stands in the hole');
+  // The oval crosses the TOP's back edge (z 18) from 342.2 to 557.8.
+  assert.equal(L.call('vanity-oval-meets-p', 342.3, 342.3, 450, 18), true);
+  assert.equal(L.call('vanity-oval-meets-p', 342.1, 342.1, 450, 18), null);
+  assert.equal(L.call('vanity-oval-meets-p', 557.7, 557.7, 450, 18), true);
+  assert.equal(L.call('vanity-oval-meets-p', 557.9, 557.9, 450, 18), null);
+  assert.equal(L.call('vanity-oval-meets-p', 0, 900, 450, 420), null, 'a line past the oval meets nothing');
+  // Two basins on two columns stand over the TOP's two tenons; on one column at a third they miss them.
+  assert.deepEqual(L.call('vanity-top-back-dropped', 900, 18, [225, 675]), [['TENON', 113], ['TENON', 787]]);
+  assert.equal(L.call('vanity-top-back-dropped', 900, 18, [300, 600]), null);
+  say('THE TOPS: the carcass TOP takes the oval 520 x 400 at 432, 182 in its own frame, opening to its back edge; "Basin cut-out 520 x 400 oval in the carcass top of VU01: cut on site to the basin\'s template."; the rail\'s screw at 450 into the TOP\'s back edge is not cut, the tenons at 113 and 787 stay.');
+  say('D18 THE CARCASS TOP TAKES THE BASIN\'S OVAL (AMENDED 25.10.2026 after the review; the house law: material never enters another material).');
+});
+
+test('F8 D25 . a bowl that meets the top drawer\'s box or RAIL-TOP is said in #48, with the deepest bowl that clears and the cure', () => {
+  const bowl = (h, xs = [450], dims = EX, n = 3, columns = 1) => L.call('vanity-bowl-verdict', 'VU01', ...dims, n, columns, xs, 20, h);
+  const both = 'VU01: A bowl 150 deep meets the top drawer\'s box and RAIL-TOP: the deepest bowl that clears the top drawer is 68.5, '
+    + 'and the oval stands over the rail (0 from the carcass back, the rail 18); take a shallower or a vessel basin, or a shallower top drawer.';
+  assert.equal(bowl(150), both);
+  // 68.5 = the worktop 20 + the carcass TOP 18 + the air 30.5 from its underside (582) to the top box's top (551.5).
+  assert.equal(20 + 18 + (600 - 18 - L.call('vanity-box-top', boxes(3, 1)[2])), 68.5);
+  assert.equal(bowl(60), 'VU01: A bowl 60 deep meets RAIL-TOP: the oval stands over the rail (0 from the carcass back, the rail 18); '
+    + 'take a vessel basin, or set the waste 218 from the carcass back.');
+  assert.equal(bowl(20), null, 'a bowl no deeper than the worktop meets nothing under it');
+  assert.equal(bowl(150, null), null, 'no basin the worktop takes, nothing to say');
+  say(`THE BOWL: "${both}"`);
+});
+
+test('F8 D24 . a double drawer under a basin is refused in words on the top row and the row under it', () => {
+  assert.deepEqual([1, 2, 3].map((r) => L.call('vanity-double-refused-p', r, 3, 1)), [null, true, true]);
+  assert.deepEqual([1, 2, 3, 4].map((r) => L.call('vanity-double-refused-p', r, 4, 2)), [null, null, true, true]);
+  assert.deepEqual([1, 2].map((r) => L.call('vanity-double-refused-p', r, 2, 1)), [true, true], 'on two drawers both rows are the trap\'s');
+  assert.deepEqual([1, 2, 3].map((r) => L.call('vanity-double-refused-p', r, 3, 0)), [null, null, null], 'no basin: the parent\'s double');
+  assert.equal(L.call('vanity-double-refusal', 3),
+    'Drawer 3: a double drawer is not cut under a basin: the trap\'s U is the top box\'s and its air is measured to the box under it. One box is cut.');
+  say('THE DOUBLE. VANITY3 with a basin: a double asked on drawer 3 or 2: "Drawer 3: a double drawer is not cut under a basin: the trap\'s U is the top box\'s and its air is measured to the box under it. One box is cut."; on drawer 1 the parent\'s double.');
 });
 
 // ═══ (e) PLINTH OR FLOATING ══════════════════════════════════════════════
@@ -446,7 +545,8 @@ test('F8 . the worked example and every decision the slices mirror are written i
     'D2 NO BACK: THE BACK CUT OUT', 'D3 THE RAIL KEEPS THE BACK\'S JOINT THAT LANDS INSIDE IT',
     'D11 THE DIVIDER STANDS ON THE BOTTOM AND UNDER THE TOP', 'D12 THE PAIR OF FRONTS',
     'D13 THE TRAP\'S U', 'D15 THE NUMBERS DISAGREE AND THE ROOM SAYS SO', 'D16 THE TRAP\'S BOTTOM LINE',
-    'D17 A WASTE OVER THE DIVIDER', 'D18 THE CARCASS TOP STAYS WHOLE', 'D19 PLINTH OR FLOATING',
-    'D21 THE CHECKS.', 'D22 THE UNIT NUMBER is VU',
+    'D17 A WASTE OVER THE DIVIDER', 'D18 THE CARCASS TOP TAKES THE BASIN\'S OVAL', 'D19 PLINTH OR FLOATING',
+    'D21 THE CHECKS.', 'D22 THE UNIT NUMBER is VU', 'D23 THE BACK WALL KEEPS 30', 'D24 NO DOUBLE DRAWER UNDER A BASIN',
+    'D25 THE BOWL, AND CHECK #48', 'D26 THE TOP\'S BACK JOINT UNDER A BASIN',
   ]) say(d);
 });

@@ -44,6 +44,9 @@ import {
 } from './runs.js';
 // T75 F5 · the corner rulebook: which two runs meet at a corner, and who is A.
 import { cornersOf } from './corners.js';
+// T82 F11 · the vanity's wastes, THE ONE SOURCE (KIT_VANITY.lsp D14): the
+// basin stands where the trap's U was cut for it, never the other way round.
+import { vanitySpec, vanityWastes } from './vanity.js';
 
 /**
  * Does this kit take a worktop at all?
@@ -414,13 +417,17 @@ function sideTrim(geometry, list, units, profile) {
  * geometry (the drawing set reads geometry alone), and its joint likewise.
  */
 function withCutouts(entry, units, profile) {
-  const cutouts = cutoutsFor(units, entry.geometry, profile);
+  // T82 F11 · and only the basins the stone can take (`fitBasins`): a basin
+  // that does not fit is never cut, and says so (Check #48).
+  const { cutouts, refusals } = fitBasins(cutoutsFor(units, entry.geometry, profile), entry.geometry, units, profile);
   return {
     ...entry,
     cutouts,
+    ...(refusals.length ? { basinRefusals: refusals } : {}),
     geometry: {
       ...entry.geometry,
       ...(cutouts.length ? { cutouts } : {}),
+      ...(refusals.length ? { basinRefusals: refusals } : {}),
       ...(entry.joint ? { joint: entry.joint } : {}),
     },
   };
@@ -648,6 +655,11 @@ export function cutoutsFor(units, geometry, profile) {
   const out = [];
   for (const u of units || []) {
     const type = getUnitType(u.type);
+    // T82 F11 · a vanity's basins: an oval each, never machined.
+    if (isVanityKit(u.type)) {
+      out.push(...basinCutoutsOf(u, profile));
+      continue;
+    }
     const kind = type.id === 'SINK' ? 'sink' : ((u.params?.hob === true || type.hob) ? 'hob' : null);
     if (!kind) continue;
     const W = Number(u.params?.width) || 0;
@@ -699,6 +711,214 @@ export function serviceVoidOf(unit, profile) {
   if (!unit || !isVanityKit(unit.type)) return 0;
   const clearance = Math.max(0, Number(profile?.room?.wallBackClearance) || 0);
   return Math.max(0, wallGapOf(unit, profile) - clearance);
+}
+
+/** T82 F11 · the basin to the eye (`vanity.basin`, PROPOSED oval 520 x 400 x 150). */
+export function basinSpec(profile) {
+  const b = profile?.vanity?.basin || {};
+  const num = (v, fallback) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : fallback);
+  return {
+    shape: b.shape || 'oval',
+    w: num(b.widthMm, 520),
+    d: num(b.depthMm, 400),
+    h: num(b.heightMm, 150),
+    colour: b.colour || null,
+  };
+}
+
+/**
+ * T82 F11 · where a vanity's basins stand, in the UNIT's frame: `x` from the
+ * carcass's left outer face, `z` from the carcass back. Read, never derived:
+ * the x is `engine/vanity.js vanityWastes` (the LISP's `vanity-wastes`, D14:
+ * one centred; two at the column centres on two columns, at a third and two
+ * thirds on one), the z its `wasteFromBackMm`. The waste IS the basin's
+ * centre, so the trap's U and the basin cannot stand apart.
+ */
+export function basinCentresOf(unit, profile) {
+  if (!unit || !isVanityKit(unit.type)) return [];
+  const W = Number(unit.params?.width) || 0;
+  const columns = Number(unit.params?.columns) === 2 ? 2 : 1;
+  const z = vanitySpec(profile).wasteFromBackMm;
+  return vanityWastes({ W, columns, sinks: unit.params?.sinks }).map((x) => ({ x, z }));
+}
+
+/**
+ * T82 F11 · the worktop's cut-out for each basin, in the slab's frame (along
+ * the wall, out from it): an OVAL of the basin's own size centred on its
+ * waste, its box in `x / z / w / d` so every reader of a cut-out finds it.
+ * Never machined and never a part: the basin is supplied by others and its
+ * hole is cut on site to its own template (the BOM carries it as a NOTE under
+ * the worktop, as the sink's; Check #30 lists it as manual).
+ */
+function basinCutoutsOf(u, profile) {
+  const b = basinSpec(profile);
+  const x0 = Number(u.position?.x_mm) || 0;
+  const back = wallGapOf(u, profile);
+  const r2 = (v) => Math.round(v * 100) / 100;
+  const num = u.params?.unit_num || u.id;
+  return basinCentresOf(u, profile).map((c, i) => ({
+    kind: 'basin',
+    shape: b.shape,
+    unitId: u.id,
+    unitNum: u.params?.unit_num || null,
+    basin: i + 1,
+    x: r2(x0 + c.x - b.w / 2),
+    z: r2(back + c.z - b.d / 2),
+    w: b.w,
+    d: b.d,
+    r: null,
+    cx: r2(x0 + c.x),
+    cz: r2(back + c.z),
+    depthMm: b.h,
+    machined: false,
+    readiness: 'manual',
+    note: `Basin cut-out ${Math.round(b.w)} x ${Math.round(b.d)} oval over ${num}: cut on site to the basin's template.`,
+  }));
+}
+
+// ─── T82 F11 · THE BASINS THE STONE CAN TAKE, AND THE ONES IT CANNOT ───────
+//
+// CLAUDE.md T82's law: *"The room refuses in words, the engine never
+// squashes"*. Two 520 basins on one 900 column overlap; on two columns they
+// pass the slab's ends. Nothing is moved or shrunk to make them fit: a basin is
+// cut into the slab only where its oval lies wholly inside the slab with the
+// house's cut-out margin to the edge (`worktop.cutout.insetMm`, 20) and clear
+// of the ovals already cut by the same margin, in the order the LISP's wastes
+// stand (the rule the room's slab keeps, 3d/Scene.jsx). A basin that does not
+// fit is not cut, not drawn, not listed; the vanity says why and what would
+// let it in (Check #48). The trap's U is the LISP's cut and follows `sinks`.
+
+/** Two ovals clear of each other by the margin: each grown by half of it, the centres one scaled diameter apart. */
+function ovalsClear(a, b, m) {
+  const rx = (a.w + b.w) / 4 + m / 2;
+  const rz = (a.d + b.d) / 4 + m / 2;
+  const dx = (a.x + a.w / 2) - (b.x + b.w / 2);
+  const dz = (a.z + a.d / 2) - (b.z + b.d / 2);
+  return (dx / rx) ** 2 + (dz / rz) ** 2 >= 4 - 1e-9;
+}
+
+/**
+ * The basin ovals (their boxes `x z w d`) laid into a slab's box `{ x0, x1,
+ * z0, z1 }` in order: each one cut where it lies inside with the margin and
+ * clear of those cut before it. Per oval: `{ ok, inX, inZ, clear }`.
+ */
+function basinSequence(ovals, box, m) {
+  const cut = [];
+  return ovals.map((o) => {
+    const e = 1e-6;
+    const inX = o.x >= box.x0 + m - e && o.x + o.w <= box.x1 - m + e;
+    const inZ = o.z >= box.z0 + m - e && o.z + o.d <= box.z1 - m + e;
+    const clear = cut.every((k) => ovalsClear(o, k, m));
+    const ok = inX && inZ && clear;
+    if (ok) cut.push(o);
+    return {
+      ok, inX, inZ, clear,
+    };
+  });
+}
+
+/**
+ * T82 F11 · a slab's cut-outs with only the basins it can take, and for each
+ * vanity that lost one the refusal in words: what was asked, why, and the
+ * width (or depth) that would let it in, worked out from the basin's spec,
+ * the margin and the slab's own reach past the vanity.
+ *
+ * @returns {{ cutouts: object[], refusals: object[] }}
+ */
+function fitBasins(cutouts, geometry, units, profile) {
+  const basins = (cutouts || []).filter((c) => c.kind === 'basin');
+  if (!basins.length || !geometry) return { cutouts: cutouts || [], refusals: [] };
+  const m = worktopSpec(profile).cutout.insetMm;
+  const gz = Number(geometry.z) || 0;
+  const box = {
+    x0: Number(geometry.x) || 0, x1: (Number(geometry.x) || 0) + (Number(geometry.w) || 0), z0: gz, z1: gz + (Number(geometry.d) || 0),
+  };
+  const verdict = basinSequence(basins, box, m);
+  const refused = new Set(basins.filter((c, i) => !verdict[i].ok));
+  const kept = (cutouts || []).filter((c) => !refused.has(c));
+  const byUnit = new Map();
+  for (const c of refused) {
+    if (!byUnit.has(c.unitId)) byUnit.set(c.unitId, []);
+    byUnit.get(c.unitId).push(c);
+  }
+  const refusals = [];
+  for (const [unitId, lost] of byUnit) {
+    const u = (units || []).find((x) => x.id === unitId);
+    if (u) refusals.push(basinRefusal(u, lost, geometry, profile));
+  }
+  return { cutouts: kept, refusals };
+}
+
+/** The refusal of one vanity's basins, in its own frame: why, and the size that would let them in. */
+function basinRefusal(u, lost, geometry, profile) {
+  const spec = worktopSpec(profile);
+  const m = spec.cutout.insetMm;
+  const b = basinSpec(profile);
+  const W = Number(u.params?.width) || 0;
+  const D = Number(u.params?.depth) || 0;
+  const x0 = Number(u.position?.x_mm) || 0;
+  const back = wallGapOf(u, profile);
+  const columns = Number(u.params?.columns) === 2 ? 2 : 1;
+  const sinks = u.params?.sinks;
+  const z = vanitySpec(profile).wasteFromBackMm;
+  // The slab's reach past this vanity, in the vanity's own frame: the slab's
+  // own where it lies on the vanity's wall (every straight slab), else the
+  // slab the vanity would carry alone (an island's face).
+  const own = Number(geometry.wall ?? 0) === Number(u.position?.wall ?? 0) && geometry.shape !== 'island'
+    ? geometry : worktopGeometry({ units: [u], profile });
+  const left = (Number(own.x) || 0) - x0;
+  const right = (Number(own.x) || 0) + (Number(own.w) || 0) - (x0 + W);
+  const zBack = (Number(own.z) || 0) - back;
+  const zFront = (Number(own.z) || 0) + (Number(own.d) || 0) - back;
+  const lay = (w, frontGrow = 0) => basinSequence(
+    vanityWastes({ W: w, columns, sinks }).map((x) => ({
+      x: x - b.w / 2, z: z - b.d / 2, w: b.w, d: b.d,
+    })),
+    {
+      x0: left, x1: w + right, z0: zBack, z1: zFront + frontGrow,
+    },
+    m,
+  );
+  const now = lay(W);
+  const asked = now.length;
+  const unitNum = u.params?.unit_num || u.id;
+  const lostCount = lost.length;
+  const base = {
+    unitId: u.id, unitNum: u.params?.unit_num || null, asked, cut: asked - lostCount, basinW: b.w, basinD: b.d,
+  };
+  // Too deep for the top: the depth that lets the oval in, front edge and margin.
+  if (now.some((v) => !v.inZ)) {
+    const backShort = zBack + m - (z - b.d / 2);
+    if (backShort > 1e-6) {
+      return {
+        ...base,
+        why: 'depth',
+        need: null,
+        message: `${unitNum}: A basin ${b.d} deep does not fit the top of a ${D} deep vanity: its waste stands ${z} from the carcass back; take a smaller basin.`,
+      };
+    }
+    const over = (z + b.d / 2) + m - zFront;
+    const need = Math.ceil((D + over) / 10) * 10;
+    return {
+      ...base,
+      why: 'depth',
+      need: { depth: need },
+      message: `${unitNum}: A basin ${b.d} deep does not fit the top of a ${D} deep vanity: make the vanity ${need} deep${asked > 1 ? ' or take one basin' : ''}.`,
+    };
+  }
+  // Too wide for the top, or two that meet: the width that lets every one in.
+  let need = null;
+  for (let w = Math.ceil((W + 1) / 10) * 10; w <= W + 6000; w += 10) {
+    if (lay(w).every((v) => v.ok)) { need = w; break; }
+  }
+  const what = asked > 1 ? `${asked === 2 ? 'Two' : String(asked)} basins ${b.w} wide do not` : `A basin ${b.w} wide does not`;
+  const fix = [need ? `make the vanity ${need} wide` : null, asked > 1 ? 'take one basin' : null].filter(Boolean).join(' or ');
+  return {
+    ...base,
+    why: 'width',
+    need: need ? { width: need } : null,
+    message: `${unitNum}: ${what} fit the top of a ${W} vanity${fix ? `: ${fix}` : ''}.`,
+  };
 }
 
 // ─── T75 F11 · THE ISLAND'S ONE SLAB ────────────────────────────────────────
@@ -799,19 +1019,29 @@ function islandSlab({ record, units, walls, profile }) {
       const corners = [[c.x, c.z], [c.x + c.w, c.z], [c.x + c.w, c.z + c.d], [c.x, c.z + c.d]]
         .map(([pu, pv]) => toA(plan(wall, pu, pv)));
       const cu = corners.map((p) => p[0]); const cv = corners.map((p) => p[1]);
+      // T82 F11 · a basin's centre rides into A's frame with its box (the hole and the bowl read it).
+      const centre = c.cx != null ? toA(plan(wall, c.cx, c.cz)) : null;
       cutouts.push({
         ...c,
         x: r2(Math.min(...cu)),
         z: r2(Math.min(...cv)),
         w: r2(Math.max(...cu) - Math.min(...cu)),
         d: r2(Math.max(...cv) - Math.min(...cv)),
+        ...(centre ? { cx: r2(centre[0]), cz: r2(centre[1]) } : {}),
       });
     }
   }
+  // T82 F11 · the basins the island's slab can take, in its own frame.
+  const fit = fitBasins(cutouts, geometry, units, profile);
   return {
     ...record,
     slabId: `${record.id}`,
-    cutouts,
-    geometry: { ...geometry, ...(cutouts.length ? { cutouts } : {}) },
+    cutouts: fit.cutouts,
+    ...(fit.refusals.length ? { basinRefusals: fit.refusals } : {}),
+    geometry: {
+      ...geometry,
+      ...(fit.cutouts.length ? { cutouts: fit.cutouts } : {}),
+      ...(fit.refusals.length ? { basinRefusals: fit.refusals } : {}),
+    },
   };
 }

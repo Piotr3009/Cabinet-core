@@ -156,8 +156,10 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // #47 at the end (*"wysuwasz pocket door i zakrywasz szafke lub szafki"*). Rule 15 is
   // still the fifteenth.
   // AMENDED BY T82 F9 (25.10.2026): #39 the vanity's trap (*"prosze uzyc shallow trap"*),
-  // after #36. Rule 15 is still the fifteenth. Forty-two.
-  assert.equal(CHECKS.length, 42);
+  // after #36. Rule 15 is still the fifteenth.
+  // AMENDED BY T82 F11 (25.10.2026): #48 the basins a vanity's top cannot take (*"The room
+  // refuses in words, the engine never squashes"*), at the end. Forty-three.
+  assert.equal(CHECKS.length, 43);
   assert.equal(CHECKS[14].n, 15);
 });
 

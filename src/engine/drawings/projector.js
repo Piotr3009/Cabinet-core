@@ -974,6 +974,28 @@ export function runSolids(group, {
       layer: 'WORKTOP', occludes: true, worktop: g,
       prisms: [{ axis: 1, lo: g.y, hi: g.y + g.h, outline: orient(outline, true), holes: [] }],
     });
+    // ─── T82 F11 · THE BASIN SET INTO THE SLAB, IN SECTION ─────────────────
+    // The owner, 25.10.2026 (12:57): *"dodajesz tylko do widoku"*. A vanity's
+    // basin (engine/worktop.js cutoutsFor, kind 'basin') on the appliance ink
+    // (what the client supplies, blue, dashed: T71), occluding nothing: the
+    // bowl's half ellipse in the knife's plane, swept across the basin's
+    // width. A section's solid only: the plan draws the oval from the
+    // cut-out itself (setPlan.js), the elevation is the fronts'.
+    (g.cutouts || []).filter((c) => c.kind === 'basin').forEach((c, k) => {
+      const depth = Number(c.depthMm) || 0;
+      const top = g.y + g.h;
+      if (!(depth > 0) || !(c.w > 0) || !(c.d > 0)) return;
+      const ring = [];
+      for (let j = 0; j <= 24; j += 1) {
+        const a = (Math.PI * j) / 24;
+        ring.push([c.cz + (c.d / 2) * Math.cos(a), top - depth * Math.sin(a)]);
+      }
+      solids.push({
+        key: `basin:${g.slabId || g.id || i}:${c.unitId}:${c.basin ?? k}`, kind: 'basin', part: 'BASIN', role: 'basin',
+        front: false, shell: false, layer: 'APPLIANCE', occludes: false, views: ['section'],
+        prisms: [{ axis: 0, lo: c.cx - c.w / 2, hi: c.cx + c.w / 2, outline: orient(ring, true), holes: [], smooth: true }],
+      });
+    });
   });
   return { solids, marks };
 }
@@ -1027,6 +1049,8 @@ function buildScene(group, {
   const live = [];
   for (const s of all) {
     if (!keeps(s, mode)) continue;
+    // T82 F11 · a solid drawn in some views only (the basin: the section's).
+    if (Array.isArray(s.views) && !s.views.includes(view)) continue;
     if (skipSolid && skipSolid(s)) continue;
     // A handle seen face on is the owner's mark (a circle, a bar), not its solid.
     if (s.frontMark && faceOn) continue;

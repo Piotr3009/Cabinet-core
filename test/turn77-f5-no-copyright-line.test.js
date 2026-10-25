@@ -278,6 +278,9 @@ export const NEW_FILES = [
   // T82 F10 (25.10.2026): the vanity's top is the house worktop, to the wall over the void
   'test/turn82-f10-vanity-top-basin.test.js',
   'scripts/t78-classify.d/f43-t82-f10.mjs',
+  // T82 F11 (25.10.2026): the basin, only to the eye, on the LISP's wastes
+  'src/3d/Basin.jsx',
+  'scripts/t78-classify.d/f43-t82-f11.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

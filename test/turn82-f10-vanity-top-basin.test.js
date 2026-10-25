@@ -33,12 +33,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { useProjectStore } from '../src/stores/projectStore.js';
-import { rectCorners } from '../src/engine/room.js';
+import { rectCorners, roomWalls } from '../src/engine/room.js';
 import { getCabinetProfile } from '../src/engine/profile.js';
 import { migrateDesign } from '../src/engine/design.js';
 import { wallGapOf } from '../src/engine/runs.js';
-import { serviceVoidOf, worktopGeometry } from '../src/engine/worktop.js';
-import { vanitySpec } from '../src/engine/vanity.js';
+import {
+  basinCentresOf, serviceVoidOf, worktopGeometry, worktopsFor,
+} from '../src/engine/worktop.js';
+import { vanitySpec, vanityWastes } from '../src/engine/vanity.js';
+import { buildBom } from '../src/engine/bom.js';
+import { buildUnitDxfFiles } from '../src/engine/cnc/dxf.js';
+import { CHECKS, checkSummary } from '../src/engine/checks.js';
+import { DRAWING_LAYERS, LAYER_ORDER } from '../src/engine/drawings/layers.js';
+import { drawingContext } from '../src/engine/drawings/setSheet.js';
+import { buildPlan } from '../src/engine/drawings/setPlan.js';
+import { wallGroups } from '../src/engine/drawings/wallElevation.js';
+import { worktopsOnWall } from '../src/engine/drawings/setElevation.js';
+import { buildStation, sectionStations } from '../src/engine/drawings/setSection.js';
 import { confirmDrawerBox } from './drawer-box-gate.js';
 
 const S = () => useProjectStore.getState();
@@ -76,6 +87,20 @@ const slabOver = (id) => S().worktopsOf().find((w) => (w.geometry?.unitIds || []
 const basinsOf = (slab) => (slab?.cutouts || []).filter((c) => c.kind === 'basin');
 const entryOf = (id) => S().allResults().find((e) => e.unit.id === id);
 
+/** The plan of the room as the Drawings window builds it, at 1:20. */
+const planOf = (which) => buildPlan(S().allResults(), {
+  which, room: S().project.room, worktops: S().worktopsOf().map((w) => w.geometry || w), profile: P(), ctx: drawingContext(20, P()),
+});
+
+/** The section station through one unit, at 1:20. */
+function sectionOf(id) {
+  const group = wallGroups(S().allResults(), P())[0];
+  const st = sectionStations(group, { chosenId: id }).find((x) => x.member.unit.id === id);
+  assert.ok(st, 'a station through the unit');
+  return buildStation(group, st, {
+    room: S().project.room, worktops: worktopsOnWall(S().worktopsOf(), 0), profile: P(), ctx: drawingContext(20, P()),
+  });
+}
 
 // ─── F10 · THE TOP IS A WORKTOP ────────────────────────────────────────────
 
@@ -129,3 +154,285 @@ test('F10 · the thickness is typed (*"blat grubosc do wyboru"*): the record\'s 
   assert.equal(slabOver(id).geometry.thickness, 30, 'and nothing changed');
 });
 
+// ─── F11 · THE BASIN, ONLY TO THE EYE ──────────────────────────────────────
+
+test('F11 · sinks 0: no basin, no cut-out', () => {
+  const id = vanity('VANITY3', { sinks: 0 });
+  assert.deepEqual(basinCentresOf(unitOf(id), P()), []);
+  assert.equal(basinsOf(slabOver(id)).length, 0);
+});
+
+test('F11 · one sink is centred; its waste is the basin\'s centre, wasteFromBack off the carcass back', () => {
+  const id = vanity('VANITY3', { sinks: 1 });
+  const u = unitOf(id);
+  const W = Number(u.params.width);
+  const c = basinCentresOf(u, P());
+  assert.equal(c.length, 1);
+  assert.ok(near(c[0].x, W / 2));
+  assert.ok(near(c[0].z, WASTE_FROM_BACK()));
+  // On the slab: an oval cut-out of the basin's size, centred there, in the wall's frame.
+  const [cut] = basinsOf(slabOver(id));
+  assert.ok(cut, 'the worktop carries the basin\'s cut-out');
+  assert.equal(cut.shape, 'oval');
+  assert.equal(cut.w, BASIN().w);
+  assert.equal(cut.d, BASIN().d);
+  assert.ok(near(cut.x + cut.w / 2, Number(u.position.x_mm) + W / 2));
+  assert.ok(near(cut.z + cut.d / 2, wallGapOf(u, P()) + WASTE_FROM_BACK()));
+  assert.equal(cut.machined, false, 'never machined: the basin is supplied by others');
+});
+
+test('F11 · two sinks on one column stand at a third and two thirds of the width (on a top they fit)', () => {
+  const id = vanity('VANITY3', { sinks: 2, columns: 1, width: 1620 });
+  const u = unitOf(id);
+  const W = Number(u.params.width);
+  const xs = basinCentresOf(u, P()).map((c) => c.x);
+  assert.equal(xs.length, 2);
+  assert.ok(near(xs[0], W / 3) && near(xs[1], (2 * W) / 3), `${xs}`);
+  assert.equal(basinsOf(slabOver(id)).length, 2);
+});
+
+test('F11 · two sinks on two columns stand at the column centres, READ from the one source (vanity.js vanityWastes)', () => {
+  const id = vanity('VANITY3', { sinks: 2, columns: 2, width: 1200 });
+  const u = unitOf(id);
+  const W = Number(u.params.width);
+  const r = entryOf(id).result;
+  assert.ok(r.panels.some((p) => p.part === 'VPART' || p.id === 'DIVIDER'), 'columns 2 cuts a divider (F8)');
+  const xs = basinCentresOf(u, P()).map((c) => c.x);
+  assert.deepEqual(xs, vanityWastes({ W, columns: 2, sinks: 2 }), 'the basins stand on the LISP\'s wastes');
+  assert.ok(near(xs[0], W / 4) && near(xs[1], (3 * W) / 4), `${xs}`);
+  // And the U the LISP cut for each: centred on its basin (the trap round the waste).
+  const cuts = basinsOf(slabOver(id)).map((c) => c.cx - Number(u.position.x_mm));
+  assert.deepEqual(cuts, xs);
+});
+
+test('F11 · the basin stands where the trap\'s U was cut: the U in the top box is centred on the basin', () => {
+  for (const [sinks, columns] of [[1, 1], [2, 1], [2, 2]]) {
+    const id = vanity('VANITY3', { sinks, columns });
+    const u = unitOf(id);
+    const trap = entryOf(id).result.derived?.vanity?.trap;
+    assert.ok(trap, 'the engine says where it cut the U (derived.vanity.trap)');
+    const xs = basinCentresOf(u, P()).map((c) => c.x);
+    assert.deepEqual(trap.wastes, xs, `sinks ${sinks}, columns ${columns}: the wastes are the basins`);
+    for (const cut of trap.cuts) {
+      cut.us.forEach((one, k) => {
+        assert.ok(near((one.from + one.to) / 2, cut.centres[k]));
+        assert.ok(xs.some((x) => near(x, cut.centres[k])), `the U at ${cut.centres[k]} stands under a basin`);
+      });
+    }
+    assert.equal(trap.wasteFromBackMm, basinCentresOf(u, P())[0].z);
+  }
+});
+
+test('F11 · one sink on two columns is centred all the same ("one centred")', () => {
+  const id = vanity('VANITY3', { sinks: 1, columns: 2 });
+  const u = unitOf(id);
+  const xs = basinCentresOf(u, P()).map((c) => c.x);
+  assert.equal(xs.length, 1);
+  assert.ok(near(xs[0], Number(u.params.width) / 2));
+});
+
+test('F11 · nothing in the cut list and nothing on the CNC from a basin: the parts of sinks 0, 1 and 2 are one list', () => {
+  const ids = {};
+  const parts = {};
+  const files = {};
+  for (const sinks of [0, 1, 2]) {
+    const id = vanity('VANITY3', { sinks, width: 1620 });
+    ids[sinks] = id;
+    const r = entryOf(id).result;
+    // The one difference the sinks make is the TRAP's (F8(d), B2's cut): the
+    // top box's back wall split round the U into its pieces, {tag}-BB-k. Folded
+    // back to the wall they came from, the lists are one: the basin adds nothing.
+    const wall = (pid) => pid.replace(/-BB-\d+$/, '-BB');
+    parts[sinks] = [...new Set(r.panels.map((p) => wall(p.id)))].sort();
+    files[sinks] = [...new Set(buildUnitDxfFiles(r, P()).map((f) => wall(f.panelId)))].sort();
+    assert.ok(!r.panels.some((p) => /BASIN/i.test(`${p.id} ${p.part}`)), 'no basin board');
+    assert.ok(!files[sinks].some((f) => /BASIN/i.test(f)), 'no basin file');
+    const bom = buildBom(S().allResults(), {
+      design: migrateDesign(S().project.design), profile: P(), room: S().project.room,
+    });
+    assert.ok(!bom.cutRows.some((row) => /BASIN/i.test(`${row.id} ${row.part}`)), 'no basin on the cut list');
+    // The basin's cut-out is a NOTE under the worktop, one per basin, as the sink's is (T75 F5).
+    const wt = bom.units.find((x) => x.unitId === 'worktops');
+    const notes = (wt?.rows || []).filter((row) => row.part === 'WORKTOP-CUTOUT' && /basin/i.test(row.id));
+    assert.equal(notes.length, sinks);
+    assert.ok(notes.every((row) => row.material_role === 'note' && row.area_m2 === 0));
+  }
+  assert.deepEqual(parts[1], parts[0]);
+  assert.deepEqual(parts[2], parts[0]);
+  assert.deepEqual(files[1], files[0]);
+  assert.deepEqual(files[2], files[0]);
+});
+
+test('F11 · the basins follow the vanity: a save and a reload keep them, sinks 0 takes them away', () => {
+  const id = vanity('VANITY3', { sinks: 2, columns: 1, width: 1620 });
+  const saved = JSON.parse(JSON.stringify({ project: S().project, units: S().units }));
+  S().newProject('somewhere else');
+  S().loadProject(saved.project, saved.units);
+  assert.equal(basinsOf(slabOver(id)).length, 2, 'the reload draws the same two');
+  S().updateUnitParams(id, { sinks: 0 });
+  assert.equal(basinsOf(slabOver(id)).length, 0);
+  assert.equal(records().filter((w) => w.unitIds.includes(id)).length, 1, 'the top stays');
+});
+
+test('F11 · worktopsFor alone (no store) gives the same basins: one law, one path', () => {
+  const id = vanity('VANITY4', { sinks: 1 });
+  const slabs = worktopsFor({ records: records(), units: S().units, profile: P() });
+  const fromStore = basinsOf(slabOver(id));
+  const pure = basinsOf(slabs.find((w) => (w.geometry?.unitIds || []).includes(id)));
+  assert.deepEqual(pure, fromStore);
+});
+
+// ─── F11 · THE BASINS THAT DO NOT FIT: SAID, NEVER SQUASHED ────────────────
+//
+// CLAUDE.md T82's law: *"The room refuses in words, the engine never
+// squashes"*. A basin is cut into the top only where its oval lies wholly
+// inside the slab with the cut-out margin (worktop.cutout.insetMm) and clear of
+// the ovals cut before it; one that does not fit is not cut, not drawn, not
+// listed, and Check #48 says what would let it in. Nothing moves, nothing
+// shrinks: the wastes (and the trap's U) stay the LISP's.
+
+const MARGIN = () => P().autoParts.worktop.cutout?.insetMm ?? 20;
+const findings48 = () => S().runChecks().filter((f) => f.check === 48);
+
+/** Every basin cut lies inside its slab with the margin and clear of the others: the room's own rule. */
+function assertBasinsFit(slab) {
+  const g = slab.geometry;
+  const m = MARGIN();
+  const cut = basinsOf(slab);
+  for (const c of cut) {
+    assert.ok(c.x >= g.x + m - 1e-6 && c.x + c.w <= g.x + g.w - m + 1e-6, `basin x ${c.x}..${c.x + c.w} inside ${g.x}..${g.x + g.w}`);
+    assert.ok(c.z >= (g.z || 0) + m - 1e-6 && c.z + c.d <= (g.z || 0) + g.d - m + 1e-6, 'and in depth');
+  }
+  for (let i = 0; i < cut.length; i += 1) {
+    for (let j = i + 1; j < cut.length; j += 1) {
+      const a = cut[i]; const b = cut[j];
+      const rx = a.w / 2 + m / 2; const rz = a.d / 2 + m / 2;
+      assert.ok(((a.cx - b.cx) / rx) ** 2 + ((a.cz - b.cz) / rz) ** 2 >= 4 - 1e-6, 'two basins clear of each other');
+    }
+  }
+}
+
+test('F11 · two 520 basins on one 900 column overlap: the second is not cut, and #48 says what lets it in', () => {
+  const id = vanity('VANITY3', { sinks: 2, columns: 1 });
+  const u = unitOf(id);
+  const slab = slabOver(id);
+  const cut = basinsOf(slab);
+  assert.equal(cut.length, 1, 'the first is cut, the one that meets it is not');
+  assert.ok(near(cut[0].cx - Number(u.position.x_mm), 300), 'where the LISP put it: nothing moved');
+  assertBasinsFit(slab);
+  const [f] = findings48();
+  assert.ok(f, '#48 said');
+  assert.equal(f.level, 'yellow');
+  assert.equal(f.unitId, id);
+  assert.equal(f.message, `VU01: Two basins ${BASIN().w} wide do not fit the top of a 900 vanity: make the vanity 1620 wide or take one basin.`);
+  // The trap's U is the LISP's and follows `sinks`: both wastes stand (the engine never squashes).
+  assert.deepEqual(entryOf(id).result.derived.vanity.trap.wastes, [300, 600]);
+  // The width it names lets both in, and 10 less does not.
+  S().updateUnitParams(id, { width: 1620 });
+  assert.equal(basinsOf(slabOver(id)).length, 2);
+  assert.equal(findings48().length, 0);
+  S().updateUnitParams(id, { width: 1610 });
+  assert.equal(basinsOf(slabOver(id)).length, 1);
+  // ...and one basin is the other way out.
+  S().updateUnitParams(id, { width: 900, sinks: 1 });
+  assert.equal(basinsOf(slabOver(id)).length, 1);
+  assert.equal(findings48().length, 0);
+});
+
+test('F11 · on two columns of 900 both ovals pass the slab\'s ends: none is cut, #48 names 1080', () => {
+  const id = vanity('VANITY3', { sinks: 2, columns: 2 });
+  assert.equal(basinsOf(slabOver(id)).length, 0);
+  const [f] = findings48();
+  assert.equal(f.message, `VU01: Two basins ${BASIN().w} wide do not fit the top of a 900 vanity: make the vanity 1080 wide or take one basin.`);
+  assert.deepEqual(f.basins, { asked: 2, cut: 0, why: 'width', need: { width: 1080 } });
+  S().updateUnitParams(id, { width: 1080 });
+  assertBasinsFit(slabOver(id));
+  assert.equal(basinsOf(slabOver(id)).length, 2);
+});
+
+test('F11 · one basin on a narrow vanity, and on a shallow one: the width, the depth', () => {
+  const id = vanity('VANITY3', { sinks: 1, width: 500 });
+  assert.equal(basinsOf(slabOver(id)).length, 0);
+  assert.equal(findings48()[0].message, `VU01: A basin ${BASIN().w} wide does not fit the top of a 500 vanity: make the vanity 540 wide.`);
+  S().updateUnitParams(id, { width: 540 });
+  assert.equal(basinsOf(slabOver(id)).length, 1);
+  S().updateUnitParams(id, { width: 900, depth: 350 });
+  assert.equal(basinsOf(slabOver(id)).length, 0);
+  const [f] = findings48();
+  assert.equal(f.message, `VU01: A basin ${BASIN().d} deep does not fit the top of a 350 deep vanity: make the vanity 390 deep.`);
+  S().updateUnitParams(id, { depth: 390 });
+  assert.equal(basinsOf(slabOver(id)).length, 1);
+  assertBasinsFit(slabOver(id));
+});
+
+test('F11 · what is not cut is in no reader: the BOM notes, the plan and the bowls count the basins cut', () => {
+  const id = vanity('VANITY3', { sinks: 2, columns: 1 });
+  const bom = buildBom(S().allResults(), {
+    design: migrateDesign(S().project.design), profile: P(), room: S().project.room,
+  });
+  const notes = bom.units.find((x) => x.unitId === 'worktops').rows.filter((row) => row.part === 'WORKTOP-CUTOUT');
+  assert.equal(notes.length, 1, 'one note: the one basin cut');
+  // Over every width a vanity is born at, every basin cut fits (the room's rule never fires).
+  for (const width of [600, 800, 900, 1000, 1080, 1200, 1500, 1620, 1800]) {
+    for (const [sinks, columns] of [[1, 1], [2, 1], [2, 2], [1, 2]]) {
+      S().updateUnitParams(id, { width, sinks, columns });
+      const slab = slabOver(id);
+      assertBasinsFit(slab);
+      const asked = basinCentresOf(unitOf(id), P()).length;
+      const said = findings48().length;
+      assert.equal(said, basinsOf(slab).length < asked ? 1 : 0, `${width} ${sinks}/${columns}: #48 exactly when one is not cut`);
+    }
+  }
+});
+
+test('F11 · on an island the basin\'s centre rides into the slab\'s frame with its box', () => {
+  S().newProject('T82 F11 island');
+  S().setRoom({ corners: rectCorners(5000, 4000), height: 2500 });
+  confirmDrawerBox();
+  S().addIsland();
+  const walls = roomWalls(S().project.room);
+  const faceB = walls.find((w) => w.island && w.face === 'B');
+  assert.ok(faceB, 'the island has a face B');
+  const id = S().addUnit('VANITY3', { wall: faceB.index }).id;
+  assert.ok(id);
+  const slab = S().worktopsOf().find((w) => (w.geometry?.unitIds || []).includes(id));
+  assert.ok(slab, 'the vanity\'s top is the island\'s slab');
+  assert.equal(slab.geometry.shape, 'island');
+  const [c] = basinsOf(slab);
+  assert.ok(c, 'the basin is cut into the island\'s slab');
+  assert.ok(near(c.cx, c.x + c.w / 2) && near(c.cz, c.z + c.d / 2), `centre ${c.cx}, ${c.cz} in the box ${c.x}, ${c.z}, ${c.w}, ${c.d}`);
+  assertBasinsFit(slab);
+});
+
+// ─── F11 / F12 ON E3's SHEETS ───────────────────────────────────────────────
+//
+// The plan's oval cut-out on the APPLIANCE ink (blue, dashed: what the client
+// supplies, T71), the void hatched on SERVICE_VOID on the base plan, and the
+// basin's bowl in section. They are drawn by E3's files (layers.js, setPlan.js,
+// projector.js) from the B3 patches (/home/user/t82/patches/F11-B3-to-E3-*,
+// F12-B3-to-E3-*); until those land the block says so and waits.
+
+const E3 = DRAWING_LAYERS.SERVICE_VOID ? false : 'awaits E3: the B3 patches to layers.js, setPlan.js and projector.js';
+
+test('F11 · E3 · the wall plan draws the basin as an oval on the APPLIANCE ink with its size', { skip: E3 }, () => {
+  vanity('VANITY3', { sinks: 1 });
+  const plan = planOf('wall');
+  const oval = plan.entities.filter((e) => e.meta === 'basin-cutout');
+  assert.equal(oval.length, 1);
+  assert.equal(oval[0].layer, 'APPLIANCE');
+  assert.ok(oval[0].kind === 'poly' && oval[0].pts.length >= 24, 'an oval, not a rectangle');
+  assert.ok(plan.entities.some((e) => e.kind === 'text' && e.text === `BASIN ${BASIN().w} x ${BASIN().d}`));
+  assert.ok(!plan.entities.some((e) => e.kind === 'text' && /^BASIN .* R/.test(e.text)), 'never named as a radiused rectangle');
+});
+
+test('F11 · E3 · the section draws the basin\'s bowl, hung from the slab\'s top by its depth', { skip: E3 }, () => {
+  const id = vanity('VANITY3', { sinks: 1 });
+  const sec = sectionOf(id);
+  const bowl = sec.entities.filter((e) => e.layer === 'APPLIANCE' && String(e.src || '').startsWith('basin:'));
+  assert.ok(bowl.length >= 12, 'its half ellipse');
+  const slab = worktopsOnWall(S().worktopsOf(), 0)[0];
+  const ys = bowl.flatMap((e) => [e.y1, e.y2]);
+  assert.ok(near(Math.max(...ys), slab.y + slab.h) && near(Math.min(...ys), slab.y + slab.h - BASIN().h, 0.5), `${Math.min(...ys)}..${Math.max(...ys)}`);
+  // ...and the plan and the elevation never draw it as a solid (the plan's oval is the cut-out's).
+  assert.ok(!planOf('wall').entities.some((e) => String(e.src || '').startsWith('basin:')));
+});

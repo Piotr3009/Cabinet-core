@@ -13,6 +13,8 @@ import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
 import FrameDemand from './frameDemand.jsx';
 import IslandPlan from './IslandPlan.jsx';
+// T82 F11 · the vanity's basin, to the eye (B3's file, mounted here by D1).
+import { Basins } from './Basin.jsx';
 import DistanceArrows from './DistanceArrows.jsx';
 import AddPlus from './AddPlus.jsx';
 // Turn 50 (CLAUDE.md F2, decision 1): the share-out is offered AT THE GAP.
@@ -914,6 +916,14 @@ function Worktops({
         <WorktopOutline key={w.slabId || w.id} w={w} wall={wall} roomCentre={roomCentre} colour={colour} />
       );
     }
+    // T82 F11 · a slab with a basin set into it is extruded from its own
+    // rectangle with the basins' ovals as holes, so the bowl under it is seen.
+    if ((g.cutouts || []).some((c) => c.kind === 'basin')) {
+      const rectOutline = [[g.x, g.z || 0], [g.x + g.w, g.z || 0], [g.x + g.w, (g.z || 0) + g.d], [g.x, (g.z || 0) + g.d]];
+      return (
+        <WorktopOutline key={w.slabId || w.id} w={w} wall={wall} roomCentre={roomCentre} colour={colour} outline={rectOutline} />
+      );
+    }
     const along = new THREE.Vector3(wall.along.x, 0, wall.along.y);
     const inward = new THREE.Vector3(wall.inward.x, 0, wall.inward.y);
     const centre = new THREE.Vector3(
@@ -957,7 +967,8 @@ function worktopPoint(wall, roomCentre, along, out, y) {
 /** T75 F5 · each cut-out a slab proposes, a dark inset on its top face. */
 function WorktopCutouts({ w, wall, roomCentre }) {
   const g = w.geometry;
-  return (w.cutouts || []).map((c) => {
+  // T82 F11 · a basin is its hole and its bowl (Basin.jsx), never a dark plane.
+  return (w.cutouts || []).filter((c) => c.kind !== 'basin').map((c) => {
     const at = worktopPoint(wall, roomCentre, c.x + c.w / 2, c.z + c.d / 2, g.y + g.h + 0.6);
     return (
       <mesh key={`${c.kind}-${c.unitId}`} position={at.toArray()} rotation={[-Math.PI / 2, 0, wall.angle]}
@@ -969,18 +980,65 @@ function WorktopCutouts({ w, wall, roomCentre }) {
   });
 }
 
+/** T82 F11 · a basin's oval in the slab's frame: 48 points, as the plan draws it. */
+function ovalPoints(c) {
+  const pts = [];
+  for (let i = 0; i < 48; i += 1) {
+    const a = (2 * Math.PI * i) / 48;
+    pts.push([c.cx + (c.w / 2) * Math.cos(a), c.cz + (c.d / 2) * Math.sin(a)]);
+  }
+  return pts;
+}
+
+/** T82 F11 · strictly inside a basin's oval. */
+function insideOval(c, [x, z]) {
+  return ((x - c.cx) / (c.w / 2)) ** 2 + ((z - c.cz) / (c.d / 2)) ** 2 < 1;
+}
+
+/** T82 F11 · strictly inside the slab's ring (an even-odd ray, the ring in the slab's frame). */
+function insideRing(ring, [x, z]) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+    const [xi, zi] = ring[i];
+    const [xj, zj] = ring[j];
+    if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
 /**
  * T75 F4/F5 · an L slab, extruded from the engine's own outline: the shape is
  * built in the wall's frame (x along the wall, y out from it) and stood on the
  * carcass tops at the slab's height.
  */
-function WorktopOutline({ w, wall, roomCentre, colour }) {
+function WorktopOutline({
+  w, wall, roomCentre, colour, outline = null,
+}) {
   const g = w.geometry;
+  // T82 F11 · the outline handed in (a plain slab with basins) or the slab's own (an L).
+  const ring = outline || g.outline;
+  // T82 F11 · the basins' ovals, cut through the slab (48 points each, as the plan draws them).
+  // …only where the stone can be cut (D1, reviewing): wholly inside the slab
+  // and clear of the ovals already cut. Two 520 ovals on one 900 column
+  // overlap, and a column's oval can pass the slab's end; a hole that crosses
+  // another or the edge tears the triangulation, so that basin is not cut into
+  // the stone and the slab stays whole there. The refusal in words is the
+  // engine's to say, never a torn slab.
+  const holes = [];
+  const cut = [];
+  for (const c of (g.cutouts || []).filter((k) => k.kind === 'basin')) {
+    const pts = ovalPoints(c);
+    if (!pts.every((p) => insideRing(ring, p))) continue;
+    if (cut.some((k) => pts.some((p) => insideOval(k, p)) || ovalPoints(k).some((p) => insideOval(c, p)))) continue;
+    cut.push(c);
+    holes.push(pts);
+  }
   // Chat-fix 12.10.2026: keyed by the outline's NUMBERS (a fresh array came in
   // every render, so a new slab was built each time) and the old one released.
-  const outlineKey = JSON.stringify([g.outline, g.h]);
+  const outlineKey = JSON.stringify([ring, g.h, holes]);
   const geometry = useMemo(() => {
-    const shape = new THREE.Shape(g.outline.map(([x, z]) => new THREE.Vector2(mm(x), mm(z))));
+    const shape = new THREE.Shape(ring.map(([x, z]) => new THREE.Vector2(mm(x), mm(z))));
+    for (const hole of holes) shape.holes.push(new THREE.Path(hole.map(([x, z]) => new THREE.Vector2(mm(x), mm(z)))));
     const extruded = new THREE.ExtrudeGeometry(shape, { depth: mm(g.h), bevelEnabled: false });
     // Shape lies in XY; lift it so +Y of the shape becomes the wall's inward.
     extruded.rotateX(Math.PI / 2);
@@ -997,7 +1055,19 @@ function WorktopOutline({ w, wall, roomCentre, colour }) {
         rotation={[0, wall.angle, 0]}
         castShadow
         receiveShadow
-        userData={{ ccWorktopId: w.id, ccWorktopSlab: w.slabId || w.id, ccWorktopUnits: g.unitIds, ccWorktopShape: 'L' }}
+        userData={{
+          ccWorktopId: w.id,
+          ccWorktopSlab: w.slabId || w.id,
+          ccWorktopUnits: g.unitIds,
+          ccWorktopShape: outline ? 'basin' : 'L',
+          // T82 F11 · a slab with basins is a plain slab to every reader of its figures.
+          ...(outline ? {
+            ccWorktopMm: {
+              w: g.w, d: g.d, t: g.h, y: g.y, overhang: g.overhang,
+            },
+            ccWorktopBasinsCut: cut.length,
+          } : {}),
+        }}
       >
         <meshStandardMaterial color={colour} roughness={0.55} metalness={0.04} side={THREE.DoubleSide} />
       </mesh>
@@ -2253,6 +2323,10 @@ export default function Scene({
           roomCentre={bounds.centre}
           colour={profile.appearance.worktop.colour}
         />
+      )}
+      {/* T82 F11 · the vanity's basins, hung in the slabs' ovals: to the eye only. */}
+      {!contourView && worktops.length > 0 && (
+        <Basins worktops={shownWorktops} walls={walls} roomCentre={bounds.centre} profile={profile} />
       )}
 
       {/* ─── TURN 50 (CLAUDE.md F2): THE SHARE-OUT BAR, IN THE GAP ────────

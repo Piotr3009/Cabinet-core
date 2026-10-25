@@ -197,8 +197,30 @@ export function buildPlan(entries, {
     // from above the worktop is where the slab is drawn, so each cut-out is a
     // rectangle on it with its size, and a corner joint is its line with the
     // bolt count. Notes, not machining: the slab is cut on site.
+    // ─── T82 F11 · THE BASIN'S OVAL ──────────────────────────────────────
+    // The owner, 25.10.2026 (12:57): *"dodajesz tylko do widoku, musimy miec
+    // tez wyciecie"*. A vanity's basin (engine/worktop.js cutoutsFor, kind
+    // 'basin') is the worktop's oval hole, on the appliance ink (what the
+    // client supplies, blue, dashed: T71, the mockup's blue basin), on both
+    // plans; named with its size where every cut-out is named, from above.
+    for (const c of (w.cutouts || []).filter((k) => k.kind === 'basin')) {
+      const pts = [];
+      for (let i = 0; i < 48; i += 1) {
+        const a = (2 * Math.PI * i) / 48;
+        pts.push(at(wall, c.cx + (c.w / 2) * Math.cos(a), c.cz + (c.d / 2) * Math.sin(a)));
+      }
+      entities.push({ ...poly('APPLIANCE', pts), pen: 'THIN', meta: 'basin-cutout' });
+      if (which === 'wall') {
+        const mid = at(wall, c.cx, c.cz);
+        entities.push({
+          ...text('FRAME', mid[0], mid[1], `BASIN ${Math.round(c.w)} x ${Math.round(c.d)}`, ctx.mm(2.2)),
+          paperHeight: 2.2,
+          mask: true,
+        });
+      }
+    }
     if (which === 'wall') {
-      for (const c of w.cutouts || []) {
+      for (const c of (w.cutouts || []).filter((k) => k.kind !== 'basin')) {
         const r = [at(wall, c.x, c.z), at(wall, c.x + c.w, c.z), at(wall, c.x + c.w, c.z + c.d), at(wall, c.x, c.z + c.d)];
         entities.push({ ...poly('CARCASE', r), pen: 'THIN' });
         const mid = at(wall, c.x + c.w / 2, c.z + c.d / 2);

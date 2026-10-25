@@ -326,6 +326,15 @@ export const CHECKS = Object.freeze([
   // #45 and #46 are the vanity's and the reeds' (BRIEF section 6). YELLOW: a
   // note, the panels are cut 22.
   { n: 47, level: 'yellow', label: 'HAWA pocket panels 22 on an 18 front' },
+  // ─── T82 F11 · THE BASINS THAT DO NOT FIT THE TOP ───────────────────────
+  // CLAUDE.md T82's law: *"The room refuses in words, the engine never
+  // squashes"*. A basin whose oval does not lie inside the vanity's top with
+  // the cut-out margin, or meets the one cut before it, is not cut, not drawn
+  // and not listed (engine/worktop.js fitBasins); this says so, with the
+  // width (or depth) that lets it in. CLAUDE.md names no number: the next
+  // free one after the turn's own (#45 to #47, T82 BRIEF 6). YELLOW: nothing
+  // the machine cuts changes, a person decides.
+  { n: 48, level: 'yellow', label: 'Basins that do not fit the vanity\'s top' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -1309,6 +1318,20 @@ export function runChecks({
     });
     const lines = [];
     const joints = new Set();
+    // ── #48 the basins a vanity's top cannot take (T82 F11), one per vanity ──
+    const basinsSaid = new Set();
+    for (const slab of slabs) {
+      for (const r of slab.basinRefusals || []) {
+        if (basinsSaid.has(r.unitId)) continue;
+        basinsSaid.add(r.unitId);
+        out.push(finding(48, 'yellow', {
+          unitId: r.unitId,
+          unitNum: r.unitNum || '',
+          message: r.message,
+          basins: { asked: r.asked, cut: r.cut, why: r.why, need: r.need },
+        }));
+      }
+    }
     for (const slab of slabs) {
       for (const c of slab.cutouts || []) {
         const state = readinessOf(c);

@@ -15,8 +15,12 @@
 import {
   boundsOf, entLine as line, entText as text,
 } from './primitives.js';
-import { heightChains, mountingBands, widthChains } from './wallElevation.js';
-import { chainH, chainV } from './setChains.js';
+import {
+  frontChainLines, leafChains, mountingBands, widthChains, widthGroups,
+} from './wallElevation.js';
+import {
+  LINE_CLEAR, chainH, chainReachX, chainV,
+} from './setChains.js';
 import { roomWalls } from '../room.js';
 // T81 · the sheets draw what the room draws, through the one projector.
 import { applianceMarks as projectedAppliances, projectRun, unitNumbers } from './projector.js';
@@ -76,7 +80,7 @@ function wallEnds(group, wall) {
  * chains, each in its home as T71 hung them.
  */
 function projectedRun(group, {
-  mode, room, worktops, frontTypeOf, shakerFrame, profile, ctx,
+  mode, room, worktops, frontTypeOf, shakerFrame, profile, ctx, defaultHandle = null,
 }) {
   const W = profile.drawings.wallDrawing;
   const entities = [];
@@ -86,6 +90,8 @@ function projectedRun(group, {
   const ceiling = Number(room?.height) || 0;
   const drawn = projectRun(group, {
     view: 'front', mode, profile, worktops, frontTypeOf, shakerFrame,
+    // T82 F22: a front with no handle chosen shows the profile's default.
+    defaultHandle,
     // A piece shorter than a quarter of a paper millimetre is not a line a
     // printer can draw: what a 3 mm slot leaves of a board behind it.
     minEdge: ctx ? ctx.mm(profile.drawings.projector.minEdgePaperMm) : 0,
@@ -115,10 +121,12 @@ function projectedRun(group, {
  */
 export function buildRunElevation(group, {
   withFronts = true, mode = null, room = null, worktops = [], frontTypeOf = null, shakerFrame = null, profile, ctx,
+  defaultHandle = null,
 }) {
   // T81 F3 to F5 · every sheet of a wall is the projector's: only what the eye sees.
+  // T82 F22 · `defaultHandle`: projector.js sheetDefaultHandle, drawn on the fronts and the X-ray.
   return projectedRun(group, {
-    mode: mode || (withFronts ? 'fronts' : 'no-fronts'), room, worktops, frontTypeOf, shakerFrame, profile, ctx,
+    mode: mode || (withFronts ? 'fronts' : 'no-fronts'), room, worktops, frontTypeOf, shakerFrame, profile, ctx, defaultHandle,
   });
 }
 
@@ -146,12 +154,15 @@ function runChains(group, { withFronts, ends, worktops, ceiling, profile, ctx })
     const bandTop = Math.max(...topBand.members.map((m) => m.top));
     out.push(chainH({ edges, y: bandTop + ctx.chainFirst, yObj: bandTop, ctx, above: true }));
   }
-  // BOTTOM: the floor run with its scribes, and the overall.
+  // BOTTOM: the floor run with its scribes, and the overall. T82 F21: on a
+  // sheet with fronts the floor run's LEAF, GAP, LEAF hangs on the second line
+  // under its unit chain, and the overall steps out to the third.
+  const floorLeaves = withFronts && floor ? leafChains(floor.members).leafEdges : [];
   if (floor) {
     const edges = [...new Set([...ends, ...widthChains(floor.members, profile).detailedEdges])].sort((a, b) => a - b);
     out.push(chainH({ edges, y: -ctx.chainFirst, yObj: 0, ctx, above: false }));
     if (edges.length > 2) {
-      out.push(chainH({ edges: [edges[0], edges[edges.length - 1]], y: -ctx.chainSecond, ctx, above: false }));
+      out.push(chainH({ edges: [edges[0], edges[edges.length - 1]], y: floorLeaves.length > 1 ? -ctx.chainThird : -ctx.chainSecond, ctx, above: false }));
     }
   }
   // LEFT: heights.
@@ -163,10 +174,64 @@ function runChains(group, { withFronts, ends, worktops, ceiling, profile, ctx })
   const outer = [0, group.top];
   if (ceiling > group.top) outer.push(ceiling);
   if (outer[outer.length - 1] > 0) out.push(chainV({ edges: outer, x: left - ctx.chainSecond, ctx, left: true }));
-  // RIGHT.
+  // RIGHT. T82 F21: every unit's own FRONT, GAP, FRONT (never two units'
+  // edges pooled into one chain), one line per stack that overlaps another in
+  // height; the inner line takes the extension lines, as T71's inner chains do.
+  //
+  // After the C/D/E review (sheets 0): never past the band. The lines stand
+  // where T71 hangs them (8, 17, 26 paper mm) when every one of them fits
+  // the band there; where one would not, the lines past the first step in,
+  // each LINE_CLEAR beyond the figures of the line inside it, compact (a gap's
+  // figure beside its own arrows rather than lifted out); a line that still
+  // does not fit is not drawn, and its units are named in words in the band's
+  // foot, "Front heights of 05, 06: see the cut list", the panel sizes the
+  // caption points to. The richest stacks (FRONT, GAP, FRONT) take the lines
+  // first, so what the band cannot hold is a single front's height.
   if (withFronts) {
-    const { frontEdges } = heightChains(group.members, { floorMm: Number(profile?.doors?.gap) || 0 });
-    if (frontEdges.length > 1) out.push(chainV({ edges: frontEdges, x: right + ctx.chainFirst, xObj: right, ctx, left: false }));
+    const lines = frontChainLines(group.members);
+    const limit = right + ctx.band;
+    const reach = (chains) => Math.max(...chains.map((ch) => chainReachX(ch, ctx.textHeight)));
+    const lineAt = (line, x, k, compact) => line.map((stack) => chainV({
+      edges: stack.edges, x, xObj: k === 0 ? right : null, ctx, left: false, ...(compact ? { compact: true } : {}),
+    }));
+    const placed = lines.map((line, k) => lineAt(line, right + ctx.chainFirst + k * (ctx.chainSecond - ctx.chainFirst), k, false));
+    if (placed.every((chains) => reach(chains) <= limit)) {
+      for (const chains of placed) out.push(...chains);
+    } else {
+      out.push(...placed[0]);
+      let edge = reach(placed[0]);
+      const unchained = [];
+      lines.slice(1).forEach((line, i) => {
+        const chains = lineAt(line, edge + ctx.mm(LINE_CLEAR), i + 1, true);
+        if (reach(chains) <= limit) {
+          out.push(...chains);
+          edge = reach(chains);
+        } else {
+          unchained.push(...line);
+        }
+      });
+      if (unchained.length) {
+        const nums = [...new Set(unchained.flatMap((stack) => stack.ids)
+          .map((id) => String(group.members.find((m) => m.unit.id === id)?.unit.params?.unit_num ?? '')))]
+          .filter(Boolean).sort();
+        const words = ['Front', 'heights', 'of', ...nums.map((n, i) => `${n}${i < nums.length - 1 ? ',' : ':'}`), 'see', 'the', 'cut', 'list'];
+        // As many characters to a row as the band holds past its 2 mm inset.
+        const T = ctx.textHeight;
+        const perRow = Math.max(8, Math.floor((ctx.band - ctx.mm(2)) / (T * 0.55)));
+        const rows = [];
+        for (const w of words) {
+          if (rows.length && `${rows[rows.length - 1]} ${w}`.length <= perRow) rows[rows.length - 1] += ` ${w}`;
+          else rows.push(w);
+        }
+        const note = rows.map((row, i) => ({
+          ...text('DIMENSIONS', right + ctx.mm(2), -ctx.chainFirst - i * T * 1.4, row, T, 'left'),
+          paperHeight: T / ctx.scale,
+          note: 'fronts-unchained',
+        }));
+        note.figures = [];
+        out.push(note);
+      }
+    }
   } else {
     const shelved = (floor?.members || []).find((m) => (m.result.assemblies?.shelves || []).length);
     if (shelved) {
@@ -175,6 +240,30 @@ function runChains(group, { withFronts, ends, worktops, ceiling, profile, ctx })
       const ys = new Set([base, base + H]);
       for (const s of shelved.result.assemblies.shelves) { ys.add(base + s.y); ys.add(base + s.y + (s.thickness || 18)); }
       out.push(chainV({ edges: [...ys].sort((a, b) => a - b), x: right + ctx.chainFirst, xObj: right, ctx, left: false }));
+    }
+  }
+  // T82 F21: the leaf chains, last, so every chain T71 hung keeps its place
+  // in the list. The floor run's on its second line below the floor.
+  if (floorLeaves.length > 1) out.push(chainH({ edges: floorLeaves, y: -ctx.chainSecond, ctx, above: false }));
+  // A hung run's under its own carcasses, in the open wall between it and
+  // what stands below, one chain per run of touching units (a tall unit
+  // between two wall runs is never crossed), first leaf to last (a figure at
+  // a carcass end would hang over the tall unit beside it). It needs the room
+  // of two chain lines there, `chainSecond`; where a unit or a worktop stands
+  // in that room the run's leaves are not hung over it.
+  if (withFronts) {
+    for (const band of bands.slice(1)) {
+      for (const run of widthGroups(band.members, profile)) {
+        const { leafEdges } = leafChains(run.members, { ends: false });
+        if (leafEdges.length < 2) continue;
+        const base = Math.min(...run.members.map((m) => m.base));
+        const room = { x0: run.from, x1: run.to, y0: base - ctx.chainSecond, y1: base };
+        // Half a millimetre, the house's "same edge" (wallElevation.js SAME).
+        const across = (x0, x1, y0, y1) => x0 < room.x1 - 0.5 && x1 > room.x0 + 0.5 && y0 < room.y1 - 0.5 && y1 > room.y0;
+        const blocked = group.members.some((m) => !run.members.includes(m) && across(m.x, m.x + m.width, m.base, m.top))
+          || worktops.some((w) => across(w.x, w.x + w.w, w.y, w.y + w.h));
+        if (!blocked) out.push(chainH({ edges: leafEdges, y: base - ctx.chainFirst, ctx, above: false }));
+      }
     }
   }
   void top;

@@ -184,6 +184,41 @@ const CLASSES = [
     draw: true,
     reason: 'the cup’s own two fixing screws. BLIND: turn 21’s "pilot dots on his door faces" were exactly these, read as through holes.',
   },
+  // ─── T82 F5 (KIT_HAWA.lsp D15): THE HAWA POCKET'S FIVE ─────────────────
+  // Every one states its depth on its record (engine/cnc/hawa.js), the foot
+  // alone goes through; the room bores what the sheet drills.
+  {
+    layer: 'HAWA_3MM',
+    draw: true,
+    reason: 'the HAWA pocket panels\' screw pilots (the tracks, the catch bracket, the connector, its brackets and pads), dia 3, BLIND to the 10 their record states (PROPOSED, CLAUDE.md T82 F5): the 4.5 x 16 and 4.5 x 20 screws go into the panel\'s pocket face, never through to its outer face.',
+  },
+  {
+    layer: 'FRONT_HINGES_5MM_D13',
+    draw: true,
+    reason: 'the HAWA hinge\'s two dia 5 fixing holes, 26 above and below each cup and 9 further in (160704), BLIND to the 13 their record states, from the door\'s back face.',
+  },
+  {
+    layer: 'FRONT_HINGES_8MM_D13',
+    draw: true,
+    reason: 'the HAWA door\'s dia 8 sleeve holes, on the cup axis 22 from each end and along the III/35 steel profile\'s rows (160704 section C - C), BLIND to the 13 their record states, from the door\'s back face.',
+  },
+  // After the review (T82 F5): the HAWA cup on a layer of its own, its 13 in
+  // its name (the house's FRONT_HINGES_35MM is the owner's 11).
+  {
+    layer: 'FRONT_HINGES_35MM_D13',
+    draw: true,
+    reason: 'the HAWA door\'s dia 35 cups, 200 from the top and the bottom and the rest equal (160704 section C - C), BLIND to the 13 their record states and their layer\'s name says, from the door\'s back face; never the house cup\'s FRONT_HINGES_35MM, which is the owner\'s 11.',
+  },
+  {
+    layer: 'HAWA_FOOT_35MM',
+    draw: true,
+    reason: 'the adjustable foot\'s dia 35 hole in the HAWA pocket\'s bottom board, centred in the pocket, S + 21 behind its front edge (169313): THROUGH, the foot stands in it.',
+  },
+  {
+    layer: 'HAWA_GROOVE_12MM',
+    draw: true,
+    reason: 'the III/35 steel stiffening profile\'s groove in the HAWA door\'s back face, 12 wide, cut to the 12 its record states (PROPOSED, KIT_HAWA.lsp D11), running out of the hinge edge.',
+  },
   {
     layer: 'DRAWER_RUNNER_POCKET',
     draw: true,

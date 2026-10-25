@@ -43,6 +43,12 @@ wins; the table is only the default, and it is the workshop's own
 | `RUNNERS_3MM` | **yes** | through | the runner’s fixing screws, drawn to whatever the workshop’s own drillDefaults row says — which today is THROUGH. Nobody has given a pilot depth for a MOVENTO screw and this turn does not invent one; BLOCKERS carries the question. |
 | `FRONT_HINGES_35MM` | **yes** | 11 mm | the ⌀35 cup. BLIND to the owner’s measured 11 mm — and the RECORD states it (engine/cabinet.js), so this default is never the number actually used. |
 | `FRONT_HINGES_3MM` | **yes** | 11 mm | the cup’s own two fixing screws. BLIND: turn 21’s "pilot dots on his door faces" were exactly these, read as through holes. |
+| `HAWA_3MM` | **yes** | through | the HAWA pocket panels' screw pilots (the tracks, the catch bracket, the connector, its brackets and pads), dia 3, BLIND to the 10 their record states (PROPOSED, CLAUDE.md T82 F5): the 4.5 x 16 and 4.5 x 20 screws go into the panel's pocket face, never through to its outer face. |
+| `FRONT_HINGES_5MM_D13` | **yes** | through | the HAWA hinge's two dia 5 fixing holes, 26 above and below each cup and 9 further in (160704), BLIND to the 13 their record states, from the door's back face. |
+| `FRONT_HINGES_8MM_D13` | **yes** | through | the HAWA door's dia 8 sleeve holes, on the cup axis 22 from each end and along the III/35 steel profile's rows (160704 section C - C), BLIND to the 13 their record states, from the door's back face. |
+| `FRONT_HINGES_35MM_D13` | **yes** | through | the HAWA door's dia 35 cups, 200 from the top and the bottom and the rest equal (160704 section C - C), BLIND to the 13 their record states and their layer's name says, from the door's back face; never the house cup's FRONT_HINGES_35MM, which is the owner's 11. |
+| `HAWA_FOOT_35MM` | **yes** | through | the adjustable foot's dia 35 hole in the HAWA pocket's bottom board, centred in the pocket, S + 21 behind its front edge (169313): THROUGH, the foot stands in it. |
+| `HAWA_GROOVE_12MM` | **yes** | through | the III/35 steel stiffening profile's groove in the HAWA door's back face, 12 wide, cut to the 12 its record states (PROPOSED, KIT_HAWA.lsp D11), running out of the hinge edge. |
 | `DRAWER_RUNNER_POCKET` | **yes** | through | a groove in the box side, cut to the depth its own record states. |
 | `DRAWER_BOTTOM_POCKET` | **yes** | through | a groove in the box side, cut to the depth its own record states. |
 | `HANGER_HOLE` | **yes** | through | the wall bracket’s cut-out in the back panel — the bracket passes through it. |

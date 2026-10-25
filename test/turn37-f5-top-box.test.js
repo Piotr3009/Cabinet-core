@@ -152,7 +152,18 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // *"dlaczego cut the corner likwiduje nam wcięcie do recess?"* Thirty-three.
   // AMENDED BY T80 F10 (22.10.2026): #40 to #44, the in-frame project's five, appended
   // at the end. Rule 15 is still the fifteenth and still says what it said. Thirty-eight.
-  assert.equal(CHECKS.length, 38);
+  // AMENDED BY T82 F3 (25.10.2026): the HAWA pocket's #37 and #38 beside #36 and its
+  // #47 at the end (*"wysuwasz pocket door i zakrywasz szafke lub szafki"*). Rule 15 is
+  // still the fifteenth.
+  // AMENDED BY T82 F9 (25.10.2026): #39 the vanity's trap (*"prosze uzyc shallow trap"*),
+  // after #36. Rule 15 is still the fifteenth.
+  // AMENDED BY T82 F11 (25.10.2026): #48 the basins a vanity's top cannot take (*"The room
+  // refuses in words, the engine never squashes"*), at the end.
+  // AMENDED BY T82 F12 (25.10.2026): #45 the vanity's service void, a note (*"miejsce z
+  // tylu na rurki"*), appended at the end. Rule 15 is still the fifteenth.
+  // AMENDED BY T82 F15 (25.10.2026): #46 the reeds (*"daj wariant b czyli na styk narazie"*),
+  // appended at the end. Rule 15 is still the fifteenth. Forty-five.
+  assert.equal(CHECKS.length, 45);
   assert.equal(CHECKS[14].n, 15);
 });
 

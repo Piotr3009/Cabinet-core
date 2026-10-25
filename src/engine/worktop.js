@@ -38,12 +38,15 @@
 //
 // Pure functions and pure data. No React, no store, no three.js.
 
-import { getUnitType } from './types.js';
+import { getUnitType, isVanityKit } from './types.js';
 import {
   cornerLAdjacentSpan, paddedSpan, unitBase, unitTop, wallGapOf,
 } from './runs.js';
 // T75 F5 · the corner rulebook: which two runs meet at a corner, and who is A.
 import { cornersOf } from './corners.js';
+// T82 F11 · the vanity's wastes, THE ONE SOURCE (KIT_VANITY.lsp D14): the
+// basin stands where the trap's U was cut for it, never the other way round.
+import { vanitySpec, vanityWastes } from './vanity.js';
 
 /**
  * Does this kit take a worktop at all?
@@ -94,6 +97,15 @@ function isDeskUnit(unit) {
 }
 
 /**
+ * T82 F10, after the review (topbasin 2) · …and so does a vanity: born under
+ * its own top, it may take it back alone after a Remove, and keeps it when the
+ * other vanity of a shared top is deleted.
+ */
+function isLoneTopUnit(unit) {
+  return isDeskUnit(unit) || isVanityKit(unit?.type);
+}
+
+/**
  * T75 F17 · THE PER-WORKTOP THICKNESS the T30 comment above deferred: the
  * record's own (a desk or a sideboard top is 25), else the profile's (38).
  */
@@ -132,7 +144,7 @@ export function worktopEligible(units, profile, { walls = null, single = false }
   // corner unit is a run of its own: one is enough.
   // T75 F20 · …and so is the one cabinet a SET lays a top on (the Vanity's
   // sink, the Hallway's shoe bench): asked for as one, it is one.
-  const loneL = list.length === 1 && (isCornerKit(list[0]) || isDeskUnit(list[0]) || single === true);
+  const loneL = list.length === 1 && (isCornerKit(list[0]) || isLoneTopUnit(list[0]) || single === true);
   if (list.length < spec.minUnits && !loneL) {
     return { ok: false, why: `A worktop covers a run: select ${spec.minUnits} or more base cabinets.` };
   }
@@ -208,11 +220,15 @@ export function worktopGeometry({ units, record = null, profile }) {
 
   // OUT FROM THE WALL: the deepest carcass, plus its door and the door's gap,
   // plus the front overhang. Flush at the wall — nothing hangs over a wall.
+  // T82 F10 · ...and over a vanity's SERVICE VOID: the carcass stands 80 off
+  // the wall for the pipes and the top reaches the wall over them, so the
+  // slab's front stands as proud of the vanity's fronts as any slab of the
+  // house stands of a kitchen's. Zero for every other unit.
   const reach = (u) => {
     const depth = Number(u.params?.depth) || 0;
     const frontT = Number(u.params?.front_t) || 0;
     const gap = Number(profile?.doors?.gap) || 0;
-    return depth + gap + frontT;
+    return depth + gap + frontT + serviceVoidOf(u, profile);
   };
   const depth = Math.max(...list.map(reach)) + spec.frontOverhang + ext.front;
 
@@ -300,7 +316,8 @@ export function worktopsFor({
     const loneL = mine.length === 1 && isCornerKit(mine[0]);
     // T75 F17 · one desk is a run of its own: its slab is the straight one.
     // T75 F20 · …and so is the one cabinet a set's record names as a 'top'.
-    const loneDesk = mine.length === 1 && (isDeskUnit(mine[0]) || record?.kind === 'top');
+    // T82 F10 · …and a vanity alone under its record (a shared top's survivor).
+    const loneDesk = mine.length === 1 && (isLoneTopUnit(mine[0]) || record?.kind === 'top');
     if (mine.length < worktopSpec(profile).minUnits && !loneL && !loneDesk) continue;
     // ─── T75 F4/F5 · ONE SLAB SHAPED LIKE THE L ────────────────────────────
     if (loneL) {
@@ -410,13 +427,18 @@ function sideTrim(geometry, list, units, profile) {
  * geometry (the drawing set reads geometry alone), and its joint likewise.
  */
 function withCutouts(entry, units, profile) {
+  // T82 F11 · and only the basins the stone can take (`fitBasins`): a basin
+  // that does not fit is never cut, and says so (Check #48).
   const cutouts = cutoutsFor(units, entry.geometry, profile);
+  const refusals = basinRefusalsOf(units, profile);
   return {
     ...entry,
     cutouts,
+    ...(refusals.length ? { basinRefusals: refusals } : {}),
     geometry: {
       ...entry.geometry,
       ...(cutouts.length ? { cutouts } : {}),
+      ...(refusals.length ? { basinRefusals: refusals } : {}),
       ...(entry.joint ? { joint: entry.joint } : {}),
     },
   };
@@ -644,6 +666,11 @@ export function cutoutsFor(units, geometry, profile) {
   const out = [];
   for (const u of units || []) {
     const type = getUnitType(u.type);
+    // T82 F11 · a vanity's basins: an oval each, never machined.
+    if (isVanityKit(u.type)) {
+      out.push(...basinCutoutsOf(u, profile));
+      continue;
+    }
     const kind = type.id === 'SINK' ? 'sink' : ((u.params?.hob === true || type.hob) ? 'hob' : null);
     if (!kind) continue;
     const W = Number(u.params?.width) || 0;
@@ -671,6 +698,249 @@ export function cutoutsFor(units, geometry, profile) {
     });
   }
   return out;
+}
+
+// ─── T82 F10, F11, F12 · THE VANITY'S TOP, ITS BASINS, ITS VOID ─────────────
+//
+// The owner, 25.10.2026 (12:57): *"dodanie blat grubosc do wyboru"*, *"dodanie
+// 1 sink or 2 sink? dodajesz tylko do widoku"*, *"nastepnie to bedzie miejsce
+// z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"*; and at 13:03:
+// *"3 - 80"*, *"5 - blat osobny element jak worktop"*. The vanity's top is
+// this module's slab (the store lays it at birth, `kind: 'top'`), reaching the
+// wall over the void; the basins are what the eye sees set into it and the
+// worktop's cut-outs on the plan; the void is a note and a hatch. None of it
+// is a board: the basin is supplied by others, as appliances are.
+
+/**
+ * T82 F10 / F12 · the SERVICE VOID behind a vanity: how far its carcass stands
+ * off the wall beyond the house's clearance (`vanity.serviceVoidMm`, 80, by the
+ * kit's own `wall_gap` at birth; a gap typed since is the unit's and is read as
+ * it stands). 0 for every unit that is not a vanity. The slab's depth, the
+ * plan's hatch, the section's band and Check #45 all read this one number.
+ */
+export function serviceVoidOf(unit, profile) {
+  if (!unit || !isVanityKit(unit.type)) return 0;
+  const clearance = Math.max(0, Number(profile?.room?.wallBackClearance) || 0);
+  return Math.max(0, wallGapOf(unit, profile) - clearance);
+}
+
+/** T82 F11 · the basin to the eye (`vanity.basin`, PROPOSED oval 520 x 400 x 150). */
+export function basinSpec(profile) {
+  const b = profile?.vanity?.basin || {};
+  const num = (v, fallback) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : fallback);
+  return {
+    shape: b.shape || 'oval',
+    w: num(b.widthMm, 520),
+    d: num(b.depthMm, 400),
+    h: num(b.heightMm, 150),
+    colour: b.colour || null,
+  };
+}
+
+/**
+ * T82 F11 · where a vanity's basins stand, in the UNIT's frame: `x` from the
+ * carcass's left outer face, `z` from the carcass back. Read, never derived:
+ * the x is `engine/vanity.js vanityWastes` (the LISP's `vanity-wastes`, D14:
+ * one centred; two at the column centres on two columns, at a third and two
+ * thirds on one), the z its `wasteFromBackMm`. The waste IS the basin's
+ * centre, so the trap's U and the basin cannot stand apart.
+ */
+export function basinCentresOf(unit, profile) {
+  if (!unit || !isVanityKit(unit.type)) return [];
+  const W = Number(unit.params?.width) || 0;
+  const columns = Number(unit.params?.columns) === 2 ? 2 : 1;
+  const z = vanitySpec(profile).wasteFromBackMm;
+  return vanityWastes({ W, columns, sinks: unit.params?.sinks }).map((x) => ({ x, z }));
+}
+
+/**
+ * T82 F11 · the worktop's cut-out for each basin, in the slab's frame (along
+ * the wall, out from it): an OVAL of the basin's own size centred on its
+ * waste, its box in `x / z / w / d` so every reader of a cut-out finds it.
+ * Never machined and never a part: the basin is supplied by others and its
+ * hole is cut on site to its own template (the BOM carries it as a NOTE under
+ * the worktop, as the sink's; Check #30 lists it as manual).
+ */
+function basinCutoutsOf(u, profile) {
+  const b = basinSpec(profile);
+  const x0 = Number(u.position?.x_mm) || 0;
+  const back = wallGapOf(u, profile);
+  const r2 = (v) => Math.round(v * 100) / 100;
+  const num = u.params?.unit_num || u.id;
+  // T82 F11, after the review · only the basins that fit (`fitBasins`, the one source).
+  return fitBasins(u, profile).fitted.map((c) => ({
+    kind: 'basin',
+    shape: b.shape,
+    unitId: u.id,
+    unitNum: u.params?.unit_num || null,
+    basin: c.n,
+    x: r2(x0 + c.x),
+    z: r2(back + c.z),
+    w: b.w,
+    d: b.d,
+    r: null,
+    cx: r2(x0 + c.cx),
+    cz: r2(back + c.cz),
+    depthMm: b.h,
+    machined: false,
+    readiness: 'manual',
+    note: `Basin cut-out ${Math.round(b.w)} x ${Math.round(b.d)} oval over ${num}: cut on site to the basin's template.`,
+  }));
+}
+
+// ─── T82 F11 · THE BASINS THE STONE CAN TAKE, AND THE ONES IT CANNOT ───────
+//
+// CLAUDE.md T82's law: *"The room refuses in words, the engine never
+// squashes"*. Two 520 basins on one 900 column overlap; on two columns they
+// pass the slab's ends. Nothing is moved or shrunk to make them fit: a basin is
+// cut only where its oval lies wholly inside the vanity's own top with the
+// house's cut-out margin to the edge (`worktop.cutout.insetMm`, 20) and clear
+// of the ovals already fitted by the same margin, in the order the LISP's
+// wastes stand (`fitBasins`, the one source; the room's slab keeps the same
+// rule, 3d/Scene.jsx). A basin that does not fit is not cut, not drawn, not
+// listed; the vanity says why and what would let it in (Check #48). The trap's
+// U is the LISP's cut and follows `sinks`.
+
+/** Two ovals clear of each other by the margin: each grown by half of it, the centres one scaled diameter apart. */
+function ovalsClear(a, b, m) {
+  const rx = (a.w + b.w) / 4 + m / 2;
+  const rz = (a.d + b.d) / 4 + m / 2;
+  const dx = (a.x + a.w / 2) - (b.x + b.w / 2);
+  const dz = (a.z + a.d / 2) - (b.z + b.d / 2);
+  return (dx / rx) ** 2 + (dz / rz) ** 2 >= 4 - 1e-9;
+}
+
+/**
+ * The basin ovals (their boxes `x z w d`) laid into a slab's box `{ x0, x1,
+ * z0, z1 }` in order: each one cut where it lies inside with the margin and
+ * clear of those cut before it. Per oval: `{ ok, inX, inZ, clear }`.
+ */
+function basinSequence(ovals, box, m) {
+  const cut = [];
+  return ovals.map((o) => {
+    const e = 1e-6;
+    const inX = o.x >= box.x0 + m - e && o.x + o.w <= box.x1 - m + e;
+    const inZ = o.z >= box.z0 + m - e && o.z + o.d <= box.z1 - m + e;
+    const clear = cut.every((k) => ovalsClear(o, k, m));
+    const ok = inX && inZ && clear;
+    if (ok) cut.push(o);
+    return {
+      ok, inX, inZ, clear,
+    };
+  });
+}
+
+/**
+ * T82 F11 · THE ONE SOURCE of which of a vanity's basins fit, and where: every
+ * reader takes it from here (the slab's cut-outs and so the plan, the section,
+ * the BOM note and the room's bowl; Check #48; and the carcass TOP's cut-outs
+ * of KIT_VANITY.lsp D18, which the engine mirrors from `fitted`).
+ *
+ * Judged on the vanity's OWN top, in its own frame: along the wall its own
+ * width (the carcass's outer faces), out from the wall the slab it carries
+ * alone (`worktopGeometry` of the one vanity: from the wall over the void to
+ * the front overhang), so the answer is the vanity's whatever stands beside
+ * it (a trimmed side overhang, a neighbour's stone), any real slab over it
+ * holds every fitted oval at least the margin inside, and `computeCabinet` can
+ * ask it with the unit's params alone. Each basin, in the order of the LISP's
+ * wastes (`vanityWastes`), fits where its oval lies inside that top with the
+ * cut-out margin and clear of the basins fitted before it by the same margin.
+ *
+ * @param {{type:string, params:object, position?:object}} unit
+ * @returns {{ basins: object[], fitted: object[], refusal: object|null }}
+ *   `basins` every one asked, `{ n, cx, cz, x, z, w, d, h, fits }` with `cx`
+ *   from the carcass's left outer face and `cz` from the carcass back (the
+ *   waste), `x z` the oval's box corner in the same frame; `fitted` those
+ *   that fit; `refusal` the words for those that do not, or null.
+ */
+export function fitBasins(unit, profile) {
+  if (!unit || !isVanityKit(unit.type)) return { basins: [], fitted: [], refusal: null };
+  const spec = worktopSpec(profile);
+  const m = spec.cutout.insetMm;
+  const b = basinSpec(profile);
+  const W = Number(unit.params?.width) || 0;
+  const D = Number(unit.params?.depth) || 0;
+  const back = wallGapOf(unit, profile);
+  const columns = Number(unit.params?.columns) === 2 ? 2 : 1;
+  const sinks = unit.params?.sinks;
+  const z = vanitySpec(profile).wasteFromBackMm;
+  // The vanity's own top, its carcass's left face at 0 and its back at 0.
+  // Along the wall the basin lies over its own vanity, the margin from the
+  // carcass's outer faces (never counting on a side overhang a neighbour can
+  // trim away, nor on a neighbour's stone); out from the wall the top reaches
+  // from the wall over the void to its front overhang.
+  const own = worktopGeometry({ units: [{ ...unit, position: { ...(unit.position || {}), x_mm: 0 } }], profile });
+  const left = 0;
+  const right = 0;
+  const zBack = (Number(own?.z) || 0) - back;
+  const zFront = (Number(own?.z) || 0) + (Number(own?.d) || 0) - back;
+  const ovals = (w) => vanityWastes({ W: w, columns, sinks }).map((x) => ({
+    x: x - b.w / 2, z: z - b.d / 2, w: b.w, d: b.d,
+  }));
+  const lay = (w) => basinSequence(ovals(w), {
+    x0: left, x1: w + right, z0: zBack, z1: zFront,
+  }, m);
+  const now = lay(W);
+  const basins = ovals(W).map((o, i) => ({
+    n: i + 1, cx: o.x + o.w / 2, cz: o.z + o.d / 2, x: o.x, z: o.z, w: o.w, d: o.d, h: b.h, fits: now[i].ok,
+  }));
+  const fitted = basins.filter((o) => o.fits);
+  if (fitted.length === basins.length) return { basins, fitted, refusal: null };
+  const asked = basins.length;
+  const unitNum = unit.params?.unit_num || unit.id;
+  const base = {
+    unitId: unit.id, unitNum: unit.params?.unit_num || null, asked, cut: fitted.length, basinW: b.w, basinD: b.d,
+  };
+  // Too deep for the top: the depth that lets the oval in, front edge and margin.
+  if (now.some((v) => !v.inZ)) {
+    const backShort = zBack + m - (z - b.d / 2);
+    if (backShort > 1e-6) {
+      return {
+        basins,
+        fitted,
+        refusal: {
+          ...base,
+          why: 'depth',
+          need: null,
+          message: `${unitNum}: A basin ${b.d} deep does not fit the top of a ${D} deep vanity: its waste stands ${z} from the carcass back; take a smaller basin.`,
+        },
+      };
+    }
+    const over = (z + b.d / 2) + m - zFront;
+    const need = Math.ceil((D + over) / 10) * 10;
+    return {
+      basins,
+      fitted,
+      refusal: {
+        ...base,
+        why: 'depth',
+        need: { depth: need },
+        message: `${unitNum}: A basin ${b.d} deep does not fit the top of a ${D} deep vanity: make the vanity ${need} deep${asked > 1 ? ' or take one basin' : ''}.`,
+      },
+    };
+  }
+  // Too wide for the top, or two that meet: the width that lets every one in.
+  let need = null;
+  for (let w = Math.ceil((W + 1) / 10) * 10; w <= W + 6000; w += 10) {
+    if (lay(w).every((v) => v.ok)) { need = w; break; }
+  }
+  const what = asked > 1 ? `${asked === 2 ? 'Two' : String(asked)} basins ${b.w} wide do not` : `A basin ${b.w} wide does not`;
+  const fix = [need ? `make the vanity ${need} wide` : null, asked > 1 ? 'take one basin' : null].filter(Boolean).join(' or ');
+  return {
+    basins,
+    fitted,
+    refusal: {
+      ...base,
+      why: 'width',
+      need: need ? { width: need } : null,
+      message: `${unitNum}: ${what} fit the top of a ${W} vanity${fix ? `: ${fix}` : ''}.`,
+    },
+  };
+}
+
+/** T82 F11 · the refusals of the vanities under one slab, one per vanity that lost a basin. */
+function basinRefusalsOf(units, profile) {
+  return (units || []).map((u) => fitBasins(u, profile).refusal).filter(Boolean);
 }
 
 // ─── T75 F11 · THE ISLAND'S ONE SLAB ────────────────────────────────────────
@@ -745,16 +1015,20 @@ function islandSlab({ record, units, walls, profile }) {
   const panels = onIsland.filter((u) => getUnitType(u.type)?.freePanel);
   const top = tops.length ? Math.max(...tops) : Math.max(0, ...panels.map((u) => Number(u.params?.height) || 0));
   const outline = [[u0, v0], [u1, v0], [u1, v1], [u0, v1]].map(([u, v]) => [r2(u), r2(v)]);
+  // T82 F10, after the review (topbasin 3) · the record's own thickness, as
+  // every other slab reads it (a vanity's typed top on an island is the
+  // island slab's); a record with none is the profile's, as it always was.
+  const thick = slabThickness(record, spec);
   const geometry = {
     wall: A.index,
     x: r2(u0),
     w: r2(u1 - u0),
     y: top,
-    h: spec.thickness,
+    h: thick,
     z: r2(v0),
     d: r2(v1 - v0),
     depth: r2(v1 - v0),
-    thickness: spec.thickness,
+    thickness: thick,
     decor: record?.decor ?? null,
     overhang: { front: over, side: over, wall: 0 },
     extensions: ext,
@@ -771,19 +1045,29 @@ function islandSlab({ record, units, walls, profile }) {
       const corners = [[c.x, c.z], [c.x + c.w, c.z], [c.x + c.w, c.z + c.d], [c.x, c.z + c.d]]
         .map(([pu, pv]) => toA(plan(wall, pu, pv)));
       const cu = corners.map((p) => p[0]); const cv = corners.map((p) => p[1]);
+      // T82 F11 · a basin's centre rides into A's frame with its box (the hole and the bowl read it).
+      const centre = c.cx != null ? toA(plan(wall, c.cx, c.cz)) : null;
       cutouts.push({
         ...c,
         x: r2(Math.min(...cu)),
         z: r2(Math.min(...cv)),
         w: r2(Math.max(...cu) - Math.min(...cu)),
         d: r2(Math.max(...cv) - Math.min(...cv)),
+        ...(centre ? { cx: r2(centre[0]), cz: r2(centre[1]) } : {}),
       });
     }
   }
+  // T82 F11 · the basins each vanity's top refuses (`fitBasins`, its own frame).
+  const refusals = basinRefusalsOf(cabinets, profile);
   return {
     ...record,
     slabId: `${record.id}`,
     cutouts,
-    geometry: { ...geometry, ...(cutouts.length ? { cutouts } : {}) },
+    ...(refusals.length ? { basinRefusals: refusals } : {}),
+    geometry: {
+      ...geometry,
+      ...(cutouts.length ? { cutouts } : {}),
+      ...(refusals.length ? { basinRefusals: refusals } : {}),
+    },
   };
 }

@@ -158,6 +158,17 @@ function paramSets(typeId) {
   if (T.id === 'FRIDGE' || T.id === 'FRIDGE_US') {
     sets.push(['fridge', { ...base, doors: true, fridge_h: 1780, plinth: true }]);
   }
+  // T82 F2 F3 · the HAWA pocket's door: cut when the pocket covers a unit (the
+  // store hands `pocket_cover`, engine/hawaPocket.js pocketCoverOf), one door
+  // and two. The owner, 25.10.2026: *"wysuwasz pocket door i zakrywasz szafke
+  // lub szafki"*.
+  if (T.hawaPocket) {
+    const side = (s) => ({ side: s, units: ['u'], spanMm: 500, KT1: 580, freeEndClearanceMm: 1.5 });
+    sets.push(['pocket-door', { ...base, plinth: true, pocket_cover: { doors: [side('R')] } }]);
+    sets.push(['pocket-two-doors', {
+      ...base, pocket: { ...base.pocket, doors: 2, hand: null }, pocket_cover: { doors: [side('L'), side('R')] },
+    }]);
+  }
   return sets;
 }
 
@@ -272,6 +283,10 @@ const INSERT_SRC = readFileSync(new URL('../src/engine/shoeInsert.js', import.me
 // T75 F7 · the corner notch names the boards of its box (`notch.js`, the
 // `board('RETURN', 'NOTCH-RETURN', ...)` helper), so it is read here too.
 const NOTCH_SRC = readFileSync(new URL('../src/engine/notch.js', import.meta.url), 'utf8');
+// T82 F2 · the HAWA pocket names its parts in KIT_HAWA.lsp's own `hawa-cut`
+// shape, `[part, id, w, h, t, box]` (`engine/hawaPocket.js cutParts`), so it is
+// read here too: the first string of each part row.
+const HAWA_SRC = readFileSync(new URL('../src/engine/hawaPocket.js', import.meta.url), 'utf8');
 
 function partNamesInSource() {
   const names = new Set();
@@ -282,6 +297,7 @@ function partNamesInSource() {
   }
   for (const m of ENGINE_SRC.matchAll(/\bboard\(\s*`[^`]*`\s*,\s*'([^']+)'/g)) names.add(m[1]);
   for (const m of NOTCH_SRC.matchAll(/\bboard\(\s*'[^']*'\s*,\s*'([A-Z][A-Z0-9-]+)'/g)) names.add(m[1]);
+  for (const m of HAWA_SRC.matchAll(/parts\.push\(\['([A-Z][A-Z0-9-]+)',/g)) names.add(m[1]);
   // T54-F7 AMENDED (28.08.2026): the shoe box suffix-map scan
   // (`const suffix = {…}[piece.role]` → SHOEBOX-*) is deleted — the map it
   // read is gone from cabinet.js with the rest of the shoe box world

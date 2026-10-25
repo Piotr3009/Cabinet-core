@@ -16,6 +16,8 @@ import { formatMm } from '../engine/format.js';
 // Turn 39 (CLAUDE.md F7): the warning a cut file carries when nobody has said
 // what a part is made of.
 import { cncAssignmentWarning } from '../engine/bom.js';
+// T82 F12, after the review · a note is never a thing to look at before the machine.
+import { findingsToAct } from '../engine/checks.js';
 
 // ─── What is on the sheet (turn 11, CLAUDE.md F8.1/F8.2) ────────────────────
 //
@@ -173,11 +175,13 @@ export default function CncTree() {
     });
     if (unassigned) notify(unassigned, 'warn');
     const found = runChecks();
-    if (!found.length) return;
-    const reds = found.filter((f) => f.level === 'red').length;
+    // T82 F12, after the review: what asks something of a person; a note does not.
+    const work = findingsToAct(found);
+    if (!work.length) return;
+    const reds = work.filter((f) => f.level === 'red').length;
     setCheckOpen(true);
     notify(
-      `Check: ${reds ? `${reds} fault${reds === 1 ? '' : 's'}` : `${found.length} to look at`} `
+      `Check: ${reds ? `${reds} fault${reds === 1 ? '' : 's'}` : `${work.length} to look at`} `
       + 'before this goes to the machine.',
       reds ? 'error' : 'warn',
     );

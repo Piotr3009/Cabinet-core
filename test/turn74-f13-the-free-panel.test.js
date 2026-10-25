@@ -392,3 +392,63 @@ test('T74 F13 · the drawing set (read-only) takes a job with a free panel in it
     assert.ok(sheets.length > 0, `${facing}/${tilt}: the set drew nothing`);
   }
 });
+
+// ═══ 6 · T82 F18 · THE THICKNESS SHOWS ═════════════════════════════════════
+//
+// The owner, 25.10.2026 13:36: *"nie moge wizualnie zwiekszyc tez grubosci
+// tego panela"*. The probe (`verify/t82/f18-probe.md`): `board_t 36` wrote a
+// box 36 deep, but the engine cut the FP from `G`, which is the project's
+// carcass slot (`paramsForEngine` always fills it), so the room drew an 18
+// board inside a 36 box and the cut list said 18. One link: the free panel's
+// board is its own `board_t`, read before the carcass slot; the slot keeps
+// ruling every cabinet.
+
+test('T82 F18 · board_t 36 through the store: the FP is 36 and fills its box (upright, along), the cut list line is 36; across, the box is 36 wide', async () => {
+  const { buildBom } = await import('../src/engine/bom.js');
+  aRoom();
+  const id = S().addUnit('FREE_PANEL').id;
+  assert.equal(S().unitResult(id).panels[0].thickness, 18, 'the stage: the job\'s 18 board');
+  const res = S().updateUnitParams(id, { board_t: 36 });
+  assert.deepEqual(res.notices, []);
+  assert.equal(unit(id).params.board_t, 36);
+  assert.equal(unit(id).params.depth, 36, 'the box is the board\'s');
+  const r = S().unitResult(id);
+  const fp = r.panels.find((p) => p.id === 'FP');
+  assert.equal(fp.thickness, 36, 'the engine cut the carcass slot\'s 18');
+  assert.equal(fp.box.d, 36, 'an 18 board inside a 36 box');
+  const bom = buildBom([{ unit: unit(id), result: r }], { profile: P });
+  const row = bom.cutRows.find((c) => c.part === 'FREE-PANEL');
+  assert.equal(row?.thickness, 36, 'the cut list says another thickness');
+  S().updateUnitParams(id, { panel_facing: 'across' });
+  const across = S().unitResult(id).panels.find((p) => p.id === 'FP');
+  assert.equal(across.thickness, 36);
+  assert.equal(across.box.w, 36);
+  assert.equal(unit(id).params.width, 36);
+});
+
+test('T82 F18 · the engine: the panel\'s own board_t before the carcass slot; every cabinet still cut from its slot', () => {
+  // The probe's two rows: a bare call gave 36, the same call with the slot 18.
+  const bare = computeCabinet(params({ board_t: 36 }), P).panels[0];
+  assert.equal(bare.thickness, 36);
+  const slotted = computeCabinet({ ...params({ board_t: 36 }), thickness_slots: { carcass1: 18 } }, P).panels[0];
+  assert.equal(slotted.thickness, 36, 'the carcass slot overrode the panel\'s own board');
+  assert.equal(slotted.box.d, 36);
+  // No board_t said at all: the slot (G) as before.
+  const { board_t: _drop, ...noBoard } = params();
+  assert.equal(computeCabinet({ ...noBoard, thickness_slots: { carcass1: 19 } }, P).panels[0].thickness, 19);
+  // A cabinet: the slot rules its carcass, its board_t notwithstanding.
+  const bud = computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: '01', board_t: 18, thickness_slots: { carcass1: 19 } }, P);
+  for (const id of ['BUL', 'BUR', 'TOP', 'BOTTOM', 'BACK']) {
+    assert.equal(bud.panels.find((p) => p.id === id).thickness, 19, `${id} left the carcass slot`);
+  }
+});
+
+test('T82 F18 · the Thickness field carries the ladder 18, 22, 25, 30, 36 (the profile\'s, PROPOSED) beside the free number', () => {
+  assert.deepEqual(P.freePanel.thicknessLadder, [18, 22, 25, 30, 36]);
+  const src = uncomment(read('src/components/ElementProperties.jsx'));
+  assert.match(src, /\(profile\.freePanel\?\.thicknessLadder \|\| \[\]\)\.map\(\(t\) => \(/);
+  assert.match(src, /data-free-panel-thickness-step=\{t\}/);
+  assert.match(src, /onClick=\{\(\) => put\(\{ board_t: t \}\)\}/);
+  // The free number stays, the typed road.
+  assert.match(src, /data-free-panel-thickness="1"[\s\S]*?onCommit=\{\(v\) => put\(\{ board_t: v \}\)\}/);
+});

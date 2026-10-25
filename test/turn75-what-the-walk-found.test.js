@@ -42,7 +42,15 @@ test('f04 / f11 · the one selected cabinet\'s Worktop row: Add worktop alone, R
   assert.match(row, /removeWorktop\(record\.id\)/);
   assert.match(row, /seatingOverhang\(record\.id, f\.face\)/);
   assert.match(row, /extendIslandWorktop\(record\.id, f\.face, 0\)/);
-  assert.doesNotMatch(row, /NumberField|type="number"/, 'no proposed number is typed in the UI');
+  // AMENDED BY T82 F10 (25.10.2026): the vanity's top is typed by the owner's own order
+  // (*"dodanie blat grubosc do wyboru"*): ONE field, on a vanity's slab only, through the
+  // store's refusal in words. Every other number of the row is still the profile's.
+  const typed = row.match(/<NumberField[\s\S]*?\/>/g) || [];
+  assert.equal(typed.length, 1, 'one typed number: the vanity top\'s thickness');
+  assert.match(typed[0], /data-worktop-thickness-field/);
+  assert.match(typed[0], /setWorktopThickness\(record\.id, v\)/);
+  assert.match(row, /\{isVanityKit\(unit\.type\) && \(/, 'on a vanity\'s slab only');
+  assert.doesNotMatch(row, /type="number"/, 'no proposed number is typed in the UI');
 });
 
 test('f03r · a one-wall retail job\'s corner wardrobes stand on that wall, at its two ends, and a third is refused', () => {

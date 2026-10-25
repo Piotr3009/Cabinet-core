@@ -39,6 +39,8 @@ import { useCheckFindings, useGoToSubject } from '../lib/checkFindings.js';
 const TONE = {
   red: 'border-status-danger/60 text-status-danger',
   yellow: 'border-status-warn/60 text-status-warn',
+  // T82 F12 · a NOTE (#45, the vanity's service void): grey, it informs.
+  note: 'border-shell-600 text-ink-200',
 };
 
 export default function CheckPanel() {

@@ -35,8 +35,10 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   // Turn 12's flat list of ten became the owner's FOUR groups, because that is
   // how he wrote the catalogue out and because thirty entries in one column is
   // not a list anybody reads.
+  // AMENDED BY T82 F9: *"new library group "Bathroom" in the Kitchen library and in the wardrobe library"* (CLAUDE.md T82 F9): the fifth group, before
+  // Extras (the pieces that finish a run stay last).
   assert.deepEqual(KITCHEN_LIBRARY.map((e) => e.id), [
-    'base-units', 'tall-units', 'wall-units', 'extras',
+    'base-units', 'tall-units', 'wall-units', 'bathroom', 'extras',
   ]);
   for (const g of KITCHEN_LIBRARY) assert.equal(g.kind, 'group');
 
@@ -60,8 +62,9 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   // they are made of; the pantry's held-open row became a kit.
   // AMENDED BY T75 F12: *"Four library rows, Tall units ... `Oven tall`
   // (oven + cupboard), `Oven + microwave`, `Fridge freezer`, `Washer + dryer`."*
+  // AMENDED BY T82 F2: the HAWA pocket after Standard, *"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2).
   assert.deepEqual(idsOf('tall-units'), [
-    'tall', 'fridge', 'cargo-300', 'basket-tall', 'pantry', 'pantry-worktop',
+    'tall', 'hawa-pocket', 'fridge', 'cargo-300', 'basket-tall', 'pantry', 'pantry-worktop',
     'space-tower', 'oven-tall', 'oven-microwave', 'fridge-freezer', 'washer-dryer', 'american-fridge',
   ]);
   // Turn 31 (CLAUDE.md F9): the HOOD unit joins the wall group.
@@ -90,7 +93,10 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // AMENDED BY T75 F13: BUD_INT, *"Drawers behind doors"*.
     // AMENDED BY T75 F14: the hob drawer units, 2x and 3x.
     // AMENDED BY T78 F17: the canopy hood and the short hood, beside the hood unit.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDR2_HOB', 'BUDR_HOB', 'BUD_INT', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'BLIND_WALL', 'CORNER_L_WALL',
+    // AMENDED BY T82 F2: the HAWA pocket in Tall units, after Standard (*"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2)).
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDR2_HOB', 'BUDR_HOB', 'BUD_INT', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'HAWA_POCKET', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'BLIND_WALL', 'CORNER_L_WALL',
+    // AMENDED BY T82 F9: the Bathroom group's three vanity units, before Extras.
+    'VANITY2', 'VANITY3', 'VANITY4',
     // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
     'FREE_PANEL',
   ]);
@@ -146,7 +152,9 @@ test('the Kitchen category carries the list, and the others are untouched', () =
   // AMENDED BY T75 F16: + the chest of drawers' three counts (*"Wardrobes category"*).
   // AMENDED BY T75 F17: + the floating desk.
   // AMENDED BY T75 F18: + the low unit.
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
+  // AMENDED BY T82 F2: + the HAWA pocket, *"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2).
+  // AMENDED BY T82 F9: + the Bathroom group's three vanity units, *"new library group "Bathroom" in the Kitchen library and in the wardrobe library"* (CLAUDE.md T82 F9).
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET', 'VANITY2', 'VANITY3', 'VANITY4'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
   // Nothing was lost in the restructure: every kit is still reachable.
   const reachable = new Set(UNIT_CATEGORIES.flatMap((c) => c.types));
   for (const id of UNIT_TYPE_ORDER) assert.ok(reachable.has(id), `${id} is in no category`);

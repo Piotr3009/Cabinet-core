@@ -48,7 +48,14 @@ const rect = (r) => `(${r.map(fmt).join(' ')})`;
 // base to diff against (the PRO freeze's own reason, test/turn59-f1).
 const LISP_BASE_FINGERPRINT = '745d56d65a7b94e20bba9f85f3510b6d59d1c1ada46c3b19cecb738177480a02';
 const sha256 = (b) => createHash('sha256').update(b).digest('hex');
-const lispFingerprint = () => sha256(readdirSync(`${ROOT}reference/lisp`).filter((n) => n !== KIT).sort()
+// T82 F1 AMENDED (25.10.2026): a kit a LATER turn adds is a NEW file held by that turn's own test
+// (KIT_HAWA.lsp, test/turn82-f01-hawa-lisp.test.js; the owner, 25.10.2026: *"zaczniemy od hawa dodanie"*;
+// CLAUDE.md T82 LAWS: *"PART A and PART B each begin with a LISP kit"*). It stands outside T80's fingerprint
+// and its git row; every other file is still T80's base byte for byte, and the fingerprint is not re-pinned.
+// T82 F8 AMENDED (25.10.2026): and KIT_VANITY.lsp (test/turn82-f08-vanity-lisp.test.js; the owner, 25.10.2026:
+// *"pozniej dodajemy vanity unit"*).
+const LATER_KITS = ['KIT_HAWA.lsp', 'KIT_VANITY.lsp'];
+const lispFingerprint = () => sha256(readdirSync(`${ROOT}reference/lisp`).filter((n) => n !== KIT && !LATER_KITS.includes(n)).sort()
   .map((n) => `${n} ${sha256(readFileSync(`${ROOT}reference/lisp/${n}`))}`).join('\n'));
 /** The turn's base, where git can answer (origin/main, else main), or null. */
 function baseCommit() {
@@ -78,7 +85,9 @@ test('F1 · KIT_INFRAME.lsp: the Skylon header, ASCII, no dash, a NEW file and t
   if (base) {
     const moved = spawnSync('git', ['diff', '--name-status', base, '--', 'reference/lisp'], { cwd: ROOT, encoding: 'utf8' })
       .stdout.split('\n').filter(Boolean);
-    for (const row of moved) assert.match(row, /^A\treference\/lisp\/KIT_INFRAME\.lsp$/, `only the new kit: ${row}`);
+    for (const row of moved) {
+      assert.ok([KIT, ...LATER_KITS].some((k) => row === `A\treference/lisp/${k}`), `only the new kits: ${row}`);
+    }
   }
 });
 

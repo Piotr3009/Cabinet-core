@@ -105,6 +105,24 @@ export const DRAWING_LAYERS = {
   // The frame of an in-frame run: front material, a darker front ink, so the
   // frame and the fronts set in it can be told apart in a legend.
   FRAME_BOARD: { aci: 216, colour: '#5A2D5A', width: 0.35, pen: 'VISIBLE' },
+  // ─── T82 F12 · THE SERVICE VOID BEHIND A VANITY ────────────────────────
+  // The owner, 25.10.2026 (12:57): *"nastepnie to bedzie miejsce z tylu na
+  // rurki minimum potrzebujemy okolo 80 mm do 100 mm"*. CLAUDE.md T82 F12:
+  // "the plan draws the void hatched (a new ink SERVICE_VOID, grey hatch,
+  // T81's one-ink-one-layer law)". A grey of its own (between
+  // the X-ray's two greys), the finest pen: a hatch is a hint about a space, never
+  // an edge. ACI 9 (light grey), no other layer's index: ACI 253 is F24's
+  // PLINTH_HIDDEN (E3, the layer table's owner, on review).
+  SERVICE_VOID: { aci: 9, colour: '#ADADAD', width: 0.13, pen: 'FINE' },
+  // ─── T82 F24: ONE DASHED LINE FOR THE PLINTH ────────────────────────────
+  // The owner, 24.10.2026 (19:34): *"przerywana linia tez nie, bedzie jedna
+  // linia typu przerywana a nie podwojna bo to mylace bardzo jest"*. On a
+  // plan, a board hidden under the cut and seen edge-on (the plinth, a rail)
+  // is ONE dashed line at its face toward the room, on a layer of its own:
+  // grey (ACI 253, the one grey of the 250 to 255 ladder no layer wears), the
+  // FINE pen, dashed as the HIDDEN role is (SHELVES' dash). The shelves keep
+  // theirs. The colour PROPOSED.
+  PLINTH_HIDDEN: { aci: 253, colour: '#828282', width: 0.13, dash: [6, 4], pen: 'FINE' },
 };
 
 export function drawingLayer(name) {
@@ -120,8 +138,8 @@ export function drawingLayer(name) {
  * not in this list paints after it, in the order the sheet first uses it.
  */
 export const LAYER_ORDER = Object.freeze([
-  'MASK', 'WORKTOP', 'BUILDING', 'CARCASE', 'FRAME_BOARD', 'XRAY_CARCASE', 'XRAY_FRONT',
-  'SHELVES', 'RUNNERS', 'HINGES', 'LEG_BLOCK', 'DOORS', 'DOOR_SWING', 'HANDLES', 'HINGE_MARK',
+  'MASK', 'WORKTOP', 'SERVICE_VOID', 'BUILDING', 'CARCASE', 'FRAME_BOARD', 'XRAY_CARCASE', 'XRAY_FRONT',
+  'SHELVES', 'PLINTH_HIDDEN', 'RUNNERS', 'HINGES', 'LEG_BLOCK', 'DOORS', 'DOOR_SWING', 'HANDLES', 'HINGE_MARK',
   'DIMENSIONS', 'SHEET_MUTED', 'FRAME_LIGHT', 'SHEET_CUT', 'FRAME', 'UNIT_NUMBER', 'APPLIANCE', 'VIEW_TITLE',
 ]);
 

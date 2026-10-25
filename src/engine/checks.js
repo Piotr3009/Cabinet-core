@@ -45,6 +45,8 @@ import { groupOfPanel } from './cnc/groups.js';
 import { frontClearances, frontGapRows, carcassGaps } from './frontClearance.js';
 import { unitFindings } from './cnc/exportGate.js';
 import { unitBase, unitTop, hasTopInfill } from './runs.js';
+// T82 F2, after the review · the HAWA pocket in its run: the sentences are runs.js's.
+import { pocketClaimRefusal, pocketRecutRefusal, runPocketParams } from './runs.js';
 // T75 F1 · the corner rulebook, the one detection every consumer reads.
 import {
   blindClearanceView, cornersOf, cornerChecks, lClearanceView,
@@ -52,7 +54,7 @@ import {
 import { roomWalls } from './room.js';
 // T75 F22 · what the machine does not finish, by unit.
 import { notCutParts, readinessCheckMessage, readinessOf } from './readiness.js';
-import { worktopsFor } from './worktop.js';
+import { serviceVoidOf, worktopsFor } from './worktop.js';
 // T78 F17 . the hood's clearance over the hob: the one measure the store's
 // proposal reads too (Check #34 says it, the store's button fixes it).
 import { hoodClearanceMessage, hoodClearanceShortfalls } from './hoodClearance.js';
@@ -60,6 +62,8 @@ import { migrateDesign } from './design.js';
 import { shelfTypeOf } from './shelfTypes.js';
 import { railObstruction } from './railDatum.js';
 import { takesPlinth } from './autoparts.js';
+// T82 F13 · a floating vanity hangs: Check #6 asks it first.
+import { floatHeightOf } from './types.js';
 // Turn 36 (CLAUDE.md F7): is this top box standing on anything?
 import { riderIsOrphaned, riderOverlapMm } from './topBox.js';
 // Turn 50 (CLAUDE.md F3): …and is it standing INSIDE the room?
@@ -291,6 +295,24 @@ export const CHECKS = Object.freeze([
   // reached no screen. #28's twin, RED: a person decides. CLAUDE.md names it
   // #32, which T76 F4 holds (the front's decoration board); it is the next free.
   { n: 36, level: 'red', label: 'Recess extension refused' },
+  // ─── T82 F3 · THE HAWA POCKET (KIT_HAWA.lsp section 4 (i)) ──────────────
+  // The owner, 25.10.2026: *"wysuwasz pocket door i zakrywasz szafke lub
+  // szafki"*; 13:46 *"raczej zawsze wystaja troche wiec nie ma problemu"*.
+  // CLAUDE.md T82: "The room refuses in words, the engine never squashes": a
+  // door outside HAWA's sheet (#37) and a pocket too shallow for its door
+  // (#38) are RED, in the kit's own sentences (`hawa-check-37`,
+  // `hawa-check-38`); the door is cut as asked and nothing is clamped.
+  { n: 37, level: 'red', label: 'HAWA door out of range' },
+  { n: 38, level: 'red', label: 'HAWA pocket too shallow for the door' },
+  // ─── T82 F9 · THE VANITY'S TRAP (KIT_VANITY.lsp D15 to D17, D21) ──────────
+  // The owner, 25.10.2026: *"musimy miec tez wyciecie na trap, w razie czego
+  // jak nie bedzie miejsca to zostawimy informacje prosze uzyc shallow trap"*.
+  // The engine cuts the U it was asked for and never squashes it; where the
+  // trap has no room this row says so in the LISP's sentences (the trap beyond
+  // the U, the shallow trap, the waste over the divider, the U that does not
+  // fit), read off the engine's own warning (`VANITY_TRAP`). YELLOW: the
+  // information the owner asked to leave; a person decides.
+  { n: 39, level: 'yellow', label: 'Use a shallow trap (the vanity\'s trap and its U)' },
   // ─── T80 F10 · THE IN-FRAME CHECKS (engine/inframeChecks.js) ─────────────
   // CLAUDE.md T80 F10 names them #40 to #44, and the probe found them free
   // (verify/t80/f10-probe.md: 37 to 39 stay unused, so nobody reads them as a
@@ -302,6 +324,39 @@ export const CHECKS = Object.freeze([
   { n: 42, level: 'yellow', label: 'Unit the in-frame frame stops at' },
   { n: 43, level: 'yellow', label: 'In-frame frame joined (wider than the board)' },
   { n: 44, level: 'red', label: 'In-frame hinge cup within 3 mm of the lip' },
+  // ─── T82 F12 · THE SERVICE VOID BEHIND A VANITY, A NOTE ──────────────────
+  // CLAUDE.md T82 F12: *"The Check lists the void as a note (#40 "Service
+  // void 80 behind the vanity for the pipes"), never as a fault"*; #40 is the
+  // in-frame project's, so the note takes the next free number (T82 BRIEF 6).
+  // The owner, 25.10.2026 (12:57): *"nastepnie to bedzie miejsce z tylu na
+  // rurki minimum potrzebujemy okolo 80 mm do 100 mm"*. A NOTE is the third
+  // level: grey, sorted after the yellows, counted by `checkSummary` as
+  // neither a fault nor a thing to look at, and never a gate. Generic: any
+  // later rule that only informs takes the same level.
+  { n: 45, level: 'note', label: 'Service void behind a vanity' },
+  // ─── T82 F15 · THE REEDS (engine/frontDecoration.js) ─────────────────────
+  // CLAUDE.md T82 F15 names it #41, which T80's in-frame row holds; the
+  // night's brief gives the reeds #46. The owner, 25.10.2026: *"daj wariant b
+  // czyli na styk narazie"*, *"do tego daj ustawienie srednicy walkow tez"*.
+  // "Reeds leave N mm under the valley" when under the profile's 10, and a
+  // field the diameter does not divide, centred. YELLOW: the leaf is cut; a
+  // person decides.
+  { n: 46, level: 'yellow', label: 'Fluted reeds: little board under the valley, or a field that does not divide' },
+  // T82 F3 · the owner, 13:46: *"jesli jest 18 mm to daj zawsze 22 mm
+  // automatycznie, i napisz informacje minimum 19 mm"* (KIT_HAWA.lsp D3,
+  // `hawa-check-47`). CLAUDE.md names it #42, which the in-frame project holds;
+  // #45 and #46 are the vanity's and the reeds' (BRIEF section 6). YELLOW: a
+  // note, the panels are cut 22.
+  { n: 47, level: 'yellow', label: 'HAWA pocket panels 22 on an 18 front' },
+  // ─── T82 F11 · THE BASINS THAT DO NOT FIT THE TOP ───────────────────────
+  // CLAUDE.md T82's law: *"The room refuses in words, the engine never
+  // squashes"*. A basin whose oval does not lie inside the vanity's top with
+  // the cut-out margin, or meets the one cut before it, is not cut, not drawn
+  // and not listed (engine/worktop.js fitBasins); this says so, with the
+  // width (or depth) that lets it in. CLAUDE.md names no number: the next
+  // free one after the turn's own (#45 to #47, T82 BRIEF 6). YELLOW: nothing
+  // the machine cuts changes, a person decides.
+  { n: 48, level: 'yellow', label: 'Basins that do not fit the vanity\'s top' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -684,16 +739,53 @@ export function runChecks({
       // T75 F23 · #31: the dowel gate, and a joint system refused, likewise.
       // T76 F4 · #32: the board the decoration was drawn for, yellow.
       // T79 F8 · #36: the recess extension the engine refused, in its own words.
+      // T82 F9 · #39: the vanity's trap (KIT_VANITY.lsp D15 to D17), yellow.
       const n = {
         SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21, NOTCH_REFUSED: 28, DOWEL_GATE: 31, JOINTS_REFUSED: 31,
         // T78 F20 · #31 again: the Cabineo gate (engine/cabineo.js CABINEO_GATE_CODE), the same law as the dowel's.
         CABINEO_GATE: 31,
         FRONT_DECORATION_BOARD: 32,
         EXTENSION_REFUSED: 36,
+        // T82 F3 · the HAWA pocket, in the kit's own words (engine/hawaPocket.js HAWA_CODES).
+        HAWA_OUT_OF_RANGE: 37,
+        HAWA_POCKET_DEPTH: 38,
+        HAWA_PANEL_22: 47,
+        // T82 F9 · #39: the vanity's trap, in the LISP's sentences, yellow.
+        VANITY_TRAP: 39,
+        // T82 F9, after the review · #48: the bowl the tops cannot take (KIT_VANITY.lsp D25).
+        VANITY_BOWL: 48,
+        // T82 F15 · #46: the reeds' two notes, yellow as #32 is.
+        FRONT_DECORATION_REED_SKIN: 46, FRONT_DECORATION_REED_REMAINDER: 46,
       }[wn.code];
       if (!n) continue;
-      if (n === 32) {
-        out.push(finding(32, 'yellow', at(wn.panel || null, {
+      if (n === 37 || n === 38 || n === 47) {
+        // The sentence carries its own number (`#37 HAWA door out of range:
+        // ...`); the row names it once.
+        out.push(finding(n, n === 47 ? 'yellow' : 'red', at(null, {
+          message: `${unitNum}: ${String(wn.message).replace(/^#\d+ /, '')}`,
+          subject: { unitId, editor: 'cabinet' },
+        })));
+        continue;
+      }
+      if (n === 48) {
+        // T82 F9, after the review · the LISP's sentence names the unit itself (`vanity-bowl-verdict`).
+        out.push(finding(48, 'yellow', at(null, {
+          message: wn.message,
+          subject: { unitId, editor: 'cabinet' },
+          bowl: true,
+        })));
+        continue;
+      }
+      if (n === 39) {
+        out.push(finding(39, 'yellow', at(null, {
+          message: `${unitNum}: ${wn.message}`,
+          subject: { unitId, editor: 'cabinet' },
+          trap: wn.kind || null,
+        })));
+        continue;
+      }
+      if (n === 32 || n === 46) {
+        out.push(finding(n, 'yellow', at(wn.panel || null, {
           message: `${unitNum} ${wn.message}`,
           subject: { unitId, panelId: wn.panel, editor: 'element' },
         })));
@@ -868,7 +960,9 @@ export function runChecks({
     }
 
     // ── #6 a base run standing with no plinth ─────────────────────────────
+    // T82 F13 · …never a floating vanity: it hangs, it stands on no legs.
     if (takesPlinth(unit.type, profile) && unit.params?.plinth !== true
+      && floatHeightOf(unit.type, unit.params, profile) == null
       && (Number(unitBase(unit, profile)) || 0) > 0) {
       out.push(finding(6, 'yellow', at(null, {
         message: `${unitNum}: standing on legs with no plinth.`,
@@ -1028,6 +1122,33 @@ export function runChecks({
       message: `${num}: this top box is standing on nothing — put a wardrobe under it, or delete it.`,
       subject: { unitId: unit.id, editor: 'cabinet' },
     }));
+  }
+
+  // ── #37 the HAWA pocket the room could not re-cut (T82 F2, after the review)
+  // A new front makes the pocket wider or narrower (panel + 55 + panel); the
+  // store re-cuts it by one law and moves the run beside it, and where the
+  // room has no space nothing moves: the engine cuts the pocket at its width
+  // and the room still holds it at the old one. Said here, red, in one
+  // sentence (`runs.js pocketRecutRefusal`), never left silent.
+  // ...and (store:2) the pocket whose door would close a cabinet another
+  // pocket's door already closes: one cabinet takes one pocket door, so its
+  // door on that side is not cut, and this is where that is said.
+  const pocketRows = entries.some((e) => e?.result?.hawa) ? runPocketParams(list, profile) : new Map();
+  for (const { unit, result } of entries) {
+    if (!result?.hawa || !unit) continue;
+    const said = [
+      pocketRecutRefusal(unit, result.hawa),
+      ...(pocketRows.get(unit.id)?.refused || []).map((entry) => pocketClaimRefusal(unit, entry)),
+    ].filter(Boolean);
+    for (const message of said) {
+      out.push(finding(37, 'red', {
+        unitId: unit.id,
+        unitNum: unit.params?.unit_num || unit.id,
+        panelId: null,
+        message,
+        subject: { unitId: unit.id, editor: 'cabinet' },
+      }));
+    }
   }
 
   // ── #15 a TOP BOX standing THROUGH its main (T37 F5c) ──────────────────
@@ -1261,6 +1382,20 @@ export function runChecks({
     });
     const lines = [];
     const joints = new Set();
+    // ── #48 the basins a vanity's top cannot take (T82 F11), one per vanity ──
+    const basinsSaid = new Set();
+    for (const slab of slabs) {
+      for (const r of slab.basinRefusals || []) {
+        if (basinsSaid.has(r.unitId)) continue;
+        basinsSaid.add(r.unitId);
+        out.push(finding(48, 'yellow', {
+          unitId: r.unitId,
+          unitNum: r.unitNum || '',
+          message: r.message,
+          basins: { asked: r.asked, cut: r.cut, why: r.why, need: r.need },
+        }));
+      }
+    }
     for (const slab of slabs) {
       for (const c of slab.cutouts || []) {
         const state = readinessOf(c);
@@ -1398,6 +1533,20 @@ export function runChecks({
     entries, units: list, design, profile,
   }));
 
+  // ── #45 the service void behind a vanity (T82 F12), a NOTE ──────────────
+  // The one number the slab, the plan and the section read
+  // (`engine/worktop.js serviceVoidOf`): the carcass's stand-off beyond the
+  // house's clearance, 80 by the kit's own wall gap.
+  for (const { unit, result } of entries) {
+    const v = unit ? serviceVoidOf(unit, profile) : 0;
+    if (!(v > 0)) continue;
+    out.push(finding(45, 'note', {
+      unitId: unit.id,
+      unitNum: result?.unitNum ?? unit.params?.unit_num ?? '',
+      message: `Service void ${round2(v)} behind the vanity for the pipes.`,
+    }));
+  }
+
   const seen = new Set();
   const once = out.filter((f) => {
     const key = `${f.check}|${f.unitId}|${f.panelId ?? ''}|${f.message}`;
@@ -1408,7 +1557,8 @@ export function runChecks({
 
   // Reds first, then yellows, then the checks in their own order — which is the
   // order a joiner works down a list in.
-  const rank = { red: 0, yellow: 1 };
+  // T82 F12 · a NOTE after the yellows: it informs and asks nothing.
+  const rank = { red: 0, yellow: 1, note: 2 };
   return once.sort((a, b) => (rank[a.level] - rank[b.level]) || (a.check - b.check)
     || String(a.unitNum).localeCompare(String(b.unitNum)));
 }
@@ -1431,10 +1581,21 @@ export function runnerRowsOf(result) {
   return [...rows.values()].sort((a, b) => a.drawer - b.drawer);
 }
 
+/**
+ * T82 F12, after the review (topbasin 6) · the findings that ask something of
+ * a person: every one but a NOTE. A note (#45, the vanity's service void)
+ * informs and is listed, and is never "to look at": the export preflight, the
+ * toolbar's count and this summary all read it here, one reading.
+ */
+export function findingsToAct(findings) {
+  return (findings || []).filter((f) => f && f.level !== 'note');
+}
+
 /** How the panel's header reads: what was found, in one sentence. */
 export function checkSummary(findings) {
-  const reds = (findings || []).filter((f) => f.level === 'red').length;
-  const yellows = (findings || []).filter((f) => f.level === 'yellow').length;
+  const work = findingsToAct(findings);
+  const reds = work.filter((f) => f.level === 'red').length;
+  const yellows = work.filter((f) => f.level === 'yellow').length;
   if (!reds && !yellows) return 'Nothing to fix — the job is ready to cut.';
   const parts = [];
   if (reds) parts.push(`${reds} fault${reds === 1 ? '' : 's'}`);

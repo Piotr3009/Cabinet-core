@@ -53,13 +53,16 @@ const pointsOk = (points, count) => Array.isArray(points) && points.length >= co
 // T76 F4 · a V groove (`vgroove`) is the owner's G and GF groove: like a
 // flute its vector is the centre line, and unlike one it names no diameter.
 // Its record carries the width at the mouth and the depth; CAM picks the bit.
-const CENTRELINE_KINDS = ['flute', 'vgroove'];
+// T82 F15 · a reed valley (`reed`) is the owner's cloud: its vector is the
+// reed profile cutter's centre path along one valley, its record the cutter's
+// diameter and the section it leaves (one flank and a wall at a field edge).
+const CENTRELINE_KINDS = ['flute', 'vgroove', 'reed'];
 
 function operationProblems(operation, panel) {
   const out = [];
   const op = operation || {};
   const name = op.id || 'unnamed operation';
-  if (!['pocket', 'flute', 'vgroove'].includes(op.kind)) out.push(`${name}: unsupported machining kind.`);
+  if (!['pocket', 'flute', 'vgroove', 'reed'].includes(op.kind)) out.push(`${name}: unsupported machining kind.`);
   if (op.face !== 'front') out.push(`${name}: front machining must name the front face.`);
   if (!Number.isFinite(Number(panel.thickness)) || Number(panel.thickness) <= 0
     || !Number.isFinite(op.depth) || op.depth <= 0 || op.depth >= Number(panel.thickness)) {
@@ -73,16 +76,20 @@ function operationProblems(operation, panel) {
     if (op.crossSection?.kind !== 'v' || !(Number(op.crossSection?.width) > 0) || !(Number(op.crossSection?.depth) > 0)) {
       out.push(`${name}: the V groove's width and depth are missing.`);
     }
-  } else if (!['endmill', 'ballnose'].includes(op.tool?.kind)
+  } else if (!['endmill', 'ballnose', 'reedProfile'].includes(op.tool?.kind)
     || !Number.isFinite(op.tool?.diameter) || op.tool.diameter <= 0) {
     out.push(`${name}: a cutter kind and positive diameter are required.`);
   }
   if ((op.kind === 'flute' && op.tool?.kind !== 'ballnose')
+    || (op.kind === 'reed' && op.tool?.kind !== 'reedProfile')
     || (op.kind === 'pocket' && op.tool?.kind !== 'endmill')) {
     out.push(`${name}: cutter kind does not match the machining operation.`);
   }
   if (op.kind === 'flute' && op.crossSection?.kind !== 'circular') {
     out.push(`${name}: flute circular cross-section is missing.`);
+  }
+  if (op.kind === 'reed' && (op.crossSection?.kind !== 'reed' || !(Number(op.crossSection?.radius) > 0))) {
+    out.push(`${name}: the reed's cross-section is missing.`);
   }
   if (typeof op.layer !== 'string' || op.layer.length > 31 || !/^FRONT_[A-Z0-9_]+$/.test(op.layer)) {
     out.push(`${name}: an uppercase FRONT machining layer of at most 31 characters is required.`);
@@ -236,7 +243,10 @@ export function frontOperationsManifest(entries = [], {
           cuttingDepthMm: operation.depth - operation.startDepth,
           tool: operation.tool,
           ...(operation.crossSection ? { crossSection: operation.crossSection } : {}),
-          vectorMeaning: { flute: 'tool-centre path', vgroove: 'groove centre line', relief: 'proposed 3D machining surface; DXF contours are references only' }[operation.kind] || 'finished pocket boundary',
+          vectorMeaning: operation.kind === 'reed' && operation.crossSection?.edge
+            // T82 F15, after the review (reeds:3): the field's edge is its own cut.
+            ? 'reed field edge: the wall line; one reed flank rises from it toward the field'
+            : { flute: 'tool-centre path', vgroove: 'groove centre line', reed: 'reed profile cutter centre path along a valley', relief: 'proposed 3D machining surface; DXF contours are references only' }[operation.kind] || 'finished pocket boundary',
           readiness: readinessOf(isOrnateReference(panel) ? { ...operation, readiness: 'geometry' } : operation),
           ...(isOrnateReference(panel) ? { referenceOnly: true, productionApproved: false } : {}),
           exported: !isOrnateReference(panel) && (exportAnyway || !held) && operationProblems(operation, panel).length === 0,
@@ -259,6 +269,15 @@ export function frontOperationsManifest(entries = [], {
       pocket: 'Closed vectors describe finished pocket boundaries. Apply tool-radius compensation in CAM.',
       flute: 'Open vectors are ballnose cutter centre paths. Use the specified cutter and final depth.',
       vgroove: 'Open vectors are V groove centre lines. The record gives the width at the mouth and the depth; select a V cutter that cuts that width at that depth in CAM. No included angle is assumed.',
+      // T82 F15 · said only in an export that carries reeds, so every manifest before them is what it was.
+      ...(parts.some((part) => part.operations.some((operation) => operation.kind === 'reed')) ? {
+        reed: 'Open vectors on a FRONT_REED layer are reed valley lines: the centre path of a reed profile cutter of the '
+          + 'recorded diameter, cut to the final depth (half the diameter), two flanks. The reeds are convex half-rounds '
+          + 'touching, their crests on the original face. Open vectors on a FRONT_REEDEDGE layer are the two edges of a '
+          + 'field, a different cut: a vertical wall on the line, as deep as a valley, to the flat margin, and ONE reed '
+          + 'flank rising from it toward the field, which lies between the two lines (crossSection.edge, '
+          + 'crossSection.profile); nothing is cut on the margin side of the line. Give each layer its own CAM recipe.',
+      } : {}),
       registration: 'No registration holes or fixtures are generated. Set the part datum and secure each part for both setups.',
       cam: 'Select tools, feeds, speeds, stepdown, stepover and workholding in CAM. Simulate the supplied depths and both setups before machining.',
     },
@@ -324,7 +343,11 @@ export function frontDecorationLayers(panels = [], { referencePreview = false } 
         name: operation.layer,
         label: operation.kind === 'vgroove'
           ? `V groove: ${operation.depth} mm, ${operation.crossSection.width} mm wide at the mouth`
-          : `${line ? 'Flute' : 'Pocket'}: ${operation.depth} mm, ${operation.tool.diameter} mm ${operation.tool.kind}`,
+          : operation.kind === 'reed' && operation.crossSection?.edge
+            ? `Reed field edge: ${operation.depth} mm, one flank of a ${operation.tool.diameter} mm reed profile and a wall`
+          : operation.kind === 'reed'
+            ? `Reed valley: ${operation.depth} mm, ${operation.tool.diameter} mm reed profile`
+            : `${line ? 'Flute' : 'Pocket'}: ${operation.depth} mm, ${operation.tool.diameter} mm ${operation.tool.kind}`,
         screen: line ? '#63e6e2' : '#c3a06a', aci: line ? 4 : 41,
         kind: line ? 'mark' : 'pocket',
       });
@@ -348,6 +371,9 @@ export function frontLayerFindings(entries = []) {
         const signature = JSON.stringify([
           operation.kind, operation.face, operation.depth, operation.startDepth,
           operation.tool.kind, operation.tool.diameter, operation.crossSection?.width ?? null,
+          // T82 F15, after the review (reeds:3): a reed's field edge is not its valley (the
+          // two edges of a field are one recipe, mirrored: the wall on the line, the flank inward).
+          operation.crossSection?.edge ? 'edge' : null,
         ]);
         const rows = layers.get(operation.layer) || [];
         rows.push({ signature, unitId, unitNum, panel: panel.id, part: panel.part });

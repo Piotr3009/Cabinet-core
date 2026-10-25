@@ -126,8 +126,9 @@ export function groupOfPanel(panel) {
   // T75 F14 · …and the hob unit's dummy, the same FIX front.
   // T75 F15 · …and the pelmet, a strip of front board.
   // T80 F4 · …and the in-frame frame, routed from the front board and sprayed with the fronts.
+  // T82 F4 · …and the HAWA pocket's two panels and its door, cut from the front board (KIT_HAWA.lsp D3).
   if (role === 'front' || role === 'end_panel' || role === 'mask' || role === 'blind_blank' || role === 'false_front'
-    || role === 'pelmet' || role === 'frame') return 'fronts';
+    || role === 'pelmet' || role === 'frame' || role === 'pocket_panel' || role === 'pocket_door') return 'fronts';
   // T75 F2 · the corner post is the side infill's sibling and goes with it.
   if (role === 'infill' || role === 'plinth' || role === 'corner_post') return 'infills';
   if (role === 'shelf') return 'shelves';                     // SHELF, VPART, RAIL-PART, FIXED

@@ -23,8 +23,12 @@ import { entLine as line, entPoly as poly, entText as text } from './primitives.
 import { realWalls, roomWalls, openingsOnWall } from '../room.js';
 import { wallGroups, wallLabel } from './wallElevation.js';
 import { chainH, chainV } from './setChains.js';
-import { sectionStations } from './setSection.js';
+import { hatchLines, sectionStations } from './setSection.js';
 import { unitBase, unitTop, wallGapOf } from '../runs.js';
+// T82 F7 · the HAWA pocket's own words on the plan: the open door dashed, TB and M.
+import { pocketPlanEntities } from '../pocketDoorPose.js';
+// T82 F12 · the vanity's service void: the one number the slab and the Check read.
+import { serviceVoidOf } from '../worktop.js';
 
 const AXIS = 1e-6;
 
@@ -195,8 +199,30 @@ export function buildPlan(entries, {
     // from above the worktop is where the slab is drawn, so each cut-out is a
     // rectangle on it with its size, and a corner joint is its line with the
     // bolt count. Notes, not machining: the slab is cut on site.
+    // ─── T82 F11 · THE BASIN'S OVAL ──────────────────────────────────────
+    // The owner, 25.10.2026 (12:57): *"dodajesz tylko do widoku, musimy miec
+    // tez wyciecie"*. A vanity's basin (engine/worktop.js cutoutsFor, kind
+    // 'basin') is the worktop's oval hole, on the appliance ink (what the
+    // client supplies, blue, dashed: T71, the mockup's blue basin), on both
+    // plans; named with its size where every cut-out is named, from above.
+    for (const c of (w.cutouts || []).filter((k) => k.kind === 'basin')) {
+      const pts = [];
+      for (let i = 0; i < 48; i += 1) {
+        const a = (2 * Math.PI * i) / 48;
+        pts.push(at(wall, c.cx + (c.w / 2) * Math.cos(a), c.cz + (c.d / 2) * Math.sin(a)));
+      }
+      entities.push({ ...poly('APPLIANCE', pts), pen: 'THIN', meta: 'basin-cutout' });
+      if (which === 'wall') {
+        const mid = at(wall, c.cx, c.cz);
+        entities.push({
+          ...text('FRAME', mid[0], mid[1], `BASIN ${Math.round(c.w)} x ${Math.round(c.d)}`, ctx.mm(2.2)),
+          paperHeight: 2.2,
+          mask: true,
+        });
+      }
+    }
     if (which === 'wall') {
-      for (const c of w.cutouts || []) {
+      for (const c of (w.cutouts || []).filter((k) => k.kind !== 'basin')) {
         const r = [at(wall, c.x, c.z), at(wall, c.x + c.w, c.z), at(wall, c.x + c.w, c.z + c.d), at(wall, c.x, c.z + c.d)];
         entities.push({ ...poly('CARCASE', r), pen: 'THIN' });
         const mid = at(wall, c.x + c.w / 2, c.z + c.d / 2);
@@ -246,17 +272,40 @@ export function buildPlan(entries, {
   // the hardware below it are seen from above in painter's order, and the
   // plinth, under the carcass and below either cut, is a dashed line, never
   // a solid outline (the audit of 22.10, finding 3).
+  // T82 F24: ONE dashed line, at its face toward the room, on PLINTH_HIDDEN
+  // (*"bedzie jedna linia typu przerywana a nie podwojna"*). A rail hidden
+  // under a cut joins this predicate when a kit cuts one there.
   const cutList = cutEntries(entries, cut, profile);
+  // ─── T82 F12 · THE SERVICE VOID, HATCHED ───────────────────────────────
+  // CLAUDE.md T82 F12: "the plan draws the void hatched (a new ink
+  // SERVICE_VOID, grey hatch)". The base cut passes through it: the space
+  // from the wall to the vanity's carcass back, along the vanity's width, on
+  // its own ink, drawn before the carcass so the boards stand over it.
+  if (which === 'base') {
+    for (const e of cutList) {
+      if (!(serviceVoidOf(e.unit, profile) > 0)) continue;
+      const wall = walls[Math.max(0, Math.trunc(Number(e.unit.position?.wall ?? 0)))] || walls[0];
+      if (!wall) continue;
+      const x0 = Number(e.unit.position?.x_mm) || 0;
+      const x1 = x0 + (Number(e.unit.params?.width) || 0);
+      for (const [ax, ay, bx, by] of hatchLines(x0, 0, x1, gapOf(e.unit), ctx.mm(profile.drawings.set.hatchPitch))) {
+        const a = at(wall, ax, ay); const b = at(wall, bx, by);
+        entities.push({ ...line('SERVICE_VOID', a[0], a[1], b[0], b[1]), pen: 'FINE', meta: 'service-void' });
+      }
+    }
+  }
   for (const group of planGroups(cutList, profile)) {
     const wall = walls[group.wall] || walls[0];
     if (!wall) continue;
     const drawn = projectRun(group, {
       view: 'plan', cut, mode: 'fronts', profile, frontTypeOf, shakerFrame,
-      hiddenAs: (s) => s.role === 'plinth',
+      hiddenAs: (s) => (s.role === 'plinth' ? 'PLINTH_HIDDEN' : false),
       minEdge: ctx.mm(profile.drawings.projector.minEdgePaperMm),
     });
     for (const e of drawn.entities) entities.push(throughWall(e, wall));
     for (const e of unitNumbers(group, { view: 'plan', profile, ctx })) entities.push(throughWall(e, wall));
+    // T82 F7 · *"wysuwasz pocket door"*: the door open in its pocket, dashed, with TB and M.
+    for (const e of pocketPlanEntities(group, { profile, ctx, gapOf })) entities.push(throughWall(e, wall));
   }
 
   // ── chains: along each run, outside its wall; the depth beside wall A's start ──

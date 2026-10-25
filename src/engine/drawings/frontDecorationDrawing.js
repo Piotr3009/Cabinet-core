@@ -11,6 +11,13 @@ function contourPoints(points, minimumPoints = 3) {
 // A sculpted relief has one canonical surface and several contour references.
 // These curves describe that surface; each curve is not a separate pocket.
 function operationContours(operation) {
+  // T82 F15 · a reed's visible line is its VALLEY (the sharp edge between two
+  // convex reeds, and the wall at a field's side): its centre line, open. The
+  // crests are smooth and draw nothing; the strip it cuts is not an outline.
+  if (operation.kind === 'reed') {
+    return contourPoints(operation.centreline, 2) && operation.face === 'front'
+      ? [{ ...operation, points: operation.centreline, closed: false, contourId: null }] : [];
+  }
   return [
     { ...operation, contourId: null },
     ...(operation.contours || []).map((contour) => ({
@@ -104,6 +111,10 @@ export function frontDecorationDetailNote(panel) {
     notes.push(`Decoration blocked: ${(decoration.problems || []).map((p) => p.message).filter(Boolean).join('; ') || 'Check the front recipe'}`);
   }
   if (decoration.operations?.length) notes.push('Front-face decoration shown in the CNC back-view datum; the separate FRONT DXF mirrors X for front-face setup');
+  if (decoration.reeds) {
+    const r = decoration.reeds;
+    notes.push(`Reeded face: ${r.count} convex reeds of ${formatMm(r.diameterMm)} mm, touching, valleys ${formatMm(r.diameterMm / 2)} mm deep; the lines are the valleys`);
+  }
   if (decoration.operations?.some((operation) => operation.kind === 'relief')) {
     notes.push('Ornate relief is a proposed reconstruction. Dimensions, ornament and cutter access require a physical sample and workshop approval. Relief contours are references, not independent pocket cuts');
   }

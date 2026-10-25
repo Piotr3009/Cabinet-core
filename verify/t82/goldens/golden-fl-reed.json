@@ -1,0 +1,1372 @@
+{
+  "meta": {
+    "name": "../verify/t82/goldens/golden-fl-reed.json",
+    "turn": "T78",
+    "F": "F43",
+    "source": "T82 F15, a new cut geometry (FROZEN 1): the house BUD with one Fluted leaf born as a new choice is, reeds of 20 at the 50 side margins: the 597 x 767 leaf's 497 field takes 24 reeds, 17 over and centred (58.5 a side), 25 valleys 10 deep on FRONT_REED_D10_S0_T20, the leaf's T75 summary and its FRONT DXF fingerprint. The owner, 25.10.2026: *\"fluted teraz to sa rowki a ja potrzebuje chmurke\"*, *\"daj wariant b czyli na styk narazie\"*, *\"do tego daj ustawienie srednicy walkow tez\"*.",
+    "computed_by": "scripts/t78-goldens.mjs flReedScene()",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "BUD",
+    "width": 600,
+    "height": 770,
+    "depth": 558,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "FL",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": null,
+    "unit_num": "01",
+    "front_decoration": {
+      "version": 1,
+      "style": "FL",
+      "grooveCutter": "ballnose",
+      "fluteDiameterMm": 12,
+      "grooveDepthMm": 3,
+      "groovePitchMm": 20,
+      "grooveInsetMm": 50,
+      "grooveDirection": "vertical",
+      "fluteProfile": "reed",
+      "reedDiameterMm": 20
+    }
+  },
+  "expected": {
+    "summary": {
+      "csvLines": [
+        "01,BUL,540,770,<,0.77,0.416",
+        "01,BUR,540,770,>,0.77,0.416",
+        "01,TOP,564,540,>,0.56,0.305",
+        "01,BOTTOM,564,540,>,0.56,0.305",
+        "01,BACK,600,770,,0,0.462",
+        "01,01-F,597,767,<>^v,2.73,0.458"
+      ],
+      "panels": [
+        {
+          "id": "BUL",
+          "part": "BUL",
+          "role": "side",
+          "w": 540,
+          "h": 770,
+          "thickness": 18,
+          "box": {
+            "x": 0,
+            "y": 0,
+            "z": 18,
+            "w": 18,
+            "h": 770,
+            "d": 540
+          },
+          "outline": 34,
+          "holes": 14,
+          "pockets": 7,
+          "readiness": null
+        },
+        {
+          "id": "BUR",
+          "part": "BUR",
+          "role": "side",
+          "w": 540,
+          "h": 770,
+          "thickness": 18,
+          "box": {
+            "x": 582,
+            "y": 0,
+            "z": 18,
+            "w": 18,
+            "h": 770,
+            "d": 540
+          },
+          "outline": 34,
+          "holes": 14,
+          "pockets": 7,
+          "readiness": null
+        },
+        {
+          "id": "TOP",
+          "part": "TOP",
+          "role": "top",
+          "w": 564,
+          "h": 540,
+          "thickness": 18,
+          "box": {
+            "x": 18,
+            "y": 752,
+            "z": 18,
+            "w": 564,
+            "h": 18,
+            "d": 540
+          },
+          "outline": 64,
+          "holes": 0,
+          "pockets": 6,
+          "readiness": null
+        },
+        {
+          "id": "BOTTOM",
+          "part": "BOTTOM",
+          "role": "bottom",
+          "w": 564,
+          "h": 540,
+          "thickness": 18,
+          "box": {
+            "x": 18,
+            "y": 0,
+            "z": 18,
+            "w": 564,
+            "h": 18,
+            "d": 540
+          },
+          "outline": 64,
+          "holes": 0,
+          "pockets": 6,
+          "readiness": null
+        },
+        {
+          "id": "BACK",
+          "part": "BACK",
+          "role": "back",
+          "w": 600,
+          "h": 770,
+          "thickness": 18,
+          "box": {
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "w": 600,
+            "h": 770,
+            "d": 18
+          },
+          "outline": 4,
+          "holes": 34,
+          "pockets": 10,
+          "readiness": null
+        },
+        {
+          "id": "01-F",
+          "part": "FRONT",
+          "role": "front",
+          "w": 597,
+          "h": 767,
+          "thickness": 25,
+          "box": {
+            "x": 1.5,
+            "y": 0,
+            "z": 561,
+            "w": 597,
+            "h": 767,
+            "d": 25
+          },
+          "outline": 4,
+          "holes": 0,
+          "pockets": 0,
+          "readiness": null
+        }
+      ],
+      "drills": [
+        [
+          "FRONT_HINGES_35MM|01-F",
+          3
+        ],
+        [
+          "FRONT_HINGES_3MM|01-F",
+          6
+        ],
+        [
+          "HINGES_5MM|BUL",
+          6
+        ],
+        [
+          "PUZZLE_HOLES_7_5MM|BACK",
+          20
+        ],
+        [
+          "PUZZLE_HOLES_7_5MM|BUL",
+          8
+        ],
+        [
+          "PUZZLE_HOLES_7_5MM|BUR",
+          8
+        ],
+        [
+          "SCREWS_3MM|BACK",
+          14
+        ],
+        [
+          "SCREWS_3MM|BUL",
+          6
+        ],
+        [
+          "SCREWS_3MM|BUR",
+          6
+        ]
+      ],
+      "hardware": [
+        {
+          "role": "hinges",
+          "qty": 3,
+          "label": "Hinges"
+        },
+        {
+          "role": "legs",
+          "qty": 4,
+          "label": "Legs"
+        }
+      ]
+    },
+    "leaf": {
+      "id": "01-F",
+      "w": 597,
+      "h": 767,
+      "thickness": 25,
+      "status": "ready"
+    },
+    "reeds": {
+      "count": 24,
+      "diameterMm": 20,
+      "fieldMm": 497,
+      "remainderMm": 17,
+      "marginMm": 58.5,
+      "underValleyMm": 15
+    },
+    "advisories": [
+      "FRONT_DECORATION_REED_REMAINDER"
+    ],
+    "valleys": [
+      {
+        "id": "reed-valley-1",
+        "kind": "reed",
+        "layer": "FRONT_REEDEDGE_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            58.5,
+            0
+          ],
+          [
+            58.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            58.5,
+            0
+          ],
+          [
+            68.5,
+            0
+          ],
+          [
+            68.5,
+            767
+          ],
+          [
+            58.5,
+            767
+          ]
+        ],
+        "edge": "start",
+        "profile": "5f95b24164399ae3",
+        "surface": [
+          28,
+          26
+        ]
+      },
+      {
+        "id": "reed-valley-2",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            78.5,
+            0
+          ],
+          [
+            78.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            68.5,
+            0
+          ],
+          [
+            88.5,
+            0
+          ],
+          [
+            88.5,
+            767
+          ],
+          [
+            68.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-3",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            98.5,
+            0
+          ],
+          [
+            98.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            88.5,
+            0
+          ],
+          [
+            108.5,
+            0
+          ],
+          [
+            108.5,
+            767
+          ],
+          [
+            88.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-4",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            118.5,
+            0
+          ],
+          [
+            118.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            108.5,
+            0
+          ],
+          [
+            128.5,
+            0
+          ],
+          [
+            128.5,
+            767
+          ],
+          [
+            108.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-5",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            138.5,
+            0
+          ],
+          [
+            138.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            128.5,
+            0
+          ],
+          [
+            148.5,
+            0
+          ],
+          [
+            148.5,
+            767
+          ],
+          [
+            128.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-6",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            158.5,
+            0
+          ],
+          [
+            158.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            148.5,
+            0
+          ],
+          [
+            168.5,
+            0
+          ],
+          [
+            168.5,
+            767
+          ],
+          [
+            148.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-7",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            178.5,
+            0
+          ],
+          [
+            178.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            168.5,
+            0
+          ],
+          [
+            188.5,
+            0
+          ],
+          [
+            188.5,
+            767
+          ],
+          [
+            168.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-8",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            198.5,
+            0
+          ],
+          [
+            198.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            188.5,
+            0
+          ],
+          [
+            208.5,
+            0
+          ],
+          [
+            208.5,
+            767
+          ],
+          [
+            188.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-9",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            218.5,
+            0
+          ],
+          [
+            218.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            208.5,
+            0
+          ],
+          [
+            228.5,
+            0
+          ],
+          [
+            228.5,
+            767
+          ],
+          [
+            208.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-10",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            238.5,
+            0
+          ],
+          [
+            238.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            228.5,
+            0
+          ],
+          [
+            248.5,
+            0
+          ],
+          [
+            248.5,
+            767
+          ],
+          [
+            228.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-11",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            258.5,
+            0
+          ],
+          [
+            258.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            248.5,
+            0
+          ],
+          [
+            268.5,
+            0
+          ],
+          [
+            268.5,
+            767
+          ],
+          [
+            248.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-12",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            278.5,
+            0
+          ],
+          [
+            278.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            268.5,
+            0
+          ],
+          [
+            288.5,
+            0
+          ],
+          [
+            288.5,
+            767
+          ],
+          [
+            268.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-13",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            298.5,
+            0
+          ],
+          [
+            298.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            288.5,
+            0
+          ],
+          [
+            308.5,
+            0
+          ],
+          [
+            308.5,
+            767
+          ],
+          [
+            288.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-14",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            318.5,
+            0
+          ],
+          [
+            318.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            308.5,
+            0
+          ],
+          [
+            328.5,
+            0
+          ],
+          [
+            328.5,
+            767
+          ],
+          [
+            308.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-15",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            338.5,
+            0
+          ],
+          [
+            338.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            328.5,
+            0
+          ],
+          [
+            348.5,
+            0
+          ],
+          [
+            348.5,
+            767
+          ],
+          [
+            328.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-16",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            358.5,
+            0
+          ],
+          [
+            358.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            348.5,
+            0
+          ],
+          [
+            368.5,
+            0
+          ],
+          [
+            368.5,
+            767
+          ],
+          [
+            348.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-17",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            378.5,
+            0
+          ],
+          [
+            378.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            368.5,
+            0
+          ],
+          [
+            388.5,
+            0
+          ],
+          [
+            388.5,
+            767
+          ],
+          [
+            368.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-18",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            398.5,
+            0
+          ],
+          [
+            398.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            388.5,
+            0
+          ],
+          [
+            408.5,
+            0
+          ],
+          [
+            408.5,
+            767
+          ],
+          [
+            388.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-19",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            418.5,
+            0
+          ],
+          [
+            418.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            408.5,
+            0
+          ],
+          [
+            428.5,
+            0
+          ],
+          [
+            428.5,
+            767
+          ],
+          [
+            408.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-20",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            438.5,
+            0
+          ],
+          [
+            438.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            428.5,
+            0
+          ],
+          [
+            448.5,
+            0
+          ],
+          [
+            448.5,
+            767
+          ],
+          [
+            428.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-21",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            458.5,
+            0
+          ],
+          [
+            458.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            448.5,
+            0
+          ],
+          [
+            468.5,
+            0
+          ],
+          [
+            468.5,
+            767
+          ],
+          [
+            448.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-22",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            478.5,
+            0
+          ],
+          [
+            478.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            468.5,
+            0
+          ],
+          [
+            488.5,
+            0
+          ],
+          [
+            488.5,
+            767
+          ],
+          [
+            468.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-23",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            498.5,
+            0
+          ],
+          [
+            498.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            488.5,
+            0
+          ],
+          [
+            508.5,
+            0
+          ],
+          [
+            508.5,
+            767
+          ],
+          [
+            488.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-24",
+        "kind": "reed",
+        "layer": "FRONT_REED_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            518.5,
+            0
+          ],
+          [
+            518.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            508.5,
+            0
+          ],
+          [
+            528.5,
+            0
+          ],
+          [
+            528.5,
+            767
+          ],
+          [
+            508.5,
+            767
+          ]
+        ],
+        "edge": null,
+        "profile": "b69a2749d8cd4122",
+        "surface": [
+          50,
+          48
+        ]
+      },
+      {
+        "id": "reed-valley-25",
+        "kind": "reed",
+        "layer": "FRONT_REEDEDGE_D10_S0_T20",
+        "depth": 10,
+        "startDepth": 0,
+        "tool": {
+          "kind": "reedProfile",
+          "diameter": 20
+        },
+        "centreline": [
+          [
+            538.5,
+            0
+          ],
+          [
+            538.5,
+            767
+          ]
+        ],
+        "points": [
+          [
+            528.5,
+            0
+          ],
+          [
+            538.5,
+            0
+          ],
+          [
+            538.5,
+            767
+          ],
+          [
+            528.5,
+            767
+          ]
+        ],
+        "edge": "end",
+        "profile": "055bd3e3b93e7a2c",
+        "surface": [
+          28,
+          26
+        ]
+      }
+    ],
+    "dxf": {
+      "name": "01-F-FRONT.dxf",
+      "fingerprint": "7a1b81cb"
+    }
+  }
+}

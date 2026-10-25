@@ -221,7 +221,10 @@ export function shakerPocket({ w, h, frame }, profile) {
  * carry a rebate" and "is this board hung on hinges" are two questions.
  */
 export function isShakerFront(panel) {
-  if (panel?.role !== 'front') return false;
+  // T82 F6, after the review: the HAWA pocket door wears the run's front
+  // finish, *"spray, decoration, in-frame as the neighbours"* (CLAUDE.md T82
+  // F6), so its own role asks this question as a front does.
+  if (panel?.role !== 'front' && panel?.role !== 'pocket_door') return false;
   return panel?.meta?.frontType === 'S';
 }
 
@@ -233,7 +236,8 @@ export function isShakerFront(panel) {
  * of the shaker's width, and the recess goes all the way through.
  */
 export function isGlassFront(panel) {
-  if (panel?.role !== 'front') return false;
+  // T82 F6, after the review: the HAWA pocket door too (isShakerFront above).
+  if (panel?.role !== 'front' && panel?.role !== 'pocket_door') return false;
   return panel?.meta?.frontType === 'GL';
 }
 

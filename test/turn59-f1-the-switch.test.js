@@ -77,13 +77,15 @@ const EXEMPT = {
     'T75 F22 · after an export the CNC view says how many parts the machine does not finish (the export\'s readiness banner), one line beside the gate\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."*'
     + ' DECOR F3: await packaged front/back CNC exports. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T77 F3 · the two levels of the Ornate reference files: one select, shown only to a job that carries an Ornate leaf, read by every download. *"The CNC export offers two levels in the existing export options (no new numeric field): `Reference (default)` at `sampleMm` and `Full resolution` at `fullSampleMm`; the manifest records which one was written."*'
-    + ' Chat fix 17.10.2026 \u00b7 the three downloads hand each cabinet its slice of the project\'s part number plan (lib/partLabels.js): the label text on LABEL_<cabinet> in the cabinet\'s colour, numbered. *"naklejki 44 na A4 ... kolorami ... przynajmniej kolory napisow pod kolory szafki ... ponumerujemy wszystkie elementy ... ok koduj"*',
+    + ' Chat fix 17.10.2026 \u00b7 the three downloads hand each cabinet its slice of the project\'s part number plan (lib/partLabels.js): the label text on LABEL_<cabinet> in the cabinet\'s colour, numbered. *"naklejki 44 na A4 ... kolorami ... przynajmniej kolory napisow pod kolory szafki ... ponumerujemy wszystkie elementy ... ok koduj"*'
+    + ' T82 F12, after the review · the CNC export\'s preflight counts what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)',
   'src/components/SaveTemplateModal.jsx':
     'T75 F20 · right-clicked inside a selection of two or more, the modal saves a SET (templateStore.saveSet): the units left to right with the gaps between them. *"`lib/templates.js` grows `kind: \'set\'`: an ORDERED list of units (type + params, positions stripped as today) with the gaps between them."*',
   'src/components/TopBar.jsx':
     'T75 F20 · the Library menu\'s Sets row says what is on the shelf instead of "0 types". *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."*'
     + ' T78 F21 · the Output menu\'s Spraying placeholder becomes a live entry (onOpenSpraying): one page on the Production Core pattern, the spray schedule by colour, the cards and the paint order. *"cale sprayowanie jako osobne menu Cabinet Core."*'
-    + ' Chat fix 17.10.2026 \u00b7 Output > Part labels (PDF): the sticker sheets (onExportLabels). *"naklejki 44 na A4 bo takie mam, kolorami ... napis co to, i strzalka co oklejamy ... ok koduj"*',
+    + ' Chat fix 17.10.2026 \u00b7 Output > Part labels (PDF): the sticker sheets (onExportLabels). *"naklejki 44 na A4 bo takie mam, kolorami ... napis co to, i strzalka co oklejamy ... ok koduj"*'
+    + ' T82 F20, after the review · File > Save marks the job saved only when the save was stored (persistProject answers stored); a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
   // ─── ADDED 15.10.2026 (the evening) · THE RECESS SEEN FROM THE FRONT ──────
   // The owner: *"na setup room jak widze sciane od frontu nie top tylko front
   // to nie widze kresek, gdzie jest komin i gdzie wneka"* and *"reces pionowy
@@ -141,7 +143,14 @@ const EXEMPT = {
     + ' T79 F4 . the CUT CORNER window\'s HEIGHT takes a negative number (a notch from the top, KIT_NOTCH.lsp D21) and shows it as itself, 0 still reads full; the help line reads "WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; 0 runs top to bottom; a negative HEIGHT cuts from the top (e.g. -500)." (data-testid notch-help); the cut is the store\'s one action as before. *"nie powinno być funkcji -500 na przykład i wtedy ucina od góry? i mała informacja o tym."*'
     + ' T79 F5 . the CUT CORNER row gains a second button, CUT EDGE (data-testid cut-edge): it lights the four horizontal side edges in the scene (`3d/NotchEdges.jsx`, `uiStore.edgeNotchPick`), a click on one opens EdgeNotchWindow at the click with EDGE (TB, BB, TF, BF), DEPTH and HEIGHT (the profile\'s `notch.edgeDefaults`), the help line "A rebate along the whole edge: skirting at the bottom-back, coving at the top-back." (data-testid edge-notch-help); Enter cuts through the store\'s one action `setUnitEdgeNotch` and a refusal shows in the engine\'s words (KIT_NOTCH.lsp D22); REMOVE takes it off. No retail copy (retail\'s SIZE step carries its own button). *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*'
     + ' T79 F13 . the shelf row\'s face button and the drawer cap\'s Partition front edge name the project\'s numbers (carcass.shelfSetbackMm 10, wardrobe.drawers.capSetbackMm 20), no longer the deleted interiorSetback nor the LISP\'s 20; its two tooltips lose their dashes. *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*'
-    + ' CHAT-FIX 25.10.2026 · the Attach section of a free panel: an Attach to select (wall, floor, ceiling, a unit\'s left side, right side or top, a chimney or box face) and a Gap field, through the store\'s one action `attachFreePanel`; the panel stays put afterwards (*"nie jedzie"*). *"chce tez oblozyc boxy lub kominy tez prosze z odsunieciem od nich"*; *"ten panel musi byc w miare mozliwe do ustawienia gdzie bede chcial, naprzyklad bede chcial polozyc na szafkach jako daszek albo oblozyc komin w kacie"* (25.10.2026).',
+    + ' CHAT-FIX 25.10.2026 · the Attach section of a free panel: an Attach to select (wall, floor, ceiling, a unit\'s left side, right side or top, a chimney or box face) and a Gap field, through the store\'s one action `attachFreePanel`; the panel stays put afterwards (*"nie jedzie"*). *"chce tez oblozyc boxy lub kominy tez prosze z odsunieciem od nich"*; *"ten panel musi byc w miare mozliwe do ustawienia gdzie bede chcial, naprzyklad bede chcial polozyc na szafkach jako daszek albo oblozyc komin w kacie"* (25.10.2026).'
+    + ' T82 F2 · the POCKET DOOR section of a HAWA pocket: Doors 1 / 2, Hand L / R (one door), Push / Pull, Class Auto / III/25 / III/35 (setPocket), Door covers (the units its door closes, the next one added beside the last or the last one left out through setPocketCovers, a refusal said in its words), and per door TB, T1, M, E1, the pocket\'s width and depth and the refusals read off the store\'s pocketFiguresFor (the engine\'s result.hawa, nothing worked out here); the Carcass Width and Depth of a pocket shown, not typed, and its Height while its door covers a cabinet. *"wysuwasz pocket door i zakrywasz szafke lub szafki"*; *"3 tak moga"*, *"4 - tak"*, *"5 - tak"* (25.10.2026).'
+    + ' T82 F6 · the pocket\'s Door: Closed / Open row (PocketDoorToggle) inside its POCKET DOOR section, the doors the engine\'s, the state the room\'s openFronts. *"A toggle on the pocket (right panel: Door closed / open ...) slides the door into the pocket"*; *"wysuwasz pocket door i zakrywasz szafke lub szafki"* (25.10.2026)'
+    + ' T82 F10 · the vanity\'s top is typed: one Top thickness field in the Worktop row, on a vanity\'s slab only, through the store\'s setWorktopThickness (a refusal said in words). *"dodanie blat grubosc do wyboru"*'
+    + ' T82 F9 / F13 / F14 · the Vanity section of a vanity unit: Drawers 2 / 3 / 4 (the kit, swapped by the store\'s setVanityDrawers, the unit kept), Sinks 0 / 1 / 2 (CLAUDE.md F14\'s word), Floor / Floating with the height from the floor (setVanityFloating, refused in words where the room has no room), the plinth row as today (a floating vanity says it takes none); on every kit whose type takes drawer columns (the vanity and the chest of drawers) the drawer stack\'s Columns 1 / 2 row (updateUnitParams columns) and the "Equal" button (setDrawersEqual: drawer_split equal, drawer_heights null). *"vanity unit potrzebuje z szufladami nawierzchniowymi, wybor jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa rowne, do tego prosze external drawers ale wybor 2 rows, patrz szafa ... plinth do zmiany wysokosc, propozycja floating lub on the floor, dodanie 1 sink or 2 sink?"*; *"7 - tak"* (25.10.2026).'
+    + ' T82 F17 · the Back inset field ends where the store\'s clamp does (insetBackMaxFor): a free panel\'s back inset is capped by the room, the far wall less the panel, never by a cabinet\'s 300; a cabinet\'s field is what it was. *"jak mam frontowy komin to nie moge powiekszyc panela bo mi wchodzi w sciane"*'
+    + ' T82 F2, after the review · the POCKET DOOR section says in red, in the Check\'s #37 sentences, a pocket the room could not re-cut to its front\'s width and a cabinet another pocket\'s door already closes. *"the room refuses in words, the engine never squashes"* (CLAUDE.md T82 LAWS)'
+    + ' T82 F13, after the review: the End panels row asks unitEndPanelDrop (the kit as computeCabinet cuts it), so a floating vanity\'s end panel, cut to end with the hung carcass, reads "ends with the cabinet", never "to floor". *"plinth do zmiany wysokosc, propozycja floating lub on the floor"* (25.10.2026); Turn 13: a label that disagrees with the piece is worse than no label.',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -158,11 +167,13 @@ const EXEMPT = {
     + ' Chat fix 17.10.2026 \u00b7 every part\'s caption carries its project number and wears its cabinet\'s colour, from the same plan the downloads use. *"ponumerujemy wszystkie elementy ... kolory napisow pod kolory szafki ... ok koduj"*'
     + ' 14:10 \u00b7 the EDGE arrow and the line along the banded edge on every numbered board, the one geometry the DXF writes (edgeArrowGeometry). *"na projekcie nie ma strzalek ktora strone oklejamy, jak mam przykleic naklejki? ... 1 - tak ... prosze - koduj"*'
     + ' 16:10 \u00b7 a mark is drawn as the open walk it is (markPoints): the corner mark one L through the corner. *"jeden L wektor ... obok linii"*'
-    + ' T79 F1 . the layer legend stands on the Changes bar (bottom-11, was bottom-3) so the bar of the one bottom-left message column never covers it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej ... powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*',
+    + ' T79 F1 . the layer legend stands on the Changes bar (bottom-11, was bottom-3) so the bar of the one bottom-left message column never covers it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej ... powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
+    + ' T82 F15 · the front readout names a reed valley (title and vector). The owner, 25.10.2026: *"fluted teraz to sa rowki a ja potrzebuje chmurke"*',
   'src/components/FrontDecorationControls.jsx': 'ORNATE, Piotr 10.10.2026: rozpisz zakoduj dokaldnei prosze i ja roto dam do clauda, ale daj gotowy kod wlacznei z leyersami prosze do cnc. Adds proposed relief note and mirror choice; no new numeric fields. ' + 'DECOR F1: editable, versioned decorative machining defaults shared with Retail. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T76 F4 · the Arch rise field goes with the ellipse it set; the defaults the controls show are the profile\'s. *"SEMICIRCULAR arch (rise = half the inner width; ... never squashed to an ellipse)"*'
     + ' T76 F6 · one prop, `fields` (PRO passes nothing and keeps every field); retail passes false and shows no number of a recipe. *"a client picks a style and gets the owner\'s recipe with NO numeric fields (lazy client law; the recipe controls are PRO\'s)"*'
-    + ' T76 integration · the AH sentence gets the space GPT\'s line lacked (F2 probe). *"AH (Arched handleless) | A\'s recipe; the J-pull is chosen separately under Opening"*',
+    + ' T76 integration · the AH sentence gets the space GPT\'s line lacked (F2 probe). *"AH (Arched handleless) | A\'s recipe; the J-pull is chosen separately under Opening"*'
+    + ' T82 F15 · a Fluted front shows Flute profile (Reeds / Grooves) and, for reeds, Reed diameter (the profile\'s ladder beside a free number), the side margin and the direction; Activate gives the new choice (FL born reeds). The owner, 25.10.2026: *"fluted teraz to sa rowki a ja potrzebuje chmurke"*, *"daj wariant b czyli na styk narazie"*, *"do tego daj ustawienie srednicy walkow tez"*',
   'src/components/PartDetailModal.jsx': 'DECOR F4: decorative layer colours follow the canonical part legend. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' Chat fix 17.10.2026, 16:10 \u00b7 a mark is drawn and boxed as the open walk it is (its pts): the corner mark one L through the corner. *"jeden L wektor ... obok linii"*',
   'src/components/SettingsPanel.jsx': 'DECOR F1: project and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
@@ -207,7 +218,8 @@ const EXEMPT = {
     + 'choose, tylko te 2 opcje."*'
     + ' T79 F12 · Center between beside Center all, the same width: one click arms the shared uiStore\'s two-pick mode, the panel says which pick is next, Escape cancels. *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie półki pomiędzy tymi elementami się centrują."*'
     + ' T79 F13 . SET BACK\'s standard chip is the project\'s setback, carcass.shelfSetbackMm for a shelf and carcass.dividerSetbackMm for a divider (10), no longer the LISP\'s 20; Flush and the field unchanged. *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*'
-    + ' T79 F16 · the shelf\'s Type field gains a `Restore sleeve rows` button (data-restore-sleeve-rows), shown only when the shelf carries `sleeves_dropped`, calling the store\'s `restoreSleeveRows`. *"przycisk Restore sleeve rows"*, accepted by the owner 14:55: *"ok daj"*',
+    + ' T79 F16 · the shelf\'s Type field gains a `Restore sleeve rows` button (data-restore-sleeve-rows), shown only when the shelf carries `sleeves_dropped`, calling the store\'s `restoreSleeveRows`. *"przycisk Restore sleeve rows"*, accepted by the owner 14:55: *"ok daj"*'
+    + ' T82 F18 · the free panel\'s Thickness field gains the ladder 18, 22, 25, 30, 36 (profile.freePanel.thicknessLadder, PROPOSED) beside the free number, each chip through updateUnitParams({ board_t }); the number stays the typed road. *"nie moge wizualnie zwiekszyc tez grubosci tego panela"*',
   // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
   // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
   // client cannot reach. Three of his fourteen points are answered in PRO's own
@@ -243,7 +255,9 @@ const EXEMPT = {
     + 'captured through the Output ▸ Render rig, the title block\'s fields, the '
     + 'numbered sheet buttons. *"nie zapomnij zostawić w stopce miejsca na '
     + 'firmę, daty, nazwy"*.'
-    + ' T81 F2 · the window says the set in the owner\'s order (the 3D, every wall\'s fronts, without fronts, X-ray, the plans, the sections, the visualisation, the cut list); its sheet buttons walk the list the engine returns. *"najpierw chce widziec 3d jak zrobiles pierwsza strona, pozniej chce widziec wszystkie fronty ... nastepnie widok wszystkich scian bez frontow ... pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu wizualizacja"* (22.10.2026, 21:23)',
+    + ' T81 F2 · the window says the set in the owner\'s order (the 3D, every wall\'s fronts, without fronts, X-ray, the plans, the sections, the visualisation, the cut list); its sheet buttons walk the list the engine returns. *"najpierw chce widziec 3d jak zrobiles pierwsza strona, pozniej chce widziec wszystkie fronty ... nastepnie widok wszystkich scian bez frontow ... pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu wizualizacja"* (22.10.2026, 21:23)'
+    + ' T82 F20 · the Title block gets a LOGO row beside Company ("Choose image", a PNG, JPG or SVG read by lib/drawingExport.js readLogoFile, and "Remove"), the logo kept with the company (`setTitleBlock({ company: { logo } })`), so it is remembered on this computer where the company name is. *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
+    + ' T82 F20, after the review · the logo is kept once on this computer, and when the browser refuses to keep it the window says so (setTitleBlock answers { remembered }). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
   'src/pages/ConfiguratorPage.jsx':
     'T75 F22 · the Output menu\'s DXF export says the same banner as the CNC view\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."* '
     + 'T75 F20 · a Media wall, Sideboard, Vanity, Utility or Hallway job\'s first plus puts its shipped set on the first wall (insertSet, Room refuses first). *"NEW PROJECT with one of them offers the set first (the first plus point on the first wall)."* '
@@ -256,7 +270,9 @@ const EXEMPT = {
     + ' Chat fix 17.10.2026 \u00b7 onExportLabels writes the sticker sheets (lib/labelsPdf.js) from the project\'s part number plan; the Output menu\'s DXF ZIP takes the cabinet\'s labels slice. *"naklejki 44 na A4 ... ponumerujemy wszystkie elementy ... ok koduj"*'
     + ' T79 F1 . the messages and the front-gap rows stand in ONE bottom-left column (components/Messages.jsx, the rows as its top slot through a wrapper, FrontGapWarnings.jsx untouched); the lone Messages mount after the context menu is gone. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
     + ' T79 F18 · onExportLabels takes { sheet } from the two Output entries (21 per sheet, Avery L7160; 44 per sheet) and hands that preset of profile.labels.sheets to exportLabelsPdf; the default stays L7160. *"przełącznik 21/44 naklejek w oknie eksportu"* (the handover), the owner 14:55: *"ok daj"*'
-    + ' T80 F10 · the in-frame checks #40 to #44 stand in the left column beside the front-gap rows (components/InframeWarnings.jsx, the same findings the Check panel reads, the same fly-to). *"Each in the left messages and in the Check panel."* (CLAUDE.md T80 F10); the owner: *"3 mm zawsze."* (21.10.2026, 22:03)',
+    + ' T80 F10 · the in-frame checks #40 to #44 stand in the left column beside the front-gap rows (components/InframeWarnings.jsx, the same findings the Check panel reads, the same fly-to). *"Each in the left messages and in the Check panel."* (CLAUDE.md T80 F10); the owner: *"3 mm zawsze."* (21.10.2026, 22:03)'
+    + ' T82 F12, after the review · the page\'s export preflight counts what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)'
+    + ' T82 F20, after the review · File > Save as marks the job saved only when the copy was stored; a refused write leaves the job as it was, unsaved, and says so. *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -320,6 +336,20 @@ const EXEMPT = {
   // CHAT FIX 19.10.2026: the second rod in a bay (KIT_HANGER_TWO.lsp).
   'src/components/RailModal.jsx':
     'T79 F11 (the rod alone), CHAT FIX 19.10.2026 (re-frozen): the window finds its rod BY ITEM ID first (the store\'s railTravelFor reads it so); a second unit-wide rod is published among the column rods with no column, and the zone alone would name the first. *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze"*.',
+  // CLAUDE.md T82 FROZEN 4: *"every PRO file edited is licensed in `EXEMPT` with the owner's words from this
+  // file and re-frozen in the same commit."*  T82 F6: the canvas toolbar's Open all takes the HAWA door.
+  'src/components/CanvasToolbar.jsx':
+    'T82 F6 · Open all takes the HAWA pocket door with every other door. *"A toggle on the pocket (right panel: Door closed / open; the same in the viewer\'s "Open all" of T69) slides the door into the pocket"*'
+    + ' T82 F12, after the review · the Check button\'s count is what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)',
+  // T82 F12: the Check panel draws the note level (TONE.note), the service void behind a vanity.
+  'src/components/CheckPanel.jsx':
+    'T82 F12 · the Check\'s note level drawn grey (TONE.note): #45, the service void behind a vanity, is a note, never a fault. *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"*',
+  // T82 F20, after the review: a refused save leaves the job marked unsaved (persistProject answers stored).
+  'src/components/DesignSettingsModal.jsx':
+    'T82 F20, after the review · Update and save marks the job saved only when the save was stored; a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
+  // T82 F20, after the review: the start screen reads whether the shelf took the brand-new job.
+  'src/components/StartScreen.jsx':
+    'T82 F20, after the review · Start designing reads whether the shelf took the brand-new job; when the browser refused it the job opens marked unsaved (markUnsaved) and the start screen says the save\'s own red sentence (notOnShelf). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
 };
 
 /**
@@ -332,7 +362,8 @@ const EXEMPT = {
  * t58b merged). Not one of them is touched by this turn.
  */
 const FROZEN = {
-  'src/components/FrontDecorationControls.jsx': '029b9a2c4488bcb4e9bdbda77fa4798d2531caaca1d98ff4790d9947dd6171e4',
+  // T82 F15 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/FrontDecorationControls.jsx': 'b32660180217d45760e074f4fcd8932f90b9a57f11cb02121c59670225de2546',
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
   // T78 F11 · re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -349,14 +380,19 @@ const FROZEN = {
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/CabinetEditorModal.jsx': '3f080e23b09ce5c5018f89649264e77cb85e5f5594dafecd839673d6db9fd066',
-  'src/components/CanvasToolbar.jsx': 'ee85f7f7d4b3a64021f56cbea5fe36ff504136ace340216fdef71fcb316e2bd9',
-  'src/components/CheckPanel.jsx': '65a991cbc4aed29b3c9a49ed613e715dd3d033106f8e5e9ded45e8125a8dc014',
+  // T82 F6 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CanvasToolbar.jsx': '4348532ae83ff7f113980edacae7fe37afe497ab48c15d8d7e00226084e0f6f0',
+  // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CheckPanel.jsx': '8f1dfc8c0670aebddd6d23ea11465168cc7d61ca95a6c5b9e173ec9992c8f168',
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
   // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
-  'src/components/CncTree.jsx': '68aa1ffd5f8c07525c34b7b242c3adc387bc70157a38ae5bd07d0f257691d8e0',
+  // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CncTree.jsx': 'a814c546318362c1310280917bd05ba962d705715688c7768d4101a5f58a37a3',
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 (the afternoon) re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/CncView.jsx': '516abfc24d9f2ed2cbadf91898da2b559423ea568401ae6117d796c637945f03',
+  // T82 F15 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CncView.jsx': '044eba8a094749d2bf9c0da1b622a3e7e7129516886940b6acd09381fa97d635',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
   // T78 F19 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/CompanyDefaultsModal.jsx': 'e365305d290ab32057544e05f83b068f1ef9414642fe00f429cfbedb84dbc917',
@@ -364,17 +400,21 @@ const FROZEN = {
   'src/components/ContextMenu.jsx': '9ecd6083c1808257a9c4f53ec9ff654304cfae671c1b923e9910ab5a55ca524c',
   'src/components/DecorPicker.jsx': '3ed5d2c75e1c7eb48b364f3b86cf9ec30fdad43acae9f1b30879f65f14e82e6a',
   'src/components/DecorPickerModal.jsx': 'eff9e583740f2381cfa8e796339f5b664f88ddf010e427a61cd450ed2ad44411',
-  'src/components/DesignSettingsModal.jsx': '370f34cccd0b9907215eead9d27884ae14e6806ca192361bece6ef049116cf56',
+  // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/DesignSettingsModal.jsx': '7f4863ce3d4ec2bb8433a11a659377e809950fb3ab6ec956225ddc409683bc0b',
   'src/components/DoorModal.jsx': '4e5e539c734fe6ccf32f030f5c90e3678196828aad35be244248c0992e16efe7',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawRoomModal.jsx': '31107a5dc23977013675fed7d5392ed5c4f89e82e86f9dc1f5c94433bf19d260',
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/DrawingModal.jsx': '4542171e083dcf05c375a763c6454bb6f4a7114d0ef99b627c560c240374344b',
+  // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/DrawingModal.jsx': 'dcff9259c93f1b48c97f8841bdd2665705b93f80b2e2b0102a4524dc44307540',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F16 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/ElementProperties.jsx': '8e4639fd5eacf027cd8fe76dcc577720d5853a8970c21e9d3106aaa909a0d9f5',
+  // T82 F18 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/ElementProperties.jsx': '9229e3044f0cdfaada3589d808e17f2af7a2042a3f1ae3b279ece76ccfadce74',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',
@@ -407,7 +447,15 @@ const FROZEN = {
   // T79 F5 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT-FIX 25.10 re-frozen at the new hash (the free panel's Attach section); EXEMPT above carries the reason.
-  'src/components/RightPanel.jsx': 'b6943c7d29e878f569dbfbdf08ed68974f7985b9ea650295b47d19e9edeab2b0',
+  // T82 F2 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T82 F6 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T82 F10 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T82 F14 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T82 F17 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T82 F2 (after the review) re-frozen at the new hash; EXEMPT above carries the reason.
+  // T82 F2 (after the review, one cabinet one door) re-frozen at the new hash; EXEMPT above carries the reason.
+  // T82 F13 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/RightPanel.jsx': '933ed6376f989e9e7da859d150870550f3ceecad60042c744ad856d42ae47987',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
   'src/components/RoomModal.jsx': '04bc0d7b944cac119f44aa1c562ef0a635f6e86ecee9b6ea26784e075b69d2a1',
@@ -422,9 +470,11 @@ const FROZEN = {
   'src/components/SprayingPanel.jsx': '7d8f7adb67d26f0402c123e78d4c785981a2a15113968c43ed3132e5ada9bb9f',
   'src/components/SheenSlider.jsx': 'ec09e0dd7ad835672e4c024dee3013e649dcfa8ad64a2da5c120ed78d5c94bfb',
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
-  'src/components/StartScreen.jsx': '6a6de6d1667872a45d18bb5b8e9e42d3d4522ac99f8ef2d1e9a32ce54ab363aa',
+  // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/StartScreen.jsx': '861cd8a0bf25008356969643d19dc9efa7e4116b482ed6c5d3c99c6dcec0f397',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/TopBar.jsx': '9560495aac02f9f03a4138ea6f74b46116f7e2e94362935301458f1a9bc3fbc3',
+  // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/TopBar.jsx': 'c79b1e79ad886daed19c4d93a2860afe6624e708df0ed7c1fb28de1dc0c28ec2',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
   // T78 F5 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/UnitSizeModal.jsx': 'e8b94789f07fffaeb5b66a2a8fd160c28d9d4f4b0ed56383ecc18532f7b06c1f',
@@ -444,7 +494,9 @@ const FROZEN = {
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F18 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '654f82638286e4d6cd1fa4d1069d7057cc35e39b2ece198a4b07f3415da72f58',
+  // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': '37b7fc67836d2deef861251637ef5cdd377f265e0b0d40e495533c122ec5c021',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -630,12 +682,18 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/BomPanel.jsx',
     // T79 F12 · *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element"*: a click in the editor's canvas is the pick.
     'src/components/CabinetEditorModal.jsx',
+    // T82 F6 · *"the same in the viewer's "Open all" of T69"*: Open all takes the HAWA door.
+    'src/components/CanvasToolbar.jsx',
+    // T82 F12 · *"miejsce z tylu na rurki"*: the Check panel's note level, the service void.
+    'src/components/CheckPanel.jsx',
     // T75 F22 · *"the CNC export carries a banner counting the lines that are not 'cut'"*.
     'src/components/CncTree.jsx',
     'src/components/CncView.jsx',
     // T78 F19 · *"Cabineo 8 AND 12, chosen in the company's default settings"*: the Joints choice on the company defaults screen.
     'src/components/CompanyDefaultsModal.jsx',
     'src/components/ContextMenu.jsx',
+    // T82 F20, after the review · *"musze miec dzisiaj profesjonalne rysunki dla klientow"*: Update and save marks the job saved only when it was stored.
+    'src/components/DesignSettingsModal.jsx',
     'src/components/DrawRoomModal.jsx',
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',
@@ -658,6 +716,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // T78 F21 · *"cale sprayowanie jako osobne menu Cabinet Core"*: the Spraying page, a new PRO surface.
     'src/components/SprayingPanel.jsx',
     // T75 F20 · *"the Library's `media` category (`soon`) becomes the sets shelf"*.
+    // T82 F20, after the review · *"musze miec dzisiaj profesjonalne rysunki dla klientow"*: Start designing reads whether the shelf took the job.
+    'src/components/StartScreen.jsx',
     'src/components/TopBar.jsx',
     'src/components/UnitSizeModal.jsx',
     // 15.10.2026 (the evening) · *"nie widze kresek, gdzie jest komin i gdzie wneka"*: the recess and the chimney seen from the front, the recess's band.

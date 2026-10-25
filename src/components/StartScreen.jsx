@@ -5,7 +5,7 @@ import MockModeBadge from './MockModeBadge.jsx';
 import NewProjectFlow from './NewProjectFlow.jsx';
 import {
   browserStorage, deleteLocalProject, listLocalProjects, loadLocalProject,
-  mergeProjectLists, nextProjectNumber, recentProjects, saveLocalProject, touchLocalProject,
+  mergeProjectLists, nextProjectNumber, notOnShelf, recentProjects, saveLocalProject, touchLocalProject,
 } from '../lib/projectLibrary.js';
 import { listProjects, loadProject as loadCloudProject } from '../lib/cloudSync.js';
 import { isMockMode } from '../lib/supabase.js';
@@ -36,6 +36,7 @@ const stamp = (ms) => {
 export default function StartScreen() {
   const storage = useMemo(() => browserStorage(), []);
   const loadProject = useProjectStore((s) => s.loadProject);
+  const markUnsaved = useProjectStore((s) => s.markUnsaved);
   const openEditor = useUiStore((s) => s.openEditor);
   const setLibraryCategory = useUiStore((s) => s.setLibraryCategory);
   const notify = useUiStore((s) => s.notify);
@@ -80,6 +81,12 @@ export default function StartScreen() {
     // project boundary).
     useHistoryStore.getState().clear();
     loadProject(saved.project, units);
+    // T82 F20, after the review: a brand-new job the shelf refused opens
+    // marked unsaved, and the start screen says so in the save's own words.
+    if (saved.stored === false) {
+      markUnsaved();
+      notify(`Not saved: ${notOnShelf(saved)}`, 'error');
+    }
     const design = migrateDesign(project.design);
     if (design.projectType) setLibraryCategory(getProjectType(design.projectType).category);
     setFlow(null);

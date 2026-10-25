@@ -477,29 +477,48 @@ function runnerInstances(result, profile) {
     : Number(result.hardware.find((h) => h.role === 'runner_pairs')?.spec?.length_mm) || 0;
   const z = sample ? sample.box.z : D - length;
 
-  // The outside faces of the box: where the pair sits. Without a box (a stack
-  // the carcass refused), fall back to the carcass sides so the count still
-  // matches what is on order.
-  const xs = sides.map((p) => p.box.x);
-  const leftFace = xs.length ? Math.min(...xs) : G;
-  const rightFace = xs.length ? Math.max(...xs.map((x, i) => x + sides[i].box.w)) : W - G;
-
+  // T82 F9 · two drawer columns (KIT_VANITY.lsp 5(c2)): the boxes of each
+  // column carry their own pairs, on the column's own two walls. The engine
+  // marks a column's boxes `meta.column`; a stack with none is one group, so
+  // every unit before tonight places exactly what it placed.
+  const groups = columnGroupsOf(sides);
   const out = [];
-  for (const [i, rowY] of rows.entries()) {
-    // Turn 18 (CLAUDE.md F6.4): WHICH DRAWER this pair belongs to, counted from
-    // the floor exactly as the engine counts them everywhere else. The variant
-    // is a per-drawer answer, so the view has to be able to ask the question,
-    // and the rows are already in the engine's own order.
-    const drawer = i + 1;
-    const y = Number.isFinite(bottoms[i]) ? bottoms[i] : rowY;
-    out.push({
-      kind: 'runner', side: 'L', drawer, x: leftFace, y, rowY, z, length, thickness: HW.profileThickness,
-    });
-    out.push({
-      kind: 'runner', side: 'R', drawer, x: rightFace, y, rowY, z, length, thickness: HW.profileThickness,
-    });
+  for (const [k, group] of groups.entries()) {
+    // The outside faces of the box: where the pair sits. Without a box (a stack
+    // the carcass refused), fall back to the carcass sides so the count still
+    // matches what is on order.
+    const xs = group.map((p) => p.box.x);
+    const leftFace = xs.length ? Math.min(...xs) : G;
+    const rightFace = xs.length ? Math.max(...xs.map((x, i) => x + group[i].box.w)) : W - G;
+
+    for (const [i, rowY] of rows.entries()) {
+      // Turn 18 (CLAUDE.md F6.4): WHICH DRAWER this pair belongs to, counted from
+      // the floor exactly as the engine counts them everywhere else. The variant
+      // is a per-drawer answer, so the view has to be able to ask the question,
+      // and the rows are already in the engine's own order. T82 F9 · a second
+      // column's drawers count after the first's, as the BOM counts them.
+      const drawer = i + 1 + k * rows.length;
+      const y = Number.isFinite(bottoms[i]) ? bottoms[i] : rowY;
+      out.push({
+        kind: 'runner', side: 'L', drawer, x: leftFace, y, rowY, z, length, thickness: HW.profileThickness,
+      });
+      out.push({
+        kind: 'runner', side: 'R', drawer, x: rightFace, y, rowY, z, length, thickness: HW.profileThickness,
+      });
+    }
   }
   return out;
+}
+
+/**
+ * T82 F9 · the drawer sides by the column they stand in (`meta.column`, cut
+ * only on two drawer columns), left to right; a stack with no column is ONE
+ * group of every side, which is what every reader here has always used.
+ */
+function columnGroupsOf(sides) {
+  if (!sides.some((p) => p.meta?.column != null)) return [sides];
+  const cols = [...new Set(sides.map((p) => p.meta?.column))].sort((a, b) => a - b);
+  return cols.map((c) => sides.filter((p) => p.meta?.column === c));
 }
 
 /**
@@ -521,20 +540,23 @@ function rodInstances(result, profile) {
     : (result.drillSummary?.runner_rows_carcass_y || []);
   const sides = result.panels.filter((p) => p.part === 'DRAWER-SIDE' && p.box);
   if (!rows.length || !sides.length) return [];
-  const xs = sides.map((p) => p.box.x);
-  const centreX = (Math.min(...xs) + Math.max(...xs.map((x, i) => x + sides[i].box.w))) / 2;
   const sample = sides[0];
   const length = Number(line.spec?.length_mm) || 0;
-  return rows.map((y, i) => ({
-    kind: 'rod',
-    drawer: i + 1,
-    x: centreX,
-    y,
-    // At the BACK of the box, which is where a synchronisation rod runs.
-    z: sample.box.z,
-    length,
-    diameter: profile.hardware.runner.movento.rod.diameter,
-  }));
+  // T82 F9 · one rod per box, in its own column (one column: one group).
+  return columnGroupsOf(sides).flatMap((group, k) => {
+    const xs = group.map((p) => p.box.x);
+    const centreX = (Math.min(...xs) + Math.max(...xs.map((x, i) => x + group[i].box.w))) / 2;
+    return rows.map((y, i) => ({
+      kind: 'rod',
+      drawer: i + 1 + k * rows.length,
+      x: centreX,
+      y,
+      // At the BACK of the box, which is where a synchronisation rod runs.
+      z: sample.box.z,
+      length,
+      diameter: profile.hardware.runner.movento.rod.diameter,
+    }));
+  });
 }
 
 /**

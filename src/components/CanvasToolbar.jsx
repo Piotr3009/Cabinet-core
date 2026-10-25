@@ -10,6 +10,8 @@ import { LAYER_CLASS } from '../lib/modalLayer.js';
 // button could be stale for exactly the reasons F1a names (the profile's hinge
 // ladders, the room, the material assignments). One reader now, shared.
 import { useCheckFindings } from '../lib/checkFindings.js';
+// T82 F12, after the review · the badge counts what asks something of a person.
+import { findingsToAct } from '../engine/checks.js';
 
 // ─── Canvas toolbar ───
 // The controls that act on the DRAWING, sitting on the drawing (CLAUDE.md turn
@@ -65,7 +67,7 @@ export default function CanvasToolbar() {
   // through eleven rules, and doing that sixty times a second is a frame rate
   // spent on a question nobody has asked.
   const checkFindings = useCheckFindings();
-  const checkCount = checkFindings.length;
+  const checkCount = findingsToAct(checkFindings).length;
   const checkReds = checkFindings.some((f) => f.level === 'red');
   // ─── TURN 27 (CLAUDE.md F2.1): EVERY FRONT ANSWERS ───────────────────────
   //
@@ -76,7 +78,8 @@ export default function CanvasToolbar() {
   const doorEntries = useMemo(() => units.map((u) => ({
     unitId: u.id,
     panelIds: (unitResult(u.id)?.panels || [])
-      .filter((p) => p.part === 'FRONT')
+      // T82 F6 · the HAWA pocket door opens with every door (*"the same in the viewer's Open all"*).
+      .filter((p) => p.part === 'FRONT' || p.part === 'POCKET-DOOR')
       .map((p) => p.id),
   })).filter((e) => e.panelIds.length), [units, unitResult]);
   const everyDoorOpen = doorEntries.length > 0 && doorEntries.every(

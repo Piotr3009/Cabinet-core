@@ -44,6 +44,30 @@ const OVEN_STACK = 'An oven stands at eye level with cupboards under and over it
   + 'The owner sets the stack first';
 
 /**
+ * ─── T82 F9 · THE BATHROOM GROUP, ONE LIST IN BOTH LIBRARIES ────────────────
+ *
+ * CLAUDE.md T82 F9: *"`VANITY2`, `VANITY3`, `VANITY4` (bathroom family, new
+ * library group "Bathroom" in the Kitchen library and in the wardrobe
+ * library, row "Vanity unit, N drawers")"*.  The owner, 25.10.2026 (12:57):
+ * *"vanity unit potrzebuje z szufladami nawierzchniowymi, wybor jak zawsze 2 3
+ * i 4"*.  ONE constant, placed in both lists, so the two cannot drift; the
+ * rows leave `label` out, so the row reads what the kit calls itself
+ * (`engine/types.js`: "Vanity unit, N drawers"). A bathroom kit belongs to no
+ * one job, so the project filter below keeps it in every one.
+ */
+const BATHROOM_GROUP = {
+  kind: 'group',
+  id: 'bathroom',
+  label: 'Bathroom',
+  hint: 'The vanity unit: equal drawers under a basin, an open back for the pipes',
+  items: [
+    { kind: 'type', id: 'vanity-2', typeId: 'VANITY2' },
+    { kind: 'type', id: 'vanity-3', typeId: 'VANITY3' },
+    { kind: 'type', id: 'vanity-4', typeId: 'VANITY4' },
+  ],
+};
+
+/**
  * An entry is one of:
  *   { kind: 'type',  id, typeId, label?, hint? }
  *   { kind: 'group', id, label, hint?, items: [entry…] }   — flies out to the side
@@ -157,6 +181,12 @@ export const KITCHEN_LIBRARY = [
     hint: 'Floor to the top of the run',
     items: [
       { kind: 'type', id: 'tall', typeId: 'BUDTALL', label: 'Standard' },
+      // ─── T82 F2 · THE HAWA POCKET (Concepta III) ───────────────────────────
+      // The owner, 25.10.2026: *"wstawienie pomiedzy 2 panele 110 mm przestrzen
+      // pomiedzy, wysuwasz pocket door i zakrywasz szafke lub szafki"*. A pocket
+      // between two front-material panels (KIT_HAWA.lsp); its door covers the
+      // cabinet beside it, swings 90 degrees and slides in.
+      { kind: 'type', id: 'hawa-pocket', typeId: 'HAWA_POCKET', label: 'HAWA pocket (Concepta III)', hint: 'A pocket between two panels; the door of the cabinet beside it swings and slides in' },
       { kind: 'type', id: 'fridge', typeId: 'FRIDGE', label: 'Fridge housing' },
       // ─── Turn 30 (CLAUDE.md F13): CARGO 300 ─────────────────────────────
       // KIT_BUDTALL's carcass and door at 300 wide. The pull-out frame is a
@@ -253,6 +283,9 @@ export const KITCHEN_LIBRARY = [
       { kind: 'type', id: 'corner-l-wall', typeId: 'CORNER_L_WALL', label: 'Corner L wall', hint: 'One L wall carcass in a room corner: two doors, hung on both far ends' },
     ],
   },
+  // ─── T82 F9 · *"new library group "Bathroom" in the Kitchen library"* ──
+  // Before Extras: the pieces that finish a run stay the last group.
+  BATHROOM_GROUP,
   {
     // ─── The new group (turn 15, CLAUDE.md F5.2) ───
     // Not cabinets: the pieces that FINISH a run. They belong in the library
@@ -326,7 +359,15 @@ export const WARDROBE_LIBRARY = [
   { kind: 'type', id: 'WARDROBE_DESK', typeId: 'WARDROBE_DESK', hint: 'Hung beside a wardrobe: one drawer under a 25 mm top' },
   // T75 F18 · *"`WARDROBE_LOW` copied from `LOW_CABINET`."*
   { kind: 'type', id: 'WARDROBE_LOW', typeId: 'WARDROBE_LOW', hint: 'A low cupboard beside a wardrobe, as deep as it' },
+  // T82 F2 · the HAWA pocket in the wardrobe library too (CLAUDE.md T82 F2:
+  // *"kitchen and wardrobe families"*): a pocket door over a wardrobe.
+  { kind: 'type', id: 'HAWA_POCKET', typeId: 'HAWA_POCKET', label: 'HAWA pocket (Concepta III)', hint: 'A pocket between two panels; the door of the cabinet beside it swings and slides in' },
+  // T82 F9 · *"... and in the wardrobe library"*: the same group, the same rows.
+  BATHROOM_GROUP,
 ];
+
+/** T82 F9 · the families every job's library keeps, whatever the job (the bathroom). */
+const EVERY_JOB_FAMILIES = new Set(['bathroom']);
 
 /** Every entry, groups flattened — what a "which kits exist" question wants. */
 /**
@@ -364,7 +405,9 @@ export function filterLibraryByProject(entries, projectCategory, familyOf) {
       }
       if (e.kind === 'type' && e.typeId) {
         const family = familyOf(e.typeId) || null;
-        if (family && family !== projectCategory) {
+        // T82 F9 · a bathroom kit is every job's: the owner put its group in
+        // the Kitchen library and in the wardrobe library alike.
+        if (family && family !== projectCategory && !EVERY_JOB_FAMILIES.has(family)) {
           hidden += 1;
           return null;
         }

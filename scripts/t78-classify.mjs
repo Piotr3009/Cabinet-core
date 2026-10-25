@@ -714,4 +714,4 @@ out(`\nSUMMARY: six IDENTICAL=${six.length - sixMoved - sixRepinned} RE-PINNED(n
 out(`dump ${sha256(JSON.stringify(HEAD_DUMP)).slice(0, 16)}\n`);
 out(`${okAll ? 'GREEN' : 'RED'}: ${okAll ? 'every delta is named, every gate is live, and what a golden reaches a golden holds'
   : 'see the FAIL rows above'}\n`);
-process.exit(okAll ? 0 : 1);
+process.stdout.write('', () => process.exit(okAll ? 0 : 1));

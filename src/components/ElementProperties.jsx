@@ -1202,14 +1202,30 @@ export default function ElementProperties({
                 onCommit={(v) => put({ panel_width: v })}
               />
             </Field>
+            {/* T82 F18 · the ladder (`profile.freePanel.thicknessLadder`,
+                PROPOSED) beside the free number, one click a board. */}
             <Field label="Thickness">
-              <NumberField
-                className="cc-input text-right"
-                data-free-panel-thickness="1"
-                min={1}
-                value={board.thickness}
-                onCommit={(v) => put({ board_t: v })}
-              />
+              <div className="flex items-center gap-1">
+                {(profile.freePanel?.thicknessLadder || []).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`cc-btn px-1.5 text-[11px] ${board.thickness === t ? 'border-gold text-ink-50' : ''}`}
+                    data-free-panel-thickness-step={t}
+                    aria-pressed={board.thickness === t}
+                    onClick={() => put({ board_t: t })}
+                  >
+                    {t}
+                  </button>
+                ))}
+                <NumberField
+                  className="cc-input text-right"
+                  data-free-panel-thickness="1"
+                  min={1}
+                  value={board.thickness}
+                  onCommit={(v) => put({ board_t: v })}
+                />
+              </div>
             </Field>
           </div>
         );

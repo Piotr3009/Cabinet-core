@@ -68,7 +68,10 @@ test('F16 · PROBE: three types, each its BUDR to the letter; only what files it
       .filter((k) => JSON.stringify(t[k]) !== JSON.stringify(p[k])).sort();
     // The probe's hook list, and nothing else: the same LISP, variant, hinge
     // and cup rules, legs, carcass, drawer style and supports.
-    assert.deepEqual(differ, ['besideWardrobe', 'defaultsKey', 'family', 'heightGroup', 'id', 'label', 'legSource']);
+    // AMENDED BY T82 F9 (25.10.2026): the owner, of the chest, *"7 - tak"*: it
+    // takes KIT_VANITY.lsp's two drawer rules (equal at birth, two columns),
+    // keyed `drawerColumns`; a bare chest is still its BUDR hole for hole.
+    assert.deepEqual(differ, ['besideWardrobe', 'defaultsKey', 'drawerColumns', 'family', 'heightGroup', 'id', 'label', 'legSource']);
     assert.equal(t.family, 'wardrobe');
     assert.equal(t.legSource, 'wardrobe', 'the wardrobe\'s leg source');
     assert.equal(t.heightGroup, null, 'its height is its own: the kitchen\'s 770 would replace it');

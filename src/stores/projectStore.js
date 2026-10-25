@@ -23,16 +23,24 @@ import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 // them, so the menu and the sweep cannot disagree with the cabinet.
 import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
+// T82 F13 · floatHeightOf: a floating vanity's height, the one question (KIT_VANITY.lsp D19).
 import {
-  defaultParamsFor, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel, isWardrobeWallUnit,
-  profilePath,
+  defaultParamsFor, floatHeightOf, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel,
+  isHawaPocket, isVanityKit, isWardrobeWallUnit, profilePath,
   resolveTypeId, TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
 // kept one with its box, and where a drop would be caught.
 import { freePanelFit, freePanelPatch, freePanelSnap } from '../engine/freePanel.js';
+// T82 F2 · the HAWA pocket: its choices, its width at birth and THE ONE
+// derivation of its figures (KIT_HAWA.lsp's mirror), read, never re-derived.
+import {
+  frontTOf, hawaPocketFigures, hawaPocketWidth, hawaSpec, pocketChoiceOf,
+} from '../engine/hawaPocket.js';
 // CHAT-FIX 25.10.2026 · the free panel stuck to a surface of the owner's choice.
 import { attachPlan, attachTargetByKey, attachTargets, obstaclesBeyond } from '../engine/attachPanel.js';
+// T82 F17 · ...and the room's cap on how far off its wall a free panel stands.
+import { freePanelInsetMax } from '../engine/attachPanel.js';
 // T75 F7 · the corner notch: whether a kit takes one, and the engine's own
 // refusal (KIT_NOTCH.lsp, asked of the parent's cut) read before it is kept.
 // T79 F5 · ...and the edge notch's edges (KIT_NOTCH.lsp D22).
@@ -56,6 +64,8 @@ import {
   wallObstacles,
   bandsOverlap, unitBand, bandSegmentAt, bandSegments,
 } from '../engine/collision.js';
+// T82 F19 · a free panel standing in front of a unit is not in its way.
+import { standsInFrontOf } from '../engine/collision.js';
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, faceIndexOf, islandCorners, migrateRoom, plasterPosition, rehomeIslandUnits, roomBoxes,
   roomChangeGuard, roomIslands, roomWalls, wallName, wallPlanObstacles,
@@ -98,6 +108,9 @@ import {
 // `src/engine/**` is closed byte-for-byte tonight (lib/ledSpec.js says it in
 // full). The day the engine reopens it moves into `design.lighting`.
 import { migrateLedSpec } from '../lib/ledSpec.js';
+// T82 F20, after the review: the logo is kept once beside the company memory;
+// the cache and the memory carry its `{ ref }` and read it back whole.
+import { companyWithLogo, companyWithLogoRef, projectWithLogo, projectWithLogoRef } from '../lib/projectLibrary.js';
 // T51 (CLAUDE.md F6 · decision 1): the light rig lives WITH THE PROJECT — *"a
 // room with one window and a showroom want different rigs, and a saved job
 // should reopen looking as it did."*
@@ -150,6 +163,10 @@ import {
   runMemberIds, runPlinthParams, runUpstandParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
   verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
+// T82 F2 · which units a HAWA pocket's door covers, decided from where they stand.
+import { pocketNeighbours, runPocketParams } from '../engine/runs.js';
+// T82 F2, after the review · the run that moves with a re-cut pocket.
+import { buttedChainOf, pocketClaimRefusal } from '../engine/runs.js';
 // T80 F3 · the in-frame frame of a run (KIT_INFRAME.lsp's mirror).
 import { runFrameParams } from '../engine/inframe.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
@@ -391,6 +408,15 @@ function newUnit(typeId, profile, index, design) {
       // refused it a plinth. A LOADED project never comes through here: it opens
       // exactly as it was saved.
       ...(takesPlinth(type.id, profile) ? { plinth: true } : {}),
+      // ─── T82 F9 · A DRAWER-COLUMN KIT IS BORN EQUAL, IN ONE COLUMN ────────
+      // The owner, 25.10.2026 (12:57): *"w vanity default to sa rowne"*, and
+      // of the chest (13:03): *"7 - tak"* (KIT_VANITY.lsp D8, D20). Written
+      // HERE for the plinth's reason above: a bare kit (`defaultParamsFor`)
+      // is its golden's contract, and WARDROBE_CHEST3's golden is the kit's
+      // 4:3:2. A loaded project never comes through here, so a chest saved
+      // before tonight opens at the split it was cut to. Asked by the type's
+      // key, never by its id.
+      ...(type.drawerColumns ? { drawer_split: 'equal', columns: 1 } : {}),
       sections: [{ width_mm: params.width, items }],
       materials: {},
       // T74 F13 · a free panel's box is its board's: it is cut from the job's
@@ -1001,6 +1027,8 @@ function wholeRecessOf(unit, state = useProjectStore.getState(), profile = getCa
 /** The extension the room asks of this unit where it stands (KIT_RECESS.lsp section 1), or null. */
 function recessExtensionFor(unit, state = useProjectStore.getState(), profile = getCabinetProfile()) {
   if (!unit || Number(unit.params?.recess_mm) > 0) return null;
+  // T82 F16, after the review: a free panel is a board, never a carcass that grows into a recess.
+  if (isFreePanel(unit.type)) return null;
   const mine = recessesFor(unit, state);
   if (!mine.length || !roomWalls(state.project.room)[unit.position.wall]) return null;
   const K = notchProfile(profile);
@@ -1102,6 +1130,19 @@ function inframeFor(unit, design, profile, elements = useProjectStore.getState()
   return Boolean(elements?.frame);
 }
 
+/**
+ * T82 F9, after the review · the thickness of the worktop over a vanity, from
+ * the record that names it (`{ vanity_top_mm }`), or nothing: absent on every
+ * other unit and on a vanity no record covers.
+ */
+function vanityTopMmOf(unit, design) {
+  if (!isVanityKit(unit?.type)) return {};
+  const records = Array.isArray(design?.worktops) ? design.worktops : [];
+  const rec = records.find((r) => Array.isArray(r?.unitIds) && r.unitIds.includes(unit.id));
+  const t = Number(rec?.thickness);
+  return Number.isFinite(t) && t > 0 ? { vanity_top_mm: t } : {};
+}
+
 function paramsForEngine(unit, design = null) {
   // ─── T55 ("tnij"): THE FOSSIL HAS NO ROAD ────────────────────────────────
   // run_* are destructured OUT of the saved params before anything spreads,
@@ -1144,6 +1185,14 @@ function paramsForEngine(unit, design = null) {
       ...(elements.pelmet ? { run_pelmet: elements.pelmet } : {}),
       // T80 F3 · …and the in-frame frame, where the project is in-frame.
       ...(elements.frame && inframeFor(unit, design, profile, elements) ? { run_frame: elements.frame } : {}),
+      // T82 F2 · …and the HAWA pocket's door: on the pocket, what its doors
+      // cover (`pocket_cover`, hawaPocket.js pocketCoverOf); on a covered
+      // cabinet, the pocket that closes it (`pocket_covered`, which takes its
+      // own doors off, KIT_HAWA.lsp D17). Spread only where the run has one.
+      ...(elements.pocket?.role === 'pocket' && elements.pocket.cover ? { pocket_cover: elements.pocket.cover } : {}),
+      ...(elements.pocket?.role === 'covered'
+        ? { pocket_covered: { pocketId: elements.pocket.pocketId, unitNum: elements.pocket.unitNum } }
+        : {}),
     } : {}),
     type: unit.type,
     items,
@@ -1158,6 +1207,14 @@ function paramsForEngine(unit, design = null) {
     // exactly this), so a bare `computeCabinet()` and every golden fixture pass
     // nothing at all and cut what the AutoLISP cuts.
     ...(slopeCut ? { slope_cut: slopeCut } : {}),
+    // ─── T82 F9, after the review · THE VANITY'S TOP, AS THICK AS ITS SLAB ───
+    // KIT_VANITY.lsp D25 reads the bowl below the worktop's top, so the engine
+    // is handed the thickness of the slab over the vanity (its worktop
+    // record's, typed: *"blat grubosc do wyboru"*). Which basins that top takes
+    // the engine asks of engine/worktop.js `fitBasins` itself. The key is
+    // ABSENT where no record covers a vanity, so a bare kit and every golden
+    // read the kit's own 20.
+    ...vanityTopMmOf(unit, design),
     // ─── Turn 8 (CLAUDE.md F4) ───
     // How far a FIX shelf and a partition stand back from the face. It is
     // supplied HERE rather than defaulted inside computeCabinet, and that is
@@ -1673,7 +1730,8 @@ function loadCache() {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed?.project || !Array.isArray(parsed.units)) return null;
-    return parsed;
+    // T82 F20, after the review: the cached job's logo comes back whole.
+    return { ...parsed, project: projectWithLogo(localStorage, parsed.project) };
   } catch {
     return null;
   }
@@ -1708,9 +1766,19 @@ function openAssignmentsFor(project) {
 // persists nothing, never reads it.
 const TITLE_BLOCK_COMPANY_KEY = 'cabinet-core.titleBlock.company';
 
+// T82 F20, after the review: the company's logo is kept ONCE under its own
+// key (`lib/projectLibrary.js keepLogo`); the memory carries its `{ ref }`.
+// The answer is whether this computer took it: false when the browser
+// refused (its storage full), and the Drawings window says so.
 function rememberTitleBlockCompany(company) {
-  if (!persistenceOn() || typeof localStorage === 'undefined') return;
-  try { localStorage.setItem(TITLE_BLOCK_COMPANY_KEY, JSON.stringify(company || {})); } catch { /* quota or private mode */ }
+  if (!persistenceOn() || typeof localStorage === 'undefined') return false;
+  try {
+    const kept = companyWithLogoRef(localStorage, company || {}, { prune: true });
+    // A picture that could not be kept once is not copied into the memory either.
+    if (typeof kept?.logo?.href === 'string') return false;
+    localStorage.setItem(TITLE_BLOCK_COMPANY_KEY, JSON.stringify(kept || {}));
+    return true;
+  } catch { return false; /* quota or private mode */ }
 }
 
 function recallTitleBlockCompany() {
@@ -1718,7 +1786,7 @@ function recallTitleBlockCompany() {
   try {
     const raw = localStorage.getItem(TITLE_BLOCK_COMPANY_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
-    return parsed && typeof parsed === 'object' ? parsed : null;
+    return parsed && typeof parsed === 'object' ? companyWithLogo(localStorage, parsed) : null;
   } catch { return null; }
 }
 
@@ -1734,7 +1802,9 @@ function saveCache(state) {
   cacheTimer = setTimeout(() => {
     cacheTimer = null;
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(cachePending));
+      // T82 F20, after the review: the cache keeps the logo as its `{ ref }`.
+      const kept = { ...cachePending, project: projectWithLogoRef(localStorage, cachePending.project) };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(kept));
     } catch { /* quota or private mode — the DB is the real home anyway */ }
   }, 250);
 }
@@ -1815,11 +1885,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   setTitleBlock: (patch) => {
     const prev = get().project.titleBlock || {};
     const next = { ...prev, ...(patch || {}) };
+    // T82 F20, after the review: whether this computer remembered the
+    // company (false: the browser refused, the window says so).
+    let remembered = null;
     if (patch?.company) {
       next.company = { ...(prev.company || {}), ...patch.company };
-      rememberTitleBlockCompany(next.company);
+      remembered = rememberTitleBlockCompany(next.company);
     }
     set((s) => ({ project: { ...s.project, titleBlock: next } }));
+    return { remembered };
   },
 
   /**
@@ -3098,6 +3172,86 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }
     }
 
+    // ─── T82 F2 · THE POCKET FOLLOWS WHAT ITS DOOR COVERS (slice A3) ───────
+    //
+    // CLAUDE.md T82 F2: *"Its height is the run's (unit height, legs as the
+    // neighbours: the pocket stands on the plinth line as a cabinet does); its
+    // depth KT = the pocket's depth, which the engine derives (F3) and never
+    // lets the hand type below T1."*  Written on every pass from the engine's
+    // one derivation (hawaPocket.js), so nothing here is typed and nothing is
+    // remembered:
+    //   the WIDTH is the pocket's (panel + 55 + panel, panel + 110 + panel) at
+    //     the project's front, re-cut keeping the edge its one door covers in
+    //     place (the left edge for two doors);
+    //   the HEIGHT and the LEGS are the covered cabinet's, so the run keeps
+    //     one top line and one plinth;
+    //   the DEPTH is the figures' KT, and the BACK stands off the covered
+    //     cabinet's back by `frontAlignMm`, so the pocket's front plane is the
+    //     cabinet's (KIT_HAWA.lsp D8, the pocket shallower than the cabinet).
+    // WHICH units are covered is `runs.js runPocketParams` (the owner's stored
+    // list resolved as a chain, else the one nearest unit on the hand). A
+    // pocket that covers nothing keeps its height and depth as they are.
+    let pocketParams = new Map();
+    if (next.some((u) => isHawaPocket(u.type))) {
+      const slots = projectThicknesses({ design, profile, materials: workshopMaterials() });
+      // T82 F2, after the review (store:1): a new front re-cuts the width by
+      // the ONE re-cut law (`pocketRecutPlan`): the run beside it moves with
+      // it, or, with no room, nothing moves and the Check says so (#37,
+      // `runs.js pocketRecutRefusal`); never an overlap, never a gap.
+      let recut = false;
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        if (!isHawaPocket(u.type)) continue;
+        const choice = pocketChoiceOf(u.params, profile);
+        const width = hawaPocketWidth({ doors: choice.doors, frontT: frontTOf({ ...u.params, thickness_slots: slots }, profile) }, profile);
+        const was = Number(u.params?.width) || 0;
+        if (!(width > 0) || Math.abs(width - was) < 1e-6) continue;
+        const plan = pocketRecutPlan({ ...s, units: next }, next, u, width, profile);
+        if (!plan.ok) continue;
+        next[i] = { ...u, position: { ...u.position, x_mm: plan.x }, params: { ...u.params, width: plan.width } };
+        for (const [id, x] of plan.moves) {
+          const j = next.findIndex((o) => o.id === id);
+          if (j >= 0) next[j] = { ...next[j], position: { ...next[j].position, x_mm: x } };
+        }
+        recut = recut || plan.moves.length > 0;
+      }
+      if (recut) {
+        // A wardrobe the re-cut moved carries its top boxes with it.
+        const settled = settleRiders(next, profile);
+        for (let i = 0; i < next.length; i += 1) next[i] = settled[i];
+      }
+      pocketParams = runPocketParams(next, profile, { walls });
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        const el = pocketParams.get(u.id);
+        if (el?.role !== 'pocket' || !el.cover) continue;
+        const firstId = el.doors === 2 ? (el.sides.L[0] || el.sides.R[0]) : el.sides[el.hand]?.[0];
+        const c = next.find((o) => o.id === firstId);
+        if (!c) continue;
+        const params = { ...u.params };
+        if (Number(c.params?.height) > 0) params.height = Number(c.params.height);
+        if (c.params?.leg_height != null) params.leg_height = c.params.leg_height;
+        const fig = hawaPocketFigures({ ...params, thickness_slots: slots, pocket_cover: el.cover }, profile);
+        if (Number(fig?.KT) > 0) params.depth = Number(fig.KT);
+        // T82 F2, after the review (store:3): the pocket's FRONT is the plane
+        // its doors close on (runs.js pocketFrontLine: the most forward of the
+        // covered cabinets' fronts), so its back stands KT behind it and no
+        // closed door is cut inside a carcass. With one plane this is the old
+        // `frontAlignMm` reading; with two, the engine refuses in words (A2).
+        // wallGapOf(pocket) = wall_gap - recess + standoff, so its gap is:
+        const back = el.front
+          ? el.front.mm - (Number(params.depth) || 0)
+          : wallGapOf(c, profile) + (Number(fig?.frontAlignMm) || 0);
+        const recess = Math.max(0, Number(u.params?.recess_mm) || 0);
+        const standoff = Math.max(0, Number(u.params?.standoff_mm) || 0);
+        params.wall_gap = Math.round((back + recess - standoff) * 100) / 100;
+        if (params.height !== u.params?.height || params.leg_height !== u.params?.leg_height
+          || params.depth !== u.params?.depth || params.wall_gap !== u.params?.wall_gap) {
+          next[i] = { ...u, params };
+        }
+      }
+    }
+
     // The RUN is decided last and always across ALL units, whatever one unit
     // was asked about (turn 6, CLAUDE.md F4). The top infill is one piece for a
     // whole run: moving one cabinet changes the length of the piece over its
@@ -3258,9 +3412,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ...(pelmetParams.get(u.id) ? { pelmet: pelmetParams.get(u.id) } : {}),
         // T80 F3 · …and the in-frame frame, likewise.
         ...(frameParams.get(u.id) ? { frame: frameParams.get(u.id) } : {}),
+        // T82 F2 · …and the HAWA pocket's door: the pocket's cover, or the
+        // pocket that closes this cabinet. Present only where there is one.
+        ...(pocketParams.get(u.id) ? { pocket: pocketParams.get(u.id) } : {}),
       };
       if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice && !entry.upstand
-        && !entry.pelmet && !entry.frame) continue;
+        && !entry.pelmet && !entry.frame && !entry.pocket) continue;
       const prev = prevElements[u.id];
       // Reference equality matters (drag frames), and the test is BYTE
       // equality of the WHOLE element — a field list here rotted twice
@@ -3407,7 +3564,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     let changed = false;
     const next = s.units.map((u) => {
       const has = Number(u.params?.recess_mm) > 0;
-      const whole = wholeRecessOf(u, s, profile);
+      // T82 F16, after the review: the recess law is a CARCASS's (it goes
+      // deeper by the recess, its back behind the wall line). A free panel is a
+      // board: its box is its board and its back is where the hand puts it, so
+      // no recess takes it, and one an old project saved on it is given back.
+      const whole = isFreePanel(u.type) ? null : wholeRecessOf(u, s, profile);
       // T79 F10: the recess less this unit's stand-off; at or under 0, no recess.
       const depth = whole ? Math.max(0, effectiveRecessDepth(u, whole, profile)) : 0;
       if (depth > 0) {
@@ -3887,6 +4048,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   addPlinth: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit || !takesPlinth(unit.type, getCabinetProfile())) return false;
+    // T82 F13 · a floating vanity takes no plinth (*"no legs, no plinth"*): it is put on the floor first.
+    if (floatHeightOf(unit.type, unit.params, getCabinetProfile()) != null) return false;
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: true } } : u)),
     }));
@@ -3973,6 +4136,66 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // Taking one out of the middle of a run splits the kick in two — the same
     // reason adding one joins them.
     get().refreshAutoParts();
+  },
+
+  /**
+   * ─── T82 F13 · PLINTH OR FLOATING ────────────────────────────────────────
+   *
+   * CLAUDE.md T82 F13: *"Plinth: the house plinth under the vanity ...;
+   * `floating: true`: no legs, no plinth, the carcass hung at `float_height_mm`
+   * (PROPOSED default 300)"*; the owner, 25.10.2026 (12:57): *"plinth do zmiany
+   * wysokosc, propozycja floating lub on the floor"*. KIT_VANITY.lsp D19.
+   *
+   * Floating writes the flag, the height (the one typed, else the unit's own,
+   * else the profile's) and takes the plinth off: a hung carcass has no toe
+   * kick, and the run's plinth (`runs.js`, `params.plinth`) closes over the gap
+   * it leaves. Back on the floor the plinth returns as a new unit is born with
+   * it (T48 F3, `takesPlinth`), and the toe kick is the one it stood on.
+   *
+   * THE ROOM REFUSES IN WORDS: a height that puts the carcass through the
+   * ceiling, or below the floor, is said and nothing moves. Any kit but a
+   * vanity is refused too: floating is the vanity's own.
+   *
+   * @returns {{ ok: boolean, said: string }}
+   */
+  setVanityFloating: (unitId, floating, heightMm = null) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, said: 'No such unit.' };
+    const profile = getCabinetProfile();
+    const label = unit.params?.unit_num ? `${unit.params.unit_num}: ` : '';
+    if (!isVanityKit(unit.type)) {
+      return { ok: false, said: `${label}only a vanity unit floats; this one stands on the floor.` };
+    }
+    let patch;
+    if (floating) {
+      const asked = heightMm != null && heightMm !== '' ? Number(heightMm) : null;
+      const own = Number(unit.params?.float_height_mm);
+      const h = asked != null ? asked
+        : (Number.isFinite(own) && unit.params?.float_height_mm != null ? own : Number(profile.vanity?.defaults?.floatHeightMm) || 0);
+      if (!Number.isFinite(h) || h < 0) {
+        return { ok: false, said: `${label}a vanity hangs at 0 mm or more off the floor.` };
+      }
+      const roomH = Number(s.project.room?.height) || 0;
+      const carcass = Number(unit.params?.height) || 0;
+      if (roomH > 0 && h + carcass > roomH + 1e-6) {
+        return {
+          ok: false,
+          said: `${label}the room is ${formatMm(roomH)} mm: a ${formatMm(carcass)} mm vanity hung at ${formatMm(h)} mm will not fit under the ceiling. `
+            + `${formatMm(Math.max(0, roomH - carcass))} mm is the highest it can hang.`,
+        };
+      }
+      patch = { floating: true, float_height_mm: h, plinth: false };
+    } else {
+      patch = { floating: false, plinth: takesPlinth(unit.type, profile) ? true : unit.params?.plinth === true };
+    }
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, ...patch } } : u)),
+    }));
+    // The run's plinth splits or joins, and the fronts are measured again.
+    get().refreshAutoParts();
+    get().healFrontGaps();
+    return { ok: true, said: '' };
   },
 
   /**
@@ -4812,16 +5035,37 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{applied:object, notices:string[]}}
    */
+  /**
+   * T82 F17 · the end of a unit's Back inset field: a cabinet's
+   * `editor.maxInset`, a free panel's the room's (`freePanelInsetMax`), the
+   * same ceiling `setUnitInsets` clamps to. Null for no such unit.
+   */
+  insetBackMaxFor: (unitId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    return unit ? insetBackMaxOf(s, unit, getCabinetProfile()) : null;
+  },
+
   setUnitInsets: (unitId, patch) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return { applied: {}, notices: [] };
     const profile = getCabinetProfile();
     const max = profile.editor.maxInset;
+    // T82 F17 · a free panel's BACK inset is capped by the room, not by a
+    // cabinet's `maxInset` (`engine/attachPanel.js freePanelInsetMax`): a
+    // panel stuck 340 off the wall in front of a chimney stays at 340.
+    const backMax = insetBackMaxOf(s, unit, profile);
+    const capped = [];
     const applied = {};
     for (const [key, param] of [['left', 'inset_left_mm'], ['right', 'inset_right_mm'], ['back', 'inset_back_mm']]) {
       if (patch[key] == null) continue;
-      applied[param] = Math.min(max, Math.max(0, snapTo(Number(patch[key]) || 0, profile.editor.mmStep)));
+      const want = Math.max(0, snapTo(Number(patch[key]) || 0, profile.editor.mmStep));
+      const ceiling = key === 'back' ? backMax : max;
+      applied[param] = Math.min(ceiling, want);
+      if (key === 'back' && isFreePanel(unit.type) && want > ceiling + 1e-6) {
+        capped.push(`Back inset limited to ${formatMm(ceiling)} mm by the room.`);
+      }
     }
     if (!Object.keys(applied).length) return { applied: {}, notices: [] };
 
@@ -4833,7 +5077,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ),
     }));
 
-    const notices = [];
+    const notices = [...capped];
 
     // The unit is now WIDER IN PLAN where it already stands, and a unit butted
     // against its neighbour is suddenly 40 mm inside it. No drag can produce
@@ -5451,6 +5695,37 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       unit.params.depth = Number(bornBeside.params.depth) || unit.params.depth;
       if (bornBeside.params.wall_gap != null) unit.params.wall_gap = bornBeside.params.wall_gap;
     }
+    // ─── T82 F2 · A HAWA POCKET IS BORN IN ITS RUN (slice A3) ───────────────
+    // The owner, 25.10.2026: *"wysuwasz pocket door i zakrywasz szafke lub
+    // szafki"*.  Its choices are `params.pocket` (CLAUDE.md F2: doors, hand,
+    // Push by default, the class by F3, covers). Its width is the pocket's at
+    // the project's front, worked out BEFORE the free slot is looked for, so it
+    // lands at the width it is. Put beside a cabinet it is born MATCHED (as
+    // T74 F7 matches a wardrobe's wall unit): that cabinet's height, legs and
+    // gap off the wall, one top line and so one run; and its one door covers
+    // that cabinet, so the hand is the side the cabinet stands on (put on the
+    // LEFT of 01, the door is on its right). A caller's own `pocket` wins.
+    if (isHawaPocket(typeId)) {
+      const asked = params?.pocket || {};
+      const doors = Number(asked.doors) === 2 ? 2 : 1;
+      const bySide = beside && side ? (isLeftSide(side) ? 'R' : 'L') : null;
+      unit.params.pocket = {
+        doors,
+        hand: doors === 2 ? null : (asked.hand === 'L' || asked.hand === 'R' ? asked.hand : (bySide || 'R')),
+        push: asked.push == null ? hawaSpec(profile).defaultPush : asked.push !== false,
+        cls: Number(asked.cls) === 25 || Number(asked.cls) === 35 ? Number(asked.cls) : null,
+        covers: Array.isArray(asked.covers) ? [...asked.covers] : [],
+      };
+      const slots = projectThicknesses({ design: migrateDesign(state.project.design), profile, materials: workshopMaterials() });
+      unit.params.width = hawaPocketWidth({ doors, frontT: frontTOf({ ...unit.params, thickness_slots: slots }, profile) }, profile);
+      const matched = beside && getUnitType(beside.type).mount === 'floor'
+        && !isFreePanel(beside.type) && !isHawaPocket(beside.type) ? beside : null;
+      if (matched) {
+        if (Number(matched.params?.height) > 0) unit.params.height = Number(matched.params.height);
+        if (matched.params?.leg_height != null) unit.params.leg_height = matched.params.leg_height;
+        if (matched.params?.wall_gap != null) unit.params.wall_gap = matched.params.wall_gap;
+      }
+    }
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
     // units occupy different bands of the same wall, so they are placed
@@ -5693,7 +5968,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
             .map(unitSpan),
           // A box in the plan refuses a placement exactly as a neighbour does
           // (turn 14, CLAUDE.md F10.3): a unit is never DROPPED into a chimney.
-          ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes) }),
+          ...boxSpansOnWall({
+            wall, depth: unit.params.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes), back: bandBackOf(unit, profile),
+          }),
           // T75 F2 · …and a unit round the corner, at its corner stop. The
           // room refuses first: a placement is never dropped into an occupied
           // corner square (verify/t75/p01-probe.md measured it landing there).
@@ -5782,6 +6059,33 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // and a drag asked nothing. Both are `settleLayout` now, and every action
     // that can move a cabinet's edge ends by calling it.
     get().settleLayout(unit.id);
+    // T82 F2 · …and once it stands, its door's hand and covers are what stands
+    // beside it: with no side named, the hand is the side its only neighbour
+    // is on (both or none: R, the documents' "Anlage links", pocket left of
+    // its door); the covers are the one unit nearest on that hand (CLAUDE.md
+    // F3: *"by default the ONE unit next to the pocket on that side"*),
+    // written as the owner's starting list. From here on the run resolves it
+    // (runs.js runPocketParams); nothing below re-derives a HAWA figure.
+    if (isHawaPocket(unit.type)) {
+      const born = get().units.find((u) => u.id === unit.id);
+      if (born) {
+        const pocket = { ...born.params.pocket };
+        if (pocket.doors !== 2 && !(beside && side) && params?.pocket?.hand == null) {
+          const n = pocketNeighbours(get().units, born, profile);
+          pocket.hand = n.L.length && !n.R.length ? 'L' : 'R';
+        }
+        if (!(Array.isArray(params?.pocket?.covers) && params.pocket.covers.length)) {
+          const probe = { ...born, params: { ...born.params, pocket: { ...pocket, covers: [] } } };
+          // T82 F2, after the review (store:2): the default as the run
+          // resolves it, so a cabinet another pocket closes is not written in.
+          pocket.covers = defaultPocketCovers(get().units, probe, profile);
+        }
+        set((st) => ({
+          units: st.units.map((u) => (u.id === unit.id ? { ...u, params: { ...u.params, pocket } } : u)),
+        }));
+        get().refreshAutoParts();
+      }
+    }
     // ─── T75 F17 · A DESK: FRONT ON THE WARDROBE'S LINE, AND ITS TOP ────────
     // *"Placed beside a wardrobe at `mount_height = 720`, aligned to the FRONT
     // of the wardrobe by default (T74 F7's two choices). It takes a WORKTOP."*
@@ -5793,6 +6097,32 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (isDeskKit(unit.type)) {
       if (hangsBeside) get().alignUnitDepth(unit.id, 'front');
       get().addWorktop([unit.id]);
+    }
+    // ─── T82 F10 · A VANITY IS BORN UNDER ITS TOP ──────────────────────────
+    // The owner, 25.10.2026 (13:03): *"5 - blat osobny element jak worktop"*.
+    // The house worktop over the one vanity, as a set lays a top on one
+    // cabinet (`kind: 'top'`), at the vanity's own top thickness
+    // (`vanity.defaults.top`, PROPOSED 20); reaching the wall over the
+    // service void is the slab's own law (engine/worktop.js serviceVoidOf).
+    // After the review (T82 PART B, topbasin 1): a vanity born on an island
+    // face JOINS the island's one slab when the island has one (its decor, its
+    // seating overhang, its thickness are the island's and stay), never
+    // replaces it; only an island with no slab yet, or a wall, is given one.
+    if (isVanityKit(unit.type)) {
+      const st = get();
+      const born = st.units.find((u) => u.id === unit.id) || unit;
+      const isle = roomWalls(st.project.room)[born.position?.wall ?? 0]?.island ?? null;
+      const design = migrateDesign(st.project.design);
+      const islandTop = isle != null ? design.worktops.find((w) => w.island === isle) : null;
+      if (islandTop) {
+        get().setDesign({
+          worktops: design.worktops.map((w) => (w.id === islandTop.id
+            ? { ...w, unitIds: [...new Set([...(w.unitIds || []), unit.id])] }
+            : w)),
+        });
+      } else {
+        get().addWorktop([unit.id], { single: true, thickness: Number(profile.vanity?.defaults?.top) || null });
+      }
     }
     // ─── TURN 72 (CLAUDE.md F8): …AND IT TAKES THE RUN'S CORNICE ───────────
     //
@@ -6315,6 +6645,79 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * ─── T82 F16 · THE PANEL IN THE HAND: UP AND DOWN ────────────────────────
+   *
+   * The owner: *"bardziej chcialem grab and move"*. The room's drag reads the
+   * height off the same plane it reads the wall from and hands it here; the
+   * `fp-floor` figure types the same number through `updateUnitParams`. `y`
+   * is the panel's underside above the floor (its `mount_height`), on the
+   * hand's grid (`snapStep`, else the workshop's `mmStep`), held by the room
+   * (`freePanelReach`): the floor and the ceiling less the box. Nothing it
+   * stands in front of stops it. A height already there writes nothing.
+   *
+   * @returns {{y:number, blocked:boolean, by:string|null, notices:string[]}|null}
+   */
+  moveFreePanelY: (unitId, y, snapStep = null) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isFreePanel(unit.type)) return null;
+    const profile = getCabinetProfile();
+    const want = snapTo(Number(y) || 0, snapStep || profile.editor.mmStep);
+    const fit = withinReach(want, freePanelReach(s, unit, profile).mount, 'the floor', 'the ceiling');
+    if (fit.value !== (Number(unit.params.mount_height) || 0)) get().updateUnitParams(unitId, { mount_height: fit.value });
+    // T82 F16, after the review: what it says is where the panel IS, read back.
+    const landed = Number(get().units.find((u) => u.id === unitId)?.params?.mount_height) || 0;
+    const notices = fit.blocked ? [`From the floor limited to ${formatMm(fit.value)} mm by ${fit.by}.`] : [];
+    if (Math.abs(landed - fit.value) > 1e-6) notices.push(`From the floor settled at ${formatMm(landed)} mm by the room.`);
+    return {
+      y: landed,
+      blocked: fit.blocked,
+      by: fit.by,
+      notices,
+    };
+  }),
+
+  /**
+   * ─── T82 F16 · …AND OFF THE WALL ─────────────────────────────────────────
+   *
+   * The room's drag with Shift held, and the `fp-wall` figure. `z` is the
+   * distance of the panel's BACK FACE from the wall line (its `backStandoff`,
+   * what the eye and the figure read); it is written as `inset_back_mm`, z
+   * less the wall clearance, held by the room (`freePanelReach`): the
+   * clearance every unit keeps, and the far wall less the panel. Not the
+   * cabinet's `editor.maxInset` 300 (F17), and never through `setUnitInsets`,
+   * whose depth re-clamp would shorten a panel standing across the wall: the
+   * room moves the panel, it never squashes it.
+   *
+   * @returns {{z:number, inset:number, blocked:boolean, by:string|null, notices:string[]}|null}
+   */
+  moveFreePanelZ: (unitId, z, snapStep = null) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isFreePanel(unit.type)) return null;
+    const profile = getCabinetProfile();
+    const reach = freePanelReach(s, unit, profile);
+    const want = snapTo(Number(z) || 0, snapStep || profile.editor.mmStep);
+    const fit = withinReach(want, reach.standoff, 'the wall clearance', 'the far wall');
+    const inset = roundTo(fit.value - reach.clearance, 4);
+    if (inset !== (Number(unit.params.inset_back_mm) || 0)) get().updateUnitParams(unitId, { inset_back_mm: inset });
+    // T82 F16, after the review: what it says is where the panel IS, its back
+    // read back off the store (the review found a recess settling it 290 away
+    // while this still answered with the number asked).
+    const landed = get().units.find((u) => u.id === unitId);
+    const zNow = landed ? roundTo(backStandoff(landed, profile), 4) : fit.value;
+    const notices = fit.blocked ? [`From the wall limited to ${formatMm(fit.value)} mm by ${fit.by}.`] : [];
+    if (Math.abs(zNow - fit.value) > 1e-6) notices.push(`From the wall settled at ${formatMm(zNow)} mm by the room.`);
+    return {
+      z: zNow,
+      inset: Number(landed?.params?.inset_back_mm) || 0,
+      blocked: fit.blocked,
+      by: fit.by,
+      notices,
+    };
+  }),
+
+  /**
    * ─── CHAT-FIX 25.10.2026 · THE SURFACES A FREE PANEL CAN BE STUCK TO ──────
    *
    * The owner: *"zebym ja mogl go przykleic do tej powierzchni jakiej chce"*.
@@ -6442,7 +6845,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       x: unit.position.x_mm,
       wallWidth: wall.width,
       others: wallObstacles({
-        wall, walls, depth: unit.params.depth, others, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
+        // T82 F17 · the same obstacles the width edit reads, in the same band.
+        wall, walls, depth: unit.params.depth, others, boxes: planObstaclesInWayOf(unit, wall, s.project.room, s.project.wallSlopes, profile),
+        back: bandBackOf(unit, profile),
       }),
       wallMargin: wallMarginOf(s, unit),
       padRight: footprintPads(unit, unit.params.front_t, profile).right,
@@ -6717,6 +7122,182 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     };
   }),
 
+  // ─── T82 F2 · THE POCKET DOOR'S CHOICES (slice A3) ──────────────────────
+  //
+  // The owner, 25.10.2026: *"wysuwasz pocket door i zakrywasz szafke lub
+  // szafki"*; 13:46: *"4 - tak"* (the class by height and weight, with a
+  // manual override), *"5 - tak"* (Push by default), *"3 tak moga"* (one door
+  // over two narrow units).  Three actions and nothing else: the choices
+  // (`setPocket`), the units the door covers (`setPocketCovers`), and the
+  // figures the right panel shows (`pocketFiguresFor`, the engine's own
+  // `result.hawa`, KIT_HAWA.lsp's mirror; never worked out here).
+
+  /**
+   * Doors 1 | 2, hand 'L' | 'R' (one door), push, cls 25 | 35 | null (auto).
+   * A change of doors re-cuts the pocket's width (panel + 55 + panel, panel +
+   * 110 + panel); the room is asked first (*"the room refuses in words"*): it
+   * grows where there is room for it, keeping its door's edge where it can, and
+   * where there is none nothing changes and the sentence says why. A change of
+   * doors or hand puts the covers back to the default (the nearest unit).
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setPocket: (unitId, patch = {}) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isHawaPocket(unit.type)) return { ok: false, error: 'Only a HAWA pocket has a pocket door.' };
+    const profile = getCabinetProfile();
+    const was = pocketChoiceOf(unit.params, profile);
+    const doors = patch?.doors == null ? was.doors : (Number(patch.doors) === 2 ? 2 : 1);
+    const storedHand = unit.params?.pocket?.hand === 'L' ? 'L' : 'R';
+    const askedHand = patch?.hand === 'L' || patch?.hand === 'R' ? patch.hand : null;
+    const hand = doors === 2 ? null : (askedHand || was.hand || storedHand);
+    const pocket = {
+      doors,
+      hand,
+      push: patch?.push == null ? was.push : patch.push !== false,
+      cls: Object.hasOwn(patch || {}, 'cls')
+        ? (Number(patch.cls) === 25 || Number(patch.cls) === 35 ? Number(patch.cls) : null)
+        : was.cls,
+      covers: was.covers,
+    };
+    const resetCovers = doors !== was.doors || hand !== was.hand;
+    const name = unit.params.unit_num || unit.id;
+    let position = unit.position;
+    let { width } = unit.params;
+    let moves = [];
+    if (doors !== was.doors) {
+      const slots = projectThicknesses({ design: migrateDesign(s.project.design), profile, materials: workshopMaterials() });
+      const want = hawaPocketWidth({ doors, frontT: frontTOf({ ...unit.params, thickness_slots: slots }, profile) }, profile);
+      // T82 F2, after the review (store:1): the ONE re-cut law, the same one
+      // the front's re-cut takes (`pocketRecutPlan`): the door's edge stays,
+      // the run on the other side moves with the pocket, or nothing moves.
+      const plan = pocketRecutPlan(s, s.units, { ...unit, params: { ...unit.params, pocket } }, want, profile);
+      if (!plan.ok) {
+        return {
+          ok: false,
+          error: `${name}: ${doors === 2 ? 'two doors take' : 'one door takes'} a pocket ${formatMm(want)} mm wide, and there is no room for one here: move a neighbour first.`,
+        };
+      }
+      position = { ...unit.position, x_mm: plan.x };
+      ({ width, moves } = plan);
+    }
+    const movedTo = new Map(moves);
+    set((st) => ({
+      units: settleRiders(st.units.map((u) => {
+        if (u.id === unitId) return { ...u, position, params: { ...u.params, width, pocket } };
+        if (movedTo.has(u.id)) return { ...u, position: { ...u.position, x_mm: movedTo.get(u.id) } };
+        return u;
+      }), profile),
+    }));
+    if (resetCovers) {
+      const moved = get().units.find((u) => u.id === unitId);
+      const probe = { ...moved, params: { ...moved.params, pocket: { ...pocket, covers: [] } } };
+      const covers = defaultPocketCovers(get().units, probe, profile);
+      set((st) => ({
+        units: st.units.map((u) => (u.id === unitId
+          ? { ...u, params: { ...u.params, pocket: { ...u.params.pocket, covers } } }
+          : u)),
+      }));
+    }
+    get().refreshAutoParts();
+    get().settleLayout(unitId);
+    return { ok: true, error: null };
+  }),
+
+  /**
+   * The units the pocket's door covers, nearest first (*"zakrywasz szafke lub
+   * szafki"*). They must stand one after another from the pocket on a door's
+   * side, none skipped; a door over more than one unit may not pass HAWA's
+   * widest door (CLAUDE.md F3: *"the owner may add the next ... while TB stays
+   * within 440 to 750"*), the figure the engine's own. An empty list puts the
+   * default back (the nearest unit). Refused: nothing changes, and the
+   * sentence says why.
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setPocketCovers: (unitId, ids = []) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isHawaPocket(unit.type)) return { ok: false, error: 'Only a HAWA pocket has a pocket door.' };
+    const profile = getCabinetProfile();
+    const choice = pocketChoiceOf(unit.params, profile);
+    const name = unit.params.unit_num || unit.id;
+    const want = [...new Set((ids || []).filter(Boolean))];
+    const chains = pocketNeighbours(s.units, unit, profile);
+    const sides = choice.doors === 2 ? ['L', 'R'] : [choice.hand];
+    const numOf = (id) => s.units.find((u) => u.id === id)?.params?.unit_num || id;
+    for (const id of want) {
+      if (!sides.some((side) => chains[side].some((u) => u.id === id))) {
+        return {
+          ok: false,
+          error: `${numOf(id)} does not stand beside ${name} on its door's side: a pocket door covers the cabinets next to its pocket, one after another.`,
+        };
+      }
+    }
+    for (const side of sides) {
+      const chain = chains[side].map((u) => u.id);
+      const mine = want.filter((id) => chain.includes(id));
+      if (!chain.slice(0, mine.length).every((id) => mine.includes(id))) {
+        return {
+          ok: false,
+          error: `${name}: a door covers the cabinets one after another from its pocket; ${numOf(chain.find((id) => !mine.includes(id)))} would be skipped.`,
+        };
+      }
+    }
+    // T82 F2, after the review (store:2): a cabinet another pocket's door
+    // already closes is refused in that pocket's words.
+    {
+      const held = runPocketParams(s.units, profile);
+      for (const id of want) {
+        const el = held.get(id);
+        if (el?.role !== 'covered' || el.pocketId === unitId) continue;
+        const by = s.units.find((u) => u.id === el.pocketId);
+        return {
+          ok: false,
+          error: pocketClaimRefusal(unit, {
+            unitId: id, unitNum: numOf(id), by: el.pocketId, byNum: by?.params?.unit_num || el.pocketId,
+          }),
+        };
+      }
+    }
+    if (want.length) {
+      const probe = { ...unit, params: { ...unit.params, pocket: { ...unit.params.pocket, covers: want } } };
+      const el = runPocketParams(s.units.map((u) => (u.id === unitId ? probe : u)), profile, {
+        walls: roomWalls(s.project.room),
+      }).get(unitId);
+      const slots = projectThicknesses({ design: migrateDesign(s.project.design), profile, materials: workshopMaterials() });
+      const fig = el?.cover ? hawaPocketFigures({ ...probe.params, thickness_slots: slots, pocket_cover: el.cover }, profile) : null;
+      const K = hawaSpec(profile);
+      const wide = (fig?.doors || []).find((d) => (d.covers || []).length > 1 && d.TB > K.hawaTBMax);
+      if (wide) {
+        return {
+          ok: false,
+          error: `${name}: the door over ${wide.unitNums.join(' and ')} would be ${formatMm(wide.TB)} mm wide; a HAWA Concepta III door is ${formatMm(K.hawaTBMin)} to ${formatMm(K.hawaTBMax)} mm (#37). Nothing changed.`,
+        };
+      }
+    }
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, pocket: { ...u.params.pocket, covers: want } } }
+        : u)),
+    }));
+    get().refreshAutoParts();
+    return { ok: true, error: null };
+  }),
+
+  /**
+   * The pocket's figures, as the engine cut them (`result.hawa`, the one
+   * derivation of KIT_HAWA.lsp's mirror): TB, T1, M, E1, the class per door,
+   * the pocket's width and KT, the refusals in the LISP's words. Null for
+   * anything that is not a pocket.
+   */
+  pocketFiguresFor: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !isHawaPocket(unit.type)) return null;
+    return get().unitResult(unitId)?.hawa ?? null;
+  },
+
   removeUnit: (unitId) => runBatch(() => {
     // T36 F7: a rider whose main goes is ORPHANED, not moved and not deleted —
     // the joiner is shown a red fault and decides. `settleRiders` leaves it
@@ -6822,7 +7403,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // it always has, so nothing drifts when a number is typed down.
     if (patch.width != null) {
       const spans = wallObstacles({
-        wall, walls, depth: unit.params.depth, others, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
+        // T82 F17 · a free panel stood in front of a chimney grows along its
+        // face: the obstacles behind its back line are not in its way.
+        wall, walls, depth: unit.params.depth, others, boxes: planObstaclesInWayOf(unit, wall, s.project.room, s.project.wallSlopes, profile),
+        back: bandBackOf(unit, profile),
         enter: notchEnterFor({ ...unit, params: { ...unit.params, width: patch.width } }),
       });
       const pads = footprintPads(unit, unit.params.front_t, profile);
@@ -6867,8 +7451,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           // F9 leaves — is when they gave NOTHING; otherwise this is a limit,
           // and either way the sentence names what is on EACH side rather than
           // pointing at one of them and leaving the other to be discovered.
+          // T82 F17 · the unit is named by its type, never "wardrobe" for a panel.
           notices.push(applied.width <= have + 1e-6
-            ? `This wardrobe cannot grow either way: ${clamp.by} is on the right and `
+            ? `This ${typeWordOf(unit)} cannot grow either way: ${clamp.by} is on the right and `
               + `${heldBy} is on the left. ${formatMm(applied.width)} mm is what it can be.`
             : `Width limited to ${formatMm(applied.width)} mm — ${clamp.by} on the right, `
               + `${heldBy} on the left.`);
@@ -6915,6 +7500,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       applied.wall_gap = Math.min(want, ceiling);
       if (applied.wall_gap < want) {
         notices.push(`From the wall limited to ${formatMm(applied.wall_gap)} mm by ${room.by || 'the room'}.`);
+      }
+    }
+    // ─── T82 F16 · A FREE PANEL'S HEIGHT AND DISTANCE OFF THE WALL ──────────
+    // *"grab and move"*: the hand moves both now (`moveFreePanelY`, `moveFreePanelZ`),
+    // and the probe found neither had a room behind it (mount_height 3000 in a
+    // 2500 room stored, no notice). Every road that types them lands here, so
+    // the law is one: the room's reach (`freePanelReach`), said in words. It
+    // runs BEFORE the height clamp, so a panel asked higher than the ceiling
+    // allows is held down whole rather than squashed by its own height. A
+    // cabinet's mount and inset are not this law.
+    if (isFreePanel(unit.type) && (patch.mount_height != null || patch.inset_back_mm != null)) {
+      const reach = freePanelReach(s, unit, profile, {
+        height: patch.height, width: applied.width, depth: applied.depth,
+      });
+      if (patch.mount_height != null) {
+        const fit = withinReach(Number(patch.mount_height) || 0, reach.mount, 'the floor', 'the ceiling');
+        applied.mount_height = fit.value;
+        if (fit.blocked) notices.push(`From the floor limited to ${formatMm(fit.value)} mm by ${fit.by}.`);
+      }
+      if (patch.inset_back_mm != null) {
+        const fit = withinReach(Number(patch.inset_back_mm) || 0, reach.inset, 'the wall clearance', 'the far wall');
+        applied.inset_back_mm = fit.value;
+        if (fit.blocked) notices.push(`Back inset limited to ${formatMm(fit.value)} mm by ${fit.by}.`);
       }
     }
     if (patch.height != null) {
@@ -7190,9 +7798,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // front of a chimney or a box (`attachFreePanel`, the obstacle's front)
       // is not stopped by what it stands in front of: only an obstacle that
       // reaches past the panel's own back line is in its way.
-      boxes: isFreePanel(unit.type)
-        ? obstaclesBeyond(planObstaclesOf(s.project.room, s.project.wallSlopes), wall, backStandoff(unit, getCabinetProfile()))
-        : planObstaclesOf(s.project.room, s.project.wallSlopes),
+      // T82 F17 · one road: `planObstaclesInWayOf` is that rule, read by the
+      // width edit, the size window and the Check as well.
+      boxes: planObstaclesInWayOf(unit, wall, s.project.room, s.project.wallSlopes, getCabinetProfile()),
+      // T82 F17, after the review: a free panel is checked where it stands,
+      // from its own back line, never from the wall line.
+      back: bandBackOf(unit, getCabinetProfile()),
       // ...unless the cabinet can be notched for it (15.10.2026): then it may
       // drive in as far as the widest notch its carcass takes.
       enter: notchEnterFor(unit),
@@ -7394,6 +8005,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           .map(unitSpan),
         ...boxSpansOnWall({
           wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(get().project.room, get().project.wallSlopes),
+          back: bandBackOf(unit),
         }),
         // T75 F2 · the unit round the corner, at its corner stop.
         ...cornerSpansFor(get(), unit, walls[wallIndex], walls),
@@ -7491,6 +8103,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           .map(unitSpan),
         ...boxSpansOnWall({
           wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
+          back: bandBackOf(unit),
         }),
         // T75 F2 · the unit round the corner, at its corner stop.
         ...cornerSpansFor(s, unit, walls[wallIndex], walls),
@@ -9639,6 +10252,84 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * ─── T82 F14 · "EQUAL" ───────────────────────────────────────────────────
+   *
+   * CLAUDE.md T82 F14: *"the drawer heights editable as the chest's are (T75
+   * F16) and reset to equal by one button "Equal""*; the owner, 25.10.2026
+   * (12:57): *"w vanity default to sa rowne"*, and of the chest (13:03): *"7 -
+   * tak"*. On a kit whose type takes drawer columns (the vanity, the chest):
+   * the typed heights go and the split is the LISP's equal one (KIT_VANITY.lsp
+   * D8, `cabinet.js drawerSplitOf`), so an old chest cut 4:3:2 is made equal by
+   * the same press. Any other kit is refused: its split is its own.
+   *
+   * @returns {boolean} whether it was done
+   */
+  setDrawersEqual: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !getUnitType(unit.type).drawerColumns) return false;
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, drawer_split: 'equal', drawer_heights: null } } : u)),
+    }));
+    get().healFrontGaps();
+    return true;
+  },
+
+  /**
+   * ─── T82 F14 · DRAWERS 2 / 3 / 4: THE KIT ─────────────────────────────────
+   *
+   * CLAUDE.md T82 F14: *"Drawers 2 / 3 / 4 (the kit)"*; the owner, 25.10.2026
+   * (12:57): *"wybor jak zawsze 2 3 i 4"*. The count IS the kit (VANITY2,
+   * VANITY3, VANITY4: one LISP, three counts, as the drawer base's BUDR2 / BUDR
+   * / BUDR4), so the press swaps the unit's kit and keeps the UNIT: its id, its
+   * place, its size, its number, its columns, its basins, how it stands. The
+   * stack is born again on the new kit's split (equal), as `newUnit` builds it,
+   * and the row-keyed answers of the old stack (typed heights, double rows) go
+   * with it. Refused in words for any count but 2, 3 and 4, and for any kit but
+   * a vanity.
+   *
+   * @returns {{ ok: boolean, said: string }}
+   */
+  setVanityDrawers: (unitId, count) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, said: 'No such unit.' };
+    const label = unit.params?.unit_num ? `${unit.params.unit_num}: ` : '';
+    if (!isVanityKit(unit.type)) return { ok: false, said: `${label}only a vanity unit is offered 2, 3 or 4 drawers here.` };
+    const n = Math.trunc(Number(count));
+    const typeId = `VANITY${n}`;
+    if (!UNIT_TYPES[typeId] || !isVanityKit(typeId)) {
+      return { ok: false, said: `${label}a vanity unit has 2, 3 or 4 drawers.` };
+    }
+    if (resolveTypeId(unit.type) === typeId) return { ok: true, said: '' };
+    const profile = getCabinetProfile();
+    const type = getUnitType(typeId);
+    const drawers = drawerSplitFor(type, profile).ratio.map((_, i) => ({
+      id: uid('drawer'), kind: 'drawer', index: i + 1, mount: 'overlay',
+    }));
+    set((st) => ({
+      units: st.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const section = u.params.sections?.[0] || { width_mm: u.params.width, items: [] };
+        const kept = (section.items || []).filter((i) => i.kind !== 'drawer');
+        return {
+          ...u,
+          type: typeId,
+          params: {
+            ...u.params,
+            type: typeId,
+            drawer_heights: null,
+            drawer_double: null,
+            sections: [{ ...section, items: [...kept, ...drawers] }, ...(u.params.sections || []).slice(1)],
+          },
+        };
+      }),
+    }));
+    get().refreshAutoParts();
+    get().healFrontGaps();
+    return { ok: true, said: '' };
+  },
+
+  /**
    * The project's runner variant: T or S (turn 18, CLAUDE.md F6.4).
    *
    * HARDWARE and not geometry — nothing in the engine branches on it, because
@@ -9987,7 +10678,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // the record carries none and the profile's 38 stands.
         ...(units.length === 1 && isDeskKit(units[0].type) ? { kind: 'desk' } : {}),
         // T75 F20 · …and so does the one cabinet a SET lays a top on.
-        ...(units.length === 1 && single && !getUnitType(units[0].type).corner && !isDeskKit(units[0].type)
+        // T82 F10, after the review · …and a lone vanity, asked or born.
+        ...(units.length === 1 && (single || isVanityKit(units[0].type)) && !getUnitType(units[0].type).corner && !isDeskKit(units[0].type)
           ? { kind: 'top' } : {}),
         ...recordThickness(thickness, units, profile),
         ...(gate.island ? {
@@ -10035,6 +10727,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }
     const mm = Number(getCabinetProfile()?.autoParts?.worktop?.seatingMm) || 300;
     return get().extendIslandWorktop(worktopId, face, mm);
+  },
+
+  /**
+   * T82 F10 · the thickness of one worktop, typed (the owner, 25.10.2026:
+   * *"dodanie blat grubosc do wyboru"*): the record's own, which wins over
+   * the profile's 38 (`worktop.js slabThickness`). A number that is not a
+   * thickness is refused in words and nothing changes.
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setWorktopThickness: (worktopId, mm) => {
+    const design = migrateDesign(get().project.design);
+    const record = design.worktops.find((w) => w.id === worktopId);
+    if (!record) return { ok: false, error: 'No such worktop.' };
+    const t = Number(mm);
+    if (!(Number.isFinite(t) && t > 0)) {
+      return { ok: false, error: 'A worktop thickness is a number of millimetres above 0.' };
+    }
+    get().setDesign({
+      worktops: design.worktops.map((w) => (w.id === worktopId ? { ...w, thickness: t } : w)),
+    });
+    return { ok: true, error: null };
   },
 
   /** Take one off. No confirmation — Undo covers it (turn 25's rule, F11). */
@@ -11249,6 +11963,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   markSaved: (project) => set((s) => ({ project: project || s.project, dirty: false })),
 
   /**
+   * T82 F20, after the review: a job that is NOT on the shelf (the browser
+   * refused the write) is marked unsaved. The gate (`stores/dirtyGate.js`) is
+   * the only writer of the flag, so this hands it a new project object, which
+   * is what a change to the document looks like to it; the job is unchanged.
+   */
+  markUnsaved: () => set((s) => ({ project: { ...s.project } })),
+
+  /**
    * The project as it should be WRITTEN — the live assignment blob folded in
    * (turn 39, CLAUDE.md F2).
    *
@@ -11327,6 +12049,9 @@ useUiStore.subscribe((ui) => {
  */
 function floorYOf(unit, applied, profile) {
   const type = getUnitType(unit.type);
+  // T82 F13 · a floating vanity hangs at its own height, whatever is being applied to it.
+  const floatH = floatHeightOf(unit.type, { ...unit.params, ...(applied || {}) }, profile);
+  if (floatH != null) return floatH;
   if (type.mount === 'wall') {
     return Number(applied?.mount_height ?? unit.params.mount_height ?? profile.wallUnit.defaults.mountHeight) || 0;
   }
@@ -11374,11 +12099,150 @@ function obstructs(unit, other, profile = getCabinetProfile()) {
   // (np. box)."*  A box is four boards touching and crossing at its corners,
   // so a free panel never holds another off. Anything else still does.
   if (isFreePanel(unit?.type) && isFreePanel(other?.type)) return false;
+  // T82 F19 · a free panel whose back stands at or past a unit's door face is
+  // in FRONT of it (a cabinet's front clad): neither holds the other off.
+  if (standsInFrontOf(unit, other, profile) || standsInFrontOf(other, unit, profile)) return false;
   return bandsOverlap(bandOf(unit, profile), bandOf(other, profile), profile.editor.levelOverlapMm);
+}
+
+/**
+ * T82 F2, after the review (store:2) · the covers a pocket starts from (its
+ * birth, a new hand or a new door count): the default as the run resolves it,
+ * the one nearest unit on each door's side that no earlier pocket closes.
+ */
+function defaultPocketCovers(units, probe, profile = getCabinetProfile()) {
+  const list = (units || []).map((u) => (u.id === probe.id ? probe : u));
+  return runPocketParams(list, profile).get(probe.id)?.covers || [];
+}
+
+/**
+ * ─── T82 F2, AFTER THE REVIEW (store:1) · THE POCKET RE-CUT, ONE LAW ───────
+ *
+ * A pocket's width is worked out (panel + 55 + panel, panel + 110 + panel at
+ * the project's front), so it changes when its doors change (`setPocket`) or
+ * when the front does (`refreshAutoParts`). Both roads ask HERE, and the answer
+ * is the one a joiner gives: the edge its one door covers stays where it is
+ * (the left edge for two doors), the other edge moves, and the cabinets butted
+ * one after another on that side move WITH it, pushed out when the pocket
+ * grows, pulled in when it shrinks, so the run stays one run and no door
+ * drops. Where pushing would drive any of them into a neighbour, a box, the
+ * corner or the wall's stop, nothing moves and the caller says so in words
+ * (*"the room refuses in words, the engine never squashes"*).
+ *
+ * @returns {{ok:boolean, x:number, width:number, moves:Array<[string, number]>}}
+ */
+function pocketRecutPlan(state, units, pocket, want, profile = getCabinetProfile()) {
+  const was = Number(pocket?.params?.width) || 0;
+  const x = Number(pocket?.position?.x_mm) || 0;
+  const delta = (Number(want) || 0) - was;
+  if (!(Number(want) > 0) || Math.abs(delta) < 1e-6) return { ok: true, x, width: was, moves: [] };
+  const choice = pocketChoiceOf(pocket.params, profile);
+  const keepRight = choice.doors === 1 && choice.hand === 'R';
+  const free = keepRight ? 'L' : 'R';
+  const round = (v) => Math.round(v * 100) / 100;
+  const shift = free === 'L' ? -delta : delta;
+  const chain = buttedChainOf(units, pocket, free, profile);
+  const plan = {
+    ok: true,
+    x: round(keepRight ? x - delta : x),
+    width: Number(want),
+    moves: chain.map((u) => [u.id, round((Number(u.position?.x_mm) || 0) + shift)]),
+  };
+  // Shrinking pulls the chain into the room the pocket gave up: it cannot hit
+  // anything it was not already touching.
+  if (delta < 0) return plan;
+  const walls = roomWalls(state.project.room);
+  const wall = walls[pocket.position?.wall ?? 0] || walls[0];
+  const moved = new Set([pocket.id, ...chain.map((u) => u.id)]);
+  const at = new Map(plan.moves);
+  const probes = [
+    { ...pocket, position: { ...pocket.position, x_mm: plan.x }, params: { ...pocket.params, width: plan.width } },
+    ...chain.map((u) => ({ ...u, position: { ...u.position, x_mm: at.get(u.id) } })),
+  ];
+  const boxes = planObstaclesOf(state.project.room, state.project.wallSlopes);
+  for (const probe of probes) {
+    const others = [
+      ...units
+        .filter((o) => !moved.has(o.id) && (o.position?.wall ?? 0) === wall.index && obstructs(probe, o, profile))
+        .map(unitSpan),
+      ...boxSpansOnWall({ wall, depth: probe.params.depth, boxes }),
+      ...cornerSpansFor({ ...state, units }, probe, wall, walls, profile),
+    ];
+    const span = unitSpan(probe);
+    const fits = slotTakes({
+      x: span.left, width: span.right - span.left, wallWidth: wall.width, others, wallMargin: wallMarginOf(state, probe, wall),
+    }, profile);
+    if (!fits) return { ok: false, x, width: was, moves: [] };
+  }
+  return plan;
 }
 
 /** T74 F13 · the keys a size edit of a free panel is read through (`freePanelPatch`). */
 const FREE_PANEL_KEYS = ['width', 'height', 'depth', 'panel_width', 'panel_length', 'panel_tilt_deg', 'panel_facing', 'board_t'];
+
+/**
+ * ─── T82 F16 · HOW FAR A FREE PANEL MAY TRAVEL UP AND OFF ITS WALL ─────────
+ *
+ * The owner: *"bardziej chcialem grab and move"*. The probe
+ * (`verify/t82/f16-probe.md`, rows 6 and 7) found the two numbers the hand now
+ * moves with no room behind them: `mount_height` stored 3000, 2400 and -200 in
+ * a 2500 room with no notice, and the back inset held at the cabinet's
+ * `editor.maxInset` 300 where the room leaves 2972. The ROOM is the limit, and
+ * this is the one answer the drag (`moveFreePanelY`, `moveFreePanelZ`) and the
+ * typed road (`updateUnitParams`) both read:
+ *
+ *   mount     the underside: the floor, 0, at least; the room height less the
+ *             box at most (no upper limit in a room with no height)
+ *   standoff  the back face off the wall line: the wall clearance every unit
+ *             keeps at least; the far wall less the panel's box at most
+ *   inset     the same, as the `inset_back_mm` it is written as: the standoff
+ *             less the clearance. T82 F17 · its ceiling is
+ *             `engine/attachPanel.js freePanelInsetMax` (the far wall over the
+ *             panel's span, `maxDepthOnWall`, less its clearance and its box),
+ *             the one law the drag, the `fp-wall` chip, the right panel's Back
+ *             field and `setUnitInsets` all read
+ *
+ * `patch` is the edit in hand (its own height, depth or width, when it moves
+ * them). Nothing here knows about obstacles: a panel is never stopped on these
+ * two axes by what it stands in front of.
+ *
+ * @returns {{mount:{min:number,max:number}, standoff:{min:number,max:number},
+ *   inset:{min:number,max:number}, clearance:number}}
+ */
+export function freePanelReach(state, unit, profile, patch = {}) {
+  const room = state?.project?.room || {};
+  const roomHeight = Number(room.height) || 0;
+  const height = Number(patch.height ?? unit.params?.height) || 0;
+  const depth = Number(patch.depth ?? unit.params?.depth) || 0;
+  const width = Number(patch.width ?? unit.params?.width) || 0;
+  const walls = roomWalls(room);
+  const wall = walls[unit.position?.wall ?? 0] || walls[0];
+  const clearance = wallGapOf(unit, profile);
+  // (`roundTo` reads Infinity as 0, so the open reach is kept off it.)
+  const r4 = (v) => (Number.isFinite(v) ? roundTo(v, 4) : v);
+  // T82 F17 · one law: the panel as the edit in hand would have it (its width
+  // and depth), asked of freePanelInsetMax. No far wall found (a ray into the
+  // open): Infinity, no limit, rather than none at all.
+  const insetMax = wall ? freePanelInsetMax({
+    panel: { ...unit, params: { ...unit.params, width, depth } }, wall, walls, profile,
+  }) : Infinity;
+  return {
+    mount: { min: 0, max: roomHeight > 0 ? Math.max(0, r4(roomHeight - height)) : Infinity },
+    standoff: { min: clearance, max: r4(clearance + insetMax) },
+    inset: { min: 0, max: insetMax },
+    clearance,
+  };
+}
+
+/**
+ * T82 F16 · one number held inside its reach: `{ value, blocked, by }`, `by`
+ * naming what stopped it (`below` or `above`), null when nothing did.
+ */
+function withinReach(want, range, below, above) {
+  if (want < range.min) return { value: range.min, blocked: true, by: below };
+  if (want > range.max) return { value: range.max, blocked: true, by: above };
+  return { value: want, blocked: false, by: null };
+}
 
 /**
  * ─── TURN 51 (CLAUDE.md F1): EVERYTHING THE PLAN PUTS IN THE WAY ───────────
@@ -11401,6 +12265,58 @@ function planObstaclesOf(room, wallSlopeList) {
       id: island.id, corners: islandCorners(island), label: `island ${k + 1}`,
     })),
   ];
+}
+
+/**
+ * ─── T82 F17 · …AND WHAT OF IT IS IN THIS UNIT'S WAY ──────────────────────
+ *
+ * The owner, 25.10.2026 13:36: *"jak mam frontowy komin to nie moge
+ * powiekszyc panela bo mi wchodzi w sciane"*. Every obstacle of the plan for a
+ * cabinet; for a FREE PANEL only those that reach past its own back line
+ * (`engine/attachPanel.js obstaclesBeyond`), so a panel stood in front of a
+ * chimney is not held off by the chimney it stands in front of. The chat-fix
+ * gave `moveUnit` this rule; the width edit, the size window, the Check and
+ * the inset settle read it from here, so the five cannot disagree
+ * (verify/t82/f17-probe.md rows 3 to 6).
+ */
+function planObstaclesInWayOf(unit, wall, room, wallSlopeList, profile = getCabinetProfile()) {
+  const all = planObstaclesOf(room, wallSlopeList);
+  return isFreePanel(unit?.type) && wall ? obstaclesBeyond(all, wall, backStandoff(unit, profile)) : all;
+}
+
+/**
+ * T82 F17, after the review · WHERE A UNIT'S BAND STARTS OFF ITS WALL for the
+ * plan's questions (`collision.js wallObstacles`, `boxSpansOnWall`): 0, the
+ * wall line, for every cabinet, as since turn 14; a FREE PANEL's own back line
+ * (`backStandoff`), so a board stood off its wall is checked where it stands:
+ * a box or a unit round the corner where the board is stops it, one behind it
+ * does not (the review of 25.10, panel 0).
+ */
+function bandBackOf(unit, profile = getCabinetProfile()) {
+  return isFreePanel(unit?.type) ? backStandoff(unit, profile) : 0;
+}
+
+/**
+ * T82 F17 · the most a unit's BACK inset may be: a cabinet's `editor.maxInset`,
+ * a free panel's the room's (`freePanelInsetMax`). `setUnitInsets` clamps to it
+ * and the right panel's Back field shows it as its end.
+ */
+function insetBackMaxOf(state, unit, profile = getCabinetProfile()) {
+  const max = Number(profile.editor.maxInset) || 0;
+  if (!isFreePanel(unit?.type)) return max;
+  const walls = roomWalls(state.project.room);
+  return freePanelInsetMax({
+    panel: unit, wall: walls[unit.position?.wall ?? 0], walls, profile,
+  });
+}
+
+/**
+ * T82 F17 · a unit named in a sentence by its type: the label's first words
+ * with the capital lowered ("wardrobe", "free-standing panel", "base unit").
+ */
+function typeWordOf(unit) {
+  const label = String(getUnitType(unit?.type)?.label || 'unit').split(/,|\s[\u2013\u2014-]\s/)[0].trim();
+  return /^[A-Z][a-z]/.test(label) ? label[0].toLowerCase() + label.slice(1) : label;
 }
 
 function neighboursOf(state, unit) {
@@ -11428,7 +12344,9 @@ function panelObstaclesFor(state, unit, profile = getCabinetProfile()) {
   const band = bandOf(unit, profile);
   const already = new Set(neighboursOf(state, unit).map((u) => u.id));
   const verticals = unitVerticals(
-    state.units.filter((u) => u.id !== unit.id && !already.has(u.id)),
+    // T82 F19 · a unit a free panel stands in front of is out of `neighboursOf`
+    // by `obstructs`, and its fillers and end panels with it.
+    state.units.filter((u) => u.id !== unit.id && !already.has(u.id) && !standsInFrontOf(unit, u, profile)),
     profile,
   )
     // ─── TURN 51 (CLAUDE.md F2): …EXCEPT THE ONES BEING RE-CUT ─────────────
@@ -11460,7 +12378,7 @@ function cornerSpansFor(state, unit, wall, walls, profile = getCabinetProfile())
     .map(toObstacleUnit);
   if (!others.length) return [];
   return wallObstacles({
-    wall, walls, depth: unit.params.depth, others,
+    wall, walls, depth: unit.params.depth, others, back: bandBackOf(unit, profile),
   }).filter((o) => o.corner && !o.box);
 }
 
@@ -11613,7 +12531,9 @@ function alignedMountFor(state, unit, placed, prefer = null) {
  */
 function recordThickness(thickness, units, profile) {
   const own = Number(thickness) > 0 ? Number(thickness)
-    : (units.length && units.every((u) => isDeskKit(u.type)) ? Number(profile.wardrobeDesk?.defaults?.topThickness) : 0);
+    : (units.length && units.every((u) => isDeskKit(u.type)) ? Number(profile.wardrobeDesk?.defaults?.topThickness)
+      // T82 F10, after the review · a vanity's top asked for again is the vanity's own (vanity.defaults.top).
+      : (units.length && units.every((u) => isVanityKit(u.type)) ? Number(profile.vanity?.defaults?.top) : 0));
   return own > 0 ? { thickness: own } : {};
 }
 
@@ -11631,7 +12551,9 @@ function freeBesideUnit(state, unit, side) {
     walls,
     depth: unit.params.depth,
     others: obstaclesFor(state, unit),
-    boxes: planObstaclesOf(state.project.room, state.project.wallSlopes),
+    // T82 F17 · the obstacles the move reads (a stood-off panel's insets).
+    boxes: planObstaclesInWayOf(unit, wall, state.project.room, state.project.wallSlopes),
+    back: bandBackOf(unit),
   });
   // WHICH SIDE an obstacle is on is decided on the CARCASS, and how far away it
   // is on the padded span. That distinction is what lets this report a negative
@@ -12133,7 +13055,9 @@ export function validateUnit(unit, result, context = {}) {
     const others = [
       ...inTheWay.map(toObstacleUnit),
       ...verticalsInBand(
-        unitVerticals((context.units || []).filter((u) => u.id !== unit.id && !seen.has(u.id)), profile),
+        // T82 F19 · not the boards of a unit this free panel stands in front of.
+        unitVerticals((context.units || []).filter((u) => u.id !== unit.id && !seen.has(u.id)
+          && !standsInFrontOf(unit, u, profile)), profile),
         bandOf(unit, profile),
         profile.editor.levelOverlapMm,
       ).map((v) => ({
@@ -12152,7 +13076,10 @@ export function validateUnit(unit, result, context = {}) {
       roomHeight: context.room.height,
       // Same wall or around the corner — both are an overlap on the floor.
       others: wallObstacles({
-        wall, walls, depth: unit.params?.depth ?? 0, others, boxes: planObstaclesOf(context.room, context.wallSlopes),
+        // T82 F17 · the obstacles the move reads: a free panel in front of a
+        // chimney does not overlap it.
+        wall, walls, depth: unit.params?.depth ?? 0, others, boxes: planObstaclesInWayOf(unit, wall, context.room, context.wallSlopes, profile),
+        back: bandBackOf(unit, profile),
         enter: notchEnterFor(unit, profile),
       })
         .map((o) => ({ left: o.left, right: o.right, label: o.label, ...(o.enter ? { enter: o.enter } : {}) })),

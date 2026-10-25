@@ -155,6 +155,24 @@ export const T78_PRO_EDITS = [
       + 'shelf carries `sleeves_dropped`, calling the store\'s `restoreSleeveRows`; a refusal is said, never silent.',
     words: 'the handover of 18.10.2026: *"przycisk Restore sleeve rows"*, accepted by the owner 14:55: *"ok daj"*',
   },
+  {
+    pro: 'src/components/FrontDecorationControls.jsx',
+    by: 'T82 F15',
+    why: 'a Fluted front shows a Flute profile select (Reeds / Grooves); for reeds the Reed diameter row (the profile\'s '
+      + 'ladder beside a free number, `reedChoices`), the side margin and the direction, the ballnose\'s own numbers '
+      + 'staying the groove\'s; Activate gives `newFrontDecoration` (FL is born reeds). Retail passes `fields={false}` '
+      + 'and shows none of it.',
+    words: 'the owner, 25.10.2026: *"fluted teraz to sa rowki a ja potrzebuje chmurke"*, *"daj wariant b czyli na styk '
+      + 'narazie"*, *"do tego daj ustawienie srednicy walkow tez"*.',
+  },
+  {
+    pro: 'src/components/ElementProperties.jsx',
+    by: 'T82 F18',
+    why: 'the free panel\'s Thickness field gains the ladder 18, 22, 25, 30, 36 (`profile.freePanel.thicknessLadder`, '
+      + 'PROPOSED) beside the free number, each chip `put({ board_t })` through `updateUnitParams`; the number stays the '
+      + 'typed road, and the engine cuts the board at it (cabinet.js `fpT`).',
+    words: 'the owner, 25.10.2026 13:36: *"nie moge wizualnie zwiekszyc tez grubosci tego panela"*.',
+  },
 ];
 
 /**

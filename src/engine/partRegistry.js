@@ -186,6 +186,14 @@ export const PART_REGISTRY = {
     id: 'frame', name: 'In-frame frames', group: G('front'), unit: 'm²', materialType: 'front',
     note: 'One routed frame per run, the openings cut through (T80); no banding, the edges are painted',
   },
+  // T82 F2 · the HAWA pocket's two panels (KIT_HAWA.lsp D3): the owner,
+  // 25.10.2026, *"panele po bokach to jest nie carcas tylko front zawsze, wiec
+  // jesli jest 18 mm to daj zawsze 22 mm"*. Front material; their own row,
+  // because on an 18 front they are 22 and so not cut from the doors' board.
+  pocket_panel: {
+    id: 'pocket_panel', name: 'HAWA pocket panels', group: G('front'), unit: 'm²', materialType: 'front',
+    note: 'POCKET-A and POCKET-B: the front material, 22 when the front is 18 (T82, KIT_HAWA.lsp)',
+  },
   // T75 F10 · the back panel on an island's empty long face, front material.
   back_panel: {
     id: 'back_panel', name: 'Back panels', group: G('front'), unit: 'm²', materialType: 'front',
@@ -279,6 +287,12 @@ export const PART_REGISTRY = {
   hanger: {
     id: 'hanger', name: 'Wall hangers', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'Two per hung unit',
+  },
+  // T82 F13 · *"6 - do BOM tez"*: a floating vanity's cabinet hangers with
+  // their wall plates (`profile.vanity.hangers`, the article the owner's).
+  vanity_hanger: {
+    id: 'vanity_hanger', name: 'Vanity hangers', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'Two per floating vanity, on its top rail',
   },
   top_box_connector: {
     id: 'top_box_connector', name: 'Top box connectors', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
@@ -437,6 +451,36 @@ export const PART_REGISTRY = {
     id: 'ready_drawer_box', name: 'Ready-made drawer boxes', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'When the project buys its boxes instead of cutting them (turn 32)',
   },
+  // ─── T82 F4 · THE HAWA POCKET'S ORDER LINES (engine/cnc/hawa.js) ─────────
+  // CLAUDE.md T82 F4, KIT_HAWA.lsp D22: one set per door, one connector per
+  // pocket, the set's own hinges, the tracks cut to T1 - 7, the III/35 steel
+  // profile, one adjustable foot. The only article the documents give is the
+  // NBS sheet's 408.30.711 (III/25-35 Push, left); the rest are the owner's
+  // to fill (profile.hawa.articles), so each is a product to assign here.
+  hawa_set: {
+    id: 'hawa_set', name: 'HAWA Concepta III sets', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'One set per pocket door, by class (III/25, III/35), Push or Pull and HAWA\'s hand (T82, KIT_HAWA.lsp D16 D19)',
+  },
+  hawa_connector: {
+    id: 'hawa_connector', name: 'HAWA Connectors', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'One per pocket: Connector 55 for one door, Connector 110 for two (31418)',
+  },
+  hawa_hinge: {
+    id: 'hawa_hinge', name: 'HAWA Concepta III hinges', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'The set\'s own: 3 a door for III/25, 4 for III/35 (52676); no plate, never a house cup hinge',
+  },
+  hawa_track: {
+    id: 'hawa_track', name: 'HAWA top and bottom tracks', group: G('hardware'), unit: 'pairs', materialType: 'hardware',
+    note: 'One pair per door, cut to T1 - 7 (at most 560), from 5 behind panel B\'s front edge (160704, 52676)',
+  },
+  hawa_steel_profile: {
+    id: 'hawa_steel_profile', name: 'HAWA steel stiffening profiles', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'III/35 only: one per routed groove of the door, TB - M + 3 long (160704 "Stahlprofil")',
+  },
+  hawa_foot: {
+    id: 'hawa_foot', name: 'Adjustable feet under a pocket', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'One per pocket, in the bottom board\'s fi 35 hole (160704 "Recommendation: use adjustable foot", 169313)',
+  },
 
   // ─── LIGHTING ─────────────────────────────────────────────────────────────
   led_strip: {
@@ -553,6 +597,12 @@ export const ELEMENT_TO_PART_ID = {
   TOP: 'carcase_horizontal',
   BOTTOM: 'carcase_horizontal',
   HOLDER: 'carcase_horizontal',
+  // T82 F9 · the vanity's two rails (KIT_VANITY.lsp D2): what is left of its
+  // back, but in the CARCASS board (the owner: *"4 - 100 na material carcasa
+  // grubosc"*), so they are bought with the carcass horizontals, as the sink's
+  // holders are, never with the back.
+  'RAIL-BOTTOM': 'carcase_horizontal',
+  'RAIL-TOP': 'carcase_horizontal',
 
   // Backs — SEPARATE, because a back is 6 mm and a side is 18. A fridge
   // housing's back RAILS are back material too: they are what closes it.
@@ -621,6 +671,14 @@ export const ELEMENT_TO_PART_ID = {
   'NOTCH-FLOOR': 'carcase_horizontal',
   // T74 F13 · the free-standing panel's one board.
   'FREE-PANEL': 'free_panel',
+  // T82 F2 · the HAWA pocket (KIT_HAWA.lsp D20): the two panels in the front
+  // material, the bottom and the top as a carcass's horizontals, the door as
+  // a door.
+  'POCKET-A': 'pocket_panel',
+  'POCKET-B': 'pocket_panel',
+  'POCKET-TOP': 'carcase_horizontal',
+  'POCKET-BOTTOM': 'carcase_horizontal',
+  'POCKET-DOOR': 'door',
 
   // The drawer box: three boards that are one board to buy, and a bottom that
   // is not.
@@ -715,6 +773,15 @@ export const HARDWARE_TO_PART_ID = {
   lift_caps: 'lift_cover_caps',
   lift_bracket: 'lift_front_bracket',
   lift_hinges: 'hinge_aventos_hf',
+  // T82 F4 · `hw('hawa_*', ...)`, the HAWA pocket's order lines (engine/cnc/hawa.js).
+  hawa_set: 'hawa_set',
+  hawa_connector: 'hawa_connector',
+  hawa_hinges: 'hawa_hinge',
+  hawa_tracks: 'hawa_track',
+  hawa_stiffener: 'hawa_steel_profile',
+  hawa_foot: 'hawa_foot',
+  // T82 F13 · `hw('vanity_hangers', ...)`, a floating vanity's hangers.
+  vanity_hangers: 'vanity_hanger',
 };
 
 /**
@@ -773,6 +840,8 @@ const EDGE_OF_PART = {
   // T80 F3 · the in-frame frame is never banded (its edges are painted); the
   // row is here so a frame that ever were would pay for it as a front does.
   frame: 'edge_front',
+  // T82 F2 · the HAWA pocket panels are banded as an end panel is: front edging.
+  pocket_panel: 'edge_front',
 };
 
 /** Which edging part pays for this part's banding, or null when none does. */

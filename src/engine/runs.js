@@ -19,7 +19,10 @@
 //
 // Pure functions — no React, no store imports.
 
-import { getUnitType } from './types.js';
+import { floatHeightOf, getUnitType } from './types.js';
+// T82 F2 · the HAWA pocket's own choices and the shape its doors' cover takes
+// (engine/hawaPocket.js, KIT_HAWA.lsp's mirror): read, never re-derived here.
+import { pocketChoiceOf, pocketCoverOf } from './hawaPocket.js';
 
 /**
  * ─── TURN 72 (CLAUDE.md F14): HOW FAR THIS ONE STANDS OFF THE WALL ─────────
@@ -97,6 +100,10 @@ export function unitTop(unit, profile) {
  */
 export function unitBase(unit, profile) {
   const type = getUnitType(unit.type);
+  // T82 F13 · a floating vanity hangs at its own height (`types.js floatHeightOf`, KIT_VANITY.lsp D19):
+  // the run, the scene, the plan and the elevation read it here.
+  const floatH = floatHeightOf(unit.type, unit.params, profile);
+  if (floatH != null) return floatH;
   if (type.mount === 'wall') return Number(unit.params?.mount_height) || 0;
   if (!standsOnLegHeight(type)) return 0;
   return impliedLegHeight(unit?.params, type, profile);
@@ -1575,6 +1582,320 @@ export function runUpstandParams(units, profile) {
       current.push(unit);
     }
     close();
+  }
+  return out;
+}
+
+// ─── T82 F2 · THE HAWA POCKET IN ITS RUN (slice A3, the placement) ──────────
+//
+// The owner, 25.10.2026, 11:40: *"potrzebujemy zaprojektowac to jako
+// wstawienie pomiedzy 2 panele 110 mm przestrzen pomiedzy, wysuwasz pocket
+// door i zakrywasz szafke lub szafki"*.  CLAUDE.md T82 F2: *"The pocket is a
+// unit: it is moved, numbered, listed and drawn by the roads every cabinet
+// takes"*; F3: *"by default the ONE unit next to the pocket on that side; the
+// owner may add the next ... while TB stays within 440 to 750."*
+//
+// The pocket is IN the run with no line of its own here: `levelGroups` above
+// takes every unit that is not a free panel, so a pocket standing at its
+// neighbours' top line shares their plinth, top infill, cornice and worktop.
+// What is the pocket's own is WHICH units its door covers. That is decided
+// here, from where the units stand, and nowhere else:
+//
+//   the CHAIN on each side: the units butted one after another outwards from
+//     the pocket on its wall (the run's own gap, `runGap`), stopping at the
+//     first one a pocket door cannot close (another pocket, a free panel, a
+//     hung or turned unit, a top box);
+//   the COVERS on a door's side: the owner's stored `params.pocket.covers`
+//     that form an unbroken chain from the pocket, or, when none of them does,
+//     the ONE nearest unit (the default);
+//   what stands BEYOND the last covered unit (a front, an end panel, an
+//     infill, a wall, nothing): the clearance the door's free edge keeps,
+//     the kit's `far` (KIT_HAWA.lsp D6, profile.doors.clearance).
+//
+// Read at every refresh and never stored (T55's law for run elements): the
+// stored list is the owner's choice, the element is what stands beside the
+// pocket now. A cabinet dragged away is uncovered, dragged back is covered
+// again, and the owner's list is not touched by either.
+
+/** Is this unit a HAWA pocket (types.js `hawaPocket`)? */
+export function isPocketUnit(unit) {
+  return Boolean(getUnitType(unit?.type)?.hawaPocket);
+}
+
+/** May a pocket door close this unit: a cabinet standing on the floor, square to its wall. */
+function pocketCoverable(unit) {
+  const type = getUnitType(unit?.type);
+  if (!type || type.freePanel || type.hawaPocket || type.ridesOn) return false;
+  if (type.mount !== 'floor' || unit?.params?.rides_on) return false;
+  const rotation = (((Number(unit?.position?.rotation_deg) || 0) % 360) + 360) % 360;
+  return rotation === 0;
+}
+
+/** The floor units of the pocket's wall that stand square to it, left to right. */
+function pocketWallUnits(units, pocket) {
+  const wall = pocket?.position?.wall ?? 0;
+  return (units || [])
+    .filter((u) => u && u.id !== pocket.id && (u.position?.wall ?? 0) === wall)
+    .filter((u) => {
+      const type = getUnitType(u.type);
+      if (!type || type.freePanel || type.mount !== 'floor') return false;
+      const rotation = (((Number(u.position?.rotation_deg) || 0) % 360) + 360) % 360;
+      return rotation === 0;
+    })
+    .sort((a, b) => paddedSpan(a).left - paddedSpan(b).left);
+}
+
+/** The unit butted onto `from`'s side `side` ('L' | 'R'), or null. */
+function buttedOn(list, from, side, tolerance) {
+  const edge = side === 'R' ? paddedSpan(from).right : paddedSpan(from).left;
+  let best = null;
+  let bestGap = Infinity;
+  for (const u of list) {
+    if (u.id === from.id) continue;
+    const span = paddedSpan(u);
+    const gap = side === 'R' ? span.left - edge : edge - span.right;
+    if (gap < -tolerance || gap > tolerance) continue;
+    if (Math.abs(gap) < bestGap) { best = u; bestGap = Math.abs(gap); }
+  }
+  return best;
+}
+
+/**
+ * The CHAINS a pocket stands between: on each side, the units butted one after
+ * another outwards from it, nearest first, as far as a door could close them.
+ *
+ * @returns {{L: Array<object>, R: Array<object>}}
+ */
+export function pocketNeighbours(units, pocket, profile) {
+  const out = { L: [], R: [] };
+  if (!pocket) return out;
+  const tolerance = Math.max(0, Number(profile?.autoParts?.topInfill?.runGap) || 0) + 1e-6;
+  const list = pocketWallUnits(units, pocket);
+  for (const side of ['L', 'R']) {
+    let at = pocket;
+    const seen = new Set([pocket.id]);
+    for (;;) {
+      const next = buttedOn(list, at, side, tolerance);
+      if (!next || seen.has(next.id) || !pocketCoverable(next)) break;
+      out[side].push(next);
+      seen.add(next.id);
+      at = next;
+    }
+  }
+  return out;
+}
+
+/**
+ * T82 F2, after the review (store:1) · every unit butted one after another on
+ * `side` of `unit`, nearest first, whatever it is (a pocket, a cabinet a door
+ * cannot close): the units that move together when the pocket's width is
+ * re-cut and its free edge pushes or pulls the run (`projectStore
+ * pocketRecutPlan`).
+ *
+ * @returns {Array<object>}
+ */
+export function buttedChainOf(units, unit, side, profile) {
+  if (!unit) return [];
+  const tolerance = Math.max(0, Number(profile?.autoParts?.topInfill?.runGap) || 0) + 1e-6;
+  const list = pocketWallUnits(units, unit);
+  const out = [];
+  const seen = new Set([unit.id]);
+  let at = unit;
+  for (;;) {
+    const next = buttedOn(list, at, side, tolerance);
+    if (!next || seen.has(next.id)) break;
+    out.push(next);
+    seen.add(next.id);
+    at = next;
+  }
+  return out;
+}
+
+/**
+ * T82 F2, after the review (store:1) · the sentence when the room has no space
+ * to re-cut a pocket to the width its front makes it (the engine's
+ * `widthMm`), or null when the pocket stands at that width. Said by the Check
+ * (#37) and by the right panel, one sentence.
+ */
+export function pocketRecutRefusal(unit, figures) {
+  const want = Number(figures?.widthMm);
+  const have = Number(unit?.params?.width);
+  if (!Number.isFinite(want) || !Number.isFinite(have) || Math.abs(want - have) < 0.5) return null;
+  const num = unit?.params?.unit_num || unit?.id || 'The pocket';
+  return `${num}: at this front the pocket is ${hawaFigure(want)} mm wide (two ${hawaFigure(figures?.panel?.t)} mm panels `
+    + `and ${hawaFigure(figures?.clearMm)} clear), and there is no room to re-cut it from ${hawaFigure(have)}: `
+    + 'move the cabinet beside it, and the pocket follows.';
+}
+
+/**
+ * T82 F2, after the review (store:2) · the sentence for a pocket whose door
+ * would close a cabinet another pocket's door already closes (one `refused`
+ * entry of its element). Said by the Check (#37), the right panel and
+ * `setPocketCovers`, one sentence.
+ */
+export function pocketClaimRefusal(pocket, entry) {
+  if (!entry) return null;
+  const num = pocket?.params?.unit_num || pocket?.id || 'The pocket';
+  return `${num}: ${entry.unitNum} is closed by ${entry.byNum}'s door already, and one cabinet takes one pocket door: `
+    + `${num}'s door on that side is not cut. Turn its hand, or take ${entry.unitNum} off ${entry.byNum}.`;
+}
+
+/**
+ * T82 F2, after the review (store:3) · the FRONT PLANE a pocket's doors close
+ * on: each covered unit's front line from its wall (its back line, `wallGapOf`,
+ * plus its depth), and the most forward of them, which is where the pocket's
+ * front stands (CLAUDE.md F3: *"the pocket's and the cabinets' front edges in
+ * one plane"*), so no closed door is ever cut inside a carcass. `equal` is
+ * whether they are one plane at all; where they are not, the engine refuses
+ * the door in words (A2), reading the lines this hands it per door
+ * (`pocket_cover.doors[].fronts`).
+ *
+ * @returns {{mm:number, equal:boolean, lines:Array<{id:string, mm:number}>}|null}
+ */
+export function pocketFrontLine(units, ids, profile) {
+  const byId = new Map((units || []).map((u) => [u.id, u]));
+  const lines = (ids || []).map((id) => byId.get(id)).filter(Boolean)
+    .map((u) => ({ id: u.id, mm: Math.round((wallGapOf(u, profile) + (Number(u.params?.depth) || 0)) * 100) / 100 }));
+  if (!lines.length) return null;
+  const mm = Math.max(...lines.map((l) => l.mm));
+  return { mm, equal: lines.every((l) => Math.abs(l.mm - mm) < 0.5), lines };
+}
+
+/** A millimetre figure in a sentence: whole, or to the half the kit rounds to. */
+function hawaFigure(n) {
+  const v = Math.round((Number(n) || 0) * 10) / 10;
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
+/**
+ * The units each of the pocket's doors covers NOW, as ids nearest first.
+ *
+ * One door: its hand's side only. Two doors: one door each side. On a side,
+ * the stored `params.pocket.covers` that form an unbroken chain from the
+ * pocket; when none does, the default: the ONE nearest unit.
+ *
+ * @returns {{L: string[], R: string[]}}
+ */
+export function pocketCoverSides(units, pocket, profile) {
+  const out = { L: [], R: [] };
+  if (!pocket) return out;
+  const choice = pocketChoiceOf(pocket.params, profile);
+  const chains = pocketNeighbours(units, pocket, profile);
+  const sides = choice.doors === 2 ? ['L', 'R'] : [choice.hand];
+  for (const side of sides) {
+    const chain = chains[side].map((u) => u.id);
+    let k = 0;
+    while (k < chain.length && choice.covers.includes(chain[k])) k += 1;
+    out[side] = k > 0 ? chain.slice(0, k) : chain.slice(0, 1);
+  }
+  return out;
+}
+
+/**
+ * What stands past the far edge of a door's last covered unit, as the kind the
+ * house's clearance matrix knows (engine/frontClearance.js NEIGHBOUR): the
+ * unit's own side infill there ('infill'), a unit butted beyond ('endPanel'
+ * where its facing side carries one, else 'front'), the wall within the
+ * house's neighbour reach ('wall'), or nothing ('none'). The covered unit's
+ * own end panel there is read by `pocketCoverOf` itself.
+ */
+function beyondKind(units, pocket, last, side, wallWidth, profile) {
+  const infill = Number(side === 'R' ? last?.params?.side_infill_right_mm : last?.params?.side_infill_left_mm) || 0;
+  if (infill > 0) return 'infill';
+  const tolerance = Math.max(0, Number(profile?.autoParts?.topInfill?.runGap) || 0) + 1e-6;
+  const next = buttedOn(pocketWallUnits(units, pocket), last, side, tolerance);
+  if (next) {
+    const facing = side === 'R' ? 'L' : 'R';
+    const panel = (next.params?.end_panels || []).some((e) => (e?.side === 'R' ? 'R' : 'L') === facing);
+    return panel ? 'endPanel' : 'front';
+  }
+  const width = Number(wallWidth) || 0;
+  if (width > 0) {
+    const reach = Number(profile?.doors?.neighbourReachMm) > 0 ? Number(profile.doors.neighbourReachMm) : 200;
+    const span = paddedSpan(last);
+    const gap = side === 'R' ? width - span.right : span.left;
+    if (gap >= -1e-6 && gap <= reach) return 'wall';
+  }
+  return 'none';
+}
+
+/**
+ * The pocket element of EVERY unit: for a pocket, which units its doors cover
+ * and the `pocket_cover` the engine takes (`hawaPocket.js pocketCoverOf`); for
+ * a covered unit, the pocket that closes it. Every other unit maps to null.
+ *
+ * The twin of `runPlinthParams`: derived from where the units stand, handed to
+ * the engine by the store's `paramsForEngine`, never saved.
+ *
+ * @param {object} [opts]
+ *   walls  the room's walls (`roomWalls`), so a covered unit at a wall's end
+ *          is known to stand beside the wall; absent, nothing is a wall
+ * @returns {Map<string, object|null>}
+ */
+export function runPocketParams(units, profile, { walls = null } = {}) {
+  const list = units || [];
+  const out = new Map(list.map((u) => [u.id, null]));
+  const byId = new Map(list.map((u) => [u.id, u]));
+  const numOf = (u) => String(u?.params?.unit_num ?? u?.id ?? '');
+  // T82 F2, after the review (store:2) · ONE pocket door closes a cabinet. The
+  // pockets are read in the room's own order and the first to reach a cabinet
+  // keeps it; a later pocket's door stops short of it (a side is a chain from
+  // the pocket, so nothing past it is covered either) and the element says
+  // which cabinet and whose door (`refused`, `pocketClaimRefusal`).
+  const claimed = new Map();
+  for (const pocket of list.filter(isPocketUnit)) {
+    const choice = pocketChoiceOf(pocket.params, profile);
+    const asked = pocketCoverSides(list, pocket, profile);
+    const sides = { L: [], R: [] };
+    const refused = [];
+    for (const side of ['L', 'R']) {
+      const ids = asked[side];
+      const k = ids.findIndex((id) => claimed.has(id));
+      sides[side] = k < 0 ? ids : ids.slice(0, k);
+      if (k >= 0) {
+        const by = claimed.get(ids[k]);
+        refused.push({
+          side, unitId: ids[k], unitNum: numOf(byId.get(ids[k])), by: by.id, byNum: numOf(by),
+        });
+      }
+    }
+    for (const id of [...sides.L, ...sides.R]) claimed.set(id, pocket);
+    const wallWidth = walls?.[pocket.position?.wall ?? 0]?.width ?? 0;
+    const beyond = {};
+    for (const side of ['L', 'R']) {
+      const ids = sides[side];
+      if (!ids.length) continue;
+      beyond[side] = beyondKind(list, pocket, byId.get(ids[ids.length - 1]), side, wallWidth, profile);
+    }
+    const cover = pocketCoverOf(pocket, {
+      L: sides.L.map((id) => byId.get(id)),
+      R: sides.R.map((id) => byId.get(id)),
+    }, profile, { beyond });
+    // (store:3) the plane the doors close on, and each door's covered fronts
+    // for the engine to compare (a pocket's front is ONE plane).
+    const front = pocketFrontLine(list, [...sides.L, ...sides.R], profile);
+    for (const door of cover?.doors || []) {
+      door.fronts = (door.units || []).map((id) => front.lines.find((l) => l.id === id)?.mm ?? null);
+    }
+    out.set(pocket.id, {
+      role: 'pocket',
+      doors: choice.doors,
+      hand: choice.hand,
+      covers: [...sides.L, ...sides.R],
+      sides,
+      beyond,
+      cover,
+      front,
+      refused,
+    });
+    for (const id of [...sides.L, ...sides.R]) {
+      out.set(id, {
+        role: 'covered',
+        pocketId: pocket.id,
+        unitNum: String(pocket.params?.unit_num ?? pocket.id),
+        side: sides.L.includes(id) ? 'L' : 'R',
+      });
+    }
   }
   return out;
 }

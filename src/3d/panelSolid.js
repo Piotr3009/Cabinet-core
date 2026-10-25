@@ -43,6 +43,184 @@ const CACHE_LIMIT = 240;
 const cache = new Map();
 
 /**
+ * T82 F9 · THE TRAP'S U, AS IT IS CUT (KIT_VANITY.lsp D13, D14).
+ *
+ * The owner: *"wyciecie u dookola zeby sie szuflada otwierala"*, *"6 - tak"*
+ * (R 20). The bottom of the vanity's top drawer box is notched from its back
+ * edge round the trap: the engine records the U in the board's own frame
+ * (`meta.vanityTrap.notches`, [from, to, depth, r]) and cuts the outline from
+ * it with `socketFace.js notchedOutline` at the trap's radius
+ * (`engine/vanity.js applyVanityTrap`). The room hands the SAME numbers to the
+ * SAME function (the socket notch's road, T11), so the U in the room is the U
+ * on the CNC sheet: one law, nothing re-derived.
+ *
+ * The gate is the RECORD (as the side's wedge is gated on its record): every
+ * other board keeps its socket notches and its cutter radius, byte for byte.
+ * The back wall's pieces carry the trap's record without `notches` and stay
+ * boxes (they are cut apart, not notched). The engine's outline is the U
+ * alone, so a board cut round a trap takes no socket notch either.
+ *
+ * @returns {{notches:Array<{edge:'bottom',from:number,to:number,depth:number}>, radius:number}|null}
+ */
+export function trapCutNotches(panel) {
+  const rows = panel?.meta?.vanityTrap?.notches;
+  if (!Array.isArray(rows) || !rows.length) return null;
+  const notches = [];
+  let radius = 0;
+  for (const row of rows) {
+    const [from, to, depth, r] = (Array.isArray(row) ? row : []).map(Number);
+    if (![from, to, depth].every(Number.isFinite) || !(to > from) || !(depth > 0)) return null;
+    notches.push({ edge: 'bottom', from, to, depth });
+    radius = Math.max(radius, Number.isFinite(r) && r > 0 ? r : 0);
+  }
+  return { notches, radius };
+}
+
+// ─── T82 F11 · THE BASIN SEEN THROUGH THE VANITY'S TOP (KIT_VANITY.lsp D18, D26)
+//
+// The owner: *"dodanie 1 sink or 2 sink? dodajesz tylko do widoku"*. The
+// worktop is cut round the bowl (Scene.jsx), and under it the carcass TOP is
+// cut round it too, so the bowl is seen and not hidden in the carcass. The
+// engine records each fitted basin's oval on the TOP
+// (`meta.vanityBasins.cutouts`, x and z in the unit's frame, w along x, d
+// along z; cut on site, never on its CNC), and the room cuts the board's
+// outline by it: the record is the gate, as the trap's U is gated on its own,
+// and every other board is built as before.
+
+const r4 = (v) => Math.round(v * 1e4) / 1e4;
+/** As many points as the plan's and the worktop's ovals. */
+const OVAL_POINTS = 48;
+
+/**
+ * The TOP's basin ovals in the board's own DRAWN frame (`panelPlacement`: u
+ * and v are the CNC axes), as `{ cx, cy, rx, ry }`; [] for every board that
+ * carries none, and for any board that does not lie flat.
+ */
+export function basinOvalsOf(panel) {
+  const rows = panel?.meta?.vanityBasins?.cutouts;
+  if (!Array.isArray(rows) || !rows.length || !panel?.box) return [];
+  const placement = panelPlacement(panel);
+  if (!placement || Math.abs(placement.n[1]) < 0.5) return [];
+  const { origin, u, v } = placement;
+  const out = [];
+  for (const c of rows) {
+    const [x, z, w, d] = [c?.x, c?.z, c?.w, c?.d].map(Number);
+    if (![x, z, w, d].every(Number.isFinite) || !(w > 0) || !(d > 0)) continue;
+    // On a flat board u and v have no y: the oval's centre is (x, z) on its plane.
+    const at = (axis) => (x - origin[0]) * axis[0] + (z - origin[2]) * axis[2];
+    const half = (axis) => Math.abs(axis[0]) * (w / 2) + Math.abs(axis[2]) * (d / 2);
+    out.push({ cx: r4(at(u)), cy: r4(at(v)), rx: r4(half(u)), ry: r4(half(v)) });
+  }
+  return out;
+}
+
+const ovalF = (o, [x, y]) => ((x - o.cx) / o.rx) ** 2 + ((y - o.cy) / o.ry) ** 2;
+const ovalAt = (o, angle) => [o.cx + o.rx * Math.cos(angle), o.cy + o.ry * Math.sin(angle)];
+const ovalRing = (o) => Array.from({ length: OVAL_POINTS }, (_, i) => ovalAt(o, (2 * Math.PI * i) / OVAL_POINTS));
+const ovalAngle = (o, [x, y]) => Math.atan2((y - o.cy) / o.ry, (x - o.cx) / o.rx);
+const ringArea = (pts) => pts.reduce((sum, [x, y], i) => {
+  const [x2, y2] = pts[(i + 1) % pts.length];
+  return sum + x * y2 - x2 * y;
+}, 0) / 2;
+function insideRing(ring, [x, y]) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/** Where the segment a to b crosses the oval: the parameters t in [0, 1), ascending. */
+function ovalCrossings(o, a, b) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const ex = (a[0] - o.cx) / o.rx;
+  const ey = (a[1] - o.cy) / o.ry;
+  const A = (dx / o.rx) ** 2 + (dy / o.ry) ** 2;
+  const B = 2 * (ex * (dx / o.rx) + ey * (dy / o.ry));
+  const C = ex * ex + ey * ey - 1;
+  const disc = B * B - 4 * A * C;
+  if (!(A > 0) || !(disc > 1e-12)) return [];
+  const root = Math.sqrt(disc);
+  return [(-B - root) / (2 * A), (-B + root) / (2 * A)].filter((t) => t >= 0 && t < 1);
+}
+
+/**
+ * The board's outline with the ovals cut out of it: `{ outline, holes, cut }`.
+ * An oval wholly inside the board is a HOLE; an oval that crosses the board's
+ * edge once in and once out takes that edge with it, the outline walking the
+ * oval's arc between the two crossings (against the board's own winding, so
+ * the board stays on its left). Anything else (an oval outside the board, or
+ * one crossing its edge more than twice, or one over a hole already cut) is
+ * not cut: the board stays whole there, never torn.
+ */
+export function cutOvals(outline, ovals = []) {
+  let ring = outline;
+  const holes = [];
+  const done = [];
+  let cut = 0;
+  for (const o of ovals || []) {
+    if (!(o?.rx > 0) || !(o?.ry > 0)) continue;
+    const n = ring.length;
+    let crossings = 0;
+    for (let i = 0; i < n; i += 1) crossings += ovalCrossings(o, ring[i], ring[(i + 1) % n]).length;
+    if (done.some((k) => ovalRing(o).some((q) => ovalF(k, q) < 1) || ovalRing(k).some((q) => ovalF(o, q) < 1))) continue;
+    if (crossings === 0) {
+      const pts = ovalRing(o);
+      if (!pts.every((q) => insideRing(ring, q))) continue;
+      holes.push(pts);
+      done.push(o);
+      cut += 1;
+      continue;
+    }
+    if (crossings !== 2) continue;
+    const start = ring.findIndex((q) => ovalF(o, q) > 1);
+    if (start < 0) continue;
+    const walk = [...ring.slice(start), ...ring.slice(0, start)];
+    const sense = ringArea(ring) >= 0 ? -1 : 1;
+    const step = (2 * Math.PI) / OVAL_POINTS;
+    const out = [walk[0]];
+    let entry = null;
+    for (let i = 0; i < n; i += 1) {
+      const a = walk[i];
+      const b = walk[(i + 1) % n];
+      for (const t of ovalCrossings(o, a, b)) {
+        const at = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+        if (!entry) { out.push(at); entry = at; continue; }
+        // The arc from the entry to here, the board on its left.
+        const from = ovalAngle(o, entry);
+        let to = ovalAngle(o, at);
+        if (sense < 0) {
+          while (to >= from) to -= 2 * Math.PI;
+          for (let k = Math.ceil(from / step) - 1; k * step > to; k -= 1) out.push(ovalAt(o, k * step));
+        } else {
+          while (to <= from) to += 2 * Math.PI;
+          for (let k = Math.floor(from / step) + 1; k * step < to; k += 1) out.push(ovalAt(o, k * step));
+        }
+        out.push(at);
+        entry = null;
+      }
+      if (!entry && (i + 1) % n !== 0) out.push(b);
+    }
+    ring = out;
+    done.push(o);
+    cut += 1;
+  }
+  return { outline: ring, holes, cut };
+}
+
+/** A recess (a pocket, a bore) that an oval takes, in part or whole, goes with it. */
+function clearOfOvals(recesses, ovals) {
+  return recesses.filter((f) => {
+    const b = boundsOf(f);
+    const pts = [[f.x, f.y], [b.x0, b.y0], [b.x1, b.y0], [b.x1, b.y1], [b.x0, b.y1]];
+    return !ovals.some((o) => pts.some((q) => ovalF(o, q) < 1));
+  });
+}
+
+/**
  * The machined solid for one panel, or null when the panel is a plain box.
  *
  * Returned geometry is centred on the panel's own box, exactly as a
@@ -194,7 +372,9 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
   // (the strip is an INFILL and `panelPlacement` has no seat for it), grew the
   // strip and the shelf, and reads its shear sign from the SIGNED `tilt_deg`.
   // The words above stay as the law's history; the code lives at the top.
-  const notches = socketNotches(panel, layers);
+  // T82 F9 · …or the trap's U, on a bottom the engine cut round one.
+  const trap = trapCutNotches(panel);
+  const notches = trap ? trap.notches : socketNotches(panel, layers);
   // ─── Turn 12 (CLAUDE.md F6.2): the OTHER half of the joint ───
   // A socket is a POCKET and a TAB is part of the OUTLINE, and turn 11 only
   // read the pockets — so a side panel came out a rectangle and its three tabs
@@ -204,7 +384,8 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
   const { w, h } = cncRect(panel);
   const thickness = thicknessOf(panel, placement);
   if (!(w > 0) || !(h > 0) || !(thickness > 0)) return NOTHING;
-  const radius = Math.max(0, (Number(profile?.cnc?.toolDiameter) || 0) / 2);
+  // The cutter's radius at a socket's corners; the trap's own R at its U's.
+  const radius = trap ? trap.radius : Math.max(0, (Number(profile?.cnc?.toolDiameter) || 0) / 2);
   // Turn 46 (F6a): the engine's own cut, or null on every panel that has none.
   // Turn 47 (F1): …and that cut is a LINE now, so the scene clips on the line.
   // `slopeCutActive` reads `pts` where the engine published them and the two
@@ -287,6 +468,8 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
   // 15.10.2026 · the recess extension's BITE out of one edge of the BACK
   // (`cnc.bite`, the engine's own rectangle in the board's drawn frame).
   const bite = panel?.cnc?.bite && Number(panel.cnc.bite.x1) > Number(panel.cnc.bite.x0) ? panel.cnc.bite : null;
+  // T82 F11 · the basins' ovals through a vanity's TOP (the record's, in this board's drawn frame).
+  const basins = basinOvalsOf(panel);
   // T80 F9 · a frame's openings are its SHAPE (KIT_INFRAME.lsp D10), not a
   // machining: the board is cut through whether or not the scene bores the rest.
   const recesses = profile?.appearance?.cuts?.enabled || panel.part === 'FRAME'
@@ -310,7 +493,7 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
   if (!notches.length && !tabs.length && !recesses.length && !slopeCut && !bevel3d && !jpull) {
     // T75 F7 · …and a board whose only feature is the corner a notch took is
     // a shape too (a shelf has no joint of its own to make it one).
-    if (!notch && !bite) return NOTHING;
+    if (!notch && !bite && !basins.length) return NOTHING;
   }
 
   const key = [
@@ -334,6 +517,8 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
     // T79 F8: the whole `also` chain and a grown side's corner frame (engine/notch.js notchCornerKey).
     notch ? `notch:${notchCornerKey(notch)}` : '',
     bite ? `bite:${bite.x0}:${bite.y0}:${bite.x1}:${bite.y1}` : '',
+    // Two TOPs that differ only in where a basin is cut through them are two boards.
+    basins.length ? `basin:${basins.map((o) => `${o.cx},${o.cy},${o.rx},${o.ry}`).join(';')}` : '',
     recessKey(recesses),
   ].join('|');
 
@@ -353,7 +538,8 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
     radius,
     notches,
     tabs,
-    recesses,
+    // A pocket or a bore in an oval's way is taken with it.
+    recesses: basins.length ? clearOfOvals(recesses, basins) : recesses,
     placement,
     box: panel.box,
     slopeCut,
@@ -361,6 +547,7 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
     jpull,
     notch,
     bite,
+    basins,
   });
   cache.set(key, built);
   if (cache.size > CACHE_LIMIT) {
@@ -505,7 +692,7 @@ function thicknessOf(panel, placement) {
 
 function build({
   w, h, thickness, radius, notches, tabs = [], recesses = [], placement, box, slopeCut = null,
-  bevel3d = null, jpull = null, notch = null, bite = null,
+  bevel3d = null, jpull = null, notch = null, bite = null, basins = [],
 }) {
   const shapeOf = (points) => new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(mm(x), mm(y))));
   const extrudeShape = (shape) => new THREE.ExtrudeGeometry(shape, {
@@ -543,7 +730,11 @@ function build({
   // 11. A BLIND feature then gets its floor back as a separate cap at the true
   // depth (below), which is what makes 2 mm read as 2 mm rather than as a slot
   // straight through an 18 mm board.
-  const board = shapeOf(bitten);
+  // T82 F11 · …and the basins' ovals out of a vanity's TOP: a hole, or the back
+  // edge opened along the oval where it runs out of it (`cutOvals`).
+  const basined = cutOvals(bitten, basins);
+  const board = shapeOf(basined.outline);
+  for (const hole of basined.holes) board.holes.push(new THREE.Path(hole.map(([x, y]) => new THREE.Vector2(mm(x), mm(y)))));
   for (const f of recesses) board.holes.push(recessPath(f));
 
   // ─── TURN 57 (CLAUDE.md F3): THE J-PULL, AS THREE SLABS ──────────────────

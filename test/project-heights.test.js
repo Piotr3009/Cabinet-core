@@ -92,7 +92,13 @@ test('every unit type either has a height group or says why not', () => {
         // the canopy's own 500 and the short hood's 660 (the clearance's
         // answer); the project's wall height would undo both. Their TOP meets
         // the wall run's top line instead (types.js `topLine: 'wall'`).
-        'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT'].includes(id), `${id} has no height group and no reason`);
+        'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT',
+        // AMENDED BY T82 F9 (25.10.2026) . and the three VANITY kits: a 600
+        // carcass on a 100 plinth for a basin at the bathroom's height
+        // (profile.vanity.defaults), which the kitchen's 770 base height would
+        // silently replace. The owner: *"vanity unit potrzebuje z szufladami
+        // nawierzchniowymi"*.
+        'VANITY2', 'VANITY3', 'VANITY4'].includes(id), `${id} has no height group and no reason`);
       continue;
     }
     assert.ok(known.has(group), `${id} points at a group that does not exist: ${group}`);

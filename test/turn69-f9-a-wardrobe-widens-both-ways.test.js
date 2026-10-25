@@ -199,6 +199,16 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
     // AMENDED BY T80 F10 (22.10.2026): `InframeWarnings` (a new PRO surface, the in-frame checks #40 to #44 in the
     // bottom-left column, *"Each in the left messages and in the Check panel."*), argued, frozen. Not a widening file.
     'InframeWarnings',
+    // AMENDED BY T82 F6 (25.10.2026): `CanvasToolbar` (Open all takes the HAWA pocket door, *"the same in the
+    // viewer's "Open all" of T69"*), argued in the manifest, re-frozen. Not a widening file.
+    'CanvasToolbar',
+    // AMENDED BY T82 F12 (25.10.2026): `CheckPanel` (the note level, TONE.note, for the service void behind a vanity,
+    // *"miejsce z tylu na rurki"*), argued in the manifest, re-frozen. Not a widening file.
+    'CheckPanel',
+    // AMENDED BY T82 F20, after the review (25.10.2026): `DesignSettingsModal` and `StartScreen` (a refused save leaves the
+    // job marked unsaved, *"musze miec dzisiaj profesjonalne rysunki dla klientow"*), argued in the manifest, frozen. Not
+    // widening files.
+    'DesignSettingsModal', 'StartScreen',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');
@@ -206,7 +216,8 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
     // AMENDED BY T78 F19: T78 licenses CompanyDefaultsModal (the Joints choice). AMENDED BY T79 F1: T79 licenses Messages.
     // AMENDED BY T79 F12: T79 licenses CabinetEditorModal (Center between's pick).
     // AMENDED BY T80 F10: T80 licenses InframeWarnings (the in-frame checks in the left column).
-    assert.ok(['67', '69', '71', '72', '74', '75', '78', '79', '80'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
+    // AMENDED BY T82 F6: T82 licenses CanvasToolbar (Open all takes the HAWA door).
+    assert.ok(['67', '69', '71', '72', '74', '75', '78', '79', '80', '82'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
   }
   assert.ok(!exempt.some(([n, t]) => /UnitSize/.test(n) && t === '69'), 'F9 bought no exemption');
   // AMENDED BY T75 F9: RoomModal's licence is renewed tonight (ADD ISLAND), so

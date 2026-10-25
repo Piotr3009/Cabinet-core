@@ -32,6 +32,19 @@ export const DECORATIVE_FRONT_STYLES = Object.freeze(['G', 'GF', 'A', 'AH', 'FL'
 /** The cutters a groove recipe may name, per style (T76 F4: a V is a V). */
 const GROOVE_CUTTERS = Object.freeze({ G: ['v', 'endmill'], GF: ['v', 'endmill'], FL: ['ballnose'] });
 
+/**
+ * T82 F15 · the two faces a Fluted front can have: T76's grooves, and the
+ * owner's cloud (*"fluted teraz to sa rowki a ja potrzebuje chmurke"*),
+ * convex reeds touching. A saved FL decoration that names no profile is
+ * grooves: that is what every FL front saved before T82 was.
+ */
+export const FLUTE_PROFILES = Object.freeze(['groove', 'reed']);
+
+/** The reed's numbers (`profile.front.flute`), or the active workshop's. */
+function fluteOf(profile) {
+  return profile?.front?.flute || getCabinetProfile().front?.flute || {};
+}
+
 /** One style's recipe in this profile, or null where the style has none. */
 function recipeOf(style, profile) {
   if (![...DECORATIVE_FRONT_STYLES, ...ORNATE_STYLE_IDS].includes(style)) return null;
@@ -45,6 +58,33 @@ export function defaultFrontDecoration(style, profile = getCabinetProfile()) {
   return recipe ? { version: 1, style, ...recipe } : null;
 }
 
+/**
+ * T82 F15 · the recipe a NEW choice of a style is born with: the style's
+ * recipe (`defaultFrontDecoration`, T76's record, unchanged), and for FL the
+ * profile a new Fluted front takes (`profile.front.flute.profile`, `reed` by
+ * CLAUDE.md T82 F15) with the reed's diameter. Every road that chooses a
+ * style asks this (`frontStyleSelection`, the Activate button); a saved
+ * decoration is never re-born, so an old FL front stays grooves.
+ */
+export function newFrontDecoration(style, profile = getCabinetProfile()) {
+  const recipe = defaultFrontDecoration(style, profile);
+  if (style !== 'FL' || !recipe) return recipe;
+  const flute = fluteOf(profile);
+  const fluteProfile = FLUTE_PROFILES.includes(flute.profile) ? flute.profile : 'groove';
+  return fluteProfile === 'reed'
+    ? { ...recipe, fluteProfile, reedDiameterMm: flute.reedDiameterMm }
+    : { ...recipe, fluteProfile };
+}
+
+/** T82 F15 · the reed's diameter for a new reed and the ladder beside the free number (the profile's). */
+export function reedChoices(profile = getCabinetProfile()) {
+  const flute = fluteOf(profile);
+  return { diameterMm: flute.reedDiameterMm, ladderMm: Array.isArray(flute.reedLadderMm) ? [...flute.reedLadderMm] : [] };
+}
+
+const enteredNumber = (value) => (typeof value === 'number' ? value
+  : (typeof value === 'string' && value.trim() ? Number(value) : NaN));
+
 /** Preserve invalid entered numbers for validation, never silently clamp. */
 export function normaliseFrontDecoration(config, style = config?.style, profile = getCabinetProfile()) {
   if (!config || typeof config !== 'object' || Array.isArray(config)) return null;
@@ -57,6 +97,14 @@ export function normaliseFrontDecoration(config, style = config?.style, profile 
     out[key] = typeof fallback === 'number'
       ? (typeof value === 'number' ? value : (typeof value === 'string' && value.trim() ? Number(value) : NaN))
       : value;
+  }
+  // T82 F15 · FL's profile and the reed's diameter ride beside T76's keys.
+  // A saved FL decoration that names neither normalises to exactly what it
+  // did before (no key is added): it is grooves, old projects included.
+  if (style === 'FL') {
+    if (Object.hasOwn(config, 'fluteProfile')) out.fluteProfile = config.fluteProfile;
+    if (Object.hasOwn(config, 'reedDiameterMm')) out.reedDiameterMm = enteredNumber(config.reedDiameterMm);
+    else if (config.fluteProfile === 'reed') out.reedDiameterMm = enteredNumber(fluteOf(profile).reedDiameterMm);
   }
   return out;
 }
@@ -301,6 +349,96 @@ function makeGrooves(outline, config, depthStart) {
   return { operations };
 }
 
+// ─── T82 F15 · THE CLOUD: FL AS CONVEX REEDS ────────────────────────────────
+// The owner, 25.10.2026, over verify/t82/mockups/chmurka.png: *"fluted teraz
+// to sa rowki a ja potrzebuje chmurke"*, *"daj wariant b czyli na styk
+// narazie"*, *"do tego daj ustawienie srednicy walkow tez"*. A row of CONVEX
+// half-rounds of `reedDiameterMm`, TOUCHING (no flat between), the crests on
+// the front's face, the valleys half the diameter into the board, sharp. The
+// field is the front less `grooveInsetMm` at the two sides; top and bottom
+// the reeds run to the edges. A field the diameter does not divide is
+// centred and the remainder is said (an advisory, the Check), never a reed
+// stretched or squashed. One operation per VALLEY, the reed profile cutter's
+// centre path (kind `reed`); the first and the last valley lie on the field's
+// edges, where the reed meets the flat margin in a vertical wall as deep as
+// the valley (their cross-section says `edge`: one flank and the wall).
+
+/** One valley's swept surface; `profile` is [offset, depth] across it, left to right. */
+function sweepSurface({ x, profile, local, transform, horizontal, base }) {
+  const vertices = []; const triangles = [];
+  for (let i = 0; i < profile.length; i += 1) {
+    const [u, d] = profile[i];
+    const span = intervalAtX(local, x + u);
+    if (!span || span[1] - span[0] <= EPS) return null;
+    vertices.push([...point(transform([x + u, span[0]])), round(base + d)]);
+    vertices.push([...point(transform([x + u, span[1]])), round(base + d)]);
+    if (i) {
+      const n = vertices.length - 4;
+      triangles.push([n, n + 2, n + 1], [n + 1, n + 2, n + 3]);
+    }
+  }
+  if (horizontal) triangles.forEach((t) => { [t[1], t[2]] = [t[2], t[1]]; });
+  return { vertices, triangles };
+}
+
+/** The section of one valley: the left reed's flank, the right reed's flank, or both. */
+function reedValleyProfile(radius, edge) {
+  const steps = Math.max(CURVE_STEPS / 2, Math.ceil(halfCurveSteps(radius) / 2));
+  const flank = (side) => Array.from({ length: steps + 1 }, (_, i) => {
+    // phi 0 is the valley, phi pi/2 the crest; the circle's centre stands
+    // one radius under the crest, on the valley line.
+    const phi = side < 0 ? (Math.PI / 2) * (1 - i / steps) : (Math.PI / 2) * (i / steps);
+    return [round(side * (radius - radius * Math.cos(phi))), round(radius - radius * Math.sin(phi))];
+  });
+  if (edge === 'start') return [[0, 0], ...flank(1)];
+  if (edge === 'end') return [...flank(-1), [0, 0]];
+  return [...flank(-1), ...flank(1).slice(1)];
+}
+
+function makeReeds(outline, config, depthStart) {
+  const horizontal = config.grooveDirection === 'horizontal';
+  const transform = horizontal ? ([x, y]) => [y, x] : ([x, y]) => [x, y];
+  const local = ccw(outline.map(transform));
+  const b = bounds(local);
+  const diameter = config.reedDiameterMm; const radius = diameter / 2;
+  const inset = config.grooveInsetMm;
+  const field = round(b.x2 - b.x1 - 2 * inset);
+  if (field < diameter - EPS) {
+    return { problem: problem('FRONT_DECORATION_TOO_SMALL', `The front is too narrow for one ${diameter} mm reed between its ${inset} mm margins.`) };
+  }
+  const count = Math.floor((field + EPS) / diameter);
+  if (count + 1 > MAX_OPERATIONS - 1) return { problem: problem('FRONT_DECORATION_LIMIT', `The recipe exceeds ${MAX_OPERATIONS - 2} reeds on one front.`) };
+  const remainder = round(field - count * diameter);
+  const first = b.x1 + inset + remainder / 2;
+  const operations = [];
+  for (let i = 0; i <= count; i += 1) {
+    const x = first + i * diameter;
+    const edge = i === 0 ? 'start' : (i === count ? 'end' : null);
+    const left = edge === 'start' ? 0 : radius; const right = edge === 'end' ? 0 : radius;
+    let strip = clipHalfPlane(local, [x - left, 1], [x - left, 0], 0);
+    strip = clipHalfPlane(strip, [x + right, 0], [x + right, 1], 0);
+    const span = intervalAtX(local, x);
+    const profile = reedValleyProfile(radius, edge);
+    const surface = sweepSurface({ x, profile, local, transform, horizontal, base: depthStart });
+    if (strip.length < 3 || !span || !surface) return { problem: problem('FRONT_DECORATION_TOO_SMALL', 'A complete reed does not fit inside the cut front.') };
+    const points = ccw(strip.map(transform)).map(point);
+    if (!contains(outline, points)) return { problem: problem('FRONT_DECORATION_OUTSIDE', 'A reed would cross the cut front outline.') };
+    operations.push({
+      id: `reed-valley-${i + 1}`, kind: 'reed', face: 'front', points,
+      depth: depthStart + radius, startDepth: depthStart,
+      centreline: [point(transform([x, span[0]])), point(transform([x, span[1]]))],
+      tool: { kind: 'reedProfile', diameter },
+      // T82 F15, after the review (reeds:3): a field edge (one flank and the
+      // wall) is a different cut from a valley (two flanks): its own layer,
+      // its own width, so one layer is never two recipes.
+      layer: operationLayer(edge ? 'REEDEDGE' : 'REED', depthStart + radius, depthStart, diameter),
+      crossSection: { kind: 'reed', radius, width: edge ? radius : diameter, depth: radius, edge, profile },
+      surface,
+    });
+  }
+  return { operations, count, fieldMm: field, remainderMm: remainder, marginMm: round(inset + remainder / 2) };
+}
+
 // T76 F4 · the owner, 31.08.2026: a SEMICIRCULAR head, its rise half the
 // inner width. *"A leaf narrower than the rise allows is refused in words,
 // never squashed to an ellipse."*  The ratio GPT scaled by is gone with it.
@@ -375,6 +513,53 @@ function polygonsOverlap(a, b) {
   return true;
 }
 
+/**
+ * T82 F15, after the review (reeds:0) · the deepest a reed valley cuts over
+ * a bore's disc (from the face), or null where the disc misses its strip.
+ * Across the valley line the reed falls as d(u) = r - sqrt(r^2 - (r - |u|)^2)
+ * for |u| < r (the valley at u = 0, the crests at r), and it does not vary
+ * along the line; the strip is [-r, r] (one side only at a field edge). So
+ * the deepest point over the disc is at the |u| nearest the valley.
+ */
+function reedDepthOverDisc(op, centre, radius) {
+  const [a, b] = op.centreline || [];
+  const r = Number(op.crossSection?.radius);
+  if (!a || !b || !(r > 0)) return Number(op.depth);
+  const vertical = Math.abs(a[0] - b[0]) < EPS;
+  const u0 = vertical ? centre[0] - a[0] : centre[1] - a[1];
+  const edge = op.crossSection?.edge || null;
+  // The strip in u: a field edge keeps the one flank on the field's side.
+  // Which side that is: the strip's points tell (the valley line is one of its edges).
+  const across = (op.points || []).map((p) => (vertical ? p[0] - a[0] : p[1] - a[1]));
+  const lo = edge ? Math.min(0, ...across) : -r; const hi = edge ? Math.max(0, ...across) : r;
+  const from = Math.max(lo, u0 - radius); const to = Math.min(hi, u0 + radius);
+  if (from > to + EPS) return null;
+  const nearest = from <= 0 && to >= 0 ? 0 : Math.min(Math.abs(from), Math.abs(to));
+  const t = r - nearest;
+  return (Number(op.startDepth) || 0) + (nearest >= r ? 0 : r - Math.sqrt(Math.max(0, r * r - t * t)));
+}
+
+/**
+ * T82 F15, after the review (reeds:2) · the J-pull sentence. Grooves and the
+ * frame recipes keep T76's ("Increase its frame or margin"), where that is the
+ * remedy. Reeds run to the two edges across their direction (top and bottom
+ * for upright reeds) and keep a margin on the other two: a J on an edge they
+ * run to is crossed whatever the margin, so the sentence names what works
+ * (Grooves, or another handle); a J on a margin edge names the margin's number.
+ */
+function jpullSentence(decoration, edge, reach) {
+  if (!decoration.operations.some((op) => op.kind === 'reed')) return 'The decoration enters the J-pull machining zone. Increase its frame or margin.';
+  const top = ['T', 'TOP'].includes(edge);
+  const horizontal = decoration.parameters?.grooveDirection === 'horizontal';
+  const mm = round(reach);
+  if (top !== horizontal) {
+    return `Reeds run to the ${top ? 'top' : 'side'} edge and cross the J-pull's slot, ${mm} mm in from it: `
+      + 'choose Grooves in the Flute profile for this front, or another handle.';
+  }
+  return `The reeds enter the J-pull's slot, ${mm} mm in from its edge: make the Reed side margin more than ${mm} mm, `
+    + 'or choose Grooves in the Flute profile, or another handle.';
+}
+
 /** Validate opposing machining after the cabinet has placed its hardware. */
 export function validateFrontDecoration({ panel, decoration, drills = [], profile = getCabinetProfile() }) {
   if (!decoration || decoration.status === 'blocked') return decoration?.problems || [];
@@ -404,6 +589,23 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
       if (!(depth > 0) || !Number.isFinite(depth) || depth >= thickness - EPS) continue;
       const radius = Number(drill.d ?? drill.diameter) / 2;
       if (!(radius > 0) || !Number.isFinite(radius)) continue;
+      if (op.kind === 'reed') {
+        // T82 F15, after the review (reeds:0): a reed is not a flat pocket.
+        // Its own depth over the bore's disc, never the valley's everywhere.
+        const cut = reedDepthOverDisc(op, [Number(drill.x), Number(drill.y)], radius);
+        if (cut === null || !skinShort(thickness - depth, cut, profile)) continue;
+        if (!circleTouchesPolygon([Number(drill.x), Number(drill.y)], radius, op.points)) continue;
+        const left = round(thickness - depth - cut);
+        const reedMm = round(2 * Number(op.crossSection?.radius));
+        problems.push(problem('FRONT_DECORATION_BACK_BORE', `${op.id} cuts ${round(cut)} mm deep over the back `
+          + `${drill.kind || 'bore'} and ${left > EPS ? `leaves ${left} mm between them, less than ${MIN_SKIN} mm` : 'meets it'}. `
+          // T82 F15, after the review (reeds:2): the remedy the owner can take.
+          + (2 * radius >= reedMm - EPS
+            ? `A bore ${round(2 * radius)} mm wide always meets a valley of reeds of ${reedMm} mm: keep the reeds clear of it `
+              + '(the margin, or the other direction), or choose a thicker front.'
+            : 'Choose a thicker front, smaller reeds or another width, so the bore sits under a crest.')));
+        continue;
+      }
       if (!skinShort(thickness - depth, op.depth, profile)) continue;
       if (circleTouchesPolygon([Number(drill.x), Number(drill.y)], radius, op.points)) {
         problems.push(problem('FRONT_DECORATION_BACK_BORE', `${op.id} conflicts with the back ${drill.kind || 'bore'} or leaves less than ${MIN_SKIN} mm between cuts.`));
@@ -421,7 +623,7 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
       : j.edge === 'R' ? rect(b.x2 - reach, from, b.x2, to)
         : ['T', 'TOP'].includes(j.edge) ? rect(b.x1, b.y2 - reach, b.x2, b.y2) : null;
     if (band && [...decoration.operations, ...decoration.additions].some((item) => polygonsOverlap(item.points, band))) {
-      problems.push(problem('FRONT_DECORATION_JPULL', 'The decoration enters the J-pull machining zone. Increase its frame or margin.'));
+      problems.push(problem('FRONT_DECORATION_JPULL', jpullSentence(decoration, j.edge, reach)));
     }
   }
   return problems;
@@ -437,7 +639,10 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
  *
  * @returns {{code, message, needMm, haveMm}|null}
  */
-export function boardRefusal(style, thicknessMm, profile = getCabinetProfile(), recipe = recipeOf(style, profile)) {
+// T82 F15 · a Fluted front is asked what a NEW choice of it would cut (the
+// reeds, `newFrontDecoration`), since that is what picking it gives.
+export function boardRefusal(style, thicknessMm, profile = getCabinetProfile(),
+  recipe = style === 'FL' ? newFrontDecoration(style, profile) : recipeOf(style, profile)) {
   // T77 F4 · the one function (`engine/frontBoard.js`), for A/AH and Ornate
   // alike; `recipe` is a leaf's own numbers where a caller has them.
   return recipeOf(style, profile) ? boardShortfall(style, thicknessMm, recipe, profile) : null;
@@ -499,7 +704,15 @@ export function buildFrontDecoration({
     return fail(problem('FRONT_DECORATION_CUTTER', `${style} grooves are cut with ${GROOVE_CUTTERS[style].join(' or ')}, not ${parameters.grooveCutter}.`));
   }
   if (style === 'AM' && parameters.mitreDeg !== 45) return fail(problem('FRONT_DECORATION_MITRE', 'Four strips close a rectangle only with 45 degree mitres.'));
-  if (style === 'FL' && parameters.grooveDepthMm > parameters.fluteDiameterMm / 2) return fail(problem('FRONT_DECORATION_FLUTE', 'Flute depth cannot exceed the ballnose radius.'));
+  // T82 F15 · a Fluted front is grooves or reeds; the reed names its diameter.
+  if (style === 'FL' && Object.hasOwn(parameters, 'fluteProfile') && !FLUTE_PROFILES.includes(parameters.fluteProfile)) {
+    return fail(problem('FRONT_DECORATION_FLUTE_PROFILE', 'Choose grooves or reeds for the fluted front.'));
+  }
+  const reed = style === 'FL' && parameters.fluteProfile === 'reed';
+  if (reed && !(Number.isFinite(parameters.reedDiameterMm) && parameters.reedDiameterMm > 0)) {
+    return fail(problem('FRONT_DECORATION_PARAMETER', 'reedDiameterMm must be a finite positive number.'));
+  }
+  if (style === 'FL' && !reed && parameters.grooveDepthMm > parameters.fluteDiameterMm / 2) return fail(problem('FRONT_DECORATION_FLUTE', 'Flute depth cannot exceed the ballnose radius.'));
   const width = Number(panel?.cnc?.drawn_w ?? panel?.w); const height = Number(panel?.cnc?.drawn_h ?? panel?.h);
   if (![width, height, result.thickness].every((v) => Number.isFinite(v) && v > 0 && v <= 100000)) return fail(problem('FRONT_DECORATION_PANEL', 'The front needs finite positive dimensions no greater than 100000 mm.'));
   const raw = panel?.cnc?.outline || rect(0, 0, width, height);
@@ -544,7 +757,18 @@ export function buildFrontDecoration({
       if (!points.length) return fail(problem('FRONT_DECORATION_TOO_SMALL', 'The complete recessed pattern does not fit inside this cut front.'));
       result.operations.push(pocket('panel-recess', points, parameters.recessDepthMm));
     }
-    if (['G', 'GF', 'FL'].includes(style)) {
+    if (reed) {
+      // T82 F15 · the reeds run to the top and bottom edges: the field is
+      // the inner panel less the side margins, measured in `makeReeds`.
+      const reeds = makeReeds(inner, parameters, parameters.recessDepthMm || 0);
+      if (reeds.problem) return fail(reeds.problem);
+      result.operations.push(...reeds.operations);
+      result.reeds = {
+        count: reeds.count, diameterMm: parameters.reedDiameterMm, fieldMm: reeds.fieldMm,
+        remainderMm: reeds.remainderMm, marginMm: reeds.marginMm,
+        underValleyMm: round(result.thickness - (parameters.recessDepthMm || 0) - parameters.reedDiameterMm / 2),
+      };
+    } else if (['G', 'GF', 'FL'].includes(style)) {
       const grooveRegion = insetPolygon(inner, parameters.grooveInsetMm);
       if (!grooveRegion.length) return fail(problem('FRONT_DECORATION_TOO_SMALL', 'The groove margins leave no usable front area.'));
       const grooves = makeGrooves(grooveRegion, parameters, parameters.recessDepthMm || 0);
@@ -565,6 +789,24 @@ export function buildFrontDecoration({
     result.advisories.push(problem('FRONT_DECORATION_BOARD', `${style} is drawn for a ${parameters.boardMm} mm board and this front is `
       + `${result.thickness} mm: the ${parameters.recessDepthMm} mm recess leaves ${left} mm. Assign a ${parameters.boardMm} mm `
       + 'front material, or keep this board by decision.'));
+  }
+  // T82 F15 · the reeds' two notes, said by the Check (#46) and blocking
+  // nothing: the board left under a valley when it is under the profile's
+  // number (a 22 front with reeds of 20 leaves 12, said nothing; an 18 leaves
+  // 8, said), and a field the diameter does not divide, centred.
+  if (result.reeds) {
+    const r = result.reeds;
+    const limit = Number(fluteOf(profile).reedNoteUnderValleyMm);
+    if (Number.isFinite(limit) && r.underValleyMm < limit - EPS) {
+      result.advisories.push(problem('FRONT_DECORATION_REED_SKIN', `Reeds leave ${r.underValleyMm} mm under the valley: `
+        + `this ${result.thickness} mm front takes reeds of ${r.diameterMm} mm, cut ${round(r.diameterMm / 2)} mm deep `
+        + `(the note speaks under ${limit} mm). Choose a thicker front or smaller reeds, or keep it by decision.`));
+    }
+    if (r.remainderMm > EPS) {
+      result.advisories.push(problem('FRONT_DECORATION_REED_REMAINDER', `Reeds of ${r.diameterMm} mm do not divide the `
+        + `${r.fieldMm} mm between the margins: ${r.count} reeds fit and ${r.remainderMm} mm is over, so the row is centred `
+        + `and each side margin is ${r.marginMm} mm.`));
+    }
   }
   return result;
 }

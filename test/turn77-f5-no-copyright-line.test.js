@@ -243,6 +243,96 @@ export const NEW_FILES = [
   // T81 F10 (22.10.2026): the walk
   'scripts/t81-walk.mjs',
   'scripts/t78-classify.d/f41-t81-f10.mjs',
+  // T82 F1 (25.10.2026): the LISP of the HAWA pocket, first
+  'test/turn82-f01-hawa-lisp.test.js',
+  'scripts/t78-classify.d/f43-t82-f01.mjs',
+  // T82 F2 (25.10.2026): the HAWA pocket is a unit in the run
+  'src/engine/hawaPocket.js',
+  'test/turn82-f02-hawa-run.test.js',
+  'test/turn82-f03-hawa-door.test.js',
+  'scripts/t78-classify.d/f43-t82-f02.mjs',
+  // T82 F3 (25.10.2026): the door, its width, its depth, the refusals in words
+  'scripts/t78-classify.d/f43-t82-f03.mjs',
+  // T82 F4 (25.10.2026): the pocket in the BOM, its sets, its connector, its tracks, its parts
+  'src/engine/cnc/hawa.js',
+  'test/turn82-f04-hawa-bom-cnc.test.js',
+  'scripts/t78-classify.d/f43-t82-f04.mjs',
+  // T82 F5 (25.10.2026): the pocket on the CNC, the panels' pilots and the door's cups
+  'scripts/t78-classify.d/f43-t82-f05.mjs',
+  // T82 F6 (25.10.2026): the HAWA door closed and open in the room
+  'src/engine/pocketDoorPose.js',
+  'src/3d/PocketDoor.jsx',
+  'scripts/t78-classify.d/f43-t82-f06.mjs',
+  // T82 F7 (25.10.2026): the HAWA pocket on the sheets
+  'test/turn82-f06-hawa-room.test.js',
+  'scripts/t78-classify.d/f43-t82-f07.mjs',
+  // T82 F8 (25.10.2026): the LISP of the vanity, first
+  'test/turn82-f08-vanity-lisp.test.js',
+  'scripts/t78-classify.d/f43-t82-f08.mjs',
+  // T82 F9 (25.10.2026): the vanity kits and the chest, two columns and equal drawers
+  'src/engine/vanity.js',
+  'test/turn82-f09-chest-columns.test.js',
+  'test/turn82-f09-vanity-kit.test.js',
+  'test/turn82-f09-trap-room.test.js',
+  'scripts/t78-classify.d/f43-t82-f09.mjs',
+  // T82 F10 (25.10.2026): the vanity's top is the house worktop, to the wall over the void
+  'test/turn82-f10-vanity-top-basin.test.js',
+  'scripts/t78-classify.d/f43-t82-f10.mjs',
+  // T82 F11 (25.10.2026): the basin, only to the eye, on the LISP's wastes
+  'src/3d/Basin.jsx',
+  'scripts/t78-classify.d/f43-t82-f11.mjs',
+  // T82 F12 (25.10.2026): the service void, a note in the Check and a hatch on the sheets
+  'scripts/t78-classify.d/f43-t82-f12.mjs',
+  // T82 F13 (25.10.2026): the vanity on its plinth or floating, and its hangers in the BOM
+  'test/turn82-f13-vanity-panel.test.js',
+  'scripts/t78-classify.d/f43-t82-f13.mjs',
+  // T82 F15 (25.10.2026): the cloud, Fluted as convex reeds touching
+  'test/turn82-f15-reed.test.js',
+  'scripts/t78-classify.d/f43-t82-f15.mjs',
+  // T82 F16 (25.10.2026): grab and move, the free panel on three axes; the probes' shared reader and F16's probe
+  'scripts/t82-probe-lib.mjs',
+  'scripts/t82-probe-f16.mjs',
+  'src/3d/panelDrag.js',
+  'test/turn82-f16-panel-drag.test.js',
+  // T82 F17 (25.10.2026): the panel in front of a chimney can grow; F17's probe
+  'scripts/t82-probe-f17.mjs',
+  'scripts/t78-classify.d/f43-t82-f17.mjs',
+  // T82 F18 (25.10.2026): the thickness shows, the panel's own board; F18's probe
+  'scripts/t82-probe-f18.mjs',
+  'scripts/t78-classify.d/f43-t82-f18.mjs',
+  // T82 F19 (25.10.2026): the front of a unit, a panel in front is in nobody's way
+  'scripts/t78-classify.d/f43-t82-f19.mjs',
+  // T82 F20 (25.10.2026): the logo and the company on the sheet
+  'test/turn82-f20-logo.test.js',
+  'scripts/t78-classify.d/f43-t82-f20.mjs',
+  // T82 F21 (25.10.2026): the fronts' own dimensions; F21's probe
+  'scripts/t82-probe-f21.mjs',
+  'test/turn82-f21-chains.test.js',
+  'scripts/t78-classify.d/f43-t82-f21.mjs',
+  // T82 F22 (25.10.2026): handles on the sheets; F22's probe
+  'scripts/t82-probe-f22.mjs',
+  'test/turn82-f22-f24-sheets.test.js',
+  'scripts/t78-classify.d/f43-t82-f22.mjs',
+  // T82 F23 (25.10.2026): the hinges and the runners from the models; F23's probe
+  'scripts/t82-probe-f23.mjs',
+  'scripts/t78-classify.d/f43-t82-f23.mjs',
+  // T82 F24 (25.10.2026): one dashed line for the plinth
+  'scripts/t78-classify.d/f43-t82-f24.mjs',
+  // T82 F6 (after the review) (25.10.2026): the door's holes ride the door
+  'src/3d/drillRingPanels.js',
+  'test/turn82-f06-door-rings.test.js',
+  // T82 F7 (after the review) (25.10.2026): the HAWA door's finish and handle on the sheets
+  'test/turn82-f07-hawa-door-sheets.test.js',
+  // T82 F11 (25.10.2026): the basin is seen through the vanity's top (after the review)
+  'test/turn82-f11-basin-top-room.test.js',
+  // T82 F15 (25.10.2026): the reeds run out of a J-pull door's edges too (after the review)
+  'test/turn82-f15-reed-jpull-room.test.js',
+  // T82 F16 (25.10.2026): off the wall, where asked, every time (after the review)
+  'test/turn82-f16-panel-recess.test.js',
+  // T82 F21 (25.10.2026): a vertical figure prints where the drawing puts it (after the review)
+  'test/turn82-f21-rotated-figures.test.js',
+  // T82 F25 (25.10.2026): the walk, real mouse on the built app
+  'scripts/t82-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

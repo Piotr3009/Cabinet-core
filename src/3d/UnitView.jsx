@@ -120,6 +120,8 @@ import SpacingChain from './SpacingChain.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
+// T82 F6 · the HAWA door: carried open into its pocket by the one pose (engine/pocketDoorPose.js).
+import PocketDoor from './PocketDoor.jsx';
 import DrillRings from './DrillRings.jsx';
 import LedStrips from './LedStrips.jsx';
 import Props from './Props.jsx';
@@ -193,6 +195,10 @@ import NotchEdges from './NotchEdges.jsx';
 // leaf's own geometry — so a click on it is a hit test, and the hit test is a
 // pure function with a unit test behind it.
 import { onJpullStrip, jpullNotch } from './jpullProfile.js';
+// T82 F16 · the free panel's three axes: the plane, the gesture, the grab.
+import {
+  dragPlaneOffsetMm, offPlaneHeightMm, panelDragMode, panelDragTo, panelGrab,
+} from './panelDrag.js';
 import { backStandoff } from '../engine/collision.js';
 import { doorOpenAngle } from '../engine/doors.js';
 import { drawerMotion } from '../engine/drawerMotion.js';
@@ -1096,7 +1102,8 @@ export function MovingPanel({
   // Solid is opaque now, full stop. Translucency belongs to the two modes that
   // exist to be translucent.
   const X = profile.appearance.xray;
-  const faded = contour ? surface.opacity : (xray ? (front ? X.front : X.carcass) : 1);
+  // T82 F6, after the review: the HAWA door fades as the front it is (the sheets' X-ray inks it XRAY_FRONT).
+  const faded = contour ? surface.opacity : (xray ? ((front || p.role === 'pocket_door') ? X.front : X.carcass) : 1);
   const translucent = faded < 1;
 
   const body = (
@@ -1667,6 +1674,13 @@ export default function UnitView({
   onEditPart = null,
   onMoveEnd = null,
   snapProposal = null,
+  // T82 F16 · *"grab and move"*: a free panel's drag also goes UP and DOWN
+  // (`onMovePanelY(y, step)`, its mounting height) and, with Shift held, OFF
+  // THE WALL (`onMovePanelZ(z, step)`, its back face's distance from the
+  // wall line). The clamps are the store's. Default null: a view nobody gave
+  // them to (the editor window) drags a panel along the wall, as it did.
+  onMovePanelY = null,
+  onMovePanelZ = null,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   // TURN 40 (CLAUDE.md F4c): { panelId, atMm } — fly to THAT piece.
   focusPanel = null, onFocusPanelDone = null,
@@ -1815,10 +1829,16 @@ export default function UnitView({
 
   // A vertical plane parallel to the wall, halfway into the cabinet — the ray
   // is intersected with it so the unit follows the cursor instead of itself.
+  //
+  // T82 F16 · …and for a FREE PANEL, through its OWN back line. The probe
+  // (`verify/t82/f16-probe.md` row 3): a panel on a chimney's face, drawn 350
+  // to 368 off the wall, was dragged on a plane 9 off it, 350 behind the board
+  // the eye sees. A cabinet's plane is where it always was (`D / 2`).
+  const dragPlaneMm = dragPlaneOffsetMm(unit, profile);
   const dragPlane = useMemo(() => {
-    const point = wallStart.clone().addScaledVector(inward, mm(D / 2));
+    const point = wallStart.clone().addScaledVector(inward, mm(dragPlaneMm));
     return new THREE.Plane().setFromNormalAndCoplanarPoint(inward, point);
-  }, [wallStart, inward, D]);
+  }, [wallStart, inward, dragPlaneMm]);
 
   const pointerToPlane = useCallback((clientX, clientY) => {
     const rect = gl.domElement.getBoundingClientRect();
@@ -1857,6 +1877,71 @@ export default function UnitView({
     return { x: target.x / MM + roomCentre.x, y: target.z / MM + roomCentre.y };
   }, [camera, gl, raycaster, roomCentre.x, roomCentre.y]);
 
+  /**
+   * ─── T82 F16 · SHIFT AND PULL: A FREE PANEL OFF ITS WALL ──────────────────
+   *
+   * *"bardziej chcialem grab and move"*. The third axis is `startDepthDrag`'s
+   * own gesture, learnt by every hand that has pulled a shelf forward: a
+   * HORIZONTAL plane, here at the grab point's own height (so the board stays
+   * under the cursor), the hit measured along the wall's inward axis from the
+   * wall line, the grab kept, one move per frame, the orbit locked. What it
+   * writes is the distance of the panel's back face from the wall line, through
+   * the store's `moveFreePanelZ`, whose room has the last word. A pull off the
+   * wall is no drop along it: the x proposal of T74 F13 is never taken here.
+   */
+  const startPanelOffDrag = useCallback((e) => {
+    if (!onMovePanelZ) return;
+    const atMm = offPlaneHeightMm({
+      pointMm: e.point ? e.point.y / MM : null,
+      baseMm: Number(unit.params?.mount_height) || 0,
+      heightMm: Number(unit.params?.height) || 0,
+    });
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -mm(atMm));
+    const toPlane = (clientX, clientY) => {
+      const rect = gl.domElement.getBoundingClientRect();
+      const ndc = new THREE.Vector2(
+        ((clientX - rect.left) / rect.width) * 2 - 1,
+        -((clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      raycaster.setFromCamera(ndc, camera);
+      const target = new THREE.Vector3();
+      return raycaster.ray.intersectPlane(plane, target) ? target : null;
+    };
+    // How far off the wall line a world point is, in millimetres.
+    const offMm = (point) => point.clone().sub(wallStart).dot(inward) / MM;
+    const hit = toPlane(e.clientX, e.clientY);
+    if (!hit) return;
+    const grab = panelGrab(unit, profile, { offMm: offMm(hit) });
+    if (orbitRef?.current) orbitRef.current.enabled = false;
+
+    let pendingMove = null;
+    let moveFrame = 0;
+    const moveNow = () => {
+      moveFrame = 0;
+      const ev = pendingMove;
+      pendingMove = null;
+      if (!ev) return;
+      const p = toPlane(ev.clientX, ev.clientY);
+      if (!p) return;
+      onMovePanelZ(panelDragTo(grab, { offMm: offMm(p) }).z, snapStep);
+    };
+    const move = (ev) => {
+      pendingMove = ev;
+      if (!moveFrame) moveFrame = requestAnimationFrame(moveNow);
+    };
+    const up = (ev) => {
+      if (moveFrame) { cancelAnimationFrame(moveFrame); moveNow(); }
+      if (orbitRef?.current) orbitRef.current.enabled = true;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      onMoveEnd?.({ altKey: Boolean(ev?.altKey), cancelled: ev?.type === 'pointercancel', moved: false });
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  }, [onMovePanelZ, onMoveEnd, unit, profile, camera, gl, raycaster, wallStart, inward, orbitRef, snapStep]);
+
   const startDrag = useCallback((e) => {
     e.stopPropagation();
     // ─── Turn 13 (CLAUDE.md F5.1): CTRL+CLICK BUILDS A SET ───
@@ -1875,10 +1960,23 @@ export default function UnitView({
     const additive = Boolean(native.ctrlKey || native.metaKey || e.ctrlKey || e.metaKey);
     onSelect({ additive });
     if (additive) return;
+    // ─── T82 F16 · A FREE PANEL IS IN THE HAND ON THREE AXES ───────────────
+    // Shift at the press pulls it OFF THE WALL (read off the native event
+    // first, for Ctrl's reason above); a plain press moves it ALONG the wall
+    // and UP AND DOWN on the one plane through its back line. A cabinet, and
+    // a panel in a view given neither setter, drags along the wall only.
+    const mode = panelDragMode(unit, {
+      shiftKey: Boolean(native.shiftKey || e.shiftKey),
+      canLift: Boolean(onMovePanelY),
+      canPull: Boolean(onMovePanelZ),
+    });
+    if (mode === 'off') { startPanelOffDrag(e); return; }
     const hit = pointerToPlane(e.clientX, e.clientY);
     if (!hit) return;
     drag.current = { offset: alongMm(hit) - unit.position.x_mm, x0: e.clientX, y0: e.clientY, moved: false };
     setDragging(true);
+    // T82 F16 · the same plane's height, grabbed where the hand went down.
+    if (mode === 'face') drag.current.grab = panelGrab(unit, profile, { alongMm: alongMm(hit), upMm: hit.y / MM });
     if (orbitRef?.current) orbitRef.current.enabled = false;
 
     // Chat-fix 13.10.2026: at most one move per frame; the newest pointer wins.
@@ -1903,6 +2001,10 @@ export default function UnitView({
       // proposal.
       if (Math.hypot(ev.clientX - drag.current.x0, ev.clientY - drag.current.y0) >= 2) drag.current.moved = true;
       onMove(alongMm(p) - drag.current.offset, snapStep);
+      // T82 F16 · …and up and down, once the hand has travelled: a click
+      // that presses and releases where it stands lifts nothing.
+      const { grab } = drag.current;
+      if (grab && drag.current.moved) onMovePanelY?.(panelDragTo(grab, { upMm: p.y / MM }).y, snapStep);
     };
     const move = (ev) => {
       pendingMove = ev;
@@ -1926,7 +2028,8 @@ export default function UnitView({
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
   }, [onSelect, pointerToPlane, alongMm, unit.position.x_mm, unit.position.wall, orbitRef,
-    onMove, onMoveEnd, onMoveToWall, pointerToFloor, walls, snapStep, W]);
+    onMove, onMoveEnd, onMoveToWall, pointerToFloor, walls, snapStep, W,
+    unit, profile, onMovePanelY, onMovePanelZ, startPanelOffDrag]);
 
   // Cabinet origin: on its wall, back against it (local z = 0 is the wall
   // face), standing on its legs or hanging at its mount height.
@@ -2789,6 +2892,8 @@ export default function UnitView({
           which is what makes it different in kind from "Remove doors". */}
       {result.panels.filter((p) => p.box && !p.meta?.frontDecorationParent
         && !(hideFronts && frontKind(p))
+        // T82 F6 · the HAWA door is a front to the eye: it leaves the picture with them.
+        && !(hideFronts && p.part === 'POCKET-DOOR')
         // T78 F8 · a bi-fold child leaf is rendered inside its carrier's group, not here.
         // T78 F18 · the HF lower half is rendered inside its upper half's group the same way.
         && !p.meta?.lift?.parent
@@ -2894,7 +2999,8 @@ export default function UnitView({
           ? (WATCH_FELT_COLOURS.find((c) => c.id === p.meta.watch_felt)?.hex || null)
           : null;
         const worn = feltHex ? feltSurface(surface, feltHex) : surface;
-        return (
+        // T82 F6 · the HAWA door is this same leaf, carried by <PocketDoor> (below).
+        const leaf = (
           <MovingPanel
             key={p.id}
             panel={p}
@@ -3157,6 +3263,8 @@ export default function UnitView({
               // leaf stands in front of, by geometry and by nothing else. The
               // store shuts them only when the leaf is SHUTTING — opening one
               // opens nothing.
+              // T82 F6 · the HAWA door: a double click slides it into its pocket and out (the one `openFronts` switch).
+              if (p.part === 'POCKET-DOOR' && onToggleFront) onToggleFront(p.id);
               if (front && onToggleFront) {
                 onToggleFront(p.id, {
                   fronts: coveredByLeaf(p, pullOutsOf(result.panels)),
@@ -3208,7 +3316,7 @@ export default function UnitView({
               // the card opens beside the piece the camera has just closed in
               // on. A front is the exception — it swings, and flying the camera
               // into a door that is opening is a way to see nothing.
-              if (onFocus && !front) {
+              if (onFocus && !front && p.part !== 'POCKET-DOOR') {
                 onFocus(panelWorldCentre(p), Math.max(p.box.w, p.box.h, p.box.d));
               }
             }}
@@ -3275,6 +3383,16 @@ export default function UnitView({
               : undefined}
           />
         );
+        // ─── T82 F6 · THE HAWA DOOR, CLOSED AND OPEN ──────────────────────
+        // *"wysuwasz pocket door i zakrywasz szafke lub szafki"*. The leaf is
+        // drawn as every front is (its finish, its outline, its gestures);
+        // <PocketDoor> turns it on its hinges and slides it E1 into the pocket
+        // on this door's own `openFronts` value, with the cups and the symbols.
+        return p.part === 'POCKET-DOOR' ? (
+          <PocketDoor key={p.id} door={p} result={result} profile={profile} open={openFronts?.[p.id] ?? 0}>
+            {leaf}
+          </PocketDoor>
+        ) : leaf;
       })}
 
       {/* ─── TURN 23 (CLAUDE.md F8.2): hover a PARTITION, read the bays ───

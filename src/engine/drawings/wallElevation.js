@@ -242,42 +242,157 @@ export function bandChains(band, profile) {
   return { ...chains, same, base: band.base };
 }
 
-/** THE TWO VERTICAL CHAINS, AS NUMBERS — every front's own height, and the bands. */
-export function heightChains(members, { floorMm = 0 } = {}) {
-  const rawFrontEdges = uniqueSorted(members.flatMap((m) => m.result.panels
-    .filter((p) => p.box && (p.part === 'FRONT' || p.part === 'DRAWER-FRONT'))
-    .flatMap((p) => [m.base + p.box.y, m.base + p.box.y + p.box.h])));
-  // ─── TURN 41 (F5c): A 3 mm GAP IS NOT A DIMENSION ────────────────────────
-  //
-  // MEASURED. A BUDR4 over a BUD with two wall units gave the front chain
-  //
-  //     190 · 3 · 190 · 3 · 190 · 3 · 188 · 633 · 717
-  //
-  // — nine segments, three of them the 3 mm air between one front and the next.
-  // At the sheet's 1:10 that is a 0.3 mm arrow carrying a 5.5 mm-tall "3". The
-  // owner's own chain is 140.3 · 100.3 · 40.0 · 221.0 · 22.0: front heights,
-  // and no gaps.
-  //
-  // So an edge that would make a segment shorter than the legibility floor is
-  // DROPPED rather than dimensioned. The floor is the front gap itself, passed
-  // in by the caller from the profile, so the rule is "do not dimension the
-  // air between two fronts" and not a magic number. `chainValues` is untouched
-  // and still total — the filter is at the drawing step, which is where the
-  // legibility question belongs.
-  const frontEdges = [];
-  for (const e of rawFrontEdges) {
-    if (!frontEdges.length || e - frontEdges[frontEdges.length - 1] > floorMm + SAME) frontEdges.push(e);
+// ─── T82 F21 · THE FRONTS' OWN DIMENSIONS ───────────────────────────────────
+//
+// The owner, 24.10.2026 (19:34): *"jak mamy szuflady to nie pokazuje dokladnie
+// wymiarow frontow i przerw pomiedzy nimi czy pomiedzy drzwiami tylko 207 i
+// 200 co nie ma sensu"*. CLAUDE.md T82 F21: "the height chain is FRONT, GAP,
+// FRONT (363 · 3 · 360 on the BUDR2) ... the width chain gains the same for
+// doors: LEAF, GAP, LEAF (376.5 · 3 · 376.5 on the BUD 800) under the run's
+// unit chain. Where a figure would not fit its segment ... it is written
+// beside the chain with a leader, never dropped."
+//
+// T41 F5c's law, "a 3 mm gap is not a dimension", is RETIRED. It dropped every
+// edge closer than the front gap to the last one kept, so the gap fell into
+// the next front: the T81 fronts sheet printed 360 · 366 for drawer fronts of
+// 360 and 363 (verify/t82/f21-probe.md rows 2 and 3). The gap is dimensioned
+// now, and a figure too small for its segment is lifted beside the chain on a
+// leader by the set's own grammar (setChains.js, T71's collision rule).
+//
+// THE SECOND FAULT THE PROBE FOUND (row 11). The edges were pooled across the
+// whole wall, so on a lay-on run the BUDR2's top front (867) and the BUD's
+// door top (870) made a 3 that is no gap between two fronts, and the BUD's own
+// 770 was never a figure. A front chain is therefore ONE UNIT'S STACK, the
+// same FRONT, GAP, FRONT the room's "Show front dimensions" measures per
+// cabinet (frontDimensions.js frontGaps): two units are never pooled into one
+// chain. Identical stacks (a row of doors of one height) are one chain, and
+// stacks that do not overlap in height (the wall run over the base run) share
+// a line of the sheet.
+
+/**
+ * A FACE front: a door leaf or a drawer front, as the room shows it closed.
+ * An inner drawer front behind a door (T78 F15, `meta.inner`) is not on the
+ * face, so it is in no chain of fronts. Nor is a leaf that does not look at
+ * the elevation: an L corner's B-arm door standing along z (`meta.swingZ`,
+ * or `meta.faceX` seen from the other wall) is a board edge on this wall,
+ * the projector's own law (projector.js handleMarks); counted, its 25 split
+ * the A leaf beside it (the C/D/E review, sheets 1).
+ *
+ * T82 F21, after the review: the HAWA pocket door (PART A, `POCKET-DOOR`,
+ * role `pocket_door`) is a leaf like any other, its TB across and its TH up.
+ * Its box is in the pocket's own frame and reaches over the unit it covers,
+ * so it is read where it hangs, as every front is.
+ */
+function isFaceFront(p) {
+  if (!p?.box || p.meta?.inner || p.meta?.swingZ || p.meta?.faceX) return false;
+  return p.part === 'FRONT' || p.part === 'DRAWER-FRONT' || p.part === 'POCKET-DOOR';
+}
+
+/**
+ * A BOARD ON THE FACE that is not a leaf: a HAWA pocket panel (role
+ * `pocket_panel`, in the front material) that no leaf of its own unit hangs
+ * in front of. The one-door pocket's panel A runs forward flush with the
+ * closed door and is seen; panel B, and both B panels of the two-door pocket,
+ * stand behind a door and are not. On the leaf chain such a board is its own
+ * figure with the true gaps either side of it, never folded into a "gap".
+ */
+function faceBoards(m) {
+  const leaves = m.result.panels.filter(isFaceFront);
+  return m.result.panels.filter((p) => p?.box && p.role === 'pocket_panel'
+    && !leaves.some((l) => l.box.x < p.box.x + p.box.w - SAME && l.box.x + l.box.w > p.box.x + SAME));
+}
+
+/**
+ * Every unit's own front stack, up the wall: its face fronts' bottom and top
+ * edges, FRONT, GAP, FRONT. Units whose stacks are the same (within the
+ * half millimetre) share one stack.
+ *
+ * @returns {Array<{edges:number[], values:number[], ids:string[], right:number}>}
+ *          in the members' order; `right` is the stack's rightmost carcass edge
+ */
+export function frontStacks(members) {
+  const stacks = [];
+  for (const m of members) {
+    const edges = uniqueSorted(m.result.panels.filter(isFaceFront)
+      .flatMap((p) => [m.base + p.box.y, m.base + p.box.y + p.box.h]));
+    if (edges.length < 2) continue;
+    const same = stacks.find((s) => s.edges.length === edges.length
+      && s.edges.every((e, i) => Math.abs(e - edges[i]) <= SAME));
+    if (same) {
+      same.ids.push(m.unit.id);
+      same.right = Math.max(same.right, m.x + m.width);
+      continue;
+    }
+    stacks.push({ edges, values: chainValues(edges), ids: [m.unit.id], right: m.x + m.width });
   }
-  // …and never drop the last edge: the chain has to reach the top of the run.
-  const lastRaw = rawFrontEdges[rawFrontEdges.length - 1];
-  if (lastRaw != null && frontEdges[frontEdges.length - 1] !== lastRaw) {
-    frontEdges[frontEdges.length - 1] = lastRaw;
+  return stacks;
+}
+
+/**
+ * The stacks laid on the LINES of the front chain, innermost first. The
+ * richest stack (the most fronts, then the one nearest the chain) takes the
+ * inner line; a stack shares a line with every stack whose height it does not
+ * overlap and takes the next line out where it would.
+ *
+ * @returns {Array<Array<stack>>}
+ */
+export function frontChainLines(members) {
+  const order = frontStacks(members)
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => (b.s.values.length - a.s.values.length) || (b.s.right - a.s.right) || (a.i - b.i))
+    .map(({ s }) => s);
+  const lines = [];
+  const lo = (s) => s.edges[0];
+  const hi = (s) => s.edges[s.edges.length - 1];
+  for (const s of order) {
+    let line = lines.find((l) => l.every((o) => lo(s) >= hi(o) - SAME || hi(s) <= lo(o) + SAME));
+    if (!line) {
+      line = [];
+      lines.push(line);
+    }
+    line.push(s);
   }
+  return lines;
+}
+
+/**
+ * LEAF, GAP, LEAF along one run: every face front's two edges (and a face
+ * board's: the HAWA pocket's panel A), and with `ends` the run's first and
+ * last carcass edges too. A pair of doors reads
+ * 376.5 · 3 · 376.5, the stiles and the reveals between two cabinets' leaves
+ * are figures too (his own DXF's bottom chain, 40 · 600 · 3 · 600 · 40), and
+ * with its ends the chain adds up to the unit chain above it, which is the
+ * joiner's check. Without them it is the fronts' own extent, first leaf to
+ * last, which is what a hung run's chain takes: it stands in the open wall
+ * where a tall unit's front may be the next thing beside it.
+ *
+ * @returns {{leafEdges:number[], leaves:number[]}}  empty when no front stands in the run
+ */
+export function leafChains(members, { ends = true } = {}) {
+  const edges = members.flatMap((m) => [...m.result.panels.filter(isFaceFront), ...faceBoards(m)]
+    .flatMap((p) => [m.x + p.box.x, m.x + p.box.x + p.box.w]));
+  if (!edges.length) return { leafEdges: [], leaves: [] };
+  const outer = ends
+    ? [Math.min(...members.map((m) => m.x)), Math.max(...members.map((m) => m.x + m.width))]
+    : [];
+  const leafEdges = uniqueSorted([...outer, ...edges]);
+  return { leafEdges, leaves: chainValues(leafEdges) };
+}
+
+/**
+ * THE TWO VERTICAL CHAINS, AS NUMBERS: every front's own height, and the bands.
+ *
+ * `stacks` are the units' own FRONT, GAP, FRONT (above); `fronts` is every
+ * stack's figures in order. T82 F21: the `floorMm` option of T41 F5c is
+ * retired and read no more, so a caller still passing it changes nothing.
+ */
+export function heightChains(members) {
+  const stacks = frontStacks(members);
   const bandEdges = uniqueSorted([0, ...members.flatMap((m) => [m.base, m.top])]);
   return {
-    frontEdges,
+    stacks,
+    fronts: stacks.flatMap((s) => s.values),
     bandEdges,
-    fronts: chainValues(frontEdges),
     bands: chainValues(bandEdges),
   };
 }
@@ -337,22 +452,24 @@ export function verticalChains(members, { profile, x, textHeight, fronts = true 
   const out = [];
   const top = Math.max(...members.map((m) => m.top));
 
-  // T41-F5c: the legibility floor is the front GAP itself — the air between one
-  // front and the next is not a part and is not dimensioned.
-  const { frontEdges, bandEdges: bands } = heightChains(members, {
-    floorMm: Number(profile?.doors?.gap) || 0,
+  // T82 F21: every unit's own FRONT, GAP, FRONT, one line per overlapping
+  // stack (`frontChainLines`); the T41 floor is retired.
+  const { bandEdges: bands } = heightChains(members);
+  const lines = fronts ? frontChainLines(members) : [];
+  lines.forEach((line, k) => {
+    for (const stack of line) {
+      out.push(...chainDimensions({
+        edges: stack.edges, at: x.right, direction: 'v', offset: W.chainFirst + k * W.chainStep, textHeight,
+      }));
+    }
   });
-  if (fronts && frontEdges.length > 1) {
-    out.push(...chainDimensions({
-      edges: frontEdges, at: x.right, direction: 'v', offset: W.chainFirst, textHeight,
-    }));
-  }
 
   // The BANDS. The floor is always an edge — his left-hand chain starts there
-  // and so does a fitter's tape.
+  // and so does a fitter's tape. T82 F21: one line out from the last line of
+  // fronts.
   if (bands.length > 1) {
     out.push(...chainDimensions({
-      edges: bands, at: x.right, direction: 'v', offset: W.chainFirst + W.chainStep, textHeight,
+      edges: bands, at: x.right, direction: 'v', offset: W.chainFirst + Math.max(1, lines.length) * W.chainStep, textHeight,
     }));
   }
 

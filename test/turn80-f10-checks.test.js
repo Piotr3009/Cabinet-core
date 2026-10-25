@@ -74,7 +74,15 @@ function mockup({ inframe = true, material = 'generic-22' } = {}) {
 // ═══ THE PROBE, AS ASSERTIONS ═════════════════════════════════════════════
 
 test('F10 probe · #40 to #44 are the next rows of the registry, in CLAUDE.md\'s colours; #37 to #39 stay unused', () => {
-  const rows = CHECKS.filter((c) => c.n >= 37);
+  // AMENDED BY T82 F3 (25.10.2026): #37 and #38 are the HAWA pocket's now (KIT_HAWA.lsp
+  // `hawa-check-37`, `hawa-check-38`; the owner: *"wysuwasz pocket door i zakrywasz
+  // szafke lub szafki"*) and #47 its panels' note; this probe reads the in-frame band.
+  assert.deepEqual(CHECKS.filter((c) => c.n === 37 || c.n === 38 || c.n === 47).map((c) => c.label.slice(0, 4)), ['HAWA', 'HAWA', 'HAWA']);
+  // AMENDED BY T82 F9 (25.10.2026): T82 fills #39 (the vanity's trap, the owner: *"prosze
+  // uzyc shallow trap"*) and #45 on; this probe reads the in-frame band, #40 to #44.
+  // AMENDED BY T82 F15 (25.10.2026): #46 the reeds (the owner: *"daj wariant b czyli na styk narazie"*)
+  // stands after the in-frame five with T82's other rows; the band read here is still #40 to #44.
+  const rows = CHECKS.filter((c) => c.n >= 40 && c.n <= 44);
   assert.deepEqual(rows.map((c) => [c.n, c.level]), [[40, 'red'], [41, 'yellow'], [42, 'yellow'], [43, 'yellow'], [44, 'red']]);
   for (const c of rows) assert.match(c.label, /in-frame/i, `#${c.n} says what it is about`);
   assert.deepEqual(Object.values(INFRAME_CHECKS), OURS);

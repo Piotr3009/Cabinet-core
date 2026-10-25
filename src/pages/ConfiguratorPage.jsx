@@ -57,6 +57,8 @@ import { persistProject } from '../lib/persist.js';
 // Turn 39 (CLAUDE.md F7): the warning the CNC export carries when nobody has
 // said what a part is cut from.
 import { cncAssignmentWarning } from '../engine/bom.js';
+// T82 F12, after the review · a note is never a thing to look at before an export.
+import { findingsToAct } from '../engine/checks.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
 // TURN 40 (CLAUDE.md F5): a sheet is a WALL — the whole run, not one cabinet.
@@ -373,11 +375,13 @@ export default function ConfiguratorPage() {
     });
     if (unassigned) notify(unassigned, 'warn');
     const found = runChecks();
-    if (!found.length) return found;
-    const reds = found.filter((f) => f.level === 'red').length;
+    // T82 F12, after the review: what asks something of a person; a note does not.
+    const work = findingsToAct(found);
+    if (!work.length) return found;
+    const reds = work.filter((f) => f.level === 'red').length;
     setCheckOpen(true);
     notify(
-      `Check: ${reds ? `${reds} fault${reds === 1 ? '' : 's'}` : `${found.length} to look at`} `
+      `Check: ${reds ? `${reds} fault${reds === 1 ? '' : 's'}` : `${work.length} to look at`} `
       + 'before this goes to the machine.',
       reds ? 'error' : 'warn',
     );
@@ -598,8 +602,9 @@ export default function ConfiguratorPage() {
 
   /** File ▸ Save as… — a copy under a new name. */
   const onSaveAs = useCallback(async (name) => {
-    const { project: saved, message, tone } = await persistProject({ project, units, asName: name });
-    markSaved(saved);
+    const { project: saved, message, tone, stored } = await persistProject({ project, units, asName: name });
+    // T82 F20, after the review: a copy the shelf refused leaves the job as it was, unsaved.
+    if (stored) markSaved(saved);
     notify(message, tone);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project, units, markSaved]);

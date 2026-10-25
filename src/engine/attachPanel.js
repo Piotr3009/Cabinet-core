@@ -33,6 +33,10 @@
 //   unit right    the mirror of left
 //   unit top      flat, lying on the unit's top plus the gap, its left edge
 //                 on the unit's left span, its back on the unit's back line
+//   unit front    (T82 F19) along, upright, its back on the unit's door face
+//                 plus the gap, its left edge on the unit's left span, on the
+//                 floor when the unit stands on the floor, at its base when
+//                 it hangs
 //   obstacle      a chimney drawn on a wall, or a box typed in the plan, read
 //                 in the frame of the wall it stands against: front (along,
 //                 upright, in front of its face plus the gap), left and right
@@ -46,17 +50,24 @@
 // typed edit of a panel does, so the two can never disagree.
 
 import { boxCorners, wallName } from './room.js';
-import { backStandoff, spanInWallFrame, unitSpan } from './collision.js';
+import {
+  backStandoff, maxDepthOnWall, spanInWallFrame, unitFrontLine, unitSpan,
+} from './collision.js';
 import { unitBase, unitTop, wallGapOf } from './runs.js';
 import { getUnitType, isFreePanel } from './types.js';
 import { freePanelOf, freePanelPatch } from './freePanel.js';
 import { unitName } from './naming.js';
+import { formatMm } from './format.js';
 
 const num = (v, fallback = 0) => (Number.isFinite(Number(v)) && v !== '' && v != null ? Number(v) : fallback);
 const round4 = (v) => Math.round(v * 1e4) / 1e4;
 
-/** The faces a unit offers a panel, in the order the list shows them. */
-export const UNIT_FACES = Object.freeze(['left', 'right', 'top']);
+/**
+ * The faces a unit offers a panel, in the order the list shows them. T82 F19:
+ * its FRONT too, a panel covering a cabinet's front (the cladding the
+ * chat-fix left out), which `collision.js standsInFrontOf` lets stand there.
+ */
+export const UNIT_FACES = Object.freeze(['left', 'right', 'top', 'front']);
 /** The faces an obstacle (a chimney, a box) offers. */
 export const OBSTACLE_FACES = Object.freeze(['front', 'left', 'right']);
 
@@ -157,6 +168,32 @@ export function attachTargetByKey(key, args) {
 }
 
 /**
+ * ─── T82 F17 · HOW FAR OFF ITS WALL A FREE PANEL'S BACK MAY STAND ─────────
+ *
+ * The owner, 25.10.2026 13:36: *"jak mam frontowy komin to nie moge
+ * powiekszyc panela bo mi wchodzi w sciane"*. A panel stuck to a chimney 350
+ * deep stands 340 over the clearance, and `editor.maxInset` (300) is a
+ * CABINET's number: any later inset pulled the panel 40 into the chimney. A
+ * free panel's back inset is capped by the ROOM: the far wall, less the box
+ * the panel fills, less the clearance it keeps off its own wall. The one law:
+ * `setUnitInsets`, the right panel's Back field, the drag off the wall (F16)
+ * and `attachPlan` below all read it. Infinity where no far wall is met.
+ *
+ * @param {{panel:object, wall:object, walls:object[], profile:object}} args
+ * @returns {number}
+ */
+export function freePanelInsetMax({
+  panel, wall, walls = [], profile,
+}) {
+  if (!panel || !wall) return Infinity;
+  const reach = maxDepthOnWall({
+    wall, walls, x: num(panel.position?.x_mm, 0), width: num(panel.params?.width, 0),
+  });
+  if (!(reach > 0)) return Infinity;
+  return Math.max(0, round4(reach - wallGapOf(panel, profile) - num(panel.params?.depth, 0)));
+}
+
+/**
  * THE NUMBERS A SURFACE ASKS OF THE PANEL: `{ wall, x, params, label }`, or
  * `{ error }` in words. `params` is the whole patch for the unit's params (the
  * board's stance and the box it fills, through `freePanelPatch`, plus
@@ -173,7 +210,33 @@ export function attachTargetByKey(key, args) {
  * @param {object} args.profile
  * @param {number} args.roomHeight
  */
-export function attachPlan({
+export function attachPlan(args) {
+  const plan = surfacePlan(args);
+  if (plan.error) return plan;
+  // T82 F17 · the room refuses in words: a surface that would stand the panel
+  // past the far wall (its back inset over `freePanelInsetMax`, read at the
+  // place and in the stance the surface asks) is refused, never squashed.
+  const { panel, walls = [], profile } = args;
+  const at = {
+    ...panel,
+    position: { ...panel.position, wall: plan.wall, x_mm: plan.x },
+    params: { ...panel.params, ...plan.params },
+  };
+  const max = freePanelInsetMax({
+    panel: at, wall: walls[plan.wall], walls, profile,
+  });
+  const inset = num(plan.params?.inset_back_mm, 0);
+  if (inset > max + 1e-6) {
+    return {
+      error: `${plan.label} would stand the panel ${formatMm(inset)} mm off the wall; `
+        + `the room leaves it ${formatMm(max)} mm.`,
+    };
+  }
+  return plan;
+}
+
+/** `attachPlan`'s numbers, before the room has its say on how far out they reach. */
+function surfacePlan({
   panel, target, gap = 0, units = [], walls = [], obstacles = [], profile, roomHeight,
 }) {
   if (!panel || !isFreePanel(panel.type)) return { error: 'Only a free-standing panel can be attached.' };
@@ -235,6 +298,14 @@ export function attachPlan({
     // Beside it: on the floor when the unit stands on the floor, at its base
     // when it hangs, so a cladding panel reaches the floor as a joiner's does.
     const mount = getUnitType(host.type).mount === 'wall' ? round4(unitBase(host, profile)) : 0;
+    // T82 F19 · in front of it: along and upright, its back on the plane of
+    // the unit's doors plus the gap (`unitFrontLine`), from the same floor.
+    if (target.face === 'front') {
+      return {
+        wall: wall.index, x: round4(span.left), label: target.label,
+        params: { ...stance('along', 0), mount_height: mount, inset_back_mm: insetFor(unitFrontLine(host, profile) + g) },
+      };
+    }
     const x = target.face === 'left' ? span.left - g - t : span.right + g;
     return {
       wall: wall.index, x: round4(x), label: target.label,

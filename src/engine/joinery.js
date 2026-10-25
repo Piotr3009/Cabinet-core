@@ -247,6 +247,10 @@ export function panelPlacement(panel) {
     // a back drilled with its dia 3 rows, drawn upright: the BACK's own frame.
     case 'RECESS-BACK':
     case 'BACK':
+    // T82 F9 · the vanity's two rails are the back with its middle cut out
+    // (KIT_VANITY.lsp D2), drawn in the back's own frame: they stand where it stood.
+    case 'RAIL-BOTTOM':
+    case 'RAIL-TOP':
       // ─── Turn 12 (CLAUDE.md F10): A BACK MAY BE DRAWN ROTATED ───
       //
       // Owner: the FRIDGE housing's back panel renders turned 90°, and it was
@@ -511,6 +515,32 @@ export function panelPlacement(panel) {
         u: [-1, 0, 0],
         v: [0, 1, 0],
         n: [0, 0, -1],
+      };
+
+    // ─── T82 F5 · THE HAWA POCKET'S BOARDS (KIT_HAWA.lsp D20) ────────────────
+    // They carry the LISP's holes, seated by engine/cnc/hawa.js in the house's
+    // own frames, and these are READERS of that seating: a panel on the
+    // pocket's left is drawn as BUL is (its pocket face, the front at x 0), on
+    // the right as BUR is (the front at x = w; D20 "their drilling is
+    // mirrored"), read off `meta.pocket.seat`; the door as a FRONT (seen from
+    // its back); the bottom and the top from above, x across from the left
+    // edge, y back from the front edge (hawa-foot's own frame). Right-handed
+    // as the rest (u x v = -n).
+    case 'POCKET-A':
+    case 'POCKET-B': {
+      const seat = panel.meta?.pocket?.seat;
+      if (seat !== 'L' && seat !== 'R') return null;
+      return panelPlacement({ ...panel, part: seat === 'L' ? 'BUL' : 'BUR', meta: {} });
+    }
+    case 'POCKET-DOOR':
+      return panelPlacement({ ...panel, part: 'FRONT', meta: {} });
+    case 'POCKET-BOTTOM':
+    case 'POCKET-TOP':
+      return {
+        origin: [box.x, box.y, box.z + box.d],
+        u: [1, 0, 0],
+        v: [0, 0, -1],
+        n: [0, -1, 0],
       };
 
     // T80 F9 · THE FRAME OF A RUN (KIT_INFRAME.lsp D10): drawn as the sheet

@@ -58,10 +58,14 @@ import { panelRecesses } from '../recesses.js';
 import { wallGapOf } from '../runs.js';
 import { runnerAskFor } from '../runners.js';
 import { corniceSolids } from '../cornice.js';
+import { resolveHandle } from '../handles.js';
+import { getUnitType } from '../types.js';
 import { doorSwing, elevationOutline, frontDetail, panelStyle } from './frontElevation.js';
 import { frontDecorationElevation } from './frontDecorationDrawing.js';
 import { silhouetteMark } from './silhouettes.js';
 import { drawingLayer } from './layers.js';
+// T82 F7 · the HAWA door: a front of the sheets, its hinge bars and its symbols, from the room's one pose module.
+import { isPocketDoor, pocketDoorBarMarks, pocketDoorGeometry, pocketHardwareBoxes } from '../pocketDoorPose.js';
 
 // ═══ THE NUMBERS OF THE KERNEL ═════════════════════════════════════════════
 
@@ -616,7 +620,8 @@ function roomBoards(result) {
 
 /** Is this board a FRONT (a door or a drawer front), the room's `frontKind`? */
 function isRoomFront(panel) {
-  return panel?.part === 'FRONT' || panel?.part === 'DRAWER-FRONT';
+  // T82 F7 · the HAWA pocket door is a front: lifted with the fronts, drawn in their ink.
+  return panel?.part === 'FRONT' || panel?.part === 'DRAWER-FRONT' || isPocketDoor(panel);
 }
 
 /** The shell of a carcass: what the X-ray fades as carcass and every sheet draws in the carcass's own ink. */
@@ -708,7 +713,7 @@ function memberOffset(m, profile) {
  * body. A symbol is a THIN solid on its family's ink; it is hidden by the
  * boards in front of it and hides nothing but itself.
  */
-function hardwareSolids(m, profile) {
+function hardwareSolids(m, profile, defaultHandle = null) {
   const out = [];
   const r = m.result;
   const hw = hardwareInstances(r, profile);
@@ -784,12 +789,18 @@ function hardwareSolids(m, profile) {
     add('kit', 'APPLIANCE', [boxPrism({ x0: kit.x, x1: kit.x + kit.w, y0: kit.y, y1: kit.y + kit.h, z0: kit.z, z1: kit.z + kit.d })],
       { instance: kit, occludes: true, label: kit.label || null, sil: silhouetteMark('kit', kit) });
   }
+  // T82 F7 · the HAWA symbols the room draws (the two hardware zones on panel
+  // B, the vertical profile, the Push ejector), where they stand with the door
+  // shut; none is screwed to the door, so they stay when the fronts are off.
+  for (const b of pocketHardwareBoxes(pocketDoorGeometry(r, profile))) {
+    add(`hawa-${b.kind}`, 'HINGES', [boxPrism(b)], { instance: b });
+  }
   // The handles, standing proud of their fronts as the room models them
   // (3d/Hardware.jsx FrontHandle): seen from the front they are the owner's
   // circle of 30 (a mark), on a plan or a section their own side.
   const K = profile.handles?.knob || {};
   const B = profile.handles?.bar || {};
-  for (const h of handleMarks(m, profile)) {
+  for (const h of handleMarks(m, profile, defaultHandle)) {
     if (h.nx !== 0) continue;
     const face = h.points[0][2];
     if (h.type === 'knob' || h.points.length < 2) {
@@ -819,13 +830,92 @@ function hardwareSolids(m, profile) {
   return out;
 }
 
+// ─── T82 F22 · HANDLES ON THE SHEETS ────────────────────────────────────────
+//
+// The owner, 24.10.2026 (19:34): *"nie widac wogole zeby bylo jakiekolwiek
+// handles nic"*. The probe (verify/t82/f22-probe.md): with no handle chosen
+// the engine drills none (R9, engine/handles.js resolveHandle), so the
+// drill summary is empty and every sheet showed fronts with nothing to pull.
+// CLAUDE.md T82 F22: the fronts sheet then draws the project's DEFAULT
+// handle (`profile.handles.default`, a knob of 30) at the engine's own
+// point; `handles: 'none'` is a choice and draws nothing; the drill summary
+// is untouched. So the sheet asks the engine's law for the point alone, as
+// cabinet.js asks it, and writes no `meta.handle` (the room mounts its 3-D
+// handle on it) and no drill: the CNC, the BOM and the room never see it.
+
+/** The profile's default as a handle record, or null for none. */
+function profileDefaultHandle(profile) {
+  const raw = profile?.handles?.default;
+  const d = typeof raw === 'string' ? { type: raw } : raw;
+  if (!d || (d.type !== 'knob' && d.type !== 'bar')) return null;
+  const centres = d.type === 'bar'
+    ? (Number(d.centres) > 0 ? Number(d.centres) : (Number(profile?.handles?.defaultCentres) || 128))
+    : 0;
+  return { type: d.type, centres };
+}
+
+/**
+ * THE HANDLE A SHEET DRAWS ON A FRONT THE ENGINE FITTED NONE TO, or null.
+ *
+ * Null when the project CHOSE: a handle (bar, knob or J-pull: the engine's
+ * own answer stands, and a J is drawn as no handle), the J-pull of a project
+ * saved as `style: 'HJ'` (lib/frontOpening.js reads it as J-pull), or NONE,
+ * which the project already says in two words: push-to-open written by the
+ * Settings opening tile and the Hardware step's runner switch
+ * (`runners.variant 'T'`, the MOVENTO TIP-ON, on the design itself and never
+ * the profile's fallback for a project that has not answered), and the
+ * hardware block's `handles: 'none'` (T32). Else the profile's default.
+ *
+ * @param {object|null} design  the project design (migrated or raw)
+ * @param {object} profile
+ * @returns {{type:'knob'|'bar', centres:number}|null}
+ */
+export function sheetDefaultHandle(design, profile) {
+  const chosen = design?.fronts?.handle;
+  if (chosen && chosen.type) return null;
+  if (design?.fronts?.style === 'HJ') return null;
+  if (String(design?.hardware?.handles || '').toLowerCase() === 'none') return null;
+  if (String(design?.runners?.variant || '').toUpperCase() === 'T') return null;
+  return profileDefaultHandle(profile);
+}
+
+/**
+ * Does this front take the sheet's default handle? A house front (the
+ * engine's handle law gives it a class) on a unit that is not opened by a
+ * push of its own. One predicate, so a kit with its own opening says so
+ * here: PART A's HAWA pocket door (`POCKET-DOOR`, role `pocket_door`, Push
+ * by HAWA's hardware) has no class and is skipped; the covered units' doors
+ * are dropped by the pocket in the engine. HOOK (A5, F7): a further push
+ * rule of a new kit joins the `push` line below.
+ *
+ * AFTER THE REVIEW (verify:sheets:2): the default is only for a front with
+ * NOTHING to pull. A front that carries a handle of its own takes none,
+ * whatever the project says: its own record (DoorModal's per-front handle,
+ * a J-pull with "apply to all" unticked: `params.front_handles`, which
+ * cabinet.js reads as `own`), any handle or J edge the engine wrote on it
+ * (`meta.handle`, `meta.jpull`, `cnc.jpull`), or a handleless shape whose
+ * groove is its pull (front types `H` and `HJ`). One list: a further pull
+ * of a front's own joins `ownsAPull`.
+ */
+function ownsAPull(panel, unit) {
+  if (unit?.params?.front_handles?.[panel.id]) return true;
+  if (panel.meta?.handle || panel.meta?.jpull || panel.cnc?.jpull) return true;
+  const style = String(panel.meta?.frontType || '').toUpperCase();
+  return style === 'H' || style === 'HJ';
+}
+
+function takesSheetDefault(panel, unit) {
+  if (panel?.role !== 'front') return false;
+  if (ownsAPull(panel, unit)) return false;
+  const push = panel.meta?.push === true || unit?.params?.pocket?.push === true;
+  return !push;
+}
+
 /** The handles of one member, as the room places them (out of the front's cut frame). */
-function handleMarks(m, profile) {
+function handleMarks(m, profile, defaultHandle = null) {
   const out = [];
   const r = m.result;
-  for (const h of r.drillSummary?.handles || []) {
-    const p = (r.panels || []).find((q) => q.id === h.panel && q.box);
-    if (!p) continue;
+  const place = (p, h, extra = {}) => {
     const box = p.box;
     // The leaf's face normal (3d/Hardware.jsx FrontHandle `nx`): a leaf standing along z is not drawn on an elevation.
     // eslint-disable-next-line no-nested-ternary
@@ -834,7 +924,32 @@ function handleMarks(m, profile) {
     const at = (x, y) => (nx > 0 ? [box.x + box.w, box.y + Number(y), box.z + Number(x)]
       : (nx < 0 ? [box.x, box.y + Number(y), box.z + box.d - Number(x)] : [box.x + box.w - Number(x), box.y + Number(y), faceZ]));
     const holes = Array.isArray(h.holes) && h.holes.length ? h.holes : [[h.x, h.y]];
-    out.push({ type: h.type, panel: p.id, points: holes.map(([x, y]) => at(x, y)), axis: h.axis, nx });
+    out.push({ type: h.type, panel: p.id, points: holes.map(([x, y]) => at(x, y)), axis: h.axis, nx, ...extra });
+  };
+  const drilled = new Set();
+  for (const h of r.drillSummary?.handles || []) {
+    const p = (r.panels || []).find((q) => q.id === h.panel && q.box);
+    if (!p) continue;
+    drilled.add(p.id);
+    place(p, h);
+  }
+  // T82 F22 · the default, on every front the engine fitted none to, at the
+  // point the engine's law gives it (cabinet.js asks resolveHandle with the
+  // same panel, unit type, hinge and frame), drilled nowhere.
+  if (defaultHandle) {
+    const unitType = getUnitType(m.unit?.type ?? r.params?.type);
+    const cabinetHinge = String(r.params?.hinge || profile?.doors?.defaultHinge || 'L').toUpperCase() === 'R' ? 'R' : 'L';
+    for (const p of r.panels || []) {
+      if (!p.box || drilled.has(p.id) || !takesSheetDefault(p, m.unit)) continue;
+      const got = resolveHandle({
+        panel: p, unitType, project: defaultHandle, own: null, hinge: p.meta?.hinge || cabinetHinge, frame: p.meta?.shaker?.frame ?? null,
+      }, profile);
+      if (!got || got.system === 'jpull' || !got.reference) continue;
+      place(p, {
+        type: got.type, axis: got.reference.axis, x: got.reference.x, y: got.reference.y,
+        holes: got.holes.map((k) => [k.x, k.y]),
+      }, { fallback: true });
+    }
   }
   return out;
 }
@@ -847,7 +962,7 @@ function handleMarks(m, profile) {
  * @param {object} args    { profile, worktops, frontTypeOf, shakerFrame, clipX: [x0, x1] | null }
  */
 export function runSolids(group, {
-  profile, worktops = [], frontTypeOf = null, shakerFrame = null,
+  profile, worktops = [], frontTypeOf = null, shakerFrame = null, defaultHandle = null,
 } = {}) {
   const solids = [];
   const marks = [];
@@ -875,7 +990,7 @@ export function runSolids(group, {
         member: m,
       });
     }
-    for (const s of hardwareSolids(m, profile)) {
+    for (const s of hardwareSolids(m, profile, defaultHandle)) {
       solids.push({ ...s, unitId: m.unit.id, num, prisms: s.prisms.map((pr) => movePrism(pr, off)), offset: off, member: m });
     }
     // The cornice: bought moulding, drawn from assemblies.cornice (3d/Cornice.jsx).
@@ -906,6 +1021,11 @@ export function runSolids(group, {
       const host = `${m.unit.id}:${p.id}`;
       const face = (p.box.z + p.box.d) + off[2];
       const lift2 = (x, y) => [x + off[0], y + off[1], face];
+      // T82 F7, after the review: the HAWA door wears the run's finish in the
+      // room (A2: its meta.frontType, its shaker recess, the decoration pass),
+      // so its face is drawn as a front's (CLAUDE.md T82 F6, *"the door in the
+      // front finish of the run"*). Its handle is the engine's (a Pull door's
+      // drill summary); a Push door has none.
       const detail = p.meta?.frontDecoration
         ? frontDecorationElevation(p)
         : frontDetail(p.box, p.meta?.frontType || style || profile.front.defaultType, profile, shakerFrame);
@@ -926,10 +1046,12 @@ export function runSolids(group, {
         }
       }
     }
-    for (const h of handleMarks(m, profile)) {
+    for (const h of handleMarks(m, profile, defaultHandle)) {
       const host = `${m.unit.id}:${h.panel}`;
       const pts = h.points.map((q) => [q[0] + off[0], q[1] + off[1], q[2] + off[2]]);
-      marks.push({ kind: 'handle', host, front: true, type: h.type, pts, axis: h.axis, standing: h.nx !== 0 });
+      marks.push({
+        kind: 'handle', host, front: true, type: h.type, pts, axis: h.axis, standing: h.nx !== 0, ...(h.fallback ? { fallback: true } : {}),
+      });
     }
     // The hinge bars: one per cup, on the hinge edge of the leaf (CLAUDE.md F3).
     const hinges = hardwareInstances(r, profile).hinges;
@@ -948,6 +1070,8 @@ export function runSolids(group, {
         });
       }
     }
+    // T82 F7 · the HAWA door's bars: its hinge edge, at the cups the engine drills.
+    marks.push(...pocketDoorBarMarks(m, off, profile));
   }
   // The worktops of this wall (engine/worktop.js worktopsFor, the store's slabs).
   (worktops || []).forEach((w, i) => {
@@ -961,8 +1085,103 @@ export function runSolids(group, {
       layer: 'WORKTOP', occludes: true, worktop: g,
       prisms: [{ axis: 1, lo: g.y, hi: g.y + g.h, outline: orient(outline, true), holes: [] }],
     });
+    // ─── T82 F11 · THE BASIN SET INTO THE SLAB, IN SECTION ─────────────────
+    // The owner, 25.10.2026 (12:57): *"dodajesz tylko do widoku"*. A vanity's
+    // basin (engine/worktop.js cutoutsFor, kind 'basin') on the appliance ink
+    // (what the client supplies, blue, dashed: T71), occluding nothing: the
+    // bowl's half ellipse in the knife's plane, swept across the basin's
+    // width. A section's solid only: the plan draws the oval from the
+    // cut-out itself (setPlan.js), the elevation is the fronts'.
+    (g.cutouts || []).filter((c) => c.kind === 'basin').forEach((c, k) => {
+      const depth = Number(c.depthMm) || 0;
+      const top = g.y + g.h;
+      if (!(depth > 0) || !(c.w > 0) || !(c.d > 0)) return;
+      const ring = [];
+      for (let j = 0; j <= 24; j += 1) {
+        const a = (Math.PI * j) / 24;
+        ring.push([c.cz + (c.d / 2) * Math.cos(a), top - depth * Math.sin(a)]);
+      }
+      solids.push({
+        key: `basin:${g.slabId || g.id || i}:${c.unitId}:${c.basin ?? k}`, kind: 'basin', part: 'BASIN', role: 'basin',
+        front: false, shell: false, layer: 'APPLIANCE', occludes: false, views: ['section'],
+        prisms: [{ axis: 0, lo: c.cx - c.w / 2, hi: c.cx + c.w / 2, outline: orient(ring, true), holes: [], smooth: true }],
+      });
+    });
   });
   return { solids, marks };
+}
+
+// ═══ T82 F24 · ONE DASHED LINE FOR A BOARD SEEN EDGE-ON ════════════════════
+//
+// The owner, 24.10.2026 (19:34): *"przerywana linia tez nie, bedzie jedna
+// linia typu przerywana a nie podwojna bo to mylace bardzo jest"*. A plinth
+// under a plan's cut was every edge of its top face, dashed: its front face,
+// its back face and two 18 mm ticks. CLAUDE.md T82 F24: a board hidden under
+// the cut that is SEEN EDGE-ON (the plinth, a rail) is one dashed line at its
+// face toward the room, on a layer of its own.
+
+/**
+ * Which of a board's two faces across its thin axis `k` looks at the room:
+ * +1 the far one, -1 the near one. The room is where its own unit's FRONTS
+ * stand (a toe kick is there for the boot in front of them): the fronts
+ * beside it along `j` vote. A unit with no fronts: a board along the run
+ * (thin in z) faces +z, the run frame's room; a board across it (thin in x)
+ * faces along its role's other boards (the true L's other toe kick, which
+ * runs on into the open floor), else the unit's middle.
+ */
+function roomwardSide(s, k, j, lo, hi, profile) {
+  const m = s.member;
+  const mid = (lo[k] + hi[k]) / 2;
+  if (!m?.result) return 1;
+  const off = memberOffset(m, profile);
+  const span = (b) => {
+    const a0 = [b.x + off[0], b.y + off[1], b.z + off[2]];
+    return [a0, [a0[0] + b.w, a0[1] + b.h, a0[2] + b.d]];
+  };
+  let vote = 0;
+  for (const p of roomBoards(m.result).filter(isRoomFront)) {
+    const [a0, a1] = span(p.box);
+    if (a1[j] <= lo[j] + EPS_D || a0[j] >= hi[j] - EPS_D) continue;
+    vote += Math.sign((a0[k] + a1[k]) / 2 - mid);
+  }
+  if (vote) return Math.sign(vote);
+  if (k !== 0) return 1;
+  let along = 0;
+  for (const p of roomBoards(m.result)) {
+    if (p.role !== s.role || p.id === s.panelId) continue;
+    const [a0, a1] = span(p.box);
+    along += Math.sign((a0[0] + a1[0]) / 2 - mid);
+  }
+  if (along) return Math.sign(along);
+  return Math.sign(off[0] + (Number(m.result.params?.width) || 0) / 2 - mid) || 1;
+}
+
+/**
+ * The one line of a board seen edge-on in an orthographic view, as two
+ * screen points, or null where the view sees it face-on (its thinnest
+ * extent lies along the view) or it is no board.
+ */
+function edgeOnLine(s, V, profile) {
+  if (!V.ortho || s.kind !== 'board' || !s.prisms?.length) return null;
+  const va = [0, 1, 2].find((i) => Math.abs(V.dir[i]) > 0.5);
+  const lo = [Infinity, Infinity, Infinity];
+  const hi = [-Infinity, -Infinity, -Infinity];
+  for (const pr of s.prisms) {
+    const b = prismBounds(pr);
+    for (let i = 0; i < 3; i += 1) { lo[i] = Math.min(lo[i], b.lo[i]); hi[i] = Math.max(hi[i], b.hi[i]); }
+  }
+  const ext = [0, 1, 2].map((i) => hi[i] - lo[i]);
+  const k = [0, 1, 2].reduce((best, i) => (ext[i] < ext[best] ? i : best), 0);
+  if (k === va) return null;
+  const j = 3 - va - k;
+  if (!(ext[j] > ext[k])) return null;
+  const A = [0, 0, 0];
+  A[va] = V.dir[va] < 0 ? hi[va] : lo[va];
+  A[k] = roomwardSide(s, k, j, lo, hi, profile) > 0 ? hi[k] : lo[k];
+  A[j] = lo[j];
+  const B = [...A];
+  B[j] = hi[j];
+  return [V.screen(A), V.screen(B)];
 }
 
 // ═══ THE MODES ═════════════════════════════════════════════════════════════
@@ -1003,9 +1222,11 @@ function inkOf(solid, mode) {
 /** Stage 1: the faces, edges and marks of one group in its own run frame. */
 function buildScene(group, {
   view, mode = 'fronts', cut = null, beyond = null, clipX = null, skipSolid = null,
-  profile, worktops = [], frontTypeOf = null, shakerFrame = null, solidsIn = null,
+  profile, worktops = [], frontTypeOf = null, shakerFrame = null, solidsIn = null, defaultHandle = null,
 }) {
-  const { solids: all, marks } = solidsIn || runSolids(group, { profile, worktops, frontTypeOf, shakerFrame });
+  const { solids: all, marks } = solidsIn || runSolids(group, {
+    profile, worktops, frontTypeOf, shakerFrame, defaultHandle,
+  });
   const faceOn = view === 'front' || view === 'perspective';
   // The cut plane: a plan keeps what is below it, a section what is beyond it.
   const plane = cut == null ? null
@@ -1014,6 +1235,8 @@ function buildScene(group, {
   const live = [];
   for (const s of all) {
     if (!keeps(s, mode)) continue;
+    // T82 F11 · a solid drawn in some views only (the basin: the section's).
+    if (Array.isArray(s.views) && !s.views.includes(view)) continue;
     if (skipSolid && skipSolid(s)) continue;
     // A handle seen face on is the owner's mark (a circle, a bar), not its solid.
     if (s.frontMark && faceOn) continue;
@@ -1142,9 +1365,28 @@ function renderScene(scene, V, {
   const longEnough = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]) >= (minEdge || 0) - 1e-9;
   const seenXray = new Set();
   const line = (a, b, props) => ({ kind: 'line', x1: a[0], y1: a[1], x2: b[0], y2: b[1], ...props });
+  // T82 F24 · a solid `hiddenAs` names a LAYER for, seen edge-on: ONE dashed
+  // line at its face toward the room, on that layer, in that layer's pen.
+  const asOneLine = new Set();
+  if (hiddenAs && V.ortho && !xray) {
+    for (const s of live) {
+      const layer = hiddenAs(s);
+      if (typeof layer !== 'string') continue;
+      const seg = edgeOnLine(s, V, profile);
+      if (!seg) continue;
+      asOneLine.add(s.key);
+      const [a, b] = seg;
+      if (!longEnough(a, b)) continue;
+      entities.push(line(a, b, {
+        layer, pen: drawingLayer(layer).pen, hidden: true, src: s.key, ...(s.panelId ? { part: s.panelId } : {}), dashedSolid: true, edgeOn: true,
+      }));
+      census.hidden += 1;
+    }
+  }
   for (const e of edges) {
     const adj = e.faces.map((id) => faceById.get(id)).filter(Boolean);
     const s = e.solid;
+    if (asOneLine.has(s.key)) continue;
     // A curved side (a cylinder's facets) shows only its silhouette.
     if (e.smooth && adj.filter((f) => isFacing.get(f.id)).length !== 1) continue;
     const cutEdge = Boolean(e.cut) || adj.some((f) => f.cut);
@@ -1181,9 +1423,12 @@ function renderScene(scene, V, {
       skip: new Set(e.faces), tie: tieFor(s), hiddenToo: Boolean(dashed), inner,
     });
     if (dashed) {
+      // T81: on SHELVES in the HIDDEN pen; T82 F24: a named layer in its own pen.
+      const dashLayer = typeof dashed === 'string' ? dashed : 'SHELVES';
+      const dashPen = typeof dashed === 'string' ? drawingLayer(dashed).pen : 'HIDDEN';
       for (const [a, b] of [...parts.shown, ...parts.hidden]) {
         if (!longEnough(a, b)) continue;
-        entities.push(line(a, b, { layer: 'SHELVES', pen: 'HIDDEN', hidden: true, src: s.key, ...(s.panelId ? { part: s.panelId } : {}), dashedSolid: true }));
+        entities.push(line(a, b, { layer: dashLayer, pen: dashPen, hidden: true, src: s.key, ...(s.panelId ? { part: s.panelId } : {}), dashedSolid: true }));
         census.hidden += 1;
       }
       continue;
@@ -1315,7 +1560,9 @@ function renderScene(scene, V, {
         for (const P of shown) {
           const c = V.screen(P);
           const r = V.ortho ? knobD / 2 : (knobD / 2) * (V.focal / Math.max(1, V.depth(P)));
-          entities.push({ kind: 'circle', layer: 'HANDLES', cx: c[0], cy: c[1], r, pen: 'VISIBLE', src: mk.host, handle: 'knob' });
+          entities.push({
+            kind: 'circle', layer: 'HANDLES', cx: c[0], cy: c[1], r, pen: 'VISIBLE', src: mk.host, handle: 'knob', ...(mk.fallback ? { defaultHandle: true } : {}),
+          });
         }
       } else {
         // A bar: its two fixings, joined by a line of the bar's own length.
@@ -1326,12 +1573,16 @@ function renderScene(scene, V, {
         const u = [(P1[0] - P0[0]) / len, (P1[1] - P0[1]) / len, (P1[2] - P0[2]) / len];
         const a = V.screen([P0[0] - u[0] * over, P0[1] - u[1] * over, P0[2] - u[2] * over]);
         const b = V.screen([P1[0] + u[0] * over, P1[1] + u[1] * over, P1[2] + u[2] * over]);
-        entities.push(line(a, b, { layer: 'HANDLES', pen: 'VISIBLE', src: mk.host, handle: 'bar' }));
+        entities.push(line(a, b, {
+          layer: 'HANDLES', pen: 'VISIBLE', src: mk.host, handle: 'bar', ...(mk.fallback ? { defaultHandle: true } : {}),
+        }));
         const post = (Number(B.postDiameter) || 10) / 2;
         for (const P of [P0, P1]) {
           const c = V.screen(P);
           const r = V.ortho ? post : post * (V.focal / Math.max(1, V.depth(P)));
-          entities.push({ kind: 'circle', layer: 'HANDLES', cx: c[0], cy: c[1], r, pen: 'THIN', src: mk.host, handle: 'fixing' });
+          entities.push({
+            kind: 'circle', layer: 'HANDLES', cx: c[0], cy: c[1], r, pen: 'THIN', src: mk.host, handle: 'fixing', ...(mk.fallback ? { defaultHandle: true } : {}),
+          });
         }
       }
     } else if (mk.kind === 'bar') {
@@ -1384,21 +1635,25 @@ function renderScene(scene, V, {
  *   clipX      [x0, x1]: every solid clipped to this stretch (the unit card)
  *   camera     { P, T } for the perspective
  *   hiddenAs   (solid) => true for a solid drawn DASHED, seen or not, and
- *              hiding nothing (the plinth under a plan's cut)
+ *              hiding nothing, on SHELVES; or a LAYER NAME (T82 F24): a
+ *              board seen edge-on is then ONE dashed line at its face toward
+ *              the room on that layer (the plinth under a plan's cut)
  *   skipSolid  (solid) => true for a solid left out of this view
  *   minEdge    a visible piece shorter than this (drawing mm) is noise
  *   solidsIn   the `runSolids` answer, when the caller already holds it
+ *   defaultHandle  T82 F22: the handle drawn on a front the engine fitted
+ *              none to (`sheetDefaultHandle`), or null; never drilled
  *   profile, worktops, frontTypeOf, shakerFrame
  * @returns {{entities:Array, solids:Array, census:object, view:object}}
  */
 export function projectRun(group, {
   view = 'front', mode = 'fronts', cut = null, beyond = null, clipX = null, camera = null,
   hiddenAs = null, skipSolid = null, minEdge = 0, profile, worktops = [], frontTypeOf = null, shakerFrame = null,
-  solidsIn = null,
+  solidsIn = null, defaultHandle = null,
 } = {}) {
   const V = view === 'perspective' ? perspectiveView(camera.P, camera.T) : orthoView(view);
   const scene = buildScene(group, {
-    view: V.name, mode, cut, beyond, clipX, skipSolid, profile, worktops, frontTypeOf, shakerFrame, solidsIn,
+    view: V.name, mode, cut, beyond, clipX, skipSolid, profile, worktops, frontTypeOf, shakerFrame, solidsIn, defaultHandle,
   });
   const { entities, census } = renderScene(scene, V, { mode, hiddenAs, minEdge, profile });
   return { entities, solids: scene.live, census, view: V };

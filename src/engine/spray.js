@@ -138,6 +138,12 @@ export function sprayRuleFor(panel, { set2 = false, openUnit = false, profile = 
   if (role === 'plinth') return { id: 'plinth', kind: null };
   if (role === 'infill') return { id: isTopInfill(panel) ? 'top_infill' : 'infill', kind: null };
   if (role === 'pelmet') return { id: 'pelmet', kind: null };
+  // T82 F4 - the HAWA pocket (KIT_HAWA.lsp D3, the front's material): its door
+  // is a door, all round (rule 1); its two panels stand beside the carcasses
+  // as an end panel does, one face, the back framed, four edges (rule 7):
+  // PROPOSED, owner to confirm.
+  if (role === 'pocket_door') return { id: 'door', kind: null };
+  if (role === 'pocket_panel') return { id: 'end_panel', kind: null };
   if (role === 'upstand') return null;                                        // 18 - worktop material
   // 20 - open shelves, desk and sideboard tops 25: all around, whatever set.
   if (role === 'shelf' || role === 'top') {

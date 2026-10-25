@@ -16,6 +16,9 @@ import { boxCorners } from './room.js';
 // It lives in `runs.js` because CLAUDE.md F14 puts it there, and `runs.js`
 // imports nothing but `types.js`, so there is no cycle to weigh.
 import { wallGapOf } from './runs.js';
+// T82 F19 · whether a unit is a free panel (types.js is a leaf `runs.js`
+// already imports: no cycle).
+import { getUnitType, isFreePanel } from './types.js';
 
 /** Clamp that survives a reversed range: never returns a value outside [lo,hi]. */
 function clampTo(value, lo, hi) {
@@ -306,6 +309,64 @@ export function backStandoff(unit, profile) {
 }
 
 /**
+ * T82 F19 · how far a unit's FRONT FACE stands off its wall: its own back line
+ * (`backStandoff`, so a cabinet stood off for a pipe counts), its carcass, the
+ * door gap and its front. The house's sum for the plane of the doors
+ * (`projectStore refreshAutoParts frontFaceDepthOf`, `corners.js
+ * cornerFaceMm`), read from where the unit really stands.
+ *
+ * T82 F19, after the review: a unit with NO front stands to its carcass face,
+ * no door gap and no front board (`front_t` is on every unit, a free panel's
+ * too): Attach "Unit FP01, front" left 28 mm of air at gap 0.
+ */
+export function unitFrontLine(unit, profile) {
+  const depth = Math.max(0, Number(unit?.params?.depth) || 0);
+  const carcass = backStandoff(unit, profile) + depth;
+  if (!unitHasFront(unit)) return carcass;
+  const gap = Math.max(0, Number(profile?.doors?.gap) || 0);
+  const front = Number(unit?.params?.front_t) > 0 ? Number(unit.params.front_t) : Math.max(0, Number(profile?.front?.thickness) || 0);
+  return carcass + gap + front;
+}
+
+/**
+ * T82 F19, after the review · does a front board stand before this unit's
+ * carcass? Its doors (the engine's own reading of `params.doors`: `false`, 0
+ * or a count of 0 is none, `cabinet.js normalizeParams`), else its drawer
+ * fronts where they are its face (a drawer unit, a chest, a vanity); never a
+ * free panel, a wine rack, a hood canopy or a pocket.
+ */
+export function unitHasFront(unit) {
+  if (!unit || isFreePanel(unit.type)) return false;
+  const supports = getUnitType(unit.type)?.supports || {};
+  if (!supports.doors) return Boolean(supports.drawers);
+  const doors = unit.params?.doors;
+  if (doors === false || doors === 0) return false;
+  if (doors && typeof doors === 'object' && Number.isFinite(Number(doors.count)) && Number(doors.count) === 0) return false;
+  return true;
+}
+
+/**
+ * ─── T82 F19 · THE FRONT OF A UNIT ──────────────────────────────────────────
+ *
+ * CLAUDE.md T82 F19: *"a free panel whose back line stands at or beyond a
+ * unit's front line ... does not obstruct that unit and is not obstructed by
+ * it"*: a panel covering a cabinet's front (the owner's cladding of 24.10's
+ * list) is not in the cabinet's way. The store's `obstructs` held a free panel
+ * off a cabinet on its x span and height band and never read depth.
+ *
+ * True only for `panel` a FREE_PANEL and `unit` not one (two panels meet
+ * anyway, T74 F13), both on the same wall, `unit` square to it, and the
+ * panel's back line (`backStandoff`) at or past the unit's front line. The
+ * one predicate: `obstructs` asks it both ways round.
+ */
+export function standsInFrontOf(panel, unit, profile) {
+  if (!panel || !unit || !isFreePanel(panel.type) || isFreePanel(unit.type)) return false;
+  if ((panel.position?.wall ?? 0) !== (unit.position?.wall ?? 0)) return false;
+  if ((Number(unit.position?.rotation_deg) || 0) % 360) return false;
+  return backStandoff(panel, profile) >= unitFrontLine(unit, profile) - 1e-6;
+}
+
+/**
  * How much wall a unit takes up beyond its own width, per side.
  *
  * Two different things add to it and they add TOGETHER: an end panel, which is
@@ -462,12 +523,21 @@ export function spanInWallFrame(points, wall) {
  *
  * Its own function because two different questions ask it — the drag clamp
  * (through `wallObstacles`) and the PLACEMENT search, which takes bare spans.
+ *
+ * T82 F17, after the review: `back` is where that band STARTS off the wall
+ * line. 0 (the wall line) for every cabinet, as since turn 14; a free panel's
+ * own back line (`backStandoff`) for a panel, so a board stood 700 off the
+ * wall is checked at 700 to 718, never at 0 to 18: a box where the board
+ * really is stops it, a box behind it does not.
  */
-export function boxSpansOnWall({ wall, depth, boxes = [], enter = null }) {
+export function boxSpansOnWall({
+  wall, depth, boxes = [], enter = null, back = 0,
+}) {
   const out = [];
+  const from = Number(back) || 0;
   for (const box of boxes || []) {
     const span = spanInWallFrame(boxCorners(box), wall);
-    if (span.far <= 0 || span.near >= (Number(depth) || 0)) continue;
+    if (span.far <= from || span.near >= from + (Number(depth) || 0)) continue;
     if (span.right <= 0 || span.left >= wall.width) continue;
     // ─── CHAT-FIX 15.10.2026: THE OBSTACLE A NOTCH IS CUT FOR ─────────────
     // The owner: *"komin nie ma mozliwosci automatycznego wycinania w szafce
@@ -517,11 +587,18 @@ export function boxSpansOnWall({ wall, depth, boxes = [], enter = null }) {
  *            this wall's frame, ignored unless it reaches into the depth band
  *            this unit occupies — because to a cabinet being slid along a wall
  *            a chimney and a neighbour are the same fact.
+ *   back     T82 F17, after the review: where the band starts off the wall
+ *            line, 0 for a cabinet (unchanged), a free panel's own back line
+ *            (`backStandoff`): boxes and units round the corner count where
+ *            they reach into `[back, back + depth]`
  */
 export function wallObstacles({
-  wall, walls, depth, others = [], boxes = [], enter = null,
+  wall, walls, depth, others = [], boxes = [], enter = null, back = 0,
 }) {
-  const out = [...boxSpansOnWall({ wall, depth, boxes, enter })];
+  const from = Number(back) || 0;
+  const out = [...boxSpansOnWall({
+    wall, depth, boxes, enter, back: from,
+  })];
   for (const o of others) {
     if (o.wall === wall.index && !o.rotation) {
       out.push({ left: o.x_mm, right: o.x_mm + o.width, label: o.label, corner: false });
@@ -540,7 +617,9 @@ export function wallObstacles({
       continue;
     }
     // Behind this wall, or past the front of this unit: not in the way.
-    if (span.far <= 0 || span.near >= depth) continue;
+    // (T82 F17, after the review: behind a free panel's back line, or past its
+    // face, `from` its own back line.)
+    if (span.far <= from || span.near >= from + depth) continue;
     if (span.right <= 0 || span.left >= wall.width) continue;
     // ─── T75 F2 · THE CORNER STOP ──────────────────────────────────────────
     // *"A unit on wall B that approaches a corner where wall A's run ends in a
@@ -656,7 +735,10 @@ export function clampUnitDepth({ depth, x, width, wall, walls, others = [], back
     );
     // Only a neighbour standing in front of this unit's width can limit it.
     if (span.right <= x || span.left >= x + width) continue;
-    if (span.far <= 0) continue;
+    // T82 F17, after the review: a neighbour entirely BEHIND this unit's back
+    // line (a free panel stood 1000 off the wall in front of a corner cabinet)
+    // limits nothing in front of it; with no back inset this is the old `<= 0`.
+    if (span.far <= back) continue;
     const free = span.near - clearance - back;
     if (free < max) { max = Math.max(0, free); limitedBy = o.label || 'a neighbour'; }
   }

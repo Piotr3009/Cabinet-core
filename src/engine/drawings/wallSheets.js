@@ -64,6 +64,8 @@ import { buildPlan, measurePlan } from './setPlan.js';
 import { sectionStations, stationSet } from './setSection.js';
 import { buildRoom3d } from './setPerspective.js';
 import { buildCutList, buildVisual, cutListPages, visualPictureBox } from './setPaper.js';
+// T82 F22 · the handle a sheet draws where the project chose none.
+import { sheetDefaultHandle } from './projector.js';
 import { decorById, decorIdFromFinishId, decorLabel } from '../decors.js';
 import { worktopsFor } from '../worktop.js';
 
@@ -150,6 +152,10 @@ export function wallDrawingSheets({
   // T75 F9 · …a cabinet on an island face is a cabinet: its job has a set.
   if (!standing.length) return [];
   const shakerFrame = shakerFrameMm(design ?? project?.design ?? null, profile);
+  // T82 F22 (*"nie widac wogole zeby bylo jakiekolwiek handles"*): the handle
+  // the fronts and the X-ray draw where the project chose none; null when it
+  // chose one, or chose none (push-to-open). Never drilled.
+  const defaultHandle = sheetDefaultHandle(design ?? project?.design ?? null, profile);
   const theRoom = room || project?.room || null;
   // The worktops: the store's own resolution when the caller passes it, else
   // resolved here from the design's records and the entries' units, so a
@@ -181,7 +187,9 @@ export function wallDrawingSheets({
       profile,
       drawing: {
         measure: () => measureRun(group, { room: theRoom, worktops: onWall, profile }),
-        build: (ctx) => buildRunElevation(group, { mode, room: theRoom, worktops: onWall, frontTypeOf, shakerFrame, profile, ctx }),
+        build: (ctx) => buildRunElevation(group, {
+          mode, room: theRoom, worktops: onWall, frontTypeOf, shakerFrame, profile, ctx, defaultHandle,
+        }),
       },
       caption: { title: `${no} · ${label.toUpperCase()} · ${name.toUpperCase()}`, sub },
       column: { room: theRoom, highlight: group.wall, arrow: true, notes: SET_NOTES },

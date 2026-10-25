@@ -128,6 +128,26 @@ export function appliedStripNotes(panels) {
 }
 
 /**
+ * T82 F9, after the review · the carcass TOP of a vanity under a basin
+ * (KIT_VANITY.lsp D18): its oval is a NOTE, cut on site to the basin's
+ * template, never on the CNC (`meta.vanityBasins`, written by
+ * engine/vanity.js applyVanityTop). The TOP itself is `cut`; the hole in it
+ * is `manual`, one row per TOP, as the applied strips' gluing is.
+ */
+export function vanityTopNotes(panels) {
+  return (panels || [])
+    .filter((p) => p?.meta?.vanityBasins && (p.meta.vanityBasins.cutouts || []).length)
+    .map((p) => ({
+      id: `${p.id} basin cut-out`,
+      part: 'BASIN-CUTOUT',
+      host: p.id,
+      cutouts: p.meta.vanityBasins.cutouts.length,
+      note: p.meta.vanityBasins.note,
+      state: 'manual',
+    }));
+}
+
+/**
  * Every line of one result that is NOT `cut`, with its state: what a joiner
  * has to do or buy beyond what the machine makes.
  *
@@ -141,6 +161,8 @@ export function notCutParts(result) {
       .filter((r) => r.state !== 'cut'),
     // T76 F5 · and the strips a joiner glues on, as the worktop joint is listed.
     ...appliedStripNotes(result?.panels).map((n) => ({ id: n.id, part: n.part, state: n.state })),
+    // T82 F9, after the review · and the basin's oval in a vanity's carcass TOP.
+    ...vanityTopNotes(result?.panels).map((n) => ({ id: n.id, part: n.part, state: n.state })),
   ];
 }
 

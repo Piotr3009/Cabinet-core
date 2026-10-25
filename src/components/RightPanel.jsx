@@ -3,11 +3,17 @@ import { useUiStore } from '../stores/uiStore.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { HEIGHT_GROUPS, getUnitType, isFreePanel, profilePath } from '../engine/types.js';
+import { HEIGHT_GROUPS, getUnitType, isFreePanel, isHawaPocket, isVanityKit, profilePath } from '../engine/types.js';
+// T82 F13 · how a vanity stands: floating, at what height (KIT_VANITY.lsp D19).
+import { floatHeightOf } from '../engine/types.js';
 import { doorCountFor, leafCountRefusal, minDrawerFrontHeight } from '../engine/cabinet.js';
-import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
+import { takesPlinth, unitEndPanelDrop } from '../engine/autoparts.js';
 import { roomWalls, wallLabel } from '../engine/room.js';
-import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
+import {
+  hasBottomMask, hasTopInfill, pocketClaimRefusal, pocketNeighbours, pocketRecutRefusal,
+} from '../engine/runs.js';
+// T82 F2 · the HAWA pocket's choices, read the one way (KIT_HAWA.lsp's mirror).
+import { pocketChoiceOf } from '../engine/hawaPocket.js';
 import { corniceOption } from '../engine/cornice.js';
 // T78 F18 · the four lift systems a wall unit's front may open by, and which kits take one.
 import { LIFT_SYSTEMS, liftTakesKit } from '../engine/liftSystems.js';
@@ -82,6 +88,10 @@ export default function RightPanel() {
   const setPartitionFront = useProjectStore((s) => s.setPartitionFront);
   const setDrawerHeight = useProjectStore((s) => s.setDrawerHeight);
   const resetDrawerHeights = useProjectStore((s) => s.resetDrawerHeights);
+  // T82 F14 · the vanity's kit, how it stands, and "Equal" on a drawer-column kit.
+  const setVanityDrawers = useProjectStore((s) => s.setVanityDrawers);
+  const setVanityFloating = useProjectStore((s) => s.setVanityFloating);
+  const setDrawersEqual = useProjectStore((s) => s.setDrawersEqual);
   const setAllDrawerHeights = useProjectStore((s) => s.setAllDrawerHeights);
   const setDrawerEqualHeights = useProjectStore((s) => s.setDrawerEqualHeights);
   const redistributeShelves = useProjectStore((s) => s.redistributeShelves);
@@ -164,6 +174,17 @@ export default function RightPanel() {
   const ownDrawerHeights = Array.isArray(unit?.params.drawer_heights)
     && unit.params.drawer_heights.length > 0;
   const equalHeights = unit?.params.drawer_equal_heights !== false;
+  // T82 F14 · a kit whose type takes drawer columns (the vanity, the chest):
+  // is its stack already the LISP's equal split (KIT_VANITY.lsp D8)?
+  const drawerColumnsKit = Boolean(type?.drawerColumns);
+  const splitIsEqual = drawerColumnsKit && !ownDrawerHeights
+    && (Boolean(type?.equalDrawers) || unit?.params.drawer_split === 'equal');
+  // T82 F13 · how high a floating vanity hangs, or null where it stands.
+  const vanityFloat = unit ? floatHeightOf(unit.type, unit.params, profile) : null;
+  // T82 F14 · the vanity's count IS its kit (VANITY2 / 3 / 4), the variant's own number.
+  const vanityDrawerCount = type?.vanity
+    ? ((profile.baseDrawerUnit?.variants || []).find((v) => v.id === type.drawerVariant)?.count ?? null)
+    : null;
   const resolvedDesign = unit ? resolveUnitDesign(unit, design) : null;
   const hasDoors = Boolean(unit?.params.doors) && unit.params.doors !== false;
   // Turn 21 (CLAUDE.md F12): the bays this face divides into, and this unit's
@@ -291,6 +312,14 @@ export default function RightPanel() {
           <AttachSection unit={unit} />
         )}
 
+        {/* ── T82 F2 · the HAWA pocket's door ──
+            Above the carcass, as Attach is for the free panel: for a pocket
+            the door is the whole job. The owner: *"wysuwasz pocket door i
+            zakrywasz szafke lub szafki"* (25.10.2026). */}
+        {isHawaPocket(unit.type) && (
+          <PocketDoorSection unit={unit} />
+        )}
+
         {/* ─── TURN 30 (CLAUDE.md F7): A SHELF AND A HINGE AT ONE HEIGHT ────
             ABOVE the sections and outside every one of them, deliberately: a
             conflict prompt folded inside a collapsed "Carcass" is a prompt
@@ -329,6 +358,12 @@ export default function RightPanel() {
                 <NumberField
                   value={unit.params[key]}
                   data-unit-size-field={key}
+                  {...(/* T82 F2 · a HAWA pocket's width and depth are worked
+                      out (the panels and the clear, KT) and its height is the
+                      cabinet's its door covers: shown, never typed. */
+                    isHawaPocket(unit.type) && (key !== 'height' || (result?.hawa?.doors || []).length > 0)
+                      ? { disabled: true, title: 'Worked out by the pocket and the cabinet its door covers' }
+                      : {})}
                   onCommit={(v) => {
                     // ─── TURN 50 (CLAUDE.md F3): THE ROOM REFUSES FIRST ─────
                     //
@@ -733,6 +768,113 @@ export default function RightPanel() {
           )}
         </Section>
 
+        {/* ─── T82 F13 / F14 · THE VANITY ─────────────────────────────────────
+            CLAUDE.md T82 F14: *"Drawers 2 / 3 / 4 (the kit), Columns 1 / 2,
+            Sinks 0 / 1 / 2, Floor / Floating with the height field, the
+            plinth height as today"*. The owner, 25.10.2026 (12:57): *"wybor
+            jak zawsze 2 3 i 4 ... plinth do zmiany wysokosc, propozycja
+            floating lub on the floor, dodanie 1 sink or 2 sink?"*. The count
+            swaps the kit (`setVanityDrawers`), the basins are a parameter the
+            engine and the room read, Floating hangs it (`setVanityFloating`,
+            refused in words where the room has no room). Columns 1 / 2 is in
+            the drawer stack below, as the chest's is; the plinth is in
+            Construction, as every unit's. No number is typed here: the
+            heights are the profile's until he types one. */}
+        {type.vanity && (
+          <Section
+            title="Vanity"
+            badge={vanityFloat != null ? `floating ${formatMm(vanityFloat)}` : 'on the floor'}
+            open={panelOpen.vanity}
+            onToggle={() => togglePanelSection('vanity')}
+            hint="Drawers, basins, and whether it stands on its plinth or hangs on the wall"
+          >
+            <div className="cc-row" data-vanity-drawers="1">
+              <span className="text-sm text-ink-100">Drawers</span>
+              <div className="flex gap-1">
+                {[2, 3, 4].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`cc-btn px-2 ${vanityDrawerCount === n ? 'border-gold text-gold' : ''}`}
+                    aria-pressed={vanityDrawerCount === n}
+                    data-vanity-drawers-count={n}
+                    title={`${n} equal drawers: the vanity unit of ${n} (its size, its basins and how it stands are kept)`}
+                    onClick={() => {
+                      const r = setVanityDrawers(unit.id, n);
+                      if (!r.ok) notify(r.said, 'warn');
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="cc-row" data-vanity-sinks="1">
+              <span className="text-sm text-ink-100">Sinks</span>
+              <div className="flex gap-1">
+                {[0, 1, 2].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`cc-btn px-2 ${Number(unit.params.sinks ?? 0) === n ? 'border-gold text-gold' : ''}`}
+                    aria-pressed={Number(unit.params.sinks ?? 0) === n}
+                    data-vanity-sinks-count={n}
+                    title={n === 0 ? 'No basin' : `${n} basin${n > 1 ? 's' : ''}, to the eye: the trap's U follows the waste`}
+                    onClick={() => updateUnitParams(unit.id, { sinks: n })}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="cc-row" data-vanity-mount="1">
+              <span className="text-sm text-ink-100">Stands</span>
+              <div className="flex gap-1">
+                {[['floor', 'Floor'], ['floating', 'Floating']].map(([key, word]) => {
+                  const on = (key === 'floating') === (vanityFloat != null);
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`cc-btn px-2 ${on ? 'border-gold text-gold' : ''}`}
+                      aria-pressed={on}
+                      data-vanity-mount-choice={key}
+                      title={key === 'floating'
+                        ? 'Hung on the wall: no legs, no plinth, two hangers on the top rail in the BOM'
+                        : 'On the floor: its legs and the house plinth'}
+                      onClick={() => {
+                        const r = setVanityFloating(unit.id, key === 'floating');
+                        if (!r.ok) notify(r.said, 'warn');
+                      }}
+                    >
+                      {word}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {vanityFloat != null && (
+              <div className="cc-row">
+                <span className="text-[12px] text-ink-100">Height from the floor</span>
+                <div className="flex items-center gap-1">
+                  <NumberField
+                    className="cc-input w-20 text-right"
+                    min={0}
+                    data-vanity-float-height="1"
+                    title="The carcass underside above the floor (mm): the room refuses a height that will not fit under the ceiling"
+                    value={vanityFloat}
+                    onCommit={(v) => {
+                      const r = setVanityFloating(unit.id, true, v);
+                      if (!r.ok) notify(r.said, 'warn');
+                    }}
+                  />
+                  <span className="text-[11px] text-ink-400">mm</span>
+                </div>
+              </div>
+            )}
+          </Section>
+        )}
+
         {/* ── add items: a list of TYPES, settings inline (BACKLOG #10) ── */}
         {(type.supports.shelves || type.supports.rail || (type.supports.drawers && !ratioDrawers)) && (
           <Section
@@ -767,6 +909,39 @@ export default function RightPanel() {
                     : (result.derived.szufDl ? `${result.derived.szufSzer} × ${result.derived.szufDl} mm` : 'dropped')}
                 </span>
               </div>
+
+              {/* ─── T82 F9 / F14 · COLUMNS 1 / 2 ─────────────────────────────
+                  On a kit whose type takes drawer columns (the vanity, the
+                  chest): *"external drawers ale wybor 2 rows, patrz szafa"*
+                  (the owner, 25.10.2026): a divider mid-width and a stack in
+                  each column (KIT_VANITY.lsp 5(c2)); the engine refuses in
+                  words where a column has no room for its box. */}
+              {drawerColumnsKit && (
+                <div className="cc-row" data-drawer-columns="1">
+                  <span className="text-[12px] text-ink-100">Columns</span>
+                  <div className="flex gap-1">
+                    {[1, 2].map((n) => {
+                      const on = (Math.trunc(Number(unit.params.columns)) === 2 ? 2 : 1) === n;
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          className={`cc-btn px-2 ${on ? 'border-gold text-gold' : ''}`}
+                          aria-pressed={on}
+                          data-drawer-columns-count={n}
+                          title={n === 2 ? 'Two stacks side by side, a divider between them' : 'One stack the full width'}
+                          onClick={() => {
+                            const { notices } = updateUnitParams(unit.id, { columns: n });
+                            for (const m of notices) notify(m, 'warn');
+                          }}
+                        >
+                          {n}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Equal heights ✓ by default: one field for the whole stack
                   (BACKLOG #11). Unticked, every drawer gets its own — listed
@@ -876,7 +1051,26 @@ export default function RightPanel() {
                   no heights of its own, so there is nothing to reset and the
                   button is not there; the moment one is typed it appears, and
                   it hands the whole stack back to the kit's own split. */}
-              {ratioDrawers && ownDrawerHeights && (
+              {/* ─── T82 F14 · …AND ON A DRAWER-COLUMN KIT THE WAY BACK IS "EQUAL" ──
+                  *"the drawer heights editable as the chest's are (T75 F16)
+                  and reset to equal by one button "Equal""*; the owner: *"w
+                  vanity default to sa rowne"*, of the chest *"7 - tak"*. It
+                  writes the LISP's equal split (KIT_VANITY.lsp D8), so an old
+                  chest cut 4:3:2 is made equal by the same press; shown, and
+                  disabled with its reason, while the stack is equal already. */}
+              {ratioDrawers && drawerColumnsKit && (
+                <button
+                  type="button"
+                  className="cc-btn px-2 text-xs"
+                  data-drawer-heights-equal="1"
+                  disabled={splitIsEqual}
+                  title={splitIsEqual ? 'The drawers are equal already' : 'Every drawer the same height again'}
+                  onClick={() => setDrawersEqual(unit.id)}
+                >
+                  Equal
+                </button>
+              )}
+              {ratioDrawers && !drawerColumnsKit && ownDrawerHeights && (
                 <button
                   type="button"
                   className="cc-btn px-2 text-xs"
@@ -1175,12 +1369,17 @@ export default function RightPanel() {
               <div className="flex flex-col">
                 <span className="text-sm text-ink-100">Plinth</span>
                 <span className="text-[11px] text-ink-400">
-                  {unit.params.plinth
-                    ? `${formatMm(result.assemblies.carcass.legHeight)} mm, set back ${formatMm(profile.autoParts.plinth.setback)}`
-                    : 'not fitted'}
+                  {/* T82 F13 · a floating vanity hangs: *"no legs, no plinth"*. */}
+                  {/* eslint-disable-next-line no-nested-ternary */}
+                  {vanityFloat != null
+                    ? <span data-vanity-plinth-floating="1">{`floating at ${formatMm(vanityFloat)} mm: it hangs on its hangers and takes none`}</span>
+                    : unit.params.plinth
+                      ? `${formatMm(result.assemblies.carcass.legHeight)} mm, set back ${formatMm(profile.autoParts.plinth.setback)}`
+                      : 'not fitted'}
                 </span>
               </div>
-              {unit.params.plinth ? (
+              {/* eslint-disable-next-line no-nested-ternary */}
+              {vanityFloat != null ? null : unit.params.plinth ? (
                 <button type="button" className="cc-btn" onClick={() => removePlinth(unit.id)}>Remove</button>
               ) : (
                 <button type="button" className="cc-btn" onClick={() => addPlinth(unit.id)}>Add plinth</button>
@@ -1676,6 +1875,200 @@ function AttachSection({ unit }) {
   );
 }
 
+/**
+ * ─── T82 F2 · POCKET DOOR: THE HAWA POCKET'S OWN SECTION (slice A3) ────────
+ *
+ * The owner, 25.10.2026, 11:40: *"wysuwasz pocket door i zakrywasz szafke lub
+ * szafki"*; 13:46: *"3 tak moga"* (one door over two narrow units), *"4 -
+ * tak"* (the class by height and weight, with a manual override), *"5 - tak"*
+ * (Push by default).
+ *
+ * The choices are the store's three actions and nothing else: Doors 1 / 2,
+ * Hand L / R (one door: the side the door covers), Push / Pull, Class Auto /
+ * III/25 / III/35 (`setPocket`); Door covers, the units the door closes now,
+ * one more added beside the last or the last one taken off (`setPocketCovers`,
+ * a refusal said in its words). The figures under them, TB, T1, M and E1 per
+ * door, the pocket's width and depth and the refusals, are the engine's own
+ * `result.hawa` (`pocketFiguresFor`, KIT_HAWA.lsp's mirror): read, never
+ * worked out here. The walk reads `data-pocket-hand` and
+ * `data-pocket-figure`.
+ */
+function PocketDoorSection({ unit }) {
+  const setPocket = useProjectStore((s) => s.setPocket);
+  const setPocketCovers = useProjectStore((s) => s.setPocketCovers);
+  const pocketFiguresFor = useProjectStore((s) => s.pocketFiguresFor);
+  const units = useProjectStore((s) => s.units);
+  const runElements = useProjectStore((s) => s.runElements);
+  const notify = useUiStore((s) => s.notify);
+  const profile = useCabinetProfileStore((s) => s.profile);
+  if (typeof setPocket !== 'function' || typeof setPocketCovers !== 'function' || typeof pocketFiguresFor !== 'function') return null;
+  const choice = pocketChoiceOf(unit.params, profile);
+  const fig = pocketFiguresFor(unit.id);
+  const element = runElements?.[unit.id]?.pocket?.role === 'pocket' ? runElements[unit.id].pocket : null;
+  const chains = pocketNeighbours(units, unit, profile);
+  const sides = choice.doors === 2 ? ['L', 'R'] : [choice.hand];
+  const covered = { L: element?.sides?.L || [], R: element?.sides?.R || [] };
+  const numOf = (id) => units.find((u) => u.id === id)?.params?.unit_num || id;
+  const say = (res) => { if (res && res.ok === false && res.error) notify(res.error, 'warn'); };
+  const chip = (on) => `${on ? 'cc-btn-gold' : 'cc-btn'} px-3`;
+  const autoCls = (fig?.doors || []).find((d) => d.cls)?.cls ?? null;
+  const coversWith = (side, list) => [...(side === 'L' ? list : covered.L), ...(side === 'R' ? list : covered.R)];
+  return (
+    <section className="rounded border border-gold/60 bg-shell-700/40 p-2 space-y-2" data-section="Pocket door">
+      <div className="cc-row">
+        <span className="text-[11px] uppercase tracking-wide text-ink-400 flex-1">Pocket door</span>
+        {fig?.connectorName && <span className="text-[11px] text-ink-400">{fig.connectorName}</span>}
+      </div>
+      <div className="cc-row" data-pocket-doors={choice.doors}>
+        <span className="text-xs text-ink-200 flex-1" title="One door in a 55 pocket, or two in one 110 pocket (one each side)">Doors</span>
+        {[1, 2].map((n) => (
+          <button key={n} type="button" className={chip(choice.doors === n)} data-pocket-doors-chip={n} onClick={() => say(setPocket(unit.id, { doors: n }))}>
+            {n}
+          </button>
+        ))}
+      </div>
+      {choice.doors === 1 && (
+        <div className="cc-row" data-pocket-hand={choice.hand}>
+          <span className="text-xs text-ink-200 flex-1" title="The side of the pocket the door covers">Hand</span>
+          {['L', 'R'].map((h) => (
+            <button key={h} type="button" className={chip(choice.hand === h)} data-pocket-hand-chip={h} onClick={() => say(setPocket(unit.id, { hand: h }))}>
+              {h}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="cc-row" data-pocket-push={choice.push ? 'push' : 'pull'}>
+        <span className="text-xs text-ink-200 flex-1">Opening</span>
+        <button type="button" className={chip(choice.push)} data-pocket-push-chip="push" onClick={() => say(setPocket(unit.id, { push: true }))}>Push</button>
+        <button type="button" className={chip(!choice.push)} data-pocket-push-chip="pull" onClick={() => say(setPocket(unit.id, { push: false }))}>Pull</button>
+      </div>
+      <div className="cc-row" data-pocket-class={choice.cls ?? 'auto'}>
+        <span className="text-xs text-ink-200 flex-1" title="III/25 to 2200 high and 25 kg, III/35 to 2700 and 35 kg; Auto takes the class by the door's height and weight">Class</span>
+        <button type="button" className={chip(choice.cls == null)} data-pocket-class-chip="auto" onClick={() => say(setPocket(unit.id, { cls: null }))}>
+          {autoCls ? `Auto (III/${autoCls})` : 'Auto'}
+        </button>
+        {[25, 35].map((c) => (
+          <button key={c} type="button" className={chip(choice.cls === c)} data-pocket-class-chip={c} onClick={() => say(setPocket(unit.id, { cls: c }))}>
+            {`III/${c}`}
+          </button>
+        ))}
+      </div>
+      <div className="space-y-1" data-pocket-covers="1">
+        <span className="cc-label">Door covers</span>
+        {sides.map((side) => {
+          const list = covered[side];
+          const next = chains[side][list.length] || null;
+          return (
+            <div key={side} className="cc-row" data-pocket-covers-side={side}>
+              <span className="text-xs text-ink-200 flex-1">
+                {choice.doors === 2 ? `${side === 'L' ? 'Left' : 'Right'}: ` : ''}
+                {list.length ? list.map(numOf).join(', ') : 'nothing beside it'}
+              </span>
+              {next && (
+                <button
+                  type="button"
+                  className="cc-btn px-2"
+                  data-pocket-cover-add={side}
+                  title={`Cover ${numOf(next.id)} too`}
+                  onClick={() => say(setPocketCovers(unit.id, coversWith(side, [...list, next.id])))}
+                >
+                  {`+ ${numOf(next.id)}`}
+                </button>
+              )}
+              {list.length > 1 && (
+                <button
+                  type="button"
+                  className="cc-btn-ghost"
+                  data-pocket-cover-remove={side}
+                  title={`Leave ${numOf(list[list.length - 1])} out`}
+                  onClick={() => say(setPocketCovers(unit.id, coversWith(side, list.slice(0, -1))))}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {(fig?.doors || []).map((d) => (
+        <div key={d.id} className="grid grid-cols-4 gap-1 text-[11px]" data-pocket-door={d.side}>
+          {['TB', 'T1', 'M', 'E1'].map((k) => (
+            <div key={k} className="flex flex-col" data-pocket-figure={k} title={{
+              TB: 'Door width', T1: 'Pocket hardware depth', M: 'How far the open door stands proud', E1: 'How far it slides in',
+            }[k]}
+            >
+              <span className="text-ink-400">{choice.doors === 2 ? `${k} ${d.side}` : k}</span>
+              <span className="text-ink-100" data-pocket-figure-value={k}>{formatMm(d[k])}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+      {fig && (
+        <p className="text-[11px] text-ink-400" data-pocket-size="1">
+          {`Pocket ${formatMm(fig.widthMm)} wide, ${formatMm(fig.KT)} deep, panels ${formatMm(fig.panel?.t)} in the front's material.`}
+        </p>
+      )}
+      {(fig?.refusals || []).map((r) => (
+        <p key={`${r.n}-${r.side}-${r.unit || ''}`} className="text-[11px] text-red-400" data-pocket-refusal={r.n}>{r.message}</p>
+      ))}
+      {/* T82 F2, after the review (store:1) · the room had no space to re-cut
+          the pocket to its front's width: the Check's #37 sentence, here too. */}
+      {pocketRecutRefusal(unit, fig) && (
+        <p className="text-[11px] text-red-400" data-pocket-refusal="recut">{pocketRecutRefusal(unit, fig)}</p>
+      )}
+      {/* (store:2) · a cabinet another pocket's door already closes. */}
+      {(element?.refused || []).map((entry) => (
+        <p key={`claim-${entry.side}-${entry.unitId}`} className="text-[11px] text-red-400" data-pocket-refusal="claimed">
+          {pocketClaimRefusal(unit, entry)}
+        </p>
+      ))}
+      {(fig?.notes || []).map((n) => (
+        <p key={n.n} className="text-[11px] text-ink-400" data-pocket-note={n.n}>{n.message}</p>
+      ))}
+      {/* T82 F6 (slice A5) · the "Door: Closed / Open" row, inside the section (A3's marked place). */}
+      <PocketDoorToggle unit={unit} />
+    </section>
+  );
+}
+
+// ─── T82 F6 · THE HAWA DOOR, CLOSED OR OPEN ─────────────────────────────────
+// CLAUDE.md T82 F6: *"A toggle on the pocket (right panel: Door closed / open;
+// the same in the viewer's "Open all") slides the door into the pocket"*. A
+// way of LOOKING, as Open all is: it writes the room's own `openFronts` for
+// the pocket's door (or its two), and nothing about the project changes. The
+// doors are the engine's (`result.hawa.doors`), never counted here. This row
+// belongs inside the POCKET DOOR section (A3's); it is its own component so
+// that section can hold it as it is.
+function PocketDoorToggle({ unit }) {
+  const unitResult = useProjectStore((s) => s.unitResult);
+  const openFronts = useUiStore((s) => s.openFronts);
+  const togglePocketDoor = useUiStore((s) => s.togglePocketDoor);
+  const ids = (unitResult(unit.id)?.hawa?.doors || []).map((d) => d.id).filter(Boolean);
+  if (!ids.length || typeof togglePocketDoor !== 'function') return null;
+  const open = ids.every((id) => (openFronts[unit.id]?.[id] ?? 0) > 0.5);
+  const choose = (wantOpen) => { if (wantOpen !== open) togglePocketDoor(unit.id, ids); };
+  return (
+    <div className="cc-row" data-pocket-door-open={open ? '1' : '0'}>
+      <span className="cc-label flex-1">Door</span>
+      {[['Closed', false], ['Open', true]].map(([word, value]) => (
+        <button
+          key={word}
+          type="button"
+          aria-pressed={open === value}
+          data-pocket-door={word.toLowerCase()}
+          className={`cc-btn ${open === value ? 'border-gold text-gold' : ''}`}
+          title={value
+            ? 'Swing the door and slide it into its pocket (nothing about the project changes)'
+            : 'Bring the door out of its pocket and shut it'}
+          onClick={() => choose(value)}
+        >
+          {word}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function PanelHeader({ title, onClose, children = null }) {
   return (
     <div className="flex items-center gap-2 px-3 py-2 border-b border-shell-600">
@@ -1768,6 +2161,10 @@ function constructionBadge(unit, type) {
  */
 function Insets({ unit, profile, onSet }) {
   const value = Number(unit.params.inset_back_mm) || 0;
+  // T82 F17 · the field ends where the store's clamp does: a cabinet's
+  // `editor.maxInset`, a free panel's the room (the far wall less the panel).
+  const insetBackMaxFor = useProjectStore((s) => s.insetBackMaxFor);
+  const backMax = (typeof insetBackMaxFor === 'function' ? insetBackMaxFor(unit.id) : null) ?? profile.editor.maxInset;
   return (
     <div className="space-y-1">
       <div className="cc-row">
@@ -1780,7 +2177,7 @@ function Insets({ unit, profile, onSet }) {
           <NumberField
             className="cc-input text-right"
             min={0}
-            max={profile.editor.maxInset}
+            max={Number.isFinite(backMax) ? backMax : undefined}
             title="Stand it off the wall — a pipe, a bowed wall, a skirting"
             value={value}
             onCommit={(v) => onSet({ back: v })}
@@ -1804,7 +2201,6 @@ function Insets({ unit, profile, onSet }) {
 function EndPanels({
   unit, profile, design, onAdd, onRemove, onDefaults,
 }) {
-  const type = getUnitType(unit.type);
   const panels = unit.params.end_panels || [];
   const has = (side) => panels.some((ep) => ep.side === side);
   return (
@@ -1858,14 +2254,11 @@ function EndPanels({
               {/* Turn 13 (F4): a wall unit's panel ends with the cabinet
                   whatever the stored value claims, so the row reads the RULE
                   rather than the field — a label that disagrees with the piece
-                  is worse than no label. */}
-              {endPanelDrop({
-                height: ep.height,
-                type,
-                mountHeight: unit.params.mount_height,
-                legHeight: unit.params.leg_height,
-                profile,
-              }) > 0 ? 'to floor' : 'ends with the cabinet'}
+                  is worse than no label.
+                  T82 F13, after the review: …and the rule is asked of the kit
+                  as the engine cuts it, so a floating vanity's panel (cut to
+                  end with the hung carcass) says so (`unitEndPanelDrop`). */}
+              {unitEndPanelDrop(unit, ep, profile) > 0 ? 'to floor' : 'ends with the cabinet'}
               {' · '}
               {formatMm(ep.thickness || unit.params.front_t || profile.front.thickness)} mm
               {Number(ep.top_mm) > 0 ? ` · +${formatMm(ep.top_mm)} above` : ''}
@@ -2274,6 +2667,7 @@ function WorktopRow({ unit }) {
   const removeWorktop = useProjectStore((s) => s.removeWorktop);
   const seatingOverhang = useProjectStore((s) => s.seatingOverhang);
   const extendIslandWorktop = useProjectStore((s) => s.extendIslandWorktop);
+  const setWorktopThickness = useProjectStore((s) => s.setWorktopThickness);
   const notify = useUiStore((s) => s.notify);
   const profile = useCabinetProfileStore((s) => s.profile);
   if (!takesWorktop(unit.type)) return null;
@@ -2314,6 +2708,21 @@ function WorktopRow({ unit }) {
         </div>
         <button type="button" className="cc-btn" data-remove-worktop-one={record.id} onClick={() => removeWorktop(record.id)}>Remove</button>
       </div>
+      {/* T82 F10 · the vanity's top is typed (*"blat grubosc do wyboru"*):
+          the record's own thickness, through the store's refusal in words. */}
+      {isVanityKit(unit.type) && (
+        <div className="cc-row" data-worktop-thickness={record.id}>
+          <span className="text-[11px] text-ink-400">Top thickness (mm)</span>
+          <NumberField
+            data-worktop-thickness-field="1"
+            title="The vanity's top: the worktop over it, as thick as you type."
+            min={1}
+            step={1}
+            value={Number(record.thickness) > 0 ? Number(record.thickness) : Number(profile.autoParts?.worktop?.thickness) || 38}
+            onCommit={(v) => { const res = setWorktopThickness(record.id, v); if (!res.ok) notify(res.error, 'warn'); }}
+          />
+        </div>
+      )}
       {empty.map((f) => {
         const on = Number(record.extend?.[f.face]) > 0;
         return (

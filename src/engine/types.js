@@ -12,8 +12,12 @@
 
 // T74 F13 · the free panel's box, from its board.
 import { freePanelDefaultParams } from './freePanel.js';
+// T82 F2 · the HAWA pocket's width, height and choices at birth (KIT_HAWA.lsp).
+import { hawaPocketDefaultParams } from './hawaPocket.js';
 import { resolveApertures } from './applianceTower.js';
 import { KITCHEN_LIBRARY, WARDROBE_LIBRARY, libraryTypeIds } from './library.js';
+// T82 F13 · how a vanity stands (KIT_VANITY.lsp D19, part 5(e)).
+import { vanityBaseY, vanityMount, vanityPlinthP } from './vanity.js';
 
 /**
  * carcass.top      — 'panel' (TOP + BOTTOM) | 'holders' (SINK: 2 rails on edge)
@@ -22,6 +26,8 @@ import { KITCHEN_LIBRARY, WARDROBE_LIBRARY, libraryTypeIds } from './library.js'
  *                    | 'rail' (DW_PANEL, turn 28 F1: ONE plain board across the
  *                      opening, at the unit's own width — see below)
  * carcass.back     — 'full' | 'inset' (SINK) | 'rails' (FRIDGE) | 'none'
+ *                    | 'cut' (T82 F9, the VANITY: the back cut out to two rails,
+ *                      KIT_VANITY.lsp D2; RAIL-BOTTOM and RAIL-TOP where it stood)
  * carcass.sides    — 'panel' (default, when the key is absent) | 'none'
  * carcass.bottom   — 'panel' (default, when the key is absent) | 'none'
  *
@@ -269,6 +275,58 @@ export const UNIT_TYPES = {
     available: true,
   },
 
+  // ─── T82 F2 · THE HAWA POCKET (Concepta III 25 / 35) ─────────────────────
+  //
+  // The owner, 25.10.2026: *"potrzebujemy zaprojektowac to jako wstawienie
+  // pomiedzy 2 panele 110 mm przestrzen pomiedzy, wysuwasz pocket door i
+  // zakrywasz szafke lub szafki"*. The law is `reference/lisp/KIT_HAWA.lsp`,
+  // written first; `engine/hawaPocket.js` is its mirror and the builder in
+  // `cabinet.js` (`carcass.top: 'pocket'`) cuts what it returns: two pocket
+  // panels in the FRONT material, a bottom and a top board, and the door that
+  // covers the unit(s) beside it (CLAUDE.md T82 F2 and F3).
+  //
+  // It is a UNIT OF THE RUN, not a free board: it stands on the run's legs and
+  // plinth line (`mount: 'floor'`, legs as a cabinet), is numbered HP01, is
+  // held off its neighbours as a cabinet is, and the run's plinth, cornice
+  // and worktop span it (`supports.cornice`, `topInfill: false` so a base run's
+  // worktop goes over it). `heightGroup: 'tall'`: Concepta doors are 1200 to
+  // 2700 high, a tall run's, and in the tall group a project height change
+  // moves the pocket with the talls beside it, so it never drops out of the
+  // run's level group (`runs.js levelGroups`, keyed on the top line). No
+  // family: both libraries show it (CLAUDE.md F2 *"kitchen and wardrobe
+  // families"*). It carries no house door, shelf or drawer: its door is the
+  // HAWA door, cut by the pocket's own builder.
+  HAWA_POCKET: {
+    id: 'HAWA_POCKET',
+    heightGroup: 'tall',
+    label: 'HAWA pocket (Concepta III)',
+    lisp: 'KIT_HAWA.lsp',
+    hawaPocket: true,
+    // T82 F2, after the review (store:0) · its width is the pocket's (panel +
+    // 55 + panel, panel + 110 + panel), worked out and never shared: a
+    // share-out lays the run out AROUND it, as it does around a hood or a
+    // fridge (`engine/shareOut.js widthFixed`).
+    widthFixed: true,
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: {
+      top: 'pocket', sides: 'none', bottom: 'none', back: 'none',
+    },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'hawa.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false,
+      topInfill: false, cornice: true,
+    },
+    available: true,
+  },
+
   BUD: {
     id: 'BUD',
     heightGroup: 'base',
@@ -380,6 +438,116 @@ export const UNIT_TYPES = {
     available: true,
   },
 
+  // ─── T82 F9 · THE VANITY UNIT (reference/lisp/KIT_VANITY.lsp) ─────────────
+  //
+  // The owner, 25.10.2026 (12:57): *"vanity unit (podobna zasada bedzie do
+  // chest drawers) vanity unit potrzebuje z szufladami nawierzchniowymi, wybor
+  // jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa rowne ... nie ma
+  // plecow na vanity unit tylko sa poziome poprzeczki na dole i na gorze,
+  // plecy sa jakby wyciete"*; over the mockup (13:03): *"3 - 80, 4 - 100 na
+  // material carcasa grubosc"*.
+  //
+  // KIT_BUDR_FULL is the parent (D1): each is its drawer unit of the same count
+  // to the letter (the variant, so the same runner ladder, boxes, fronts, legs
+  // and hinge rules) with what the LISP changes: `equalDrawers` (D8, the
+  // fronts equal, exact, by `cabinet.js drawerSplitFor`), the back `cut` to
+  // two rails (D2 to D4, `engine/vanity.js`), `vanity` (the trap's U and Check
+  // #39, D13 to D17), `drawerColumns` (D10, the two columns the chest takes
+  // too, cut ONCE for every kit that declares it), the bathroom family, its own
+  // LISP and defaults block. `heightGroup: null` and `ownDepth: true`: its 600
+  // and its 500 are its own (a basin's height, the bathroom's depth over the
+  // 80 void), the project's base height and 558 must not replace them
+  // (projectStore projectHeightParams). `topInfill: false`: what goes
+  // on it is a worktop (D7, `worktop.js takesWorktop`). Floating (D19) is a
+  // parameter the room reads (F13), never a second type.
+  VANITY2: {
+    id: 'VANITY2',
+    heightGroup: null,
+    label: 'Vanity unit, 2 drawers',
+    drawerVariant: 'x2',
+    equalDrawers: true,
+    drawerColumns: true,
+    vanity: true,
+    ownDepth: true,
+    family: 'bathroom',
+    lisp: 'KIT_VANITY.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'cut' },
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'vanity.defaults',
+    supports: {
+      drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
+      cornice: false,
+    },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  VANITY3: {
+    id: 'VANITY3',
+    heightGroup: null,
+    label: 'Vanity unit, 3 drawers',
+    drawerVariant: 'x3',
+    equalDrawers: true,
+    drawerColumns: true,
+    vanity: true,
+    ownDepth: true,
+    family: 'bathroom',
+    lisp: 'KIT_VANITY.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'cut' },
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'vanity.defaults',
+    supports: {
+      drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
+      cornice: false,
+    },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  VANITY4: {
+    id: 'VANITY4',
+    heightGroup: null,
+    label: 'Vanity unit, 4 drawers',
+    drawerVariant: 'x4',
+    equalDrawers: true,
+    drawerColumns: true,
+    vanity: true,
+    ownDepth: true,
+    family: 'bathroom',
+    lisp: 'KIT_VANITY.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'cut' },
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'vanity.defaults',
+    supports: {
+      drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
+      cornice: false,
+    },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+
   // ─── T75 F16 · THE CHEST OF DRAWERS BETWEEN WARDROBES ─────────────────────
   //
   // CLAUDE.md T75 F16: *"`WARDROBE_CHEST2 / 3 / 4` copied from `BUDR2 / BUDR /
@@ -399,6 +567,15 @@ export const UNIT_TYPES = {
   // wardrobe and is not one. No top box rides it (`topBox.hostsRidersOf`), it
   // is never "the wardrobe" the retail columns are about, and a wardrobe's
   // hanging kits (trouser pull-out, tie rack) are not offered in it.
+  //
+  // T82 F9 · `drawerColumns: true`: the chest takes KIT_VANITY.lsp's two
+  // drawer rules (D20; the owner, 25.10.2026, 13:03: *"7 - tak"*): equal
+  // fronts by default (`params.drawer_split: 'equal'`, written where a chest
+  // is BORN, projectStore `newUnit`, so the bare kit and its golden keep the
+  // kit's own split) and two columns (`params.columns: 2`, section 5(c2): a
+  // DIVIDER mid-width, the same stack in each column, its TOP over both). Its
+  // back stays: no rails, no void, no basin. cabinet.js `drawerColumnsOf`,
+  // `drawerSplitOf` and `drawerColumnsPlan` read the key, never the id.
   WARDROBE_CHEST2: {
     id: 'WARDROBE_CHEST2',
     heightGroup: null,
@@ -416,6 +593,7 @@ export const UNIT_TYPES = {
     carcass: { top: 'panel', back: 'full' },
     drawerStyle: 'budr',
     besideWardrobe: true,
+    drawerColumns: true,
     minHeightKey: null,
     defaultsKey: 'wardrobeChest.defaults',
     supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
@@ -439,6 +617,7 @@ export const UNIT_TYPES = {
     carcass: { top: 'panel', back: 'full' },
     drawerStyle: 'budr',
     besideWardrobe: true,
+    drawerColumns: true,
     minHeightKey: null,
     defaultsKey: 'wardrobeChest.defaults',
     supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
@@ -462,6 +641,7 @@ export const UNIT_TYPES = {
     carcass: { top: 'panel', back: 'full' },
     drawerStyle: 'budr',
     besideWardrobe: true,
+    drawerColumns: true,
     minHeightKey: null,
     defaultsKey: 'wardrobeChest.defaults',
     supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
@@ -1613,7 +1793,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'VANITY2', 'VANITY3', 'VANITY4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'HAWA_POCKET', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1686,6 +1866,54 @@ export function isDeskKit(typeId) {
   return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.desk);
 }
 
+/** T82 F9 · is this a vanity kit (KIT_VANITY.lsp: the drawer base with its back cut out)? */
+export function isVanityKit(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.vanity);
+}
+
+/**
+ * ─── T82 F13 · PLINTH OR FLOATING: THE ONE QUESTION ─────────────────────────
+ *
+ * CLAUDE.md T82 F13: *"`floating: true`: no legs, no plinth, the carcass hung
+ * at `float_height_mm` (PROPOSED default 300)"*; the owner, 25.10.2026
+ * (12:57): *"plinth do zmiany wysokosc, propozycja floating lub on the
+ * floor"*. KIT_VANITY.lsp D19, `vanity-base-y`.
+ *
+ * How far off the floor a FLOATING vanity's carcass underside stands, or null
+ * for every unit that stands (every kit but a vanity, and a vanity whose
+ * `params.floating` is not true: an old project, a new one on the floor). The
+ * height is the unit's own; unsaid, the profile's `vanity.defaults.
+ * floatHeightMm`. Every reader of "how high does it stand" asks this first:
+ * `cabinet.js normalizeParams` (the cut), `runs.js unitBase` (the run, the
+ * scene, the plan, the elevation), `projectStore floorYOf` (the bands, the
+ * height clamp), `roomFit.floorOf` (the room's refusal) and Check #6.
+ */
+export function floatHeightOf(typeId, params, profile) {
+  if (!isVanityKit(typeId) || params?.floating !== true) return null;
+  const said = params?.float_height_mm;
+  const stated = said != null && said !== '' && Number.isFinite(Number(said)) && Number(said) >= 0;
+  const own = stated ? Number(said) : Number(profile?.vanity?.defaults?.floatHeightMm) || 0;
+  return vanityBaseY(true, own, null);
+}
+
+const HUNG_TYPES = new Map();
+
+/**
+ * T82 F13 · the kit as a FLOATING vanity stands: no legs, no plinth, hung
+ * (`vanity-mount`, `vanity-plinth-p`). What `computeCabinet` builds a floating
+ * vanity from, so its legs, its toe kick, its plinth gate, its side infills
+ * and the room's `assemblies.mount` follow from one answer. The carcass is the
+ * same box: no board of it reads `mount`, `legs` or `plinth`.
+ */
+export function hungTypeOf(type) {
+  if (!HUNG_TYPES.has(type.id)) {
+    HUNG_TYPES.set(type.id, Object.freeze({
+      ...type, legs: false, legSource: null, plinth: vanityPlinthP(true), mount: vanityMount(true),
+    }));
+  }
+  return HUNG_TYPES.get(type.id);
+}
+
 /** T75 F3 · is this a blind corner kit (a blank beside one leaf)? */
 export function isBlindKit(typeId) {
   return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.blind);
@@ -1694,6 +1922,11 @@ export function isBlindKit(typeId) {
 /** T75 F4 · is this a true L corner kit (one carcass on two walls)? */
 export function isCornerLKit(typeId) {
   return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.corner);
+}
+
+/** T82 F2 · is this the HAWA pocket (KIT_HAWA.lsp: two panels, the door that slides in)? */
+export function isHawaPocket(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.hawaPocket);
 }
 
 /** T74 F13 · is this the free panel kit (one board standing in the room)? */
@@ -1834,6 +2067,24 @@ export function defaultParamsFor(typeId, profile) {
     // T75 F14 · a hob drawer unit carries the flag the engine and the worktop
     // read. Spread, so no other kit carries the key.
     ...(type.hob ? { hob: true } : {}),
+    // T82 F2 · the HAWA pocket: its width the pocket's (panel + 55 + panel at
+    // the workshop's front), a tall run's height and depth, and its choices
+    // (`params.pocket`: one door, hand R, Push, the class by F3, nothing
+    // covered yet). Spread, so no other kit carries a key it did not.
+    ...(type.hawaPocket ? hawaPocketDefaultParams(profile) : {}),
+    // ─── T82 F9 · THE VANITY'S OWN ANSWERS (KIT_VANITY.lsp) ──────────────────
+    // One column (D10), one basin (the LISP's worked example and its command's
+    // default, D14), on the floor (D19, the room's, F13), and THE SERVICE VOID
+    // in the unit's own wall gap: the project's clearance + 80 (D6,
+    // `vanity-wall-gap`), written here and never typed, so every reader of
+    // `runs.js wallGapOf` sees it. Spread, so no other kit carries a key.
+    ...(type.vanity ? {
+      columns: 1,
+      sinks: 1,
+      floating: false,
+      float_height_mm: Number(d.floatHeightMm) || 0,
+      wall_gap: Math.max(0, Number(profile.room?.wallBackClearance) || 0) + (Number(profile.vanity?.serviceVoidMm) || 0),
+    } : {}),
     unit_num: '01',
   };
 }
@@ -1866,4 +2117,8 @@ export const UNIT_NUM_PREFIX = {
   WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
   // T78 F17 . the hood's two new kits keep the hood's letter, as the hob variants keep DR.
   WUD_HOOD_CANOPY: 'HD', WUD_HOOD_SHORT: 'HD',
+  // T82 F2 · the HAWA pocket: HP01.
+  HAWA_POCKET: 'HP',
+  // T82 F9 · the vanity: VU01, whatever its count (KIT_VANITY.lsp D22), as DR is the drawer base's.
+  VANITY2: 'VU', VANITY3: 'VU', VANITY4: 'VU',
 };

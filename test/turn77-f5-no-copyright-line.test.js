@@ -318,6 +318,9 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f43-t82-f23.mjs',
   // T82 F24 (25.10.2026): one dashed line for the plinth
   'scripts/t78-classify.d/f43-t82-f24.mjs',
+  // T82 F6 (after the review) (25.10.2026): the door's holes ride the door
+  'src/3d/drillRingPanels.js',
+  'test/turn82-f06-door-rings.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

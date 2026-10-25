@@ -5,6 +5,8 @@ import { machiningLines, panelPlacement } from '../engine/joinery.js';
 import { shelfSupportInstances } from '../engine/hardware3d.js';
 import { shelfSupportMetal } from './hardwareFinish.js';
 import { chromeOn } from './chrome.js';
+// T82 F6 · which boards take these rings: never one that moves.
+import { ringsOn } from './drillRingPanels.js';
 
 // ─── DRILL RINGS — a hole you can see, without cutting the board ───────────
 //
@@ -105,8 +107,9 @@ export default function DrillRings({ result, profile, design = null }) {
 
     for (const panel of panels) {
       if (!panel.box) continue;
-      // A front animates; see the note above.
-      if (panel.role === 'front' || panel.part === 'FRONT') continue;
+      // A front animates; see the note above. T82 F6 · so does the HAWA door,
+      // whose holes ride its own leaf (3d/drillRingPanels.js, one predicate).
+      if (!ringsOn(panel)) continue;
       const placement = panelPlacement(panel);
       if (!placement) continue;
       const { n } = placement;

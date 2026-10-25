@@ -4,6 +4,8 @@ import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { HEIGHT_GROUPS, getUnitType, isFreePanel, isHawaPocket, isVanityKit, profilePath } from '../engine/types.js';
+// T82 F13 · how a vanity stands: floating, at what height (KIT_VANITY.lsp D19).
+import { floatHeightOf } from '../engine/types.js';
 import { doorCountFor, leafCountRefusal, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls, wallLabel } from '../engine/room.js';
@@ -84,6 +86,10 @@ export default function RightPanel() {
   const setPartitionFront = useProjectStore((s) => s.setPartitionFront);
   const setDrawerHeight = useProjectStore((s) => s.setDrawerHeight);
   const resetDrawerHeights = useProjectStore((s) => s.resetDrawerHeights);
+  // T82 F14 · the vanity's kit, how it stands, and "Equal" on a drawer-column kit.
+  const setVanityDrawers = useProjectStore((s) => s.setVanityDrawers);
+  const setVanityFloating = useProjectStore((s) => s.setVanityFloating);
+  const setDrawersEqual = useProjectStore((s) => s.setDrawersEqual);
   const setAllDrawerHeights = useProjectStore((s) => s.setAllDrawerHeights);
   const setDrawerEqualHeights = useProjectStore((s) => s.setDrawerEqualHeights);
   const redistributeShelves = useProjectStore((s) => s.redistributeShelves);
@@ -166,6 +172,17 @@ export default function RightPanel() {
   const ownDrawerHeights = Array.isArray(unit?.params.drawer_heights)
     && unit.params.drawer_heights.length > 0;
   const equalHeights = unit?.params.drawer_equal_heights !== false;
+  // T82 F14 · a kit whose type takes drawer columns (the vanity, the chest):
+  // is its stack already the LISP's equal split (KIT_VANITY.lsp D8)?
+  const drawerColumnsKit = Boolean(type?.drawerColumns);
+  const splitIsEqual = drawerColumnsKit && !ownDrawerHeights
+    && (Boolean(type?.equalDrawers) || unit?.params.drawer_split === 'equal');
+  // T82 F13 · how high a floating vanity hangs, or null where it stands.
+  const vanityFloat = unit ? floatHeightOf(unit.type, unit.params, profile) : null;
+  // T82 F14 · the vanity's count IS its kit (VANITY2 / 3 / 4), the variant's own number.
+  const vanityDrawerCount = type?.vanity
+    ? ((profile.baseDrawerUnit?.variants || []).find((v) => v.id === type.drawerVariant)?.count ?? null)
+    : null;
   const resolvedDesign = unit ? resolveUnitDesign(unit, design) : null;
   const hasDoors = Boolean(unit?.params.doors) && unit.params.doors !== false;
   // Turn 21 (CLAUDE.md F12): the bays this face divides into, and this unit's
@@ -749,6 +766,113 @@ export default function RightPanel() {
           )}
         </Section>
 
+        {/* ─── T82 F13 / F14 · THE VANITY ─────────────────────────────────────
+            CLAUDE.md T82 F14: *"Drawers 2 / 3 / 4 (the kit), Columns 1 / 2,
+            Sinks 0 / 1 / 2, Floor / Floating with the height field, the
+            plinth height as today"*. The owner, 25.10.2026 (12:57): *"wybor
+            jak zawsze 2 3 i 4 ... plinth do zmiany wysokosc, propozycja
+            floating lub on the floor, dodanie 1 sink or 2 sink?"*. The count
+            swaps the kit (`setVanityDrawers`), the basins are a parameter the
+            engine and the room read, Floating hangs it (`setVanityFloating`,
+            refused in words where the room has no room). Columns 1 / 2 is in
+            the drawer stack below, as the chest's is; the plinth is in
+            Construction, as every unit's. No number is typed here: the
+            heights are the profile's until he types one. */}
+        {type.vanity && (
+          <Section
+            title="Vanity"
+            badge={vanityFloat != null ? `floating ${formatMm(vanityFloat)}` : 'on the floor'}
+            open={panelOpen.vanity}
+            onToggle={() => togglePanelSection('vanity')}
+            hint="Drawers, basins, and whether it stands on its plinth or hangs on the wall"
+          >
+            <div className="cc-row" data-vanity-drawers="1">
+              <span className="text-sm text-ink-100">Drawers</span>
+              <div className="flex gap-1">
+                {[2, 3, 4].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`cc-btn px-2 ${vanityDrawerCount === n ? 'border-gold text-gold' : ''}`}
+                    aria-pressed={vanityDrawerCount === n}
+                    data-vanity-drawers-count={n}
+                    title={`${n} equal drawers: the vanity unit of ${n} (its size, its basins and how it stands are kept)`}
+                    onClick={() => {
+                      const r = setVanityDrawers(unit.id, n);
+                      if (!r.ok) notify(r.said, 'warn');
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="cc-row" data-vanity-sinks="1">
+              <span className="text-sm text-ink-100">Sinks</span>
+              <div className="flex gap-1">
+                {[0, 1, 2].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`cc-btn px-2 ${Number(unit.params.sinks ?? 0) === n ? 'border-gold text-gold' : ''}`}
+                    aria-pressed={Number(unit.params.sinks ?? 0) === n}
+                    data-vanity-sinks-count={n}
+                    title={n === 0 ? 'No basin' : `${n} basin${n > 1 ? 's' : ''}, to the eye: the trap's U follows the waste`}
+                    onClick={() => updateUnitParams(unit.id, { sinks: n })}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="cc-row" data-vanity-mount="1">
+              <span className="text-sm text-ink-100">Stands</span>
+              <div className="flex gap-1">
+                {[['floor', 'Floor'], ['floating', 'Floating']].map(([key, word]) => {
+                  const on = (key === 'floating') === (vanityFloat != null);
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`cc-btn px-2 ${on ? 'border-gold text-gold' : ''}`}
+                      aria-pressed={on}
+                      data-vanity-mount-choice={key}
+                      title={key === 'floating'
+                        ? 'Hung on the wall: no legs, no plinth, two hangers on the top rail in the BOM'
+                        : 'On the floor: its legs and the house plinth'}
+                      onClick={() => {
+                        const r = setVanityFloating(unit.id, key === 'floating');
+                        if (!r.ok) notify(r.said, 'warn');
+                      }}
+                    >
+                      {word}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {vanityFloat != null && (
+              <div className="cc-row">
+                <span className="text-[12px] text-ink-100">Height from the floor</span>
+                <div className="flex items-center gap-1">
+                  <NumberField
+                    className="cc-input w-20 text-right"
+                    min={0}
+                    data-vanity-float-height="1"
+                    title="The carcass underside above the floor (mm): the room refuses a height that will not fit under the ceiling"
+                    value={vanityFloat}
+                    onCommit={(v) => {
+                      const r = setVanityFloating(unit.id, true, v);
+                      if (!r.ok) notify(r.said, 'warn');
+                    }}
+                  />
+                  <span className="text-[11px] text-ink-400">mm</span>
+                </div>
+              </div>
+            )}
+          </Section>
+        )}
+
         {/* ── add items: a list of TYPES, settings inline (BACKLOG #10) ── */}
         {(type.supports.shelves || type.supports.rail || (type.supports.drawers && !ratioDrawers)) && (
           <Section
@@ -783,6 +907,39 @@ export default function RightPanel() {
                     : (result.derived.szufDl ? `${result.derived.szufSzer} × ${result.derived.szufDl} mm` : 'dropped')}
                 </span>
               </div>
+
+              {/* ─── T82 F9 / F14 · COLUMNS 1 / 2 ─────────────────────────────
+                  On a kit whose type takes drawer columns (the vanity, the
+                  chest): *"external drawers ale wybor 2 rows, patrz szafa"*
+                  (the owner, 25.10.2026): a divider mid-width and a stack in
+                  each column (KIT_VANITY.lsp 5(c2)); the engine refuses in
+                  words where a column has no room for its box. */}
+              {drawerColumnsKit && (
+                <div className="cc-row" data-drawer-columns="1">
+                  <span className="text-[12px] text-ink-100">Columns</span>
+                  <div className="flex gap-1">
+                    {[1, 2].map((n) => {
+                      const on = (Math.trunc(Number(unit.params.columns)) === 2 ? 2 : 1) === n;
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          className={`cc-btn px-2 ${on ? 'border-gold text-gold' : ''}`}
+                          aria-pressed={on}
+                          data-drawer-columns-count={n}
+                          title={n === 2 ? 'Two stacks side by side, a divider between them' : 'One stack the full width'}
+                          onClick={() => {
+                            const { notices } = updateUnitParams(unit.id, { columns: n });
+                            for (const m of notices) notify(m, 'warn');
+                          }}
+                        >
+                          {n}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Equal heights ✓ by default: one field for the whole stack
                   (BACKLOG #11). Unticked, every drawer gets its own — listed
@@ -892,7 +1049,26 @@ export default function RightPanel() {
                   no heights of its own, so there is nothing to reset and the
                   button is not there; the moment one is typed it appears, and
                   it hands the whole stack back to the kit's own split. */}
-              {ratioDrawers && ownDrawerHeights && (
+              {/* ─── T82 F14 · …AND ON A DRAWER-COLUMN KIT THE WAY BACK IS "EQUAL" ──
+                  *"the drawer heights editable as the chest's are (T75 F16)
+                  and reset to equal by one button "Equal""*; the owner: *"w
+                  vanity default to sa rowne"*, of the chest *"7 - tak"*. It
+                  writes the LISP's equal split (KIT_VANITY.lsp D8), so an old
+                  chest cut 4:3:2 is made equal by the same press; shown, and
+                  disabled with its reason, while the stack is equal already. */}
+              {ratioDrawers && drawerColumnsKit && (
+                <button
+                  type="button"
+                  className="cc-btn px-2 text-xs"
+                  data-drawer-heights-equal="1"
+                  disabled={splitIsEqual}
+                  title={splitIsEqual ? 'The drawers are equal already' : 'Every drawer the same height again'}
+                  onClick={() => setDrawersEqual(unit.id)}
+                >
+                  Equal
+                </button>
+              )}
+              {ratioDrawers && !drawerColumnsKit && ownDrawerHeights && (
                 <button
                   type="button"
                   className="cc-btn px-2 text-xs"
@@ -1191,12 +1367,17 @@ export default function RightPanel() {
               <div className="flex flex-col">
                 <span className="text-sm text-ink-100">Plinth</span>
                 <span className="text-[11px] text-ink-400">
-                  {unit.params.plinth
-                    ? `${formatMm(result.assemblies.carcass.legHeight)} mm, set back ${formatMm(profile.autoParts.plinth.setback)}`
-                    : 'not fitted'}
+                  {/* T82 F13 · a floating vanity hangs: *"no legs, no plinth"*. */}
+                  {/* eslint-disable-next-line no-nested-ternary */}
+                  {vanityFloat != null
+                    ? <span data-vanity-plinth-floating="1">{`floating at ${formatMm(vanityFloat)} mm: it hangs on its hangers and takes none`}</span>
+                    : unit.params.plinth
+                      ? `${formatMm(result.assemblies.carcass.legHeight)} mm, set back ${formatMm(profile.autoParts.plinth.setback)}`
+                      : 'not fitted'}
                 </span>
               </div>
-              {unit.params.plinth ? (
+              {/* eslint-disable-next-line no-nested-ternary */}
+              {vanityFloat != null ? null : unit.params.plinth ? (
                 <button type="button" className="cc-btn" onClick={() => removePlinth(unit.id)}>Remove</button>
               ) : (
                 <button type="button" className="cc-btn" onClick={() => addPlinth(unit.id)}>Add plinth</button>

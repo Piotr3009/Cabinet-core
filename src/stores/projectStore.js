@@ -10029,6 +10029,84 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * ─── T82 F14 · "EQUAL" ───────────────────────────────────────────────────
+   *
+   * CLAUDE.md T82 F14: *"the drawer heights editable as the chest's are (T75
+   * F16) and reset to equal by one button "Equal""*; the owner, 25.10.2026
+   * (12:57): *"w vanity default to sa rowne"*, and of the chest (13:03): *"7 -
+   * tak"*. On a kit whose type takes drawer columns (the vanity, the chest):
+   * the typed heights go and the split is the LISP's equal one (KIT_VANITY.lsp
+   * D8, `cabinet.js drawerSplitOf`), so an old chest cut 4:3:2 is made equal by
+   * the same press. Any other kit is refused: its split is its own.
+   *
+   * @returns {boolean} whether it was done
+   */
+  setDrawersEqual: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !getUnitType(unit.type).drawerColumns) return false;
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, drawer_split: 'equal', drawer_heights: null } } : u)),
+    }));
+    get().healFrontGaps();
+    return true;
+  },
+
+  /**
+   * ─── T82 F14 · DRAWERS 2 / 3 / 4: THE KIT ─────────────────────────────────
+   *
+   * CLAUDE.md T82 F14: *"Drawers 2 / 3 / 4 (the kit)"*; the owner, 25.10.2026
+   * (12:57): *"wybor jak zawsze 2 3 i 4"*. The count IS the kit (VANITY2,
+   * VANITY3, VANITY4: one LISP, three counts, as the drawer base's BUDR2 / BUDR
+   * / BUDR4), so the press swaps the unit's kit and keeps the UNIT: its id, its
+   * place, its size, its number, its columns, its basins, how it stands. The
+   * stack is born again on the new kit's split (equal), as `newUnit` builds it,
+   * and the row-keyed answers of the old stack (typed heights, double rows) go
+   * with it. Refused in words for any count but 2, 3 and 4, and for any kit but
+   * a vanity.
+   *
+   * @returns {{ ok: boolean, said: string }}
+   */
+  setVanityDrawers: (unitId, count) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, said: 'No such unit.' };
+    const label = unit.params?.unit_num ? `${unit.params.unit_num}: ` : '';
+    if (!isVanityKit(unit.type)) return { ok: false, said: `${label}only a vanity unit is offered 2, 3 or 4 drawers here.` };
+    const n = Math.trunc(Number(count));
+    const typeId = `VANITY${n}`;
+    if (!UNIT_TYPES[typeId] || !isVanityKit(typeId)) {
+      return { ok: false, said: `${label}a vanity unit has 2, 3 or 4 drawers.` };
+    }
+    if (resolveTypeId(unit.type) === typeId) return { ok: true, said: '' };
+    const profile = getCabinetProfile();
+    const type = getUnitType(typeId);
+    const drawers = drawerSplitFor(type, profile).ratio.map((_, i) => ({
+      id: uid('drawer'), kind: 'drawer', index: i + 1, mount: 'overlay',
+    }));
+    set((st) => ({
+      units: st.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const section = u.params.sections?.[0] || { width_mm: u.params.width, items: [] };
+        const kept = (section.items || []).filter((i) => i.kind !== 'drawer');
+        return {
+          ...u,
+          type: typeId,
+          params: {
+            ...u.params,
+            type: typeId,
+            drawer_heights: null,
+            drawer_double: null,
+            sections: [{ ...section, items: [...kept, ...drawers] }, ...(u.params.sections || []).slice(1)],
+          },
+        };
+      }),
+    }));
+    get().refreshAutoParts();
+    get().healFrontGaps();
+    return { ok: true, said: '' };
+  },
+
+  /**
    * The project's runner variant: T or S (turn 18, CLAUDE.md F6.4).
    *
    * HARDWARE and not geometry — nothing in the engine branches on it, because

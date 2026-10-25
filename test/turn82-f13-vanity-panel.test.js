@@ -47,6 +47,10 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import {
   vanityBaseY, vanityHangers, vanityMount, vanityPlinthP,
 } from '../src/engine/vanity.js';
+import {
+  KITCHEN_LIBRARY, WARDROBE_LIBRARY, filterLibraryByProject, flattenLibrary, resolveEntry,
+} from '../src/engine/library.js';
+import { getCategory } from '../src/engine/types.js';
 import { buildBom } from '../src/engine/bom.js';
 import { HARDWARE_TO_PART_ID, PART_REGISTRY } from '../src/engine/partRegistry.js';
 import { floorOf } from '../src/engine/roomFit.js';
@@ -304,4 +308,147 @@ test('F13 · an old project (no `floating` key) opens standing, exactly as it wa
   assert.equal(r.assemblies.mount, 'floor');
   assert.ok(partsOf(r).includes('PLINTH'));
   assert.equal(hwOf(r, 'vanity_hangers'), null);
+});
+
+// ═══ 5 · F14 · THE LIBRARY ROWS (F9's group): BATHROOM, IN BOTH LISTS ═══════
+
+const familyOf = (id) => getUnitType(id)?.family;
+
+test('F14 · the Bathroom group: "Vanity unit, N drawers", in the Kitchen library and in the wardrobe library', () => {
+  for (const list of [KITCHEN_LIBRARY, WARDROBE_LIBRARY]) {
+    const group = list.find((e) => e.id === 'bathroom');
+    assert.ok(group, 'no Bathroom group');
+    assert.equal(group.kind, 'group');
+    assert.equal(group.label, 'Bathroom');
+    assert.deepEqual(group.items.map((i) => i.typeId), VANITIES);
+    VANITIES.forEach((id, k) => {
+      const row = group.items.find((i) => i.typeId === id);
+      assert.equal(resolveEntry(row, P).enabled, true, `${id} is not placeable`);
+      // One name for a kit (library.js: `label` left out is the type's own).
+      assert.equal(row.label, undefined);
+      assert.equal(getUnitType(id).label, `Vanity unit, ${k + 2} drawers`);
+      assert.doesNotMatch(getUnitType(id).label, /[\u2013\u2014]/);
+    });
+  }
+  // One group, one source: the same data in both lists, so the two cannot drift.
+  assert.equal(KITCHEN_LIBRARY.find((e) => e.id === 'bathroom'), WARDROBE_LIBRARY.find((e) => e.id === 'bathroom'));
+  // Before Extras in the Kitchen list (the pieces that finish a run stay last); last in the wardrobe list.
+  assert.deepEqual(KITCHEN_LIBRARY.map((e) => e.id), ['base-units', 'tall-units', 'wall-units', 'bathroom', 'extras']);
+  assert.equal(WARDROBE_LIBRARY.at(-1).id, 'bathroom');
+  for (const cat of ['kitchen', 'wardrobe']) {
+    for (const id of VANITIES) assert.ok(getCategory(cat).types.includes(id), `${id} is not in ${cat}`);
+  }
+});
+
+test('F14 · the project filter keeps the bathroom in every job: a kitchen and a wardrobe both show it', () => {
+  for (const id of VANITIES) assert.equal(familyOf(id), 'bathroom');
+  const ids = (r) => flattenLibrary(r.entries).filter((e) => e.kind === 'type').map((e) => e.typeId);
+  const kitchen = filterLibraryByProject(KITCHEN_LIBRARY, 'kitchen', familyOf);
+  assert.equal(kitchen.hidden, 0, 'a kitchen job hid something of its own');
+  for (const id of VANITIES) assert.ok(ids(kitchen).includes(id));
+  const wardrobe = filterLibraryByProject(WARDROBE_LIBRARY, 'wardrobe', familyOf);
+  assert.equal(wardrobe.hidden, 0);
+  for (const id of VANITIES) assert.ok(ids(wardrobe).includes(id));
+  // A wardrobe job opening the KITCHEN list still loses the kitchen kits, and keeps the bathroom.
+  const across = filterLibraryByProject(KITCHEN_LIBRARY, 'wardrobe', familyOf);
+  assert.ok(across.hidden > 10);
+  assert.ok(across.entries.some((e) => e.id === 'bathroom'), 'the bathroom folded away with the kitchen');
+  // The library places one: the store's own road (addUnit), born on the floor, VU01.
+  vanityJob('wardrobe');
+  const id = S().addUnit('VANITY2').id;
+  assert.equal(U(id).type, 'VANITY2');
+  assert.equal(U(id).params.unit_num, 'VU01');
+});
+
+// ═══ 6 · F14 · THE RIGHT PANEL ═══════════════════════════════════════════════
+
+test('F14 · the Vanity section: Drawers 2/3/4, Basins 0/1/2, Floor / Floating with its height; Columns and Equal on every drawer-column kit', () => {
+  const src = read('src/components/RightPanel.jsx');
+  assert.match(src, /title="Vanity"/);
+  assert.match(src, /\{type\.vanity && \(/, 'the section is the vanity\'s alone');
+  for (const hook of ['data-vanity-drawers', 'data-vanity-sinks', 'data-vanity-mount', 'data-vanity-float-height',
+    'data-drawer-columns', 'data-drawer-heights-equal', 'data-vanity-plinth-floating']) {
+    assert.match(src, new RegExp(hook), `${hook} is not in the panel`);
+  }
+  assert.match(src, /\[2, 3, 4\]\.map/);
+  assert.match(src, /\[0, 1, 2\]\.map/);
+  assert.match(src, /\[1, 2\]\.map/);
+  assert.match(src, /setVanityDrawers\(unit\.id, n\)/);
+  assert.match(src, /setVanityFloating\(unit\.id, key === 'floating'\)/);
+  assert.match(src, /setVanityFloating\(unit\.id, true, v\)/);
+  assert.match(src, /updateUnitParams\(unit\.id, \{ sinks: n \}\)/);
+  assert.match(src, /updateUnitParams\(unit\.id, \{ columns: n \}\)/);
+  assert.match(src, /setDrawersEqual\(unit\.id\)/);
+  assert.match(src, />\s*Equal\s*</, 'no "Equal" button');
+  // The Columns row and Equal are asked of the TYPE's key, so the chest has them too.
+  assert.match(src, /const drawerColumnsKit = Boolean\(type\?\.drawerColumns\)/);
+  // The numbers are the profile's and the kit's: the panel types none.
+  assert.doesNotMatch(src, /float_height_mm:\s*\d/);
+  assert.doesNotMatch(src, /setVanityFloating\(unit\.id, true, \d/);
+});
+
+test('F14 · Drawers 2 / 3 / 4 swaps the kit and keeps the unit: its place, its size, its choices', () => {
+  vanityJob();
+  const id = S().addUnit('VANITY3').id;
+  S().updateUnitParams(id, { columns: 2, sinks: 1 });
+  S().setVanityFloating(id, true, 350);
+  const top = U(id).params.sections[0].items.find((i) => i.kind === 'drawer');
+  S().setDrawerHeight(id, top.id, 230);
+  const before = U(id);
+  const res = S().setVanityDrawers(id, 4);
+  assert.equal(res.ok, true, res.said);
+  const after = U(id);
+  assert.equal(after.id, before.id);
+  assert.equal(after.type, 'VANITY4');
+  assert.equal(after.params.type, 'VANITY4');
+  assert.deepEqual(after.position, before.position);
+  for (const k of ['width', 'height', 'depth', 'columns', 'sinks', 'floating', 'float_height_mm', 'unit_num', 'wall_gap']) {
+    assert.deepEqual(after.params[k], before.params[k], `${k} was lost on the swap`);
+  }
+  assert.equal(after.params.drawer_heights, null, 'the new count starts equal');
+  assert.equal(after.params.sections[0].items.filter((i) => i.kind === 'drawer').length, 4);
+  const fronts = S().unitResult(id).derived.front_heights;
+  assert.equal(fronts.length, 4);
+  assert.ok(Math.max(...fronts) - Math.min(...fronts) <= 1, `VANITY4 is not equal: ${fronts}`);
+  assert.equal(S().unitResult(id).assemblies.mountHeight, 350, 'it stopped hanging on the swap');
+  assert.equal(S().setVanityDrawers(id, 5).ok, false, '5 is not a vanity kit');
+  assert.equal(U(id).type, 'VANITY4');
+  const bud = S().addUnit('BUD').id;
+  const no = S().setVanityDrawers(bud, 3);
+  assert.equal(no.ok, false);
+  assert.match(no.said, /only a vanity unit/);
+  assert.equal(U(bud).type, 'BUD');
+});
+
+test('F14 · Equal: the heights typed by hand go, the equal split comes back; an old chest cut 4:3:2 is made equal', () => {
+  vanityJob();
+  const id = S().addUnit('VANITY3').id;
+  const equal = S().unitResult(id).derived.front_heights;
+  assert.equal(equal.length, 3);
+  assert.ok(Math.max(...equal) - Math.min(...equal) <= 1, `the vanity is not born equal: ${equal}`);
+  const top = U(id).params.sections[0].items.find((i) => i.kind === 'drawer');
+  S().setDrawerHeight(id, top.id, equal[0] + 40);
+  const typed = S().unitResult(id).derived.front_heights;
+  assert.notDeepEqual(typed, equal, 'the typed height did nothing');
+  assert.equal(S().setDrawersEqual(id), true);
+  assert.equal(U(id).params.drawer_heights, null);
+  assert.equal(U(id).params.drawer_split, 'equal');
+  assert.deepEqual(S().unitResult(id).derived.front_heights, equal);
+
+  // The chest: an old project's CHEST3 (no `drawer_split`) is the kit's 4:3:2; Equal makes it equal.
+  vanityJob('wardrobe');
+  const c = S().addUnit('WARDROBE_CHEST3').id;
+  const saved = JSON.parse(JSON.stringify({ project: S().project, units: S().units }));
+  delete saved.units.find((u) => u.id === c).params.drawer_split;
+  S().newProject();
+  S().loadProject(saved.project, saved.units);
+  const old = S().unitResult(c).derived.front_heights;
+  assert.ok(Math.max(...old) - Math.min(...old) > 1, `the old chest was already equal: ${old}`);
+  assert.equal(S().setDrawersEqual(c), true);
+  const now = S().unitResult(c).derived.front_heights;
+  assert.ok(Math.max(...now) - Math.min(...now) <= 1, `Equal did not make the chest equal: ${now}`);
+  // Any other kit keeps its own split: Equal is refused.
+  const budr = S().addUnit('BUDR').id;
+  assert.equal(S().setDrawersEqual(budr), false);
+  assert.equal(U(budr).params.drawer_split, undefined);
 });

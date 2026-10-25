@@ -10611,7 +10611,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // the record carries none and the profile's 38 stands.
         ...(units.length === 1 && isDeskKit(units[0].type) ? { kind: 'desk' } : {}),
         // T75 F20 · …and so does the one cabinet a SET lays a top on.
-        ...(units.length === 1 && single && !getUnitType(units[0].type).corner && !isDeskKit(units[0].type)
+        // T82 F10, after the review · …and a lone vanity, asked or born.
+        ...(units.length === 1 && (single || isVanityKit(units[0].type)) && !getUnitType(units[0].type).corner && !isDeskKit(units[0].type)
           ? { kind: 'top' } : {}),
         ...recordThickness(thickness, units, profile),
         ...(gate.island ? {
@@ -12443,7 +12444,9 @@ function alignedMountFor(state, unit, placed, prefer = null) {
  */
 function recordThickness(thickness, units, profile) {
   const own = Number(thickness) > 0 ? Number(thickness)
-    : (units.length && units.every((u) => isDeskKit(u.type)) ? Number(profile.wardrobeDesk?.defaults?.topThickness) : 0);
+    : (units.length && units.every((u) => isDeskKit(u.type)) ? Number(profile.wardrobeDesk?.defaults?.topThickness)
+      // T82 F10, after the review · a vanity's top asked for again is the vanity's own (vanity.defaults.top).
+      : (units.length && units.every((u) => isVanityKit(u.type)) ? Number(profile.vanity?.defaults?.top) : 0));
   return own > 0 ? { thickness: own } : {};
 }
 

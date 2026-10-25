@@ -128,6 +128,11 @@ test('F10 · its depth reaches the WALL over the service void: the unit\'s reach
   assert.ok(near(g.d, reach + VOID() + over), `d ${g.d} = ${reach} + ${VOID()} + ${over}`);
   // The slab's front edge stands as proud of the vanity's front as any slab of
   // the house stands of its run's (T30's law, the clearance included).
+  // DECIDED after the review of PART B (topbasin 0): this 628 (900 x 500 x 600,
+  // front 25, wall gap 90) is the house worktop's law, not the 638 the LISP's
+  // vanity-top-depth first gave: the vanity's top IS the house worktop, the
+  // fronts 10 under its edge as under every kitchen slab. KIT_VANITY.lsp D7 is
+  // amended to say so (slice B1, the same fix round).
   const front = wallGapOf(u, P()) + reach;
   assert.ok(near(g.d - front, over - CLEARANCE()), 'the same overhang past the fronts as a kitchen slab');
 });
@@ -199,6 +204,35 @@ test('F10 · review 1: a vanity alone on an island takes the island\'s top at it
   assert.equal(mine.length, 1);
   assert.ok(mine[0].unitIds.includes(v));
   assert.equal(slabOver(v).geometry.shape, 'island');
+});
+
+test('F10 · review 2: a lone vanity gets its top back after Remove, through the gate and the Add worktop road', () => {
+  const id = vanity('VANITY3');
+  const rec = records().find((w) => w.unitIds.includes(id));
+  S().removeWorktop(rec.id);
+  assert.equal(slabOver(id), undefined, 'removed');
+  const gate = worktopEligible([unitOf(id)], P(), { walls: roomWalls(S().project.room) });
+  assert.equal(gate.ok, true, `a vanity takes its own top: ${gate.why}`);
+  // The right panel's own button: addWorktop([unit.id]), no `single`.
+  const res = S().addWorktop([id]);
+  assert.equal(res.ok, true, res.error);
+  const back = records().find((w) => w.unitIds.includes(id));
+  assert.equal(back.kind, 'top');
+  assert.equal(slabOver(id).geometry.thickness, Number(V().defaults.top), 'at the vanity\'s own top thickness');
+  assert.equal(basinsOf(slabOver(id)).length, 1, 'and its basin with it');
+});
+
+test('F10 · review 2: two vanities under one top, one deleted: the other keeps its top and its basin', () => {
+  room();
+  const a = S().addUnit('VANITY3', { wall: 0, x: 1000 }).id;
+  const b = S().addUnit('VANITY3', { wall: 0, x: 1900 }).id;
+  const res = S().addWorktop([a, b]);
+  assert.equal(res.ok, true, res.error);
+  assert.equal(basinsOf(slabOver(a)).length, 2);
+  S().removeUnit(b);
+  const slab = slabOver(a);
+  assert.ok(slab, 'the survivor keeps its top');
+  assert.equal(basinsOf(slab).length, 1);
 });
 
 // ─── F11 · THE BASIN, ONLY TO THE EYE ──────────────────────────────────────

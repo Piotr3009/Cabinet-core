@@ -97,6 +97,15 @@ function isDeskUnit(unit) {
 }
 
 /**
+ * T82 F10, after the review (topbasin 2) · …and so does a vanity: born under
+ * its own top, it may take it back alone after a Remove, and keeps it when the
+ * other vanity of a shared top is deleted.
+ */
+function isLoneTopUnit(unit) {
+  return isDeskUnit(unit) || isVanityKit(unit?.type);
+}
+
+/**
  * T75 F17 · THE PER-WORKTOP THICKNESS the T30 comment above deferred: the
  * record's own (a desk or a sideboard top is 25), else the profile's (38).
  */
@@ -135,7 +144,7 @@ export function worktopEligible(units, profile, { walls = null, single = false }
   // corner unit is a run of its own: one is enough.
   // T75 F20 · …and so is the one cabinet a SET lays a top on (the Vanity's
   // sink, the Hallway's shoe bench): asked for as one, it is one.
-  const loneL = list.length === 1 && (isCornerKit(list[0]) || isDeskUnit(list[0]) || single === true);
+  const loneL = list.length === 1 && (isCornerKit(list[0]) || isLoneTopUnit(list[0]) || single === true);
   if (list.length < spec.minUnits && !loneL) {
     return { ok: false, why: `A worktop covers a run: select ${spec.minUnits} or more base cabinets.` };
   }
@@ -307,7 +316,8 @@ export function worktopsFor({
     const loneL = mine.length === 1 && isCornerKit(mine[0]);
     // T75 F17 · one desk is a run of its own: its slab is the straight one.
     // T75 F20 · …and so is the one cabinet a set's record names as a 'top'.
-    const loneDesk = mine.length === 1 && (isDeskUnit(mine[0]) || record?.kind === 'top');
+    // T82 F10 · …and a vanity alone under its record (a shared top's survivor).
+    const loneDesk = mine.length === 1 && (isLoneTopUnit(mine[0]) || record?.kind === 'top');
     if (mine.length < worktopSpec(profile).minUnits && !loneL && !loneDesk) continue;
     // ─── T75 F4/F5 · ONE SLAB SHAPED LIKE THE L ────────────────────────────
     if (loneL) {

@@ -34,6 +34,9 @@ import {
   LIBRARY_KEY, LOGO_KEY, listLocalProjects, loadLocalProject, logoId, saveLocalProject,
 } from '../src/lib/projectLibrary.js';
 import { persistProject } from '../src/lib/persist.js';
+import { notOnShelf } from '../src/lib/projectLibrary.js';
+import { migrateDesign } from '../src/engine/design.js';
+import { getProjectType } from '../src/engine/projectTypes.js';
 
 const jsPDF = jsPDFDefault?.jsPDF || jsPDFDefault;
 
@@ -413,4 +416,121 @@ test('F20 after the review · the company memory and the cache keep a ref; a ref
   const modal = readFileSync(new URL('../src/components/DrawingModal.jsx', import.meta.url), 'utf8');
   assert.match(modal, /if \(remembered === false\)/, 'the window reads the answer');
   assert.match(modal, /this computer's storage refused to keep it, so the next job will not open with it/);
+});
+
+// ═══ 7. A REFUSED SAVE LEAVES THE JOB MARKED UNSAVED, ON EVERY ROAD ═══════
+//
+// After the review: the three save roads (File > Save in the top bar, Update
+// and save in the design settings, File > Save as) called `markSaved`
+// whatever the answer, so the unsaved flag cleared on a write the browser
+// refused; the start screen put a brand-new job on the shelf and never read
+// the answer. Each road's OWN code is run here (sliced from its file, its
+// hooks handed in), against the real store and the real save.
+
+const REFUSING = {
+  getItem: () => null,
+  setItem: () => { const err = new Error('The quota has been exceeded.'); err.name = 'QuotaExceededError'; throw err; },
+  removeItem: () => {},
+};
+
+/** One road's own function, as its file writes it. */
+function roadOf(file, start, end) {
+  const src = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+  const a = src.indexOf(start);
+  assert.ok(a >= 0, `${file} has ${start}`);
+  const b = src.indexOf(end, a);
+  assert.ok(b > a, `${file}: the end of ${start}`);
+  return src.slice(a, b + end.length);
+}
+const ROADS = {
+  'File > Save (TopBar)': {
+    src: () => roadOf('src/components/TopBar.jsx', 'const save = async () => {', '\n  };'),
+    name: 'save',
+    hands: (h) => ({ timer: { current: null }, setSaveState: () => {}, confirmMs: 1, ...h }),
+    run: (fn) => fn(),
+  },
+  'Update and save (DesignSettingsModal)': {
+    src: () => roadOf('src/components/DesignSettingsModal.jsx', 'const updateAndSave = async () => {', '\n  };'),
+    name: 'updateAndSave',
+    hands: (h) => ({ blockers: [], saving: false, setSaving: () => {}, alive: { current: true }, closeModal: () => {}, ...h }),
+    run: (fn) => fn(),
+  },
+  'File > Save as (ConfiguratorPage)': {
+    src: () => roadOf('src/pages/ConfiguratorPage.jsx', 'const onSaveAs = useCallback(async (name) => {', '}, [project, units, markSaved]);'),
+    name: 'onSaveAs',
+    hands: (h) => ({ useCallback: (fn) => fn, ...h }),
+    run: (fn) => fn('Copy of the job'),
+  },
+};
+
+async function driveRoad(road, storage) {
+  const { useProjectStore } = await import('../src/stores/projectStore.js');
+  globalThis.localStorage = storage;
+  try {
+    const st = useProjectStore.getState();
+    st.newProject('Road');
+    useProjectStore.getState().setProjectName('Road, changed');
+    assert.equal(useProjectStore.getState().dirty, true, 'the job has unsaved changes');
+    const said = [];
+    const hands = road.hands({
+      persistProject,
+      project: useProjectStore.getState().project,
+      units: useProjectStore.getState().units,
+      markSaved: useProjectStore.getState().markSaved,
+      notify: (message, tone) => said.push({ message, tone }),
+    });
+    const names = Object.keys(hands);
+    // eslint-disable-next-line no-new-func
+    const fn = new Function(...names, `${road.src()}\nreturn ${road.name};`)(...names.map((k) => hands[k]));
+    await road.run(fn);
+    return { dirty: useProjectStore.getState().dirty, said };
+  } finally { delete globalThis.localStorage; }
+}
+
+for (const [label, road] of Object.entries(ROADS)) {
+  test(`F20 after the review · ${label}: a refused write leaves the job marked unsaved, and says so`, async () => {
+    const refused = await driveRoad(road, REFUSING);
+    assert.equal(refused.dirty, true, 'the unsaved flag stands');
+    assert.equal(refused.said.length, 1);
+    assert.equal(refused.said[0].tone, 'error');
+    assert.match(refused.said[0].message, /^Not saved: this computer's storage for the app is full/);
+    const taken = await driveRoad(road, quotaStorage());
+    assert.equal(taken.dirty, false, 'a save the shelf took clears it, as before');
+    assert.equal(taken.said[0].tone, 'ok');
+  });
+}
+
+test('F20 after the review · the start screen: a brand-new job the shelf refuses opens marked unsaved, in the same red words', async () => {
+  const { useProjectStore } = await import('../src/stores/projectStore.js');
+  const { useHistoryStore } = await import('../src/stores/historyStore.js');
+  const drive = (storage) => {
+    useProjectStore.getState().newProject('Brand new');
+    const said = [];
+    const hands = {
+      useProjectStore, useHistoryStore, saveLocalProject, notOnShelf, migrateDesign, getProjectType, storage,
+      loadProject: useProjectStore.getState().loadProject,
+      markUnsaved: useProjectStore.getState().markUnsaved,
+      notify: (message, tone) => said.push({ message, tone }),
+      setLibraryCategory: () => {}, setFlow: () => {}, openEditor: () => {},
+    };
+    const names = Object.keys(hands);
+    const src = roadOf('src/components/StartScreen.jsx', 'const onFlowStart = () => {', '\n  };');
+    // eslint-disable-next-line no-new-func
+    new Function(...names, `${src}\nreturn onFlowStart;`)(...names.map((k) => hands[k]))();
+    return { dirty: useProjectStore.getState().dirty, said, listed: listLocalProjects(storage).length };
+  };
+  const refused = drive(REFUSING);
+  assert.equal(refused.dirty, true, 'the job opens marked unsaved: it is not on the shelf');
+  assert.deepEqual(refused.said.map((m) => m.tone), ['error']);
+  assert.match(refused.said[0].message, /^Not saved: this computer's storage for the app is full, so this job is not on its shelf\./);
+  const shelf = quotaStorage();
+  const taken = drive(shelf);
+  assert.equal(taken.dirty, false, 'a job the shelf took opens clean, as before');
+  assert.deepEqual(taken.said, []);
+  assert.equal(taken.listed, 1);
+});
+
+test('F20 after the review · persistProject says whether the job was stored, on every branch', async () => {
+  assert.equal((await persistProject({ project: job(1), units: [], storage: quotaStorage() })).stored, true);
+  assert.equal((await persistProject({ project: job(1), units: [], storage: REFUSING })).stored, false);
 });

@@ -99,8 +99,9 @@ export default function DesignSettingsModal() {
   const updateAndSave = async () => {
     if (blockers.length || saving) return;
     setSaving(true);
-    const { project: saved, message, tone } = await persistProject({ project, units });
-    markSaved(saved);
+    const { project: saved, message, tone, stored } = await persistProject({ project, units });
+    // T82 F20, after the review: a job the shelf refused stays marked unsaved.
+    if (stored) markSaved(saved);
     notify(message, tone);
     if (!alive.current) return;
     setSaving(false);

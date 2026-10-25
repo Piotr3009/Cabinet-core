@@ -602,8 +602,9 @@ export default function ConfiguratorPage() {
 
   /** File ▸ Save as… — a copy under a new name. */
   const onSaveAs = useCallback(async (name) => {
-    const { project: saved, message, tone } = await persistProject({ project, units, asName: name });
-    markSaved(saved);
+    const { project: saved, message, tone, stored } = await persistProject({ project, units, asName: name });
+    // T82 F20, after the review: a copy the shelf refused leaves the job as it was, unsaved.
+    if (stored) markSaved(saved);
     notify(message, tone);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project, units, markSaved]);

@@ -62,6 +62,17 @@ function storageRefusal(err) {
   return `this computer's storage refused it (${String(err?.message || name || 'no reason given')})`;
 }
 
+/**
+ * The sentence for a job the shelf did not take (`saveLocalProject` answered
+ * `stored: false`), after "Not saved: ". One sentence for every road that
+ * puts a job on the shelf: File > Save, Save as, Update and save, the start
+ * screen's new job. Null when the job is on the shelf.
+ */
+export function notOnShelf(row) {
+  if (!row || row.stored !== false) return null;
+  return `${row.storeError || storageRefusal(null)}, so this job is not on its shelf. Remove jobs you no longer need on the start screen and save again.`;
+}
+
 // ─── T82 F20, AFTER THE REVIEW · THE LOGO IS KEPT ONCE ──────────────────────
 //
 // The owner, 25.10.2026, 11:40: *"do tego dodawanie loga do rysunkow musze

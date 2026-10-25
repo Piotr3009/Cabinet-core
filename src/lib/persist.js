@@ -1,4 +1,4 @@
-import { browserStorage, saveLocalProject } from './projectLibrary.js';
+import { browserStorage, notOnShelf, saveLocalProject } from './projectLibrary.js';
 import { saveProject as saveCloudProject, saveAssignments } from './cloudSync.js';
 import { isMockMode } from './supabase.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
@@ -42,9 +42,9 @@ export async function persistProject({ project, units, asName = null, at = Date.
   // T82 F20, after the review: a job the browser would not take is NOT on
   // this computer, and the save says so in words instead of "saved". The job
   // stays open as it is; nothing in it is lost while the window is open.
-  const notHere = row.stored === false
-    ? `${row.storeError}, so this job is not on its shelf. Remove jobs you no longer need on the start screen and save again.`
-    : null;
+  // `stored` says whether the save landed anywhere (the shelf, or the
+  // database where that is the road): a caller marks the job saved only then.
+  const notHere = notOnShelf(row);
 
   if (isMockMode) {
     if (notHere) return { project: saved, message: `Not saved: ${notHere}`, tone: 'error', stored: false };
@@ -52,6 +52,7 @@ export async function persistProject({ project, units, asName = null, at = Date.
       project: saved,
       message: asName ? `Saved as “${saved.name}” on this computer.` : 'Project saved on this computer.',
       tone: 'ok',
+      stored: true,
     };
   }
 
@@ -69,6 +70,7 @@ export async function persistProject({ project, units, asName = null, at = Date.
       project: saved,
       message: `Saved on this computer — the database refused it: ${res.error.message || 'error'}`,
       tone: 'warn',
+      stored: true,
     };
   }
   saved = { ...saved, id: res.project?.id || saved.id };
@@ -88,11 +90,12 @@ export async function persistProject({ project, units, asName = null, at = Date.
     } catch { /* the local copy is the copy */ }
   }
   if (notHere) {
-    return { project: saved, message: `Saved in the database, but not on this computer: ${notHere}`, tone: 'warn', stored: false };
+    return { project: saved, message: `Saved in the database, but not on this computer: ${notHere}`, tone: 'warn', stored: true };
   }
   return {
     project: saved,
     message: asName ? `Saved as “${saved.name}”.` : 'Project saved.',
     tone: 'ok',
+    stored: true,
   };
 }

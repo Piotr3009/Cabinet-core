@@ -84,7 +84,8 @@ const EXEMPT = {
   'src/components/TopBar.jsx':
     'T75 F20 · the Library menu\'s Sets row says what is on the shelf instead of "0 types". *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."*'
     + ' T78 F21 · the Output menu\'s Spraying placeholder becomes a live entry (onOpenSpraying): one page on the Production Core pattern, the spray schedule by colour, the cards and the paint order. *"cale sprayowanie jako osobne menu Cabinet Core."*'
-    + ' Chat fix 17.10.2026 \u00b7 Output > Part labels (PDF): the sticker sheets (onExportLabels). *"naklejki 44 na A4 bo takie mam, kolorami ... napis co to, i strzalka co oklejamy ... ok koduj"*',
+    + ' Chat fix 17.10.2026 \u00b7 Output > Part labels (PDF): the sticker sheets (onExportLabels). *"naklejki 44 na A4 bo takie mam, kolorami ... napis co to, i strzalka co oklejamy ... ok koduj"*'
+    + ' T82 F20, after the review · File > Save marks the job saved only when the save was stored (persistProject answers stored); a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
   // ─── ADDED 15.10.2026 (the evening) · THE RECESS SEEN FROM THE FRONT ──────
   // The owner: *"na setup room jak widze sciane od frontu nie top tylko front
   // to nie widze kresek, gdzie jest komin i gdzie wneka"* and *"reces pionowy
@@ -270,7 +271,8 @@ const EXEMPT = {
     + ' T79 F1 . the messages and the front-gap rows stand in ONE bottom-left column (components/Messages.jsx, the rows as its top slot through a wrapper, FrontGapWarnings.jsx untouched); the lone Messages mount after the context menu is gone. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
     + ' T79 F18 · onExportLabels takes { sheet } from the two Output entries (21 per sheet, Avery L7160; 44 per sheet) and hands that preset of profile.labels.sheets to exportLabelsPdf; the default stays L7160. *"przełącznik 21/44 naklejek w oknie eksportu"* (the handover), the owner 14:55: *"ok daj"*'
     + ' T80 F10 · the in-frame checks #40 to #44 stand in the left column beside the front-gap rows (components/InframeWarnings.jsx, the same findings the Check panel reads, the same fly-to). *"Each in the left messages and in the Check panel."* (CLAUDE.md T80 F10); the owner: *"3 mm zawsze."* (21.10.2026, 22:03)'
-    + ' T82 F12, after the review · the page\'s export preflight counts what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)',
+    + ' T82 F12, after the review · the page\'s export preflight counts what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)'
+    + ' T82 F20, after the review · File > Save as marks the job saved only when the copy was stored; a refused write leaves the job as it was, unsaved, and says so. *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -342,6 +344,12 @@ const EXEMPT = {
   // T82 F12: the Check panel draws the note level (TONE.note), the service void behind a vanity.
   'src/components/CheckPanel.jsx':
     'T82 F12 · the Check\'s note level drawn grey (TONE.note): #45, the service void behind a vanity, is a note, never a fault. *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"*',
+  // T82 F20, after the review: a refused save leaves the job marked unsaved (persistProject answers stored).
+  'src/components/DesignSettingsModal.jsx':
+    'T82 F20, after the review · Update and save marks the job saved only when the save was stored; a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
+  // T82 F20, after the review: the start screen reads whether the shelf took the brand-new job.
+  'src/components/StartScreen.jsx':
+    'T82 F20, after the review · Start designing reads whether the shelf took the brand-new job; when the browser refused it the job opens marked unsaved (markUnsaved) and the start screen says the save\'s own red sentence (notOnShelf). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
 };
 
 /**
@@ -392,7 +400,8 @@ const FROZEN = {
   'src/components/ContextMenu.jsx': '9ecd6083c1808257a9c4f53ec9ff654304cfae671c1b923e9910ab5a55ca524c',
   'src/components/DecorPicker.jsx': '3ed5d2c75e1c7eb48b364f3b86cf9ec30fdad43acae9f1b30879f65f14e82e6a',
   'src/components/DecorPickerModal.jsx': 'eff9e583740f2381cfa8e796339f5b664f88ddf010e427a61cd450ed2ad44411',
-  'src/components/DesignSettingsModal.jsx': '370f34cccd0b9907215eead9d27884ae14e6806ca192361bece6ef049116cf56',
+  // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/DesignSettingsModal.jsx': '7f4863ce3d4ec2bb8433a11a659377e809950fb3ab6ec956225ddc409683bc0b',
   'src/components/DoorModal.jsx': '4e5e539c734fe6ccf32f030f5c90e3678196828aad35be244248c0992e16efe7',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawRoomModal.jsx': '31107a5dc23977013675fed7d5392ed5c4f89e82e86f9dc1f5c94433bf19d260',
@@ -461,9 +470,11 @@ const FROZEN = {
   'src/components/SprayingPanel.jsx': '7d8f7adb67d26f0402c123e78d4c785981a2a15113968c43ed3132e5ada9bb9f',
   'src/components/SheenSlider.jsx': 'ec09e0dd7ad835672e4c024dee3013e649dcfa8ad64a2da5c120ed78d5c94bfb',
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
-  'src/components/StartScreen.jsx': '6a6de6d1667872a45d18bb5b8e9e42d3d4522ac99f8ef2d1e9a32ce54ab363aa',
+  // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/StartScreen.jsx': '861cd8a0bf25008356969643d19dc9efa7e4116b482ed6c5d3c99c6dcec0f397',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/TopBar.jsx': '9560495aac02f9f03a4138ea6f74b46116f7e2e94362935301458f1a9bc3fbc3',
+  // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/TopBar.jsx': 'c79b1e79ad886daed19c4d93a2860afe6624e708df0ed7c1fb28de1dc0c28ec2',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
   // T78 F5 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/UnitSizeModal.jsx': 'e8b94789f07fffaeb5b66a2a8fd160c28d9d4f4b0ed56383ecc18532f7b06c1f',
@@ -484,7 +495,8 @@ const FROZEN = {
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F18 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': 'c9ae6cf622068e116c55dcfd1c762ada19652a6c55b6b7855d53b1392a5dfdff',
+  // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': '37b7fc67836d2deef861251637ef5cdd377f265e0b0d40e495533c122ec5c021',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -680,6 +692,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // T78 F19 · *"Cabineo 8 AND 12, chosen in the company's default settings"*: the Joints choice on the company defaults screen.
     'src/components/CompanyDefaultsModal.jsx',
     'src/components/ContextMenu.jsx',
+    // T82 F20, after the review · *"musze miec dzisiaj profesjonalne rysunki dla klientow"*: Update and save marks the job saved only when it was stored.
+    'src/components/DesignSettingsModal.jsx',
     'src/components/DrawRoomModal.jsx',
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',
@@ -702,6 +716,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // T78 F21 · *"cale sprayowanie jako osobne menu Cabinet Core"*: the Spraying page, a new PRO surface.
     'src/components/SprayingPanel.jsx',
     // T75 F20 · *"the Library's `media` category (`soon`) becomes the sets shelf"*.
+    // T82 F20, after the review · *"musze miec dzisiaj profesjonalne rysunki dla klientow"*: Start designing reads whether the shelf took the job.
+    'src/components/StartScreen.jsx',
     'src/components/TopBar.jsx',
     'src/components/UnitSizeModal.jsx',
     // 15.10.2026 (the evening) · *"nie widze kresek, gdzie jest komin i gdzie wneka"*: the recess and the chimney seen from the front, the recess's band.

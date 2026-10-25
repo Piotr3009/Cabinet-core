@@ -11963,6 +11963,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   markSaved: (project) => set((s) => ({ project: project || s.project, dirty: false })),
 
   /**
+   * T82 F20, after the review: a job that is NOT on the shelf (the browser
+   * refused the write) is marked unsaved. The gate (`stores/dirtyGate.js`) is
+   * the only writer of the flag, so this hands it a new project object, which
+   * is what a change to the document looks like to it; the job is unchanged.
+   */
+  markUnsaved: () => set((s) => ({ project: { ...s.project } })),
+
+  /**
    * The project as it should be WRITTEN — the live assignment blob folded in
    * (turn 39, CLAUDE.md F2).
    *

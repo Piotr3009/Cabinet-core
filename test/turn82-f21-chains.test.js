@@ -30,9 +30,12 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 
 import { S, t81Kitchen, setArgs } from '../scripts/t81-kitchen.mjs';
 import { getCabinetProfile } from '../src/engine/profile.js';
+import { rectCorners } from '../src/engine/room.js';
+import { formatMm } from '../src/engine/format.js';
 import {
   frontChainLines, frontStacks, heightChains, leafChains, mountingBands, wallGroups, widthChains,
 } from '../src/engine/drawings/wallElevation.js';
@@ -293,6 +296,179 @@ test('F21 · on the laid sheet every chain stays in the drawing box: over the ti
           assert.ok(x1 <= zones.box.x + zones.box.w && x0 >= zones.box.x, `${mode}: ${e.kind} ${e.text ?? ''} out of the box at ${x0.toFixed(2)} to ${x1.toFixed(2)}`);
         }
       }
+    }
+  }
+});
+
+// ═══ AFTER THE REVIEW: THE HAWA DOOR IS A LEAF ON THE CHAINS ═══════════════
+//
+// INT's review of 25.10.2026: the chains read FRONT and DRAWER-FRONT only, so
+// the HAWA pocket door (PART A, `POCKET-DOOR`, role `pocket_door`) was in
+// neither chain. On a run BUD 600 (its own door), a one-door pocket hand R and
+// the BUD 500 it covers (its own door dropped) the leaf chain read 1.5 · 597 ·
+// 600.5, the last figure running from the BUD 600's door across the pocket
+// and the covered unit, and the door's height was in no stack. Counted
+// blindly, the door would read 1.5 · 597 · 26.5 · TB · 1.5, the 26.5 being
+// panel A's face with the two gaps either side of it: a false gap. So the door
+// is a leaf (its TB across, its TH up), and the pocket panel that stands on
+// the face (panel A of the one-door pocket, flush with the door, in the front
+// material) is chained as the board it is, with the true gaps either side.
+// The panels behind a door (panel B, both B of the two-door pocket) are not.
+
+const POCKET = 'HAWA_POCKET';
+const unitOf = (id) => S().units.find((u) => u.id === id);
+const withDoor = (type, x, width) => {
+  const id = S().addUnit(type, { wall: 0, x }).id;
+  S().updateUnitParams(id, { width });
+  S().setDoors(id, { count: 1, hinge: 'L' });
+  return id;
+};
+
+/**
+ * The review's run, butted end to end: a BUD 600 with its own door and a BUD
+ * 500 the pocket's door covers (hand R: the pocket left of the BUD 500; hand
+ * L: right of it), or the two-door pocket between two BUD 450 it covers.
+ */
+function hawaRun({ doors = 1, hand = 'R', front18 = false } = {}) {
+  S().newProject('T82 F21 review');
+  S().setRoom({ corners: rectCorners(6000, 3000), height: 2500 });
+  if (front18) S().setFrontType('f1', { source: 'spray', material_id: 'generic-18' });
+  const ids = {};
+  if (doors === 1 && hand === 'R') {
+    ids.c = withDoor('BUD', 2000, 500);
+    ids.p = S().addUnit(POCKET, { near: ids.c, side: 'L' }).id;
+    ids.a = withDoor('BUD', unitOf(ids.p).position.x_mm - 600, 600);
+  } else if (doors === 1) {
+    ids.c = withDoor('BUD', 1000, 500);
+    ids.p = S().addUnit(POCKET, { near: ids.c, side: 'R' }).id;
+    const pu = unitOf(ids.p);
+    ids.a = withDoor('BUD', pu.position.x_mm + pu.params.width, 600);
+  } else {
+    ids.l = withDoor('BUD', 1000, 450);
+    ids.p = S().addUnit(POCKET, { near: ids.l, side: 'R' }).id;
+    S().setPocket(ids.p, { doors: 2 });
+    const pu = unitOf(ids.p);
+    ids.r = withDoor('BUD', pu.position.x_mm + pu.params.width, 450);
+  }
+  const a = { entries: S().allResults(), room: S().project.room };
+  const group = wallGroups(a.entries, P())[0];
+  const m = (id) => group.members.find((q) => q.unit.id === id);
+  const pocket = m(ids.p);
+  const part = (re) => pocket.result.panels.filter((p) => re.test(p.id));
+  return { ids, group, m, pocket, part, a };
+}
+
+/** A board's x span on the wall. */
+const span = (m, p) => [m.x + p.box.x, m.x + p.box.x + p.box.w];
+const valuesOf = (edges) => edges.slice(1).map((e, i) => Math.round((e - edges[i]) * 100) / 100);
+
+test('F21 review · one door, hand R: the pocket door is a leaf, panel A a board with its true gaps, no false 26.5', () => {
+  const run = hawaRun({ doors: 1, hand: 'R' });
+  const { group, m, ids, pocket, part } = run;
+  assert.equal(m(ids.c).result.panels.some((p) => p.part === 'FRONT'), false, 'the covered BUD 500 has no door of its own');
+  const door = part(/^POCKET-DOOR$/)[0];
+  const panelA = part(/^POCKET-A$/)[0];
+  const bud = m(ids.a).result.panels.find((p) => p.part === 'FRONT');
+  const { leaves, leafEdges } = leafChains(mountingBands(group.members)[0].members);
+  const expected = [group.from, ...span(m(ids.a), bud), ...span(pocket, panelA), ...span(pocket, door), group.to];
+  assert.deepEqual(leafEdges, expected, 'the run end, the BUD 600\'s door, panel A, the pocket door, the run end');
+  // Read: 1.5 · 597 · 1.5 · A · 3 · TB · 1.5, every figure a leaf, a board or a gap.
+  assert.deepEqual(leaves, valuesOf(expected));
+  assert.ok(leaves.includes(door.box.w), `the door's own TB ${door.box.w} is a figure`);
+  assert.ok(leaves.includes(panelA.box.w), `panel A's own ${panelA.box.w} is a figure`);
+  const [budEnd] = span(m(ids.a), bud).slice(1);
+  const [doorStart] = span(pocket, door);
+  const across = Math.round((doorStart - budEnd) * 100) / 100;
+  assert.ok(across > panelA.box.w, 'between the BUD\'s door and the pocket door: the gap, panel A, the gap');
+  assert.ok(!leaves.includes(across), `no figure runs across panel A and its two gaps (${across})`);
+  assert.ok(!leaves.includes(Math.round((group.to - budEnd) * 100) / 100), 'no figure runs across the pocket and the covered unit');
+  assert.equal(sum(leaves), group.to - group.from, 'the chain still adds up to the run');
+  // Up the right: the door's TH is a stack of its own; panel B behind it is not a leaf.
+  const stacks = frontStacks(group.members);
+  const own = stacks.find((s) => s.ids.includes(ids.p));
+  assert.ok(own, 'the pocket\'s door is in the height stacks');
+  assert.deepEqual(own.values, [door.box.h]);
+  assert.equal(stacks.some((s) => s.ids.includes(ids.c)), false, 'the covered unit has no stack of its own');
+  const panelB = part(/^POCKET-B$/)[0];
+  assert.ok(!leafEdges.includes(span(pocket, panelB)[0]), 'panel B stands behind the door: not on the chain');
+});
+
+test('F21 review · the review\'s own run, an 18 front: 1.5 · 597 · 1.5 · 22 · 3 · 572.5 · 1.5', () => {
+  const { group, ids } = hawaRun({ doors: 1, hand: 'R', front18: true });
+  const { leaves } = leafChains(mountingBands(group.members)[0].members);
+  // The BUD 600's reveal, its door, its reveal; panel A (22 on an 18 front);
+  // the door's own gap; TB 572.5; the reveal at the run's end. T81 read the
+  // last three as one 600.5, and a blind count read 26.5 for the middle three.
+  assert.deepEqual(leaves, [1.5, 597, 1.5, 22, 3, 572.5, 1.5]);
+  assert.ok(!leaves.includes(600.5) && !leaves.includes(26.5));
+  assert.deepEqual(frontStacks(group.members).find((s) => s.ids.includes(ids.p)).values, [721.5], 'TH up the right');
+});
+
+test('F21 review · one door, hand L: the same law, mirrored', () => {
+  const { group, m, ids, pocket, part } = hawaRun({ doors: 1, hand: 'L' });
+  const door = part(/^POCKET-DOOR$/)[0];
+  const panelA = part(/^POCKET-A$/)[0];
+  const bud = m(ids.a).result.panels.find((p) => p.part === 'FRONT');
+  const { leafEdges, leaves } = leafChains(mountingBands(group.members)[0].members);
+  assert.deepEqual(leafEdges, [group.from, ...span(pocket, door), ...span(pocket, panelA), ...span(m(ids.a), bud), group.to]);
+  assert.ok(leaves.includes(door.box.w) && leaves.includes(panelA.box.w));
+  assert.deepEqual(frontStacks(group.members).find((s) => s.ids.includes(ids.p)).values, [door.box.h]);
+});
+
+test('F21 review · two doors: two leaves and the gap between them over the 110 pocket; both B panels behind them', () => {
+  const { group, ids, pocket, part } = hawaRun({ doors: 2 });
+  const doorL = part(/^POCKET-DOOR-L$/)[0];
+  const doorR = part(/^POCKET-DOOR-R$/)[0];
+  assert.ok(doorL && doorR, 'the two-door pocket has its two leaves');
+  const { leafEdges, leaves } = leafChains(mountingBands(group.members)[0].members);
+  assert.deepEqual(leafEdges, [group.from, ...span(pocket, doorL), ...span(pocket, doorR), group.to]);
+  const gap = Math.round((doorR.box.x - doorL.box.x - doorL.box.w) * 100) / 100;
+  assert.ok(hasRun(leaves, [doorL.box.w, gap, doorR.box.w]), `LEAF, GAP, LEAF: ${leaves.join(' ')}`);
+  for (const b of part(/^POCKET-B-/)) assert.ok(!leafEdges.includes(span(pocket, b)[0]), `${b.id} stands behind a door`);
+  const own = frontStacks(group.members).find((s) => s.ids.includes(ids.p));
+  assert.deepEqual(own.values, [doorL.box.h], 'the two leaves share one height');
+});
+
+test('F21 review · on the fronts sheet the pocket\'s figures are printed, the gaps beside the chain on a leader', () => {
+  for (const [cfg, scale] of [{ doors: 1, hand: 'R' }, { doors: 1, hand: 'L' }, { doors: 2 }, { doors: 1, hand: 'R', front18: true }]
+    .flatMap((c) => [[c, 15], [c, 20]])) {
+    const { group, pocket, part, a } = hawaRun(cfg);
+    const ctx = drawingContext(scale, P());
+    const sheet = buildRunElevation(group, { mode: 'fronts', room: a.room, worktops: [], profile: P(), ctx });
+    const leaf = chainAtY({ sheet }, -ctx.chainSecond);
+    assert.ok(leaf, `${JSON.stringify(cfg)}: the leaf chain under the run`);
+    for (const d of part(/^POCKET-DOOR/)) assert.ok(captions(leaf).includes(formatMm(d.box.w)), `the door's TB ${d.box.w} printed`);
+    assert.equal(leaf.figures.length, leaf.filter((e) => e.kind === 'poly').length / 2, 'one figure per segment');
+    assert.ok(leaf.figures.filter((f) => f.b - f.a <= 3.5).every((f) => f.lifted), 'every gap beside the chain, never dropped');
+    // A lifted figure has its leader, or stands on the row just off the line
+    // beside its own arrows (the third spot, where both levels are taken).
+    for (const f of leaf.figures.filter((g) => g.lifted && !g.row)) {
+      assert.ok(leaf.some((e) => e.kind === 'line' && e.x1 === f.x && e.x2 === f.x), `${f.caption} has its leader`);
+    }
+    const right = rightChains({ sheet, group });
+    assert.ok(right.some((ch) => captions(ch).includes(formatMm(part(/^POCKET-DOOR/)[0].box.h))), 'the door\'s TH up the right');
+    assert.equal(figureCollisions(sheet.chains, ctx.textHeight).length, 0);
+    void pocket;
+  }
+});
+
+test('F21 review · the walk\'s kitchen: every dimension entity of its sheets byte for byte as before the review', () => {
+  // Pinned on fa3bf30d, before this fix: sha256 of the sheet's DIMENSIONS
+  // entities (JSON), the first 16 hex, and their count.
+  const PINNED = {
+    'inframe:fronts': '41e452c587069a50 n=121',
+    'inframe:xray': '41e452c587069a50 n=121',
+    'inframe:no-fronts': '1eac86281936196e n=59',
+    'layon:fronts': '3b90ae822cc52b72 n=116',
+    'layon:xray': '3b90ae822cc52b72 n=116',
+    'layon:no-fronts': 'ad9423de50aa18e0 n=54',
+  };
+  for (const inframe of [true, false]) {
+    for (const mode of ['fronts', 'xray', 'no-fronts']) {
+      const s = stage({ inframe, mode });
+      const ents = s.sheet.entities.filter((e) => e.layer === 'DIMENSIONS');
+      const got = `${createHash('sha256').update(JSON.stringify(ents)).digest('hex').slice(0, 16)} n=${ents.length}`;
+      assert.equal(got, PINNED[`${inframe ? 'inframe' : 'layon'}:${mode}`], `${inframe ? 'in-frame' : 'lay-on'} ${mode}`);
     }
   }
 });

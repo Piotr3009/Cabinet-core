@@ -35,6 +35,16 @@ export const LICENSED = {
   },
 };
 
+LICENSED['src/engine/drawings/setChains.js'] = {
+  why: `T82 F21, after the review: a lifted figure whose alternating level is already taken at its spot takes the `
+    + `other level, then the row just off the line beside its own arrows (a chain with no extension lines), then a `
+    + `third level; where nothing stood in the way every figure stands where T71 put it (the walk's kitchen's sheets `
+    + `byte for byte). The HAWA pocket's 1.5 · 22 · 3 needs three spots. After the C/D/E review: chainV's compact `
+    + `mode (a gap's figure beside its own arrows first) and chainReachX, so the front chains step in and stay inside `
+    + `their band. ${OWNER}`,
+  gates: [],
+};
+
 export const LIVENESS = {};
 
 export const GOLDENS = [];

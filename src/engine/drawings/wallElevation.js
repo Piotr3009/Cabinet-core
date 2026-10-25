@@ -273,9 +273,29 @@ export function bandChains(band, profile) {
  * A FACE front: a door leaf or a drawer front, as the room shows it closed.
  * An inner drawer front behind a door (T78 F15, `meta.inner`) is not on the
  * face, so it is in no chain of fronts.
+ *
+ * T82 F21, after the review: the HAWA pocket door (PART A, `POCKET-DOOR`,
+ * role `pocket_door`) is a leaf like any other, its TB across and its TH up.
+ * Its box is in the pocket's own frame and reaches over the unit it covers,
+ * so it is read where it hangs, as every front is.
  */
 function isFaceFront(p) {
-  return Boolean(p?.box) && (p.part === 'FRONT' || p.part === 'DRAWER-FRONT') && !p.meta?.inner;
+  if (!p?.box || p.meta?.inner) return false;
+  return p.part === 'FRONT' || p.part === 'DRAWER-FRONT' || p.part === 'POCKET-DOOR';
+}
+
+/**
+ * A BOARD ON THE FACE that is not a leaf: a HAWA pocket panel (role
+ * `pocket_panel`, in the front material) that no leaf of its own unit hangs
+ * in front of. The one-door pocket's panel A runs forward flush with the
+ * closed door and is seen; panel B, and both B panels of the two-door pocket,
+ * stand behind a door and are not. On the leaf chain such a board is its own
+ * figure with the true gaps either side of it, never folded into a "gap".
+ */
+function faceBoards(m) {
+  const leaves = m.result.panels.filter(isFaceFront);
+  return m.result.panels.filter((p) => p?.box && p.role === 'pocket_panel'
+    && !leaves.some((l) => l.box.x < p.box.x + p.box.w - SAME && l.box.x + l.box.w > p.box.x + SAME));
 }
 
 /**
@@ -332,8 +352,9 @@ export function frontChainLines(members) {
 }
 
 /**
- * LEAF, GAP, LEAF along one run: every face front's two edges, and with
- * `ends` the run's first and last carcass edges too. A pair of doors reads
+ * LEAF, GAP, LEAF along one run: every face front's two edges (and a face
+ * board's: the HAWA pocket's panel A), and with `ends` the run's first and
+ * last carcass edges too. A pair of doors reads
  * 376.5 · 3 · 376.5, the stiles and the reveals between two cabinets' leaves
  * are figures too (his own DXF's bottom chain, 40 · 600 · 3 · 600 · 40), and
  * with its ends the chain adds up to the unit chain above it, which is the
@@ -344,7 +365,7 @@ export function frontChainLines(members) {
  * @returns {{leafEdges:number[], leaves:number[]}}  empty when no front stands in the run
  */
 export function leafChains(members, { ends = true } = {}) {
-  const edges = members.flatMap((m) => m.result.panels.filter(isFaceFront)
+  const edges = members.flatMap((m) => [...m.result.panels.filter(isFaceFront), ...faceBoards(m)]
     .flatMap((p) => [m.x + p.box.x, m.x + p.box.x + p.box.w]));
   if (!edges.length) return { leafEdges: [], leaves: [] };
   const outer = ends

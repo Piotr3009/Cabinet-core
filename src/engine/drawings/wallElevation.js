@@ -272,7 +272,11 @@ export function bandChains(band, profile) {
 /**
  * A FACE front: a door leaf or a drawer front, as the room shows it closed.
  * An inner drawer front behind a door (T78 F15, `meta.inner`) is not on the
- * face, so it is in no chain of fronts.
+ * face, so it is in no chain of fronts. Nor is a leaf that does not look at
+ * the elevation: an L corner's B-arm door standing along z (`meta.swingZ`,
+ * or `meta.faceX` seen from the other wall) is a board edge on this wall,
+ * the projector's own law (projector.js handleMarks); counted, its 25 split
+ * the A leaf beside it (the C/D/E review, sheets 1).
  *
  * T82 F21, after the review: the HAWA pocket door (PART A, `POCKET-DOOR`,
  * role `pocket_door`) is a leaf like any other, its TB across and its TH up.
@@ -280,7 +284,7 @@ export function bandChains(band, profile) {
  * so it is read where it hangs, as every front is.
  */
 function isFaceFront(p) {
-  if (!p?.box || p.meta?.inner) return false;
+  if (!p?.box || p.meta?.inner || p.meta?.swingZ || p.meta?.faceX) return false;
   return p.part === 'FRONT' || p.part === 'DRAWER-FRONT' || p.part === 'POCKET-DOOR';
 }
 

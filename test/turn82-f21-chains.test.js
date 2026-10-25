@@ -472,3 +472,49 @@ test('F21 review · the walk\'s kitchen: every dimension entity of its sheets by
     }
   }
 });
+
+// ═══ AFTER THE REVIEW (C/D/E): ONLY LEAVES SEEN FACE-ON ═══════════════════
+//
+// The review's find (sheets 1): an L corner's B-arm door stands along z
+// (`meta.swingZ`; on a corner seen from the other wall, `meta.faceX`), so on
+// this wall's elevation it is a board edge, 25 wide, inside the A door. The
+// chain took it as a leaf and printed 558 · 3 · 25 · 312.5 · 93 · 597 · 1.5:
+// the A leaf's 340.5 nowhere, a "25" that is no leaf. A chain of fronts
+// takes only the leaves the elevation sees face-on, the projector's own law
+// (projector.js handleMarks: a leaf standing along z is not drawn as a face).
+
+function cornerRun(side = 'left') {
+  S().newProject('T82 F21 review, L corner');
+  S().setRoom({ corners: rectCorners(4000, 3000), height: 2500 });
+  const l = S().addUnit('CORNER_L_BASE', { wall: 0, x: 0 }).id;
+  S().updateUnitParams(l, { corner_side: side, doors: true });
+  const b = withDoor('BUD', 1000, 600);
+  const group = wallGroups(S().allResults(), P())[0];
+  return { group, corner: group.members.find((m) => m.unit.id === l), bud: group.members.find((m) => m.unit.id === b) };
+}
+
+test('F21 review · the L corner\'s B-arm door, turned along z, is no leaf on this wall: the A leaf reads whole', () => {
+  for (const side of ['left', 'right']) {
+    const { group, corner, bud } = cornerRun(side);
+    const fronts = corner.result.panels.filter((p) => p.box && p.part === 'FRONT');
+    const turned = fronts.filter((p) => p.meta?.swingZ || p.meta?.faceX);
+    const facing = fronts.filter((p) => !p.meta?.swingZ && !p.meta?.faceX);
+    assert.ok(turned.length >= 1 && facing.length >= 1, `${side}: the corner has a leaf of each kind`);
+    const { leafEdges, leaves } = leafChains(mountingBands(group.members)[0].members);
+    for (const p of turned) {
+      const [x0, x1] = span(corner, p);
+      assert.ok(!(leafEdges.includes(x0) && leafEdges.includes(x1)), `${side}: ${p.id}'s edge (${p.box.w}) is not a leaf on the chain`);
+    }
+    for (const p of facing) assert.ok(leaves.includes(p.box.w), `${side}: ${p.id} reads whole, ${p.box.w}`);
+    const door = bud.result.panels.find((p) => p.part === 'FRONT');
+    const expected = [group.from, ...facing.flatMap((p) => span(corner, p)), ...span(bud, door), group.to]
+      .sort((a, b) => a - b).filter((v, i, arr) => i === 0 || Math.abs(v - arr[i - 1]) > 0.5);
+    assert.deepEqual(leafEdges, expected, `${side}: the run's ends, the A leaf, the BUD's door`);
+    assert.equal(sum(leaves), group.to - group.from, 'and the chain adds up to the run');
+    // Up the right, only face-on leaves make a stack.
+    const stacks = frontStacks(group.members);
+    const own = stacks.find((s) => s.ids.includes(corner.unit.id));
+    const ys = [...new Set(facing.flatMap((p) => [corner.base + p.box.y, corner.base + p.box.y + p.box.h]))].sort((a, b) => a - b);
+    assert.deepEqual(own.edges, ys, `${side}: the corner's stack is its facing leaf's`);
+  }
+});

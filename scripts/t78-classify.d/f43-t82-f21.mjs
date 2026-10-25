@@ -24,7 +24,8 @@ export const LICENSED = {
   'src/engine/drawings/wallElevation.js': {
     why: `T82 F21: frontStacks (every unit's own face fronts, FRONT, GAP, FRONT; T41 F5c's floorMm drop retired), `
       + `frontChainLines (stacks that overlap in height step out a line), leafChains (LEAF, GAP, LEAF, with or `
-      + `without the run's carcass ends); heightChains publishes the stacks; verticalChains draws them. ${OWNER}`,
+      + `without the run's carcass ends); heightChains publishes the stacks; verticalChains draws them. ${OWNER}`
+      + ' After the C/D/E review (sheets 1): isFaceFront leaves out a leaf that does not look at the elevation (an L corner\'s B-arm door along z, the projector\'s own law), so the A leaf\'s width is on the chain.',
     gates: [],
   },
   'src/engine/drawings/setElevation.js': {

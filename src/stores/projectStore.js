@@ -1024,6 +1024,8 @@ function wholeRecessOf(unit, state = useProjectStore.getState(), profile = getCa
 /** The extension the room asks of this unit where it stands (KIT_RECESS.lsp section 1), or null. */
 function recessExtensionFor(unit, state = useProjectStore.getState(), profile = getCabinetProfile()) {
   if (!unit || Number(unit.params?.recess_mm) > 0) return null;
+  // T82 F16, after the review: a free panel is a board, never a carcass that grows into a recess.
+  if (isFreePanel(unit.type)) return null;
   const mine = recessesFor(unit, state);
   if (!mine.length || !roomWalls(state.project.room)[unit.position.wall]) return null;
   const K = notchProfile(profile);
@@ -3542,7 +3544,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     let changed = false;
     const next = s.units.map((u) => {
       const has = Number(u.params?.recess_mm) > 0;
-      const whole = wholeRecessOf(u, s, profile);
+      // T82 F16, after the review: the recess law is a CARCASS's (it goes
+      // deeper by the recess, its back behind the wall line). A free panel is a
+      // board: its box is its board and its back is where the hand puts it, so
+      // no recess takes it, and one an old project saved on it is given back.
+      const whole = isFreePanel(u.type) ? null : wholeRecessOf(u, s, profile);
       // T79 F10: the recess less this unit's stand-off; at or under 0, no recess.
       const depth = whole ? Math.max(0, effectiveRecessDepth(u, whole, profile)) : 0;
       if (depth > 0) {
@@ -6637,11 +6643,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const want = snapTo(Number(y) || 0, snapStep || profile.editor.mmStep);
     const fit = withinReach(want, freePanelReach(s, unit, profile).mount, 'the floor', 'the ceiling');
     if (fit.value !== (Number(unit.params.mount_height) || 0)) get().updateUnitParams(unitId, { mount_height: fit.value });
+    // T82 F16, after the review: what it says is where the panel IS, read back.
+    const landed = Number(get().units.find((u) => u.id === unitId)?.params?.mount_height) || 0;
+    const notices = fit.blocked ? [`From the floor limited to ${formatMm(fit.value)} mm by ${fit.by}.`] : [];
+    if (Math.abs(landed - fit.value) > 1e-6) notices.push(`From the floor settled at ${formatMm(landed)} mm by the room.`);
     return {
-      y: fit.value,
+      y: landed,
       blocked: fit.blocked,
       by: fit.by,
-      notices: fit.blocked ? [`From the floor limited to ${formatMm(fit.value)} mm by ${fit.by}.`] : [],
+      notices,
     };
   }),
 
@@ -6669,12 +6679,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const fit = withinReach(want, reach.standoff, 'the wall clearance', 'the far wall');
     const inset = roundTo(fit.value - reach.clearance, 4);
     if (inset !== (Number(unit.params.inset_back_mm) || 0)) get().updateUnitParams(unitId, { inset_back_mm: inset });
+    // T82 F16, after the review: what it says is where the panel IS, its back
+    // read back off the store (the review found a recess settling it 290 away
+    // while this still answered with the number asked).
+    const landed = get().units.find((u) => u.id === unitId);
+    const zNow = landed ? roundTo(backStandoff(landed, profile), 4) : fit.value;
+    const notices = fit.blocked ? [`From the wall limited to ${formatMm(fit.value)} mm by ${fit.by}.`] : [];
+    if (Math.abs(zNow - fit.value) > 1e-6) notices.push(`From the wall settled at ${formatMm(zNow)} mm by the room.`);
     return {
-      z: fit.value,
-      inset,
+      z: zNow,
+      inset: Number(landed?.params?.inset_back_mm) || 0,
       blocked: fit.blocked,
       by: fit.by,
-      notices: fit.blocked ? [`From the wall limited to ${formatMm(fit.value)} mm by ${fit.by}.`] : [],
+      notices,
     };
   }),
 

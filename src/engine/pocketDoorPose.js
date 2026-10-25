@@ -406,7 +406,8 @@ export function pocketPlanEntities(group, { profile, ctx, gapOf }) {
  * as seen (solid, as the projector draws B and its zones). Where B stands
  * BEHIND the knife (a hand-L pocket, at a run's right end) the section sees
  * panel A, which carries no track: the axes are drawn hidden (dashed) and
- * their words say so, "BEHIND THE CUT", so no track is ever drawn on A.
+ * their words say so ("BEHIND THE CUT" under the track's name), so no track
+ * is ever drawn on A as seen.
  */
 export function pocketSectionEntities(members, { profile, ctx, gapOf, at = null }) {
   const out = [];
@@ -428,10 +429,30 @@ export function pocketSectionEntities(members, { profile, ctx, gapOf, at = null 
       const front = oz + d.zf;
       const z0 = front - (n.trackStart ?? 0);
       const z1 = z0 - (d.trackMm ?? 0);
-      const behind = seenB ? '' : ' BEHIND THE CUT';
+      // T82 F7, after the review (roomsheets 4): the words stand where no board runs. The top axis is
+      // 22 under B's top edge and the top board, so a word beside it (with its white mask) erased the
+      // board's cut and B's edge. They stand instead in the pocket's clear, inside the two hardware
+      // zones' lines (63 under the top, 50 over the bottom) and behind the profile, on a leader from
+      // their track, with no mask, as a dimension figure stands: nothing is ever painted out.
+      const hText = ctx.mm(1.9);
+      const lineH = hText * 1.3;
+      const pad = ctx.mm(1);
+      const zc = (z1 + z0 - (n.symbol?.d ?? 0)) / 2;
       const rows = [];
-      if (n.topAxis != null) rows.push({ y: base + pb.y + pb.h - n.topAxis, word: `TOP TRACK ${formatDimension(n.topAxis)}${behind}`, meta: 'hawa-track-top' });
-      if (n.bottomAxis != null) rows.push({ y: base + pb.y + n.bottomAxis, word: `BOTTOM TRACK ${formatDimension(n.bottomAxis)}${behind}`, meta: 'hawa-track-bottom' });
+      if (n.topAxis != null) {
+        rows.push({
+          y: base + pb.y + pb.h - n.topAxis, dir: -1, meta: 'hawa-track-top',
+          edge: base + pb.y + pb.h - Math.max(n.zoneTop ?? 0, n.topAxis) - pad,
+          words: [`TOP TRACK ${formatDimension(n.topAxis)}`, ...(seenB ? [] : ['BEHIND THE CUT'])],
+        });
+      }
+      if (n.bottomAxis != null) {
+        rows.push({
+          y: base + pb.y + n.bottomAxis, dir: 1, meta: 'hawa-track-bottom',
+          edge: base + pb.y + Math.max(n.zoneBottom ?? 0, n.bottomAxis) + pad,
+          words: [`BOTTOM TRACK ${formatDimension(n.bottomAxis)}`, ...(seenB ? [] : ['BEHIND THE CUT'])],
+        });
+      }
       if (d.trackMm > 0) {
         for (const r of rows) {
           const key = `${r.meta}:${r.y}:${z0}:${z1}`;
@@ -440,9 +461,12 @@ export function pocketSectionEntities(members, { profile, ctx, gapOf, at = null 
           out.push(seenB
             ? { ...line('HINGES', z1, r.y, z0, r.y), pen: 'THIN', src: host, meta: r.meta }
             : { ...line('HINGES', z1, r.y, z0, r.y), pen: 'HIDDEN', hidden: true, src: host, meta: r.meta });
-          out.push({
-            ...text('SHEET_MUTED', (z0 + z1) / 2, r.y + ctx.mm(1.6), r.word, ctx.mm(1.9)),
-            paperHeight: 1.9, mask: true, src: host, meta: `${r.meta}-label`,
+          out.push({ ...line('SHEET_MUTED', zc, r.y, zc, r.edge), pen: 'FINE', src: host, meta: `${r.meta}-leader` });
+          r.words.forEach((word, i) => {
+            out.push({
+              ...text('SHEET_MUTED', zc, r.edge + r.dir * (lineH / 2 + i * lineH), word, hText),
+              paperHeight: 1.9, src: host, meta: i ? `${r.meta}-label-${i + 1}` : `${r.meta}-label`,
+            });
           });
         }
       }

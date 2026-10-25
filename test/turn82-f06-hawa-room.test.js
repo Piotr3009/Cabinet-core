@@ -437,11 +437,61 @@ test('F7, after the review (roomsheets 3) · the section draws the tracks on pan
         assert.ok(t.hidden && !t.solid && t.pen === 'HIDDEN', `${name}: ${t.meta} dashed, B is behind the cut`);
       }
     }
-    const words = one.entities.filter((e) => e.kind === 'text' && /TRACK/.test(e.text)).map((e) => e.text);
-    assert.equal(words.length, 2);
-    for (const w of words) {
-      assert.equal(/BEHIND THE CUT/.test(w), !bSeen, `${name}: "${w}"`);
-      assert.match(w, new RegExp(`^(TOP TRACK ${H.holes.b.topAxisMm}|BOTTOM TRACK ${H.holes.b.bottomAxisMm})`));
+    const words = one.entities.filter((e) => e.kind === 'text' && /TRACK|BEHIND THE CUT/.test(e.text)).map((e) => e.text);
+    assert.deepEqual(words.filter((w) => /TRACK/.test(w)).sort(), [`BOTTOM TRACK ${H.holes.b.bottomAxisMm}`, `TOP TRACK ${H.holes.b.topAxisMm}`]);
+    // (After roomsheets 4 the words stand on two lines: the track's name, then where it is.)
+    assert.equal(words.filter((w) => w === 'BEHIND THE CUT').length, bSeen ? 0 : 2, `${name}: ${words.join(' / ')}`);
+  }
+});
+
+test('F7, after the review (roomsheets 4) · the track words stand where no board runs: no mask, nothing under them, hand R and L, 1:10 to 1:25', () => {
+  // The text box as the renderers size a word (svg.js, the masked text's own box), centred on its point.
+  const boxOf = (e) => {
+    const w = String(e.text).length * e.height * 0.62 + e.height * 0.6;
+    const h = e.height * 1.3;
+    return { x0: e.x - w / 2, x1: e.x + w / 2, y0: e.y - h / 2, y1: e.y + h / 2 };
+  };
+  // Does a segment cross (or lie in) a box? Liang-Barsky clip.
+  const crosses = (b, x1, y1, x2, y2) => {
+    let t0 = 0; let t1 = 1;
+    const dx = x2 - x1; const dy = y2 - y1;
+    for (const [p, q] of [[-dx, x1 - b.x0], [dx, b.x1 - x1], [-dy, y1 - b.y0], [dy, b.y1 - y1]]) {
+      if (Math.abs(p) < 1e-12) { if (q < 0) return false; continue; }
+      const r = q / p;
+      if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+    }
+    return t0 <= t1;
+  };
+  const GEOMETRY = new Set(['CARCASE', 'DOORS', 'HINGES', 'LEG_BLOCK', 'BUILDING', 'SHELVES', 'RUNNERS', 'WORKTOP', 'FRAME_BOARD', 'APPLIANCE']);
+  for (const [name, params] of [['hand R', ONE()], ['hand L', ONE_L()]]) {
+    for (const scale of [10, 15, 20, 25]) {
+      const { group, m } = stage(params);
+      const st = sectionStations(group).find((s) => s.member === m);
+      const one = buildStation(group, st, { profile: P(), ctx: drawingContext(scale, P()) });
+      const words = one.entities.filter((e) => e.kind === 'text' && /^(TOP|BOTTOM) TRACK|^BEHIND THE CUT$/.test(e.text));
+      assert.ok(words.length >= 2, `${name} 1:${scale}: the track words`);
+      const segs = [];
+      for (const e of one.entities) {
+        if (!GEOMETRY.has(e.layer)) continue;
+        if (e.kind === 'line') segs.push([e.x1, e.y1, e.x2, e.y2, e]);
+        else if (e.kind === 'rect') {
+          const { x, y, w, h } = e;
+          segs.push([x, y, x + w, y, e], [x + w, y, x + w, y + h, e], [x + w, y + h, x, y + h, e], [x, y + h, x, y, e]);
+        }
+      }
+      for (const wd of words) {
+        assert.ok(!wd.mask, `${name} 1:${scale}: "${wd.text}" carries no white mask to erase a board`);
+        const b = boxOf(wd);
+        const under = segs.filter(([x1, y1, x2, y2]) => crosses(b, x1, y1, x2, y2));
+        assert.equal(under.length, 0, `${name} 1:${scale}: "${wd.text}" at ${wd.x}, ${wd.y} lies on ${under.map(([, , , , e]) => `${e.src} ${e.layer}`).join(', ')}`);
+      }
+      // ...and each word is tied to its track by a leader.
+      for (const meta of ['hawa-track-top', 'hawa-track-bottom']) {
+        const track = one.entities.find((e) => e.meta === meta);
+        const leader = one.entities.find((e) => e.meta === `${meta}-leader`);
+        assert.ok(leader, `${name} 1:${scale}: ${meta} has its leader`);
+        assert.ok(Math.abs(Math.min(leader.y1, leader.y2) - track.y1) < 1e-6 || Math.abs(Math.max(leader.y1, leader.y2) - track.y1) < 1e-6, 'the leader starts on the track');
+      }
     }
   }
 });

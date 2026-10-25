@@ -23,7 +23,8 @@ export const LICENSED = {
       + 'door\'s back), pocketHardwareBoxes (the two zones on B, the 17 x 60 profile, the Push ejector), and the F7 '
       + `marks (pocketDoorBarMarks, pocketPlanEntities, pocketSectionEntities). Read by the room and the sheets only. ${OWNER}`
       + ' T82 F6, after the review: the Push ejector is a length of the vertical profile, the carriage stays on its track.'
-      + ' After the review (F7): the section\'s track entities know whether the cut sees panel B.',
+      + ' After the review (F7): the section\'s track entities know whether the cut sees panel B.'
+      + ' After the review (F7): the track words stand in the pocket\'s clear on a leader, with no mask to erase a board.',
     gates: [],
   },
   'src/engine/shaker.js': {

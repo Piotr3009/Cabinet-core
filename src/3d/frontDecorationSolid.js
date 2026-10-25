@@ -217,8 +217,23 @@ function reedEnds(operations, toMesh, half) {
   return ends;
 }
 
-/** The top of one side wall along a -> b: the face, and the reeds' sections where they end on it, by distance s along the edge. */
-function reedWallTop(a, b, zHigh, ends) {
+/**
+ * One slab slice's side wall along a -> b, its z from zLow to zHigh, where
+ * the reeds' sections end on that edge: the pieces of the wall in the edge's
+ * own (s, z) plane, each an outline (the floor at zLow, then the top from the
+ * far end back), the top being the slice's own zHigh or the section, whichever
+ * is lower. Null when no section ends on this edge, or when none reaches down
+ * into this slice (its wall is then the plain quad it always was).
+ *
+ * T82 F15, after the review: EVERY slice the sections cross takes them. A
+ * door with a side J is three slices through its thickness, and on an 18 or
+ * a 22 front the rear leg is thinner than a valley: the section goes on into
+ * the slot's slice below it, and where it dips under a slice's floor that
+ * slice has no wall there at all. Cut into the face slice alone, the leg's
+ * wall dipped below its own floor and the slot's wall stood across the
+ * valleys' ends (the review: 54 real gaps on a WD at 22, the valleys sealed).
+ */
+function reedWallPieces(a, b, zLow, zHigh, ends) {
   const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
   if (!(length > EPS)) return null;
   const dir = [(b[0] - a[0]) / length, (b[1] - a[1]) / length];
@@ -229,19 +244,102 @@ function reedWallTop(a, b, zHigh, ends) {
       const dx = p[0] - a[0]; const dy = p[1] - a[1];
       const along = dx * dir[0] + dy * dir[1];
       const off = Math.abs(dx * dir[1] - dy * dir[0]);
-      return off <= tol && along >= -tol && along <= length + tol ? [Math.max(0, Math.min(length, along)), Math.min(zHigh, p[2])] : null;
+      return off <= tol && along >= -tol && along <= length + tol ? [Math.max(0, Math.min(length, along)), p[2]] : null;
     }).filter(Boolean);
     if (on.length < 2) continue;
     lines.push(on[0][0] > on.at(-1)[0] ? on.reverse() : on);
   }
   if (!lines.length) return null;
   lines.sort((p, q) => p[0][0] - q[0][0]);
-  const top = [[0, zHigh]];
-  for (const point of [...lines.flat(), [length, zHigh]]) {
+  const seq = [[0, zHigh], ...lines.flat(), [length, zHigh]];
+  if (!seq.some(([, z]) => z < zHigh - tol)) return null;
+  // The top along the edge: min(zHigh, the section), with the points where
+  // the section crosses the slice's top and floor, so the slices meet there.
+  const top = [];
+  const push = (point) => {
     const last = top.at(-1);
-    if (Math.abs(point[0] - last[0]) > tol || Math.abs(point[1] - last[1]) > tol) top.push(point);
+    if (!last || Math.abs(point[0] - last[0]) > tol || Math.abs(point[1] - last[1]) > tol) top.push(point);
+  };
+  for (let i = 0; i < seq.length; i += 1) {
+    const p = seq[i];
+    if (i > 0) {
+      const q = seq[i - 1];
+      const crossings = [zHigh, zLow]
+        .filter((zc) => (q[1] - zc) * (p[1] - zc) < 0)
+        .map((zc) => ({ t: (zc - q[1]) / (p[1] - q[1]), zc }))
+        .sort((m, n) => m.t - n.t);
+      for (const { t, zc } of crossings) push([q[0] + t * (p[0] - q[0]), zc]);
+    }
+    push([p[0], Math.min(zHigh, p[1])]);
   }
-  return { length, dir, top };
+  // Where the section stands over the slice, its points clamped to zHigh are
+  // one straight run: kept as its two ends, so the floor of the slice above
+  // (one edge from crossing to crossing) meets it edge for edge.
+  for (let i = top.length - 2; i >= 1; i -= 1) {
+    if (Math.abs(top[i - 1][1] - zHigh) <= tol && Math.abs(top[i][1] - zHigh) <= tol
+      && Math.abs(top[i + 1][1] - zHigh) <= tol) top.splice(i, 1);
+  }
+  // The pieces: where the top stands above the floor. A point under the floor
+  // is in the valley's void; a point on it closes one piece and opens the next.
+  const pieces = [];
+  let run = [];
+  const close = () => {
+    if (run.length >= 2 && run.some(([, z]) => z > zLow + tol)) pieces.push(run);
+    run = [];
+  };
+  for (const point of top) {
+    if (point[1] < zLow - tol) { close(); continue; }
+    if (point[1] <= zLow + tol) {
+      run.push([point[0], zLow]);
+      const at = [point[0], zLow];
+      close();
+      run = [at];
+      continue;
+    }
+    run.push(point);
+  }
+  close();
+  const outlines = pieces.map((piece) => {
+    const first = piece[0]; const last = piece.at(-1);
+    const back = [...piece].reverse();
+    const outline = [[first[0], zLow], [last[0], zLow], ...back];
+    // A piece that starts or ends on the floor has that corner once.
+    const same = (m, n) => Math.abs(m[0] - n[0]) <= tol && Math.abs(m[1] - n[1]) <= tol;
+    if (same(outline[1], outline[2])) outline.splice(2, 1);
+    if (same(outline.at(-1), outline[0])) outline.pop();
+    return outline;
+  }).filter((outline) => outline.length >= 3);
+  return { length, dir, pieces: outlines };
+}
+
+const pointKey = (p) => `${p[0].toFixed(6)},${p[1].toFixed(6)},${p[2].toFixed(6)}`;
+
+/**
+ * T82 F15, after the review: one reed surface triangle with its END edge (both
+ * vertices on one of the reed's end sections) split where it crosses any of
+ * `levels`, as a fan from the opposite vertex, in the triangle's own winding.
+ * A triangle with no such edge, or none crossing a level, comes back whole.
+ */
+function splitEndEdge(tri, levels, endKeys) {
+  for (const [i, j, k] of [[0, 1, 2], [1, 2, 0], [2, 0, 1]]) {
+    const a = tri[i]; const b = tri[j];
+    if (!endKeys.has(pointKey(a)) || !endKeys.has(pointKey(b)) || Math.abs(a[1] - b[1]) > 1e-6) continue;
+    const cuts = levels
+      .filter((z) => (a[2] - z) * (b[2] - z) < 0)
+      .map((z) => (z - a[2]) / (b[2] - a[2]))
+      .sort((m, n) => m - n);
+    if (!cuts.length) return [tri];
+    const chain = [a, ...cuts.map((t) => [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1]), a[2] + t * (b[2] - a[2])]), b];
+    const out = [];
+    for (let n = 0; n + 1 < chain.length; n += 1) {
+      // The same cyclic order as (i, j, k): the piece keeps the triangle's face.
+      const piece = [];
+      piece[i] = chain[n]; piece[j] = chain[n + 1]; piece[k] = tri[k];
+      out.push(piece);
+    }
+    return out;
+  }
+  return [tri];
 }
 
 function build(panel, bores) {
@@ -314,20 +412,24 @@ function build(panel, bores) {
       const a = points[i]; const b = points[(i + 1) % points.length];
       const lowA = [...a, zLow]; const lowB = [...b, zLow];
       const highA = [...a, zHigh]; const highB = [...b, zHigh];
-      const reeded = !inward && ends.length && Math.abs(zHigh - half) < EPS ? reedWallTop(a, b, zHigh, ends) : null;
+      // T82 F15, after the review: every outward slice wall under the face
+      // that the reeds' sections cross takes them (an addition above the
+      // face never does: the reeds are cut into the board, not out of it).
+      const reeded = !inward && ends.length && zLow < half - EPS ? reedWallPieces(a, b, zLow, zHigh, ends) : null;
       if (reeded) {
-        // One outward wall polygon in the edge's own (s, z) plane: the
-        // bottom, then the top from the far end back, the reeds' sections
+        // Each piece one outward wall polygon in the edge's own (s, z) plane:
+        // the bottom, then the top from the far end back, the reeds' sections
         // in it. Each triangle counter-clockwise there, as the quads below.
-        const { dir, top } = reeded;
-        const outline = [[0, zLow], [reeded.length, zLow], ...[...top].reverse()];
+        const { dir } = reeded;
         const at = ([sAlong, z]) => [a[0] + sAlong * dir[0], a[1] + sAlong * dir[1], z];
-        const faces = THREE.ShapeUtils.triangulateShape(outline.map(([x, y]) => new THREE.Vector2(x, y)), []);
-        for (const [i0, i1, i2] of faces) {
-          const [p, q, r] = [outline[i0], outline[i1], outline[i2]];
-          const turn = (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
-          if (turn > 0) triangle(at(p), at(q), at(r));
-          else triangle(at(p), at(r), at(q));
+        for (const outline of reeded.pieces) {
+          const faces = THREE.ShapeUtils.triangulateShape(outline.map(([x, y]) => new THREE.Vector2(x, y)), []);
+          for (const [i0, i1, i2] of faces) {
+            const [p, q, r] = [outline[i0], outline[i1], outline[i2]];
+            const turn = (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
+            if (turn > 0) triangle(at(p), at(q), at(r));
+            else triangle(at(p), at(r), at(q));
+          }
         }
         continue;
       }
@@ -386,11 +488,18 @@ function build(panel, bores) {
     cap(removed ? layer.ring : next.ring, [removed ? next.ring : layer.ring],
       -half + next.z0, removed ? +1 : -1);
   }
+  // T82 F15, after the review: where a reed's end section crosses a slice's
+  // boundary (a door with a J), the slice walls meet at the crossing, so the
+  // reed's own end edge is split there too and the solid stays closed.
+  const levels = [...new Set(slices.flatMap((layer) => [-half + layer.z0, -half + layer.z0 + layer.depth]))]
+    .filter((z) => z > -half + EPS && z < half - EPS);
+  const endKeys = levels.length && ends.length ? new Set(ends.flat().map(pointKey)) : null;
   for (const op of operations) {
     if (op.surface?.vertices && op.surface?.triangles) {
       for (const vertices of op.triangles) {
         // Reflecting the CNC x coordinate reverses every triangle's winding.
-        triangle(vertices[0], vertices[2], vertices[1]);
+        const pieces = endKeys && op.kind === 'reed' ? splitEndEdge(vertices, levels, endKeys) : [vertices];
+        for (const t of pieces) triangle(t[0], t[2], t[1]);
       }
       continue;
     }

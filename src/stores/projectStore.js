@@ -25,7 +25,7 @@ import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
   defaultParamsFor, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel, isHawaPocket,
-  isWardrobeWallUnit, profilePath,
+  isVanityKit, isWardrobeWallUnit, profilePath,
   resolveTypeId, TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
@@ -5941,6 +5941,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (hangsBeside) get().alignUnitDepth(unit.id, 'front');
       get().addWorktop([unit.id]);
     }
+    // ─── T82 F10 · A VANITY IS BORN UNDER ITS TOP ──────────────────────────
+    // The owner, 25.10.2026 (13:03): *"5 - blat osobny element jak worktop"*.
+    // The house worktop over the one vanity, as a set lays a top on one
+    // cabinet (`kind: 'top'`), at the vanity's own top thickness
+    // (`vanity.defaults.top`, PROPOSED 20); reaching the wall over the
+    // service void is the slab's own law (engine/worktop.js serviceVoidOf).
+    if (isVanityKit(unit.type)) {
+      get().addWorktop([unit.id], { single: true, thickness: Number(profile.vanity?.defaults?.top) || null });
+    }
     // ─── TURN 72 (CLAUDE.md F8): …AND IT TAKES THE RUN'S CORNICE ───────────
     //
     // *"każda dodatkowa szafa albo też ma cornice, albo żadna nie ma, bo jak
@@ -10353,6 +10362,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }
     const mm = Number(getCabinetProfile()?.autoParts?.worktop?.seatingMm) || 300;
     return get().extendIslandWorktop(worktopId, face, mm);
+  },
+
+  /**
+   * T82 F10 · the thickness of one worktop, typed (the owner, 25.10.2026:
+   * *"dodanie blat grubosc do wyboru"*): the record's own, which wins over
+   * the profile's 38 (`worktop.js slabThickness`). A number that is not a
+   * thickness is refused in words and nothing changes.
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setWorktopThickness: (worktopId, mm) => {
+    const design = migrateDesign(get().project.design);
+    const record = design.worktops.find((w) => w.id === worktopId);
+    if (!record) return { ok: false, error: 'No such worktop.' };
+    const t = Number(mm);
+    if (!(Number.isFinite(t) && t > 0)) {
+      return { ok: false, error: 'A worktop thickness is a number of millimetres above 0.' };
+    }
+    get().setDesign({
+      worktops: design.worktops.map((w) => (w.id === worktopId ? { ...w, thickness: t } : w)),
+    });
+    return { ok: true, error: null };
   },
 
   /** Take one off. No confirmation — Undo covers it (turn 25's rule, F11). */

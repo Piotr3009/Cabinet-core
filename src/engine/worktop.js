@@ -38,7 +38,7 @@
 //
 // Pure functions and pure data. No React, no store, no three.js.
 
-import { getUnitType } from './types.js';
+import { getUnitType, isVanityKit } from './types.js';
 import {
   cornerLAdjacentSpan, paddedSpan, unitBase, unitTop, wallGapOf,
 } from './runs.js';
@@ -208,11 +208,15 @@ export function worktopGeometry({ units, record = null, profile }) {
 
   // OUT FROM THE WALL: the deepest carcass, plus its door and the door's gap,
   // plus the front overhang. Flush at the wall — nothing hangs over a wall.
+  // T82 F10 · ...and over a vanity's SERVICE VOID: the carcass stands 80 off
+  // the wall for the pipes and the top reaches the wall over them, so the
+  // slab's front stands as proud of the vanity's fronts as any slab of the
+  // house stands of a kitchen's. Zero for every other unit.
   const reach = (u) => {
     const depth = Number(u.params?.depth) || 0;
     const frontT = Number(u.params?.front_t) || 0;
     const gap = Number(profile?.doors?.gap) || 0;
-    return depth + gap + frontT;
+    return depth + gap + frontT + serviceVoidOf(u, profile);
   };
   const depth = Math.max(...list.map(reach)) + spec.frontOverhang + ext.front;
 
@@ -671,6 +675,30 @@ export function cutoutsFor(units, geometry, profile) {
     });
   }
   return out;
+}
+
+// ─── T82 F10, F11, F12 · THE VANITY'S TOP, ITS BASINS, ITS VOID ─────────────
+//
+// The owner, 25.10.2026 (12:57): *"dodanie blat grubosc do wyboru"*, *"dodanie
+// 1 sink or 2 sink? dodajesz tylko do widoku"*, *"nastepnie to bedzie miejsce
+// z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"*; and at 13:03:
+// *"3 - 80"*, *"5 - blat osobny element jak worktop"*. The vanity's top is
+// this module's slab (the store lays it at birth, `kind: 'top'`), reaching the
+// wall over the void; the basins are what the eye sees set into it and the
+// worktop's cut-outs on the plan; the void is a note and a hatch. None of it
+// is a board: the basin is supplied by others, as appliances are.
+
+/**
+ * T82 F10 / F12 · the SERVICE VOID behind a vanity: how far its carcass stands
+ * off the wall beyond the house's clearance (`vanity.serviceVoidMm`, 80, by the
+ * kit's own `wall_gap` at birth; a gap typed since is the unit's and is read as
+ * it stands). 0 for every unit that is not a vanity. The slab's depth, the
+ * plan's hatch, the section's band and Check #45 all read this one number.
+ */
+export function serviceVoidOf(unit, profile) {
+  if (!unit || !isVanityKit(unit.type)) return 0;
+  const clearance = Math.max(0, Number(profile?.room?.wallBackClearance) || 0);
+  return Math.max(0, wallGapOf(unit, profile) - clearance);
 }
 
 // ─── T75 F11 · THE ISLAND'S ONE SLAB ────────────────────────────────────────

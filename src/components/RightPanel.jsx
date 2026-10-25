@@ -3,7 +3,7 @@ import { useUiStore } from '../stores/uiStore.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { HEIGHT_GROUPS, getUnitType, isFreePanel, isHawaPocket, profilePath } from '../engine/types.js';
+import { HEIGHT_GROUPS, getUnitType, isFreePanel, isHawaPocket, isVanityKit, profilePath } from '../engine/types.js';
 import { doorCountFor, leafCountRefusal, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls, wallLabel } from '../engine/room.js';
@@ -2473,6 +2473,7 @@ function WorktopRow({ unit }) {
   const removeWorktop = useProjectStore((s) => s.removeWorktop);
   const seatingOverhang = useProjectStore((s) => s.seatingOverhang);
   const extendIslandWorktop = useProjectStore((s) => s.extendIslandWorktop);
+  const setWorktopThickness = useProjectStore((s) => s.setWorktopThickness);
   const notify = useUiStore((s) => s.notify);
   const profile = useCabinetProfileStore((s) => s.profile);
   if (!takesWorktop(unit.type)) return null;
@@ -2513,6 +2514,21 @@ function WorktopRow({ unit }) {
         </div>
         <button type="button" className="cc-btn" data-remove-worktop-one={record.id} onClick={() => removeWorktop(record.id)}>Remove</button>
       </div>
+      {/* T82 F10 · the vanity's top is typed (*"blat grubosc do wyboru"*):
+          the record's own thickness, through the store's refusal in words. */}
+      {isVanityKit(unit.type) && (
+        <div className="cc-row" data-worktop-thickness={record.id}>
+          <span className="text-[11px] text-ink-400">Top thickness (mm)</span>
+          <NumberField
+            data-worktop-thickness-field="1"
+            title="The vanity's top: the worktop over it, as thick as you type."
+            min={1}
+            step={1}
+            value={Number(record.thickness) > 0 ? Number(record.thickness) : Number(profile.autoParts?.worktop?.thickness) || 38}
+            onCommit={(v) => { const res = setWorktopThickness(record.id, v); if (!res.ok) notify(res.error, 'warn'); }}
+          />
+        </div>
+      )}
       {empty.map((f) => {
         const on = Number(record.extend?.[f.face]) > 0;
         return (

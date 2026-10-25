@@ -275,6 +275,9 @@ export const NEW_FILES = [
   'test/turn82-f09-vanity-kit.test.js',
   'test/turn82-f09-trap-room.test.js',
   'scripts/t78-classify.d/f43-t82-f09.mjs',
+  // T82 F10 (25.10.2026): the vanity's top is the house worktop, to the wall over the void
+  'test/turn82-f10-vanity-top-basin.test.js',
+  'scripts/t78-classify.d/f43-t82-f10.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

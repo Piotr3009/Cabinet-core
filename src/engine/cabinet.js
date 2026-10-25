@@ -126,6 +126,8 @@ import { applyCanopy } from './hoodCanopy.js';
 // T82 F9 · the vanity's own boards (KIT_VANITY.lsp part 5): the back cut out to
 // two rails, the trap's U and Check #39; a one-way read, as the canopy's.
 import { applyVanityTrap, vanityRailGeometry, vanityRails } from './vanity.js';
+// T82 F9, after the review · no double drawer under a basin (KIT_VANITY.lsp D24).
+import { vanityDoubleRefusal, vanityDoubleRefused } from './vanity.js';
 // T82 F13 · a floating vanity's hangers (KIT_VANITY.lsp D19, `vanity-hangers`).
 import { vanityHangers } from './vanity.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
@@ -3005,6 +3007,14 @@ export function computeCabinet(params, profileOverride) {
           level: 'warn',
           message: `Drawer ${row}: a double drawer is not cut in two drawer columns (KIT_VANITY.lsp writes none). One box is cut in each column.`,
         });
+        continue;
+      }
+      // T82 F9, after the review · KIT_VANITY.lsp D24: under a basin the top
+      // row and the row under it refuse a double, in words, and cut one box,
+      // so the trap's U is the top box's and its air is measured to the box
+      // under it (`vanity-double-refused-p`, `vanity-double-refusal`).
+      if (type.vanity && vanityDoubleRefused(row, heights.length, Number(params?.sinks) || 0)) {
+        warnings.push({ code: 'DOUBLE_DRAWER_REFUSED', level: 'warn', message: vanityDoubleRefusal(row) });
         continue;
       }
       if (!ID.loaded || ID.deepSpaceMm == null || ID.innerSpaceMm == null || ID.stackMinMm == null || ID.innerSideMm == null) {

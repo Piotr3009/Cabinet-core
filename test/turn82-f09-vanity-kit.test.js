@@ -479,6 +479,30 @@ test('F9, after the review . D23: no U leaves a back-wall board under 30; a U th
   }
 });
 
+test('F9, after the review . D24: under a basin the top row and the row under it refuse a double, in words; lower rows keep the parent\'s', () => {
+  const refused = (r) => r.warnings.filter((w) => w.code === 'DOUBLE_DRAWER_REFUSED').map((w) => w.message);
+  for (const [n, id] of [[3, 'VANITY3'], [4, 'VANITY4']]) {
+    for (const sinks of [0, 1, 2]) {
+      for (let row = 1; row <= n; row += 1) {
+        const r = kit(id, { sinks, drawer_double: { [row]: true } });
+        const lispSays = L.call('vanity-double-refused-p', row, n, sinks) === true;
+        const said = refused(r).includes(L.call('vanity-double-refusal', row));
+        assert.equal(said, lispSays, `${id} sinks ${sinks} row ${row}`);
+        if (lispSays) {
+          assert.equal(r.panels.filter((p) => p.meta?.inner && p.meta?.double).length, 0, 'one box is cut: no inner drawer');
+          assert.equal(refused(r).length, 1, 'said once, in the LISP\'s words only');
+        }
+      }
+    }
+  }
+  assert.equal(L.call('vanity-double-refusal', 3),
+    'Drawer 3: a double drawer is not cut under a basin: the trap\'s U is the top box\'s and its air is measured to the box under it. One box is cut.');
+  // The U stays the top box's, and the shallow air is measured to the one box under it.
+  const r = kit('VANITY4', { height: 560, drawer_double: { 3: true, 4: true } });
+  assert.ok(byId(r, 'D4-BB-1') && byId(r, 'D3-BB'));
+  assert.ok(trapSaid(r).some((w) => w.kind === 'SHALLOW' && /59 mm/.test(w.message)));
+});
+
 // ===========================================================================
 // THE FOSSILS HOLD; THE NEW GOLDENS HOLD
 // ===========================================================================

@@ -81,7 +81,8 @@ export const LICENSED = {
       + ' . ' + 'T82 F9: the import of engine/vanity.js; `drawerSplitFor` answers `equalDrawers` with the variant\'s count of '
       + 'ones, exact; the sides\' edges `{ backTabs: false }` for a back `cut`; RAIL-BOTTOM and RAIL-TOP emitted where '
       + 'the BACK would be, for a back `cut`; `applyVanityTrap` in one block guarded by `type.vanity` beside the '
-      + 'canopy\'s; `derived.vanity` under the same guard. Nothing runs for a kit without the keys.',
+      + 'canopy\'s; `derived.vanity` under the same guard. Nothing runs for a kit without the keys.'
+      + ' After the review: D24 in the drawer ladder\'s double loop, behind type.vanity.',
     gates: ['chest_columns', 'chest_split', 'vanity'],
   },
   'src/engine/types.js': {
@@ -103,7 +104,8 @@ export const LICENSED = {
     why: `T82 F9: new. The mirror of KIT_VANITY.lsp part 5 (vanity-rails, vanity-rail-side-screws, vanity-wall-gap, `
       + `vanity-wastes, vanity-trap-plan, vanity-u-in-bottom, vanity-u-outline, vanity-back-pieces, vanity-trap-verdict), `
       + `run by computeCabinet only under \`type.vanity\` / \`carcass.back === 'cut'\`. ${OWNER_B2}`
-      + ' After the review: D23 vanity-u-fits-p with backPieceMinMm 30 (no U leaves a back-wall board under 30, said by #39).',
+      + ' After the review: D23 vanity-u-fits-p with backPieceMinMm 30 (no U leaves a back-wall board under 30, said by #39).'
+      + ' D24 vanity-double-refused-p and vanity-double-refusal (no double drawer in the top row or the row under it when a basin is asked).',
     gates: ['vanity'],
   },
   'src/engine/checks.js': {

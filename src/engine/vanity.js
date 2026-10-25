@@ -364,6 +364,18 @@ export function vanityTrapVerdict({ boxes, n, columns, sinks, W, GB }, profile) 
   return out;
 }
 
+// --- (g) NO DOUBLE DRAWER UNDER A BASIN (D24, after the review) -------------
+
+/** Is a double asked on this row refused: the top row and the row under it, with a basin (`vanity-double-refused-p`)? */
+export function vanityDoubleRefused(row, n, sinks) {
+  return Number(sinks) > 0 && (row === n || row === n - 1);
+}
+
+/** ...in these words (`vanity-double-refusal`). */
+export function vanityDoubleRefusal(row) {
+  return `Drawer ${row}: a double drawer is not cut under a basin: the trap's U is the top box's and its air is measured to the box under it. One box is cut.`;
+}
+
 // --- APPLIED ON THE CUT --------------------------------------------------------
 
 // A drawn-frame point [x, y, ...] moved down by dy; a box [x0, y0, x1, y1] too.

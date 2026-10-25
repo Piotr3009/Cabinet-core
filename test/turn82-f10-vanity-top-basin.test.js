@@ -39,7 +39,7 @@ import { getCabinetProfile } from '../src/engine/profile.js';
 import { migrateDesign } from '../src/engine/design.js';
 import { wallGapOf } from '../src/engine/runs.js';
 import {
-  basinCentresOf, serviceVoidOf, worktopEligible, worktopGeometry, worktopsFor,
+  basinCentresOf, fitBasins, serviceVoidOf, worktopEligible, worktopGeometry, worktopsFor,
 } from '../src/engine/worktop.js';
 import { vanitySpec, vanityWastes } from '../src/engine/vanity.js';
 import { buildBom } from '../src/engine/bom.js';
@@ -445,13 +445,13 @@ test('F11 · two 520 basins on one 900 column overlap: the second is not cut, an
   assert.equal(findings48().length, 0);
 });
 
-test('F11 · on two columns of 900 both ovals pass the slab\'s ends: none is cut, #48 names 1080', () => {
+test('F11 · on two columns of 900 both ovals pass the vanity\'s ends: none is cut, #48 names 1120', () => {
   const id = vanity('VANITY3', { sinks: 2, columns: 2 });
   assert.equal(basinsOf(slabOver(id)).length, 0);
   const [f] = findings48();
-  assert.equal(f.message, `VU01: Two basins ${BASIN().w} wide do not fit the top of a 900 vanity: make the vanity 1080 wide or take one basin.`);
-  assert.deepEqual(f.basins, { asked: 2, cut: 0, why: 'width', need: { width: 1080 } });
-  S().updateUnitParams(id, { width: 1080 });
+  assert.equal(f.message, `VU01: Two basins ${BASIN().w} wide do not fit the top of a 900 vanity: make the vanity 1120 wide or take one basin.`);
+  assert.deepEqual(f.basins, { asked: 2, cut: 0, why: 'width', need: { width: 1120 } });
+  S().updateUnitParams(id, { width: 1120 });
   assertBasinsFit(slabOver(id));
   assert.equal(basinsOf(slabOver(id)).length, 2);
 });
@@ -459,8 +459,8 @@ test('F11 · on two columns of 900 both ovals pass the slab\'s ends: none is cut
 test('F11 · one basin on a narrow vanity, and on a shallow one: the width, the depth', () => {
   const id = vanity('VANITY3', { sinks: 1, width: 500 });
   assert.equal(basinsOf(slabOver(id)).length, 0);
-  assert.equal(findings48()[0].message, `VU01: A basin ${BASIN().w} wide does not fit the top of a 500 vanity: make the vanity 540 wide.`);
-  S().updateUnitParams(id, { width: 540 });
+  assert.equal(findings48()[0].message, `VU01: A basin ${BASIN().w} wide does not fit the top of a 500 vanity: make the vanity 560 wide.`);
+  S().updateUnitParams(id, { width: 560 });
   assert.equal(basinsOf(slabOver(id)).length, 1);
   S().updateUnitParams(id, { width: 900, depth: 350 });
   assert.equal(basinsOf(slabOver(id)).length, 0);
@@ -489,6 +489,37 @@ test('F11 · what is not cut is in no reader: the BOM notes, the plan and the bo
       assert.equal(said, basinsOf(slab).length < asked ? 1 : 0, `${width} ${sinks}/${columns}: #48 exactly when one is not cut`);
     }
   }
+});
+
+test('F11 · fitBasins is the one source: the vanity alone (as computeCabinet holds it) gives the slab\'s basins and #48\'s words', () => {
+  // KIT_VANITY.lsp D18 (B1) cuts the carcass TOP for each FITTED basin and the
+  // engine mirrors it (B2): it reads `fitBasins({ type, params }, profile).fitted`.
+  for (const [width, sinks, columns] of [[900, 1, 1], [900, 2, 1], [900, 2, 2], [1120, 2, 2], [1620, 2, 1], [500, 1, 1]]) {
+    const id = vanity('VANITY3', { width, sinks, columns });
+    const u = unitOf(id);
+    const plan = fitBasins({ type: u.type, params: u.params }, P());
+    assert.equal(plan.basins.length, basinCentresOf(u, P()).length, 'every basin asked');
+    const x0 = Number(u.position.x_mm); const back = wallGapOf(u, P());
+    const cut = basinsOf(slabOver(id)).map((c) => [c.basin, near(c.cx - x0, 0) ? 0 : c.cx - x0, c.cz - back]);
+    assert.deepEqual(cut, plan.fitted.map((b) => [b.n, b.cx, b.cz]), `${width} ${sinks}/${columns}: the slab cuts what fitBasins fits`);
+    const said = findings48();
+    assert.equal(said.length, plan.refusal ? 1 : 0);
+    if (plan.refusal) assert.equal(said[0].message, plan.refusal.message);
+    for (const b of plan.fitted) assert.ok(b.fits && b.w === BASIN().w && b.d === BASIN().d && b.h === BASIN().h);
+  }
+  // Not a vanity: nothing.
+  assert.deepEqual(fitBasins({ type: 'BUD', params: {} }, P()), { basins: [], fitted: [], refusal: null });
+});
+
+test('F11 · the vanity\'s own top decides, whatever stands beside it: butted to a tall unit, the same basins', () => {
+  room();
+  const v = S().addUnit('VANITY3', { wall: 0, x: 1000 }).id;
+  S().updateUnitParams(v, { sinks: 2, columns: 2, width: 1120 });
+  const alone = basinsOf(slabOver(v)).map((c) => c.cx);
+  S().addUnit('BUDTALL', { near: v, side: 'R' });
+  const beside = basinsOf(slabOver(v)).map((c) => c.cx);
+  assert.deepEqual(beside, alone);
+  assertBasinsFit(slabOver(v));
 });
 
 test('F11 · on an island the basin\'s centre rides into the slab\'s frame with its box', () => {

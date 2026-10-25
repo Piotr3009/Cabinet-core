@@ -24,7 +24,10 @@ export const LICENSED = {
       + 'worktop, nothing in the cut list); fitBasins, the basins the stone can take (wholly inside the slab with '
       + 'the cut-out margin, clear of those cut before), the others refused in words with the width or depth that '
       + 'lets them in (Check #48), on every slab road (withCutouts, the island\'s, whose basin centres ride into its '
-      + `frame). ${OWNER} CLAUDE.md T82: *"The room refuses in words, the engine never squashes"*.`,
+      + `frame). ${OWNER} CLAUDE.md T82: *"The room refuses in words, the engine never squashes"*.`
+      + ' After the review: fitBasins(unit, profile) exported, THE ONE SOURCE of which basins fit and where, judged on the '
+      + 'vanity\'s own top (its width, the margin from the carcass\'s outer faces; the slab it carries alone out from '
+      + 'the wall), read by the slabs\' cut-outs, #48 and the carcass TOP\'s cut-outs of KIT_VANITY.lsp D18 (B2).',
     gates: [],
   },
   'src/engine/checks.js': {

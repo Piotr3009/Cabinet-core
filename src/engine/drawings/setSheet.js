@@ -514,6 +514,8 @@ export const SET_LEGEND = [
   ['line', 'DOORS', 'Fronts (doors, drawer fronts)'],
   ['line', 'CARCASE', 'Carcass'],
   ['dash', 'SHELVES', 'Hidden / above the cut'],
+  // T82 F24 (*"bedzie jedna linia typu przerywana a nie podwojna"*): the plinth under a plan's cut, one dashed line.
+  ['dash', 'PLINTH_HIDDEN', 'Plinth, below the cut'],
   ['text', 'UNIT_NUMBER', 'Unit number'],
   ['box', 'HINGES', 'Hardware, appliance space'],
   ['line', 'BUILDING', 'Building (walls, floor, ceiling)'],

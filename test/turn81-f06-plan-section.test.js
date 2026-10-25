@@ -70,8 +70,13 @@ for (const inframe of [true, false]) {
     const a = setArgs();
     const plan = buildPlan(a.entries, { which: 'base', room: a.room, worktops: a.worktops.map((w) => w.geometry || w), profile: P(), ctx: ctx(), frontTypeOf: a.frontTypeOf });
     const plinth = plan.entities.filter((e) => e.src === `${ids.a}:PLINTH`);
-    assert.ok(plinth.length >= 4, 'the plinth is on the plan');
-    assert.ok(plinth.every((e) => e.kind === 'line' && e.hidden && e.pen === 'HIDDEN' && e.layer === 'SHELVES'), 'dashed, in the hidden pen');
+    // AMENDED 25.10.2026 (T82 F24). The owner, 24.10.2026 (19:34): *"przerywana
+    // linia tez nie, bedzie jedna linia typu przerywana a nie podwojna bo to
+    // mylace bardzo jest"*. T81 drew every edge of the plinth's top face dashed
+    // on SHELVES (its front face, its back face, two ticks); the law is now ONE
+    // dashed line at its face toward the room, on PLINTH_HIDDEN, the FINE pen.
+    assert.equal(plinth.length, 1, 'the plinth is on the plan, one line');
+    assert.ok(plinth.every((e) => e.kind === 'line' && e.hidden && e.pen === 'FINE' && e.layer === 'PLINTH_HIDDEN'), 'dashed, on its own layer');
     assert.equal(plan.entities.filter((e) => e.layer === 'MASK' && e.src === `${ids.a}:PLINTH`).length, 0, 'and it hides nothing');
     // The worktop over the base run is above the base cut: today's hidden outline (on its own ink since F8).
     assert.ok(plan.entities.some((e) => e.kind === 'poly' && e.hidden && e.layer === 'WORKTOP'), 'the worktop, dashed');

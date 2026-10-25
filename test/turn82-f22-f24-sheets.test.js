@@ -33,11 +33,15 @@ import { getCabinetProfile } from '../src/engine/profile.js';
 import { getUnitType } from '../src/engine/types.js';
 import { handleClassOf, handleReference } from '../src/engine/handles.js';
 import { frontOpeningPatch } from '../src/lib/frontOpening.js';
+import { DRAWING_LAYERS, LAYER_ORDER } from '../src/engine/drawings/layers.js';
 import { projectRun, sheetDefaultHandle } from '../src/engine/drawings/projector.js';
 import { wallDrawingSheets } from '../src/engine/drawings/wallSheets.js';
 import { wallGroups } from '../src/engine/drawings/wallElevation.js';
 import { buildRunElevation, worktopsOnWall } from '../src/engine/drawings/setElevation.js';
-import { drawingContext } from '../src/engine/drawings/setSheet.js';
+import { drawingContext, SET_LEGEND } from '../src/engine/drawings/setSheet.js';
+import { buildPlan } from '../src/engine/drawings/setPlan.js';
+import { rectCorners, roomWalls } from '../src/engine/room.js';
+import { wallGapOf } from '../src/engine/runs.js';
 
 const P = () => getCabinetProfile();
 const ctx = () => drawingContext(20, P());
@@ -165,4 +169,95 @@ test('F22 · a chosen knob is the engine\'s, as T81 drew it: one circle per dril
   assert.equal(drilled, 6);
   assert.equal(circles.length, drilled);
   assert.ok(circles.every((c) => !c.defaultHandle));
+});
+
+// ═══ F24 · ONE DASHED LINE FOR THE PLINTH ══════════════════════════════════
+
+test('F24 · PLINTH_HIDDEN: a layer of its own, grey, the FINE pen, dashed as the HIDDEN role, an ink nobody else wears', () => {
+  const L = DRAWING_LAYERS.PLINTH_HIDDEN;
+  assert.ok(L, 'on the table');
+  assert.equal(L.pen, 'FINE');
+  assert.match(L.colour, /^#([0-9A-Fa-f]{2})\1\1$/, 'a grey');
+  assert.deepEqual(L.dash, DRAWING_LAYERS.SHELVES.dash, 'the hidden role\'s dash');
+  for (const [name, other] of Object.entries(DRAWING_LAYERS)) {
+    if (name !== 'PLINTH_HIDDEN') assert.notEqual(other.colour.toLowerCase(), L.colour.toLowerCase(), `${name} wears another ink`);
+  }
+  assert.ok(LAYER_ORDER.includes('PLINTH_HIDDEN'), 'in the pen order');
+  // The shelves keep their layer.
+  assert.deepEqual([DRAWING_LAYERS.SHELVES.colour, DRAWING_LAYERS.SHELVES.pen], ['#009A3D', 'HIDDEN']);
+});
+
+test('F24 · the base plan: each plinth board is ONE dashed line at its face toward the room, on PLINTH_HIDDEN, hiding nothing', () => {
+  for (const inframe of [true, false]) {
+    const ids = t81Kitchen({ inframe });
+    const a = setArgs();
+    const plan = buildPlan(a.entries, { which: 'base', room: a.room, worktops: a.worktops.map((w) => w.geometry || w), profile: P(), ctx: ctx(), frontTypeOf: a.frontTypeOf });
+    const wall = roomWalls(a.room)[0];
+    const at = (u, v) => [wall.start.x + wall.along.x * u + wall.inward.x * v, wall.start.y + wall.along.y * u + wall.inward.y * v];
+    const e = a.entries.find((x) => x.unit.id === ids.a);
+    const boards = e.result.panels.filter((p) => p.box && p.role === 'plinth');
+    assert.ok(boards.length >= 1, 'the run has its plinth');
+    for (const pl of boards) {
+      const mine = plan.entities.filter((x) => x.src === `${ids.a}:${pl.id}`);
+      assert.equal(mine.length, 1, `${pl.id}: one line, not two (${mine.length})`);
+      const [l] = mine;
+      assert.deepEqual([l.kind, l.layer, l.pen, l.hidden], ['line', 'PLINTH_HIDDEN', 'FINE', true]);
+      // Its face toward the room: the far face from the wall, along the whole board.
+      const v = wallGapOf(e.unit, P()) + pl.box.z + pl.box.d;
+      const u0 = Number(e.unit.position.x_mm) + pl.box.x;
+      const ends = [at(u0, v), at(u0 + pl.box.w, v)];
+      const got = [[l.x1, l.y1], [l.x2, l.y2]].sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+      ends.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+      for (let k = 0; k < 2; k += 1) assert.ok(near(got[k][0], ends[k][0]) && near(got[k][1], ends[k][1]), `${pl.id}: ${got[k]} is ${ends[k]}`);
+    }
+    assert.equal(plan.entities.filter((x) => x.layer === 'SHELVES' && boards.some((pl) => x.src === `${ids.a}:${pl.id}`)).length, 0, 'not on the shelves\' layer');
+    assert.equal(plan.entities.filter((x) => x.layer === 'MASK' && boards.some((pl) => x.src === `${ids.a}:${pl.id}`)).length, 0, 'and it hides nothing');
+    // Nowhere else: the elevations carry no plinth line of this ink.
+    const sheets = wallDrawingSheets(a);
+    for (const s of sheets.filter((x) => !String(x.variant).startsWith('plan'))) {
+      assert.equal(s.sheet.entities.filter((x) => x.layer === 'PLINTH_HIDDEN' && notLegend(x)).length, 0, s.name);
+    }
+  }
+});
+
+test('F24 · a true L: each arm\'s toe kick is one line, at the face that looks at the open floor', () => {
+  for (const doors of [true, false]) {
+    S().newProject('T82 F24 L');
+    S().setRoom({ corners: rectCorners(4000, 3000), height: 2500 });
+    const left = S().addUnit('CORNER_L_BASE', { wall: 0, x: 0 }).id;
+    const right = S().addUnit('CORNER_L_BASE', { wall: 0, x: 3100 }).id;
+    S().updateUnitParams(left, { plinth: true, corner_side: 'left', doors });
+    S().updateUnitParams(right, { plinth: true, corner_side: 'right', doors });
+    const a = setArgs();
+    const plan = buildPlan(a.entries, { which: 'base', room: a.room, worktops: [], profile: P(), ctx: ctx(), frontTypeOf: a.frontTypeOf });
+    const wall = roomWalls(a.room)[0];
+    const at = (u, v) => [wall.start.x + wall.along.x * u + wall.inward.x * v, wall.start.y + wall.along.y * u + wall.inward.y * v];
+    for (const id of [left, right]) {
+      const e = a.entries.find((x) => x.unit.id === id);
+      const gap = wallGapOf(e.unit, P());
+      const x0 = Number(e.unit.position.x_mm);
+      const A = e.result.panels.find((p) => p.id === 'PLINTH-A');
+      const B = e.result.panels.find((p) => p.id === 'PLINTH-B');
+      assert.ok(A && B, 'the L cuts two toe kicks');
+      const lineOf = (p) => plan.entities.filter((x) => x.src === `${id}:${p.id}`);
+      assert.equal(lineOf(A).length, 1);
+      assert.equal(lineOf(B).length, 1);
+      // Arm A runs along wall A: its face toward the room is its far face from the wall.
+      const la = lineOf(A)[0];
+      assert.ok(near(la.y1, at(0, gap + A.box.z + A.box.d)[1]) && near(la.y2, la.y1), `${e.unit.params.corner_side} A at its room face`);
+      // Arm B runs across: its face toward the room is the one the L opens onto (where arm A runs on).
+      const bx = e.unit.params.corner_side === 'left' ? B.box.x + B.box.w : B.box.x;
+      const lb = lineOf(B)[0];
+      assert.ok(near(lb.x1, at(x0 + bx, 0)[0]) && near(lb.x2, lb.x1), `${e.unit.params.corner_side} B at ${x0 + bx} (doors ${doors})`);
+    }
+  }
+});
+
+test('F24 · the legend names the plinth line (setSheet.js, E1\'s file: the row is E3\'s patch)', () => {
+  const row = SET_LEGEND.find(([, layer]) => layer === 'PLINTH_HIDDEN');
+  assert.ok(row, 'a legend row for the plinth line');
+  assert.equal(row[0], 'dash', 'drawn dashed, as the line is');
+  t81Kitchen({ inframe: false });
+  const planSheet = wallDrawingSheets(setArgs()).find((s) => s.variant === 'plan-base').sheet;
+  assert.ok(planSheet.entities.some((e) => e.kind === 'text' && e.text === row[2]), `the plan's legend says ${row[2]}`);
 });

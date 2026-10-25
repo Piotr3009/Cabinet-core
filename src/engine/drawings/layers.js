@@ -114,6 +114,15 @@ export const DRAWING_LAYERS = {
   // an edge. ACI 9 (light grey), no other layer's index: ACI 253 is F24's
   // PLINTH_HIDDEN (E3, the layer table's owner, on review).
   SERVICE_VOID: { aci: 9, colour: '#ADADAD', width: 0.13, pen: 'FINE' },
+  // ─── T82 F24: ONE DASHED LINE FOR THE PLINTH ────────────────────────────
+  // The owner, 24.10.2026 (19:34): *"przerywana linia tez nie, bedzie jedna
+  // linia typu przerywana a nie podwojna bo to mylace bardzo jest"*. On a
+  // plan, a board hidden under the cut and seen edge-on (the plinth, a rail)
+  // is ONE dashed line at its face toward the room, on a layer of its own:
+  // grey (ACI 253, the one grey of the 250 to 255 ladder no layer wears), the
+  // FINE pen, dashed as the HIDDEN role is (SHELVES' dash). The shelves keep
+  // theirs. The colour PROPOSED.
+  PLINTH_HIDDEN: { aci: 253, colour: '#828282', width: 0.13, dash: [6, 4], pen: 'FINE' },
 };
 
 export function drawingLayer(name) {
@@ -130,7 +139,7 @@ export function drawingLayer(name) {
  */
 export const LAYER_ORDER = Object.freeze([
   'MASK', 'WORKTOP', 'SERVICE_VOID', 'BUILDING', 'CARCASE', 'FRAME_BOARD', 'XRAY_CARCASE', 'XRAY_FRONT',
-  'SHELVES', 'RUNNERS', 'HINGES', 'LEG_BLOCK', 'DOORS', 'DOOR_SWING', 'HANDLES', 'HINGE_MARK',
+  'SHELVES', 'PLINTH_HIDDEN', 'RUNNERS', 'HINGES', 'LEG_BLOCK', 'DOORS', 'DOOR_SWING', 'HANDLES', 'HINGE_MARK',
   'DIMENSIONS', 'SHEET_MUTED', 'FRAME_LIGHT', 'SHEET_CUT', 'FRAME', 'UNIT_NUMBER', 'APPLIANCE', 'VIEW_TITLE',
 ]);
 

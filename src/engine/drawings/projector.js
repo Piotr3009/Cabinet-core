@@ -1091,6 +1091,79 @@ export function runSolids(group, {
   return { solids, marks };
 }
 
+// ═══ T82 F24 · ONE DASHED LINE FOR A BOARD SEEN EDGE-ON ════════════════════
+//
+// The owner, 24.10.2026 (19:34): *"przerywana linia tez nie, bedzie jedna
+// linia typu przerywana a nie podwojna bo to mylace bardzo jest"*. A plinth
+// under a plan's cut was every edge of its top face, dashed: its front face,
+// its back face and two 18 mm ticks. CLAUDE.md T82 F24: a board hidden under
+// the cut that is SEEN EDGE-ON (the plinth, a rail) is one dashed line at its
+// face toward the room, on a layer of its own.
+
+/**
+ * Which of a board's two faces across its thin axis `k` looks at the room:
+ * +1 the far one, -1 the near one. The room is where its own unit's FRONTS
+ * stand (a toe kick is there for the boot in front of them): the fronts
+ * beside it along `j` vote. A unit with no fronts: a board along the run
+ * (thin in z) faces +z, the run frame's room; a board across it (thin in x)
+ * faces along its role's other boards (the true L's other toe kick, which
+ * runs on into the open floor), else the unit's middle.
+ */
+function roomwardSide(s, k, j, lo, hi, profile) {
+  const m = s.member;
+  const mid = (lo[k] + hi[k]) / 2;
+  if (!m?.result) return 1;
+  const off = memberOffset(m, profile);
+  const span = (b) => {
+    const a0 = [b.x + off[0], b.y + off[1], b.z + off[2]];
+    return [a0, [a0[0] + b.w, a0[1] + b.h, a0[2] + b.d]];
+  };
+  let vote = 0;
+  for (const p of roomBoards(m.result).filter(isRoomFront)) {
+    const [a0, a1] = span(p.box);
+    if (a1[j] <= lo[j] + EPS_D || a0[j] >= hi[j] - EPS_D) continue;
+    vote += Math.sign((a0[k] + a1[k]) / 2 - mid);
+  }
+  if (vote) return Math.sign(vote);
+  if (k !== 0) return 1;
+  let along = 0;
+  for (const p of roomBoards(m.result)) {
+    if (p.role !== s.role || p.id === s.panelId) continue;
+    const [a0, a1] = span(p.box);
+    along += Math.sign((a0[0] + a1[0]) / 2 - mid);
+  }
+  if (along) return Math.sign(along);
+  return Math.sign(off[0] + (Number(m.result.params?.width) || 0) / 2 - mid) || 1;
+}
+
+/**
+ * The one line of a board seen edge-on in an orthographic view, as two
+ * screen points, or null where the view sees it face-on (its thinnest
+ * extent lies along the view) or it is no board.
+ */
+function edgeOnLine(s, V, profile) {
+  if (!V.ortho || s.kind !== 'board' || !s.prisms?.length) return null;
+  const va = [0, 1, 2].find((i) => Math.abs(V.dir[i]) > 0.5);
+  const lo = [Infinity, Infinity, Infinity];
+  const hi = [-Infinity, -Infinity, -Infinity];
+  for (const pr of s.prisms) {
+    const b = prismBounds(pr);
+    for (let i = 0; i < 3; i += 1) { lo[i] = Math.min(lo[i], b.lo[i]); hi[i] = Math.max(hi[i], b.hi[i]); }
+  }
+  const ext = [0, 1, 2].map((i) => hi[i] - lo[i]);
+  const k = [0, 1, 2].reduce((best, i) => (ext[i] < ext[best] ? i : best), 0);
+  if (k === va) return null;
+  const j = 3 - va - k;
+  if (!(ext[j] > ext[k])) return null;
+  const A = [0, 0, 0];
+  A[va] = V.dir[va] < 0 ? hi[va] : lo[va];
+  A[k] = roomwardSide(s, k, j, lo, hi, profile) > 0 ? hi[k] : lo[k];
+  A[j] = lo[j];
+  const B = [...A];
+  B[j] = hi[j];
+  return [V.screen(A), V.screen(B)];
+}
+
 // ═══ THE MODES ═════════════════════════════════════════════════════════════
 
 /** Which solids a mode keeps (CLAUDE.md F1 (d)). */
@@ -1272,9 +1345,28 @@ function renderScene(scene, V, {
   const longEnough = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]) >= (minEdge || 0) - 1e-9;
   const seenXray = new Set();
   const line = (a, b, props) => ({ kind: 'line', x1: a[0], y1: a[1], x2: b[0], y2: b[1], ...props });
+  // T82 F24 · a solid `hiddenAs` names a LAYER for, seen edge-on: ONE dashed
+  // line at its face toward the room, on that layer, in that layer's pen.
+  const asOneLine = new Set();
+  if (hiddenAs && V.ortho && !xray) {
+    for (const s of live) {
+      const layer = hiddenAs(s);
+      if (typeof layer !== 'string') continue;
+      const seg = edgeOnLine(s, V, profile);
+      if (!seg) continue;
+      asOneLine.add(s.key);
+      const [a, b] = seg;
+      if (!longEnough(a, b)) continue;
+      entities.push(line(a, b, {
+        layer, pen: drawingLayer(layer).pen, hidden: true, src: s.key, ...(s.panelId ? { part: s.panelId } : {}), dashedSolid: true, edgeOn: true,
+      }));
+      census.hidden += 1;
+    }
+  }
   for (const e of edges) {
     const adj = e.faces.map((id) => faceById.get(id)).filter(Boolean);
     const s = e.solid;
+    if (asOneLine.has(s.key)) continue;
     // A curved side (a cylinder's facets) shows only its silhouette.
     if (e.smooth && adj.filter((f) => isFacing.get(f.id)).length !== 1) continue;
     const cutEdge = Boolean(e.cut) || adj.some((f) => f.cut);
@@ -1311,9 +1403,12 @@ function renderScene(scene, V, {
       skip: new Set(e.faces), tie: tieFor(s), hiddenToo: Boolean(dashed), inner,
     });
     if (dashed) {
+      // T81: on SHELVES in the HIDDEN pen; T82 F24: a named layer in its own pen.
+      const dashLayer = typeof dashed === 'string' ? dashed : 'SHELVES';
+      const dashPen = typeof dashed === 'string' ? drawingLayer(dashed).pen : 'HIDDEN';
       for (const [a, b] of [...parts.shown, ...parts.hidden]) {
         if (!longEnough(a, b)) continue;
-        entities.push(line(a, b, { layer: 'SHELVES', pen: 'HIDDEN', hidden: true, src: s.key, ...(s.panelId ? { part: s.panelId } : {}), dashedSolid: true }));
+        entities.push(line(a, b, { layer: dashLayer, pen: dashPen, hidden: true, src: s.key, ...(s.panelId ? { part: s.panelId } : {}), dashedSolid: true }));
         census.hidden += 1;
       }
       continue;
@@ -1520,7 +1615,9 @@ function renderScene(scene, V, {
  *   clipX      [x0, x1]: every solid clipped to this stretch (the unit card)
  *   camera     { P, T } for the perspective
  *   hiddenAs   (solid) => true for a solid drawn DASHED, seen or not, and
- *              hiding nothing (the plinth under a plan's cut)
+ *              hiding nothing, on SHELVES; or a LAYER NAME (T82 F24): a
+ *              board seen edge-on is then ONE dashed line at its face toward
+ *              the room on that layer (the plinth under a plan's cut)
  *   skipSolid  (solid) => true for a solid left out of this view
  *   minEdge    a visible piece shorter than this (drawing mm) is noise
  *   solidsIn   the `runSolids` answer, when the caller already holds it

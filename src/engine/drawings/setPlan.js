@@ -272,6 +272,9 @@ export function buildPlan(entries, {
   // the hardware below it are seen from above in painter's order, and the
   // plinth, under the carcass and below either cut, is a dashed line, never
   // a solid outline (the audit of 22.10, finding 3).
+  // T82 F24: ONE dashed line, at its face toward the room, on PLINTH_HIDDEN
+  // (*"bedzie jedna linia typu przerywana a nie podwojna"*). A rail hidden
+  // under a cut joins this predicate when a kit cuts one there.
   const cutList = cutEntries(entries, cut, profile);
   // ─── T82 F12 · THE SERVICE VOID, HATCHED ───────────────────────────────
   // CLAUDE.md T82 F12: "the plan draws the void hatched (a new ink
@@ -296,7 +299,7 @@ export function buildPlan(entries, {
     if (!wall) continue;
     const drawn = projectRun(group, {
       view: 'plan', cut, mode: 'fronts', profile, frontTypeOf, shakerFrame,
-      hiddenAs: (s) => s.role === 'plinth',
+      hiddenAs: (s) => (s.role === 'plinth' ? 'PLINTH_HIDDEN' : false),
       minEdge: ctx.mm(profile.drawings.projector.minEdgePaperMm),
     });
     for (const e of drawn.entities) entities.push(throughWall(e, wall));

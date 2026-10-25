@@ -316,6 +316,8 @@ export const NEW_FILES = [
   // T82 F23 (25.10.2026): the hinges and the runners from the models; F23's probe
   'scripts/t82-probe-f23.mjs',
   'scripts/t78-classify.d/f43-t82-f23.mjs',
+  // T82 F24 (25.10.2026): one dashed line for the plinth
+  'scripts/t78-classify.d/f43-t82-f24.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

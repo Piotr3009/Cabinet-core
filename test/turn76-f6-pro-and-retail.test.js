@@ -18,7 +18,7 @@ setPersistence('none');
 const { useProjectStore } = await import('../src/stores/projectStore.js');
 const A = await import('../src/retail/design/adapter.js');
 const { describeDesign } = await import('../src/retail/estimate/document.js');
-const { boardRefusal, defaultFrontDecoration } = await import('../src/engine/frontDecoration.js');
+const { boardRefusal, defaultFrontDecoration, newFrontDecoration } = await import('../src/engine/frontDecoration.js');
 const { FRONT_STYLE_ART } = await import('../src/engine/frontStyleArt.js');
 const { FRONT_STYLE_OPTIONS } = await import('../src/engine/design.js');
 
@@ -69,7 +69,11 @@ test('F6 · a client picks each style the doors can take and gets the owner\'s r
     A.setFrontStyle(style);
     const fronts = S().project.design.fronts;
     assert.equal(fronts.style, style);
-    assert.deepEqual(fronts.decoration, defaultFrontDecoration(style), `${style}: not the owner's recipe`);
+    // AMENDED BY T82 F15 (25.10.2026): a client picking Fluted gets the owner's reeds
+    // (*"fluted teraz to sa rowki a ja potrzebuje chmurke"*), `newFrontDecoration`;
+    // the other three are still T76's records.
+    assert.deepEqual(fronts.decoration, newFrontDecoration(style), `${style}: not the owner's recipe`);
+    if (style !== 'FL') assert.deepEqual(fronts.decoration, defaultFrontDecoration(style), style);
     const result = S().unitResult(unitId);
     const leaves = result.panels.filter((p) => p.role === 'front' && p.part === 'FRONT');
     assert.ok(leaves.length, style);

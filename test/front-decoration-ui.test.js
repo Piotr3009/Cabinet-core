@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { FRONT_STYLE_OPTIONS, frontStyleSelection, migrateDesign, normaliseDoorStyle, resolveUnitDesign } from '../src/engine/design.js';
-import { buildFrontDecoration, defaultFrontDecoration } from '../src/engine/frontDecoration.js';
+import { buildFrontDecoration, defaultFrontDecoration, newFrontDecoration } from '../src/engine/frontDecoration.js';
 import { setFrontTypeCount, settingsSectionSnapshot } from '../src/engine/projectSettings.js';
 import { DEFAULT_CABINET_PROFILE } from '../src/engine/profile.js';
 import { drawnFrontStyleIds } from '../src/engine/frontStyleArt.js';
@@ -29,7 +29,12 @@ test('selecting each decorative style stores an explicit recipe that survives a 
     const selected = frontStyleSelection(style);
     const design = migrateDesign(JSON.parse(JSON.stringify({ fronts: selected })));
     const resolved = resolveUnitDesign({ params: {} }, design);
-    assert.deepEqual(resolved.frontDecoration, defaultFrontDecoration(style));
+    // AMENDED BY T82 F15 (25.10.2026): a NEW choice is born as `newFrontDecoration`
+    // makes it, FL with the owner's reeds (*"fluted teraz to sa rowki a ja potrzebuje
+    // chmurke"*); every other style's is still `defaultFrontDecoration`, T76's record.
+    assert.deepEqual(resolved.frontDecoration, newFrontDecoration(style));
+    if (style !== 'FL') assert.deepEqual(resolved.frontDecoration, defaultFrontDecoration(style));
+    else assert.equal(resolved.frontDecoration.fluteProfile, 'reed', 'the reeds survive the JSON save');
     assert.equal(resolved.frontDecoration.style, style);
     assert.equal(resolved.frontDecoration.version, 1);
   }
@@ -61,7 +66,8 @@ test('explicit unit recipe reaches the engine and changing to flat removes the s
 test('a reselected style retains workshop edits and selecting another gets its own recipe', () => {
   const selected = { style: 'G', decoration: { ...defaultFrontDecoration('G'), groovePitchMm: 31 } };
   assert.equal(frontStyleSelection('G', selected).decoration.groovePitchMm, 31);
-  assert.deepEqual(frontStyleSelection('FL', selected).decoration, defaultFrontDecoration('FL'));
+  // AMENDED BY T82 F15 (25.10.2026): FL is born with the owner's reeds (*"daj wariant b czyli na styk narazie"*).
+  assert.deepEqual(frontStyleSelection('FL', selected).decoration, newFrontDecoration('FL'));
   assert.equal(frontStyleSelection('F', selected).decoration, null);
 });
 

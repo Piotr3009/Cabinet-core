@@ -1,5 +1,5 @@
 import NumberField from './NumberField.jsx';
-import { defaultFrontDecoration, normaliseFrontDecoration, ORNATE_STYLE_IDS } from '../engine/frontDecoration.js';
+import { newFrontDecoration, normaliseFrontDecoration, ORNATE_STYLE_IDS, reedChoices } from '../engine/frontDecoration.js';
 
 const FIELD_LABELS = {
   frameMm: 'Frame width',
@@ -14,11 +14,19 @@ const FIELD_LABELS = {
   mouldingProjectionMm: 'Moulding projection',
 };
 
+// T82 F15 · the cloud: a Fluted front is grooves or reeds. The owner,
+// 25.10.2026: *"fluted teraz to sa rowki a ja potrzebuje chmurke"*, *"daj
+// wariant b czyli na styk narazie"*, *"do tego daj ustawienie srednicy walkow
+// tez"*. A reed shows its diameter (the profile's ladder beside the free
+// number) and the side margin; the ballnose's own numbers are the groove's.
+const GROOVE_ONLY = ['fluteDiameterMm', 'grooveDepthMm', 'groovePitchMm'];
+
 // T76 F6 · `fields={false}` is retail's: *"a client picks a style and gets
 // the owner's recipe with NO numeric fields (lazy client law; the recipe
 // controls are PRO's)"*. Only the activation of an old saved front is left.
 export default function FrontDecorationControls({ style, value, onChange, fields = true }) {
-  const defaults = defaultFrontDecoration(style);
+  // T82 F15 · a new choice is born as `newFrontDecoration` makes it (FL: reeds).
+  const defaults = newFrontDecoration(style);
   if (!defaults) return null;
   const config = normaliseFrontDecoration(value, style);
   const ornate = ORNATE_STYLE_IDS.includes(style);
@@ -37,6 +45,12 @@ export default function FrontDecorationControls({ style, value, onChange, fields
   );
   if (config && !fields) return null;
   const update = (key, next) => onChange({ ...config, [key]: next });
+  const reed = style === 'FL' && config?.fluteProfile === 'reed';
+  const reedOf = reedChoices();
+  const setFluteProfile = (next) => onChange({
+    ...config, fluteProfile: next,
+    ...(next === 'reed' && !Number.isFinite(config.reedDiameterMm) ? { reedDiameterMm: reedOf.diameterMm } : {}),
+  });
   return (
     <div className="border border-shell-600 rounded p-2 space-y-2" data-front-decoration={style}>
       {!config ? (
@@ -53,15 +67,59 @@ export default function FrontDecorationControls({ style, value, onChange, fields
           <p className="text-[11px] text-ink-400">
             {style === 'AM'
               ? 'Four applied strips, with 45 degree mitres, added to the front and the parts list.'
+              : style === 'FL' && reed
+                ? 'Convex reeds, touching, cut with a reed profile cutter: the crests are the front\'s face and each valley goes half the diameter into the board. Top and bottom they run to the edges.'
               : style === 'FL'
                 ? 'Round-bottom grooves cut with a ballnose tool. The cutter and depth determine their opening width.'
                 : 'Decorative machining in the face of one slab. Dimensions below are editable workshop defaults.'}
             {style === 'GF' ? ' Groove depth is additional to the panel recess.' : ''}
             {style === 'AH' ? ' Choose the J-pull separately in Opening.' : ''}
           </p>
-          {Object.entries(FIELD_LABELS).filter(([key]) => Object.hasOwn(defaults, key)).map(([key, label]) => (
+          {style === 'FL' && (
+            <label className="flex items-center gap-2 text-[11px] text-ink-200">
+              <span className="flex-1">Flute profile</span>
+              <select
+                className="cc-input w-28"
+                aria-label="Flute profile"
+                data-decoration-field="fluteProfile"
+                value={config.fluteProfile || 'groove'}
+                onChange={(event) => setFluteProfile(event.target.value)}
+              >
+                <option value="reed">Reeds</option>
+                <option value="groove">Grooves</option>
+              </select>
+            </label>
+          )}
+          {reed && (
+            // A row, not a label: a label would hand a click on its words to the first ladder button.
+            <div className="flex items-center gap-2 text-[11px] text-ink-200" data-reed-diameter>
+              <span className="flex-1">Reed diameter</span>
+              {reedOf.ladderMm.map((mm) => (
+                <button
+                  key={mm}
+                  type="button"
+                  className={`cc-btn px-2 py-0.5 text-[11px] ${config.reedDiameterMm === mm ? 'border-gold text-gold' : ''}`}
+                  aria-pressed={config.reedDiameterMm === mm}
+                  data-reed-ladder={mm}
+                  onClick={() => update('reedDiameterMm', mm)}
+                >
+                  {mm}
+                </button>
+              ))}
+              <NumberField
+                className="cc-input w-20 text-right"
+                aria-label="Reed diameter"
+                data-decoration-field="reedDiameterMm"
+                value={config.reedDiameterMm}
+                integer={false}
+                onCommit={(next) => update('reedDiameterMm', next)}
+              />
+              <span className="text-ink-400">mm</span>
+            </div>
+          )}
+          {Object.entries(FIELD_LABELS).filter(([key]) => Object.hasOwn(defaults, key) && !(reed && GROOVE_ONLY.includes(key))).map(([key, label]) => (
             <label key={key} className="flex items-center gap-2 text-[11px] text-ink-200">
-              <span className="flex-1">{label}</span>
+              <span className="flex-1">{reed && key === 'grooveInsetMm' ? 'Reed side margin' : label}</span>
               <NumberField
                 className="cc-input w-20 text-right"
                 aria-label={label}
@@ -75,7 +133,7 @@ export default function FrontDecorationControls({ style, value, onChange, fields
           ))}
           {Object.hasOwn(defaults, 'grooveDirection') && (
             <label className="flex items-center gap-2 text-[11px] text-ink-200">
-              <span className="flex-1">Groove direction</span>
+              <span className="flex-1">{reed ? 'Reed direction' : 'Groove direction'}</span>
               <select
                 className="cc-input w-28"
                 aria-label="Groove direction"

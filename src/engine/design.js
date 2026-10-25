@@ -11,7 +11,7 @@
 import { decorFinish } from './decors.js';
 import { veneerFinish } from './veneers.js';
 import { DEFAULT_CABINET_PROFILE } from './profile.js';
-import { defaultFrontDecoration, normaliseFrontDecoration } from './frontDecoration.js';
+import { newFrontDecoration, normaliseFrontDecoration } from './frontDecoration.js';
 // Turn 24 (CLAUDE.md F3.1): the six slots the caliper answers for.
 import { THICKNESS_SLOTS } from './thickness.js';
 
@@ -55,6 +55,8 @@ export const FRONT_STYLE_OPTIONS = [
 ];
 
 // Selecting a style is the explicit opt-in. Merely loading a saved style is not.
+// T82 F15 · a NEW choice is born with `newFrontDecoration` (FL: the reeds,
+// the owner's *"potrzebuje chmurke"*); a reselected style keeps its own.
 export function frontStyleSelection(style, current = {}) {
   const selected = FRONT_STYLE_OPTIONS.some((o) => o.id === style) ? style : 'F';
   const previous = current.style || current.frontType;
@@ -62,7 +64,7 @@ export function frontStyleSelection(style, current = {}) {
     style: selected,
     decoration: previous === selected && current.decoration
       ? normaliseFrontDecoration(current.decoration, selected)
-      : defaultFrontDecoration(selected),
+      : newFrontDecoration(selected),
   };
 }
 

@@ -227,6 +227,22 @@ export const DEFAULT_CABINET_PROFILE = {
     // leaves under its own deepest cut and between it and an opposing cut
     // from the back (a cup, a screw).
     decorationMinSkinMm: 3,
+    // T82 F15 · THE CLOUD: FLUTED AS CONVEX REEDS. The owner, 25.10.2026,
+    // over his mockup (verify/t82/mockups/chmurka.png): *"fluted teraz to sa
+    // rowki a ja potrzebuje chmurke"*, *"daj wariant b czyli na styk
+    // narazie"*, *"do tego daj ustawienie srednicy walkow tez"*. FL keeps
+    // T76's groove recipe above, untouched: it is what a saved FL front that
+    // names no `fluteProfile` reads (old projects stay grooves). These are
+    // the reed's numbers: `profile` is the one a NEW Fluted choice is born
+    // with (`newFrontDecoration`, engine/frontDecoration.js), the diameter the
+    // one a reed decoration that names none takes. The side margins are FL's
+    // `grooveInsetMm`; top and bottom the reeds run to the edges.
+    flute: {
+      profile: 'reed',              // CLAUDE.md T82 F15: "default `reed`"
+      reedDiameterMm: 20,           // T82 PROPOSED, owner to confirm
+      reedLadderMm: [16, 20, 25],   // T82 PROPOSED, owner to confirm (the ladder beside the free number)
+      reedNoteUnderValleyMm: 10,    // CLAUDE.md T82 F15: the Check speaks under 10 mm of board below a valley
+    },
   },
 
   // ─── Carcass panel deductions ───
@@ -6110,6 +6126,8 @@ export function migrateCabinetProfile(profile) {
       decoration: Object.fromEntries(Object.keys(D.front.decoration).map((style) => [
         style, { ...D.front.decoration[style], ...profile.front?.decoration?.[style] },
       ])),
+      // T82 F15 · the reed's numbers, key by key, as the recipes are.
+      flute: { ...D.front.flute, ...profile.front?.flute },
     },
     // ─── CHAT-FIX 16.08 (owner): THE LIGHTING SPEC IS THE APP'S ─────────────
     // There was NO merge for top-level `lighting`, so a stored profile

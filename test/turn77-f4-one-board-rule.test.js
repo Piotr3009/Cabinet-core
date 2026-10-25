@@ -114,7 +114,12 @@ test('F4 · ONE FUNCTION: boardRefusal asks boardShortfall, for A/AH and Ornate 
   // The other recipes ride the same function: recess plus groove, or groove.
   assert.equal(boardRefusal('G', 5, P).needMm, 6);
   assert.equal(boardRefusal('GF', 11, P).needMm, 12);
-  assert.equal(boardRefusal('FL', 5, P).needMm, 6);
+  // AMENDED BY T82 F15 (25.10.2026): FL's T76 grooves still need 6; a Fluted front
+  // CHOSEN now is the owner's reeds (*"daj wariant b czyli na styk narazie"*), 20 cut
+  // 10 deep, and the same function asks it 13 (10 plus the 3 mm skin).
+  assert.equal(boardRefusal('FL', 5, P, D.FL).needMm, 6);
+  assert.equal(boardRefusal('FL', 5, P).needMm, 13);
+  assert.equal(boardRefusal('FL', 13, P), null, 'reeds of 20 on 13 leave their 3 mm');
   assert.equal(boardRefusal('AM', 1, P), null, 'applied strips cut nothing');
   assert.equal(boardRefusal('F', 1, P), null, 'a plain front has no recipe');
 });

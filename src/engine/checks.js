@@ -332,6 +332,14 @@ export const CHECKS = Object.freeze([
   // neither a fault nor a thing to look at, and never a gate. Generic: any
   // later rule that only informs takes the same level.
   { n: 45, level: 'note', label: 'Service void behind a vanity' },
+  // ─── T82 F15 · THE REEDS (engine/frontDecoration.js) ─────────────────────
+  // CLAUDE.md T82 F15 names it #41, which T80's in-frame row holds; the
+  // night's brief gives the reeds #46. The owner, 25.10.2026: *"daj wariant b
+  // czyli na styk narazie"*, *"do tego daj ustawienie srednicy walkow tez"*.
+  // "Reeds leave N mm under the valley" when under the profile's 10, and a
+  // field the diameter does not divide, centred. YELLOW: the leaf is cut; a
+  // person decides.
+  { n: 46, level: 'yellow', label: 'Fluted reeds: little board under the valley, or a field that does not divide' },
   // T82 F3 · the owner, 13:46: *"jesli jest 18 mm to daj zawsze 22 mm
   // automatycznie, i napisz informacje minimum 19 mm"* (KIT_HAWA.lsp D3,
   // `hawa-check-47`). CLAUDE.md names it #42, which the in-frame project holds;
@@ -742,6 +750,8 @@ export function runChecks({
         HAWA_PANEL_22: 47,
         // T82 F9 · #39: the vanity's trap, in the LISP's sentences, yellow.
         VANITY_TRAP: 39,
+        // T82 F15 · #46: the reeds' two notes, yellow as #32 is.
+        FRONT_DECORATION_REED_SKIN: 46, FRONT_DECORATION_REED_REMAINDER: 46,
       }[wn.code];
       if (!n) continue;
       if (n === 37 || n === 38 || n === 47) {
@@ -761,8 +771,8 @@ export function runChecks({
         })));
         continue;
       }
-      if (n === 32) {
-        out.push(finding(32, 'yellow', at(wn.panel || null, {
+      if (n === 32 || n === 46) {
+        out.push(finding(n, 'yellow', at(wn.panel || null, {
           message: `${unitNum} ${wn.message}`,
           subject: { unitId, panelId: wn.panel, editor: 'element' },
         })));

@@ -196,6 +196,54 @@ export function cutSizeOf(panel) {
   return { w, h, thickness };
 }
 
+// ─── T82 F15 · THE REEDS RUN TO THE EDGES ──────────────────────────────────
+// The owner's cloud (*"fluted teraz to sa rowki a ja potrzebuje chmurke"*):
+// a reed valley's swept surface (engine/frontDecoration.js, kind `reed`)
+// ends ON the front's outline, top and bottom, open. The slab's side wall
+// there stands only up to the reeds' section, never to the face, so the
+// valleys run out of the edge as they are cut instead of ending in a lip.
+// Each end is the section polyline in the room's frame: [x, y, z].
+function reedEnds(operations, toMesh, half) {
+  const ends = [];
+  for (const op of operations) {
+    const v = op.kind === 'reed' ? op.surface?.vertices : null;
+    if (!Array.isArray(v) || v.length < 4) continue;
+    for (const side of [0, 1]) {
+      const line = [];
+      for (let k = side; k < v.length; k += 2) line.push([...toMesh([v[k][0], v[k][1]]), half - v[k][2]]);
+      ends.push(line);
+    }
+  }
+  return ends;
+}
+
+/** The top of one side wall along a -> b: the face, and the reeds' sections where they end on it, by distance s along the edge. */
+function reedWallTop(a, b, zHigh, ends) {
+  const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  if (!(length > EPS)) return null;
+  const dir = [(b[0] - a[0]) / length, (b[1] - a[1]) / length];
+  const tol = 1e-4;
+  const lines = [];
+  for (const line of ends) {
+    const on = line.map((p) => {
+      const dx = p[0] - a[0]; const dy = p[1] - a[1];
+      const along = dx * dir[0] + dy * dir[1];
+      const off = Math.abs(dx * dir[1] - dy * dir[0]);
+      return off <= tol && along >= -tol && along <= length + tol ? [Math.max(0, Math.min(length, along)), Math.min(zHigh, p[2])] : null;
+    }).filter(Boolean);
+    if (on.length < 2) continue;
+    lines.push(on[0][0] > on.at(-1)[0] ? on.reverse() : on);
+  }
+  if (!lines.length) return null;
+  lines.sort((p, q) => p[0][0] - q[0][0]);
+  const top = [[0, zHigh]];
+  for (const point of [...lines.flat(), [length, zHigh]]) {
+    const last = top.at(-1);
+    if (Math.abs(point[0] - last[0]) > tol || Math.abs(point[1] - last[1]) > tol) top.push(point);
+  }
+  return { length, dir, top };
+}
+
 function build(panel, bores) {
   const decoration = panel.meta.frontDecoration;
   const { w, h, thickness } = cutSizeOf(panel);
@@ -259,11 +307,30 @@ function build(panel, bores) {
       else triangle(...p);
     }
   };
+  // T82 F15 · the reeds' open ends (none for every other decoration).
+  const ends = reedEnds(operations, toMesh, half);
   const wall = (points, zLow, zHigh, inward) => {
     for (let i = 0; i < points.length; i += 1) {
       const a = points[i]; const b = points[(i + 1) % points.length];
       const lowA = [...a, zLow]; const lowB = [...b, zLow];
       const highA = [...a, zHigh]; const highB = [...b, zHigh];
+      const reeded = !inward && ends.length && Math.abs(zHigh - half) < EPS ? reedWallTop(a, b, zHigh, ends) : null;
+      if (reeded) {
+        // One outward wall polygon in the edge's own (s, z) plane: the
+        // bottom, then the top from the far end back, the reeds' sections
+        // in it. Each triangle counter-clockwise there, as the quads below.
+        const { dir, top } = reeded;
+        const outline = [[0, zLow], [reeded.length, zLow], ...[...top].reverse()];
+        const at = ([sAlong, z]) => [a[0] + sAlong * dir[0], a[1] + sAlong * dir[1], z];
+        const faces = THREE.ShapeUtils.triangulateShape(outline.map(([x, y]) => new THREE.Vector2(x, y)), []);
+        for (const [i0, i1, i2] of faces) {
+          const [p, q, r] = [outline[i0], outline[i1], outline[i2]];
+          const turn = (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
+          if (turn > 0) triangle(at(p), at(q), at(r));
+          else triangle(at(p), at(r), at(q));
+        }
+        continue;
+      }
       if (inward) {
         triangle(lowA, highA, highB); triangle(lowA, highB, lowB);
       } else {

@@ -155,6 +155,16 @@ export const T78_PRO_EDITS = [
       + 'shelf carries `sleeves_dropped`, calling the store\'s `restoreSleeveRows`; a refusal is said, never silent.',
     words: 'the handover of 18.10.2026: *"przycisk Restore sleeve rows"*, accepted by the owner 14:55: *"ok daj"*',
   },
+  {
+    pro: 'src/components/FrontDecorationControls.jsx',
+    by: 'T82 F15',
+    why: 'a Fluted front shows a Flute profile select (Reeds / Grooves); for reeds the Reed diameter row (the profile\'s '
+      + 'ladder beside a free number, `reedChoices`), the side margin and the direction, the ballnose\'s own numbers '
+      + 'staying the groove\'s; Activate gives `newFrontDecoration` (FL is born reeds). Retail passes `fields={false}` '
+      + 'and shows none of it.',
+    words: 'the owner, 25.10.2026: *"fluted teraz to sa rowki a ja potrzebuje chmurke"*, *"daj wariant b czyli na styk '
+      + 'narazie"*, *"do tego daj ustawienie srednicy walkow tez"*.',
+  },
 ];
 
 /**

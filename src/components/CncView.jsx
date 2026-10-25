@@ -657,7 +657,8 @@ function Part({
     () => front
       ? new Map([...(decoration?.operations || []).filter((operation) => operation.kind !== 'relief').map((operation) => [operation.id, {
         // T76 F4 · a V groove reads as one: its width at the mouth, its centre line.
-        title: `${{ flute: 'Flute', vgroove: 'V groove' }[operation.kind] || 'Pocket'} | Front face`,
+        // T82 F15 · a reed valley reads as one: the reed profile cutter, its valley line.
+        title: `${{ flute: 'Flute', vgroove: 'V groove', reed: 'Reed valley' }[operation.kind] || 'Pocket'} | Front face`,
         subtitle: operation.layer,
         rows: [
           {
@@ -668,7 +669,7 @@ function Part({
           },
           { label: 'Start depth', value: `${formatMm(operation.startDepth)} mm` },
           { label: 'Final depth', value: `${formatMm(operation.depth)} mm` },
-          { label: 'Vector', value: { flute: 'Tool centre path', vgroove: 'Groove centre line' }[operation.kind] || 'Finished pocket boundary' },
+          { label: 'Vector', value: { flute: 'Tool centre path', vgroove: 'Groove centre line', reed: 'Reed cutter centre path along the valley' }[operation.kind] || 'Finished pocket boundary' },
           { label: 'Status', value: frontProblems.length ? 'Blocked: see checks' : 'Ready' },
         ],
       }]), ...frontEntities.filter((entity) => entity.referenceOnly).map((entity) => [entity.operationId, {

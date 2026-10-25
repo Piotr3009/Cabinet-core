@@ -41,6 +41,8 @@ export function deepestCutMm(recipe) {
   if (Array.isArray(recipe?.stepDepthsMm)) {
     return Math.max(Number(recipe.cornerDepthMm) || 0, ...recipe.stepDepthsMm.map((d) => Number(d) || 0));
   }
+  // T82 F15 · a reeded Fluted front cuts its valleys half the reed's diameter deep.
+  if (recipe?.fluteProfile === 'reed') return (Number(recipe.recessDepthMm) || 0) + (Number(recipe.reedDiameterMm) || 0) / 2;
   return (Number(recipe?.recessDepthMm) || 0) + (Number(recipe?.grooveDepthMm) || 0);
 }
 

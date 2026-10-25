@@ -162,11 +162,13 @@ const EXEMPT = {
     + ' Chat fix 17.10.2026 \u00b7 every part\'s caption carries its project number and wears its cabinet\'s colour, from the same plan the downloads use. *"ponumerujemy wszystkie elementy ... kolory napisow pod kolory szafki ... ok koduj"*'
     + ' 14:10 \u00b7 the EDGE arrow and the line along the banded edge on every numbered board, the one geometry the DXF writes (edgeArrowGeometry). *"na projekcie nie ma strzalek ktora strone oklejamy, jak mam przykleic naklejki? ... 1 - tak ... prosze - koduj"*'
     + ' 16:10 \u00b7 a mark is drawn as the open walk it is (markPoints): the corner mark one L through the corner. *"jeden L wektor ... obok linii"*'
-    + ' T79 F1 . the layer legend stands on the Changes bar (bottom-11, was bottom-3) so the bar of the one bottom-left message column never covers it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej ... powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*',
+    + ' T79 F1 . the layer legend stands on the Changes bar (bottom-11, was bottom-3) so the bar of the one bottom-left message column never covers it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej ... powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
+    + ' T82 F15 · the front readout names a reed valley (title and vector). The owner, 25.10.2026: *"fluted teraz to sa rowki a ja potrzebuje chmurke"*',
   'src/components/FrontDecorationControls.jsx': 'ORNATE, Piotr 10.10.2026: rozpisz zakoduj dokaldnei prosze i ja roto dam do clauda, ale daj gotowy kod wlacznei z leyersami prosze do cnc. Adds proposed relief note and mirror choice; no new numeric fields. ' + 'DECOR F1: editable, versioned decorative machining defaults shared with Retail. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T76 F4 · the Arch rise field goes with the ellipse it set; the defaults the controls show are the profile\'s. *"SEMICIRCULAR arch (rise = half the inner width; ... never squashed to an ellipse)"*'
     + ' T76 F6 · one prop, `fields` (PRO passes nothing and keeps every field); retail passes false and shows no number of a recipe. *"a client picks a style and gets the owner\'s recipe with NO numeric fields (lazy client law; the recipe controls are PRO\'s)"*'
-    + ' T76 integration · the AH sentence gets the space GPT\'s line lacked (F2 probe). *"AH (Arched handleless) | A\'s recipe; the J-pull is chosen separately under Opening"*',
+    + ' T76 integration · the AH sentence gets the space GPT\'s line lacked (F2 probe). *"AH (Arched handleless) | A\'s recipe; the J-pull is chosen separately under Opening"*'
+    + ' T82 F15 · a Fluted front shows Flute profile (Reeds / Grooves) and, for reeds, Reed diameter (the profile\'s ladder beside a free number), the side margin and the direction; Activate gives the new choice (FL born reeds). The owner, 25.10.2026: *"fluted teraz to sa rowki a ja potrzebuje chmurke"*, *"daj wariant b czyli na styk narazie"*, *"do tego daj ustawienie srednicy walkow tez"*',
   'src/components/PartDetailModal.jsx': 'DECOR F4: decorative layer colours follow the canonical part legend. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' Chat fix 17.10.2026, 16:10 \u00b7 a mark is drawn and boxed as the open walk it is (its pts): the corner mark one L through the corner. *"jeden L wektor ... obok linii"*',
   'src/components/SettingsPanel.jsx': 'DECOR F1: project and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
@@ -343,7 +345,8 @@ const EXEMPT = {
  * t58b merged). Not one of them is touched by this turn.
  */
 const FROZEN = {
-  'src/components/FrontDecorationControls.jsx': '029b9a2c4488bcb4e9bdbda77fa4798d2531caaca1d98ff4790d9947dd6171e4',
+  // T82 F15 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/FrontDecorationControls.jsx': 'b32660180217d45760e074f4fcd8932f90b9a57f11cb02121c59670225de2546',
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
   // T78 F11 · re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -369,7 +372,8 @@ const FROZEN = {
   'src/components/CncTree.jsx': '68aa1ffd5f8c07525c34b7b242c3adc387bc70157a38ae5bd07d0f257691d8e0',
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 (the afternoon) re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/CncView.jsx': '516abfc24d9f2ed2cbadf91898da2b559423ea568401ae6117d796c637945f03',
+  // T82 F15 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CncView.jsx': '044eba8a094749d2bf9c0da1b622a3e7e7129516886940b6acd09381fa97d635',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
   // T78 F19 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/CompanyDefaultsModal.jsx': 'e365305d290ab32057544e05f83b068f1ef9414642fe00f429cfbedb84dbc917',

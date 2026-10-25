@@ -161,9 +161,9 @@ import {
   verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
 // T82 F2 · which units a HAWA pocket's door covers, decided from where they stand.
-import { pocketCoverSides, pocketNeighbours, runPocketParams } from '../engine/runs.js';
+import { pocketNeighbours, runPocketParams } from '../engine/runs.js';
 // T82 F2, after the review · the run that moves with a re-cut pocket.
-import { buttedChainOf } from '../engine/runs.js';
+import { buttedChainOf, pocketClaimRefusal } from '../engine/runs.js';
 // T80 F3 · the in-frame frame of a run (KIT_INFRAME.lsp's mirror).
 import { runFrameParams } from '../engine/inframe.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
@@ -6021,8 +6021,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         }
         if (!(Array.isArray(params?.pocket?.covers) && params.pocket.covers.length)) {
           const probe = { ...born, params: { ...born.params, pocket: { ...pocket, covers: [] } } };
-          const sides = pocketCoverSides(get().units, probe, profile);
-          pocket.covers = [...sides.L, ...sides.R];
+          // T82 F2, after the review (store:2): the default as the run
+          // resolves it, so a cabinet another pocket closes is not written in.
+          pocket.covers = defaultPocketCovers(get().units, probe, profile);
         }
         set((st) => ({
           units: st.units.map((u) => (u.id === unit.id ? { ...u, params: { ...u.params, pocket } } : u)),
@@ -7108,8 +7109,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (resetCovers) {
       const moved = get().units.find((u) => u.id === unitId);
       const probe = { ...moved, params: { ...moved.params, pocket: { ...pocket, covers: [] } } };
-      const sides = pocketCoverSides(get().units, probe, profile);
-      const covers = [...sides.L, ...sides.R];
+      const covers = defaultPocketCovers(get().units, probe, profile);
       set((st) => ({
         units: st.units.map((u) => (u.id === unitId
           ? { ...u, params: { ...u.params, pocket: { ...u.params.pocket, covers } } }
@@ -7158,6 +7158,22 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         return {
           ok: false,
           error: `${name}: a door covers the cabinets one after another from its pocket; ${numOf(chain.find((id) => !mine.includes(id)))} would be skipped.`,
+        };
+      }
+    }
+    // T82 F2, after the review (store:2): a cabinet another pocket's door
+    // already closes is refused in that pocket's words.
+    {
+      const held = runPocketParams(s.units, profile);
+      for (const id of want) {
+        const el = held.get(id);
+        if (el?.role !== 'covered' || el.pocketId === unitId) continue;
+        const by = s.units.find((u) => u.id === el.pocketId);
+        return {
+          ok: false,
+          error: pocketClaimRefusal(unit, {
+            unitId: id, unitNum: numOf(id), by: el.pocketId, byNum: by?.params?.unit_num || el.pocketId,
+          }),
         };
       }
     }
@@ -11988,6 +12004,16 @@ function obstructs(unit, other, profile = getCabinetProfile()) {
   // in FRONT of it (a cabinet's front clad): neither holds the other off.
   if (standsInFrontOf(unit, other, profile) || standsInFrontOf(other, unit, profile)) return false;
   return bandsOverlap(bandOf(unit, profile), bandOf(other, profile), profile.editor.levelOverlapMm);
+}
+
+/**
+ * T82 F2, after the review (store:2) · the covers a pocket starts from (its
+ * birth, a new hand or a new door count): the default as the run resolves it,
+ * the one nearest unit on each door's side that no earlier pocket closes.
+ */
+function defaultPocketCovers(units, probe, profile = getCabinetProfile()) {
+  const list = (units || []).map((u) => (u.id === probe.id ? probe : u));
+  return runPocketParams(list, profile).get(probe.id)?.covers || [];
 }
 
 /**

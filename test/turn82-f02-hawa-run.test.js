@@ -452,3 +452,34 @@ test('T82 F2, after the review (store:1) . no room to re-cut: nothing overlaps, 
   assert.equal(unit(p).params.width, pocketWidthFor(25, 1), 'room was made and the pocket did not follow');
   assert.deepEqual(overlapsOnWall(), []);
 });
+
+test('T82 F2, after the review (store:2) . two pockets cannot both close one cabinet: the first keeps it, the second is refused in words', () => {
+  room();
+  const w = S().addUnit('WARDROBE', { wall: 0, x: 1000, params: { width: 600 } }).id;
+  const p1 = S().addUnit(POCKET, { near: w, side: 'L' }).id;
+  const p2 = S().addUnit(POCKET, { near: w, side: 'R' }).id;
+  assert.equal(unit(p1).params.pocket.hand, 'R');
+  assert.equal(unit(p2).params.pocket.hand, 'L');
+  assert.deepEqual(pocketElement(p1)?.covers, [w], 'the first pocket keeps its cabinet');
+  assert.deepEqual(pocketElement(p2)?.covers, [], 'the second pocket still covers the first one\'s cabinet');
+  assert.deepEqual(S().runElements?.[w]?.pocket, {
+    role: 'covered', pocketId: p1, unitNum: unit(p1).params.unit_num, side: 'R',
+  });
+  // One door is cut over it, not two.
+  assert.equal(S().pocketFiguresFor(p1).doors.length, 1);
+  assert.equal(S().pocketFiguresFor(p2).doors.length, 0, 'a second HAWA door is cut over the same wardrobe');
+  // The refusal is said: in the element, in the Check, by setPocketCovers.
+  const [refused] = pocketElement(p2)?.refused || [];
+  assert.deepEqual({ unitId: refused?.unitId, by: refused?.by }, { unitId: w, by: p1 });
+  const num = (id) => unit(id).params.unit_num;
+  const said = S().runChecks().filter((f) => f.unitId === p2 && f.check === 37);
+  assert.ok(said.some((f) => f.message.includes(num(w)) && f.message.includes(num(p1))),
+    `no Check sentence: ${JSON.stringify(said.map((f) => f.message))}`);
+  const res = S().setPocketCovers(p2, [w]);
+  assert.equal(res.ok, false);
+  assert.ok(res.error.includes(num(p1)), res.error);
+  // The first pocket's door turned away: the second may take the cabinet.
+  assert.equal(S().setPocket(p1, { hand: 'L' }).ok, true);
+  assert.deepEqual(pocketElement(p2)?.covers, [w], 'freed, the cabinet is not offered to the second pocket');
+  assert.deepEqual(pocketElement(p2)?.refused || [], []);
+});

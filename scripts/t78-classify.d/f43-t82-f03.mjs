@@ -80,7 +80,8 @@ export const LICENSED = {
       + '#47 yellow "HAWA pocket panels 22 on an 18 front" (CLAUDE.md\'s #42; the brief: the in-frame project holds #40 to '
       + '#44), read off the engine\'s HAWA_OUT_OF_RANGE, HAWA_POCKET_DEPTH and HAWA_PANEL_22 in the kit\'s own sentences. '
       + `${OWNER}`
-      + ' T82 F2, after the review: #37 also says a pocket the room could not re-cut to its front\'s width (runs.js pocketRecutRefusal), in its words.',
+      + ' T82 F2, after the review: #37 also says a pocket the room could not re-cut to its front\'s width (runs.js pocketRecutRefusal), in its words.'
+      + ' After the review: #37 says a cabinet another pocket\'s door already closes (runs.js pocketClaimRefusal).',
     gates: [],
   },
   'src/engine/hawaPocket.js': {

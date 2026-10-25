@@ -436,7 +436,8 @@ const FROZEN = {
   // T82 F14 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F17 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F2 (after the review) re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/RightPanel.jsx': '387f113b476da0ef47b8e7788d8492f737c6018e4e7e9550a06eb1f12787dbbf',
+  // T82 F2 (after the review, one cabinet one door) re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/RightPanel.jsx': '2ab162b072dd22bdb2e9f92c0f8dfb3df6ed0876fceae59491fdad689ad3a858',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
   'src/components/RoomModal.jsx': '04bc0d7b944cac119f44aa1c562ef0a635f6e86ecee9b6ea26784e075b69d2a1',

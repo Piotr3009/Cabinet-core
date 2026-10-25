@@ -1727,6 +1727,19 @@ export function pocketRecutRefusal(unit, figures) {
     + 'move the cabinet beside it, and the pocket follows.';
 }
 
+/**
+ * T82 F2, after the review (store:2) · the sentence for a pocket whose door
+ * would close a cabinet another pocket's door already closes (one `refused`
+ * entry of its element). Said by the Check (#37), the right panel and
+ * `setPocketCovers`, one sentence.
+ */
+export function pocketClaimRefusal(pocket, entry) {
+  if (!entry) return null;
+  const num = pocket?.params?.unit_num || pocket?.id || 'The pocket';
+  return `${num}: ${entry.unitNum} is closed by ${entry.byNum}'s door already, and one cabinet takes one pocket door: `
+    + `${num}'s door on that side is not cut. Turn its hand, or take ${entry.unitNum} off ${entry.byNum}.`;
+}
+
 /** A millimetre figure in a sentence: whole, or to the half the kit rounds to. */
 function hawaFigure(n) {
   const v = Math.round((Number(n) || 0) * 10) / 10;
@@ -1802,9 +1815,30 @@ export function runPocketParams(units, profile, { walls = null } = {}) {
   const list = units || [];
   const out = new Map(list.map((u) => [u.id, null]));
   const byId = new Map(list.map((u) => [u.id, u]));
+  const numOf = (u) => String(u?.params?.unit_num ?? u?.id ?? '');
+  // T82 F2, after the review (store:2) · ONE pocket door closes a cabinet. The
+  // pockets are read in the room's own order and the first to reach a cabinet
+  // keeps it; a later pocket's door stops short of it (a side is a chain from
+  // the pocket, so nothing past it is covered either) and the element says
+  // which cabinet and whose door (`refused`, `pocketClaimRefusal`).
+  const claimed = new Map();
   for (const pocket of list.filter(isPocketUnit)) {
     const choice = pocketChoiceOf(pocket.params, profile);
-    const sides = pocketCoverSides(list, pocket, profile);
+    const asked = pocketCoverSides(list, pocket, profile);
+    const sides = { L: [], R: [] };
+    const refused = [];
+    for (const side of ['L', 'R']) {
+      const ids = asked[side];
+      const k = ids.findIndex((id) => claimed.has(id));
+      sides[side] = k < 0 ? ids : ids.slice(0, k);
+      if (k >= 0) {
+        const by = claimed.get(ids[k]);
+        refused.push({
+          side, unitId: ids[k], unitNum: numOf(byId.get(ids[k])), by: by.id, byNum: numOf(by),
+        });
+      }
+    }
+    for (const id of [...sides.L, ...sides.R]) claimed.set(id, pocket);
     const wallWidth = walls?.[pocket.position?.wall ?? 0]?.width ?? 0;
     const beyond = {};
     for (const side of ['L', 'R']) {
@@ -1824,10 +1858,9 @@ export function runPocketParams(units, profile, { walls = null } = {}) {
       sides,
       beyond,
       cover,
+      refused,
     });
     for (const id of [...sides.L, ...sides.R]) {
-      // One pocket closes a cabinet: the first one to claim it keeps it.
-      if (out.get(id)) continue;
       out.set(id, {
         role: 'covered',
         pocketId: pocket.id,

@@ -46,7 +46,7 @@ import { frontClearances, frontGapRows, carcassGaps } from './frontClearance.js'
 import { unitFindings } from './cnc/exportGate.js';
 import { unitBase, unitTop, hasTopInfill } from './runs.js';
 // T82 F2, after the review · the HAWA pocket in its run: the sentences are runs.js's.
-import { pocketRecutRefusal } from './runs.js';
+import { pocketClaimRefusal, pocketRecutRefusal, runPocketParams } from './runs.js';
 // T75 F1 · the corner rulebook, the one detection every consumer reads.
 import {
   blindClearanceView, cornersOf, cornerChecks, lClearanceView,
@@ -1119,17 +1119,25 @@ export function runChecks({
   // room has no space nothing moves: the engine cuts the pocket at its width
   // and the room still holds it at the old one. Said here, red, in one
   // sentence (`runs.js pocketRecutRefusal`), never left silent.
+  // ...and (store:2) the pocket whose door would close a cabinet another
+  // pocket's door already closes: one cabinet takes one pocket door, so its
+  // door on that side is not cut, and this is where that is said.
+  const pocketRows = entries.some((e) => e?.result?.hawa) ? runPocketParams(list, profile) : new Map();
   for (const { unit, result } of entries) {
     if (!result?.hawa || !unit) continue;
-    const message = pocketRecutRefusal(unit, result.hawa);
-    if (!message) continue;
-    out.push(finding(37, 'red', {
-      unitId: unit.id,
-      unitNum: unit.params?.unit_num || unit.id,
-      panelId: null,
-      message,
-      subject: { unitId: unit.id, editor: 'cabinet' },
-    }));
+    const said = [
+      pocketRecutRefusal(unit, result.hawa),
+      ...(pocketRows.get(unit.id)?.refused || []).map((entry) => pocketClaimRefusal(unit, entry)),
+    ].filter(Boolean);
+    for (const message of said) {
+      out.push(finding(37, 'red', {
+        unitId: unit.id,
+        unitNum: unit.params?.unit_num || unit.id,
+        panelId: null,
+        message,
+        subject: { unitId: unit.id, editor: 'cabinet' },
+      }));
+    }
   }
 
   // ── #15 a TOP BOX standing THROUGH its main (T37 F5c) ──────────────────

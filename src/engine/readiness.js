@@ -134,7 +134,7 @@ export function appliedStripNotes(panels) {
  * engine/vanity.js applyVanityTop). The TOP itself is `cut`; the hole in it
  * is `manual`, one row per TOP, as the applied strips' gluing is.
  */
-function vanityTopNotes(panels) {
+export function vanityTopNotes(panels) {
   return (panels || [])
     .filter((p) => p?.meta?.vanityBasins && (p.meta.vanityBasins.cutouts || []).length)
     .map((p) => ({

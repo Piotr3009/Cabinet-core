@@ -141,12 +141,17 @@ export const LICENSED = {
   'src/engine/readiness.js': {
     why: `T82 F9, after the review: vanityTopNotes, the one row per vanity TOP under a basin (KIT_VANITY.lsp D18: its `
       + `oval is cut on site to the basin's template, never on the CNC), read by notCutParts (Check #30) and the BOM's `
-      + `NOTE row; it reads TOP.meta.vanityBasins, which only a vanity carries. A reader; it cuts nothing. ${OWNER_B2_FIX}`,
+      + `NOTE row; it reads TOP.meta.vanityBasins, which only a vanity carries. A reader; it cuts nothing. ${OWNER_B2_FIX}`
+      + ' vanityTopNotes is exported for the BOM\'s NOTE row (engine/bom.js, A4).',
     gates: ['vanity'],
   },
   'src/engine/worktop.js': {
     why: 'T82 F9, after the review: read by computeCabinet (fitBasins, for a vanity only); B3\'s licence\'s "computeCabinet '
       + 'never reads worktop.js" no longer holds and is amended by this line.',
+    gates: ['vanity'],
+  },
+  'src/engine/bom.js': {
+    why: 'T82 F9, after the review (A4 applies B2\'s patch F9-B2-to-A4-bom.js.diff): buildBom lists a vanity\'s carcass TOP under a basin as a NOTE row (role vanity_note, readiness manual, from readiness.js vanityTopNotes, KIT_VANITY.lsp D18): counted in nothing, merged with nothing, never a board and never a DXF; the pieces, the cut rows and the areas are what they were.',
     gates: ['vanity'],
   },
 };

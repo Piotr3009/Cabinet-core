@@ -17,7 +17,7 @@ import { sheetSizeForFamily } from './checks.js';
 import { lightingBomLines } from './ledStrips.js';
 // T75 F5 · the worktop's slabs, joint and cut-outs, resolved from the design.
 // T75 F22 · the state of every line, read off the part.
-import { appliedStripNotes, readinessOf } from './readiness.js';
+import { appliedStripNotes, readinessOf, vanityTopNotes } from './readiness.js';
 import { worktopsFor } from './worktop.js';
 import { migrateDesign } from './design.js';
 import { roomWalls } from './room.js';
@@ -162,8 +162,27 @@ export function buildBom(entries, {
       area_m2: 0,
       readiness: n.state,
     }));
+    // T82 F9, after the review · a vanity's carcass TOP under a basin (KIT_VANITY.lsp
+    // D18): the oval is cut on site to the basin's template, a NOTE row, `manual`,
+    // counted in nothing, merged with nothing, never a board and never a DXF.
+    const basinNotes = vanityTopNotes(counted).map((n) => ({
+      unit_num: result.unitNum,
+      id: n.id,
+      part: n.part,
+      role: 'vanity_note',
+      material_role: 'note',
+      material_label: `NOTE: ${n.note}`,
+      w: 0,
+      h: 0,
+      qty: 1,
+      thickness: 0,
+      edge: '',
+      edge_m: 0,
+      area_m2: 0,
+      readiness: n.state,
+    }));
     units.push({
-      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: [...rows, ...stripNotes, ...(dowelNote ? [dowelNote] : []), ...(cabineoNote ? [cabineoNote] : []), ...fillerNotes], totals: result.totals, warnings: result.warnings,
+      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: [...rows, ...stripNotes, ...(dowelNote ? [dowelNote] : []), ...(cabineoNote ? [cabineoNote] : []), ...fillerNotes, ...basinNotes], totals: result.totals, warnings: result.warnings,
     });
 
     for (const r of rows) {

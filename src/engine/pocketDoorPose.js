@@ -255,8 +255,9 @@ export function pocketDoorHoles(rig, numbers = null) {
  *     the tracks in them (T1 - 7 from 5 behind the front edge); fixed to B;
  *   . `profile`: the vertical profile block (17 x 60, PROPOSED) between the
  *     zones at the front of the tracks; it rides the carriage (`slides`);
- *   . `ejector` (Push): a block of the profile's section at mid height, behind
- *     it, the picture's height; it rides with the profile.
+ *   . `ejector` (Push): a length of the profile at its mid height, on the
+ *     profile's own section, the picture's height; it rides with the profile
+ *     (the profile is then drawn in two lengths, below and above it).
  */
 export function pocketHardwareBoxes(geometry) {
   if (!geometry) return [];
@@ -290,22 +291,21 @@ export function pocketHardwareBoxes(geometry) {
     const py0 = yBot + (n.zoneBottom ?? 0);
     const py1 = yTop - (n.zoneTop ?? 0);
     if (!(py1 > py0)) continue;
-    out.push({
-      id: `${d.doorId}:profile`, kind: 'profile', doorId: d.doorId, slides: true,
-      x0: px0, x1: px0 + w, y0: py0, y1: py1, z0: front - n.symbol.d, z1: front,
-    });
-    if (d.push) {
-      const mid = (py0 + py1) / 2;
-      out.push({
-        id: `${d.doorId}:ejector`, kind: 'ejector', doorId: d.doorId, slides: true,
-        x0: px0,
-        x1: px0 + w,
-        y0: mid - EJECTOR_PICTURE_HEIGHT_MM / 2,
-        y1: mid + EJECTOR_PICTURE_HEIGHT_MM / 2,
-        z0: front - 2 * n.symbol.d,
-        z1: front - n.symbol.d,
-      });
+    const at = { doorId: d.doorId, slides: true, x0: px0, x1: px0 + w, z0: front - n.symbol.d, z1: front };
+    // T82 F6, after the review (roomsheets 1): the Push ejector is ON the vertical profile at mid height
+    // (hawa-numbers.md 5; 160704 p1, the Push side view), a length of it, never a block behind it: behind,
+    // it rode the carriage out of the pocket's back and past its track (T1 - E1 is 95, the profile and a
+    // block behind it 125). So the profile runs below and above it, all three on the one 17 x 60 section,
+    // and the carriage never leaves the track at any t.
+    const e0 = (py0 + py1) / 2 - EJECTOR_PICTURE_HEIGHT_MM / 2;
+    const e1 = e0 + EJECTOR_PICTURE_HEIGHT_MM;
+    if (!d.push || !(e0 > py0 && e1 < py1)) {
+      out.push({ id: `${d.doorId}:profile`, kind: 'profile', ...at, y0: py0, y1: py1 });
+      continue;
     }
+    out.push({ id: `${d.doorId}:profile`, kind: 'profile', ...at, y0: py0, y1: e0 });
+    out.push({ id: `${d.doorId}:ejector`, kind: 'ejector', ...at, y0: e0, y1: e1 });
+    out.push({ id: `${d.doorId}:profile-upper`, kind: 'profile', ...at, y0: e1, y1: py1 });
   }
   return out;
 }

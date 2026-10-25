@@ -220,16 +220,50 @@ test('F6 · the symbols: the two hardware zones on B, the profile 17 x 60 betwee
   assert.deepEqual([bottom.y0, bottom.y1], [B.y, B.y + H.zoneBottomMm], 'the bottom zone, 50 above its bottom edge');
   assert.deepEqual([top.z0, top.z1], [front - f.trackMm, front], 'as long as the track, from 5 behind the front edge');
   assert.ok(!top.slides && !bottom.slides, 'screwed to B: they stay');
-  const prof = by('profile');
-  assert.deepEqual([prof.x1 - prof.x0, prof.z1 - prof.z0], [H.profileSymbolMm.w, H.profileSymbolMm.d]);
-  assert.deepEqual([prof.y0, prof.y1], [bottom.y1, top.y0], 'between the two zones');
-  assert.ok(prof.slides, 'it rides the carriage with the door');
+  // T82 F6, after the review (roomsheets 1): the ejector is ON the vertical profile at mid height
+  // (hawa-numbers.md 5, 160704 p1 Push side view), so the profile runs below and above it and the three
+  // share the one 17 x 60 section between the zones.
+  const profs = boxes.filter((b) => b.kind === 'profile');
   const ej = by('ejector');
   assert.ok(ej && ej.slides, 'Push: the ejector, on the carriage');
+  for (const b of [...profs, ej]) {
+    assert.deepEqual([b.x0, b.x1], [B.x - H.profileSymbolMm.w, B.x], 'in the 17 beside panel B');
+    assert.deepEqual([b.z0, b.z1], [front - H.profileSymbolMm.d, front], 'the profile\'s own 60 at the front of the track');
+    assert.ok(b.slides, 'it rides the carriage with the door');
+  }
+  const ys = [...profs, ej].map((b) => [b.y0, b.y1]).sort((a, b) => a[0] - b[0]);
+  assert.equal(ys[0][0], bottom.y1, 'from the bottom zone');
+  assert.equal(ys[ys.length - 1][1], top.y0, 'to the top zone');
+  for (let i = 1; i < ys.length; i += 1) assert.equal(ys[i][0], ys[i - 1][1], 'one profile, the ejector a length of it');
   assert.equal(ej.y1 - ej.y0, EJECTOR_PICTURE_HEIGHT_MM);
-  assert.ok(near((ej.y0 + ej.y1) / 2, (prof.y0 + prof.y1) / 2), 'at the profile\'s mid height');
+  assert.ok(near((ej.y0 + ej.y1) / 2, (bottom.y1 + top.y0) / 2), 'at the profile\'s mid height');
   const pull = cut({ ...ONE(), pocket: { ...ONE().pocket, push: false } });
-  assert.equal(pocketHardwareBoxes(pocketDoorGeometry(pull, P())).filter((b) => b.kind === 'ejector').length, 0, 'Pull: no ejector');
+  const pullBoxes = pocketHardwareBoxes(pocketDoorGeometry(pull, P()));
+  assert.equal(pullBoxes.filter((b) => b.kind === 'ejector').length, 0, 'Pull: no ejector');
+  const pullProf = pullBoxes.filter((b) => b.kind === 'profile');
+  assert.deepEqual(pullProf.map((b) => [b.y0, b.y1]), [[bottom.y1, top.y0]], 'Pull: the profile whole, between the zones');
+});
+
+test('F6, after the review (roomsheets 1) · open, the carriage stays on its track and inside the pocket: material never enters material', () => {
+  const H = P().hawa;
+  const ex1 = ONE();
+  // The reviewer's second case: a BUD 450 x 2000, 560 deep (T1 560, E1 465, the track 553).
+  const shallow = { ...ex1, height: 2000, pocket_cover: { doors: ex1.pocket_cover.doors.map((d) => ({ ...d, spanMm: 450, KT1: 560 })) } };
+  for (const [name, params] of [['EXAMPLE 1', ex1], ['EXAMPLE 2', TWO()], ['450 x 2000 x 560', shallow], ['EXAMPLE 1 mirrored', ONE_L()]]) {
+    const r = cut(params);
+    const g = pocketDoorGeometry(r, P());
+    for (const b of pocketHardwareBoxes(g).filter((x) => x.slides)) {
+      const d = g.doors.find((x) => x.doorId === b.doorId);
+      const front = d.zf - H.depth.trackStartMm;
+      for (let i = 0; i <= 20; i += 1) {
+        const slide = pocketDoorPose(d, i / 20).slideZ;
+        const z0 = b.z0 + slide; const z1 = b.z1 + slide;
+        assert.ok(z0 >= front - d.trackMm - 1e-6, `${name} ${b.id} at t ${i / 20}: back ${z0} behind the track's end ${front - d.trackMm}`);
+        assert.ok(z0 >= 0, `${name} ${b.id} at t ${i / 20}: back ${z0} out of the pocket's back`);
+        assert.ok(z1 <= front + 1e-6, `${name} ${b.id} at t ${i / 20}: in front of the track's start`);
+      }
+    }
+  }
 });
 
 test('F6 · the room carries the leaf by the one pose and re-derives no HAWA figure (PocketDoor.jsx)', () => {

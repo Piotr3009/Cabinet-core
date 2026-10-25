@@ -112,6 +112,8 @@ export default function PocketDoor({
   if (!rig) return children;
 
   const colour = profile?.appearance?.hardware?.bracket || '#8d8d92';
+  // The Push ejector is a length of the profile: drawn in the darker hardware tone so it reads as a unit on it.
+  const ejectorColour = profile?.appearance?.hardware?.hinge || colour;
   const [px, pz] = rig.pivot;
   return (
     <group>
@@ -123,7 +125,9 @@ export default function PocketDoor({
             {holes.map((h, i) => <HoleDisc key={`${door.id}:hole:${i}`} hole={h} />)}
           </group>
         </group>
-        {boxes.filter((b) => b.slides).map((b) => <SymbolBox key={b.id} box={b} colour={colour} />)}
+        {boxes.filter((b) => b.slides).map((b) => (
+          <SymbolBox key={b.id} box={b} colour={b.kind === 'ejector' ? ejectorColour : colour} />
+        ))}
       </group>
       {/* The two hardware zones and their tracks: screwed to panel B, they stay. */}
       {boxes.filter((b) => !b.slides).map((b) => <SymbolBox key={b.id} box={b} colour={colour} />)}

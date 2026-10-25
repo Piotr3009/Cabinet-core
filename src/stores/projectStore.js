@@ -31,6 +31,8 @@ import {
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
 // kept one with its box, and where a drop would be caught.
 import { freePanelFit, freePanelPatch, freePanelSnap } from '../engine/freePanel.js';
+// CHAT-FIX 25.10.2026 · the free panel stuck to a surface of the owner's choice.
+import { attachPlan, attachTargetByKey, attachTargets, obstaclesBeyond } from '../engine/attachPanel.js';
 // T75 F7 · the corner notch: whether a kit takes one, and the engine's own
 // refusal (KIT_NOTCH.lsp, asked of the parent's cut) read before it is kept.
 // T79 F5 · ...and the edge notch's edges (KIT_NOTCH.lsp D22).
@@ -6313,6 +6315,67 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * ─── CHAT-FIX 25.10.2026 · THE SURFACES A FREE PANEL CAN BE STUCK TO ──────
+   *
+   * The owner: *"zebym ja mogl go przykleic do tej powierzchni jakiej chce"*.
+   * The list the right panel's Attach select shows (`engine/attachPanel.js
+   * attachTargets`): the wall, the floor, the ceiling, every other unit's
+   * left side, right side and top, and every chimney's or box's front, left
+   * and right. Islands are not listed twice: their faces are walls already.
+   */
+  attachTargetsFor: (unitId) => {
+    const s = get();
+    const panel = s.units.find((u) => u.id === unitId);
+    if (!panel || !isFreePanel(panel.type)) return [];
+    return attachTargets({
+      panel,
+      units: s.units,
+      walls: roomWalls(s.project.room),
+      obstacles: planObstaclesOf(s.project.room, s.project.wallSlopes),
+    });
+  },
+
+  /**
+   * CHAT-FIX 25.10.2026 · the panel STUCK to one surface: its stance, height
+   * and distance off the wall are written from the surface's own numbers
+   * (`engine/attachPanel.js attachPlan`), its wall from the surface's wall,
+   * and its x goes through the one move every drag takes (`moveUnit`, the
+   * magnet off), so the room still refuses in words and the clamp still has
+   * the last say. The panel then stays where it was put: nothing ties it to
+   * the surface afterwards (*"3 nie jedzie"*).
+   *
+   * @returns {{ok:boolean, label:string|null, clamped:number, error:string|null}}
+   */
+  attachFreePanel: (unitId, targetKey, { gap = 0 } = {}) => runBatch(() => {
+    const s = get();
+    const panel = s.units.find((u) => u.id === unitId);
+    if (!panel || !isFreePanel(panel.type)) {
+      return { ok: false, label: null, clamped: 0, error: 'Only a free-standing panel can be attached.' };
+    }
+    const walls = roomWalls(s.project.room);
+    const obstacles = planObstaclesOf(s.project.room, s.project.wallSlopes);
+    const args = { panel, units: s.units, walls, obstacles };
+    const target = attachTargetByKey(targetKey, args);
+    const plan = attachPlan({
+      ...args, target, gap, profile: getCabinetProfile(), roomHeight: s.project.room?.height,
+    });
+    if (plan.error) return { ok: false, label: target?.label || null, clamped: 0, error: plan.error };
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? {
+          ...u,
+          params: { ...u.params, ...plan.params },
+          position: plasterPosition({ ...u.position, wall: plan.wall, x_mm: plan.x, rotation_deg: 0 }, walls),
+        }
+        : u)),
+    }));
+    const moved = get().moveUnit(unitId, plan.x, 0.5, { magnet: false });
+    const landed = Number(moved?.x);
+    const clamped = Number.isFinite(landed) ? Math.round(Math.abs(landed - plan.x)) : 0;
+    return { ok: true, label: plan.label, clamped, error: null };
+  }),
+
+  /**
    * ─── T74 F7 · THE WALL UNIT'S DEPTH, ALIGNED TO THE BACK OR TO THE FRONT ──
    *
    * The owner: *"Zmiana przez klik w wymiar (szer/wys/głęb), głębokość
@@ -7123,7 +7186,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       others: obstaclesFor(s, unit),
       // A chimney breast stops a cabinet exactly as a neighbour does
       // (turn 14, CLAUDE.md F10.3)...
-      boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
+      // CHAT-FIX 25.10.2026 · ...and a FREE PANEL standing off its wall in
+      // front of a chimney or a box (`attachFreePanel`, the obstacle's front)
+      // is not stopped by what it stands in front of: only an obstacle that
+      // reaches past the panel's own back line is in its way.
+      boxes: isFreePanel(unit.type)
+        ? obstaclesBeyond(planObstaclesOf(s.project.room, s.project.wallSlopes), wall, backStandoff(unit, getCabinetProfile()))
+        : planObstaclesOf(s.project.room, s.project.wallSlopes),
       // ...unless the cabinet can be notched for it (15.10.2026): then it may
       // drive in as far as the widest notch its carcass takes.
       enter: notchEnterFor(unit),

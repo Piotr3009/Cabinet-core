@@ -3,7 +3,7 @@ import { useUiStore } from '../stores/uiStore.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { HEIGHT_GROUPS, getUnitType, profilePath } from '../engine/types.js';
+import { HEIGHT_GROUPS, getUnitType, isFreePanel, profilePath } from '../engine/types.js';
 import { doorCountFor, leafCountRefusal, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls, wallLabel } from '../engine/room.js';
@@ -280,6 +280,15 @@ export default function RightPanel() {
             inside the unit, so the panel is not permanently a row longer. */}
         {element && (
           <ElementSection unit={unit} element={element} onClose={clearElement} />
+        )}
+
+        {/* ── CHAT-FIX 25.10.2026: the free panel put onto a surface ──
+            Only the free-standing panel has it, and it stands here, above
+            the carcass, because for a panel WHERE it goes is the whole job.
+            The owner: *"ten panel musi byc w miare mozliwe do ustawienia
+            gdzie bede chcial"*. */}
+        {isFreePanel(unit.type) && (
+          <AttachSection unit={unit} />
         )}
 
         {/* ─── TURN 30 (CLAUDE.md F7): A SHELF AND A HINGE AT ONE HEIGHT ────
@@ -1585,6 +1594,84 @@ function ElementSection({ unit, element, onClose }) {
           ? 'Screwed in place. Selected, it can still be made thicker or cut from another board.'
           : 'Double-click it in the canvas to edit it where it stands.'}
       </p>
+    </section>
+  );
+}
+
+/**
+ * ─── CHAT-FIX 25.10.2026 · ATTACH: THE FREE PANEL PUT ONTO A SURFACE ───────
+ *
+ * The owner: *"chce tez oblozyc boxy lub kominy tez prosze z odsunieciem od
+ * nich"* and *"ten panel musi byc w miare mozliwe do ustawienia gdzie bede
+ * chcial, naprzyklad bede chcial polozyc na szafkach jako daszek albo oblozyc
+ * komin w kacie"* (25.10.2026).
+ *
+ * One select names the surfaces the room offers this panel (the store's
+ * `attachTargetsFor`: the wall, the floor, the ceiling, a unit's left side,
+ * right side or top, a chimney's or a box's face), one field is the air to
+ * leave between them, and the move is the store's one action
+ * `attachFreePanel`. The room may stop the panel short of the asked spot, and
+ * the message says by how many millimetres. The panel does NOT follow its
+ * host afterwards (*"nie jedzie"*): it is placed, not parented, so a unit
+ * moved later leaves the panel where it stands. The gap is local to this
+ * section on purpose: it is an instruction for THIS attach, not a property
+ * the unit carries. Before the store carries the two actions this section
+ * renders nothing at all, so the panel keeps working without them.
+ */
+function AttachSection({ unit }) {
+  const attachTargetsFor = useProjectStore((s) => s.attachTargetsFor);
+  const attachFreePanel = useProjectStore((s) => s.attachFreePanel);
+  const notify = useUiStore((s) => s.notify);
+  const [gap, setGap] = useState(0);
+  const [choice, setChoice] = useState('');
+  if (typeof attachTargetsFor !== 'function' || typeof attachFreePanel !== 'function') return null;
+  const targets = attachTargetsFor(unit.id) || [];
+  const attach = (key) => {
+    if (!key) return;
+    const res = attachFreePanel(unit.id, key, { gap }) || {};
+    if (res.ok) {
+      const clamped = Number(res.clamped) || 0;
+      if (clamped > 0) notify(`Panel attached to ${res.label}, moved ${clamped} mm by the room.`, 'warn');
+      else notify(`Panel attached to ${res.label}.`, 'ok');
+    } else {
+      notify(res.error || 'The panel could not be attached there.', 'warn');
+    }
+    // Back to the placeholder: the select is a verb, not a stored state.
+    setChoice('');
+  };
+  return (
+    <section className="rounded border border-gold/60 bg-shell-700/40 p-2 space-y-2" data-section="Attach">
+      <div className="cc-row">
+        <span className="text-[11px] uppercase tracking-wide text-ink-400 flex-1">Attach</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <span className="cc-label">Attach to</span>
+          <select
+            className="cc-input"
+            data-attach-select="1"
+            value={choice}
+            onChange={(e) => attach(e.target.value)}
+          >
+            <option value="" disabled>Choose a surface...</option>
+            {targets.map((t) => (
+              <option key={t.key} value={t.key}>{t.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <span className="cc-label">Gap (mm)</span>
+          <NumberField
+            data-attach-gap="1"
+            title="Air between the panel and the surface. 0 is flush."
+            min={0}
+            step={1}
+            value={gap}
+            onCommit={(v) => setGap(v)}
+          />
+        </div>
+      </div>
+      <p className="text-[11px] text-ink-400">The panel stays where it is put: moving the unit does not move the panel.</p>
     </section>
   );
 }

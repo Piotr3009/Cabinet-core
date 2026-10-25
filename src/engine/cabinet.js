@@ -127,10 +127,11 @@ import { applyCanopy } from './hoodCanopy.js';
 // two rails, the trap's U and Check #39; a one-way read, as the canopy's.
 import { applyVanityTrap, vanityRailGeometry, vanityRails } from './vanity.js';
 // T82 F9, after the review · the basins through the tops (KIT_VANITY.lsp D18,
-// D24, D26): which basins the vanity's top takes is engine/worktop.js
+// D24 to D26): which basins the vanity's top takes is engine/worktop.js
 // `fitBasins`, THE ONE SOURCE (B3's), asked with the unit's params alone.
 import {
-  applyVanityTop, vanityDoubleRefusal, vanityDoubleRefused, vanityTopBackDropped,
+  applyVanityTop, vanityBowlVerdict, vanityBoxesOf, vanityDoubleRefusal, vanityDoubleRefused, vanitySpec,
+  vanityTopBackDropped, vanityTopThickness,
 } from './vanity.js';
 import { fitBasins } from './worktop.js';
 // T82 F13 · a floating vanity's hangers (KIT_VANITY.lsp D19, `vanity-hangers`).
@@ -11120,6 +11121,25 @@ export function computeCabinet(params, profileOverride) {
       sinks: Number.isFinite(Number(params?.sinks)) ? Math.trunc(Number(params.sinks)) : 0,
     })
     : null;
+  // ─── T82 F9, after the review · THE BOWL, CHECK #48 (KIT_VANITY.lsp D25) ──
+  // The bowl read as its rim's oval straight down below the worktop's top: a
+  // bowl that meets the top drawer's box or RAIL-TOP is said with the deepest
+  // that clears and the cure, never clamped (`vanity-bowl-verdict`). The top's
+  // thickness is its slab's (`params.vanity_top_mm`, the store's, from the
+  // vanity's worktop record), else the kit's own 20.
+  const vanityBowl = type.vanity && budr
+    ? vanityBowlVerdict({
+      num: unitNum,
+      H,
+      G,
+      n: budr.count,
+      boxes: vanityBoxesOf(panels, { n: budr.count, columns: budr.divider ? 2 : 1 }),
+      xs: vanityBasinsFitted,
+      wt: vanityTopThickness(params, P),
+      bowlH: vanitySpec(P).basinH,
+    }, P)
+    : null;
+  if (vanityBowl) warnings.push({ code: 'VANITY_BOWL', level: 'warn', message: vanityBowl });
   applyGrainAxis(panels);
 
   // ── Totals ─────────────────────────────────────────────────────────────────
@@ -12604,9 +12624,10 @@ export function computeCabinet(params, profileOverride) {
       rails: vanityRails({ W, H, G }, P),
       columns: budr?.divider ? 2 : 1,
       trap: vanityTrap,
-      // T82 F9, after the review · the basins the top takes, through the TOP (D18, D26).
+      // T82 F9, after the review · the basins the top takes, through the TOP (D18, D26), and the bowl (D25).
       basins: vanityBasinsFitted,
       top: vanityTopRecord,
+      bowl: vanityBowl,
     };
   }
   // T78 F17 . what the canopy is, for the drawing and the tests; BUL's hanger

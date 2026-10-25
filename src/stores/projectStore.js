@@ -1125,6 +1125,19 @@ function inframeFor(unit, design, profile, elements = useProjectStore.getState()
   return Boolean(elements?.frame);
 }
 
+/**
+ * T82 F9, after the review · the thickness of the worktop over a vanity, from
+ * the record that names it (`{ vanity_top_mm }`), or nothing: absent on every
+ * other unit and on a vanity no record covers.
+ */
+function vanityTopMmOf(unit, design) {
+  if (!isVanityKit(unit?.type)) return {};
+  const records = Array.isArray(design?.worktops) ? design.worktops : [];
+  const rec = records.find((r) => Array.isArray(r?.unitIds) && r.unitIds.includes(unit.id));
+  const t = Number(rec?.thickness);
+  return Number.isFinite(t) && t > 0 ? { vanity_top_mm: t } : {};
+}
+
 function paramsForEngine(unit, design = null) {
   // ─── T55 ("tnij"): THE FOSSIL HAS NO ROAD ────────────────────────────────
   // run_* are destructured OUT of the saved params before anything spreads,
@@ -1189,6 +1202,14 @@ function paramsForEngine(unit, design = null) {
     // exactly this), so a bare `computeCabinet()` and every golden fixture pass
     // nothing at all and cut what the AutoLISP cuts.
     ...(slopeCut ? { slope_cut: slopeCut } : {}),
+    // ─── T82 F9, after the review · THE VANITY'S TOP, AS THICK AS ITS SLAB ───
+    // KIT_VANITY.lsp D25 reads the bowl below the worktop's top, so the engine
+    // is handed the thickness of the slab over the vanity (its worktop
+    // record's, typed: *"blat grubosc do wyboru"*). Which basins that top takes
+    // the engine asks of engine/worktop.js `fitBasins` itself. The key is
+    // ABSENT where no record covers a vanity, so a bare kit and every golden
+    // read the kit's own 20.
+    ...vanityTopMmOf(unit, design),
     // ─── Turn 8 (CLAUDE.md F4) ───
     // How far a FIX shelf and a partition stand back from the face. It is
     // supplied HERE rather than defaulted inside computeCabinet, and that is

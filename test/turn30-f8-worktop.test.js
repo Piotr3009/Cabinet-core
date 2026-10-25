@@ -240,7 +240,14 @@ test('F8 it reaches NO hole: the engine neither knows nor asks about it', () => 
   // worktop" has been a comment there since turn 13 — so what is asserted is
   // that it never IMPORTS the module or READS a record. That is the claim:
   // `computeCabinet()` is not involved at all.
-  assert.doesNotMatch(engine, /from '\.\/worktop\.js'/, 'the engine does not import it');
+  // AMENDED BY T82 F9, after the review (25.10.2026): KIT_VANITY.lsp D18, the
+  // carcass TOP of a vanity takes the oval of each basin its top takes, so the
+  // engine asks engine/worktop.js `fitBasins` (B3's, the one source of which
+  // basins fit, judged on the vanity's own params) and NOTHING else of it: no
+  // slab, no record, no hole. The owner: *"dodanie 1 sink or 2 sink? dodajesz
+  // tylko do widoku"*. The one import, and only that name:
+  const imports = [...engine.matchAll(/import \{([^}]*)\} from '\.\/worktop\.js'/g)].map((m) => m[1].split(',').map((s) => s.trim()).filter(Boolean));
+  assert.deepEqual(imports, [['fitBasins']], 'the engine imports fitBasins and nothing else of it');
   assert.doesNotMatch(engine, /worktopGeometry|worktopsFor|worktopEligible|params\.worktop/,
     'and it reads nothing of one');
   const module = readFileSync(new URL('../src/engine/worktop.js', import.meta.url), 'utf8');

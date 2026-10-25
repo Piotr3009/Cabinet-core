@@ -398,7 +398,9 @@ test('F11 · worktopsFor alone (no store) gives the same basins: one law, one pa
 // shrinks: the wastes (and the trap's U) stay the LISP's.
 
 const MARGIN = () => P().autoParts.worktop.cutout?.insetMm ?? 20;
-const findings48 = () => S().runChecks().filter((f) => f.check === 48);
+// T82 F9, after the review (B2): #48 also says the BOWL (KIT_VANITY.lsp D25,
+// `bowl: true`); these are the basins the top cannot take.
+const findings48 = () => S().runChecks().filter((f) => f.check === 48 && !f.bowl);
 
 /** Every basin cut lies inside its slab with the margin and clear of the others: the room's own rule. */
 function assertBasinsFit(slab) {

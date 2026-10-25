@@ -568,6 +568,55 @@ test('F9, after the review . D26: the TOP\'s back joint the oval meets is not cu
   assert.equal(sideTabs(topOf(small)), sideTabs(topOf(plain)));
 });
 
+test('F9, after the review . D25: the bowl that meets the top drawer\'s box or RAIL-TOP is said in #48, in the LISP\'s words, never clamped', () => {
+  const bowl = (r) => r.warnings.filter((w) => w.code === 'VANITY_BOWL').map((w) => w.message);
+  const T = vanitySpec(P);
+  // The default: 150 deep under a 20 top, the oval over the rail and over the top box (68.5 clears).
+  const def = kit('VANITY3');
+  assert.deepEqual(bowl(def), [L.call('vanity-bowl-verdict', 'VU01', 900, 600, 500, G, GB, FT, 3, 1, [450], 20, T.basinH)]);
+  assert.equal(def.derived.vanity.bowl, bowl(def)[0]);
+  assert.match(bowl(def)[0], /the deepest bowl that clears the top drawer is 68\.5/);
+  // The top's thickness is its slab's (the store hands `vanity_top_mm`): 40 clears 88.5.
+  assert.deepEqual(bowl(kit('VANITY3', { vanity_top_mm: 40 })),
+    [L.call('vanity-bowl-verdict', 'VU01', 900, 600, 500, G, GB, FT, 3, 1, [450], 40, T.basinH)]);
+  // A shallower bowl that clears the box still stands over the rail: the rail's sentence alone.
+  const P60 = { ...P, vanity: { ...P.vanity, basin: { ...P.vanity.basin, heightMm: 60 } } };
+  const r60 = computeCabinet({ ...defaultParamsFor('VANITY3', P60), unit_num: 'VU01' }, P60);
+  assert.deepEqual(bowl(r60), [L.call('vanity-bowl-verdict', 'VU01', 900, 600, 500, G, GB, FT, 3, 1, [450], 20, 60)]);
+  assert.match(bowl(r60)[0], /meets RAIL-TOP: .* set the waste 218 from the carcass back\./);
+  // Off the rail (a waste set 260 from the back), the box's sentence alone.
+  const P260 = { ...P, vanity: { ...P.vanity, wasteFromBackMm: 260 } };
+  const r260 = computeCabinet({ ...defaultParamsFor('VANITY3', P260), unit_num: 'VU01', depth: 560 }, P260);
+  assert.deepEqual(bowl(r260), ['VU01: A bowl 150 deep meets the top drawer\'s box: the deepest bowl that clears it is 68.5; take a shallower or a vessel basin, or a shallower top drawer.']);
+  // No basin, nothing; never a clamp: the drawer and the rail are cut as asked.
+  assert.deepEqual(bowl(kit('VANITY3', { sinks: 0 })), []);
+  assert.deepEqual(byId(def, 'RAIL-TOP').box, byId(kit('VANITY3', { sinks: 0 }), 'RAIL-TOP').box);
+  // Check #48 says it, yellow, once, in the LISP's words.
+  const unit = { id: 'u1', type: 'VANITY3', params: { ...defaultParamsFor('VANITY3', P), unit_num: 'VU01' } };
+  const found = runChecks({ entries: [{ unit, result: def }], units: [unit], profile: P }).filter((f) => f.check === 48);
+  assert.equal(found.length, 1);
+  assert.equal(found[0].level, 'yellow');
+  assert.equal(found[0].message, bowl(def)[0]);
+});
+
+test('F9, after the review . the store hands the slab\'s thickness (vanity_top_mm); the room\'s #48 follows a typed top', () => {
+  const S = () => useProjectStore.getState();
+  S().newProject();
+  S().setRoom({ corners: rectCorners(4000, 3000), height: 2500 });
+  confirmDrawerBox();
+  const { id } = S().addUnit('VANITY3');
+  const said = () => S().unitResult(id).warnings.filter((w) => w.code === 'VANITY_BOWL').map((w) => w.message)[0];
+  assert.match(said(), /clears the top drawer is 68\.5/, 'born under its own 20 top');
+  const slab = S().worktopsOf().find((w) => (w.unitIds || []).includes(id));
+  assert.ok(slab, 'born under its own top');
+  S().setWorktopThickness(slab.id, 40);
+  assert.match(said(), /clears the top drawer is 88\.5/, 'a typed 40 top reaches the bowl');
+  // With no record over it the store hands nothing: the kit's own 20.
+  S().removeWorktop(slab.id);
+  assert.ok(!S().worktopsOf().some((w) => (w.unitIds || []).includes(id)));
+  assert.match(said(), /clears the top drawer is 68\.5/);
+});
+
 // ===========================================================================
 // THE FOSSILS HOLD; THE NEW GOLDENS HOLD
 // ===========================================================================

@@ -752,6 +752,8 @@ export function runChecks({
         HAWA_PANEL_22: 47,
         // T82 F9 · #39: the vanity's trap, in the LISP's sentences, yellow.
         VANITY_TRAP: 39,
+        // T82 F9, after the review · #48: the bowl the tops cannot take (KIT_VANITY.lsp D25).
+        VANITY_BOWL: 48,
         // T82 F15 · #46: the reeds' two notes, yellow as #32 is.
         FRONT_DECORATION_REED_SKIN: 46, FRONT_DECORATION_REED_REMAINDER: 46,
       }[wn.code];
@@ -762,6 +764,15 @@ export function runChecks({
         out.push(finding(n, n === 47 ? 'yellow' : 'red', at(null, {
           message: `${unitNum}: ${String(wn.message).replace(/^#\d+ /, '')}`,
           subject: { unitId, editor: 'cabinet' },
+        })));
+        continue;
+      }
+      if (n === 48) {
+        // T82 F9, after the review · the LISP's sentence names the unit itself (`vanity-bowl-verdict`).
+        out.push(finding(48, 'yellow', at(null, {
+          message: wn.message,
+          subject: { unitId, editor: 'cabinet' },
+          bowl: true,
         })));
         continue;
       }

@@ -58,10 +58,13 @@ export function vanitySpec(profile) {
     // D23, after the review of 25.10.2026: no board of the back wall under it.
     backPieceMinMm: num(v.backPieceMinMm, 30),        // vanityBackPieceMin, PROPOSED
     wasteFromBackMm: num(v.wasteFromBackMm, 200),     // vanityWasteFromBack, PROPOSED
-    // The basin, to the eye only (vanityBasinW / D, PROPOSED): its rim's
-    // oval is the hole in the worktop and the carcass TOP (D18).
+    // The basin, to the eye only (vanityBasinW / D / H, PROPOSED): its rim's
+    // oval is the hole in the worktop and the carcass TOP (D18), its depth the
+    // bowl's below the worktop's top (D25).
     basinW: num(v.basin?.widthMm, 520),
     basinD: num(v.basin?.depthMm, 400),
+    basinH: num(v.basin?.heightMm, 150),
+    topMm: num(v.defaults?.top, 20),                  // vanityTop, PROPOSED: the top's thickness at birth
   };
 }
 
@@ -376,7 +379,17 @@ export function vanityTrapVerdict({ boxes, n, columns, sinks, W, GB }, profile) 
   return out;
 }
 
-// --- (f) THE BASIN THROUGH THE TOPS (D18, D26, after the review) -----------
+// --- (f) THE BASIN THROUGH THE TOPS (D18, D25, D26, after the review) -------
+
+/**
+ * The top's thickness: the vanity's slab's (`params.vanity_top_mm`, handed by
+ * the store from the worktop record over it), else the kit's own 20
+ * (`vanityTop`). Which basins the top takes is engine/worktop.js `fitBasins`.
+ */
+export function vanityTopThickness(params, profile) {
+  const t = Number(params?.vanity_top_mm);
+  return t > 0 ? t : vanitySpec(profile).topMm;
+}
 
 /**
  * The oval of each basin the worktop takes, in the carcass TOP's own frame
@@ -427,6 +440,50 @@ export function vanityTopBackDropped(W, G, xs, puzzle, profile) {
   return vanityTopBackFeatures(W, G, puzzle)
     .filter((f) => (xs || []).some((xw) => vanityOvalMeets(f.lo, f.hi, xw, G, profile)))
     .map((f) => ({ kind: f.kind, x: f.x }));
+}
+
+/**
+ * Check #48 for the bowl (`vanity-bowl-verdict`, D25): the sentence, or null.
+ * `boxes` the LISP's box tuples (as the engine cut them), `xs` the wastes'
+ * x of the basins the worktop takes, `wt` the worktop's thickness, `bowlH`
+ * the bowl's depth below the worktop's top.
+ */
+export function vanityBowlVerdict({
+  num, H, G, n, boxes, xs, wt, bowlH,
+}, profile) {
+  const T = vanitySpec(profile);
+  const a = T.basinW / 2;
+  const c = T.basinD / 2;
+  const zw = T.wasteFromBackMm;
+  const zb = zw - c;
+  let rail = false;
+  let box = false;
+  let clear = null;
+  for (const xw of xs || []) {
+    if (zb < G && bowlH > wt) rail = true;
+    for (const b of boxes || []) {
+      if (b.idx === n && xw - a < b.x0 + b.bw && xw + a > b.x0 && zb < b.zBack + b.depth && zw + c > b.zBack) {
+        const cl = wt + (H - vanityBoxTop(b));
+        if (clear == null || cl < clear) clear = cl;
+        if (bowlH > cl) box = true;
+      }
+    }
+  }
+  if (box && rail) {
+    return `${num}: A bowl ${vanityMm(bowlH)} deep meets the top drawer's box and RAIL-TOP: the deepest bowl that clears the top drawer is `
+      + `${vanityMm(clear)}, and the oval stands over the rail (${vanityMm(zb)} from the carcass back, the rail `
+      + `${vanityMm(G)}); take a shallower or a vessel basin, or a shallower top drawer.`;
+  }
+  if (box) {
+    return `${num}: A bowl ${vanityMm(bowlH)} deep meets the top drawer's box: the deepest bowl that clears it is `
+      + `${vanityMm(clear)}; take a shallower or a vessel basin, or a shallower top drawer.`;
+  }
+  if (rail) {
+    return `${num}: A bowl ${vanityMm(bowlH)} deep meets RAIL-TOP: the oval stands over the rail (${vanityMm(zb)}`
+      + ` from the carcass back, the rail ${vanityMm(G)}); take a vessel basin, or set the waste `
+      + `${vanityMm(G + c)} from the carcass back.`;
+  }
+  return null;
 }
 
 /**

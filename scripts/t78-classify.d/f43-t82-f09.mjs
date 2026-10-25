@@ -87,7 +87,8 @@ export const LICENSED = {
       + 'the BACK would be, for a back `cut`; `applyVanityTrap` in one block guarded by `type.vanity` beside the '
       + 'canopy\'s; `derived.vanity` under the same guard. Nothing runs for a kit without the keys.'
       + ' After the review: D24 in the drawer ladder\'s double loop, behind type.vanity.'
-      + ' computeCabinet now IMPORTS engine/worktop.js fitBasins (B3\'s, the one source of which basins fit, asked with the unit\'s params alone) for a vanity only; D18 and D26 in the rails block, derived.vanity.basins and top; every line behind type.vanity or carcass.back === \'cut\'.',
+      + ' computeCabinet now IMPORTS engine/worktop.js fitBasins (B3\'s, the one source of which basins fit, asked with the unit\'s params alone) for a vanity only; D18 and D26 in the rails block, derived.vanity.basins and top; every line behind type.vanity or carcass.back === \'cut\'.'
+      + ' D25 beside the trap pass, derived.vanity.bowl.',
     gates: ['chest_columns', 'chest_split', 'vanity'],
   },
   'src/engine/types.js': {
@@ -111,12 +112,14 @@ export const LICENSED = {
       + `run by computeCabinet only under \`type.vanity\` / \`carcass.back === 'cut'\`. ${OWNER_B2}`
       + ' After the review: D23 vanity-u-fits-p with backPieceMinMm 30 (no U leaves a back-wall board under 30, said by #39).'
       + ' D24 vanity-double-refused-p and vanity-double-refusal (no double drawer in the top row or the row under it when a basin is asked).'
-      + ' D18 vanity-top-cutouts and vanity-top-cutout-note (applyVanityTop: TOP.meta.vanityBasins), D26 vanity-oval-meets-p, vanity-top-back-features and vanity-top-back-dropped (vanityRailGeometry\'s dropped).',
+      + ' D18 vanity-top-cutouts and vanity-top-cutout-note (applyVanityTop: TOP.meta.vanityBasins), D26 vanity-oval-meets-p, vanity-top-back-features and vanity-top-back-dropped (vanityRailGeometry\'s dropped).'
+      + ' D25 vanity-bowl-verdict (vanityBowlVerdict, vanityTopThickness).',
     gates: ['vanity'],
   },
   'src/engine/checks.js': {
     why: 'T82 F9: Check #39 (yellow, the vanity\'s trap in KIT_VANITY.lsp\'s sentences), read off the engine\'s '
-      + '`VANITY_TRAP` warning; it adds a finding only where a vanity\'s trap has no room.',
+      + '`VANITY_TRAP` warning; it adds a finding only where a vanity\'s trap has no room.'
+      + ' After the review: VANITY_BOWL mapped to Check #48 (yellow, the LISP\'s sentence with the unit number).',
     gates: ['vanity'],
   },
   'src/engine/joinery.js': {

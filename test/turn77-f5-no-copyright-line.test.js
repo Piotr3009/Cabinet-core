@@ -246,6 +246,11 @@ export const NEW_FILES = [
   // T82 F1 (25.10.2026): the LISP of the HAWA pocket, first
   'test/turn82-f01-hawa-lisp.test.js',
   'scripts/t78-classify.d/f43-t82-f01.mjs',
+  // T82 F2 (25.10.2026): the HAWA pocket is a unit in the run
+  'src/engine/hawaPocket.js',
+  'test/turn82-f02-hawa-run.test.js',
+  'test/turn82-f03-hawa-door.test.js',
+  'scripts/t78-classify.d/f43-t82-f02.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

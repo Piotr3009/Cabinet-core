@@ -186,6 +186,14 @@ export const PART_REGISTRY = {
     id: 'frame', name: 'In-frame frames', group: G('front'), unit: 'm²', materialType: 'front',
     note: 'One routed frame per run, the openings cut through (T80); no banding, the edges are painted',
   },
+  // T82 F2 · the HAWA pocket's two panels (KIT_HAWA.lsp D3): the owner,
+  // 25.10.2026, *"panele po bokach to jest nie carcas tylko front zawsze, wiec
+  // jesli jest 18 mm to daj zawsze 22 mm"*. Front material; their own row,
+  // because on an 18 front they are 22 and so not cut from the doors' board.
+  pocket_panel: {
+    id: 'pocket_panel', name: 'HAWA pocket panels', group: G('front'), unit: 'm²', materialType: 'front',
+    note: 'POCKET-A and POCKET-B: the front material, 22 when the front is 18 (T82, KIT_HAWA.lsp)',
+  },
   // T75 F10 · the back panel on an island's empty long face, front material.
   back_panel: {
     id: 'back_panel', name: 'Back panels', group: G('front'), unit: 'm²', materialType: 'front',
@@ -621,6 +629,14 @@ export const ELEMENT_TO_PART_ID = {
   'NOTCH-FLOOR': 'carcase_horizontal',
   // T74 F13 · the free-standing panel's one board.
   'FREE-PANEL': 'free_panel',
+  // T82 F2 · the HAWA pocket (KIT_HAWA.lsp D20): the two panels in the front
+  // material, the bottom and the top as a carcass's horizontals, the door as
+  // a door.
+  'POCKET-A': 'pocket_panel',
+  'POCKET-B': 'pocket_panel',
+  'POCKET-TOP': 'carcase_horizontal',
+  'POCKET-BOTTOM': 'carcase_horizontal',
+  'POCKET-DOOR': 'door',
 
   // The drawer box: three boards that are one board to buy, and a bottom that
   // is not.
@@ -773,6 +789,8 @@ const EDGE_OF_PART = {
   // T80 F3 · the in-frame frame is never banded (its edges are painted); the
   // row is here so a frame that ever were would pay for it as a front does.
   frame: 'edge_front',
+  // T82 F2 · the HAWA pocket panels are banded as an end panel is: front edging.
+  pocket_panel: 'edge_front',
 };
 
 /** Which edging part pays for this part's banding, or null when none does. */

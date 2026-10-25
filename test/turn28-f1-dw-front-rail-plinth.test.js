@@ -242,7 +242,11 @@ test('F1.4 the kit DECLARES what it is made of, in the keys every kit answers', 
     // AMENDED BY T75 F4: the three true L kits declare theirs (above).
     // AMENDED BY T78 F17: WUD_HOOD_SHORT is WUD_HOOD to the letter (its open
     // bottom too), so every extractor kit is the hood's own case.
-    if (id === 'DW_PANEL' || getUnitType(id).corner || getUnitType(id).appliance === 'extractor' || id === 'FREE_PANEL') continue;
+    // AMENDED BY T82 F2: HAWA_POCKET declares its whole carcass as the pocket
+    // (`top: 'pocket'`, KIT_HAWA.lsp's `hawa-cut`: two panels, a bottom, a top,
+    // the door). The owner, 25.10.2026: *"wstawienie pomiedzy 2 panele"*.
+    if (id === 'DW_PANEL' || getUnitType(id).corner || getUnitType(id).appliance === 'extractor' || id === 'FREE_PANEL'
+      || getUnitType(id).hawaPocket) continue;
     const { carcass } = UNIT_TYPES[id];
     assert.equal(carcass.sides, undefined, `${id} says nothing about sides`);
     assert.equal(carcass.bottom, undefined, `${id} says nothing about a bottom`);

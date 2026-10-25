@@ -12,6 +12,8 @@
 
 // T74 F13 · the free panel's box, from its board.
 import { freePanelDefaultParams } from './freePanel.js';
+// T82 F2 · the HAWA pocket's width, height and choices at birth (KIT_HAWA.lsp).
+import { hawaPocketDefaultParams } from './hawaPocket.js';
 import { resolveApertures } from './applianceTower.js';
 import { KITCHEN_LIBRARY, WARDROBE_LIBRARY, libraryTypeIds } from './library.js';
 
@@ -265,6 +267,53 @@ export const UNIT_TYPES = {
     supports: {
       drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false,
       topInfill: false, cornice: false,
+    },
+    available: true,
+  },
+
+  // ─── T82 F2 · THE HAWA POCKET (Concepta III 25 / 35) ─────────────────────
+  //
+  // The owner, 25.10.2026: *"potrzebujemy zaprojektowac to jako wstawienie
+  // pomiedzy 2 panele 110 mm przestrzen pomiedzy, wysuwasz pocket door i
+  // zakrywasz szafke lub szafki"*. The law is `reference/lisp/KIT_HAWA.lsp`,
+  // written first; `engine/hawaPocket.js` is its mirror and the builder in
+  // `cabinet.js` (`carcass.top: 'pocket'`) cuts what it returns: two pocket
+  // panels in the FRONT material, a bottom and a top board, and the door that
+  // covers the unit(s) beside it (CLAUDE.md T82 F2 and F3).
+  //
+  // It is a UNIT OF THE RUN, not a free board: it stands on the run's legs and
+  // plinth line (`mount: 'floor'`, legs as a cabinet), is numbered HP01, is
+  // held off its neighbours as a cabinet is, and the run's plinth, cornice
+  // and worktop span it (`supports.cornice`, `topInfill: false` so a base run's
+  // worktop goes over it). `heightGroup: 'tall'`: Concepta doors are 1200 to
+  // 2700 high, a tall run's, and in the tall group a project height change
+  // moves the pocket with the talls beside it, so it never drops out of the
+  // run's level group (`runs.js levelGroups`, keyed on the top line). No
+  // family: both libraries show it (CLAUDE.md F2 *"kitchen and wardrobe
+  // families"*). It carries no house door, shelf or drawer: its door is the
+  // HAWA door, cut by the pocket's own builder.
+  HAWA_POCKET: {
+    id: 'HAWA_POCKET',
+    heightGroup: 'tall',
+    label: 'HAWA pocket (Concepta III)',
+    lisp: 'KIT_HAWA.lsp',
+    hawaPocket: true,
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: {
+      top: 'pocket', sides: 'none', bottom: 'none', back: 'none',
+    },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'hawa.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false,
+      topInfill: false, cornice: true,
     },
     available: true,
   },
@@ -1613,7 +1662,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'HAWA_POCKET', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1694,6 +1743,11 @@ export function isBlindKit(typeId) {
 /** T75 F4 · is this a true L corner kit (one carcass on two walls)? */
 export function isCornerLKit(typeId) {
   return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.corner);
+}
+
+/** T82 F2 · is this the HAWA pocket (KIT_HAWA.lsp: two panels, the door that slides in)? */
+export function isHawaPocket(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.hawaPocket);
 }
 
 /** T74 F13 · is this the free panel kit (one board standing in the room)? */
@@ -1834,6 +1888,11 @@ export function defaultParamsFor(typeId, profile) {
     // T75 F14 · a hob drawer unit carries the flag the engine and the worktop
     // read. Spread, so no other kit carries the key.
     ...(type.hob ? { hob: true } : {}),
+    // T82 F2 · the HAWA pocket: its width the pocket's (panel + 55 + panel at
+    // the workshop's front), a tall run's height and depth, and its choices
+    // (`params.pocket`: one door, hand R, Push, the class by F3, nothing
+    // covered yet). Spread, so no other kit carries a key it did not.
+    ...(type.hawaPocket ? hawaPocketDefaultParams(profile) : {}),
     unit_num: '01',
   };
 }
@@ -1866,4 +1925,6 @@ export const UNIT_NUM_PREFIX = {
   WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
   // T78 F17 . the hood's two new kits keep the hood's letter, as the hob variants keep DR.
   WUD_HOOD_CANOPY: 'HD', WUD_HOOD_SHORT: 'HD',
+  // T82 F2 · the HAWA pocket: HP01.
+  HAWA_POCKET: 'HP',
 };

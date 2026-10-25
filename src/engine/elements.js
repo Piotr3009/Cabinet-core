@@ -175,6 +175,13 @@ export function elementKind(panel) {
     case 'FALSE-FRONT': return 'false-front';
     // T75 F15 · the pelmet under a run of wall units.
     case 'PELMET': return 'pelmet';
+    // T82 F2 · the HAWA pocket's boards are reached as a carcass's are, in the
+    // editor window: its two panels as sides, its bottom and top as the
+    // bottom and the top. Its door is the pocket's (the right panel's POCKET
+    // DOOR section), not a house door with a hinge modal, so it is not one.
+    case 'POCKET-A': case 'POCKET-B': return 'side';
+    case 'POCKET-TOP': return 'top';
+    case 'POCKET-BOTTOM': return 'bottom';
     default:
       // T54-F7: the SHOEBOX-* kind died with its world — a shoe is a
       // `variant:'shoe'` DRAWER now, so its boards answer as a drawer's do

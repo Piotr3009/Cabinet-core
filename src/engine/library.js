@@ -157,6 +157,12 @@ export const KITCHEN_LIBRARY = [
     hint: 'Floor to the top of the run',
     items: [
       { kind: 'type', id: 'tall', typeId: 'BUDTALL', label: 'Standard' },
+      // ─── T82 F2 · THE HAWA POCKET (Concepta III) ───────────────────────────
+      // The owner, 25.10.2026: *"wstawienie pomiedzy 2 panele 110 mm przestrzen
+      // pomiedzy, wysuwasz pocket door i zakrywasz szafke lub szafki"*. A pocket
+      // between two front-material panels (KIT_HAWA.lsp); its door covers the
+      // cabinet beside it, swings 90 degrees and slides in.
+      { kind: 'type', id: 'hawa-pocket', typeId: 'HAWA_POCKET', label: 'HAWA pocket (Concepta III)', hint: 'A pocket between two panels; the door of the cabinet beside it swings and slides in' },
       { kind: 'type', id: 'fridge', typeId: 'FRIDGE', label: 'Fridge housing' },
       // ─── Turn 30 (CLAUDE.md F13): CARGO 300 ─────────────────────────────
       // KIT_BUDTALL's carcass and door at 300 wide. The pull-out frame is a
@@ -326,6 +332,9 @@ export const WARDROBE_LIBRARY = [
   { kind: 'type', id: 'WARDROBE_DESK', typeId: 'WARDROBE_DESK', hint: 'Hung beside a wardrobe: one drawer under a 25 mm top' },
   // T75 F18 · *"`WARDROBE_LOW` copied from `LOW_CABINET`."*
   { kind: 'type', id: 'WARDROBE_LOW', typeId: 'WARDROBE_LOW', hint: 'A low cupboard beside a wardrobe, as deep as it' },
+  // T82 F2 · the HAWA pocket in the wardrobe library too (CLAUDE.md T82 F2:
+  // *"kitchen and wardrobe families"*): a pocket door over a wardrobe.
+  { kind: 'type', id: 'HAWA_POCKET', typeId: 'HAWA_POCKET', label: 'HAWA pocket (Concepta III)', hint: 'A pocket between two panels; the door of the cabinet beside it swings and slides in' },
 ];
 
 /** Every entry, groups flattened — what a "which kits exist" question wants. */

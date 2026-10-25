@@ -22,6 +22,8 @@
 
 // T74 F13 · the free panel's board and where it stands.
 import { freePanelOf, freePanelPlacement } from './freePanel.js';
+// T82 F2 F3 · the HAWA pocket, KIT_HAWA.lsp mirrored routine for routine.
+import { hawaPocketFigures } from './hawaPocket.js';
 import { getCabinetProfile } from './profile.js';
 import { buildFrontDecoration } from './frontDecoration.js';
 import { getUnitType } from './types.js';
@@ -1492,7 +1494,8 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
 // T75 F15 · …and `pelmet`, the strip under a run of wall units, front material.
 // T78 F15 · `drawer_front` is the INNER front of a drawer behind doors (meta.inner).
 // T80 F3 · 'frame': the in-frame frame is sprayed with the fronts (the owner's green frame in the mockup).
-const FINISH_EXPOSED_ROLES = new Set(['front', 'drawer_front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame']);
+// T82 F2 · the HAWA pocket's panels and its door stand in the room in the front's finish (KIT_HAWA.lsp D3).
+const FINISH_EXPOSED_ROLES = new Set(['front', 'drawer_front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame', 'pocket_panel', 'pocket_door']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1523,7 +1526,8 @@ export function isFinishExposed(role) {
 // goes through the FRONT pipeline exactly as the plinth was given in turn 11.
 // FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
 // T80 F3 · 'frame': material from the FRONT type of the project (CLAUDE.md T80 F3).
-const FRONT_MATERIAL_ROLES = new Set(['front', 'drawer_front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame']);
+// T82 F2 · the owner, 25.10.2026: *"panele po bokach to jest nie carcas tylko front zawsze"* (KIT_HAWA.lsp D3); the door is the front.
+const FRONT_MATERIAL_ROLES = new Set(['front', 'drawer_front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame', 'pocket_panel', 'pocket_door']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -3595,6 +3599,57 @@ export function computeCabinet(params, profileOverride) {
         } : {}),
       },
     }));
+  }
+  // ─── T82 F2 F3 · THE HAWA POCKET: TWO PANELS, TWO BOARDS, THE DOOR ──────
+  //
+  // *"wstawienie pomiedzy 2 panele ... wysuwasz pocket door i zakrywasz
+  // szafke lub szafki"* (the owner, 25.10.2026). The kit declares its whole
+  // carcass as the pocket (`top: 'pocket'`), and every part is KIT_HAWA.lsp's
+  // `hawa-cut` through its mirror (`engine/hawaPocket.js hawaPocketFigures`,
+  // the ONE derivation, published below as `result.hawa`): POCKET-A and
+  // POCKET-B in the front's material (22 on an 18 front, D3), POCKET-BOTTOM
+  // and POCKET-TOP full width (D4), POCKET-DOOR per covered side, TB x TH x S.
+  // The door's role is its own (`pocket_door`): it reaches past its unit over
+  // the cabinet it covers, so the house's front laws (the lay-on trims, the
+  // handle, the Blum cup ladder, the default knob) never touch it; its cups
+  // and the panels' pilots are the LISP's holes on `meta.pocket.holes`, in the
+  // LISP's face frames, for the CNC to drill (F5). The refusals and the note
+  // travel as warnings (Checks #37, #38, #47), never as a clamp.
+  let hawaFigures = null;
+  if (type.carcass.top === 'pocket') {
+    hawaFigures = hawaPocketFigures(params, P);
+    for (const part of hawaFigures.parts) {
+      const isPanel = part.kind === 'A' || part.kind === 'B';
+      const isDoor = part.kind === 'door';
+      panels.push(panel({
+        id: part.id,
+        part: part.part,
+        role: isDoor ? 'pocket_door' : (isPanel ? 'pocket_panel' : 'pocket_board'),
+        w: part.w,
+        h: part.h,
+        thickness: part.t,
+        // Front material is banded all round, as an end panel is; a board in
+        // the carcass finish on its front edge, as the TOP is.
+        edgeCode: isDoor || isPanel ? codes.all : codes.right,
+        edgeLen: isDoor || isPanel ? metres(2 * part.w + 2 * part.h) : metres(part.w),
+        box: { ...part.box },
+        cnc: { rotated: false, drawn_w: part.w, drawn_h: part.h, ...rectGeometry(part.w, part.h) },
+        meta: {
+          pocket: {
+            kind: part.kind,
+            ...(part.side ? { side: part.side } : {}),
+            holes: part.holes.map((hole) => [...hole]),
+            ...(part.grooves ? { grooves: part.grooves.map((g) => [...g]) } : {}),
+          },
+        },
+      }));
+    }
+    for (const r of hawaFigures.refusals) {
+      warnings.push({
+        code: r.code, message: r.message, check: r.n, ...(r.side ? { side: r.side } : {}),
+      });
+    }
+    for (const n of hawaFigures.notes) warnings.push({ code: n.code, message: n.message, check: n.n });
   }
   if (hasBottom) {
     panels.push(panel({
@@ -12220,6 +12275,10 @@ export function computeCabinet(params, profileOverride) {
       },
       profile: P,
     }),
+    // T82 F2 F3 · the HAWA pocket's figures, the one derivation every reader
+    // takes (the right panel, the BOM, the CNC, the room, the sheets). Absent
+    // on every other kit, so no golden carries the key.
+    ...(hawaFigures ? { hawa: hawaFigures } : {}),
   };
 }
 

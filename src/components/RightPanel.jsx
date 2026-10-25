@@ -3,11 +3,13 @@ import { useUiStore } from '../stores/uiStore.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { HEIGHT_GROUPS, getUnitType, isFreePanel, profilePath } from '../engine/types.js';
+import { HEIGHT_GROUPS, getUnitType, isFreePanel, isHawaPocket, profilePath } from '../engine/types.js';
 import { doorCountFor, leafCountRefusal, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls, wallLabel } from '../engine/room.js';
-import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
+import { hasBottomMask, hasTopInfill, pocketNeighbours } from '../engine/runs.js';
+// T82 F2 · the HAWA pocket's choices, read the one way (KIT_HAWA.lsp's mirror).
+import { pocketChoiceOf } from '../engine/hawaPocket.js';
 import { corniceOption } from '../engine/cornice.js';
 // T78 F18 · the four lift systems a wall unit's front may open by, and which kits take one.
 import { LIFT_SYSTEMS, liftTakesKit } from '../engine/liftSystems.js';
@@ -291,6 +293,14 @@ export default function RightPanel() {
           <AttachSection unit={unit} />
         )}
 
+        {/* ── T82 F2 · the HAWA pocket's door ──
+            Above the carcass, as Attach is for the free panel: for a pocket
+            the door is the whole job. The owner: *"wysuwasz pocket door i
+            zakrywasz szafke lub szafki"* (25.10.2026). */}
+        {isHawaPocket(unit.type) && (
+          <PocketDoorSection unit={unit} />
+        )}
+
         {/* ─── TURN 30 (CLAUDE.md F7): A SHELF AND A HINGE AT ONE HEIGHT ────
             ABOVE the sections and outside every one of them, deliberately: a
             conflict prompt folded inside a collapsed "Carcass" is a prompt
@@ -329,6 +339,12 @@ export default function RightPanel() {
                 <NumberField
                   value={unit.params[key]}
                   data-unit-size-field={key}
+                  {...(/* T82 F2 · a HAWA pocket's width and depth are worked
+                      out (the panels and the clear, KT) and its height is the
+                      cabinet's its door covers: shown, never typed. */
+                    isHawaPocket(unit.type) && (key !== 'height' || (result?.hawa?.doors || []).length > 0)
+                      ? { disabled: true, title: 'Worked out by the pocket and the cabinet its door covers' }
+                      : {})}
                   onCommit={(v) => {
                     // ─── TURN 50 (CLAUDE.md F3): THE ROOM REFUSES FIRST ─────
                     //
@@ -1672,6 +1688,150 @@ function AttachSection({ unit }) {
         </div>
       </div>
       <p className="text-[11px] text-ink-400">The panel stays where it is put: moving the unit does not move the panel.</p>
+    </section>
+  );
+}
+
+/**
+ * ─── T82 F2 · POCKET DOOR: THE HAWA POCKET'S OWN SECTION (slice A3) ────────
+ *
+ * The owner, 25.10.2026, 11:40: *"wysuwasz pocket door i zakrywasz szafke lub
+ * szafki"*; 13:46: *"3 tak moga"* (one door over two narrow units), *"4 -
+ * tak"* (the class by height and weight, with a manual override), *"5 - tak"*
+ * (Push by default).
+ *
+ * The choices are the store's three actions and nothing else: Doors 1 / 2,
+ * Hand L / R (one door: the side the door covers), Push / Pull, Class Auto /
+ * III/25 / III/35 (`setPocket`); Door covers, the units the door closes now,
+ * one more added beside the last or the last one taken off (`setPocketCovers`,
+ * a refusal said in its words). The figures under them, TB, T1, M and E1 per
+ * door, the pocket's width and depth and the refusals, are the engine's own
+ * `result.hawa` (`pocketFiguresFor`, KIT_HAWA.lsp's mirror): read, never
+ * worked out here. The walk reads `data-pocket-hand` and
+ * `data-pocket-figure`.
+ */
+function PocketDoorSection({ unit }) {
+  const setPocket = useProjectStore((s) => s.setPocket);
+  const setPocketCovers = useProjectStore((s) => s.setPocketCovers);
+  const pocketFiguresFor = useProjectStore((s) => s.pocketFiguresFor);
+  const units = useProjectStore((s) => s.units);
+  const runElements = useProjectStore((s) => s.runElements);
+  const notify = useUiStore((s) => s.notify);
+  const profile = useCabinetProfileStore((s) => s.profile);
+  if (typeof setPocket !== 'function' || typeof setPocketCovers !== 'function' || typeof pocketFiguresFor !== 'function') return null;
+  const choice = pocketChoiceOf(unit.params, profile);
+  const fig = pocketFiguresFor(unit.id);
+  const element = runElements?.[unit.id]?.pocket?.role === 'pocket' ? runElements[unit.id].pocket : null;
+  const chains = pocketNeighbours(units, unit, profile);
+  const sides = choice.doors === 2 ? ['L', 'R'] : [choice.hand];
+  const covered = { L: element?.sides?.L || [], R: element?.sides?.R || [] };
+  const numOf = (id) => units.find((u) => u.id === id)?.params?.unit_num || id;
+  const say = (res) => { if (res && res.ok === false && res.error) notify(res.error, 'warn'); };
+  const chip = (on) => `${on ? 'cc-btn-gold' : 'cc-btn'} px-3`;
+  const autoCls = (fig?.doors || []).find((d) => d.cls)?.cls ?? null;
+  const coversWith = (side, list) => [...(side === 'L' ? list : covered.L), ...(side === 'R' ? list : covered.R)];
+  return (
+    <section className="rounded border border-gold/60 bg-shell-700/40 p-2 space-y-2" data-section="Pocket door">
+      <div className="cc-row">
+        <span className="text-[11px] uppercase tracking-wide text-ink-400 flex-1">Pocket door</span>
+        {fig?.connectorName && <span className="text-[11px] text-ink-400">{fig.connectorName}</span>}
+      </div>
+      <div className="cc-row" data-pocket-doors={choice.doors}>
+        <span className="text-xs text-ink-200 flex-1" title="One door in a 55 pocket, or two in one 110 pocket (one each side)">Doors</span>
+        {[1, 2].map((n) => (
+          <button key={n} type="button" className={chip(choice.doors === n)} data-pocket-doors-chip={n} onClick={() => say(setPocket(unit.id, { doors: n }))}>
+            {n}
+          </button>
+        ))}
+      </div>
+      {choice.doors === 1 && (
+        <div className="cc-row" data-pocket-hand={choice.hand}>
+          <span className="text-xs text-ink-200 flex-1" title="The side of the pocket the door covers">Hand</span>
+          {['L', 'R'].map((h) => (
+            <button key={h} type="button" className={chip(choice.hand === h)} data-pocket-hand-chip={h} onClick={() => say(setPocket(unit.id, { hand: h }))}>
+              {h}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="cc-row" data-pocket-push={choice.push ? 'push' : 'pull'}>
+        <span className="text-xs text-ink-200 flex-1">Opening</span>
+        <button type="button" className={chip(choice.push)} data-pocket-push-chip="push" onClick={() => say(setPocket(unit.id, { push: true }))}>Push</button>
+        <button type="button" className={chip(!choice.push)} data-pocket-push-chip="pull" onClick={() => say(setPocket(unit.id, { push: false }))}>Pull</button>
+      </div>
+      <div className="cc-row" data-pocket-class={choice.cls ?? 'auto'}>
+        <span className="text-xs text-ink-200 flex-1" title="III/25 to 2200 high and 25 kg, III/35 to 2700 and 35 kg; Auto takes the class by the door's height and weight">Class</span>
+        <button type="button" className={chip(choice.cls == null)} data-pocket-class-chip="auto" onClick={() => say(setPocket(unit.id, { cls: null }))}>
+          {autoCls ? `Auto (III/${autoCls})` : 'Auto'}
+        </button>
+        {[25, 35].map((c) => (
+          <button key={c} type="button" className={chip(choice.cls === c)} data-pocket-class-chip={c} onClick={() => say(setPocket(unit.id, { cls: c }))}>
+            {`III/${c}`}
+          </button>
+        ))}
+      </div>
+      <div className="space-y-1" data-pocket-covers="1">
+        <span className="cc-label">Door covers</span>
+        {sides.map((side) => {
+          const list = covered[side];
+          const next = chains[side][list.length] || null;
+          return (
+            <div key={side} className="cc-row" data-pocket-covers-side={side}>
+              <span className="text-xs text-ink-200 flex-1">
+                {choice.doors === 2 ? `${side === 'L' ? 'Left' : 'Right'}: ` : ''}
+                {list.length ? list.map(numOf).join(', ') : 'nothing beside it'}
+              </span>
+              {next && (
+                <button
+                  type="button"
+                  className="cc-btn px-2"
+                  data-pocket-cover-add={side}
+                  title={`Cover ${numOf(next.id)} too`}
+                  onClick={() => say(setPocketCovers(unit.id, coversWith(side, [...list, next.id])))}
+                >
+                  {`+ ${numOf(next.id)}`}
+                </button>
+              )}
+              {list.length > 1 && (
+                <button
+                  type="button"
+                  className="cc-btn-ghost"
+                  data-pocket-cover-remove={side}
+                  title={`Leave ${numOf(list[list.length - 1])} out`}
+                  onClick={() => say(setPocketCovers(unit.id, coversWith(side, list.slice(0, -1))))}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {(fig?.doors || []).map((d) => (
+        <div key={d.id} className="grid grid-cols-4 gap-1 text-[11px]" data-pocket-door={d.side}>
+          {['TB', 'T1', 'M', 'E1'].map((k) => (
+            <div key={k} className="flex flex-col" data-pocket-figure={k} title={{
+              TB: 'Door width', T1: 'Pocket hardware depth', M: 'How far the open door stands proud', E1: 'How far it slides in',
+            }[k]}
+            >
+              <span className="text-ink-400">{choice.doors === 2 ? `${k} ${d.side}` : k}</span>
+              <span className="text-ink-100" data-pocket-figure-value={k}>{formatMm(d[k])}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+      {fig && (
+        <p className="text-[11px] text-ink-400" data-pocket-size="1">
+          {`Pocket ${formatMm(fig.widthMm)} wide, ${formatMm(fig.KT)} deep, panels ${formatMm(fig.panel?.t)} in the front's material.`}
+        </p>
+      )}
+      {(fig?.refusals || []).map((r) => (
+        <p key={`${r.n}-${r.side}-${r.unit || ''}`} className="text-[11px] text-red-400" data-pocket-refusal={r.n}>{r.message}</p>
+      ))}
+      {(fig?.notes || []).map((n) => (
+        <p key={n.n} className="text-[11px] text-ink-400" data-pocket-note={n.n}>{n.message}</p>
+      ))}
+      {/* T82 F6 (slice A5) · the "Door: Closed / Open" row stands here. */}
     </section>
   );
 }

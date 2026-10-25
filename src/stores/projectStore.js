@@ -24,13 +24,18 @@ import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
-  defaultParamsFor, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel, isWardrobeWallUnit,
-  profilePath,
+  defaultParamsFor, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel, isHawaPocket,
+  isWardrobeWallUnit, profilePath,
   resolveTypeId, TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
 // kept one with its box, and where a drop would be caught.
 import { freePanelFit, freePanelPatch, freePanelSnap } from '../engine/freePanel.js';
+// T82 F2 · the HAWA pocket: its choices, its width at birth and THE ONE
+// derivation of its figures (KIT_HAWA.lsp's mirror), read, never re-derived.
+import {
+  frontTOf, hawaPocketFigures, hawaPocketWidth, hawaSpec, pocketChoiceOf,
+} from '../engine/hawaPocket.js';
 // CHAT-FIX 25.10.2026 · the free panel stuck to a surface of the owner's choice.
 import { attachPlan, attachTargetByKey, attachTargets, obstaclesBeyond } from '../engine/attachPanel.js';
 // T75 F7 · the corner notch: whether a kit takes one, and the engine's own
@@ -150,6 +155,8 @@ import {
   runMemberIds, runPlinthParams, runUpstandParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
   verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
+// T82 F2 · which units a HAWA pocket's door covers, decided from where they stand.
+import { pocketCoverSides, pocketNeighbours, runPocketParams } from '../engine/runs.js';
 // T80 F3 · the in-frame frame of a run (KIT_INFRAME.lsp's mirror).
 import { runFrameParams } from '../engine/inframe.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
@@ -1144,6 +1151,14 @@ function paramsForEngine(unit, design = null) {
       ...(elements.pelmet ? { run_pelmet: elements.pelmet } : {}),
       // T80 F3 · …and the in-frame frame, where the project is in-frame.
       ...(elements.frame && inframeFor(unit, design, profile, elements) ? { run_frame: elements.frame } : {}),
+      // T82 F2 · …and the HAWA pocket's door: on the pocket, what its doors
+      // cover (`pocket_cover`, hawaPocket.js pocketCoverOf); on a covered
+      // cabinet, the pocket that closes it (`pocket_covered`, which takes its
+      // own doors off, KIT_HAWA.lsp D17). Spread only where the run has one.
+      ...(elements.pocket?.role === 'pocket' && elements.pocket.cover ? { pocket_cover: elements.pocket.cover } : {}),
+      ...(elements.pocket?.role === 'covered'
+        ? { pocket_covered: { pocketId: elements.pocket.pocketId, unitNum: elements.pocket.unitNum } }
+        : {}),
     } : {}),
     type: unit.type,
     items,
@@ -3098,6 +3113,69 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }
     }
 
+    // ─── T82 F2 · THE POCKET FOLLOWS WHAT ITS DOOR COVERS (slice A3) ───────
+    //
+    // CLAUDE.md T82 F2: *"Its height is the run's (unit height, legs as the
+    // neighbours: the pocket stands on the plinth line as a cabinet does); its
+    // depth KT = the pocket's depth, which the engine derives (F3) and never
+    // lets the hand type below T1."*  Written on every pass from the engine's
+    // one derivation (hawaPocket.js), so nothing here is typed and nothing is
+    // remembered:
+    //   the WIDTH is the pocket's (panel + 55 + panel, panel + 110 + panel) at
+    //     the project's front, re-cut keeping the edge its one door covers in
+    //     place (the left edge for two doors);
+    //   the HEIGHT and the LEGS are the covered cabinet's, so the run keeps
+    //     one top line and one plinth;
+    //   the DEPTH is the figures' KT, and the BACK stands off the covered
+    //     cabinet's back by `frontAlignMm`, so the pocket's front plane is the
+    //     cabinet's (KIT_HAWA.lsp D8, the pocket shallower than the cabinet).
+    // WHICH units are covered is `runs.js runPocketParams` (the owner's stored
+    // list resolved as a chain, else the one nearest unit on the hand). A
+    // pocket that covers nothing keeps its height and depth as they are.
+    let pocketParams = new Map();
+    if (next.some((u) => isHawaPocket(u.type))) {
+      const slots = projectThicknesses({ design, profile, materials: workshopMaterials() });
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        if (!isHawaPocket(u.type)) continue;
+        const choice = pocketChoiceOf(u.params, profile);
+        const width = hawaPocketWidth({ doors: choice.doors, frontT: frontTOf({ ...u.params, thickness_slots: slots }, profile) }, profile);
+        const was = Number(u.params?.width) || 0;
+        if (!(width > 0) || Math.abs(width - was) < 1e-6) continue;
+        const x = Number(u.position?.x_mm) || 0;
+        const keepRight = choice.doors === 1 && choice.hand === 'R';
+        next[i] = {
+          ...u,
+          position: { ...u.position, x_mm: keepRight ? Math.round((x + was - width) * 100) / 100 : x },
+          params: { ...u.params, width },
+        };
+      }
+      pocketParams = runPocketParams(next, profile, { walls });
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        const el = pocketParams.get(u.id);
+        if (el?.role !== 'pocket' || !el.cover) continue;
+        const firstId = el.doors === 2 ? (el.sides.L[0] || el.sides.R[0]) : el.sides[el.hand]?.[0];
+        const c = next.find((o) => o.id === firstId);
+        if (!c) continue;
+        const params = { ...u.params };
+        if (Number(c.params?.height) > 0) params.height = Number(c.params.height);
+        if (c.params?.leg_height != null) params.leg_height = c.params.leg_height;
+        const fig = hawaPocketFigures({ ...params, thickness_slots: slots, pocket_cover: el.cover }, profile);
+        if (Number(fig?.KT) > 0) params.depth = Number(fig.KT);
+        // wallGapOf(pocket) = wall_gap - recess + standoff, so the gap that
+        // puts its back `frontAlignMm` in front of the cabinet's back is:
+        const back = wallGapOf(c, profile) + (Number(fig?.frontAlignMm) || 0);
+        const recess = Math.max(0, Number(u.params?.recess_mm) || 0);
+        const standoff = Math.max(0, Number(u.params?.standoff_mm) || 0);
+        params.wall_gap = Math.round((back + recess - standoff) * 100) / 100;
+        if (params.height !== u.params?.height || params.leg_height !== u.params?.leg_height
+          || params.depth !== u.params?.depth || params.wall_gap !== u.params?.wall_gap) {
+          next[i] = { ...u, params };
+        }
+      }
+    }
+
     // The RUN is decided last and always across ALL units, whatever one unit
     // was asked about (turn 6, CLAUDE.md F4). The top infill is one piece for a
     // whole run: moving one cabinet changes the length of the piece over its
@@ -3258,9 +3336,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ...(pelmetParams.get(u.id) ? { pelmet: pelmetParams.get(u.id) } : {}),
         // T80 F3 · …and the in-frame frame, likewise.
         ...(frameParams.get(u.id) ? { frame: frameParams.get(u.id) } : {}),
+        // T82 F2 · …and the HAWA pocket's door: the pocket's cover, or the
+        // pocket that closes this cabinet. Present only where there is one.
+        ...(pocketParams.get(u.id) ? { pocket: pocketParams.get(u.id) } : {}),
       };
       if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice && !entry.upstand
-        && !entry.pelmet && !entry.frame) continue;
+        && !entry.pelmet && !entry.frame && !entry.pocket) continue;
       const prev = prevElements[u.id];
       // Reference equality matters (drag frames), and the test is BYTE
       // equality of the WHOLE element — a field list here rotted twice
@@ -5451,6 +5532,37 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       unit.params.depth = Number(bornBeside.params.depth) || unit.params.depth;
       if (bornBeside.params.wall_gap != null) unit.params.wall_gap = bornBeside.params.wall_gap;
     }
+    // ─── T82 F2 · A HAWA POCKET IS BORN IN ITS RUN (slice A3) ───────────────
+    // The owner, 25.10.2026: *"wysuwasz pocket door i zakrywasz szafke lub
+    // szafki"*.  Its choices are `params.pocket` (CLAUDE.md F2: doors, hand,
+    // Push by default, the class by F3, covers). Its width is the pocket's at
+    // the project's front, worked out BEFORE the free slot is looked for, so it
+    // lands at the width it is. Put beside a cabinet it is born MATCHED (as
+    // T74 F7 matches a wardrobe's wall unit): that cabinet's height, legs and
+    // gap off the wall, one top line and so one run; and its one door covers
+    // that cabinet, so the hand is the side the cabinet stands on (put on the
+    // LEFT of 01, the door is on its right). A caller's own `pocket` wins.
+    if (isHawaPocket(typeId)) {
+      const asked = params?.pocket || {};
+      const doors = Number(asked.doors) === 2 ? 2 : 1;
+      const bySide = beside && side ? (isLeftSide(side) ? 'R' : 'L') : null;
+      unit.params.pocket = {
+        doors,
+        hand: doors === 2 ? null : (asked.hand === 'L' || asked.hand === 'R' ? asked.hand : (bySide || 'R')),
+        push: asked.push == null ? hawaSpec(profile).defaultPush : asked.push !== false,
+        cls: Number(asked.cls) === 25 || Number(asked.cls) === 35 ? Number(asked.cls) : null,
+        covers: Array.isArray(asked.covers) ? [...asked.covers] : [],
+      };
+      const slots = projectThicknesses({ design: migrateDesign(state.project.design), profile, materials: workshopMaterials() });
+      unit.params.width = hawaPocketWidth({ doors, frontT: frontTOf({ ...unit.params, thickness_slots: slots }, profile) }, profile);
+      const matched = beside && getUnitType(beside.type).mount === 'floor'
+        && !isFreePanel(beside.type) && !isHawaPocket(beside.type) ? beside : null;
+      if (matched) {
+        if (Number(matched.params?.height) > 0) unit.params.height = Number(matched.params.height);
+        if (matched.params?.leg_height != null) unit.params.leg_height = matched.params.leg_height;
+        if (matched.params?.wall_gap != null) unit.params.wall_gap = matched.params.wall_gap;
+      }
+    }
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
     // units occupy different bands of the same wall, so they are placed
@@ -5782,6 +5894,32 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // and a drag asked nothing. Both are `settleLayout` now, and every action
     // that can move a cabinet's edge ends by calling it.
     get().settleLayout(unit.id);
+    // T82 F2 · …and once it stands, its door's hand and covers are what stands
+    // beside it: with no side named, the hand is the side its only neighbour
+    // is on (both or none: R, the documents' "Anlage links", pocket left of
+    // its door); the covers are the one unit nearest on that hand (CLAUDE.md
+    // F3: *"by default the ONE unit next to the pocket on that side"*),
+    // written as the owner's starting list. From here on the run resolves it
+    // (runs.js runPocketParams); nothing below re-derives a HAWA figure.
+    if (isHawaPocket(unit.type)) {
+      const born = get().units.find((u) => u.id === unit.id);
+      if (born) {
+        const pocket = { ...born.params.pocket };
+        if (pocket.doors !== 2 && !(beside && side) && params?.pocket?.hand == null) {
+          const n = pocketNeighbours(get().units, born, profile);
+          pocket.hand = n.L.length && !n.R.length ? 'L' : 'R';
+        }
+        if (!(Array.isArray(params?.pocket?.covers) && params.pocket.covers.length)) {
+          const probe = { ...born, params: { ...born.params, pocket: { ...pocket, covers: [] } } };
+          const sides = pocketCoverSides(get().units, probe, profile);
+          pocket.covers = [...sides.L, ...sides.R];
+        }
+        set((st) => ({
+          units: st.units.map((u) => (u.id === unit.id ? { ...u, params: { ...u.params, pocket } } : u)),
+        }));
+        get().refreshAutoParts();
+      }
+    }
     // ─── T75 F17 · A DESK: FRONT ON THE WARDROBE'S LINE, AND ITS TOP ────────
     // *"Placed beside a wardrobe at `mount_height = 720`, aligned to the FRONT
     // of the wardrobe by default (T74 F7's two choices). It takes a WORKTOP."*
@@ -6716,6 +6854,177 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       notices,
     };
   }),
+
+  // ─── T82 F2 · THE POCKET DOOR'S CHOICES (slice A3) ──────────────────────
+  //
+  // The owner, 25.10.2026: *"wysuwasz pocket door i zakrywasz szafke lub
+  // szafki"*; 13:46: *"4 - tak"* (the class by height and weight, with a
+  // manual override), *"5 - tak"* (Push by default), *"3 tak moga"* (one door
+  // over two narrow units).  Three actions and nothing else: the choices
+  // (`setPocket`), the units the door covers (`setPocketCovers`), and the
+  // figures the right panel shows (`pocketFiguresFor`, the engine's own
+  // `result.hawa`, KIT_HAWA.lsp's mirror; never worked out here).
+
+  /**
+   * Doors 1 | 2, hand 'L' | 'R' (one door), push, cls 25 | 35 | null (auto).
+   * A change of doors re-cuts the pocket's width (panel + 55 + panel, panel +
+   * 110 + panel); the room is asked first (*"the room refuses in words"*): it
+   * grows where there is room for it, keeping its door's edge where it can, and
+   * where there is none nothing changes and the sentence says why. A change of
+   * doors or hand puts the covers back to the default (the nearest unit).
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setPocket: (unitId, patch = {}) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isHawaPocket(unit.type)) return { ok: false, error: 'Only a HAWA pocket has a pocket door.' };
+    const profile = getCabinetProfile();
+    const was = pocketChoiceOf(unit.params, profile);
+    const doors = patch?.doors == null ? was.doors : (Number(patch.doors) === 2 ? 2 : 1);
+    const storedHand = unit.params?.pocket?.hand === 'L' ? 'L' : 'R';
+    const askedHand = patch?.hand === 'L' || patch?.hand === 'R' ? patch.hand : null;
+    const hand = doors === 2 ? null : (askedHand || was.hand || storedHand);
+    const pocket = {
+      doors,
+      hand,
+      push: patch?.push == null ? was.push : patch.push !== false,
+      cls: Object.hasOwn(patch || {}, 'cls')
+        ? (Number(patch.cls) === 25 || Number(patch.cls) === 35 ? Number(patch.cls) : null)
+        : was.cls,
+      covers: was.covers,
+    };
+    const resetCovers = doors !== was.doors || hand !== was.hand;
+    const name = unit.params.unit_num || unit.id;
+    let position = unit.position;
+    let { width } = unit.params;
+    if (doors !== was.doors) {
+      const slots = projectThicknesses({ design: migrateDesign(s.project.design), profile, materials: workshopMaterials() });
+      const want = hawaPocketWidth({ doors, frontT: frontTOf({ ...unit.params, thickness_slots: slots }, profile) }, profile);
+      const x = Number(unit.position?.x_mm) || 0;
+      const delta = want - (Number(width) || 0);
+      const keepRight = doors === 1 && hand === 'R';
+      // Shrinking always fits, keeping the door's edge; growing tries to the
+      // right, to the left, then both ways at once.
+      const tries = delta <= 0 ? [keepRight ? x - delta : x] : [x, x - delta, x - delta / 2];
+      const walls = roomWalls(s.project.room);
+      const wall = walls[unit.position?.wall ?? 0] || walls[0];
+      const probe = { ...unit, params: { ...unit.params, width: want } };
+      const others = [
+        ...s.units
+          .filter((u) => u.id !== unit.id && (u.position?.wall ?? 0) === wall.index && obstructs(probe, u, profile))
+          .map(unitSpan),
+        ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes) }),
+      ];
+      const at = delta <= 0 ? tries[0] : tries.find((tx) => slotTakes({
+        x: tx, width: want, wallWidth: wall.width, others, wallMargin: wallMarginOf(s, unit, wall),
+      }, profile));
+      if (at == null) {
+        return {
+          ok: false,
+          error: `${name}: ${doors === 2 ? 'two doors take' : 'one door takes'} a pocket ${formatMm(want)} mm wide, and there is no room for one here: move a neighbour first.`,
+        };
+      }
+      position = { ...unit.position, x_mm: Math.round(at * 100) / 100 };
+      width = want;
+    }
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, position, params: { ...u.params, width, pocket } }
+        : u)),
+    }));
+    if (resetCovers) {
+      const moved = get().units.find((u) => u.id === unitId);
+      const probe = { ...moved, params: { ...moved.params, pocket: { ...pocket, covers: [] } } };
+      const sides = pocketCoverSides(get().units, probe, profile);
+      const covers = [...sides.L, ...sides.R];
+      set((st) => ({
+        units: st.units.map((u) => (u.id === unitId
+          ? { ...u, params: { ...u.params, pocket: { ...u.params.pocket, covers } } }
+          : u)),
+      }));
+    }
+    get().refreshAutoParts();
+    get().settleLayout(unitId);
+    return { ok: true, error: null };
+  }),
+
+  /**
+   * The units the pocket's door covers, nearest first (*"zakrywasz szafke lub
+   * szafki"*). They must stand one after another from the pocket on a door's
+   * side, none skipped; a door over more than one unit may not pass HAWA's
+   * widest door (CLAUDE.md F3: *"the owner may add the next ... while TB stays
+   * within 440 to 750"*), the figure the engine's own. An empty list puts the
+   * default back (the nearest unit). Refused: nothing changes, and the
+   * sentence says why.
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setPocketCovers: (unitId, ids = []) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isHawaPocket(unit.type)) return { ok: false, error: 'Only a HAWA pocket has a pocket door.' };
+    const profile = getCabinetProfile();
+    const choice = pocketChoiceOf(unit.params, profile);
+    const name = unit.params.unit_num || unit.id;
+    const want = [...new Set((ids || []).filter(Boolean))];
+    const chains = pocketNeighbours(s.units, unit, profile);
+    const sides = choice.doors === 2 ? ['L', 'R'] : [choice.hand];
+    const numOf = (id) => s.units.find((u) => u.id === id)?.params?.unit_num || id;
+    for (const id of want) {
+      if (!sides.some((side) => chains[side].some((u) => u.id === id))) {
+        return {
+          ok: false,
+          error: `${numOf(id)} does not stand beside ${name} on its door's side: a pocket door covers the cabinets next to its pocket, one after another.`,
+        };
+      }
+    }
+    for (const side of sides) {
+      const chain = chains[side].map((u) => u.id);
+      const mine = want.filter((id) => chain.includes(id));
+      if (!chain.slice(0, mine.length).every((id) => mine.includes(id))) {
+        return {
+          ok: false,
+          error: `${name}: a door covers the cabinets one after another from its pocket; ${numOf(chain.find((id) => !mine.includes(id)))} would be skipped.`,
+        };
+      }
+    }
+    if (want.length) {
+      const probe = { ...unit, params: { ...unit.params, pocket: { ...unit.params.pocket, covers: want } } };
+      const el = runPocketParams(s.units.map((u) => (u.id === unitId ? probe : u)), profile, {
+        walls: roomWalls(s.project.room),
+      }).get(unitId);
+      const slots = projectThicknesses({ design: migrateDesign(s.project.design), profile, materials: workshopMaterials() });
+      const fig = el?.cover ? hawaPocketFigures({ ...probe.params, thickness_slots: slots, pocket_cover: el.cover }, profile) : null;
+      const K = hawaSpec(profile);
+      const wide = (fig?.doors || []).find((d) => (d.covers || []).length > 1 && d.TB > K.hawaTBMax);
+      if (wide) {
+        return {
+          ok: false,
+          error: `${name}: the door over ${wide.unitNums.join(' and ')} would be ${formatMm(wide.TB)} mm wide; a HAWA Concepta III door is ${formatMm(K.hawaTBMin)} to ${formatMm(K.hawaTBMax)} mm (#37). Nothing changed.`,
+        };
+      }
+    }
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, params: { ...u.params, pocket: { ...u.params.pocket, covers: want } } }
+        : u)),
+    }));
+    get().refreshAutoParts();
+    return { ok: true, error: null };
+  }),
+
+  /**
+   * The pocket's figures, as the engine cut them (`result.hawa`, the one
+   * derivation of KIT_HAWA.lsp's mirror): TB, T1, M, E1, the class per door,
+   * the pocket's width and KT, the refusals in the LISP's words. Null for
+   * anything that is not a pocket.
+   */
+  pocketFiguresFor: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !isHawaPocket(unit.type)) return null;
+    return get().unitResult(unitId)?.hawa ?? null;
+  },
 
   removeUnit: (unitId) => runBatch(() => {
     // T36 F7: a rider whose main goes is ORPHANED, not moved and not deleted —

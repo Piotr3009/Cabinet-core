@@ -291,7 +291,9 @@ test('every library type is configured, available and buildable', () => {
   // Turn 75 (CLAUDE.md F18): the wardrobe job's LOW UNIT, LOW_CABINET hole
   // for hole (*"`WARDROBE_LOW` copied from `LOW_CABINET`"*).
   // AMENDED BY T78 F17 (12.10.2026): the canopy hood and the short hood, 39 became 41.
-  assert.equal(UNIT_TYPE_ORDER.length, 41, 'every kit in the order, the free panel last');
+  // AMENDED BY T82 F2 (25.10.2026): the HAWA pocket, KIT_HAWA.lsp (the owner: *"wstawienie
+  // pomiedzy 2 panele 110 mm przestrzen pomiedzy, wysuwasz pocket door"*), 41 became 42.
+  assert.equal(UNIT_TYPE_ORDER.length, 42, 'every kit in the order, the free panel last');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

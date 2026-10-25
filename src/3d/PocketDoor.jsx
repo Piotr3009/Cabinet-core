@@ -19,7 +19,11 @@
 //
 // The LEAF is not drawn here. It is the board the room draws every board with
 // (UnitView's `MovingPanel`: the front material it wears, its outline, its
-// handlers and its `ccPanelId`), handed in as `children` and standing still
+// handlers and its `ccPanelId`; and since A2's fix of the review, the run's
+// finish the engine puts on the piece, read there as every front's is: the
+// spray, the shaker tray off `meta.shaker`, the decoration off
+// `meta.frontDecoration`, a Pull door's bar off `meta.handle`, none on Push),
+// handed in as `children` and standing still
 // where the engine cut it; this component only CARRIES it: an outer group that
 // slides (the carriage on its tracks, with the vertical profile and the
 // ejector on it) and an inner one that turns (the door on its hinges, with its

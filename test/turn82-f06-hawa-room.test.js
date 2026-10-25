@@ -45,6 +45,12 @@ import { wallGroups } from '../src/engine/drawings/wallElevation.js';
 import { wallGapOf } from '../src/engine/runs.js';
 import { rectCorners } from '../src/engine/room.js';
 import { useUiStore } from '../src/stores/uiStore.js';
+import { migrateDesign, DESIGN_SCHEMA, resolveFinishes } from '../src/engine/design.js';
+import { defaultFrontDecoration } from '../src/engine/frontDecoration.js';
+import { panelRecesses } from '../src/engine/recesses.js';
+import { surfaceFor } from '../src/3d/materials.js';
+import { shakerFrontGeometry } from '../src/3d/shakerSolid.js';
+import { frontDecorationGeometry } from '../src/3d/frontDecorationSolid.js';
 import {
   EJECTOR_PICTURE_HEIGHT_MM, pocketDoorGeometry, pocketDoorHoles, pocketDoorPose, pocketHardwareBoxes,
 } from '../src/engine/pocketDoorPose.js';
@@ -494,4 +500,60 @@ test('F7, after the review (roomsheets 4) · the track words stand where no boar
       }
     }
   }
+});
+
+test('F6, after the review (A2 F6) · the room\'s HAWA door wears the run\'s finish at every pose: the shaker tray, the decoration, the spray, the Pull bar; Push none', () => {
+  // CLAUDE.md T82 F6: *"the door in the front finish of the run (spray, decoration, in-frame as the
+  // neighbours)"*. The leaf the room draws is UnitView's own MovingPanel, the road every front takes:
+  // it reads the finish off the PIECE (the engine's meta.frontType, meta.shaker, meta.frontDecoration,
+  // meta.handle) and PocketDoor only carries it, so whatever the leaf wears it wears at every t.
+  const view = read('../src/3d/UnitView.jsx');
+  assert.match(view, /const leaf = \(\s*<MovingPanel/, 'the HAWA door is drawn by the leaf every front is drawn by');
+  assert.match(view, /<PocketDoor key=\{p\.id\} door=\{p\}[^>]*>\s*\{leaf\}\s*<\/PocketDoor>/, '...and handed to PocketDoor whole');
+  assert.match(view, /shakerFrontGeometry\(p, frontBores\)/, 'the leaf builds the shaker tray off the piece');
+  assert.match(view, /frontDecorationGeometry\(p, frontBores\)/, '...and the decoration');
+  assert.match(view, /\{p\.meta\?\.handle && \(\s*\/\/[^\n]*\n[\s\S]{0,600}<FrontHandle panel=\{p\}/, '...and the handle, inside its own group');
+  const pd = read('../src/3d/PocketDoor.jsx');
+  const turn = pd.slice(pd.indexOf('<group ref={turn}'), pd.indexOf('{holes.map'));
+  assert.match(turn, /\{children\}/, 'the leaf rides the turn, and the turn rides the slide: every pose carries the whole leaf');
+
+  const BAR = { type: 'bar', centres_mm: 128 };
+  // EXAMPLE 1 on a 22 front (a shaker recess leaves board under it), Pull with the project's bar.
+  const run = (extra) => cut({ ...ONE(), front_t: 22, ...extra });
+  const doorOf = (r) => r.panels.find((p) => p.part === 'POCKET-DOOR');
+  const pull = { pocket: { ...ONE().pocket, push: false }, project_handle: BAR };
+
+  // A shaker run: the room's board for the door is the shaker tray, the recess in its face.
+  const shakerRun = run({ front_type: 'S', ...pull });
+  const door = doorOf(shakerRun);
+  const thickness = Number(door.thickness) > 0 ? Number(door.thickness) : door.box.d;
+  const tray = shakerFrontGeometry(door, panelRecesses(door, shakerRun.drills, { thickness, profile: P() }));
+  assert.ok(tray, 'the shaker tray, as a shaker front of the run is built');
+  const pos = tray.getAttribute('position');
+  const zs = new Set();
+  for (let i = 0; i < pos.count; i += 1) zs.add(Math.round(pos.getZ(i) * 1e6) / 1e6);
+  const floor = thickness / 2 - door.meta.shaker.depth;
+  assert.ok([...zs].some((z) => Math.abs(z - floor / 1000) < 1e-6), `the recess floor ${door.meta.shaker.depth} into the face`);
+  assert.equal(shakerFrontGeometry(doorOf(run({ front_type: 'F', ...pull }))), null, 'a flat run: a flat door');
+  // A fluted run: the fluting is on the door.
+  const fl = doorOf(run({ front_type: 'FL', front_decoration: defaultFrontDecoration('FL', P()), ...pull }));
+  assert.ok(frontDecorationGeometry(fl), 'the decoration\'s solid, as a decorated front of the run');
+
+  // The spray: the door's surface is the run's fronts' surface, colour and lacquer alike.
+  const design = migrateDesign({ schema: DESIGN_SCHEMA, colour: { front: { hex: '#7b8f7a', name: 'Card Room Green', system: 'F&B' } } });
+  const finishes = resolveFinishes({ id: 'hp', type: 'HAWA_POCKET', params: {} }, design, P());
+  const surface = (panel) => surfaceFor({
+    role: panel.role, materialRole: panel.material_role, finishExposed: panel.finish_exposed, finishes, profile: P(), frontColour: finishes.front.hex,
+  });
+  const front = cut({ ...defaultParamsFor('BUDTALL', P()), front_t: 22, front_type: 'S', doors: { count: 1, hinge: 'L' } })
+    .panels.find((p) => p.part === 'FRONT');
+  const sd = surface(door); const sf = surface(front);
+  assert.ok(sd.sprayed, 'the HAWA door is sprayed with the run');
+  for (const k of ['colour', 'sprayed', 'roughness', 'clearcoat', 'clearcoatRoughness', 'metalness', 'envMapIntensity']) {
+    assert.deepEqual(sd[k], sf[k], `${k}: the door as the run's fronts`);
+  }
+
+  // The Pull door carries the bar the room draws (FrontHandle, off meta.handle); a Push door none.
+  assert.equal(door.meta.handle?.type, 'bar', 'Pull: the project\'s bar on the door');
+  assert.equal(doorOf(run({ front_type: 'S', project_handle: BAR })).meta.handle, undefined, 'Push: no handle');
 });

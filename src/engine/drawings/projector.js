@@ -1004,11 +1004,14 @@ export function runSolids(group, {
       const host = `${m.unit.id}:${p.id}`;
       const face = (p.box.z + p.box.d) + off[2];
       const lift2 = (x, y) => [x + off[0], y + off[1], face];
-      // T82 F7 · the HAWA door is plain in the room (its role takes no front style), so it is plain here.
-      // eslint-disable-next-line no-nested-ternary
-      const detail = isPocketDoor(p) ? [] : (p.meta?.frontDecoration
+      // T82 F7, after the review: the HAWA door wears the run's finish in the
+      // room (A2: its meta.frontType, its shaker recess, the decoration pass),
+      // so its face is drawn as a front's (CLAUDE.md T82 F6, *"the door in the
+      // front finish of the run"*). Its handle is the engine's (a Pull door's
+      // drill summary); a Push door has none.
+      const detail = p.meta?.frontDecoration
         ? frontDecorationElevation(p)
-        : frontDetail(p.box, p.meta?.frontType || style || profile.front.defaultType, profile, shakerFrame));
+        : frontDetail(p.box, p.meta?.frontType || style || profile.front.defaultType, profile, shakerFrame);
       for (const e of detail) {
         const pts = e.kind === 'rect'
           ? [[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]]

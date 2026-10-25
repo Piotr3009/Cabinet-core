@@ -321,6 +321,8 @@ export const NEW_FILES = [
   // T82 F6 (after the review) (25.10.2026): the door's holes ride the door
   'src/3d/drillRingPanels.js',
   'test/turn82-f06-door-rings.test.js',
+  // T82 F7 (after the review) (25.10.2026): the HAWA door's finish and handle on the sheets
+  'test/turn82-f07-hawa-door-sheets.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

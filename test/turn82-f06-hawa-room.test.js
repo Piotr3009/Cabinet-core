@@ -295,7 +295,7 @@ test('F7 · the stage: the covered BUD has no door of its own (the HAWA door is 
   assert.equal(bud.panels.filter((p) => p.part === 'FRONT').length, 0);
 });
 
-test('[F7 projector] the fronts sheet: the shut door over the pocket and the cabinet it covers, 3 proud, in the doors\' ink, plain', F7, () => {
+test('[F7 projector] the fronts sheet: the shut door over the pocket and the cabinet it covers, 3 proud, in the doors\' ink, in the run\'s finish', F7, () => {
   const { group, m, f } = stage();
   const sheet = projectRun(group, { view: 'front', mode: 'fronts', profile: P() });
   const solid = sheet.solids.find((s) => s.panelId === 'POCKET-DOOR');
@@ -303,7 +303,11 @@ test('[F7 projector] the fronts sheet: the shut door over the pocket and the cab
   const door = sheet.entities.filter((e) => e.src === `${m.unit.id}:POCKET-DOOR` && e.layer === 'DOORS');
   const rect = door.find((e) => e.kind === 'rect' && near(e.w, f.TB));
   assert.ok(rect && near(rect.x, m.x + f.closed.x), 'one rectangle, the whole TB: over B, the gap and the BUD');
-  assert.equal(door.filter((e) => e.kind === 'rect').length, 1, 'plain, as the room draws it: no shaker field');
+  // AMENDED (T82 F7, after the review; E3, the projector's owner): the door wears the run's finish (A2:
+  // its meta.frontType and shaker recess), *"the door in the front finish of the run"* (CLAUDE.md T82 F6),
+  // so on this shaker run the leaf is one rectangle and the shaker's field is drawn inside it, as on a front.
+  assert.equal(door.filter((e) => e.kind === 'rect' && near(e.w, f.TB)).length, 1, 'one leaf, the whole TB');
+  assert.ok(door.filter((e) => e.kind === 'rect').length > 1, 'and its shaker field, as the room cuts it');
   const B = sheet.solids.find((s) => s.part === 'POCKET-B');
   // INT (T82 F7, after A4's F5): joinery.js panelPlacement seats panel B as a side (BUL / BUR), so the
   // projector extrudes it along x, its thickness, with its depth in the outline's first coordinate; the

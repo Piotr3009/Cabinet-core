@@ -22,7 +22,8 @@ export const GATES = {};
 export const LICENSED = {
   'src/engine/drawings/projector.js': {
     why: `T82 F7 (A5's patch, applied by E3): isRoomFront takes POCKET-DOOR; its face detail none (plain, as the room); `
-      + `the HAWA symbols as HINGES solids; the door's hinge bars at the engine's cupY. ${OWNER}`,
+      + `the HAWA symbols as HINGES solids; the door's hinge bars at the engine's cupY. ${OWNER}`
+      + ' T82 F7, after the review: the HAWA door on the sheets wears its front finish (the shaker field, the glass) and a Pull door its handle, as every front\'s.',
     gates: [],
   },
   'src/engine/drawings/setPlan.js': {

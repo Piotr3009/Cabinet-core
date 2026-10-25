@@ -3190,9 +3190,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         if (c.params?.leg_height != null) params.leg_height = c.params.leg_height;
         const fig = hawaPocketFigures({ ...params, thickness_slots: slots, pocket_cover: el.cover }, profile);
         if (Number(fig?.KT) > 0) params.depth = Number(fig.KT);
-        // wallGapOf(pocket) = wall_gap - recess + standoff, so the gap that
-        // puts its back `frontAlignMm` in front of the cabinet's back is:
-        const back = wallGapOf(c, profile) + (Number(fig?.frontAlignMm) || 0);
+        // T82 F2, after the review (store:3): the pocket's FRONT is the plane
+        // its doors close on (runs.js pocketFrontLine: the most forward of the
+        // covered cabinets' fronts), so its back stands KT behind it and no
+        // closed door is cut inside a carcass. With one plane this is the old
+        // `frontAlignMm` reading; with two, the engine refuses in words (A2).
+        // wallGapOf(pocket) = wall_gap - recess + standoff, so its gap is:
+        const back = el.front
+          ? el.front.mm - (Number(params.depth) || 0)
+          : wallGapOf(c, profile) + (Number(fig?.frontAlignMm) || 0);
         const recess = Math.max(0, Number(u.params?.recess_mm) || 0);
         const standoff = Math.max(0, Number(u.params?.standoff_mm) || 0);
         params.wall_gap = Math.round((back + recess - standoff) * 100) / 100;

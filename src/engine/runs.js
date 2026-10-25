@@ -1740,6 +1740,27 @@ export function pocketClaimRefusal(pocket, entry) {
     + `${num}'s door on that side is not cut. Turn its hand, or take ${entry.unitNum} off ${entry.byNum}.`;
 }
 
+/**
+ * T82 F2, after the review (store:3) · the FRONT PLANE a pocket's doors close
+ * on: each covered unit's front line from its wall (its back line, `wallGapOf`,
+ * plus its depth), and the most forward of them, which is where the pocket's
+ * front stands (CLAUDE.md F3: *"the pocket's and the cabinets' front edges in
+ * one plane"*), so no closed door is ever cut inside a carcass. `equal` is
+ * whether they are one plane at all; where they are not, the engine refuses
+ * the door in words (A2), reading the lines this hands it per door
+ * (`pocket_cover.doors[].fronts`).
+ *
+ * @returns {{mm:number, equal:boolean, lines:Array<{id:string, mm:number}>}|null}
+ */
+export function pocketFrontLine(units, ids, profile) {
+  const byId = new Map((units || []).map((u) => [u.id, u]));
+  const lines = (ids || []).map((id) => byId.get(id)).filter(Boolean)
+    .map((u) => ({ id: u.id, mm: Math.round((wallGapOf(u, profile) + (Number(u.params?.depth) || 0)) * 100) / 100 }));
+  if (!lines.length) return null;
+  const mm = Math.max(...lines.map((l) => l.mm));
+  return { mm, equal: lines.every((l) => Math.abs(l.mm - mm) < 0.5), lines };
+}
+
 /** A millimetre figure in a sentence: whole, or to the half the kit rounds to. */
 function hawaFigure(n) {
   const v = Math.round((Number(n) || 0) * 10) / 10;
@@ -1850,6 +1871,12 @@ export function runPocketParams(units, profile, { walls = null } = {}) {
       L: sides.L.map((id) => byId.get(id)),
       R: sides.R.map((id) => byId.get(id)),
     }, profile, { beyond });
+    // (store:3) the plane the doors close on, and each door's covered fronts
+    // for the engine to compare (a pocket's front is ONE plane).
+    const front = pocketFrontLine(list, [...sides.L, ...sides.R], profile);
+    for (const door of cover?.doors || []) {
+      door.fronts = (door.units || []).map((id) => front.lines.find((l) => l.id === id)?.mm ?? null);
+    }
     out.set(pocket.id, {
       role: 'pocket',
       doors: choice.doors,
@@ -1858,6 +1885,7 @@ export function runPocketParams(units, profile, { walls = null } = {}) {
       sides,
       beyond,
       cover,
+      front,
       refused,
     });
     for (const id of [...sides.L, ...sides.R]) {

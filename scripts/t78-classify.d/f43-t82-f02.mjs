@@ -87,7 +87,8 @@ export const LICENSED = {
       + 'beyond kinds and hawaPocket.js pocketCoverOf\'s pocket_cover; and on a covered unit the pocket that closes '
       + `it). One import of hawaPocket.js (pocketChoiceOf, pocketCoverOf). No cut reads them. ${OWNER_A3}`
       + ' T82 F2, after the review: buttedChainOf (the cabinets butted one after another beside the pocket, which move with it when a new front re-cuts its width) and pocketRecutRefusal (where they cannot move, the sentence).'
-      + ' After the review (one cabinet, one pocket door): runPocketParams gives a cabinet to the first pocket in the room\'s order, a later pocket\'s door stops short and carries refused (pocketClaimRefusal).',
+      + ' After the review (one cabinet, one pocket door): runPocketParams gives a cabinet to the first pocket in the room\'s order, a later pocket\'s door stops short and carries refused (pocketClaimRefusal).'
+      + ' After the review (the front plane): pocketFrontLine, the most forward of the covered cabinets\' front lines, is the pocket\'s front, so no closed door stands inside a carcass; each pocket_cover door carries the covered fronts for the engine.',
     gates: [],
   },
   'src/engine/library.js': {

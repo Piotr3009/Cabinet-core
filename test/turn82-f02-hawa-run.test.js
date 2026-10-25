@@ -483,3 +483,57 @@ test('T82 F2, after the review (store:2) . two pockets cannot both close one cab
   assert.deepEqual(pocketElement(p2)?.covers, [w], 'freed, the cabinet is not offered to the second pocket');
   assert.deepEqual(pocketElement(p2)?.refused || [], []);
 });
+
+/** The front line of a unit, from its wall: its back line plus its depth. */
+const frontLineOf = (id) => runs.wallGapOf(unit(id), P) + Number(unit(id).params.depth);
+
+/** Each door's closed box, from the wall, against every carcass it covers. */
+function doorPlanes(p) {
+  const fig = S().pocketFiguresFor(p);
+  const back = runs.wallGapOf(unit(p), P);
+  return {
+    front: back + Number(unit(p).params.depth),
+    doors: fig.doors.map((d) => ({
+      side: d.side,
+      from: back + d.closed.z,
+      covers: d.covers.map((id) => ({ id, front: frontLineOf(id) })),
+    })),
+  };
+}
+
+test('T82 F2, after the review (store:3) . the pocket stands with its front on the covered cabinets\' front plane, never with its door inside a carcass', () => {
+  // (1) one door over a 558 and a 450 wardrobe.
+  room();
+  const p = S().addUnit(POCKET, { wall: 0, x: 500 }).id;
+  const a = S().addUnit('WARDROBE', { near: p, side: 'R', params: { width: 300 } }).id;
+  const b = S().addUnit('WARDROBE', { near: a, side: 'R', params: { width: 300 } }).id;
+  S().updateUnitParams(b, { depth: 450 });
+  assert.equal(S().setPocketCovers(p, [a, b]).ok, true);
+  // (2) two doors between a 558 and a 450 wardrobe.
+  const w1 = S().addUnit('WARDROBE', { wall: 0, x: 2000, params: { width: 600 } }).id;
+  const q = S().addUnit(POCKET, { near: w1, side: 'R', params: { pocket: { doors: 2 } } }).id;
+  const w2 = S().addUnit('WARDROBE', { near: q, side: 'R', params: { width: 600 } }).id;
+  S().updateUnitParams(w2, { depth: 450 });
+  const stages = [['one door, 558 + 450', p], ['two doors, 558 | 450', q]];
+  for (const [label, id] of stages) {
+    const plane = doorPlanes(id);
+    const deepest = Math.max(...plane.doors.flatMap((d) => d.covers.map((c) => c.front)));
+    assert.equal(plane.front, deepest, `${label}: the pocket's front is not the covered cabinets' front plane`);
+    for (const d of plane.doors) {
+      for (const c of d.covers) {
+        assert.ok(d.from >= c.front - 1e-6, `${label}: the ${d.side} door stands ${c.front - d.from} mm inside ${unit(c.id).params.unit_num}`);
+      }
+    }
+  }
+  // (3) two doors between two 558 wardrobes, the right one stood 50 off the wall.
+  S().updateUnitParams(w2, { depth: 558, wall_gap: 50 });
+  const plane = doorPlanes(q);
+  assert.equal(plane.front, frontLineOf(w2), 'the pocket lines up with the shallower front, not the forward one');
+  for (const d of plane.doors) for (const c of d.covers) assert.ok(d.from >= c.front - 1e-6, `the ${d.side} door stands inside ${unit(c.id).params.unit_num}`);
+  // The engine hears the covered fronts, door by door, to refuse unequal planes in words (A2).
+  const cover = pocketElement(q)?.cover;
+  assert.deepEqual(cover.doors.map((d) => d.fronts), [[frontLineOf(w1)], [frontLineOf(w2)]]);
+  // Equal planes: the front is the cabinets' front, as before the review.
+  S().updateUnitParams(w2, { wall_gap: 10 });
+  assert.equal(doorPlanes(q).front, frontLineOf(w1));
+});

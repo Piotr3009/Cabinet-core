@@ -1,0 +1,114 @@
+T82 WALK: HAWA, THE VANITY, THE CLOUD, THE PANEL IN HAND, THE DRAWINGS FOR THE CLIENT (scripts/t82-walk.mjs)
+walked 2026-10-25 21:07 UTC, HEAD 3deb3bbd, http://127.0.0.1:4173/, legs 1,2,3,4,5
+Every line: PASS or FAIL (the F, the gesture, what was expected, what was read), WAIT (a hook not landed yet, --prep only), NOTE (a reading), FRAME (the file beside this one).
+The gestures are real clicks, drags and keys; the stages are the store's; every sheet is read off the glass and framed from that very SVG at 4 px per paper mm.
+
+
+LEG 1 . HAWA CONCEPTA III: THE POCKET BESIDE A BUD 500 ON A 580 RUN
+NOTE   [1] F25 the build under the mouse | the repo's HEAD 3deb3bbd; url http://127.0.0.1:4173/
+NOTE   [1] F2 THE STAGE: a 6000 x 3000 room 2500 high; front type f1 on the generic 18 board (the store) | {"id":"f1","material":"generic-18"}
+PASS   [1] F2 Library > Kitchen > Base units > Standard (real clicks): a BUD in the room | expect: one BUD | observed: {"id":"u_s7wf9qq","type":"BUD","num":"01","x":2700,"wall":0,"w":600,"h":770,"d":558}
+PASS   [1] F2 its Width typed 500 and its Depth 580 (a real click, Ctrl+A, the digits, Enter) | expect: 500 x 580 | observed: fields ["500","580"]; unit [2700,500,770,580]
+PASS   [1] F2 Library: "HAWA pocket (Concepta III)" (row hawa-pocket, a real click): a HAWA_POCKET in the room | expect: HAWA_POCKET | observed: {"id":"u_mk1sh1t","type":"HAWA_POCKET","num":"HP01","x":3200,"wall":0,"w":99,"h":770,"d":580}
+PASS   [1] F2 the pocket's cut parts: POCKET-A, POCKET-B, POCKET-TOP, POCKET-BOTTOM, POCKET-DOOR (one door: A and B) | expect: the five parts | observed: ["POCKET-BOTTOM 99 x 601 x 18","POCKET-B 580 x 727.5 x 22","POCKET-A 601 x 727.5 x 22","POCKET-TOP 99 x 601 x 18","POCKET-DOOR 572.5 x 721.5 x 18"]
+PASS   [1] F2 the pocket panels in the FRONT material, 22 on an 18 front (*"jesli jest 18 mm to daj zawsze 22 mm"*): 22 + 55 + 22 = 99 wide | expect: door S 18, panels 22, width 99 | observed: {"S":18,"panels":[["POCKET-B",22],["POCKET-A",22]],"width":99}
+PASS   [1] F2 the pocket stands beside the BUD on the run's line, as high and as deep as the BUD lets it | expect: beside, 770 high | observed: {"pocket":[3200,99,770,580],"bud":[2700,500,770,580]}
+PASS   [1] F2 POCKET DOOR: Doors 1, Hand L (the BUD on that side), Push by default (*"5 - tak"*), Door covers the BUD | expect: {"doors":1,"hand":"L","push":true,"covers":"01"} | observed: {"hand":["L","L"],"pocket":{"doors":1,"hand":"L","push":true,"cls":null,"covers":["u_s7wf9qq"]},"covers":["L: 01"]}
+NOTE   [1] F3 the engine's figures (unitResult(id).hawa, the LISP's mirror) | {"widthMm":99,"KT":580,"panelT":22,"S":18,"TB":572.5,"TH":721.5,"T1":567,"M":100.5,"E1":472,"KT1":580,"cls":null,"covers":["u_s7wf9qq"],"unitNums":["01"],"refusals":["37: #37 HAWA door out of range: TH 721.5 (1200 to 2700)"],"notes":["47: #47 HAWA pocket panels 22: the hardware panel needs 19 mm minimum"]}
+PASS   [1] F3 the right panel reads the engine's door: TB 572.5 on the BUD 500 and an 18 front (KIT_HAWA.lsp's rule; CLAUDE.md's 592 and 599 read the share otherwise), T1 567 (the 560 track caps it on the 580 cabinet), M 100.5, E1 472 | expect: TB 572.5, T1 567, M 100.5, E1 472 | observed: {"panel":{"TB":572.5,"T1":567,"M":100.5,"E1":472},"engine":[572.5,567,100.5,472]}
+PASS   [1] F3 the kit's own words hold on the glass: T1 = TB + 92 + Z3 - M, E1 = TB - M; 414 <= T1 <= 567, S + 3 <= M <= TB - 320; the door the engine cuts is TB wide | expect: T1 567, E1 472, M in 21..252.5 | observed: {"TB":572.5,"T1":567,"M":100.5,"E1":472,"door":[572.5,721.5,18]}
+FRAME  [1] f25-03-hawa-panel.png
+PASS   [1] F6 the door closed: across the pocket and the BUD, TB along the wall, S thick, 3 in front of the fronts' plane | expect: x 572.5, z < 40 | observed: {"min":[2701.5,121,593],"max":[3274,842.5,611],"size":[572.5,721.5,18]}
+FRAME  [1] f25-01-hawa-closed.png
+PASS   [1] F6 Door: Open (a real click): the door turned 90 degrees about its hinge edge and slid E1 into the pocket, its leading edge M proud | expect: the room's t 1, x < 40, z 572.5, out to about M 100.5 past the shut face | observed: {"t":1,"opened":{"min":[3239,121,118],"max":[3257,842.5,690.5],"size":[18,721.5,572.5]},"proud":97.5}
+FRAME  [1] f25-02-hawa-open.png
+PASS   [1] F6 the viewer's Open all (a real click) slides the pocket door in too | expect: the door in the pocket | observed: {"pressed":true,"t":1,"door":[18,721.5,572.5]}
+NOTE   [1] F3 the BUD's Width typed so the door is 750 (read back off the engine) | {"bud":[2522.5,677.5],"pocket":[3200,99],"door":[750,567,278,472]}
+PASS   [1] F3 the 750 door on the 580 run: M 278 proud, T1 567 (the 560 track caps it), deep enough: no #38 (*"raczej zawsze wystaja troche wiec nie ma problemu"*) | expect: TB 750, M 278, T1 567, no #38 | observed: {"door":[750,567,278,472],"refusals":["37: #37 HAWA door out of range: TH 721.5 (1200 to 2700)"],"findings":[{"n":37,"level":"red","text":"#37 . HAWA door out of rangeHP01: HAWA door out of range: TH 721.5 (1200 to 2700)"},{"n":47,"level":"yellow","text":"#47 . HAWA pocket panels 22 on an 18 frontHP01: HAWA pocket panels 22: the hardware panel needs 19 mm minimum"}]}
+PASS   [1] F3 the base run's door is under HAWA's 1200 high: the Check says #37 in words (TH 1200 to 2700), red, the door cut as asked | expect: #37 with the height | observed: {"c37":[{"n":37,"level":"red","text":"#37 . HAWA door out of rangeHP01: HAWA door out of range: TH 721.5 (1200 to 2700)"}],"TH":721.5}
+PASS   [1] F2 the panels 22 on the 18 front said as the owner asked (#47 "HAWA pocket panels 22: the hardware panel needs 19 mm minimum"), a note, not a fault | expect: #47 in words | observed: [{"n":47,"level":"yellow","text":"#47 . HAWA pocket panels 22 on an 18 frontHP01: HAWA pocket panels 22: the hardware panel needs 19 mm minimum"}]
+PASS   [1] F3 the BUD typed 400 deep: KT1 400 is under HAWA's 414, the Check (a real click) says #38 in words, red, and the door is not squashed | expect: #38 red in words, TB still 750 | observed: {"c38":[{"n":38,"level":"red","text":"#38 . HAWA pocket too shallow for the doorHP01: HAWA: the door 750 needs a pocket 415 deep on a 400 cabinet; make the cabinet deeper or the door narrower"}],"engine":{"TB":750,"KT1":400,"refusals":["37: #37 HAWA door out of range: TH 721.5 (1200 to 2700)","38: #38 HAWA: the door 750 needs a pocket 415 deep on a 400 cabinet; make the cabinet deeper or the door narrower"]}}
+FRAME  [1] f25-04-hawa-check38.png
+PASS   [1] F3 the POCKET DOOR section says the same refusal under its figures | expect: 38 on the panel | observed: ["37: #37 HAWA door out of range: TH 721.5 (1200 to 2700)","38: #38 HAWA: the door 750 needs a pocket 415 deep on a 400 cabinet; make the cabinet deeper or the door narrower"]
+NOTE   [1] F25 console errors on the page (leg 1) | none
+
+LEG 2 . THE VANITY, 3 DRAWERS: THE VOID, THE RAILS, THE WORKTOP, THE BASIN, COLUMNS 2, SINKS 2, FLOATING, THE U
+PASS   [2] F14 Library > Kitchen > Bathroom > "Vanity unit, 3 drawers" (row vanity-3, a real click): a VANITY3, 900 x 600 x 500 | expect: VANITY3 900 x 600 x 500 | observed: {"id":"u_nc8t70d","type":"VANITY3","num":"VU01","x":2050,"wall":0,"w":900,"h":600,"d":500}
+PASS   [2] F9 the engine: three equal overlay fronts, RAIL-TOP and RAIL-BOTTOM 100 high in the board's 18, no BACK (*"nie ma plecow ... tylko sa poziome poprzeczki"*) | expect: 3 equal fronts, 2 rails 100 x 18, no BACK | observed: {"fronts":[["VU01-F1",897,197],["VU01-F2",897,197],["VU01-F3",897,197]],"rails":[["RAIL-BOTTOM",900,100,18],["RAIL-TOP",900,100,18]],"back":[]}
+PASS   [2] F8 wall_gap = the clearance 10 + the service void 80 (*"3 - 80"*) | expect: 90 | observed: 90
+PASS   [2] F12 the room: the carcass stands the void off the wall (its back line, the two rails, at plan z = wall_gap), both rails drawn 100 high, no back between them | expect: the rails' back at z 90, 100 high; no BACK | observed: {"rails":[["RAIL-BOTTOM",90,100,18],["RAIL-TOP",90,100,18]],"sides":[108,108]}
+PASS   [2] F10 the worktop at birth, over the vanity, its depth reaching the wall over the void (*"5 - blat osobny element jak worktop"*) | expect: one worktop, d >= 500 + 80 | observed: [{"id":"worktop_icu6oev","d":628,"h":20}]
+PASS   [2] F11 one basin at birth (Sinks 1), set into the top | expect: 1 basin | observed: 1
+PASS   [2] F8 the trap's U in the top drawer's box (*"wyciecie u dookola"*): its bottom notched, its back in two pieces either side of the trap | expect: one box: a notched bottom, two back pieces | observed: [{"bottom":"D3-DNO","outline":16,"backs":["D3-BB-1 329 x 104","D3-BB-2 329 x 104"]}]
+FRAME  [2] f25-05-vanity-room.png
+NOTE   [2] F14 the right panel's section | Vanity
+PASS   [2] F9 Columns 2 (a real click): a divider mid-width and six boxes, three equal fronts a column (*"patrz szafa"*) | expect: DIVIDER, 6 boxes, equal fronts | observed: {"columns":2,"divider":[["DIVIDER",564,482]],"boxes":6}
+PASS   [2] F8 Sinks 2 at columns 2: the U in each column's top box | expect: two boxes cut | observed: [{"bottom":"Z1D3-DNO","outline":16,"backs":["Z1D3-BB-1 104 x 104","Z1D3-BB-2 113 x 104"]},{"bottom":"Z2D3-DNO","outline":16,"backs":["Z2D3-BB-1 113 x 104","Z2D3-BB-2 104 x 104"]}]
+PASS   [2] F11 two 520 basins do not fit the top of the 900 vanity at columns 2: the Check says it in words (#48) and names the width, nothing squashed | expect: #48 with the width | observed: [{"n":48,"level":"yellow","text":"#48 . Basins that do not fit the vanity's topVU01: Two basins 520 wide do not fit the top of a 900 vanity: make the vanity 1120 wide or take one basin."}]
+PASS   [2] F11 the Width typed 1120 as the Check said: two basins at the column centres, #48's width sentence gone | expect: 2 basins, no #48 width | observed: {"w":1120,"basins":2,"c48":[{"n":48,"level":"yellow","text":"#48 . Basins that do not fit the vanity's topVU01: A bowl 150 deep meets the top drawer's box and RAIL-TOP: the deepest bowl that clears the top drawer is 68.5, and the oval stands over the rail (0 from the carcass back, the rail 18); take a shallower or a vessel basin, or a shallower top drawer."}]}
+NOTE   [2] F11 a bowl that meets what stands under the top is said in #48 (KIT_VANITY.lsp D25), with the deepest that clears; never clamped | yellow: #48 . Basins that do not fit the vanity's topVU01: A bowl 150 deep meets the top drawer's box and RAIL-TOP: the deepest bowl that clears the top drawer is 68.5, and the oval stands over the rail (0 from the carcass back, the rail 18); take a shallower or a vessel basin, or a shallower top drawer.
+FRAME  [2] f25-06-vanity-columns2-sinks2.png
+PASS   [2] F13 Floating (a real click) at 300: no plinth, no legs, the carcass hung 300 off the floor | expect: floating, 300, no PLINTH, the sides from y 300 | observed: {"floating":true,"h":300,"plinth":0,"sides":[300,300]}
+FRAME  [2] f25-07-vanity-floating.png
+PASS   [2] F13 the BOM (the toolbar's own button, its Order and BOM tabs): the hanging brackets, 2 (*"6 - do BOM tez"*) | expect: a hanger line | observed: Cabinet hanger 50 kg with wall plate
+PASS   [2] F12 Check: the service void a note (#45 "Service void 80 behind the vanity for the pipes"), never a fault | expect: #45, a note | observed: [{"n":45,"level":"note","text":"#45 . Service void behind a vanityService void 80 behind the vanity for the pipes."}]
+PASS   [2] F8 CNC (the toolbar's own button): the U on each top box's bottom, drawn by the outline road (the outline polygon is the engine's, more than 4 points) | expect: two bottoms, each outline the engine's | observed: [{"id":"Z1D3-DNO","on":true,"points":[16],"engine":16},{"id":"Z2D3-DNO","on":true,"points":[16],"engine":16}]
+FRAME  [2] f25-08-vanity-cnc-u.png (the CNC sheet's own SVG round the part Z1D3-DNO, 1400 x 1541)
+NOTE   [2] F25 console errors on the page (leg 2) | none
+
+LEG 3 . SETTINGS, FRONTS FL, PROFILE REED 20: THE ROOM AND THE FRONTS SHEET
+NOTE   [3] F15 THE STAGE: the T81 kitchen, lay-on, the knob (scripts/t81-kitchen.mjs, through the store) | [["BUD","01",1000,600],["BUD","02",1600,800],["BUDR2","DR01",2400,500],["WUD","WU01",1000,600]]
+PASS   [3] F15 Settings > Settings... > 5.3 Fronts (real clicks): the front types' style slots | expect: the slots | observed: true
+PASS   [3] F15 the style tile Fluted (a real click): the FL controls under the slot | expect: data-front-decoration FL | observed: true
+PASS   [3] F15 the profile is reed by default (*"daj wariant b czyli na styk"*) | expect: reed | observed: reed
+PASS   [3] F15 the reed diameter 20 by its ladder (a real click; *"do tego daj ustawienie srednicy walkow tez"*): the ladder 16, 20, 25 beside the free field | expect: ladder 16 / 20 / 25, the field 20 | observed: {"ladder":["16","20","25"],"shown":"20"}
+FRAME  [3] f25-09-reed-settings.png
+PASS   [3] F15 every door FL reed 20 (*"daj wariant b czyli na styk"*): the valleys 20 apart, the row centred, (w - 2 x 50) / 20 reeds and their two margin valleys | expect: the reed law on every leaf the engine cuts | observed: ["01-F 595.5 x 770: reed 20, 25 valleys (formula 24 reeds), first [57.75,0], ok true","02-FL 397 x 770: reed 20, 15 valleys (formula 14 reeds), first [58.5,0], ok true","02-FR 397 x 770: reed 20, 15 valleys (formula 14 reeds), first [58.5,0], ok true","DR01-F1 497 x 382: reed 20, 20 valleys (formula 19 reeds), first [58.5,0], ok true","DR01-F2 497 x 382: reed 20, 20 valleys (formula 19 reeds), first [58.5,0], ok true","WU01-F 597 x 720: reed 20, 25 valleys (formula 24 reeds), first [58.5,0], ok true"]
+PASS   [3] F15 a leaf the reeds cannot be cut on is refused in words, never squashed (0 refused here: none); a remainder the diameter does not divide is said | expect: each refused leaf named in a warning | observed: {"refused":[],"words":["FRONT_DECORATION_REED_REMAINDER: 01-F: Reeds of 20 mm do not divide the 495.5 mm between the margins: 24 reeds fit and 15.5 mm is over, so the row is centred and each side margin is 57.75 mm.","FRONT_DECORATION_REED_REMAINDER: 02-FL: Reeds of 20 mm do not divide the 297 mm between the margins: 14 reeds fit and 17 mm is over, so the row is centred and each side margin is 58.5 mm.","FRONT_DECORATION_REED_REMAINDER: 02-FR: Reeds of 20 mm do not divide the 297 mm between the margins: 14 reeds fit and 17 mm is over, so the row is centred and each side margin is 58.5 mm.","FRONT_DECORATION_REED_REMAINDER: DR01-F1: Reeds of 20 mm do not divide the 397 mm between the margins: 19 reeds fit and 17 mm is over, so the row is centred and each side margin is 58.5 mm."]}
+NOTE   [3] F15 the board left under the valley, the front less the radius (#46 "Reeds leave N mm under the valley" when under 10) | [["01-F",22,12],["02-FL",22,12],["02-FR",22,12],["DR01-F1",22,12]]
+PASS   [3] F15 the room draws the reeds: every reeded leaf a decorated solid (frontDecorationSolid, marked FL), built from the reed record | expect: the solids of 01-F, 02-FL, 02-FR, DR01-F1, DR01-F2, WU01-F | observed: [{"id":"01-F","style":"FL","vertices":6984},{"id":"02-FL","style":"FL","vertices":4104},{"id":"02-FR","style":"FL","vertices":4104},{"id":"DR01-F1","style":"FL","vertices":5544},{"id":"DR01-F2","style":"FL","vertices":5544},{"id":"WU01-F","style":"FL","vertices":6984}]
+FRAME  [3] f25-10-reed-room.png
+PASS   [3] F15 the fronts sheet draws the reeds as T81 draws the grooves (front-decoration entities, at least one per reed) | expect: >= 120 | observed: 120
+FRAME  [3] f25-11-reed-fronts-sheet.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+NOTE   [3] F25 console errors on the page (leg 3) | none
+
+LEG 4 . THE FREE PANEL IN HAND: UP 200, ON THE CHIMNEY'S FRONT 1200, THICKNESS 36
+NOTE   [4] F17 THE STAGE: a 5000 x 3000 room 2500 high, a chimney on wall 1 at x 2500, 600 wide, 350 deep (the store) | {"chimney":"chimney_4ze1iv5"}
+PASS   [4] F16 Library > Kitchen > Extras > Free-standing panel (real clicks): a FREE_PANEL in the room | expect: FREE_PANEL | observed: {"id":"u_2gffqld","type":"FREE_PANEL","num":"FP01","x":3100,"wall":0,"w":800,"h":400,"d":18}
+NOTE   [4] F25 the room's pointerless meshes (a chimney's faces, Room.jsx raycast null) given a no-op for the walk's pixel finder | 2
+PASS   [4] F16 the panel grabbed and dragged UP 200 by a real mouse (mount_height read back, within one pixel: 3.9 mm) | expect: mount 200, x 3100 | observed: {"before":[0,3100],"after":[200,3100],"drag":{"from":{"x":723,"y":476,"n":1471},"to":{"x":723.04,"y":397.78,"pxPerMm":0.38629946495600603}}}
+FRAME  [4] f25-12-panel-dragged-up.png
+PASS   [4] F17 Attach to: the chimney's front (the native select, a real click, the arrows, Enter) | expect: x 2500, inset 340 | observed: {"picked":"Chimney on wall 1, front","unit":[2500,340,0]}
+PASS   [4] F17 Length typed 1200 on the chimney's front: 1200, no notice, x 2500 kept, no UNIT_OVERLAP | expect: 1200, silent, x 2500 | observed: {"field":"1200","length":null,"w":1200,"x":2500,"said":[],"codes":[]}
+FRAME  [4] f25-13-panel-chimney-1200.png
+NOTE   [4] F18 the thickness ladder beside the field (PROPOSED 18, 22, 25, 30, 36; slice D2) | ["18","22","25","30","36"]
+PASS   [4] F18 Thickness 36: the engine's board 36 and box 36, the room's board 36, the length kept | expect: FP t 36, box.d 36, the mesh 36 thick | observed: {"thick":{"ok":true,"via":"ladder"},"part":{"t":36,"d":36},"mesh":{"x":[0,1200],"y":[0,400],"z":[0,36]},"thin":36,"length":1200}
+FRAME  [4] f25-14-panel-thickness-36.png
+NOTE   [4] F25 console errors on the page (leg 4) | none
+
+LEG 5 . OUTPUT, DRAWINGS: THE LOGO, THE CHAINS, THE KNOB, THE PLINTH, THE TRACED RUNNER, THE PDF
+NOTE   [5] F22 THE STAGE: the T81 kitchen, in-frame, NO handle chosen (scripts/t81-kitchen.mjs with knob false, through the store) | {"units":[["BUD","01",600,558],["BUD","02",800,558],["BUDR2","DR01",500,558],["WUD","WU01",600,400]],"handle":{"handle":null,"handles":null,"runners":{"system":null,"variant":null}}}
+NOTE   [5] F25 the sheet buttons | ["3D","Wall A . Fronts","Wall A . Without fronts","Wall A . X-ray","Plan . base units","Plan . wall units","Wall A . Sections A-A","Visualisation","Cut list and materials"]
+PASS   [5] F20 Title block > Logo > "Choose image" (a real click): the file chooser opened, took the PNG, the row shows it | expect: a chooser, the preview | observed: {"opened":true,"preview":true}
+FRAME  [5] f25-15-logo-row.png
+PASS   [5] F20 the logo on every sheet's title block: one image on SHEET_MUTED (data-cc logo), fitted into the 24 x 24 box keeping its 3:2 (24 x 16) | expect: one 24 x 16 image per sheet | observed: [{"sheet":"3D","n":1,"wh":[24,16]},{"sheet":"Wall A . Fronts","n":1,"wh":[24,16]},{"sheet":"Wall A . Without fronts","n":1,"wh":[24,16]},{"sheet":"Wall A . X-ray","n":1,"wh":[24,16]},{"sheet":"Plan . base units","n":1,"wh":[24,16]},{"sheet":"Plan . wall units","n":1,"wh":[24,16]},{"sheet":"Wall A . Sections A-A","n":1,"wh":[24,16]},{"sheet":"Visualisation","n":1,"wh":[24,16]},{"sheet":"Cut list and materials","n":1,"wh":[24,16]}]
+PASS   [5] F21 the BUDR2's height chain FRONT . GAP . FRONT: 363 . 3 . 360 read off the glass (*"nie pokazuje dokladnie wymiarow frontow i przerw"*), no 366 | expect: 363, 3, 360; no 366 | observed: ["600","600","800","500","1900","100","770","19","38","573","720","2220","280","360","3","363","676","726","22","556","44","376.5","3","376.5","44","456","22","556"]
+PASS   [5] F21 the BUD 800's width chain LEAF . GAP . LEAF: 376.5 . 3 . 376.5 | expect: 376.5 twice and the gaps | observed: ["3","376.5","3","376.5"]
+PASS   [5] F22 no handle chosen: the default knob of 30 on every leaf (*"nie widac wogole zeby bylo jakiekolwiek handles"*), HANDLES circles of r 15 / 15 | expect: 6 leaves, each a knob of r 1 | observed: {"leaves":6,"knobs":6,"bare":0,"radii":[1],"scale":15}
+FRAME  [5] f25-16-fronts-sheet.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   [5] F24 the base plan: the plinth ONE dashed line on PLINTH_HIDDEN (*"bedzie jedna linia typu przerywana a nie podwojna"*), no second face beside it, its legend row | expect: dashed PLINTH_HIDDEN, single, in the legend | observed: {"plinthHidden":1,"dashed":1,"doubled":0,"shelvesDashed":0,"legend":true}
+FRAME  [5] f25-17-plan-base.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+NOTE   [5] F23 the section A-A at the kitchen's 558: the BUDR2's NL500 T has no model in the bucket (E4), so the BOM's symbol stands (RUNNERS lines) | 3
+NOTE   [5] F23 the BUDR2's Depth typed 460 (a real click, Ctrl+A, the digits, Enter): its runner | {"field":"460","d":460,"runners":["Drawer runners","Runner synchronisation rods"]}
+PASS   [5] F23 the section A-A through the BUDR2 at 460: the MOVENTO NL400 T's traced side silhouette, not the symbol (*"dalem ci przeciez dxf z dokladnymi rysunkami"*; many RUNNERS lines where the symbol has a few) | expect: 40 or more RUNNERS lines (the symbol at 558: 3) | observed: 92
+FRAME  [5] f25-18-section.png (420 x 297 mm at 4 px per mm: 1680 x 1188)
+PASS   [5] F25 the PDF (the window's "Drawing set (PDF)", a real click), read back: one page per sheet | expect: 9 | observed: 9 pages, 12695630 bytes
+PASS   [5] F20 the PDF embeds the logo on every page (pdfimages: the 96 x 64 PNG, one per page) | expect: 9 | observed: 9 pages carry it
+NOTE   [5] F25 pdfinfo | Producer: jsPDF 2.5.2; Pages: 9; Page size: 1190.55 x 841.89 pts (A3)
+NOTE   [5] F21 the PDF's own text carries the chain figures (pdftotext) | {"360":true,"363":true,"376.5":true}
+NOTE   [5] F20 the browser's reload; the page's "leave this page?" answered Leave | 1 question(s)
+PASS   [5] F20 after a reload, a new job: the logo is still on the sheet (kept with the company on this computer) | expect: the image | observed: 1
+NOTE   [5] F25 console errors on the page (leg 5) | none
+
+FRAMES (18): f25-03-hawa-panel.png, f25-01-hawa-closed.png, f25-02-hawa-open.png, f25-04-hawa-check38.png, f25-05-vanity-room.png, f25-06-vanity-columns2-sinks2.png, f25-07-vanity-floating.png, f25-08-vanity-cnc-u.png, f25-09-reed-settings.png, f25-10-reed-room.png, f25-11-reed-fronts-sheet.png, f25-12-panel-dragged-up.png, f25-13-panel-chimney-1200.png, f25-14-panel-thickness-36.png, f25-15-logo-row.png, f25-16-fronts-sheet.png, f25-17-plan-base.png, f25-18-section.png
+T82: 55 steps, 55 pass, 0 fail

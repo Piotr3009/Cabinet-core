@@ -331,6 +331,8 @@ export const NEW_FILES = [
   'test/turn82-f16-panel-recess.test.js',
   // T82 F21 (25.10.2026): a vertical figure prints where the drawing puts it (after the review)
   'test/turn82-f21-rotated-figures.test.js',
+  // T82 F25 (25.10.2026): the walk, real mouse on the built app
+  'scripts/t82-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -38,6 +38,17 @@
 // it: absent, the step is a FAIL naming the hook and the slice (a WAIT with
 // --prep, the night's harness proof before the slices land).
 //
+// THE NUMBERS THE LEGS EXPECT are the engine's laws as the slices cut them:
+// leg 1 on an 18 front (the stage's front type), the pocket 22 + 55 + 22, the
+// door TB 572.5, T1 567 (the 560 track caps it), M 100.5, E1 472
+// (KIT_HAWA.lsp, not CLAUDE.md's 592 or 599); the 750 door on the 580 run M 278
+// and no #38; #38 where HAWA refuses (the BUD made 400 deep, KT1 under 414);
+// #37 for a base run's door (TH 721.5 under HAWA's 1200). Leg 2: the U splits
+// the top box's back in two and notches its bottom; two basins at columns 2
+// need the width #48 names. Leg 3: a drawer front's reeds meet its back
+// screws and are refused in words. Leg 5: the traced runner on the BUDR2 at
+// 460 (the NL500 T of the 558 has no model, E4).
+//
 //   node scripts/t82-walk.mjs --build --serve     build dist/, serve it on E2E_PORT (4173), walk, stop it
 //   npx vite build; npx vite preview --port 4173 --strictPort &   then: node scripts/t82-walk.mjs
 //   node scripts/t82-walk.mjs --legs 1,5          some legs only (also T82_LEGS=1,5)
@@ -103,6 +114,7 @@ if (flag('serve') && !(await served())) {
   for (let t = 0; t < 120 && !(await served()); t += 1) await new Promise((r) => { setTimeout(r, 500); });
 }
 const stopPreview = () => { if (preview) { try { process.kill(-preview.pid, 'SIGTERM'); } catch { /* gone */ } preview = null; } };
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { stopPreview(); process.exit(130); });
 if (!(await served())) {
   process.stdout.write(`No app at ${BASE}: build it and serve it (npx vite build; npx vite preview --port ${PORT} --strictPort), or pass --build --serve.\n`);
   stopPreview();
@@ -183,6 +195,35 @@ async function frameOf(svg, name) {
   });
   frames.push(name);
   push('FRAME', 'F25', `${name} (${wMm} x ${hMm} mm at ${PX_PER_MM} px per mm: ${W} x ${H})`);
+}
+/**
+ * One part of the CNC sheet framed from the sheet's own SVG: the root <svg> cloned with its viewBox set to
+ * the part's box in the root's user space (the pan and zoom included), painted on the sheet's dark ground at
+ * 1400 px wide in the second browser. A clip of the window would catch the layer legend floating over it.
+ */
+async function cncPartFrame(page, partId, name) {
+  const got = await page.ask(`(() => { const g = document.querySelector('[data-cnc-part=${j(partId)}]'); if (!g) return null;
+    let root = g.ownerSVGElement; while (root && root.ownerSVGElement) root = root.ownerSVGElement; if (!root) return null;
+    const b = g.getBBox(); const m = root.getScreenCTM().inverse().multiply(g.getScreenCTM());
+    const pts = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].map(([x, y]) => { const q = root.createSVGPoint(); q.x = x; q.y = y; return q.matrixTransform(m); });
+    const xs = pts.map((q) => q.x); const ys = pts.map((q) => q.y); const w = Math.max(...xs) - Math.min(...xs); const h = Math.max(...ys) - Math.min(...ys); const pad = 0.06 * Math.max(w, h);
+    const vb = [Math.min(...xs) - pad, Math.min(...ys) - pad, w + 2 * pad, h + 2 * pad]; const W = 1400; const H = Math.max(200, Math.round(W * vb[3] / vb[2]));
+    const c = root.cloneNode(true); c.setAttribute('viewBox', vb.join(' ')); c.setAttribute('width', String(W)); c.setAttribute('height', String(H)); c.removeAttribute('style'); c.removeAttribute('class');
+    c.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); return { svg: c.outerHTML, W, H }; })()`);
+  if (!got) return shot(page, name);
+  if (!painter) painter = await launch({ width: got.W, height: got.H, port: 9600 + Math.floor(Math.random() * 300) });
+  await painter.send('Emulation.setDeviceMetricsOverride', {
+    width: got.W, height: got.H, deviceScaleFactor: 1, mobile: false,
+  });
+  const file = join(SCRATCH, 'cnc.html');
+  writeFileSync(file, `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#131313">${got.svg}</body></html>`);
+  await painter.goto(`file://${file}`);
+  await painter.sleep(300);
+  await painter.screenshot(`${OUT}${name}`, {
+    x: 0, y: 0, width: got.W, height: got.H, scale: 1,
+  });
+  frames.push(name);
+  push('FRAME', 'F25', `${name} (the CNC sheet's own SVG round the part ${partId}, ${got.W} x ${got.H})`);
 }
 /** The room camera put in front of some units (wall 1 faces +z), so a frame shows them whole. */
 const frameOn = (page, ids, { side = 0.35, up = 0.22, pad = 1.35 } = {}) => page.ask(`(() => { const v = window.__cc.views && window.__cc.views.room; if (!v) return null; const T = v.three; const ids = ${j(ids)};
@@ -374,11 +415,19 @@ async function checkClose(page) {
   if (x) await clickWith(page, x.x, x.y); else await page.press('[data-check-button]');
   await until(page, '!document.querySelector(\'[data-check-panel]\')', 3000);
 }
-async function bomText(page) {
+/** The BOM opened by the toolbar's own button; its text, and each tab's named (Order, BOM) pressed in turn (real clicks). */
+async function bomText(page, tabs = []) {
   await toolbar(page, '[...document.querySelectorAll(\'button[title="Bill of materials"]\')].find((b) => b.offsetParent)');
   await until(page, `${UI}.bomOpen === true`, 5000);
   await page.sleep(1200);
-  return page.ask('document.body.innerText || \'\'');
+  let text = await page.ask('document.body.innerText || \'\'');
+  for (const tab of tabs) {
+    if (!(await page.has(tab))) continue;
+    await page.press(tab);
+    await page.sleep(1200);
+    text += `\n${await page.ask('document.body.innerText || \'\'')}`;
+  }
+  return text;
 }
 /** The BOM shut by its own x (the toolbar's BOM button stands under the open panel). (scripts/t80-walk.mjs) */
 async function bomClose(page) {
@@ -436,7 +485,8 @@ const partsOf = (page, id) => page.ask(`(() => { const r = ${S}.unitResult(${j(i
 /**
  * Every mesh of a unit in the room, its box in the PLAN's millimetres (x along wall 1 from
  * the room's corner, y up from the floor, z out of wall 1: the world is the room centred on
- * its origin, Room.jsx 189), by its piece id, and the basins by their own mark.
+ * its origin, Room.jsx 189), by its piece id, and the basins by their own mark (Basin.jsx: a
+ * group whose `userData.ccBasin` is the vanity's id, mounted with the worktop, not in the unit).
  */
 const sceneOf = (page, unitId) => page.ask(`(() => { const v = window.__cc.views && window.__cc.views.room; if (!v) return null; const T = v.three;
   const cs = (${S}.project.room || {}).corners || []; const xs = cs.map((c) => c.x); const ys = cs.map((c) => c.y);
@@ -445,11 +495,11 @@ const sceneOf = (page, unitId) => page.ask(`(() => { const v = window.__cc.views
   const hidden = (o) => { for (let a = o; a; a = a.parent) if (a.visible === false) return true; return false; };
   v.scene.updateMatrixWorld(true);
   v.scene.traverse((o) => { if (!o.isMesh || hidden(o)) return; let a = o; while (a && (!a.userData || a.userData.ccUnitId == null)) a = a.parent;
-    const mine = (a && a.userData.ccUnitId === ${j(unitId)}) || (o.userData && o.userData.ccBasinUnit === ${j(unitId)});
-    if (!mine) return;
     let basin = null; for (let b = o; b; b = b.parent) if (b.userData && b.userData.ccBasin != null) { basin = b; break; }
+    const mine = (a && a.userData.ccUnitId === ${j(unitId)}) || (basin && basin.userData.ccBasin === ${j(unitId)});
+    if (!mine) return;
     if (basin && !seen.has(basin.uuid)) { seen.add(basin.uuid); basins += 1; }
-    const k = basin ? 'BASIN-' + basin.userData.ccBasin : (o.userData && o.userData.ccPanelId);
+    const k = basin ? 'BASIN-' + basin.uuid.slice(0, 8) : (o.userData && o.userData.ccPanelId);
     if (!k) return; const b = new T.Box3().setFromObject(o);
     const plan = (q) => [q.x * 1000 + cx, q.y * 1000, q.z * 1000 + cz]; const mn = plan(b.min); const mx = plan(b.max); const p = out[k];
     out[k] = p ? { min: p.min.map((x, i) => Math.min(x, mn[i])), max: p.max.map((x, i) => Math.max(x, mx[i])) } : { min: mn, max: mx }; });
@@ -533,22 +583,26 @@ function logoPng(file) {
   return { file, w: W, h: H };
 }
 
-/** A real drag of a piece UP by `upMm`, on the plane through the piece's own back line (CLAUDE.md F16). */
+/**
+ * A real drag of a piece UP by `upMm`, on the plane the app drags a free panel on: the vertical
+ * plane through the panel's OWN back line (CLAUDE.md F16), which is its unit group's origin plane
+ * (D1's report: `scripts/t75-harness.mjs AIM` with depthMm 0 for a panel).
+ */
 const AIM_UP = `(function (unitId, panelId, fromX, fromY, upMm) {
   const v = window.__cc.views.room; const T = v.three; let g = null; let mesh = null;
   v.scene.traverse((o) => { if (!g && o.userData && o.userData.ccUnitId === unitId) g = o; });
   if (!g) return null; g.traverse((o) => { if (!mesh && o.isMesh && o.userData && o.userData.ccPanelId === panelId) mesh = o; });
   if (!mesh) return null; g.updateMatrixWorld(true);
   const inward = new T.Vector3(0, 0, 1).transformDirection(g.matrixWorld).normalize();
-  const box = new T.Box3().setFromObject(mesh); let back = Infinity;
-  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) back = Math.min(back, new T.Vector3(x, y, z).dot(inward));
-  const plane = new T.Plane(inward.clone(), -back);
+  const origin = new T.Vector3().setFromMatrixPosition(g.matrixWorld);
+  const plane = new T.Plane().setFromNormalAndCoplanarPoint(inward, origin);
   const r = v.gl.domElement.getBoundingClientRect();
   const ray = new T.Raycaster(); ray.setFromCamera(new T.Vector2(((fromX - r.left) / r.width) * 2 - 1, -(((fromY - r.top) / r.height) * 2 - 1)), v.camera);
   const hit = new T.Vector3(); if (!ray.ray.intersectPlane(plane, hit)) return null;
   const px = (p) => { const q = p.clone().project(v.camera); return { x: r.left + (q.x * 0.5 + 0.5) * r.width, y: r.top + (-q.y * 0.5 + 0.5) * r.height }; };
   const to = px(hit.clone().add(new T.Vector3(0, upMm / 1000, 0))); const a = px(hit); const b = px(hit.clone().add(new T.Vector3(0, 0.001, 0)));
-  return { x: Math.round(to.x), y: Math.round(to.y), pxPerMm: Math.hypot(b.x - a.x, b.y - a.y) };
+  // The drop at the exact point (CDP takes a fractional pixel), so the hand asks for 200 and not a pixel's rounding of it.
+  return { x: Math.round(to.x * 100) / 100, y: Math.round(to.y * 100) / 100, pxPerMm: Math.hypot(b.x - a.x, b.y - a.y) };
 })`;
 async function dragUp(page, unitId, panelId, upMm) {
   const at = await reach(page, unitId, panelId);
@@ -561,8 +615,21 @@ async function dragUp(page, unitId, panelId, upMm) {
 }
 
 // === LEG 1 · HAWA, THE POCKET DOOR (F2, F3, F6) ============================
+/** The engine's own figures of a pocket (`unitResult(id).hawa`, A2's one derivation), its first door. */
+const hawaOf = (page, id) => page.ask(`(() => { const r = ${S}.unitResult(${j(id)}); const h = r && r.hawa; if (!h) return null; const d = (h.doors || [])[0] || {};
+  return { widthMm: h.widthMm, KT: h.KT, panelT: h.panel && h.panel.t, S: d.S, TB: d.TB, TH: d.TH, T1: d.T1, M: d.M, E1: d.E1, KT1: d.KT1, cls: d.cls, covers: d.covers, unitNums: d.unitNums,
+    refusals: (h.refusals || []).map((x) => x.n + ': ' + x.message), notes: (h.notes || []).map((x) => x.n + ': ' + x.message) }; })()`);
+/** The right panel's figure k of the POCKET DOOR section, read off the glass. */
+const figureOf = (page, k) => page.ask(`(() => { const e = [...document.querySelectorAll('[data-pocket-figure-value="${k}"]')].find((x) => x.offsetParent); if (!e) return null; const m = (e.textContent || '').replace(/,/g, '').match(/-?\\d+(?:\\.\\d+)?/); return m ? Number(m[0]) : null; })()`);
+const doorBoxOf = async (page, id) => { const s = await sceneOf(page, id); const k = s && Object.keys(s.pieces).find((x) => /POCKET-DOOR/.test(x)); return k ? s.pieces[k] : null; };
+const doorTOf = (page, id) => page.ask(`(() => { const v = window.__cc.views && window.__cc.views.room; if (!v) return null; let t = null; v.scene.traverse((o) => { if (t == null && o.userData && o.userData.ccPocketDoor != null) { let a = o; while (a && (!a.userData || a.userData.ccUnitId == null)) a = a.parent; if (a && a.userData.ccUnitId === ${j(id)}) t = o.userData.ccPocketDoorT; } }); return t; })()`);
 async function leg1(page) {
   await stageRoom(page, 6000, 3000, 2500);
+  // THE STAGE: the project's fronts on an 18 board (a new PRO job's front type is 25), so the pocket's
+  // panels take the owner's 22 (*"jesli jest 18 mm to daj zawsze 22 mm"*) and the door is the LISP's 572.5.
+  await page.ask(`${S}.setFrontType('f1', { material_id: 'generic-18' })`);
+  await page.sleep(600);
+  note('F2', 'THE STAGE: a 6000 x 3000 room 2500 high; front type f1 on the generic 18 board (the store)', j(await page.ask(`(() => { const t = ((${S}.project.design.fronts || {}).types || [])[0] || {}; return { id: t.id, material: t.material_id }; })()`)));
   // A BUD 500 on a 580 run: the library's own row, its Width and Depth typed.
   const bud = await addFromLibrary(page, { category: 'Kitchen', groups: ['base-units'], ids: ['door-base'] });
   check('F2', 'Library > Kitchen > Base units > Standard (real clicks): a BUD in the room', bud.unit && bud.unit.type === 'BUD', 'one BUD', j(bud.unit || bud.why));
@@ -574,211 +641,270 @@ async function leg1(page) {
   const tw = await typeInto(page, '[data-unit-size-field="width"]', 500);
   const td = await typeInto(page, '[data-unit-size-field="depth"]', 580);
   const b0 = await unitRow(page, budId);
-  check('F2', 'its Width typed 500 and its Depth 580 (a real click, Ctrl+A, the digits, Enter)', b0.w === 500 && b0.d === 580, '500 x 580', `fields ${j([tw.shown, td.shown])}; unit ${j(b0)}`);
+  check('F2', 'its Width typed 500 and its Depth 580 (a real click, Ctrl+A, the digits, Enter)', b0.w === 500 && b0.d === 580, '500 x 580', `fields ${j([tw.shown, td.shown])}; unit ${j([b0.x, b0.w, b0.h, b0.d])}`);
 
-  // THE POCKET, from the library.
-  const pk = await addFromLibrary(page, { category: 'Kitchen', ids: ['hawa-pocket', 'HAWA_POCKET'], label: /HAWA pocket/i });
+  // THE POCKET, from the library (the BUD selected: the row puts the pocket beside it).
+  const pk = await addFromLibrary(page, { category: 'Kitchen', ids: ['hawa-pocket'], label: /HAWA pocket/i });
   if (!pk.unit) { push(PREP ? 'WAIT' : 'FAIL', 'F2', 'Library: the row "HAWA pocket (Concepta III)" (slices A2, B4)', 'a HAWA_POCKET in the room', pk.why || 'no unit'); return; }
   await closeLibrary(page);
+  await page.sleep(1200);
   const pocketId = pk.unit.id;
   check('F2', `Library: "HAWA pocket (Concepta III)" (row ${pk.entry}, a real click): a HAWA_POCKET in the room`, pk.unit.type === 'HAWA_POCKET', 'HAWA_POCKET', j(pk.unit));
   let p0 = await unitRow(page, pocketId);
-  // Beside the BUD: if the library put it elsewhere, a real drag along the wall puts it there.
-  const budNow = await unitRow(page, budId);
-  const gapRight = p0.x - (budNow.x + budNow.w);
-  const gapLeft = budNow.x - (p0.x + p0.w);
-  if (Math.abs(gapRight) > 0.5 && Math.abs(gapLeft) > 0.5) {
+  let budNow = await unitRow(page, budId);
+  const besideNow = () => near(p0.x, budNow.x + budNow.w) || near(p0.x + p0.w, budNow.x);
+  if (!besideNow()) {
+    const gapRight = p0.x - (budNow.x + budNow.w);
+    const gapLeft = budNow.x - (p0.x + p0.w);
     const delta = Math.abs(gapRight) <= Math.abs(gapLeft) ? -gapRight : gapLeft;
     await safeRays(page);
     const drag = await dragAlong(page, pocketId, (await grabIds(page, pocketId))[0], delta);
-    note('F2', `the pocket was not beside the BUD (${j({ pocket: p0.x, bud: [budNow.x, budNow.x + budNow.w] })}): a real drag along the wall by ${delta}`, j(drag));
+    note('F2', `the library put the pocket at x ${p0.x}, not beside the BUD (${budNow.x} to ${budNow.x + budNow.w}): a real drag along the wall by ${delta}`, j(drag));
+    await page.sleep(1200);
     p0 = await unitRow(page, pocketId);
+    budNow = await unitRow(page, budId);
   }
-  const P0 = await partsOf(page, pocketId);
-  const pocketParts = (P0 || []).filter((p) => /^POCKET-/.test(p.part || '') || /^POCKET-/.test(p.id || ''));
-  const pa = pocketParts.find((p) => /POCKET-A$/.test(p.part || p.id)) || pocketParts.find((p) => /POCKET-B/.test(p.part || p.id));
-  const pbs = pocketParts.filter((p) => /POCKET-B/.test(p.part || p.id));
-  const tA = pa ? pa.t : null; const tB = pbs.length ? pbs[pbs.length - 1].t : null;
-  check('F2', 'the pocket\'s parts: POCKET-A, POCKET-B, POCKET-TOP, POCKET-BOTTOM, POCKET-DOOR', ['POCKET-A', 'POCKET-B', 'POCKET-TOP', 'POCKET-BOTTOM', 'POCKET-DOOR'].every((n) => pocketParts.some((p) => (p.part || p.id).startsWith(n))),
-    'the five parts', j(pocketParts.map((p) => `${p.id} ${p.part} ${p.w} x ${p.h} x ${p.t}`)));
-  check('F2', 'its width is A + 55 + B (the panels in the front material: 22 on an 18 front)', near(p0.w, (tA || 0) + 55 + (tB || 0)), `${tA} + 55 + ${tB}`, `${p0.w}`);
-  const beside = near(p0.x, budNow.x + budNow.w) || near(p0.x + p0.w, budNow.x);
-  check('F2', 'the pocket stands beside the BUD, on the run\'s line, as high as it', beside && near(p0.h, budNow.h, 1), `beside, ${budNow.h} high`, j({ pocket: [p0.x, p0.w, p0.h], bud: [budNow.x, budNow.w, budNow.h] }));
+  const parts = await partsOf(page, pocketId);
+  const pocketParts = (parts || []).filter((p) => /^POCKET-/.test(p.part || '') || /^POCKET-/.test(p.id || ''));
+  const named = (re) => pocketParts.filter((p) => re.test(p.id) || re.test(p.part || ''));
+  const panels = named(/^POCKET-(A|B)(-[LR])?$/);
+  const door = named(/^POCKET-DOOR/)[0];
+  check('F2', 'the pocket\'s cut parts: POCKET-A, POCKET-B, POCKET-TOP, POCKET-BOTTOM, POCKET-DOOR (one door: A and B)', ['POCKET-A', 'POCKET-B', 'POCKET-TOP', 'POCKET-BOTTOM', 'POCKET-DOOR'].every((n) => named(new RegExp(`^${n}`)).length > 0),
+    'the five parts', j(pocketParts.map((p) => `${p.id} ${p.w} x ${p.h} x ${p.t}`)));
+  const S0 = door ? door.t : null;
+  check('F2', 'the pocket panels in the FRONT material, 22 on an 18 front (*"jesli jest 18 mm to daj zawsze 22 mm"*): 22 + 55 + 22 = 99 wide', S0 === 18 && panels.length === 2 && panels.every((p) => p.t === 22) && near(p0.w, 99),
+    'door S 18, panels 22, width 99', j({ S: S0, panels: panels.map((p) => [p.id, p.t]), width: p0.w }));
+  check('F2', 'the pocket stands beside the BUD on the run\'s line, as high and as deep as the BUD lets it', besideNow() && near(p0.h, budNow.h, 1),
+    `beside, ${budNow.h} high`, j({ pocket: [p0.x, p0.w, p0.h, p0.d], bud: [budNow.x, budNow.w, budNow.h, budNow.d] }));
 
   // THE RIGHT PANEL: POCKET DOOR.
   await selectUnit(page, pocketId);
-  const title = await sectionLikeOpen(page, /pocket/i);
   if (!(await need(page, 'F2', 'A3', 'the right panel\'s POCKET DOOR section', sectionLike(/pocket/i)))) return;
-  note('F2', 'the right panel\'s section', title);
   const handWanted = near(p0.x, budNow.x + budNow.w) ? 'L' : 'R';
-  if (await need(page, 'F2', 'A3', `Hand ${handWanted} (the door covers the BUD on that side)`, `document.querySelector('[data-pocket-hand="${handWanted}"]')`)) {
-    if (await page.ask(`(document.querySelector('[data-pocket-hand="${handWanted}"]') || {}).getAttribute?.('aria-pressed') !== 'true'`)) await page.press(`[data-pocket-hand="${handWanted}"]`);
-  }
+  const handNow = async () => page.ask('((document.querySelector(\'[data-pocket-hand]\') || { getAttribute: () => null }).getAttribute(\'data-pocket-hand\'))');
+  const h0 = await handNow();
+  if (h0 !== handWanted && await page.has(`[data-pocket-hand-chip="${handWanted}"]`)) await page.press(`[data-pocket-hand-chip="${handWanted}"]`);
+  const covers = await page.ask('[...document.querySelectorAll(\'[data-pocket-covers-side]\')].map((e) => e.getAttribute(\'data-pocket-covers-side\') + \': \' + e.textContent.replace(/\\s+/g, \' \').trim())');
   const p1 = await unitRow(page, pocketId);
-  check('F2', 'params.pocket: one door, its hand, Push by default, covers the BUD', p1.pocket && p1.pocket.doors === 1 && p1.pocket.hand === handWanted && p1.pocket.push === true && (p1.pocket.covers || []).includes(budId),
-    j({ doors: 1, hand: handWanted, push: true, covers: [budId] }), j(p1.pocket));
-  const fig = async (k) => page.ask(`(() => { const e = document.querySelector('[data-pocket-figure="${k}"]'); if (!e) return null; const m = (e.textContent || e.value || '').match(/-?\\d+(?:\\.\\d+)?/); return m ? Number(m[0]) : null; })()`);
-  if (await need(page, 'F3', 'A3', 'the derived figures TB, T1, M, E1 read-only', 'document.querySelector(\'[data-pocket-figure="TB"]\')')) {
-    const F = {
-      TB: await fig('TB'), T1: await fig('T1'), M: await fig('M'), E1: await fig('E1'),
-    };
-    const door = pocketParts.find((p) => /POCKET-DOOR/.test(p.part || p.id));
-    const Z3 = Number(await page.ask(`((${PROFILE}.hawa || {}).gaps || {}).Z3 ?? 3`));
-    const Sft = door ? door.t : null;
-    note('F3', 'the right panel reads (CLAUDE.md F25 names TB 592; F3\'s own test names 599 = 500 + 99: the engine decides, the walk reads both)', j({ ...F, door: door && [door.w, door.h, door.t] }));
-    check('F3', 'TB on the panel is the door the engine cuts (POCKET-DOOR width)', door && near(F.TB, door.w), door ? `${door.w}` : 'a door', `${F.TB}`);
-    check('F3', 'T1 = TB + 92 + Z3 - M and E1 = TB - M (the kit\'s own words)', near(F.T1, F.TB + 92 + Z3 - F.M) && near(F.E1, F.TB - F.M), `T1 ${F.TB + 92 + Z3 - F.M}, E1 ${F.TB - F.M}`, `T1 ${F.T1}, E1 ${F.E1}`);
-    check('F3', 'HAWA\'s limits hold: 414 <= T1 <= 567, S + 3 <= M <= TB - 320, T1 <= the BUD\'s 580', F.T1 >= 414 && F.T1 <= 567 && F.M >= (Sft || 18) + 3 && F.M <= F.TB - 320 && F.T1 <= 580,
-      `T1 in 414..567, M in ${(Sft || 18) + 3}..${F.TB - 320}`, j(F));
-  }
+  check('F2', `POCKET DOOR: Doors 1, Hand ${handWanted} (the BUD on that side), Push by default (*"5 - tak"*), Door covers the BUD`, p1.pocket && p1.pocket.doors === 1 && p1.pocket.hand === handWanted && p1.pocket.push === true && covers.some((c) => c.startsWith(`${handWanted}:`) && c.includes(budNow.num)),
+    j({ doors: 1, hand: handWanted, push: true, covers: budNow.num }), j({ hand: [h0, await handNow()], pocket: p1.pocket, covers }));
+  const F = {
+    TB: await figureOf(page, 'TB'), T1: await figureOf(page, 'T1'), M: await figureOf(page, 'M'), E1: await figureOf(page, 'E1'),
+  };
+  const H1 = await hawaOf(page, pocketId);
+  const Z3 = Number(await page.ask(`((${PROFILE}.hawa || {}).gaps || {}).Z3 ?? 3`));
+  note('F3', 'the engine\'s figures (unitResult(id).hawa, the LISP\'s mirror)', j(H1));
+  check('F3', 'the right panel reads the engine\'s door: TB 572.5 on the BUD 500 and an 18 front (KIT_HAWA.lsp\'s rule; CLAUDE.md\'s 592 and 599 read the share otherwise), T1 567 (the 560 track caps it on the 580 cabinet), M 100.5, E1 472',
+    F.TB === 572.5 && F.T1 === 567 && F.M === 100.5 && F.E1 === 472 && H1 && H1.TB === F.TB && H1.T1 === F.T1 && H1.M === F.M && H1.E1 === F.E1,
+    'TB 572.5, T1 567, M 100.5, E1 472', j({ panel: F, engine: H1 && [H1.TB, H1.T1, H1.M, H1.E1] }));
+  check('F3', 'the kit\'s own words hold on the glass: T1 = TB + 92 + Z3 - M, E1 = TB - M; 414 <= T1 <= 567, S + 3 <= M <= TB - 320; the door the engine cuts is TB wide',
+    near(F.T1, F.TB + 92 + Z3 - F.M) && near(F.E1, F.TB - F.M) && F.T1 >= 414 && F.T1 <= 567 && F.M >= S0 + 3 && F.M <= F.TB - 320 && door && near(door.w, F.TB),
+    `T1 ${F.TB + 92 + Z3 - F.M}, E1 ${F.TB - F.M}, M in ${S0 + 3}..${F.TB - 320}`, j({ ...F, door: door && [door.w, door.h, door.t] }));
   await domFrame(page, sectionLike(/pocket/i), 'f25-03-hawa-panel.png', 8, 1.5);
 
-  // THE ROOM: CLOSED, THEN OPEN (the right panel's toggle, a real click), then the viewer's Open all.
+  // THE ROOM: CLOSED, THEN OPEN (the panel's Door row, a real click), then the viewer's Open all.
   await key(page, 'Escape');
-  await frameOn(page, [budId, pocketId]);
+  await frameOn(page, [budId, pocketId], { side: 0.3, up: 0.25 });
   await settleCamera(page);
-  const doorBox = async () => { const s = await sceneOf(page, pocketId); const k = s && Object.keys(s.pieces).find((x) => /POCKET-DOOR/.test(x)); return k ? s.pieces[k] : null; };
-  const closed = await doorBox();
-  check('F6', 'the door closed: across the pocket and the BUD (TB along the wall, S thick)', closed && closed.size[0] > 400 && closed.size[2] < 40, 'x > 400, z < 40', j(closed));
+  const closed = await doorBoxOf(page, pocketId);
+  check('F6', 'the door closed: across the pocket and the BUD, TB along the wall, S thick, 3 in front of the fronts\' plane', closed && near(closed.size[0], F.TB, 1) && closed.size[2] < 40, `x ${F.TB}, z < 40`, j(closed));
   await shot(page, 'f25-01-hawa-closed.png');
   await selectUnit(page, pocketId);
-  await sectionLikeOpen(page, /pocket/i);
-  if (await need(page, 'F6', 'A5 (the action through INT)', 'the right panel\'s Door closed / open toggle', 'document.querySelector(\'[data-pocket-door-open]\')')) {
-    await page.press('[data-pocket-door-open]');
-    await page.sleep(2000);
+  if (await need(page, 'F6', 'A5', 'the right panel\'s Door: Closed / Open row', 'document.querySelector(\'[data-pocket-door="open"]\')')) {
+    await page.press('[data-pocket-door="open"]');
+    await until(page, `(() => { const e = document.querySelector('[data-pocket-door-open]'); return e && e.getAttribute('data-pocket-door-open') === '1'; })()`, 4000);
+    for (let t = 0; t < 30 && (await doorTOf(page, pocketId)) < 0.999; t += 1) await page.sleep(300);
+    const tOpen = await doorTOf(page, pocketId);
     await key(page, 'Escape');
-    await frameOn(page, [budId, pocketId], { side: 0.6, up: 0.45 });
+    await frameOn(page, [budId, pocketId], { side: 0.75, up: 0.55 });
     await settleCamera(page);
-    const opened = await doorBox();
-    check('F6', 'Door open (a real click): the door turned 90 degrees and slid into the pocket', opened && opened.size[0] < 40 && opened.size[2] > 300, 'x < 40, z > 300', j(opened));
+    const opened = await doorBoxOf(page, pocketId);
+    check('F6', 'Door: Open (a real click): the door turned 90 degrees about its hinge edge and slid E1 into the pocket, its leading edge M proud', tOpen >= 0.999 && opened && opened.size[0] < 40 && near(opened.size[2], F.TB, 1) && closed && near(opened.max[2] - closed.min[2], F.M, 25),
+      `the room's t 1, x < 40, z ${F.TB}, out to about M ${F.M} past the shut face`, j({ t: tOpen, opened, proud: opened && closed ? r1(opened.max[2] - closed.min[2]) : null }));
     await shot(page, 'f25-02-hawa-open.png');
     await selectUnit(page, pocketId);
-    await sectionLikeOpen(page, /pocket/i);
-    await page.press('[data-pocket-door-open]');
-    await page.sleep(1500);
+    await page.press('[data-pocket-door="closed"]');
+    for (let t = 0; t < 30 && (await doorTOf(page, pocketId)) > 0.001; t += 1) await page.sleep(300);
     await key(page, 'Escape');
   }
-  const all = await toolbar(page, '[...document.querySelectorAll(\'[data-open-all-doors="1"]\')].find((b) => b.offsetParent && !b.disabled)');
-  await page.sleep(2000);
-  const viaAll = await doorBox();
-  check('F6', 'the viewer\'s Open all (a real click) opens the pocket door too', all && viaAll && viaAll.size[0] < 40, 'the door in the pocket', j({ pressed: all, door: viaAll }));
-  if (all) await toolbar(page, '[...document.querySelectorAll(\'[data-open-all-doors="1"]\')].find((b) => b.offsetParent && !b.disabled)');
-  await page.sleep(1200);
+  const allBtn = '[...document.querySelectorAll(\'[data-open-all-doors="1"]\')].find((b) => b.offsetParent && !b.disabled)';
+  const all = await toolbar(page, allBtn);
+  for (let t = 0; t < 30 && (await doorTOf(page, pocketId)) < 0.999; t += 1) await page.sleep(300);
+  const viaAll = await doorBoxOf(page, pocketId);
+  check('F6', 'the viewer\'s Open all (a real click) slides the pocket door in too', all && viaAll && viaAll.size[0] < 40, 'the door in the pocket', j({ pressed: all, t: await doorTOf(page, pocketId), door: viaAll && viaAll.size }));
+  if (all) await toolbar(page, allBtn);
+  for (let t = 0; t < 30 && (await doorTOf(page, pocketId)) > 0.001; t += 1) await page.sleep(300);
 
-  // A 750 DOOR ASKED: the BUD widened by its own field until the door is 750; the Check (a real click) says #38.
+  // A 750 DOOR ASKED: the BUD widened by its own field until the door the engine cuts is 750. On the 580 run
+  // T1 is capped 567 by the track and M = 750 + 95 - 567 = 278 <= TB - 320 = 430: HAWA allows it, no #38.
   await selectUnit(page, budId);
   await sectionOpen(page, 'Carcass');
-  let tb = (await partsOf(page, pocketId) || []).find((p) => /POCKET-DOOR/.test(p.part || p.id));
-  let width = 500 + (750 - (tb ? tb.w : 599));
-  for (let k = 0; k < 2; k += 1) {
+  let H = await hawaOf(page, pocketId);
+  let width = 500 + (750 - (H ? H.TB : 572.5));
+  for (let k = 0; k < 3; k += 1) {
     await typeInto(page, '[data-unit-size-field="width"]', width);
-    tb = (await partsOf(page, pocketId) || []).find((p) => /POCKET-DOOR/.test(p.part || p.id));
-    if (!tb || near(tb.w, 750)) break;
-    width += 750 - tb.w;
+    H = await hawaOf(page, pocketId);
+    if (!H || near(H.TB, 750, 0.01)) break;
+    width += 750 - H.TB;
   }
-  note('F3', 'the BUD\'s Width typed so the door is 750', j({ width: (await unitRow(page, budId)).w, door: tb && tb.w }));
-  const findings = await checkOpen(page);
-  const c38 = findings.filter((f) => f.n === 38);
-  check('F3', 'Check (a real click): #38 "HAWA: the door TB needs a pocket T1 deep on a KT1 cabinet; make the cabinet deeper or the door narrower"', c38.length > 0 && /HAWA/.test(c38[0].text),
-    '#38 in words', j(c38.length ? c38 : findings.slice(0, 4)));
+  const b750 = await unitRow(page, budId);
+  const p750 = await unitRow(page, pocketId);
+  note('F3', 'the BUD\'s Width typed so the door is 750 (read back off the engine)', j({ bud: [b750.x, b750.w], pocket: [p750.x, p750.w], door: H && [H.TB, H.T1, H.M, H.E1] }));
+  const f750 = await checkOpen(page);
+  check('F3', 'the 750 door on the 580 run: M 278 proud, T1 567 (the 560 track caps it), deep enough: no #38 (*"raczej zawsze wystaja troche wiec nie ma problemu"*)', H && near(H.TB, 750, 0.01) && H.M === 278 && H.T1 === 567 && !f750.some((f) => f.n === 38) && !H.refusals.some((x) => /^38:/.test(x)),
+    'TB 750, M 278, T1 567, no #38', j({ door: H && [H.TB, H.T1, H.M, H.E1], refusals: H && H.refusals, findings: f750.filter((f) => [37, 38, 47].includes(f.n)) }));
+  // The door of a BASE run is TH 721.5 high: HAWA's table (160704) starts at 1200, so the kit refuses the
+  // height in words (#37) and cuts the door as asked (the room refuses, the engine never squashes).
+  const c37 = f750.filter((f) => f.n === 37);
+  const c47 = f750.filter((f) => f.n === 47);
+  check('F3', 'the base run\'s door is under HAWA\'s 1200 high: the Check says #37 in words (TH 1200 to 2700), red, the door cut as asked', c37.length > 0 && c37[0].level === 'red' && /TH \d+(\.\d+)? \(1200 to 2700\)/.test(c37[0].text) && H && H.TH < 1200,
+    '#37 with the height', j({ c37, TH: H && H.TH }));
+  check('F2', 'the panels 22 on the 18 front said as the owner asked (#47 "HAWA pocket panels 22: the hardware panel needs 19 mm minimum"), a note, not a fault', c47.length > 0 && c47[0].level !== 'red' && /19 mm/.test(c47[0].text),
+    '#47 in words', j(c47));
+  await checkClose(page);
+  // #38 WHERE HAWA REFUSES: the same BUD made shallow (Depth 400: KT1 under 414, the hardware's shortest T1).
+  await selectUnit(page, budId);
+  await sectionOpen(page, 'Carcass');
+  const d400 = await typeInto(page, '[data-unit-size-field="depth"]', 400);
+  const H400 = await hawaOf(page, pocketId);
+  const f400 = await checkOpen(page);
+  const c38 = f400.filter((f) => f.n === 38);
+  check('F3', 'the BUD typed 400 deep: KT1 400 is under HAWA\'s 414, the Check (a real click) says #38 in words, red, and the door is not squashed', d400.shown === '400' && c38.length > 0 && c38[0].level === 'red' && /HAWA/i.test(c38[0].text) && H400 && near(H400.TB, 750, 0.01),
+    '#38 red in words, TB still 750', j({ c38, engine: H400 && { TB: H400.TB, KT1: H400.KT1, refusals: H400.refusals } }));
   await shot(page, 'f25-04-hawa-check38.png');
   await checkClose(page);
+  await selectUnit(page, pocketId);
+  const said38 = await page.ask('[...document.querySelectorAll(\'[data-pocket-refusal]\')].filter((e) => e.offsetParent).map((e) => e.getAttribute(\'data-pocket-refusal\') + \': \' + e.textContent.trim())');
+  check('F3', 'the POCKET DOOR section says the same refusal under its figures', said38.some((x) => x.startsWith('38:')), '38 on the panel', j(said38));
 }
 
 // === LEG 2 · THE VANITY (F8 to F14) =========================================
+/** The boxes whose trap's U is cut: the bottom notched (its outline more than a rectangle) and its back in two pieces. */
+const uBoxesOf = (parts) => parts.filter((p) => p.part === 'DRAWER-BOTTOM' && p.outline > 4).map((b) => {
+  const tag = b.id.replace(/-DNO$/, '');
+  return { bottom: b.id, outline: b.outline, backs: parts.filter((p) => p.id.startsWith(`${tag}-BB-`)).map((p) => `${p.id} ${p.w} x ${p.h}`) };
+});
 async function leg2(page) {
   await stageRoom(page, 5000, 3000, 2500);
   const v = await addFromLibrary(page, {
-    category: 'Kitchen', groups: ['bathroom'], ids: ['vanity-3', 'VANITY3', 'vanity3'], label: /Vanity unit, 3 drawers/i,
+    category: 'Kitchen', groups: ['bathroom'], ids: ['vanity-3'], label: /Vanity unit, 3 drawers/i,
   });
   if (!v.unit) { push(PREP ? 'WAIT' : 'FAIL', 'F14', 'Library: the group "Bathroom", the row "Vanity unit, 3 drawers" (slice B4)', 'a VANITY3 in the room', v.why || 'no unit'); return; }
   await closeLibrary(page);
+  await page.sleep(1500);
   const id = v.unit.id;
-  check('F14', `Library > Kitchen > Bathroom > "Vanity unit, 3 drawers" (row ${v.entry}, a real click): a VANITY3`, v.unit.type === 'VANITY3', 'VANITY3', j(v.unit));
+  check('F14', `Library > Kitchen > Bathroom > "Vanity unit, 3 drawers" (row ${v.entry}, a real click): a VANITY3, 900 x 600 x 500`, v.unit.type === 'VANITY3' && v.unit.w === 900 && v.unit.h === 600 && v.unit.d === 500, 'VANITY3 900 x 600 x 500', j(v.unit));
   const u0 = await unitRow(page, id);
   const clearance = Number(await page.ask(`(${PROFILE}.room || {}).wallBackClearance ?? 0`));
   const voidMm = Number(await page.ask(`(${PROFILE}.vanity || {}).serviceVoidMm ?? 80`));
   const G = Number(await page.ask(`(${PROFILE}.board || {}).thickness ?? 18`));
   const parts = await partsOf(page, id);
-  const rails = parts.filter((p) => /^RAIL-(TOP|BOTTOM)$/.test(p.part || p.id));
+  const rails = parts.filter((p) => /^RAIL-(TOP|BOTTOM)$/.test(p.id));
   const fronts = parts.filter((p) => p.part === 'DRAWER-FRONT');
-  check('F9', 'the engine: three equal overlay fronts, two rails 100 high in the board thickness, no BACK', fronts.length === 3 && new Set(fronts.map((f) => f.h)).size === 1
-    && rails.length === 2 && rails.every((r) => (near(r.h, 100) || near(r.w, 100)) && near(r.t, G)) && !parts.some((p) => p.part === 'BACK'),
-  `3 equal fronts, 2 rails 100 x ${G}, no BACK`, j({ fronts: fronts.map((f) => [f.w, f.h]), rails: rails.map((r) => [r.id, r.w, r.h, r.t]), back: parts.filter((p) => p.part === 'BACK').map((p) => p.id) }));
-  check('F8', `wall_gap = the clearance ${clearance} + the service void ${voidMm}`, near(u0.wallGap, clearance + voidMm), `${clearance + voidMm}`, `${u0.wallGap}`);
+  check('F9', `the engine: three equal overlay fronts, RAIL-TOP and RAIL-BOTTOM 100 high in the board's ${G}, no BACK (*"nie ma plecow ... tylko sa poziome poprzeczki"*)`, fronts.length === 3 && new Set(fronts.map((f) => f.h)).size === 1
+    && rails.length === 2 && rails.every((r) => near(r.h, 100) && near(r.t, G)) && !parts.some((p) => p.part === 'BACK'),
+  `3 equal fronts, 2 rails 100 x ${G}, no BACK`, j({ fronts: fronts.map((f) => [f.id, f.w, f.h]), rails: rails.map((r) => [r.id, r.w, r.h, r.t]), back: parts.filter((p) => p.part === 'BACK').map((p) => p.id) }));
+  check('F8', `wall_gap = the clearance ${clearance} + the service void ${voidMm} (*"3 - 80"*)`, near(u0.wallGap, clearance + voidMm), `${clearance + voidMm}`, `${u0.wallGap}`);
   const sc = await sceneOf(page, id);
-  const sides = Object.entries(sc ? sc.pieces : {}).filter(([k]) => /^(BUL|BUR|SIDE)/.test(k)).map(([, b]) => b);
-  const railMeshes = Object.keys(sc ? sc.pieces : {}).filter((k) => /^RAIL-/.test(k));
-  check('F12', 'the room: the carcass stands the void off the wall, the two rails drawn, no back between them', sides.length > 0 && sides.every((b) => near(b.min[2], u0.wallGap, 1.5)) && railMeshes.length === 2 && !Object.keys(sc.pieces).includes('BACK'),
-    `sides' back at z ${u0.wallGap}; RAIL-TOP, RAIL-BOTTOM`, j({ sides: sides.map((b) => b.min[2]), rails: railMeshes, pieces: Object.keys(sc ? sc.pieces : {}).length }));
+  const sides = Object.entries(sc ? sc.pieces : {}).filter(([k]) => /^(BUL|BUR)$/.test(k)).map(([, b]) => b);
+  const railBoxes = Object.entries(sc ? sc.pieces : {}).filter(([k]) => /^RAIL-/.test(k));
+  // The carcass's back line is the rails' back face (they stand where KIT_BUDR's back stands, the sides butting them).
+  check('F12', 'the room: the carcass stands the void off the wall (its back line, the two rails, at plan z = wall_gap), both rails drawn 100 high, no back between them', railBoxes.length === 2 && railBoxes.every(([, b]) => near(b.min[2], u0.wallGap, 1.5) && near(b.size[1], 100, 1)) && sides.length === 2 && sides.every((b) => b.min[2] >= u0.wallGap - 0.5) && !Object.keys(sc.pieces).includes('BACK'),
+    `the rails' back at z ${u0.wallGap}, 100 high; no BACK`, j({ rails: railBoxes.map(([k, b]) => [k, b.min[2], b.size[1], b.size[2]]), sides: sides.map((b) => b.min[2]) }));
   const tops = await page.ask(`${S}.worktopsOf().filter((w) => (w.unitIds || []).includes(${j(id)})).map((w) => ({ id: w.id, d: w.geometry && w.geometry.d, h: w.geometry && w.geometry.h }))`);
-  check('F10', 'the worktop at birth, over the vanity, reaching the wall over the void', tops.length === 1 && tops[0].d >= u0.d + voidMm, `one worktop, d >= ${u0.d} + ${voidMm}`, j(tops));
-  // One basin.
-  const sectionTitle = await (async () => { await selectUnit(page, id); return sectionLikeOpen(page, /vanity/i); })();
-  if (!(await need(page, 'F14', 'B4', 'the right panel\'s VANITY section', sectionLike(/vanity/i)))) return;
-  note('F14', 'the right panel\'s section', sectionTitle);
-  const press = async (attr, val) => { if (!(await need(page, 'F14', 'B4', `${attr}=${val}`, `document.querySelector('[${attr}="${val}"]')`))) return false; await page.press(`[${attr}="${val}"]`); await page.sleep(1200); return true; };
-  if ((await unitRow(page, id)).sinks !== 1) await press('data-vanity-sinks', '1');
+  check('F10', 'the worktop at birth, over the vanity, its depth reaching the wall over the void (*"5 - blat osobny element jak worktop"*)', tops.length === 1 && tops[0].d >= u0.d + voidMm, `one worktop, d >= ${u0.d} + ${voidMm}`, j(tops));
+  check('F11', 'one basin at birth (Sinks 1), set into the top', sc && sc.basins === 1, '1 basin', `${sc && sc.basins}`);
+  const U1 = uBoxesOf(parts);
+  check('F8', 'the trap\'s U in the top drawer\'s box (*"wyciecie u dookola"*): its bottom notched, its back in two pieces either side of the trap', U1.length === 1 && U1[0].backs.length === 2, 'one box: a notched bottom, two back pieces', j(U1));
+  // The basin seen through the top: the camera over the front, looking down into the bowl.
   await key(page, 'Escape');
-  await frameOn(page, [id], { side: 0.45, up: 0.55 });
+  await frameOn(page, [id], { side: 0.25, up: 1.1, pad: 1.5 });
   await settleCamera(page);
-  const sc1 = await sceneOf(page, id);
-  const p1 = await partsOf(page, id);
-  const withU = p1.filter((p) => /DRAWER-(BOX-BACK|BOTTOM)/.test(p.part || '') && p.outline > 4);
-  check('F11', 'one basin in the room (Sinks 1)', sc1 && sc1.basins === 1, '1 basin', `${sc1 && sc1.basins}`);
-  check('F8', 'the trap\'s U in the top drawer\'s box: its back and its bottom cut (the outline more than a rectangle)', withU.length === 2, 'two parts of one drawer', j(withU.map((p) => `${p.id} ${p.outline} points`)));
   await shot(page, 'f25-05-vanity-room.png');
-  // Columns 2 and Sinks 2.
+
+  // THE RIGHT PANEL: VANITY, then Section 1's Columns.
   await selectUnit(page, id);
-  await sectionLikeOpen(page, /vanity/i);
-  await press('data-vanity-columns', '2');
-  await press('data-vanity-sinks', '2');
+  const title = await sectionLikeOpen(page, /^vanity$/i);
+  if (!(await need(page, 'F14', 'B4', 'the right panel\'s Vanity section', sectionLike(/^vanity$/i)))) return;
+  note('F14', 'the right panel\'s section', title);
+  const pressHook = async (F, sel, what) => { if (!(await need(page, F, 'B4', what, `[...document.querySelectorAll('${sel}')].find((e) => e.offsetParent)`))) return false; await page.press(sel); await page.sleep(1500); return true; };
+  if (!(await page.ask('Boolean([...document.querySelectorAll(\'[data-drawer-columns-count="2"]\')].find((e) => e.offsetParent))'))) await sectionOpen(page, 'Section 1');
+  await pressHook('F9', '[data-drawer-columns-count="2"]', 'Section 1\'s Columns 2');
+  await pressHook('F11', '[data-vanity-sinks-count="2"]', 'Vanity\'s Sinks 2');
   const p2 = await partsOf(page, id);
-  const boxes = p2.filter((p) => p.part === 'DRAWER-BOX-BACK');
   const u2 = await unitRow(page, id);
-  check('F9', 'Columns 2 (a real click): a divider and six boxes', u2.columns === 2 && p2.some((p) => /DIVIDER/.test(p.part || p.id)) && boxes.length === 6, 'DIVIDER, 6 boxes', j({ columns: u2.columns, divider: p2.filter((p) => /DIVIDER/.test(p.part || p.id)).map((p) => p.id), boxes: boxes.length }));
+  const bottoms = p2.filter((p) => p.part === 'DRAWER-BOTTOM');
+  check('F9', 'Columns 2 (a real click): a divider mid-width and six boxes, three equal fronts a column (*"patrz szafa"*)', u2.columns === 2 && p2.some((p) => /DIVIDER/.test(p.id)) && bottoms.length === 6 && new Set(p2.filter((p) => p.part === 'DRAWER-FRONT').map((f) => f.h)).size === 1,
+    'DIVIDER, 6 boxes, equal fronts', j({ columns: u2.columns, divider: p2.filter((p) => /DIVIDER/.test(p.id)).map((p) => [p.id, p.w, p.h]), boxes: bottoms.length }));
+  const U2 = uBoxesOf(p2);
+  check('F8', 'Sinks 2 at columns 2: the U in each column\'s top box', u2.sinks === 2 && U2.length === 2 && U2.every((b) => b.backs.length === 2), 'two boxes cut', j(U2));
+  // Two 520 basins over a 900 vanity at columns 2 run past the slab: the Check says so and names the width.
+  let f48 = await checkOpen(page);
+  // #48 says two things in words (worktop.js fitBasins; KIT_VANITY.lsp D25): basins the TOP cannot hold (and
+  // the width that holds them), and a bowl that meets what stands under the top (and the deepest that clears).
+  const WIDTH_48 = /make the vanity (\d+) wide/;
+  const BOWL_48 = /deepest bowl that clears/;
+  const c48 = f48.filter((f) => f.n === 48);
+  const widthSaid = c48.find((f) => WIDTH_48.test(f.text));
+  const wide = widthSaid ? Number(widthSaid.text.match(WIDTH_48)[1]) : NaN;
+  check('F11', 'two 520 basins do not fit the top of the 900 vanity at columns 2: the Check says it in words (#48) and names the width, nothing squashed', Boolean(widthSaid) && widthSaid.level !== 'red' && Number.isFinite(wide),
+    '#48 with the width', j(c48));
+  await checkClose(page);
+  if (Number.isFinite(wide)) {
+    await selectUnit(page, id);
+    await sectionOpen(page, 'Carcass');
+    await typeInto(page, '[data-unit-size-field="width"]', wide);
+  }
+  const u2b = await unitRow(page, id);
   await key(page, 'Escape');
-  await frameOn(page, [id], { side: 0.45, up: 0.55 });
+  await frameOn(page, [id], { side: 0.25, up: 1.1, pad: 1.5 });
   await settleCamera(page);
   const sc2 = await sceneOf(page, id);
-  check('F11', 'Sinks 2 (a real click): two basins at the column centres', u2.sinks === 2 && sc2 && sc2.basins === 2, '2 basins', j({ sinks: u2.sinks, basins: sc2 && sc2.basins }));
+  f48 = await checkOpen(page);
+  check('F11', `the Width typed ${wide} as the Check said: two basins at the column centres, #48's width sentence gone`, u2b.w === wide && sc2 && sc2.basins === 2 && !f48.some((f) => f.n === 48 && WIDTH_48.test(f.text)),
+    '2 basins, no #48 width', j({ w: u2b.w, basins: sc2 && sc2.basins, c48: f48.filter((f) => f.n === 48) }));
+  const bowl = f48.filter((f) => f.n === 48 && BOWL_48.test(f.text));
+  note('F11', 'a bowl that meets what stands under the top is said in #48 (KIT_VANITY.lsp D25), with the deepest that clears; never clamped', bowl.length ? `${bowl[0].level}: ${bowl[0].text}` : 'none said');
+  await checkClose(page);
   await shot(page, 'f25-06-vanity-columns2-sinks2.png');
-  // Floating at 300.
+
+  // FLOATING AT 300.
   await selectUnit(page, id);
-  await sectionLikeOpen(page, /vanity/i);
-  if (await press('data-vanity-mount', 'floating')) {
-    if (await need(page, 'F13', 'B4', 'the floating height field', 'document.querySelector(\'[data-vanity-float-height]\')')) await typeInto(page, '[data-vanity-float-height]', 300);
+  await sectionLikeOpen(page, /^vanity$/i);
+  if (await pressHook('F13', '[data-vanity-mount-choice="floating"]', 'Vanity\'s Stands: Floating')) {
+    if (await need(page, 'F13', 'B4', 'the Height from the floor field', 'document.querySelector(\'[data-vanity-float-height="1"]\')')) await typeInto(page, '[data-vanity-float-height="1"]', 300);
   }
   const u3 = await unitRow(page, id);
   const p3 = await partsOf(page, id);
   await key(page, 'Escape');
-  await frameOn(page, [id], { side: 0.45, up: 0.2 });
+  await frameOn(page, [id], { side: 0.5, up: 0.15, pad: 1.6 });
   await settleCamera(page);
   const sc3 = await sceneOf(page, id);
-  const sides3 = Object.entries(sc3 ? sc3.pieces : {}).filter(([k]) => /^(BUL|BUR|SIDE)/.test(k)).map(([, b]) => b);
-  check('F13', 'Floating at 300: no plinth, no legs, the carcass hung 300 off the floor', u3.floating === true && u3.floatHeight === 300 && !p3.some((p) => p.part === 'PLINTH') && sides3.length > 0 && sides3.every((b) => near(b.min[1], 300, 1.5)),
-    'floating, 300, no PLINTH, sides from y 300', j({ floating: u3.floating, h: u3.floatHeight, plinth: p3.filter((p) => p.part === 'PLINTH').length, sides: sides3.map((b) => b.min[1]) }));
-  const bom = await bomText(page);
-  check('F13', 'the BOM (the toolbar\'s own button): the hanging brackets', /hanger/i.test(bom), 'a hanger line', (bom.match(/[^\n]*hanger[^\n]*/i) || ['none'])[0]);
-  await bomClose(page);
+  const sides3 = Object.entries(sc3 ? sc3.pieces : {}).filter(([k]) => /^(BUL|BUR)$/.test(k)).map(([, b]) => b);
+  check('F13', 'Floating (a real click) at 300: no plinth, no legs, the carcass hung 300 off the floor', u3.floating === true && u3.floatHeight === 300 && !p3.some((p) => p.part === 'PLINTH') && sides3.length === 2 && sides3.every((b) => near(b.min[1], 300, 1.5)),
+    'floating, 300, no PLINTH, the sides from y 300', j({ floating: u3.floating, h: u3.floatHeight, plinth: p3.filter((p) => p.part === 'PLINTH').length, sides: sides3.map((b) => b.min[1]) }));
   await shot(page, 'f25-07-vanity-floating.png');
-  const said = await checkOpen(page);
-  const c45 = said.filter((f) => f.n === 45);
-  check('F12', 'Check: the service void a note (#45 "Service void 80 behind the vanity for the pipes"), never a fault', c45.length > 0 && c45.every((f) => f.level !== 'red'), '#45, not red', j(c45));
+  const bom = await bomText(page, ['[data-bom-order-tab="1"]', '[data-bom-purchase-tab="1"]']);
+  const hangers = (bom.match(/[^\n]*hanger[^\n]*/i) || [null])[0];
+  check('F13', 'the BOM (the toolbar\'s own button, its Order and BOM tabs): the hanging brackets, 2 (*"6 - do BOM tez"*)', Boolean(hangers), 'a hanger line', String(hangers));
+  await bomClose(page);
+  const fz = await checkOpen(page);
+  const c45 = fz.filter((f) => f.n === 45);
+  check('F12', 'Check: the service void a note (#45 "Service void 80 behind the vanity for the pipes"), never a fault', c45.length > 0 && c45.every((f) => f.level === 'note') && /Service void 80/.test(c45[0].text), '#45, a note', j(c45));
   await checkClose(page);
-  // The CNC sheet: the top drawer's U.
+  // The CNC sheet: the U on the top boxes' bottoms.
   const cnc = await viewMode(page, 'cnc');
-  const uParts = (await partsOf(page, id)).filter((p) => /DRAWER-(BOX-BACK|BOTTOM)/.test(p.part || '') && p.outline > 4);
+  const uParts = uBoxesOf(await partsOf(page, id));
   const drawn = [];
-  for (const p of uParts) {
-    drawn.push(await page.ask(`(() => { const g = document.querySelector('[data-cnc-part=${j(p.id)}]'); if (!g) return { id: ${j(p.id)}, on: false };
-      const poly = [...g.querySelectorAll('polygon')].map((x) => (x.getAttribute('points') || '').trim().split(/\\s+/).length); return { id: ${j(p.id)}, on: true, points: poly }; })()`));
+  for (const b of uParts) {
+    drawn.push(await page.ask(`(() => { const g = document.querySelector('[data-cnc-part=${j(b.bottom)}]'); if (!g) return { id: ${j(b.bottom)}, on: false };
+      const poly = [...g.querySelectorAll('polygon')].map((x) => (x.getAttribute('points') || '').trim().split(/\\s+/).length); return { id: ${j(b.bottom)}, on: true, points: poly }; })()`));
   }
-  // The part's OUTLINE is the first polygon it draws (CncView.jsx: the outline, then the holes; a hole is a 15-point polygon).
-  const outlineOk = (d) => d.on && d.points.length > 0 && d.points[0] > 4 && d.points[0] === (uParts.find((p) => p.id === d.id) || {}).outline;
-  check('F8', 'CNC (the toolbar\'s own button): the U on the drawer box\'s parts, drawn by the outline road (the outline polygon is the engine\'s outline, more than 4 points)', cnc && drawn.length === 2 && drawn.every(outlineOk),
-    'two parts, each outline the engine\'s', j(drawn.map((d) => ({ ...d, engine: (uParts.find((p) => p.id === d.id) || {}).outline }))));
-  if (uParts[0]) await domFrame(page, `document.querySelector('[data-cnc-part=${j(uParts[0].id)}]')`, 'f25-08-vanity-cnc-u.png', 30, 2.5);
+  // A part's OUTLINE is the first polygon it draws (CncView.jsx: the outline, then the holes; a hole is a 15-point polygon).
+  const outlineOk = (d) => d.on && d.points.length > 0 && d.points[0] > 4 && d.points[0] === (uParts.find((b) => b.bottom === d.id) || {}).outline;
+  check('F8', 'CNC (the toolbar\'s own button): the U on each top box\'s bottom, drawn by the outline road (the outline polygon is the engine\'s, more than 4 points)', cnc && drawn.length === 2 && drawn.every(outlineOk),
+    'two bottoms, each outline the engine\'s', j(drawn.map((d) => ({ ...d, engine: (uParts.find((b) => b.bottom === d.id) || {}).outline }))));
+  if (uParts[0]) await cncPartFrame(page, uParts[0].bottom, 'f25-08-vanity-cnc-u.png');
   else await shot(page, 'f25-08-vanity-cnc-u.png');
   await viewMode(page, '3d');
 }
@@ -809,16 +935,19 @@ async function leg3(page) {
   const prof = await page.ask('(document.querySelector(\'[data-decoration-field="fluteProfile"]\') || {}).value');
   check('F15', 'the profile is reed by default (*"daj wariant b czyli na styk"*)', prof === 'reed', 'reed', String(prof));
   if (prof !== 'reed') await choose(page, 'document.querySelector(\'[data-decoration-field="fluteProfile"]\')', 'reed');
-  if (await need(page, 'F15', 'C1', 'the reed diameter field', 'document.querySelector(\'[data-decoration-field="reedDiameterMm"]\')')) {
-    const t = await typeInto(page, '[data-decoration-field="reedDiameterMm"]', 20);
-    note('F15', 'the reed diameter typed 20 (*"do tego daj ustawienie srednicy walkow tez"*)', j(t));
+  if (await need(page, 'F15', 'C1', 'the reed diameter row (the ladder and the field)', 'document.querySelector(\'[data-decoration-field="reedDiameterMm"]\')')) {
+    const ladder = await page.ask('[...document.querySelectorAll(\'[data-reed-ladder]\')].filter((b) => b.offsetParent).map((b) => b.getAttribute(\'data-reed-ladder\'))');
+    if (ladder.includes('20')) await page.press('[data-reed-ladder="20"]'); else await typeInto(page, '[data-decoration-field="reedDiameterMm"]', 20);
+    await page.sleep(800);
+    const shown = await page.ask('(document.querySelector(\'[data-decoration-field="reedDiameterMm"]\') || {}).value');
+    check('F15', 'the reed diameter 20 by its ladder (a real click; *"do tego daj ustawienie srednicy walkow tez"*): the ladder 16, 20, 25 beside the free field', Number(shown) === 20 && j(ladder) === j(['16', '20', '25']), 'ladder 16 / 20 / 25, the field 20', j({ ladder, shown }));
   }
   await domFrame(page, 'document.querySelector(\'[data-front-decoration="FL"]\')', 'f25-09-reed-settings.png', 10, 2);
   await closeModals(page);
   await page.sleep(1500);
   const inset = Number(await page.ask(`((((${PROFILE}.front || {}).decoration || {}).FL) || {}).grooveInsetMm ?? 50`));
   const leaves = [];
-  for (const k of ['a', 'b', 'c']) for (const p of (await partsOf(page, ids[k])).filter((x) => (x.part === 'FRONT' || x.part === 'DRAWER-FRONT') && !/-(AM|STRIP)/.test(x.id))) leaves.push({ unit: k, ...p });
+  for (const k of ['a', 'b', 'c', 'w']) for (const p of (await partsOf(page, ids[k])).filter((x) => (x.part === 'FRONT' || x.part === 'DRAWER-FRONT') && !/-(AM|STRIP)/.test(x.id))) leaves.push({ unit: k, ...p });
   const want = (p) => Math.floor((p.w - 2 * inset) / 20 + 1e-6);
   // The law is geometric: the valleys one diameter apart (touching, no flat between), the row centred on the
   // leaf (the remainder split), and as many as the field holds (one cutter path per valley: N - 1 between N
@@ -832,20 +961,31 @@ async function leg3(page) {
     const steps = along.slice(1).map((c, i) => c - along[i]);
     return along.length > 1 && steps.every((d) => near(d, 20, 0.05)) && near(along[0] + along[along.length - 1], span, 0.6) && Math.abs(p.deco.reeds - want(p)) <= 1;
   };
-  check('F15', `every leaf FL reed 20: the valleys 20 apart, the row centred, (w - 2 x ${inset}) / 20 reeds (the engine centres the remainder)`, leaves.length > 0 && leaves.every(reedLaw),
-    'the reed law on every leaf', j(leaves.map((p) => `${p.id} ${p.w} x ${p.h}: ${p.deco ? `${p.deco.parameters.fluteProfile} ${p.deco.parameters.reedDiameterMm}, ${p.deco.reeds} valleys (formula ${want(p)} reeds), first ${j(p.deco.reedAt[0])}, ok ${reedLaw(p)}` : 'none'}`)));
+  // A leaf the reeds cannot be cut on (a drawer front: its back fixing screws, T76's back-bore law) is refused
+  // in words and cut plain, never squashed: the walk reads the refusal where the engine gives it.
+  const refused = leaves.filter((p) => p.deco && p.deco.status === 'blocked');
+  const cut = leaves.filter((p) => !refused.includes(p));
+  check('F15', `every door FL reed 20 (*"daj wariant b czyli na styk"*): the valleys 20 apart, the row centred, (w - 2 x ${inset}) / 20 reeds and their two margin valleys`, cut.length >= 4 && cut.every(reedLaw),
+    'the reed law on every leaf the engine cuts', j(cut.map((p) => `${p.id} ${p.w} x ${p.h}: ${p.deco ? `${p.deco.parameters.fluteProfile} ${p.deco.parameters.reedDiameterMm}, ${p.deco.reeds} valleys (formula ${want(p)} reeds), first ${j(p.deco.reedAt[0])}, ok ${reedLaw(p)}` : 'none'}`)));
+  const words = await page.ask(`${S}.allResults().flatMap((e) => (e.result.warnings || []).filter((w) => /FRONT_DECORATION/.test(w.code)).map((w) => w.code + ': ' + w.message))`);
+  check('F15', `a leaf the reeds cannot be cut on is refused in words, never squashed (${refused.length} refused here: ${refused.map((p) => p.id).join(', ') || 'none'}); a remainder the diameter does not divide is said`, refused.every((p) => p.deco.reeds === 0 && words.some((w) => w.includes(`${p.id}:`))) && cut.filter((p) => !near(((p.w - 2 * inset) / 20) % 1, 0, 1e-6)).every((p) => words.some((w) => /REMAINDER/.test(w) && w.includes(`${p.id}:`))),
+    'each refused leaf named in a warning', j({ refused: refused.map((p) => `${p.id} ${p.w} x ${p.h} ${p.deco.status}: ${p.deco.problems.slice(0, 2).join(' | ')}`), words: words.slice(0, 4) }));
   note('F15', 'the board left under the valley, the front less the radius (#46 "Reeds leave N mm under the valley" when under 10)', j(leaves.map((p) => [p.id, p.t, r1(p.t - 10)]).slice(0, 4)));
   // The room: the reeds on the face.
   await frameOn(page, [ids.a], { side: 0.25, up: 0.1, pad: 1.1 });
   await settleCamera(page);
-  const reedMeshes = await page.ask(`(() => { const v = window.__cc.views.room; const out = []; v.scene.traverse((o) => { const d = o.isMesh && o.geometry && o.geometry.userData && o.geometry.userData.frontDecoration; if (d) out.push({ id: o.userData && o.userData.ccPanelId, style: d.style, profile: d.fluteProfile || (d.parameters && d.parameters.fluteProfile) || null }); }); return out; })()`);
-  check('F15', 'the room draws the reeds (the leaf\'s solid marked FL, profile reed)', reedMeshes.length > 0 && reedMeshes.every((m) => m.style === 'FL' && m.profile === 'reed'), 'FL reed solids', j(reedMeshes.slice(0, 6)));
+  const reedMeshes = await page.ask(`(() => { const v = window.__cc.views.room; const out = []; v.scene.traverse((o) => { const d = o.isMesh && o.geometry && o.geometry.userData && o.geometry.userData.frontDecoration; if (d) { const n = o.geometry.attributes && o.geometry.attributes.position ? o.geometry.attributes.position.count : 0; out.push({ id: o.userData && o.userData.ccPanelId, style: d.style, vertices: n }); } }); return out; })()`);
+  // The room builds each leaf's solid from the engine's record (frontDecorationSolid.js marks the style; the
+  // valleys are the engine's swept surfaces): every FL leaf of the base and wall units a decorated solid.
+  const flLeaves = cut.map((p) => p.id);
+  check('F15', 'the room draws the reeds: every reeded leaf a decorated solid (frontDecorationSolid, marked FL), built from the reed record', flLeaves.length > 0 && flLeaves.every((pid) => reedMeshes.some((m) => m.id === pid && m.style === 'FL')),
+    `the solids of ${flLeaves.join(', ')}`, j(reedMeshes.slice(0, 8)));
   await shot(page, 'f25-10-reed-room.png');
   // The fronts sheet.
   const names = await openSet(page);
   const fronts = await sheetOnGlass(page, names.find((n) => /Fronts$/.test(n)));
   const deco = dataCc(fronts, 'front-decoration');
-  const totalReeds = leaves.filter((p) => p.unit !== 'w').reduce((s, p) => s + (p.deco ? p.deco.reeds : 0), 0);
+  const totalReeds = leaves.reduce((s, p) => s + (p.deco ? p.deco.reeds : 0), 0);
   check('F15', 'the fronts sheet draws the reeds as T81 draws the grooves (front-decoration entities, at least one per reed)', deco.length >= totalReeds && totalReeds > 0, `>= ${totalReeds}`, `${deco.length}`);
   await frameOf(fronts, 'f25-11-reed-fronts-sheet.png');
   await closeModals(page);
@@ -923,58 +1063,59 @@ async function chooseLogo(page, file) {
   const onMsg = (e) => { try { const msg = JSON.parse(e.data); if (msg.method === 'Page.fileChooserOpened') chooser = msg.params; } catch { /* not ours */ } };
   page.socket.addEventListener('message', onMsg);
   await page.send('Page.setInterceptFileChooserDialog', { enabled: true });
-  const at = await boxOf(page, '[...document.querySelectorAll(\'[data-logo-choose]\')].find((b) => b.offsetParent)');
+  // "Choose image" is a label over a hidden file input (DrawingModal.jsx): the click on the label opens the chooser.
+  const at = await boxOf(page, '[...document.querySelectorAll(\'[data-title-block-logo-choose="1"]\')].find((b) => b.offsetParent)');
   if (at) await clickWith(page, at.x, at.y);
   for (let t = 0; t < 40 && !chooser; t += 1) await page.sleep(150);
   if (chooser) await page.send('DOM.setFileInputFiles', { files: [file], backendNodeId: chooser.backendNodeId });
   await page.send('Page.setInterceptFileChooserDialog', { enabled: false });
   page.socket.removeEventListener('message', onMsg);
-  await page.sleep(1500);
+  await page.sleep(2000);
   return Boolean(chooser);
 }
+const logoImages = (svg) => dataCc(svg, 'logo').filter((t) => /^<image\b/.test(t) && /data-layer="SHEET_MUTED"/.test(t));
 async function leg5(page) {
   const ids = await stageT81Kitchen(page, { inframe: true, knob: false });
-  const handle = await page.ask(`${S}.project.design.handle ?? ${S}.project.design.handles ?? null`);
-  note('F22', 'THE STAGE: the T81 kitchen, in-frame, NO handle chosen (scripts/t81-kitchen.mjs with knob false, through the store)', j({ units: await page.ask(`${S}.units.map((u) => [u.type, u.params.unit_num, u.params.width])`), handle }));
+  const handle = await page.ask(`(() => { const d = ${S}.project.design || {}; return { handle: d.handle ?? null, handles: (d.hardware || {}).handles ?? null, runners: d.runners ?? null }; })()`);
+  note('F22', 'THE STAGE: the T81 kitchen, in-frame, NO handle chosen (scripts/t81-kitchen.mjs with knob false, through the store)', j({ units: await page.ask(`${S}.units.map((u) => [u.type, u.params.unit_num, u.params.width, u.params.depth])`), handle }));
   const logo = logoPng(join(SCRATCH, 'logo.png'));
-  const names = await openSet(page);
+  let names = await openSet(page);
   note('F25', 'the sheet buttons', j(names));
-  // THE LOGO: the title block row, "Choose image" (a real click; the file handed to the chooser it opens).
+  // THE LOGO: the title block opened, "Choose image" (a real click; the PNG handed to the chooser it opens).
   if (await page.has('[data-title-block="1"]') && !(await page.ask('document.querySelector(\'[data-title-block="1"]\').open'))) await page.press('[data-title-block="1"] > summary');
   let logoOn = false;
-  if (await need(page, 'F20', 'E1', 'the LOGO row\'s "Choose image"', 'document.querySelector(\'[data-logo-choose]\')')) {
+  if (await need(page, 'F20', 'E1', 'the title block\'s LOGO row, "Choose image"', 'document.querySelector(\'[data-title-block-logo-choose="1"]\')')) {
     const opened = await chooseLogo(page, logo.file);
-    check('F20', '"Choose image" (a real click): the file chooser opened and took the PNG', opened, 'a chooser', String(opened));
+    const preview = await page.has('[data-title-block-logo="1"]');
+    check('F20', 'Title block > Logo > "Choose image" (a real click): the file chooser opened, took the PNG, the row shows it', opened && preview, 'a chooser, the preview', j({ opened, preview }));
     await domFrame(page, 'document.querySelector(\'[data-title-block="1"]\')', 'f25-15-logo-row.png', 8, 1.5);
-    logoOn = true;
+    logoOn = opened;
   }
   // THE SHEETS, every one pressed; the logo on each title block.
   const svgs = {};
   const logos = [];
   for (const n of names) {
     svgs[n] = await sheetOnGlass(page, n);
-    const imgs = dataCc(svgs[n], 'logo').concat(tagsOn(svgs[n], 'image', 'SHEET_MUTED').filter((t) => !/data-cc="logo"/.test(t)));
+    const imgs = logoImages(svgs[n]);
     logos.push({ sheet: n, n: imgs.length, wh: imgs[0] ? [num(imgs[0], 'width'), num(imgs[0], 'height')] : null });
   }
   if (logoOn) {
-    check('F20', 'the logo on every sheet\'s title block, an image on SHEET_MUTED, fitted to the 24 x 24 box keeping its 3:2', logos.every((l) => l.n >= 1 && l.wh && l.wh[0] <= 24.01 && l.wh[1] <= 24.01 && near(l.wh[0] / l.wh[1], 1.5, 0.02)),
-      'one image per sheet, 24 x 16', j(logos));
+    check('F20', 'the logo on every sheet\'s title block: one image on SHEET_MUTED (data-cc logo), fitted into the 24 x 24 box keeping its 3:2 (24 x 16)', logos.every((l) => l.n === 1 && l.wh && near(l.wh[0], 24, 0.01) && near(l.wh[1], 16, 0.01)),
+      'one 24 x 16 image per sheet', j(logos));
   }
   // THE FRONTS SHEET: FRONT . GAP . FRONT, LEAF . GAP . LEAF, the knob of 30 on every leaf.
   const frontsName = names.find((n) => /Fronts$/.test(n));
   const fronts = svgs[frontsName] || '';
   const dims = textsOn(fronts, 'DIMENSIONS').map((t) => t.text);
-  check('F21', 'the BUDR2\'s height chain FRONT . GAP . FRONT: 363 . 3 . 360, read off the glass (and no 366)', dims.includes('363') && dims.includes('360') && dims.includes('3') && !dims.includes('366'),
+  check('F21', 'the BUDR2\'s height chain FRONT . GAP . FRONT: 363 . 3 . 360 read off the glass (*"nie pokazuje dokladnie wymiarow frontow i przerw"*), no 366', dims.includes('363') && dims.includes('360') && dims.includes('3') && !dims.includes('366'),
     '363, 3, 360; no 366', j(dims));
-  check('F21', 'the BUD 800\'s width chain LEAF . GAP . LEAF: 376.5 . 3 . 376.5', dims.filter((d) => d === '376.5').length >= 2 && dims.includes('3'), '376.5 twice and a 3', j(dims.filter((d) => /^(376\.5|3)$/.test(d))));
-  const leaders = dataCc(fronts, 'leader').length + dataCc(fronts, 'dim-leader').length;
-  note('F21', 'leaders for the figures that do not fit their segment (a 3 at 1:20 is 0.15 mm)', `${leaders}`);
+  check('F21', 'the BUD 800\'s width chain LEAF . GAP . LEAF: 376.5 . 3 . 376.5', dims.filter((d) => d === '376.5').length >= 2 && dims.filter((d) => d === '3').length >= 2, '376.5 twice and the gaps', j(dims.filter((d) => /^(376\.5|3)$/.test(d))));
   const leaves = leavesOf(fronts);
   const knobs = tagsOn(fronts, 'circle', 'HANDLES').map((t) => ({ cx: num(t, 'cx'), cy: num(t, 'cy'), r: num(t, 'r') }));
   const scale = sheetScale(fronts);
   const bare = leaves.filter((l) => !knobs.some((k) => k.cx > l.x && k.cx < l.x + l.w && k.cy > l.y && k.cy < l.y + l.h));
-  check('F22', `no handle chosen: the default knob of 30 on every leaf (HANDLES circles of r 15 / ${scale || '?'})`, leaves.length > 0 && bare.length === 0 && (!scale || knobs.every((k) => near(k.r, 15 / scale, 0.05))),
-    `${leaves.length} leaves, each a knob`, j({ leaves: leaves.length, knobs: knobs.length, bare: bare.length, radii: [...new Set(knobs.map((k) => r1(k.r * 100) / 100))], scale }));
+  check('F22', `no handle chosen: the default knob of 30 on every leaf (*"nie widac wogole zeby bylo jakiekolwiek handles"*), HANDLES circles of r 15 / ${scale || '?'}`, leaves.length === 6 && bare.length === 0 && knobs.length >= leaves.length && scale && knobs.every((k) => near(k.r, 15 / scale, 0.02)),
+    `6 leaves, each a knob of r ${scale ? r1(1500 / scale) / 100 : '?'}`, j({ leaves: leaves.length, knobs: knobs.length, bare: bare.length, radii: [...new Set(knobs.map((k) => k.r))], scale }));
   await frameOf(fronts, 'f25-16-fronts-sheet.png');
   // THE BASE PLAN: the plinth as ONE dashed line on PLINTH_HIDDEN.
   const plan = svgs[names.find((n) => /base units/i.test(n))] || '';
@@ -983,20 +1124,32 @@ async function leg5(page) {
   const horiz = (l) => Math.abs(l.y1 - l.y2) < 0.01;
   const overlap = (a, b) => Math.min(Math.max(a.x1, a.x2), Math.max(b.x1, b.x2)) - Math.max(Math.min(a.x1, a.x2), Math.min(b.x1, b.x2)) > 1;
   const doubled = ph.filter(horiz).filter((a) => [...ph, ...shelvesDashed].filter(horiz).some((b) => b !== a && overlap(a, b) && Math.abs(a.y1 - b.y1) > 0.05 && Math.abs(a.y1 - b.y1) < 2.5));
-  const legendRow = tagsOn(plan, 'line', 'PLINTH_HIDDEN', { legend: true }).some((t) => /data-cc="legend"/.test(t)) || tagsOn(plan, 'rect', 'PLINTH_HIDDEN', { legend: true }).some((t) => /data-cc="legend"/.test(t));
-  check('F24', 'the base plan: the plinth one dashed line on PLINTH_HIDDEN (no second face beside it), its legend row', ph.length > 0 && ph.every((l) => l.dashed) && doubled.length === 0 && legendRow,
+  const legendRow = ['line', 'rect', 'path'].some((k) => tagsOn(plan, k, 'PLINTH_HIDDEN', { legend: true }).some((t) => /data-cc="legend"/.test(t)));
+  check('F24', 'the base plan: the plinth ONE dashed line on PLINTH_HIDDEN (*"bedzie jedna linia typu przerywana a nie podwojna"*), no second face beside it, its legend row', ph.length > 0 && ph.every((l) => l.dashed) && doubled.length === 0 && legendRow,
     'dashed PLINTH_HIDDEN, single, in the legend', j({ plinthHidden: ph.length, dashed: ph.filter((l) => l.dashed).length, doubled: doubled.length, shelvesDashed: shelvesDashed.length, legend: legendRow }));
   await frameOf(plan, 'f25-17-plan-base.png');
-  // THE SECTION: the traced runner.
+  // THE SECTION AT THE KITCHEN'S 558: the BUDR2 orders the NL500 T, which has no model (E4: none in the bucket).
   const secName = names.find((n) => /Sections/.test(n));
-  const sec = svgs[secName] || '';
-  const traced = dataCc(sec, 'silhouette').filter((t) => /data-layer="RUNNERS"/.test(t));
-  check('F23', 'the section through the BUDR2: the MOVENTO runner\'s traced side silhouette on RUNNERS', traced.length > 0, 'RUNNERS entities marked silhouette', j({ traced: traced.length, runners: anyOn(sec, 'RUNNERS') }));
+  const runners558 = linesOf(svgs[secName] || '', 'RUNNERS').length;
+  note('F23', 'the section A-A at the kitchen\'s 558: the BUDR2\'s NL500 T has no model in the bucket (E4), so the BOM\'s symbol stands (RUNNERS lines)', `${runners558}`);
+  await closeModals(page);
+  // THE SECTION WITH THE TRACED RUNNER: the BUDR2 at 460 (a 390 box, the NL400 T, traced), its Depth typed in the right panel.
+  await selectUnit(page, ids.c);
+  await sectionOpen(page, 'Carcass');
+  const d460 = await typeInto(page, '[data-unit-size-field="depth"]', 460);
+  const box = await page.ask(`(() => { const r = ${S}.unitResult(${j(ids.c)}); const rs = (r.hardware || []).filter((h) => /runner|movento|NL\\d/i.test(JSON.stringify(h))).map((h) => h.label || h.name || h.article || h.role).slice(0, 4); return { d: ${S}.units.find((u) => u.id === ${j(ids.c)}).params.depth, runners: rs }; })()`);
+  note('F23', 'the BUDR2\'s Depth typed 460 (a real click, Ctrl+A, the digits, Enter): its runner', j({ field: d460.shown, ...box }));
+  await key(page, 'Escape');
+  names = await openSet(page);
+  const sec = await sheetOnGlass(page, names.find((n) => /Sections/.test(n)));
+  const runners460 = linesOf(sec, 'RUNNERS').length;
+  check('F23', 'the section A-A through the BUDR2 at 460: the MOVENTO NL400 T\'s traced side silhouette, not the symbol (*"dalem ci przeciez dxf z dokladnymi rysunkami"*; many RUNNERS lines where the symbol has a few)', runners460 >= 40 && runners460 > 4 * Math.max(1, runners558),
+    `40 or more RUNNERS lines (the symbol at 558: ${runners558})`, `${runners460}`);
   await frameOf(sec, 'f25-18-section.png');
   // THE PDF: Drawing set (PDF), a real click; its pages counted; the logo embedded on each.
   await page.ask('(() => { if (!window.__t82Blobs) { window.__t82Blobs = []; const o = URL.createObjectURL.bind(URL); URL.createObjectURL = (b) => { window.__t82Blobs.push(b); return o(b); }; } return true; })()');
   await page.press('[data-wall-drawings-pdf="1"]');
-  await until(page, 'window.__t82Blobs.some((b) => b.type === \'application/pdf\' || b.size > 50000)', 90000);
+  await until(page, 'window.__t82Blobs.some((b) => b.type === \'application/pdf\' || b.size > 50000)', 120000);
   const pdf64 = await page.ask(`(async () => { const b = window.__t82Blobs.filter((x) => x.type === 'application/pdf' || x.size > 50000).pop(); if (!b) return null;
     const u = new Uint8Array(await b.arrayBuffer()); let s = ''; for (let i = 0; i < u.length; i += 1) s += String.fromCharCode(u[i]); return btoa(s); })()`);
   if (pdf64) {
@@ -1008,23 +1161,32 @@ async function leg5(page) {
     const pages = Number((info.match(/^Pages:\s+(\d+)/m) || [])[1]);
     const rows = imgs.split('\n').slice(2).map((l) => l.trim().split(/\s+/)).filter((c) => c.length > 5);
     const logoPages = new Set(rows.filter((c) => Number(c[3]) === logo.w && Number(c[4]) === logo.h).map((c) => c[0]));
+    let text = '';
+    try { text = execFileSync('pdftotext', ['-layout', file, '-']).toString(); } catch { /* the count is enough */ }
     check('F25', 'the PDF (the window\'s "Drawing set (PDF)", a real click), read back: one page per sheet', pages === names.length, `${names.length}`, `${pages} pages, ${Buffer.from(pdf64, 'base64').length} bytes`);
-    if (logoOn) check('F20', 'the PDF embeds the logo on every page (pdfimages: a 96 x 64 image per page)', logoPages.size === pages, `${pages}`, `${logoPages.size} pages carry it`);
-    note('F25', 'pdfinfo', info.trim().split('\n').filter((l) => /^(Pages|Page size|Producer|Creator|Title)/.test(l)).join('; '));
+    if (logoOn) check('F20', 'the PDF embeds the logo on every page (pdfimages: the 96 x 64 PNG, one per page)', logoPages.size === pages, `${pages}`, `${logoPages.size} pages carry it`);
+    note('F25', 'pdfinfo', info.trim().split('\n').filter((l) => /^(Pages|Page size|Producer|Title)/.test(l)).map((l) => l.replace(/\s+/g, ' ')).join('; '));
+    note('F21', 'the PDF\'s own text carries the chain figures (pdftotext)', j({ '363': /\b363\b/.test(text), '360': /\b360\b/.test(text), '376.5': /376\.5/.test(text) }));
   } else check('F25', 'the PDF exported', false, 'the file', 'no blob');
   await closeModals(page);
   // THE LOGO REMEMBERED ON THIS COMPUTER: the page reloaded (the browser's own), the stage again, the set opened.
+  // The job is unsaved, so the page asks before it goes (App.jsx's beforeunload): the walk answers Leave, as a
+  // client does, for as long as the reload and the new job take.
   if (logoOn) {
+    let asked = 0;
+    const onDialog = (e) => { try { const m = JSON.parse(e.data); if (m.method === 'Page.javascriptDialogOpening') { asked += 1; page.send('Page.handleJavaScriptDialog', { accept: true }).catch(() => {}); } } catch { /* not ours */ } };
+    page.socket.addEventListener('message', onDialog);
     await page.send('Page.reload', { ignoreCache: true });
-    await page.sleep(2500);
+    await page.sleep(3000);
     await pro(page, { base: BASE });
+    page.socket.removeEventListener('message', onDialog);
+    note('F20', 'the browser\'s reload; the page\'s "leave this page?" answered Leave', `${asked} question(s)`);
     await stageT81Kitchen(page, { inframe: true, knob: false });
     const names2 = await openSet(page);
     const again = await sheetOnGlass(page, names2.find((n) => /Fronts$/.test(n)));
-    check('F20', 'after a reload the logo is still on the sheet (kept with the company on this computer)', dataCc(again, 'logo').length >= 1 || tagsOn(again, 'image', 'SHEET_MUTED').length >= 1, 'the image', `${dataCc(again, 'logo').length + tagsOn(again, 'image', 'SHEET_MUTED').length}`);
+    check('F20', 'after a reload, a new job: the logo is still on the sheet (kept with the company on this computer)', logoImages(again).length === 1, 'the image', `${logoImages(again).length}`);
     await closeModals(page);
   }
-  void ids;
 }
 
 // === LEG 0 · THE HARNESS PROVED ON TODAY'S APP (--legs 0, never in the default run) ===
@@ -1064,7 +1226,7 @@ async function leg0(page) {
   const poly = back ? await page.ask(`(() => { const g = document.querySelector('[data-cnc-part=${j(back.id)}]'); if (!g) return null; return [...g.querySelectorAll('polygon')].map((x) => (x.getAttribute('points') || '').trim().split(/\\s+/).length); })()`) : null;
   note('F25', 'the CNC sheet\'s parts (data-cnc-part)', j(await page.ask('[...document.querySelectorAll(\'[data-cnc-part]\')].map((g) => g.getAttribute(\'data-cnc-part\') + \':\' + g.getAttribute(\'data-cnc-part-face\') + \':\' + g.querySelectorAll(\'polygon\').length).slice(0, 40)')));
   check('F25', 'CNC (the toolbar\'s own button): a drawer box back on the sheet, its outline a polygon', cnc && Array.isArray(poly) && poly.length > 0, 'a polygon', j({ part: back && back.id, poly }));
-  if (back) await domFrame(page, `document.querySelector('[data-cnc-part=${j(back.id)}]')`, 'f25-selftest-cnc.png', 30, 2.5);
+  if (back) await cncPartFrame(page, back.id, 'f25-selftest-cnc.png');
   await viewMode(page, '3d');
 }
 

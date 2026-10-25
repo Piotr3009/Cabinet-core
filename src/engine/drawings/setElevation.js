@@ -78,7 +78,7 @@ function wallEnds(group, wall) {
  * chains, each in its home as T71 hung them.
  */
 function projectedRun(group, {
-  mode, room, worktops, frontTypeOf, shakerFrame, profile, ctx,
+  mode, room, worktops, frontTypeOf, shakerFrame, profile, ctx, defaultHandle = null,
 }) {
   const W = profile.drawings.wallDrawing;
   const entities = [];
@@ -88,6 +88,8 @@ function projectedRun(group, {
   const ceiling = Number(room?.height) || 0;
   const drawn = projectRun(group, {
     view: 'front', mode, profile, worktops, frontTypeOf, shakerFrame,
+    // T82 F22: a front with no handle chosen shows the profile's default.
+    defaultHandle,
     // A piece shorter than a quarter of a paper millimetre is not a line a
     // printer can draw: what a 3 mm slot leaves of a board behind it.
     minEdge: ctx ? ctx.mm(profile.drawings.projector.minEdgePaperMm) : 0,
@@ -117,10 +119,12 @@ function projectedRun(group, {
  */
 export function buildRunElevation(group, {
   withFronts = true, mode = null, room = null, worktops = [], frontTypeOf = null, shakerFrame = null, profile, ctx,
+  defaultHandle = null,
 }) {
   // T81 F3 to F5 · every sheet of a wall is the projector's: only what the eye sees.
+  // T82 F22 · `defaultHandle`: projector.js sheetDefaultHandle, drawn on the fronts and the X-ray.
   return projectedRun(group, {
-    mode: mode || (withFronts ? 'fronts' : 'no-fronts'), room, worktops, frontTypeOf, shakerFrame, profile, ctx,
+    mode: mode || (withFronts ? 'fronts' : 'no-fronts'), room, worktops, frontTypeOf, shakerFrame, profile, ctx, defaultHandle,
   });
 }
 

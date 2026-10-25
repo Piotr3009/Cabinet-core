@@ -313,6 +313,14 @@ export const DEFAULT_CABINET_PROFILE = {
     // the same place with the same axis.
     bar: { rodDiameter: 12, standoff: 32, postDiameter: 10, overhang: 20 },
     knob: { diameter: 30, standoff: 22, stemDiameter: 8 },
+    // ─── T82 F22 · THE HANDLE A SHEET DRAWS WHEN NONE IS CHOSEN ─────────────
+    // The owner, 24.10.2026 (19:34): *"nie widac wogole zeby bylo jakiekolwiek
+    // handles nic"*. A project with no handle chosen gets this one on its
+    // fronts and X-ray sheets, at the engine's own point and never drilled
+    // (engine/drawings/projector.js sheetDefaultHandle): a knob, drawn at
+    // `drawings.knobDiameter` 30. 'none' here draws nothing. PROPOSED.
+    // computeCabinet never reads it.
+    default: { type: 'knob' },
     finish: 'gold',
     // ─── TURN 57 (CLAUDE.md F2.1): THE J-PULL, WHICH BUYS NOTHING ──────────
     //

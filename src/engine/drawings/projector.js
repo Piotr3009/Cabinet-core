@@ -58,6 +58,8 @@ import { panelRecesses } from '../recesses.js';
 import { wallGapOf } from '../runs.js';
 import { runnerAskFor } from '../runners.js';
 import { corniceSolids } from '../cornice.js';
+import { resolveHandle } from '../handles.js';
+import { getUnitType } from '../types.js';
 import { doorSwing, elevationOutline, frontDetail, panelStyle } from './frontElevation.js';
 import { frontDecorationElevation } from './frontDecorationDrawing.js';
 import { silhouetteMark } from './silhouettes.js';
@@ -711,7 +713,7 @@ function memberOffset(m, profile) {
  * body. A symbol is a THIN solid on its family's ink; it is hidden by the
  * boards in front of it and hides nothing but itself.
  */
-function hardwareSolids(m, profile) {
+function hardwareSolids(m, profile, defaultHandle = null) {
   const out = [];
   const r = m.result;
   const hw = hardwareInstances(r, profile);
@@ -798,7 +800,7 @@ function hardwareSolids(m, profile) {
   // circle of 30 (a mark), on a plan or a section their own side.
   const K = profile.handles?.knob || {};
   const B = profile.handles?.bar || {};
-  for (const h of handleMarks(m, profile)) {
+  for (const h of handleMarks(m, profile, defaultHandle)) {
     if (h.nx !== 0) continue;
     const face = h.points[0][2];
     if (h.type === 'knob' || h.points.length < 2) {
@@ -828,13 +830,75 @@ function hardwareSolids(m, profile) {
   return out;
 }
 
+// ─── T82 F22 · HANDLES ON THE SHEETS ────────────────────────────────────────
+//
+// The owner, 24.10.2026 (19:34): *"nie widac wogole zeby bylo jakiekolwiek
+// handles nic"*. The probe (verify/t82/f22-probe.md): with no handle chosen
+// the engine drills none (R9, engine/handles.js resolveHandle), so the
+// drill summary is empty and every sheet showed fronts with nothing to pull.
+// CLAUDE.md T82 F22: the fronts sheet then draws the project's DEFAULT
+// handle (`profile.handles.default`, a knob of 30) at the engine's own
+// point; `handles: 'none'` is a choice and draws nothing; the drill summary
+// is untouched. So the sheet asks the engine's law for the point alone, as
+// cabinet.js asks it, and writes no `meta.handle` (the room mounts its 3-D
+// handle on it) and no drill: the CNC, the BOM and the room never see it.
+
+/** The profile's default as a handle record, or null for none. */
+function profileDefaultHandle(profile) {
+  const raw = profile?.handles?.default;
+  const d = typeof raw === 'string' ? { type: raw } : raw;
+  if (!d || (d.type !== 'knob' && d.type !== 'bar')) return null;
+  const centres = d.type === 'bar'
+    ? (Number(d.centres) > 0 ? Number(d.centres) : (Number(profile?.handles?.defaultCentres) || 128))
+    : 0;
+  return { type: d.type, centres };
+}
+
+/**
+ * THE HANDLE A SHEET DRAWS ON A FRONT THE ENGINE FITTED NONE TO, or null.
+ *
+ * Null when the project CHOSE: a handle (bar, knob or J-pull: the engine's
+ * own answer stands, and a J is drawn as no handle), the J-pull of a project
+ * saved as `style: 'HJ'` (lib/frontOpening.js reads it as J-pull), or NONE,
+ * which the project already says in two words: push-to-open written by the
+ * Settings opening tile and the Hardware step's runner switch
+ * (`runners.variant 'T'`, the MOVENTO TIP-ON, on the design itself and never
+ * the profile's fallback for a project that has not answered), and the
+ * hardware block's `handles: 'none'` (T32). Else the profile's default.
+ *
+ * @param {object|null} design  the project design (migrated or raw)
+ * @param {object} profile
+ * @returns {{type:'knob'|'bar', centres:number}|null}
+ */
+export function sheetDefaultHandle(design, profile) {
+  const chosen = design?.fronts?.handle;
+  if (chosen && chosen.type) return null;
+  if (design?.fronts?.style === 'HJ') return null;
+  if (String(design?.hardware?.handles || '').toLowerCase() === 'none') return null;
+  if (String(design?.runners?.variant || '').toUpperCase() === 'T') return null;
+  return profileDefaultHandle(profile);
+}
+
+/**
+ * Does this front take the sheet's default handle? A house front (the
+ * engine's handle law gives it a class) on a unit that is not opened by a
+ * push of its own. One predicate, so a kit with its own opening says so
+ * here: PART A's HAWA pocket door (`POCKET-DOOR`, role `pocket_door`, Push
+ * by HAWA's hardware) has no class and is skipped; the covered units' doors
+ * are dropped by the pocket in the engine. HOOK (A5, F7): a further push
+ * rule of a new kit joins the `push` line below.
+ */
+function takesSheetDefault(panel, unit) {
+  if (panel?.role !== 'front') return false;
+  const push = panel.meta?.push === true || unit?.params?.pocket?.push === true;
+  return !push;
+}
+
 /** The handles of one member, as the room places them (out of the front's cut frame). */
-function handleMarks(m, profile) {
+function handleMarks(m, profile, defaultHandle = null) {
   const out = [];
   const r = m.result;
-  for (const h of r.drillSummary?.handles || []) {
-    const p = (r.panels || []).find((q) => q.id === h.panel && q.box);
-    if (!p) continue;
+  const place = (p, h, extra = {}) => {
     const box = p.box;
     // The leaf's face normal (3d/Hardware.jsx FrontHandle `nx`): a leaf standing along z is not drawn on an elevation.
     // eslint-disable-next-line no-nested-ternary
@@ -843,7 +907,32 @@ function handleMarks(m, profile) {
     const at = (x, y) => (nx > 0 ? [box.x + box.w, box.y + Number(y), box.z + Number(x)]
       : (nx < 0 ? [box.x, box.y + Number(y), box.z + box.d - Number(x)] : [box.x + box.w - Number(x), box.y + Number(y), faceZ]));
     const holes = Array.isArray(h.holes) && h.holes.length ? h.holes : [[h.x, h.y]];
-    out.push({ type: h.type, panel: p.id, points: holes.map(([x, y]) => at(x, y)), axis: h.axis, nx });
+    out.push({ type: h.type, panel: p.id, points: holes.map(([x, y]) => at(x, y)), axis: h.axis, nx, ...extra });
+  };
+  const drilled = new Set();
+  for (const h of r.drillSummary?.handles || []) {
+    const p = (r.panels || []).find((q) => q.id === h.panel && q.box);
+    if (!p) continue;
+    drilled.add(p.id);
+    place(p, h);
+  }
+  // T82 F22 · the default, on every front the engine fitted none to, at the
+  // point the engine's law gives it (cabinet.js asks resolveHandle with the
+  // same panel, unit type, hinge and frame), drilled nowhere.
+  if (defaultHandle) {
+    const unitType = getUnitType(m.unit?.type ?? r.params?.type);
+    const cabinetHinge = String(r.params?.hinge || profile?.doors?.defaultHinge || 'L').toUpperCase() === 'R' ? 'R' : 'L';
+    for (const p of r.panels || []) {
+      if (!p.box || drilled.has(p.id) || !takesSheetDefault(p, m.unit)) continue;
+      const got = resolveHandle({
+        panel: p, unitType, project: defaultHandle, own: null, hinge: p.meta?.hinge || cabinetHinge, frame: p.meta?.shaker?.frame ?? null,
+      }, profile);
+      if (!got || got.system === 'jpull' || !got.reference) continue;
+      place(p, {
+        type: got.type, axis: got.reference.axis, x: got.reference.x, y: got.reference.y,
+        holes: got.holes.map((k) => [k.x, k.y]),
+      }, { fallback: true });
+    }
   }
   return out;
 }
@@ -856,7 +945,7 @@ function handleMarks(m, profile) {
  * @param {object} args    { profile, worktops, frontTypeOf, shakerFrame, clipX: [x0, x1] | null }
  */
 export function runSolids(group, {
-  profile, worktops = [], frontTypeOf = null, shakerFrame = null,
+  profile, worktops = [], frontTypeOf = null, shakerFrame = null, defaultHandle = null,
 } = {}) {
   const solids = [];
   const marks = [];
@@ -884,7 +973,7 @@ export function runSolids(group, {
         member: m,
       });
     }
-    for (const s of hardwareSolids(m, profile)) {
+    for (const s of hardwareSolids(m, profile, defaultHandle)) {
       solids.push({ ...s, unitId: m.unit.id, num, prisms: s.prisms.map((pr) => movePrism(pr, off)), offset: off, member: m });
     }
     // The cornice: bought moulding, drawn from assemblies.cornice (3d/Cornice.jsx).
@@ -937,10 +1026,12 @@ export function runSolids(group, {
         }
       }
     }
-    for (const h of handleMarks(m, profile)) {
+    for (const h of handleMarks(m, profile, defaultHandle)) {
       const host = `${m.unit.id}:${h.panel}`;
       const pts = h.points.map((q) => [q[0] + off[0], q[1] + off[1], q[2] + off[2]]);
-      marks.push({ kind: 'handle', host, front: true, type: h.type, pts, axis: h.axis, standing: h.nx !== 0 });
+      marks.push({
+        kind: 'handle', host, front: true, type: h.type, pts, axis: h.axis, standing: h.nx !== 0, ...(h.fallback ? { fallback: true } : {}),
+      });
     }
     // The hinge bars: one per cup, on the hinge edge of the leaf (CLAUDE.md F3).
     const hinges = hardwareInstances(r, profile).hinges;
@@ -1038,9 +1129,11 @@ function inkOf(solid, mode) {
 /** Stage 1: the faces, edges and marks of one group in its own run frame. */
 function buildScene(group, {
   view, mode = 'fronts', cut = null, beyond = null, clipX = null, skipSolid = null,
-  profile, worktops = [], frontTypeOf = null, shakerFrame = null, solidsIn = null,
+  profile, worktops = [], frontTypeOf = null, shakerFrame = null, solidsIn = null, defaultHandle = null,
 }) {
-  const { solids: all, marks } = solidsIn || runSolids(group, { profile, worktops, frontTypeOf, shakerFrame });
+  const { solids: all, marks } = solidsIn || runSolids(group, {
+    profile, worktops, frontTypeOf, shakerFrame, defaultHandle,
+  });
   const faceOn = view === 'front' || view === 'perspective';
   // The cut plane: a plan keeps what is below it, a section what is beyond it.
   const plane = cut == null ? null
@@ -1352,7 +1445,9 @@ function renderScene(scene, V, {
         for (const P of shown) {
           const c = V.screen(P);
           const r = V.ortho ? knobD / 2 : (knobD / 2) * (V.focal / Math.max(1, V.depth(P)));
-          entities.push({ kind: 'circle', layer: 'HANDLES', cx: c[0], cy: c[1], r, pen: 'VISIBLE', src: mk.host, handle: 'knob' });
+          entities.push({
+            kind: 'circle', layer: 'HANDLES', cx: c[0], cy: c[1], r, pen: 'VISIBLE', src: mk.host, handle: 'knob', ...(mk.fallback ? { defaultHandle: true } : {}),
+          });
         }
       } else {
         // A bar: its two fixings, joined by a line of the bar's own length.
@@ -1363,12 +1458,16 @@ function renderScene(scene, V, {
         const u = [(P1[0] - P0[0]) / len, (P1[1] - P0[1]) / len, (P1[2] - P0[2]) / len];
         const a = V.screen([P0[0] - u[0] * over, P0[1] - u[1] * over, P0[2] - u[2] * over]);
         const b = V.screen([P1[0] + u[0] * over, P1[1] + u[1] * over, P1[2] + u[2] * over]);
-        entities.push(line(a, b, { layer: 'HANDLES', pen: 'VISIBLE', src: mk.host, handle: 'bar' }));
+        entities.push(line(a, b, {
+          layer: 'HANDLES', pen: 'VISIBLE', src: mk.host, handle: 'bar', ...(mk.fallback ? { defaultHandle: true } : {}),
+        }));
         const post = (Number(B.postDiameter) || 10) / 2;
         for (const P of [P0, P1]) {
           const c = V.screen(P);
           const r = V.ortho ? post : post * (V.focal / Math.max(1, V.depth(P)));
-          entities.push({ kind: 'circle', layer: 'HANDLES', cx: c[0], cy: c[1], r, pen: 'THIN', src: mk.host, handle: 'fixing' });
+          entities.push({
+            kind: 'circle', layer: 'HANDLES', cx: c[0], cy: c[1], r, pen: 'THIN', src: mk.host, handle: 'fixing', ...(mk.fallback ? { defaultHandle: true } : {}),
+          });
         }
       }
     } else if (mk.kind === 'bar') {
@@ -1425,17 +1524,19 @@ function renderScene(scene, V, {
  *   skipSolid  (solid) => true for a solid left out of this view
  *   minEdge    a visible piece shorter than this (drawing mm) is noise
  *   solidsIn   the `runSolids` answer, when the caller already holds it
+ *   defaultHandle  T82 F22: the handle drawn on a front the engine fitted
+ *              none to (`sheetDefaultHandle`), or null; never drilled
  *   profile, worktops, frontTypeOf, shakerFrame
  * @returns {{entities:Array, solids:Array, census:object, view:object}}
  */
 export function projectRun(group, {
   view = 'front', mode = 'fronts', cut = null, beyond = null, clipX = null, camera = null,
   hiddenAs = null, skipSolid = null, minEdge = 0, profile, worktops = [], frontTypeOf = null, shakerFrame = null,
-  solidsIn = null,
+  solidsIn = null, defaultHandle = null,
 } = {}) {
   const V = view === 'perspective' ? perspectiveView(camera.P, camera.T) : orthoView(view);
   const scene = buildScene(group, {
-    view: V.name, mode, cut, beyond, clipX, skipSolid, profile, worktops, frontTypeOf, shakerFrame, solidsIn,
+    view: V.name, mode, cut, beyond, clipX, skipSolid, profile, worktops, frontTypeOf, shakerFrame, solidsIn, defaultHandle,
   });
   const { entities, census } = renderScene(scene, V, { mode, hiddenAs, minEdge, profile });
   return { entities, solids: scene.live, census, view: V };

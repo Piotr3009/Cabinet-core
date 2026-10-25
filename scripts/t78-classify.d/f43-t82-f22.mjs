@@ -24,7 +24,8 @@ export const LICENSED = {
   'src/engine/drawings/projector.js': {
     why: `T82 F22: sheetDefaultHandle(design, profile) names the handle a sheet draws where the project chose none; `
       + `handleMarks draws it on every house front the engine fitted none to, at resolveHandle's own point, flagged `
-      + `defaultHandle, through runSolids / buildScene / projectRun's new defaultHandle option. Never drilled. ${OWNER}`,
+      + `defaultHandle, through runSolids / buildScene / projectRun's new defaultHandle option. Never drilled. ${OWNER}`
+      + ' After the C/D/E review (sheets 2): takesSheetDefault asks ownsAPull first (the front\'s own record in params.front_handles, a handle or J edge the engine wrote on it, a handleless shape), so a front with its own pull takes no default knob.',
     gates: [],
   },
   'src/engine/drawings/setElevation.js': {

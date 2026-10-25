@@ -887,9 +887,26 @@ export function sheetDefaultHandle(design, profile) {
  * by HAWA's hardware) has no class and is skipped; the covered units' doors
  * are dropped by the pocket in the engine. HOOK (A5, F7): a further push
  * rule of a new kit joins the `push` line below.
+ *
+ * AFTER THE REVIEW (verify:sheets:2): the default is only for a front with
+ * NOTHING to pull. A front that carries a handle of its own takes none,
+ * whatever the project says: its own record (DoorModal's per-front handle,
+ * a J-pull with "apply to all" unticked: `params.front_handles`, which
+ * cabinet.js reads as `own`), any handle or J edge the engine wrote on it
+ * (`meta.handle`, `meta.jpull`, `cnc.jpull`), or a handleless shape whose
+ * groove is its pull (front types `H` and `HJ`). One list: a further pull
+ * of a front's own joins `ownsAPull`.
  */
+function ownsAPull(panel, unit) {
+  if (unit?.params?.front_handles?.[panel.id]) return true;
+  if (panel.meta?.handle || panel.meta?.jpull || panel.cnc?.jpull) return true;
+  const style = String(panel.meta?.frontType || '').toUpperCase();
+  return style === 'H' || style === 'HJ';
+}
+
 function takesSheetDefault(panel, unit) {
   if (panel?.role !== 'front') return false;
+  if (ownsAPull(panel, unit)) return false;
   const push = panel.meta?.push === true || unit?.params?.pocket?.push === true;
   return !push;
 }

@@ -171,6 +171,56 @@ test('F22 · a chosen knob is the engine\'s, as T81 drew it: one circle per dril
   assert.ok(circles.every((c) => !c.defaultHandle));
 });
 
+// AFTER THE REVIEW (verify:sheets:2): the default is only for a front with
+// nothing to pull. A front the owner gave a handle of its own (DoorModal's
+// per-front handle, a J-pull with "apply to all" unticked, a handleless
+// shape) takes none, whatever the project says.
+test('F22 · a front with its own handle takes no default knob: its own J-pull, its own bar; a plain door beside it still does', () => {
+  const sheetsOf = () => {
+    const a = setArgs();
+    const sheets = wallDrawingSheets(a);
+    return { a, fronts: sheets.find((s) => s.variant === 'fronts').sheet, xray: sheets.find((s) => s.variant === 'xray').sheet };
+  };
+  const knobsOn = (sheet, src) => sheet.entities.filter((e) => e.layer === 'HANDLES' && e.src === src && notLegend(e));
+  for (const own of [{ type: 'jpull' }, { type: 'bar', centres: 128 }]) {
+    const ids = t81Kitchen({ inframe: false, knob: false });
+    S().setFrontHandle(ids.a, '01-F', own);
+    const { a, fronts, xray } = sheetsOf();
+    assert.deepEqual(sheetDefaultHandle(a.design, P()), { type: 'knob', centres: 0 }, 'the project chose none');
+    const door = `${ids.a}:01-F`;
+    const result = a.entries.find((e) => e.unit.id === ids.a).result;
+    const leaf = result.panels.find((p) => p.id === '01-F');
+    if (own.type === 'jpull') {
+      assert.ok(leaf.meta.jpull, 'the engine machines the J on that door');
+      assert.equal(knobsOn(fronts, door).length, 0, 'its own J-pull: no knob on the fronts sheet');
+      assert.equal(knobsOn(xray, door).length, 0, '...nor on the X-ray');
+    } else {
+      // Its own bar is the engine's, drawn where it is drilled: a bar on two fixings, never the default.
+      const got = knobsOn(fronts, door);
+      assert.equal(got.filter((e) => e.handle === 'bar').length, 1, 'its own bar');
+      assert.ok(got.every((e) => !e.defaultHandle), 'no default beside it');
+    }
+    // The plain door beside it, with nothing to pull, still takes the default.
+    const pair = a.entries.find((e) => e.unit.id === ids.b).result.panels.find((p) => p.id.endsWith('-FL'));
+    const plain = knobsOn(fronts, `${ids.b}:${pair.id}`);
+    assert.equal(plain.length, 1, 'a plain door: one knob');
+    assert.ok(plain[0].defaultHandle && plain[0].handle === 'knob');
+  }
+});
+
+test('F22 · a handleless shape is its own pull: a J-type or J-groove front takes no default', () => {
+  for (const style of ['HJ', 'H']) {
+    const ids = t81Kitchen({ inframe: false, knob: false });
+    S().updateUnitParams(ids.a, { front_type: style });
+    const a = setArgs();
+    const leaf = a.entries.find((e) => e.unit.id === ids.a).result.panels.find((p) => p.id === '01-F');
+    assert.equal(leaf.meta.frontType, style, `the door is cut ${style}`);
+    const { sheet } = frontsOf(a);
+    assert.equal(sheet.entities.filter((e) => e.layer === 'HANDLES' && e.src === `${ids.a}:01-F`).length, 0, `${style}: no knob`);
+    assert.equal(sheet.entities.filter((e) => e.layer === 'HANDLES' && e.defaultHandle).length, 5, `${style}: the other five fronts keep theirs`);
+  }
+});
+
 // ═══ F24 · ONE DASHED LINE FOR THE PLINTH ══════════════════════════════════
 
 test('F24 · PLINTH_HIDDEN: a layer of its own, grey, the FINE pen, dashed as the HIDDEN role, an ink nobody else wears', () => {

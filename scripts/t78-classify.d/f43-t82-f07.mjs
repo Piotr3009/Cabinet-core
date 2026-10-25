@@ -32,7 +32,8 @@ export const LICENSED = {
   },
   'src/engine/drawings/setSection.js': {
     why: `T82 F7: a station through a run's HAWA pocket (the next letter), its two track axes (22, 41) the track's `
-      + `length from 5 behind the front edge, and T1. ${OWNER}`,
+      + `length from 5 behind the front edge, and T1. ${OWNER}`
+      + ' T82 F7, after the review: a section that does not see panel B draws the tracks behind the cut, never on panel A.',
     gates: [],
   },
 };

@@ -398,9 +398,17 @@ export function pocketPlanEntities(group, { profile, ctx, gapOf }) {
  * the engine cuts the track (`trackMm`, T1 - 7) from 5 behind the front
  * edge, and T1 itself, from the pocket's front plane back. In the section's
  * frame (x off the wall, y up), as the projector's section entities are.
- * `gapOf(unit)` is how far the unit stands off its wall.
+ * `gapOf(unit)` is how far the unit stands off its wall; `at` is the knife,
+ * along the wall (the section looks along the wall towards its end).
+ *
+ * T82 F7, after the review (roomsheets 3): the tracks are on panel B. Where B
+ * stands BEYOND the knife the section sees its face, and the axes are drawn
+ * as seen (solid, as the projector draws B and its zones). Where B stands
+ * BEHIND the knife (a hand-L pocket, at a run's right end) the section sees
+ * panel A, which carries no track: the axes are drawn hidden (dashed) and
+ * their words say so, "BEHIND THE CUT", so no track is ever drawn on A.
  */
-export function pocketSectionEntities(members, { profile, ctx, gapOf }) {
+export function pocketSectionEntities(members, { profile, ctx, gapOf, at = null }) {
   const out = [];
   const seen = new Set();
   for (const m of members || []) {
@@ -409,22 +417,29 @@ export function pocketSectionEntities(members, { profile, ctx, gapOf }) {
     const n = g.numbers;
     const oz = Number(gapOf(m.unit)) || 0;
     const base = Number(m.base) || 0;
-    for (const d of g.doors) {
-      if (!d.panelB) continue;
+    const ox = Number(m.x) || 0;
+    // The doors whose panel B the knife shows first, so a track seen wins over its twin behind the cut.
+    const beyond = (d) => at == null || ox + d.panelB.box.x >= Number(at) - 1e-6;
+    const doors = g.doors.filter((d) => d.panelB).sort((a, b) => Number(beyond(b)) - Number(beyond(a)));
+    for (const d of doors) {
       const host = `${m.unit.id}:${d.doorId}`;
       const pb = d.panelB.box;
+      const seenB = beyond(d);
       const front = oz + d.zf;
       const z0 = front - (n.trackStart ?? 0);
       const z1 = z0 - (d.trackMm ?? 0);
+      const behind = seenB ? '' : ' BEHIND THE CUT';
       const rows = [];
-      if (n.topAxis != null) rows.push({ y: base + pb.y + pb.h - n.topAxis, word: `TOP TRACK ${formatDimension(n.topAxis)}`, meta: 'hawa-track-top' });
-      if (n.bottomAxis != null) rows.push({ y: base + pb.y + n.bottomAxis, word: `BOTTOM TRACK ${formatDimension(n.bottomAxis)}`, meta: 'hawa-track-bottom' });
+      if (n.topAxis != null) rows.push({ y: base + pb.y + pb.h - n.topAxis, word: `TOP TRACK ${formatDimension(n.topAxis)}${behind}`, meta: 'hawa-track-top' });
+      if (n.bottomAxis != null) rows.push({ y: base + pb.y + n.bottomAxis, word: `BOTTOM TRACK ${formatDimension(n.bottomAxis)}${behind}`, meta: 'hawa-track-bottom' });
       if (d.trackMm > 0) {
         for (const r of rows) {
           const key = `${r.meta}:${r.y}:${z0}:${z1}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          out.push({ ...line('HINGES', z1, r.y, z0, r.y), pen: 'THIN', src: host, meta: r.meta });
+          out.push(seenB
+            ? { ...line('HINGES', z1, r.y, z0, r.y), pen: 'THIN', src: host, meta: r.meta }
+            : { ...line('HINGES', z1, r.y, z0, r.y), pen: 'HIDDEN', hidden: true, src: host, meta: r.meta });
           out.push({
             ...text('SHEET_MUTED', (z0 + z1) / 2, r.y + ctx.mm(1.6), r.word, ctx.mm(1.9)),
             paperHeight: 1.9, mask: true, src: host, meta: `${r.meta}-label`,

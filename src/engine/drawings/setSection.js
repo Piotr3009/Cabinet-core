@@ -124,7 +124,8 @@ export function buildStation(group, station, {
   });
   entities.push(...drawn.entities);
   // T82 F7 · a HAWA pocket the knife passes: its tracks' axes (22, 41) and T1.
-  entities.push(...pocketSectionEntities(members, { profile, ctx, gapOf: (u) => wallGapOf(u, profile) }));
+  // T82 F7, after the review: the knife's own station, so a panel B behind it is drawn as behind it.
+  entities.push(...pocketSectionEntities(members, { profile, ctx, gapOf: (u) => wallGapOf(u, profile), at: station.x }));
   // ─── T80 F8 · THE FILLER ON THE SECTION ────────────────────────────────
   // The owner, 21.10.2026 (22:40): *"6 informacja i na pdf na przekroju pokaz
   // kawalek timber"*. Over a base carcass, behind the top rail, the joiner's

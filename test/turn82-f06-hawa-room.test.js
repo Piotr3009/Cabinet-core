@@ -310,7 +310,9 @@ function stage(params = ONE()) {
     ...defaultParamsFor('BUD', P()), width: 500, depth: 580, unit_num: '02',
     doors: { count: 1, hinge: 'L' }, pocket_covered: { pocketId: 'hp', unitNum: 'HP01' },
   };
-  const bud = { id: 'b', type: 'BUD', position: { wall: 0, x_mm: 1000 + first.hawa.widthMm }, params: budParams };
+  // The BUD on the side the door covers: right of the pocket for hand R, left of it for hand L.
+  const budX = params.pocket?.hand === 'L' ? 1000 - budParams.width : 1000 + first.hawa.widthMm;
+  const bud = { id: 'b', type: 'BUD', position: { wall: 0, x_mm: budX }, params: budParams };
   const entries = [{ unit: pocket, result }, { unit: bud, result: cut({ type: 'BUD', ...budParams }) }];
   const group = wallGroups(entries, P())[0];
   return { entries, group, m: group.members.find((x) => x.unit.id === 'hp'), result, f: result.hawa.doors[0] };
@@ -413,4 +415,33 @@ test('F7 · the section through the pocket: the tracks\' two axes (22 and 41), e
   assert.deepEqual([Math.min(top.x1, top.x2), Math.max(top.x1, top.x2)],
     [front - H.depth.trackStartMm - f.trackMm, front - H.depth.trackStartMm], 'the track\'s length (T1 - 7) from 5 behind the front edge');
   assert.ok(one.entities.some((e) => e.kind === 'text' && e.text === `T1 ${f.T1}`), 'T1 on the section');
+});
+
+test('F7, after the review (roomsheets 3) · the section draws the tracks on panel B as seen: solid where B is beyond the knife, dashed and said where it is behind it', () => {
+  const H = P().hawa;
+  for (const [name, params] of [['hand R (B beyond the knife)', ONE()], ['hand L (B behind the knife)', ONE_L()]]) {
+    const { group, m, result } = stage(params);
+    const st = sectionStations(group).find((s) => s.member === m);
+    assert.ok(st, `${name}: a station through the pocket`);
+    const B = result.panels.find((p) => p.part === 'POCKET-B').box;
+    const one = buildStation(group, st, { profile: P(), ctx: ctx() });
+    // What the projector itself decided about panel B on this station: drawn, or not.
+    const bSeen = one.entities.some((e) => e.src === `${m.unit.id}:POCKET-B` && e.layer !== 'MASK');
+    assert.equal(bSeen, m.x + B.x >= st.x, `${name}: the projector draws B only beyond the knife`);
+    const tracks = one.entities.filter((e) => e.meta === 'hawa-track-top' || e.meta === 'hawa-track-bottom');
+    assert.equal(tracks.length, 2, `${name}: both tracks`);
+    for (const t of tracks) {
+      if (bSeen) {
+        assert.ok(!t.hidden && t.pen === 'THIN', `${name}: ${t.meta} solid, on B's face as seen`);
+      } else {
+        assert.ok(t.hidden && !t.solid && t.pen === 'HIDDEN', `${name}: ${t.meta} dashed, B is behind the cut`);
+      }
+    }
+    const words = one.entities.filter((e) => e.kind === 'text' && /TRACK/.test(e.text)).map((e) => e.text);
+    assert.equal(words.length, 2);
+    for (const w of words) {
+      assert.equal(/BEHIND THE CUT/.test(w), !bSeen, `${name}: "${w}"`);
+      assert.match(w, new RegExp(`^(TOP TRACK ${H.holes.b.topAxisMm}|BOTTOM TRACK ${H.holes.b.bottomAxisMm})`));
+    }
+  }
 });

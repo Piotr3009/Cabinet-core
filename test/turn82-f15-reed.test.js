@@ -372,3 +372,69 @@ test('F15 after the review (a) · a screw under a valley is still refused in wor
     .panels.find((p) => p.part === 'DRAWER-FRONT').meta.frontDecoration;
   assert.equal(small.status, 'ready', JSON.stringify(small.problems));
 });
+
+// ─── T82 F15, AFTER THE REVIEW (b) · THE REEDS AND THE J-PULL ──────────────
+// The review (reeds:2): reeds run to the top edge by rule, so on a TOP J-pull
+// they always cross the J's slot, and the refusal sent the owner to "Increase
+// its frame or margin", a field that cannot help (no frame, and the reed
+// margin acts on the sides). The refusal stays (a 10 mm valley through the
+// J's 4.2 mm lip is real); the sentence now names what he can take.
+
+const jBud = (type, extra = {}, more = {}) => {
+  const params = {
+    ...defaultParamsFor(type, P), unit_num: '01', front_type: 'FL', front_t: 22,
+    front_decoration: reed(extra), project_handle: { type: 'jpull' }, ...more,
+  };
+  return computeCabinet(params, P).panels.filter((p) => p.meta?.frontDecoration);
+};
+
+test('F15 after the review (b) · a TOP J-pull with reeds is refused with the remedies that work, and they work', () => {
+  const [door] = jBud('BUD');
+  assert.equal(door.cnc.jpull.edge, 'TOP');
+  const d = door.meta.frontDecoration;
+  assert.equal(d.status, 'blocked');
+  const said = d.problems.find((p) => p.code === 'FRONT_DECORATION_JPULL');
+  assert.equal(said.message, 'Reeds run to the top edge and cross the J-pull\'s slot, 45 mm in from it: choose Grooves in the '
+    + 'Flute profile for this front, or another handle.');
+  assert.doesNotMatch(said.message, /frame or margin/);
+  // The first remedy: Grooves, the same J door.
+  assert.equal(jBud('BUD', { fluteProfile: 'groove' })[0].meta.frontDecoration.status, 'ready');
+  // The second: another handle.
+  const knob = computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: '01', front_type: 'FL', front_t: 22, front_decoration: reed(), project_handle: { type: 'knob' } }, P)
+    .panels.find((p) => p.meta?.frontDecoration);
+  assert.equal(knob.meta.frontDecoration.status, 'ready');
+  // The drawer fronts of a J kitchen say the same, and grooves cut them.
+  for (const f of jBud('BUDR2')) {
+    assert.equal(f.meta.frontDecoration.problems.find((p) => p.code === 'FRONT_DECORATION_JPULL')?.message, said.message);
+  }
+  assert.ok(jBud('BUDR2', { fluteProfile: 'groove' }).every((f) => f.meta.frontDecoration.status === 'ready'));
+});
+
+test('F15 after the review (b) · a side J-pull: the reeds keep their margin, and a margin too narrow names the number', () => {
+  const [tall] = jBud('WD');
+  assert.equal(tall.cnc.jpull.edge, 'L');
+  assert.equal(tall.meta.frontDecoration.status, 'ready', 'the 50 margin clears the J\'s 45');
+  const [narrow] = jBud('WD', { grooveInsetMm: 30 });
+  const said = narrow.meta.frontDecoration.problems.find((p) => p.code === 'FRONT_DECORATION_JPULL');
+  assert.equal(said.message, 'The reeds enter the J-pull\'s slot, 45 mm in from its edge: make the Reed side margin more than '
+    + '45 mm, or choose Grooves in the Flute profile, or another handle.');
+  assert.equal(jBud('WD', { grooveInsetMm: 46 })[0].meta.frontDecoration.status, 'ready', 'the remedy works');
+  // Grooves keep T76's sentence, where the frame or the margin is the remedy.
+  const groove = buildFrontDecoration({
+    panel: { id: '01-F', w: 597, h: 767, thickness: 22, cnc: { jpull: { edge: 'L', profile: { slotDepth: 40, slotR: 5 } } } },
+    config: { ...defaultFrontDecoration('FL', P), grooveInsetMm: 20 }, style: 'FL', profile: P,
+  });
+  assert.equal(groove.problems.find((p) => p.code === 'FRONT_DECORATION_JPULL').message,
+    'The decoration enters the J-pull machining zone. Increase its frame or margin.');
+});
+
+test('F15 after the review (b) · a bore wider than a reed always meets a valley, and the sentence says so', () => {
+  // Horizontal reeds run to the hinge edge, over the cups (fi 35 against reeds of 20).
+  const [door] = jBud('BUD', { grooveDirection: 'horizontal' }, { project_handle: { type: 'knob' } });
+  const said = door.meta.frontDecoration.problems.filter((p) => p.code === 'FRONT_DECORATION_BACK_BORE');
+  assert.ok(said.length > 0);
+  assert.match(said[0].message, /over the back cup .*A bore 35 mm wide always meets a valley of reeds of 20 mm: keep the reeds clear of it \(the margin, or the other direction\), or choose a thicker front\.$/);
+  // Vertical reeds keep the cups in the margin: the same door is cut.
+  const [upright] = jBud('BUD', {}, { project_handle: { type: 'knob' } });
+  assert.equal(upright.meta.frontDecoration.status, 'ready');
+});

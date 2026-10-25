@@ -536,6 +536,27 @@ function reedDepthOverDisc(op, centre, radius) {
   return (Number(op.startDepth) || 0) + (nearest >= r ? 0 : r - Math.sqrt(Math.max(0, r * r - t * t)));
 }
 
+/**
+ * T82 F15, after the review (reeds:2) · the J-pull sentence. Grooves and the
+ * frame recipes keep T76's ("Increase its frame or margin"), where that is the
+ * remedy. Reeds run to the two edges across their direction (top and bottom
+ * for upright reeds) and keep a margin on the other two: a J on an edge they
+ * run to is crossed whatever the margin, so the sentence names what works
+ * (Grooves, or another handle); a J on a margin edge names the margin's number.
+ */
+function jpullSentence(decoration, edge, reach) {
+  if (!decoration.operations.some((op) => op.kind === 'reed')) return 'The decoration enters the J-pull machining zone. Increase its frame or margin.';
+  const top = ['T', 'TOP'].includes(edge);
+  const horizontal = decoration.parameters?.grooveDirection === 'horizontal';
+  const mm = round(reach);
+  if (top !== horizontal) {
+    return `Reeds run to the ${top ? 'top' : 'side'} edge and cross the J-pull's slot, ${mm} mm in from it: `
+      + 'choose Grooves in the Flute profile for this front, or another handle.';
+  }
+  return `The reeds enter the J-pull's slot, ${mm} mm in from its edge: make the Reed side margin more than ${mm} mm, `
+    + 'or choose Grooves in the Flute profile, or another handle.';
+}
+
 /** Validate opposing machining after the cabinet has placed its hardware. */
 export function validateFrontDecoration({ panel, decoration, drills = [], profile = getCabinetProfile() }) {
   if (!decoration || decoration.status === 'blocked') return decoration?.problems || [];
@@ -571,9 +592,15 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
         const cut = reedDepthOverDisc(op, [Number(drill.x), Number(drill.y)], radius);
         if (cut === null || !skinShort(thickness - depth, cut, profile)) continue;
         if (!circleTouchesPolygon([Number(drill.x), Number(drill.y)], radius, op.points)) continue;
+        const left = round(thickness - depth - cut);
+        const reedMm = round(2 * Number(op.crossSection?.radius));
         problems.push(problem('FRONT_DECORATION_BACK_BORE', `${op.id} cuts ${round(cut)} mm deep over the back `
-          + `${drill.kind || 'bore'} and leaves ${round(thickness - depth - cut)} mm between them, less than ${MIN_SKIN} mm. `
-          + 'Choose a thicker front, smaller reeds or another width, so the bore sits under a crest.'));
+          + `${drill.kind || 'bore'} and ${left > EPS ? `leaves ${left} mm between them, less than ${MIN_SKIN} mm` : 'meets it'}. `
+          // T82 F15, after the review (reeds:2): the remedy the owner can take.
+          + (2 * radius >= reedMm - EPS
+            ? `A bore ${round(2 * radius)} mm wide always meets a valley of reeds of ${reedMm} mm: keep the reeds clear of it `
+              + '(the margin, or the other direction), or choose a thicker front.'
+            : 'Choose a thicker front, smaller reeds or another width, so the bore sits under a crest.')));
         continue;
       }
       if (!skinShort(thickness - depth, op.depth, profile)) continue;
@@ -593,7 +620,7 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
       : j.edge === 'R' ? rect(b.x2 - reach, from, b.x2, to)
         : ['T', 'TOP'].includes(j.edge) ? rect(b.x1, b.y2 - reach, b.x2, b.y2) : null;
     if (band && [...decoration.operations, ...decoration.additions].some((item) => polygonsOverlap(item.points, band))) {
-      problems.push(problem('FRONT_DECORATION_JPULL', 'The decoration enters the J-pull machining zone. Increase its frame or margin.'));
+      problems.push(problem('FRONT_DECORATION_JPULL', jpullSentence(decoration, j.edge, reach)));
     }
   }
   return problems;

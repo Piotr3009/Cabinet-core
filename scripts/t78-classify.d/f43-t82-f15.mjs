@@ -81,7 +81,8 @@ export const LICENSED = {
       + `adds the two reed advisories (FRONT_DECORATION_REED_SKIN, _REMAINDER); boardRefusal asks FL what a pick gives. `
       + `Without the gate the code is what T78 F14 cut. ${OWNER}`
       + ' After the review (reeds:0): reedDepthOverDisc measures the reed\'s own depth over a bore\'s disc, so a screw under a crest is not a screw under a valley; one under a valley is still refused in words with the depth and the board left.'
-      + ' After the review (reeds:2): the J-pull with reeds is still refused (a valley through the J lip is real) and the sentence names what works: Grooves in the Flute profile, another handle, or the Reed side margin past the J reach; a back bore wider than a reed always meets a valley.',
+      + ' After the review (reeds:2): the J-pull with reeds is still refused (a valley through the J lip is real) and the sentence names what works: Grooves in the Flute profile, another handle, or the Reed side margin past the J reach; a back bore wider than a reed always meets a valley.'
+      + ' After the review (reeds:3): frontLayerFindings reads the edge layer, so one layer is never both sections.',
     gates: ['flReed'],
   },
   'src/engine/frontBoard.js': {
@@ -103,7 +104,8 @@ export const LICENSED = {
   'src/engine/cnc/frontOperations.js': {
     why: `T82 F15: the kind reed (tool reedProfile, crossSection reed) is a centre-line operation like a flute; its `
       + `layer label, its vector meaning and the manifest's reed note, the note only in an export that carries reeds, so `
-      + `every manifest before them is what it was. ${OWNER}`,
+      + `every manifest before them is what it was. ${OWNER}`
+      + ' After the review (reeds:3): the field\'s two edge valleys (one flank and a wall) are a layer of their own, FRONT_REEDEDGE, at their true width with their own vector meaning and label, said in the manifest\'s reed note for CAM; every existing part\'s operations untouched.',
     gates: ['flReed'],
   },
   'src/engine/design.js': {

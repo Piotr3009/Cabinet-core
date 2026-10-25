@@ -428,8 +428,11 @@ function makeReeds(outline, config, depthStart) {
       depth: depthStart + radius, startDepth: depthStart,
       centreline: [point(transform([x, span[0]])), point(transform([x, span[1]]))],
       tool: { kind: 'reedProfile', diameter },
-      layer: operationLayer('REED', depthStart + radius, depthStart, diameter),
-      crossSection: { kind: 'reed', radius, width: diameter, depth: radius, edge, profile },
+      // T82 F15, after the review (reeds:3): a field edge (one flank and the
+      // wall) is a different cut from a valley (two flanks): its own layer,
+      // its own width, so one layer is never two recipes.
+      layer: operationLayer(edge ? 'REEDEDGE' : 'REED', depthStart + radius, depthStart, diameter),
+      crossSection: { kind: 'reed', radius, width: edge ? radius : diameter, depth: radius, edge, profile },
       surface,
     });
   }

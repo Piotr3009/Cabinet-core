@@ -104,7 +104,8 @@ test('F15 · 596 x 726 at reed 20 and inset 50: (596 - 100) / 20 is 24.8, so 24 
     assert.equal(op.kind, 'reed');
     assert.equal(op.face, 'front');
     assert.deepEqual(op.tool, { kind: 'reedProfile', diameter: 20 });
-    assert.equal(op.layer, 'FRONT_REED_D10_S0_T20', 'the FLUTE grammar: kind, depth, start, tool');
+    // AMENDED AFTER THE REVIEW (reeds:3): the field's two edges are their own cut, FRONT_REEDEDGE.
+    assert.equal(op.layer, op.crossSection.edge ? 'FRONT_REEDEDGE_D10_S0_T20' : 'FRONT_REED_D10_S0_T20', 'the FLUTE grammar: kind, depth, start, tool');
     assert.equal(op.depth, 10, 'the valley is half the diameter into the board');
     assert.equal(op.startDepth, 0);
     // Top and bottom the reeds run to the edges.
@@ -139,7 +140,8 @@ test('F15 · a field that divides takes its reeds exactly, the margins as today\
   assert.deepEqual(codes(d), [], 'a 22 front with reeds of 20 leaves 12: no note');
   // The ladder: 16 and 25 cut 8 and 12.5 deep.
   assert.equal(build(580, 726, 22, reed({ reedDiameterMm: 16 })).reeds.count, 30);
-  assert.equal(build(580, 726, 22, reed({ reedDiameterMm: 16 })).operations[0].layer, 'FRONT_REED_D8_S0_T16');
+  // AMENDED AFTER THE REVIEW (reeds:3): operation 1 is the field's edge (FRONT_REEDEDGE); 2 is a valley.
+  assert.equal(build(580, 726, 22, reed({ reedDiameterMm: 16 })).operations[1].layer, 'FRONT_REED_D8_S0_T16');
   assert.equal(build(600, 726, 22, reed({ reedDiameterMm: 25 })).reeds.count, 20);
   assert.equal(build(600, 726, 22, reed({ reedDiameterMm: 25 })).operations[0].depth, 12.5);
   // Horizontal reeds take the margins at the top and the bottom and run to the sides.
@@ -247,18 +249,19 @@ test('F15 · a new project that picks Fluted gets reeds, saved and reloaded; the
 test('F15 · CNC: one open valley line per reed valley on the FRONT file, the manifest says reed, every existing export is what it was', () => {
   const { result, unit, front } = bud(reed(), 22);
   assert.deepEqual(frontDecorationProblems(front), [], 'the reeds are a ready recipe');
-  const lines = frontPanelEntities(front).filter((e) => e.layer === 'FRONT_REED_D10_S0_T20');
+  // AMENDED AFTER THE REVIEW (reeds:3): the 23 valleys on FRONT_REED, the two field edges on FRONT_REEDEDGE.
+  const lines = frontPanelEntities(front).filter((e) => /^FRONT_REED(EDGE)?_D10_S0_T20$/.test(e.layer));
   assert.equal(lines.length, front.meta.frontDecoration.operations.length);
   assert.ok(lines.every((e) => !e.closed && e.pts.length === 2), 'valley lines, open');
   const layers = frontDecorationLayers([front]).find((l) => l.name === 'FRONT_REED_D10_S0_T20');
   assert.equal(layers.label, 'Reed valley: 10 mm, 20 mm reed profile');
-  assert.deepEqual(frontLayerFindings([{ unit, result }]), [], 'one layer, one recipe: the edge valleys agree with the rest');
+  assert.deepEqual(frontLayerFindings([{ unit, result }]), [], 'one layer, one recipe');
   const manifest = frontOperationsManifest([{ unit, result }]);
-  const op = manifest.parts[0].operations[0];
+  const op = manifest.parts[0].operations[1];
   assert.equal(op.kind, 'reed');
   assert.deepEqual(op.tool, { kind: 'reedProfile', diameter: 20 });
   assert.equal(op.vectorMeaning, 'reed profile cutter centre path along a valley');
-  assert.equal(op.crossSection.edge, 'start');
+  assert.equal(manifest.parts[0].operations[0].crossSection.edge, 'start');
   assert.match(manifest.machining.reed, /convex half-rounds touching/);
   const files = buildUnitDxfFiles(result, P).filter((f) => /FRONT/i.test(f.name) && f.dxf.includes('FRONT_REED_D10_S0_T20'));
   assert.equal(files.length, 1, 'the leaf\'s FRONT file carries the reed layer');
@@ -437,4 +440,42 @@ test('F15 after the review (b) · a bore wider than a reed always meets a valley
   // Vertical reeds keep the cups in the margin: the same door is cut.
   const [upright] = jBud('BUD', {}, { project_handle: { type: 'knob' } });
   assert.equal(upright.meta.frontDecoration.status, 'ready');
+});
+
+// ─── T82 F15, AFTER THE REVIEW (c) · THE FIELD'S EDGES ARE THEIR OWN CUT ───
+// The review (reeds:3): the first and last valley (one flank and a vertical
+// wall to the flat margin) shared one layer and one tool with the middle
+// valleys (two flanks), so a CAM job that gives each layer one recipe would
+// cut the mirrored flank into the margin. The edges now have their own layer,
+// their true width, their own vector meaning; one layer never carries both.
+
+test('F15 after the review (c) · the two field edges are a layer of their own, their true width, said in the manifest', () => {
+  const { result, unit, front } = bud(reed(), 22);
+  const ops = front.meta.frontDecoration.operations;
+  const edges = ops.filter((op) => op.crossSection.edge);
+  assert.deepEqual(edges.map((op) => [op.id, op.layer, op.crossSection.width]), [
+    ['reed-valley-1', 'FRONT_REEDEDGE_D10_S0_T20', 10], ['reed-valley-25', 'FRONT_REEDEDGE_D10_S0_T20', 10],
+  ]);
+  assert.ok(ops.filter((op) => !op.crossSection.edge).every((op) => op.layer === 'FRONT_REED_D10_S0_T20' && op.crossSection.width === 20));
+  const dxf = buildUnitDxfFiles(result, P).find((f) => f.panelId === front.id && /-FRONT\.dxf$/.test(f.name));
+  const entities = frontPanelEntities(front);
+  assert.equal(entities.filter((e) => e.layer === 'FRONT_REED_D10_S0_T20').length, 23);
+  assert.equal(entities.filter((e) => e.layer === 'FRONT_REEDEDGE_D10_S0_T20').length, 2);
+  assert.ok(dxf.dxf.includes('FRONT_REEDEDGE_D10_S0_T20'), 'the FRONT DXF names the edge layer');
+  const label = frontDecorationLayers([front]).find((l) => l.name === 'FRONT_REEDEDGE_D10_S0_T20').label;
+  assert.equal(label, 'Reed field edge: 10 mm, one flank of a 20 mm reed profile and a wall');
+  const manifest = frontOperationsManifest([{ unit, result }]);
+  const first = manifest.parts[0].operations[0];
+  assert.equal(first.vectorMeaning, 'reed field edge: the wall line; one reed flank rises from it toward the field');
+  assert.equal(manifest.parts[0].operations[1].vectorMeaning, 'reed profile cutter centre path along a valley');
+  assert.match(manifest.machining.reed, /FRONT_REEDEDGE/);
+  // One layer, one recipe: an edge put on the middle layer is found.
+  assert.deepEqual(frontLayerFindings([{ unit, result }]), []);
+  const mixed = JSON.parse(JSON.stringify(result));
+  const leaf = mixed.panels.find((p) => p.id === front.id);
+  leaf.meta.frontDecoration.operations[0].layer = 'FRONT_REED_D10_S0_T20';
+  leaf.meta.frontDecoration.operations[0].crossSection.width = 20;
+  const found = frontLayerFindings([{ unit, result: mixed }]);
+  assert.equal(found.length, 1);
+  assert.equal(found[0].layer, 'FRONT_REED_D10_S0_T20');
 });

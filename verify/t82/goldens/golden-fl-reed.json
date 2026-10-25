@@ -241,7 +241,7 @@
       {
         "id": "reed-valley-1",
         "kind": "reed",
-        "layer": "FRONT_REED_D10_S0_T20",
+        "layer": "FRONT_REEDEDGE_D10_S0_T20",
         "depth": 10,
         "startDepth": 0,
         "tool": {
@@ -1321,7 +1321,7 @@
       {
         "id": "reed-valley-25",
         "kind": "reed",
-        "layer": "FRONT_REED_D10_S0_T20",
+        "layer": "FRONT_REEDEDGE_D10_S0_T20",
         "depth": 10,
         "startDepth": 0,
         "tool": {
@@ -1366,7 +1366,7 @@
     ],
     "dxf": {
       "name": "01-F-FRONT.dxf",
-      "fingerprint": "5a6b0f3f"
+      "fingerprint": "7a1b81cb"
     }
   }
 }

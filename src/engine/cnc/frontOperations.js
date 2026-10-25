@@ -243,7 +243,10 @@ export function frontOperationsManifest(entries = [], {
           cuttingDepthMm: operation.depth - operation.startDepth,
           tool: operation.tool,
           ...(operation.crossSection ? { crossSection: operation.crossSection } : {}),
-          vectorMeaning: { flute: 'tool-centre path', vgroove: 'groove centre line', reed: 'reed profile cutter centre path along a valley', relief: 'proposed 3D machining surface; DXF contours are references only' }[operation.kind] || 'finished pocket boundary',
+          vectorMeaning: operation.kind === 'reed' && operation.crossSection?.edge
+            // T82 F15, after the review (reeds:3): the field's edge is its own cut.
+            ? 'reed field edge: the wall line; one reed flank rises from it toward the field'
+            : { flute: 'tool-centre path', vgroove: 'groove centre line', reed: 'reed profile cutter centre path along a valley', relief: 'proposed 3D machining surface; DXF contours are references only' }[operation.kind] || 'finished pocket boundary',
           readiness: readinessOf(isOrnateReference(panel) ? { ...operation, readiness: 'geometry' } : operation),
           ...(isOrnateReference(panel) ? { referenceOnly: true, productionApproved: false } : {}),
           exported: !isOrnateReference(panel) && (exportAnyway || !held) && operationProblems(operation, panel).length === 0,
@@ -268,10 +271,12 @@ export function frontOperationsManifest(entries = [], {
       vgroove: 'Open vectors are V groove centre lines. The record gives the width at the mouth and the depth; select a V cutter that cuts that width at that depth in CAM. No included angle is assumed.',
       // T82 F15 · said only in an export that carries reeds, so every manifest before them is what it was.
       ...(parts.some((part) => part.operations.some((operation) => operation.kind === 'reed')) ? {
-        reed: 'Open vectors are reed valley lines: the centre path of a reed profile cutter of the recorded diameter, cut to '
-          + 'the final depth (half the diameter). The reeds are convex half-rounds touching, their crests on the original '
-          + 'face. The first and last valley of a field have one reed flank and a vertical wall to the flat margin '
-          + '(crossSection.edge); the cutter must not enter the margin.',
+        reed: 'Open vectors on a FRONT_REED layer are reed valley lines: the centre path of a reed profile cutter of the '
+          + 'recorded diameter, cut to the final depth (half the diameter), two flanks. The reeds are convex half-rounds '
+          + 'touching, their crests on the original face. Open vectors on a FRONT_REEDEDGE layer are the two edges of a '
+          + 'field, a different cut: a vertical wall on the line, as deep as a valley, to the flat margin, and ONE reed '
+          + 'flank rising from it toward the field, which lies between the two lines (crossSection.edge, '
+          + 'crossSection.profile); nothing is cut on the margin side of the line. Give each layer its own CAM recipe.',
       } : {}),
       registration: 'No registration holes or fixtures are generated. Set the part datum and secure each part for both setups.',
       cam: 'Select tools, feeds, speeds, stepdown, stepover and workholding in CAM. Simulate the supplied depths and both setups before machining.',
@@ -338,6 +343,8 @@ export function frontDecorationLayers(panels = [], { referencePreview = false } 
         name: operation.layer,
         label: operation.kind === 'vgroove'
           ? `V groove: ${operation.depth} mm, ${operation.crossSection.width} mm wide at the mouth`
+          : operation.kind === 'reed' && operation.crossSection?.edge
+            ? `Reed field edge: ${operation.depth} mm, one flank of a ${operation.tool.diameter} mm reed profile and a wall`
           : operation.kind === 'reed'
             ? `Reed valley: ${operation.depth} mm, ${operation.tool.diameter} mm reed profile`
             : `${line ? 'Flute' : 'Pocket'}: ${operation.depth} mm, ${operation.tool.diameter} mm ${operation.tool.kind}`,
@@ -364,6 +371,9 @@ export function frontLayerFindings(entries = []) {
         const signature = JSON.stringify([
           operation.kind, operation.face, operation.depth, operation.startDepth,
           operation.tool.kind, operation.tool.diameter, operation.crossSection?.width ?? null,
+          // T82 F15, after the review (reeds:3): a reed's field edge is not its valley (the
+          // two edges of a field are one recipe, mirrored: the wall on the line, the flank inward).
+          operation.crossSection?.edge ? 'edge' : null,
         ]);
         const rows = layers.get(operation.layer) || [];
         rows.push({ signature, unitId, unitNum, panel: panel.id, part: panel.part });

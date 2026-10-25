@@ -18,7 +18,9 @@ import {
 import {
   frontChainLines, leafChains, mountingBands, widthChains, widthGroups,
 } from './wallElevation.js';
-import { chainH, chainV } from './setChains.js';
+import {
+  LINE_CLEAR, chainH, chainReachX, chainV,
+} from './setChains.js';
 import { roomWalls } from '../room.js';
 // T81 · the sheets draw what the room draws, through the one projector.
 import { applianceMarks as projectedAppliances, projectRun, unitNumbers } from './projector.js';
@@ -175,14 +177,61 @@ function runChains(group, { withFronts, ends, worktops, ceiling, profile, ctx })
   // RIGHT. T82 F21: every unit's own FRONT, GAP, FRONT (never two units'
   // edges pooled into one chain), one line per stack that overlaps another in
   // height; the inner line takes the extension lines, as T71's inner chains do.
+  //
+  // After the C/D/E review (sheets 0): never past the band. The lines stand
+  // where T71 hangs them (8, 17, 26 paper mm) when every one of them fits
+  // the band there; where one would not, the lines past the first step in,
+  // each LINE_CLEAR beyond the figures of the line inside it, compact (a gap's
+  // figure beside its own arrows rather than lifted out); a line that still
+  // does not fit is not drawn, and its units are named in words in the band's
+  // foot, "Front heights of 05, 06: see the cut list", the panel sizes the
+  // caption points to. The richest stacks (FRONT, GAP, FRONT) take the lines
+  // first, so what the band cannot hold is a single front's height.
   if (withFronts) {
-    frontChainLines(group.members).forEach((line, k) => {
-      for (const stack of line) {
-        out.push(chainV({
-          edges: stack.edges, x: right + ctx.chainFirst + k * (ctx.chainSecond - ctx.chainFirst), xObj: k === 0 ? right : null, ctx, left: false,
+    const lines = frontChainLines(group.members);
+    const limit = right + ctx.band;
+    const reach = (chains) => Math.max(...chains.map((ch) => chainReachX(ch, ctx.textHeight)));
+    const lineAt = (line, x, k, compact) => line.map((stack) => chainV({
+      edges: stack.edges, x, xObj: k === 0 ? right : null, ctx, left: false, ...(compact ? { compact: true } : {}),
+    }));
+    const placed = lines.map((line, k) => lineAt(line, right + ctx.chainFirst + k * (ctx.chainSecond - ctx.chainFirst), k, false));
+    if (placed.every((chains) => reach(chains) <= limit)) {
+      for (const chains of placed) out.push(...chains);
+    } else {
+      out.push(...placed[0]);
+      let edge = reach(placed[0]);
+      const unchained = [];
+      lines.slice(1).forEach((line, i) => {
+        const chains = lineAt(line, edge + ctx.mm(LINE_CLEAR), i + 1, true);
+        if (reach(chains) <= limit) {
+          out.push(...chains);
+          edge = reach(chains);
+        } else {
+          unchained.push(...line);
+        }
+      });
+      if (unchained.length) {
+        const nums = [...new Set(unchained.flatMap((stack) => stack.ids)
+          .map((id) => String(group.members.find((m) => m.unit.id === id)?.unit.params?.unit_num ?? '')))]
+          .filter(Boolean).sort();
+        const words = ['Front', 'heights', 'of', ...nums.map((n, i) => `${n}${i < nums.length - 1 ? ',' : ':'}`), 'see', 'the', 'cut', 'list'];
+        // As many characters to a row as the band holds past its 2 mm inset.
+        const T = ctx.textHeight;
+        const perRow = Math.max(8, Math.floor((ctx.band - ctx.mm(2)) / (T * 0.55)));
+        const rows = [];
+        for (const w of words) {
+          if (rows.length && `${rows[rows.length - 1]} ${w}`.length <= perRow) rows[rows.length - 1] += ` ${w}`;
+          else rows.push(w);
+        }
+        const note = rows.map((row, i) => ({
+          ...text('DIMENSIONS', right + ctx.mm(2), -ctx.chainFirst - i * T * 1.4, row, T, 'left'),
+          paperHeight: T / ctx.scale,
+          note: 'fronts-unchained',
         }));
+        note.figures = [];
+        out.push(note);
       }
-    });
+    }
   } else {
     const shelved = (floor?.members || []).find((m) => (m.result.assemblies?.shelves || []).length);
     if (shelved) {

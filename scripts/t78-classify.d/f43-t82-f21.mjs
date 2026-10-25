@@ -31,7 +31,8 @@ export const LICENSED = {
   'src/engine/drawings/setElevation.js': {
     why: `T82 F21: runChains draws the stacks up the right, the floor run's leaf chain on the second line under `
       + `its unit chain (the overall to the third) and a hung run's leaves under its wall units, on the fronts and `
-      + `X-ray sheets. ${OWNER}`,
+      + `X-ray sheets. ${OWNER}`
+      + ' After the C/D/E review: the front chains step in (chainV compact, chainReachX, LINE_CLEAR) and stay inside their band.',
     gates: [],
   },
 };

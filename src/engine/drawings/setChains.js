@@ -64,12 +64,33 @@ function rowSpans(ends, labels, T, ctx) {
  * no figure of the row is there; then a third level out. `taken` is the
  * chain's own list of { lo, hi, level } along the chain's axis.
  */
-function liftLevel(taken, alternate, lo, hi, row) {
+function liftLevel(taken, alternate, lo, hi, row, rowFirst = false) {
   const clear = (level) => !taken.some((o) => o.level === level && o.lo < hi && lo < o.hi);
   const onRow = row && row.every((o) => !(o.lo < hi && lo < o.hi)) && clear('row');
-  const level = [alternate, 1 - alternate].find(clear) ?? (onRow ? 'row' : 2);
+  const level = (rowFirst && onRow) ? 'row' : ([alternate, 1 - alternate].find(clear) ?? (onRow ? 'row' : 2));
   taken.push({ lo, hi, level });
   return level;
+}
+
+/**
+ * T82 F21, after the review: the paper a chain stepped in needs between its
+ * outermost figure and the next line out.
+ */
+export const LINE_CLEAR = 0.4;
+
+/**
+ * How far out a built chain reaches along x, in its own drawing mm: its
+ * lines, its arrowheads and its figures' boxes (a figure read up the sheet
+ * is the text height wide).
+ */
+export function chainReachX(chain, textHeight) {
+  let max = -Infinity;
+  for (const e of chain) {
+    if (e.kind === 'line') max = Math.max(max, e.x1, e.x2);
+    else if (e.kind === 'poly') for (const [px] of e.pts || []) max = Math.max(max, px);
+    else if (e.kind === 'text') max = Math.max(max, e.x + (e.rotate ? textHeight / 2 : figureWidth(e.text, textHeight) / 2));
+  }
+  return max;
 }
 
 function arrow(x, y, dir, size) {
@@ -148,8 +169,13 @@ export function chainH({ edges, y, yObj = null, labels = null, above = true, ctx
  * A VERTICAL chain, figures rotated to read up the sheet.
  *   edges   tick positions along y; x the line; xObj the object edge
  *   left    true: figures to the left of the line
+ *   compact T82 F21, after the review: a chain stepped in to stay inside its
+ *           band. A figure too small for its segment stands just off the line
+ *           beside its own arrows (the row) where the row is free there, and
+ *           takes the lifted levels only where it is not; a figure that fits
+ *           stands where T71 sets it. Needs no extension lines (`xObj` null).
  */
-export function chainV({ edges, x, xObj = null, labels = null, left = true, ctx }) {
+export function chainV({ edges, x, xObj = null, labels = null, left = true, ctx, compact = false }) {
   const ys = [...edges];
   const T = ctx.textHeight;
   const out = [];
@@ -181,7 +207,7 @@ export function chainV({ edges, x, xObj = null, labels = null, left = true, ctx 
       lift = 0;
     } else {
       lift = lift ? 0 : 1;
-      const level = liftLevel(taken, lift, mid - w / 2, mid + w / 2, row);
+      const level = liftLevel(taken, lift, mid - w / 2, mid + w / 2, row, compact);
       if (level === 'row') {
         const rx = x + dir * (T / 2 + ctx.mm(ROW_CLEAR));
         out.push({ ...text(LAYER, rx, mid, caption, T), paperHeight: T / ctx.scale, rotate: -90 });

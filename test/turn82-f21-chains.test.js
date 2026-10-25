@@ -43,6 +43,7 @@ import { buildRunElevation, measureRun, worktopsOnWall } from '../src/engine/dra
 import { chooseSetScale, drawingContext, setZones } from '../src/engine/drawings/setSheet.js';
 import { figureCollisions, figureWidth } from '../src/engine/drawings/setChains.js';
 import { PEN, penWidth } from '../src/engine/drawings/layers.js';
+import { wallDrawingSheets } from '../src/engine/drawings/wallSheets.js';
 
 const P = () => getCabinetProfile();
 const sum = (a) => Math.round(a.reduce((n, v) => n + v, 0) * 100) / 100;
@@ -516,5 +517,92 @@ test('F21 review · the L corner\'s B-arm door, turned along z, is no leaf on th
     const own = stacks.find((s) => s.ids.includes(corner.unit.id));
     const ys = [...new Set(facing.flatMap((p) => [corner.base + p.box.y, corner.base + p.box.y + p.box.h]))].sort((a, b) => a - b);
     assert.deepEqual(own.edges, ys, `${side}: the corner's stack is its facing leaf's`);
+  }
+});
+
+// ═══ AFTER THE REVIEW (C/D/E): THE FRONT CHAINS STAY IN THEIR BAND ═════════
+//
+// The review's find (sheets 0): runChains hung one line per overlapping
+// stack at 8 + 9k paper mm with no limit, so a wall of many different drawer
+// banks put its 4th line past the 26 mm band and over the side column's
+// legend (a 6800 wall at 1:25: the 4th line at x 350, the column at 348).
+// The law now: the lines stand where T71 hangs them when they all fit; where
+// they do not, they step in, each just clear of the figures of the line
+// inside it, with its figures beside its own arrows; a stack that still finds
+// no room in the band is not drawn past it but named on the sheet in words.
+
+function runOf(spec, wall = 8000, inframe = false) {
+  S().newProject('T82 F21 review, the band');
+  S().setRoom({ corners: rectCorners(wall, 3000), height: 2500 });
+  let x = 300;
+  for (const [type, w, doors] of spec) {
+    const id = S().addUnit(type, { wall: 0, x }).id;
+    S().updateUnitParams(id, { width: w });
+    if (doors) S().setDoors(id, { count: doors, hinge: 'L' });
+    x += w;
+  }
+  S().setDesign({ inframe });
+  const st = S();
+  const args = {
+    entries: st.allResults(), project: st.project, room: st.project.room, worktops: st.worktopsOf(),
+    design: st.project.design, profile: P(), date: '25/10/2026',
+  };
+  return { args, group: wallGroups(args.entries, P())[0] };
+}
+
+const SEVEN = [['BUD', 600, 1], ['BUDR2', 500], ['BUDR4', 500], ['BUDR', 600, 1], ['BUD', 800, 2], ['BUD', 600, 1], ['BUD', 500, 1]];
+const EIGHT = [['BUD', 600, 1], ['BUDR2', 500], ['BUDR4', 500], ['BUDR', 600, 1], ['DW_PANEL', 600], ['OVEN_BASE', 600], ['BUDTALL', 600, 1], ['BUDR2_HOB', 600]];
+const FIVE = [['BUD', 600, 1], ['BUDR2', 500], ['BUDR', 500], ['BUDR4', 500], ['BUD', 800, 2]];
+const REVIEW_CASES = [['seven units, 6800', SEVEN, 6800], ['eight units, 6600', EIGHT, 6600], ['five units, 4100', FIVE, 4100]];
+
+test('F21 review · on the laid sheet no front chain passes the band into the column', () => {
+  for (const [name, spec, wall] of REVIEW_CASES) {
+    const { args } = runOf(spec, wall);
+    for (const variant of ['fronts', 'xray']) {
+      const found = wallDrawingSheets(args).find((x) => x.variant === variant);
+      const sheet = found.sheet || found;
+      const col = sheet.zones.column.x;
+      for (const e of sheet.entities.filter((q) => q.layer === 'DIMENSIONS' && q.meta !== 'legend')) {
+        const x1 = e.kind === 'text' ? e.x + (e.rotate ? e.height / 2 : figureWidth(e.text, e.height) / 2)
+          : e.kind === 'line' ? Math.max(e.x1, e.x2) : e.kind === 'poly' ? Math.max(...e.pts.map((p) => p[0])) : -Infinity;
+        assert.ok(x1 <= col + 1e-6, `${name} ${variant}: ${e.kind} ${e.text ?? ''} at ${x1.toFixed(2)} is past the column line ${col}`);
+      }
+    }
+  }
+});
+
+test('F21 review · every stack is chained inside the band, or named on the sheet in words', () => {
+  for (const [name, spec, wall] of REVIEW_CASES) {
+    const { args, group } = runOf(spec, wall);
+    const worktops = worktopsOnWall(args.worktops, 0);
+    const k = chooseSetScale(measureRun(group, { room: args.room, worktops, profile: P() }), setZones(P()).object, P()).scale;
+    const ctx = drawingContext(k, P());
+    const sheet = buildRunElevation(group, { mode: 'fronts', room: args.room, worktops, profile: P(), ctx });
+    const right = rightChains({ sheet, group });
+    // The run's right edge as the sheet takes it (the wall's end, when the
+    // run reaches near it): the inner line stands chainFirst beyond it.
+    const edge = Math.min(...right.map(lineX)) - ctx.chainFirst;
+    // Inside the band: every entity of every front chain.
+    for (const ch of right) {
+      for (const e of ch) {
+        const x1 = e.kind === 'text' ? e.x + ctx.textHeight / 2 : e.kind === 'line' ? Math.max(e.x1, e.x2) : Math.max(...e.pts.map((p) => p[0]));
+        assert.ok(x1 <= edge + ctx.band + 1e-6, `${name}: ${e.kind} ${e.text ?? ''} at ${((x1 - edge) / ctx.scale).toFixed(2)} paper mm, past the band`);
+      }
+    }
+    const note = sheet.entities.filter((e) => e.note === 'fronts-unchained').map((e) => e.text).join(' ');
+    const numOf = (id) => group.members.find((m) => m.unit.id === id).unit.params.unit_num;
+    let chained = 0;
+    for (const s of frontStacks(group.members)) {
+      const drawn = right.some((ch) => captions(ch).join(' ') === s.values.map((v) => formatMm(v)).join(' '));
+      if (drawn) { chained += 1; continue; }
+      for (const id of s.ids) assert.ok(note.includes(numOf(id)), `${name}: the stack ${s.values.join(' ')} of ${numOf(id)} is chained or named (${note})`);
+      assert.match(note, /see the cut list/);
+    }
+    // Every stack with a gap in it (FRONT, GAP, FRONT) is chained: what the band cannot hold is a single front.
+    for (const s of frontStacks(group.members).filter((q) => q.values.length > 1)) {
+      assert.ok(right.some((ch) => captions(ch).join(' ') === s.values.map((v) => formatMm(v)).join(' ')), `${name}: ${s.values.join(' ')} chained`);
+    }
+    assert.ok(chained >= 3, `${name}: the lines step in: ${chained} chained`);
+    assert.equal(figureCollisions(sheet.chains, ctx.textHeight).length, 0, `${name}: no two figures share a spot`);
   }
 });

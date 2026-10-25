@@ -109,8 +109,8 @@ test('T78 classify . THE STRICT RUN is green, and its table says what the contra
 
   // The COMMIT section lists the turn's commits with their F.
   assert.match(out, /^=== THE COMMITS OF THE TURN \(git log BASE\.\.HEAD --oneline\) ===/m);
-  assert.match(out, /^  F1\s+[0-9a-f]{7} T78 F1: nothing could be added left of an L/m, 'F1\'s commit, named with its F');
-  assert.match(out, /^  F2\s+[0-9a-f]{7} T78 F2: the L worktop and the L mask are L-shaped/m);
+  assert.match(out, /^  F1\s+[0-9a-f]{7,} T78 F1: nothing could be added left of an L/m, 'F1\'s commit, named with its F');
+  assert.match(out, /^  F2\s+[0-9a-f]{7,} T78 F2: the L worktop and the L mask are L-shaped/m);
 
   assert.match(out, /^GREEN: every delta is named, every gate is live, and what a golden reaches a golden holds$/m);
 });

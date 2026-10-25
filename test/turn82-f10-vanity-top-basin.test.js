@@ -31,6 +31,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { useProjectStore } from '../src/stores/projectStore.js';
 import { rectCorners, roomWalls } from '../src/engine/room.js';
@@ -38,7 +39,7 @@ import { getCabinetProfile } from '../src/engine/profile.js';
 import { migrateDesign } from '../src/engine/design.js';
 import { wallGapOf } from '../src/engine/runs.js';
 import {
-  basinCentresOf, serviceVoidOf, worktopGeometry, worktopsFor,
+  basinCentresOf, serviceVoidOf, worktopEligible, worktopGeometry, worktopsFor,
 } from '../src/engine/worktop.js';
 import { vanitySpec, vanityWastes } from '../src/engine/vanity.js';
 import { buildBom } from '../src/engine/bom.js';
@@ -152,6 +153,52 @@ test('F10 · the thickness is typed (*"blat grubosc do wyboru"*): the record\'s 
   assert.equal(bad.ok, false);
   assert.match(bad.error, /thickness/i, 'said in words');
   assert.equal(slabOver(id).geometry.thickness, 30, 'and nothing changed');
+});
+
+// ─── F10 · AFTER THE REVIEW (verify/t82 review of PART B, topbasin 1 to 3) ─
+
+/** An island in a 5000 x 4000 room, two BUDs on face A under the island's one slab. */
+function islandKitchen() {
+  S().newProject('T82 F10 island');
+  S().setRoom({ corners: rectCorners(5000, 4000), height: 2500 });
+  confirmDrawerBox();
+  const isle = S().addIsland().id;
+  const face = (f) => roomWalls(S().project.room).find((w) => w.island && w.face === f);
+  const a = S().addUnit('BUD', { wall: face('A').index }).id;
+  const b = S().addUnit('BUD', { wall: face('A').index }).id;
+  const add = S().addWorktop([a, b]);
+  assert.equal(add.ok, true, add.error);
+  return {
+    isle, face, a, b, wt: add.id,
+  };
+}
+
+test('F10 · review 1: a vanity born on an island face JOINS the island\'s top, never replaces it (its decor, its seating stay)', () => {
+  const { isle, face, a, wt } = islandKitchen();
+  S().extendWorktop(wt, { decor: 'OAK' });
+  S().extendIslandWorktop(wt, 'B', 300);
+  const v = S().addUnit('VANITY2', { wall: face('E2').index }).id;
+  assert.ok(v, 'the vanity stands on face E2');
+  const mine = records().filter((w) => w.island === isle);
+  assert.equal(mine.length, 1, 'one island record, still');
+  assert.equal(mine[0].id, wt, 'the same record');
+  assert.equal(mine[0].decor, 'OAK', 'its decor kept');
+  assert.equal(mine[0].extend.B, 300, 'its seating overhang kept');
+  assert.ok(mine[0].unitIds.includes(a) && mine[0].unitIds.includes(v), 'the vanity joins it');
+  assert.equal(mine[0].thickness, undefined, 'the island\'s thickness is not the vanity\'s to change at birth');
+});
+
+test('F10 · review 1: a vanity alone on an island takes the island\'s top at its own thickness', () => {
+  S().newProject('T82 F10 lone island');
+  S().setRoom({ corners: rectCorners(5000, 4000), height: 2500 });
+  confirmDrawerBox();
+  const isle = S().addIsland().id;
+  const faceA = roomWalls(S().project.room).find((w) => w.island && w.face === 'A');
+  const v = S().addUnit('VANITY3', { wall: faceA.index }).id;
+  const mine = records().filter((w) => w.island === isle);
+  assert.equal(mine.length, 1);
+  assert.ok(mine[0].unitIds.includes(v));
+  assert.equal(slabOver(v).geometry.shape, 'island');
 });
 
 // ─── F11 · THE BASIN, ONLY TO THE EYE ──────────────────────────────────────

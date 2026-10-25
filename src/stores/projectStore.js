@@ -6055,8 +6055,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // cabinet (`kind: 'top'`), at the vanity's own top thickness
     // (`vanity.defaults.top`, PROPOSED 20); reaching the wall over the
     // service void is the slab's own law (engine/worktop.js serviceVoidOf).
+    // After the review (T82 PART B, topbasin 1): a vanity born on an island
+    // face JOINS the island's one slab when the island has one (its decor, its
+    // seating overhang, its thickness are the island's and stay), never
+    // replaces it; only an island with no slab yet, or a wall, is given one.
     if (isVanityKit(unit.type)) {
-      get().addWorktop([unit.id], { single: true, thickness: Number(profile.vanity?.defaults?.top) || null });
+      const st = get();
+      const born = st.units.find((u) => u.id === unit.id) || unit;
+      const isle = roomWalls(st.project.room)[born.position?.wall ?? 0]?.island ?? null;
+      const design = migrateDesign(st.project.design);
+      const islandTop = isle != null ? design.worktops.find((w) => w.island === isle) : null;
+      if (islandTop) {
+        get().setDesign({
+          worktops: design.worktops.map((w) => (w.id === islandTop.id
+            ? { ...w, unitIds: [...new Set([...(w.unitIds || []), unit.id])] }
+            : w)),
+        });
+      } else {
+        get().addWorktop([unit.id], { single: true, thickness: Number(profile.vanity?.defaults?.top) || null });
+      }
     }
     // ─── TURN 72 (CLAUDE.md F8): …AND IT TAKES THE RUN'S CORNICE ───────────
     //

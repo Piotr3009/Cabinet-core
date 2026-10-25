@@ -229,7 +229,8 @@ test('F7.1 · the graves: the old world is gone, file by file', () => {
   // CHAT FIX 19.10.2026 AMENDED AGAIN: the site-trim allowance is a modifier file of its own (KIT_SITE_TRIM.lsp; the owner: *"side panele powinny byc wieksze o 20 mm, to samo z plinth"*): the walk ends between 16 and 25.
   // T80 F1 AMENDED (22.10.2026): the British frame is a kit of its own (KIT_INFRAME.lsp; the owner, 21.10.2026: *"raczej plyta"*, *"wszedzie ramke 38 mm"*, LISP first): the walk ends between 16 and 26.
   // T82 F1 AMENDED (25.10.2026): the HAWA pocket is a kit of its own (KIT_HAWA.lsp; the owner, 25.10.2026: *"zaczniemy od hawa dodanie"*; CLAUDE.md T82 LAWS: *"PART A and PART B each begin with a LISP kit"*): the walk ends between 16 and 27.
-  assert.ok([16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27].includes(kits.length), `the paren walk ends at ${kits.length}, derived, never typed`);
+  // T82 F8 AMENDED (25.10.2026): the vanity is a kit of its own (KIT_VANITY.lsp; the owner, 25.10.2026: *"pozniej dodajemy vanity unit"*; CLAUDE.md T82 LAWS: *"PART A and PART B each begin with a LISP kit"*): the walk ends between 16 and 28.
+  assert.ok([16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28].includes(kits.length), `the paren walk ends at ${kits.length}, derived, never typed`);
   assert.equal(kits.includes('KIT_SHOE_BOX.lsp'), false, 'and the grave is still a grave');
   const engine = readFileSync(new URL('../src/engine/cabinet.js', import.meta.url), 'utf8');
   assert.doesNotMatch(engine, /shoeBoxPlan|shoeBoxBoxFor|SHOEBOX-/,

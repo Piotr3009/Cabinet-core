@@ -266,6 +266,9 @@ export const NEW_FILES = [
   // T82 F7 (25.10.2026): the HAWA pocket on the sheets
   'test/turn82-f06-hawa-room.test.js',
   'scripts/t78-classify.d/f43-t82-f07.mjs',
+  // T82 F8 (25.10.2026): the LISP of the vanity, first
+  'test/turn82-f08-vanity-lisp.test.js',
+  'scripts/t78-classify.d/f43-t82-f08.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -2304,6 +2304,53 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 800, height: 647, depth: 568 },                        // T75 proposed, owner to confirm
   },
 
+  // ─── T82 F8 · THE VANITY UNIT (reference/lisp/KIT_VANITY.lsp) ────────────
+  //
+  // The owner, 25.10.2026 (12:57): *"vanity unit potrzebuje z szufladami
+  // nawierzchniowymi ... pamietaj ze nie ma plecow na vanity unit tylko sa
+  // poziome poprzeczki na dole i na gorze, plecy sa jakby wyciete"*, and over
+  // the mockup (13:03): *"2 wyciecie u dookola zeby sie szuflada otwierala,
+  // 3 - 80, 4 - 100 na material carcasa grubosc, 5 - blat osobny element jak
+  // worktop, 6 - do BOM tez, 7 - tak"*. Every number here is the LISP's
+  // constant of the kit's section 3 (vanityServiceVoid 80 ...), held to it by
+  // test/turn82-f08-vanity-lisp.test.js. computeCabinet reads none of it for
+  // any kit that exists today: only the VANITY kits read it, so every golden
+  // is what main cuts.
+  vanity: {
+    // *"3 - 80"* (CONFIRMED): the carcass stands the house's wall clearance
+    // plus this off its wall, for the pipes (wall_gap, written at birth).
+    serviceVoidMm: 80,
+    // *"4 - 100 na material carcasa grubosc"* (CONFIRMED): RAIL-BOTTOM and
+    // RAIL-TOP, in the carcass board, where the back stood.
+    railHeightMm: 100,
+    // *"2 wyciecie u dookola zeby sie szuflada otwierala"* (13:03) and
+    // *"6 - tak"* (13:46), CONFIRMED: the U round the trap in the top drawer's
+    // box, centred on the waste, from the box's back face, R at its two
+    // inside corners.
+    trapWidthMm: 160,
+    trapDepthMm: 120,
+    trapRadiusMm: 20,
+    // PROPOSED: the air the box under the top drawer keeps below the trap's
+    // bottom line (the top box's bottom underside), else Check #39 in the
+    // owner's words *"prosze uzyc shallow trap"* (12:57).
+    trapClearMm: 60,
+    // PROPOSED (CLAUDE.md F11): the waste's centre from the carcass back (the
+    // rails' back face). KIT_VANITY.lsp D15: a 120 U on a 500 carcass reaches
+    // 155, so the trap stands 45 beyond it and Check #39 says so.
+    wasteFromBackMm: 200,
+    // PROPOSED, to the eye only (*"dodajesz tylko do widoku"*): no cut, no
+    // part, no CNC.
+    basin: { shape: 'oval', widthMm: 520, depthMm: 400, heightMm: 150 },
+    // PROPOSED (CLAUDE.md F9): the carcass 900 x 600 x 500 on a 100 plinth, a
+    // 20 top, floating at 300 off the floor.
+    defaults: {
+      width: 900, height: 600, depth: 500, plinth: 100, top: 20, floatHeightMm: 300,
+    },
+    // *"6 - do BOM tez"* (CONFIRMED, in the BOM): per floating vanity; the
+    // count and the name PROPOSED, the article empty for the owner to fill.
+    hangers: { perUnit: 2, name: 'Cabinet hanger 50 kg with wall plate', article: '' },
+  },
+
   // ─── T75 F17 · THE FLOATING DESK ──────────────────────────────────────────
   //
   // CLAUDE.md T75 F17: *"height `wardrobeDesk.defaults.height = 160` ...
@@ -6293,6 +6340,15 @@ export function migrateCabinetProfile(profile) {
       ...D.wardrobeChest,
       ...profile.wardrobeChest,
       defaults: { ...D.wardrobeChest.defaults, ...profile.wardrobeChest?.defaults },
+    },
+    // T82 F8 · the vanity's numbers, key by key: a profile saved before
+    // tonight comes back with all of them, one that tuned a number keeps it.
+    vanity: {
+      ...D.vanity,
+      ...profile.vanity,
+      basin: { ...D.vanity.basin, ...profile.vanity?.basin },
+      defaults: { ...D.vanity.defaults, ...profile.vanity?.defaults },
+      hangers: { ...D.vanity.hangers, ...profile.vanity?.hangers },
     },
     // T75 F18 · the low unit's defaults, key by key.
     wardrobeLow: {

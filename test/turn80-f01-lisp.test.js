@@ -52,7 +52,9 @@ const sha256 = (b) => createHash('sha256').update(b).digest('hex');
 // (KIT_HAWA.lsp, test/turn82-f01-hawa-lisp.test.js; the owner, 25.10.2026: *"zaczniemy od hawa dodanie"*;
 // CLAUDE.md T82 LAWS: *"PART A and PART B each begin with a LISP kit"*). It stands outside T80's fingerprint
 // and its git row; every other file is still T80's base byte for byte, and the fingerprint is not re-pinned.
-const LATER_KITS = ['KIT_HAWA.lsp'];
+// T82 F8 AMENDED (25.10.2026): and KIT_VANITY.lsp (test/turn82-f08-vanity-lisp.test.js; the owner, 25.10.2026:
+// *"pozniej dodajemy vanity unit"*).
+const LATER_KITS = ['KIT_HAWA.lsp', 'KIT_VANITY.lsp'];
 const lispFingerprint = () => sha256(readdirSync(`${ROOT}reference/lisp`).filter((n) => n !== KIT && !LATER_KITS.includes(n)).sort()
   .map((n) => `${n} ${sha256(readFileSync(`${ROOT}reference/lisp/${n}`))}`).join('\n'));
 /** The turn's base, where git can answer (origin/main, else main), or null. */

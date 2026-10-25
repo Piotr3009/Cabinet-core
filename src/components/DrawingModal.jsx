@@ -36,10 +36,13 @@ import { wallDrawingSheets, wallSectionUnits, wallSetReport, visualAspect } from
 import { renderJob } from '../engine/render.js';
 import { PAGE_FORMATS, layoutSheet, scaleLabel } from '../engine/drawings/sheet.js';
 import { sheetToSvg } from '../engine/drawings/svg.js';
+// T82 F20 · the logo beside the company (*"dodawanie loga do rysunkow"*).
+import { logoOf } from '../engine/drawings/setSheet.js';
 import {
   drawingErrorText,
   exportBookletPdf, exportDrawingPdf, exportDrawingSvg,
   exportWallDrawingsDxf, exportWallDrawingsPdf,
+  readLogoFile,
 } from '../lib/drawingExport.js';
 
 // ─── Drawings (turn 6 F7 — one view; turn 7 F1 — the card) ───
@@ -253,6 +256,29 @@ export default function DrawingModal({ rig = null }) {
 
   const view = KINDS[kind]?.view || 'unit-card';
 
+  // ─── T82 F20 · THE LOGO BESIDE THE COMPANY ────────────────────────────────
+  // The owner, 25.10.2026, 11:40: *"do tego dodawanie loga do rysunkow musze
+  // miec dzisiaj profesjonalne rysunki dla klientow"*. "Choose image" reads a
+  // PNG, JPG or SVG (`readLogoFile`: drawn down to the profile's size, an SVG
+  // given its PNG for the PDF) and keeps it WITH the company, so it is
+  // remembered on this computer where the company's name is (`setTitleBlock`
+  // remembers the company whole); "Remove" takes it off every sheet.
+  const logo = logoOf(project?.titleBlock?.company?.logo);
+  const chooseLogo = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const picked = await readLogoFile(file, profile);
+      setTitleBlock({ company: { logo: picked } });
+      notify(`Logo ${file.name} is on every sheet of the set.`, 'ok');
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[drawings] logo', err);
+      notify(drawingErrorText(err), 'warn');
+    }
+  };
+
   const save = (target) => {
     // TURN 40 (F5): the wall set binds as a whole — every sheet, in order.
     if (target === 'walls-pdf' || target === 'walls-dxf') {
@@ -447,7 +473,7 @@ export default function DrawingModal({ rig = null }) {
               remembered on this computer for the next job. */}
           {kind === 'walls' ? (
             <details className="text-[11px] text-ink-400" data-title-block="1">
-              <summary className="cursor-pointer select-none">Title block: company, drawn by, status, revision</summary>
+              <summary className="cursor-pointer select-none">Title block: company, logo, drawn by, status, revision</summary>
               <div className="grid grid-cols-4 gap-2 mt-2">
                 {[
                   ['Company', 'company.name', 'CABINET CORE'],
@@ -471,12 +497,48 @@ export default function DrawingModal({ rig = null }) {
                     else if (key === 'company.lines') setTitleBlock({ company: { lines: v.split(';').map((x) => x.trim()).filter(Boolean) } });
                     else setTitleBlock({ [key]: v });
                   };
-                  return (
+                  const field = (
                     <label key={key} className="block">
                       <span className="cc-label">{label}</span>
                       <input className="cc-input" data-title-block-field={key} value={value} placeholder={placeholder} onChange={onChange} />
                     </label>
                   );
+                  if (key !== 'company.name') return field;
+                  // T82 F20 · the LOGO row, beside Company: kept with it.
+                  return [field, (
+                    <div key="company.logo" className="block" data-title-block-field="company.logo">
+                      <span className="cc-label">Logo (PNG, JPG or SVG)</span>
+                      <div className="flex items-center gap-1">
+                        {logo ? (
+                          <img
+                            src={logo.href}
+                            alt="Logo"
+                            className="h-7 w-7 object-contain bg-white rounded border border-shell-600"
+                            data-title-block-logo="1"
+                          />
+                        ) : null}
+                        <label className="cc-btn px-2 cursor-pointer" data-title-block-logo-choose="1">
+                          Choose image
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/svg+xml,.png,.jpg,.jpeg,.svg"
+                            className="sr-only"
+                            data-title-block-logo-input="1"
+                            onChange={chooseLogo}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="cc-btn px-2"
+                          data-title-block-logo-remove="1"
+                          disabled={!logo}
+                          onClick={() => setTitleBlock({ company: { logo: null } })}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )];
                 })}
                 <label className="block">
                   <span className="cc-label">Status</span>

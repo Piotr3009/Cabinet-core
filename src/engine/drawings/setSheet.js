@@ -265,9 +265,20 @@ export function titleStrip(zones, title, profile) {
   c = xs[1];
   // The placeholder is sheet furniture, named so (`meta`): a census of the
   // drawing's own dashed lines can leave it out by name.
-  out.push({ ...rect('SHEET_MUTED', c + 2.5, t.y + 4, 24, 24), pen: 'FINE', hidden: true, meta: 'logo' });
-  out.push({ ...text('SHEET_MUTED', c + 14.5, t.y + 17.5, company.logo ? '' : 'LOGO', 2.6), tracking: 0.3 });
-  out.push({ ...text('SHEET_MUTED', c + 14.5, t.y + 13.5, company.logo ? '' : '(Settings)', 1.7) });
+  // T82 F20: a chosen logo stands in the box instead, fitted and centred
+  // (`fitLogo`), named `logo` as the box was; no logo, the box as T71 drew it.
+  const logo = logoOf(company.logo);
+  const logoBox = { x: c + 2.5, y: t.y + 4, w: 24, h: 24 };
+  if (logo) {
+    out.push({
+      kind: 'image', layer: 'SHEET_MUTED', ...fitLogo(logo, logoBox), href: logo.href,
+      ...(logo.raster ? { raster: logo.raster } : {}), meta: 'logo',
+    });
+  } else {
+    out.push({ ...rect('SHEET_MUTED', logoBox.x, logoBox.y, logoBox.w, logoBox.h), pen: 'FINE', hidden: true, meta: 'logo' });
+  }
+  out.push({ ...text('SHEET_MUTED', c + 14.5, t.y + 17.5, logo ? '' : 'LOGO', 2.6), tracking: 0.3 });
+  out.push({ ...text('SHEET_MUTED', c + 14.5, t.y + 13.5, logo ? '' : '(Settings)', 1.7) });
   out.push(value(c + 30, top - 8, str(company.name), 4.4, { weight: 'bold', tracking: 0.2 }));
   out.push({ ...text('SHEET_MUTED', c + 30, top - 12.2, str(company.tagline), 1.9, 'left'), tracking: 0.35 });
   (company.lines || []).slice(0, 3).forEach((l, i) => out.push({ ...text('SHEET_MUTED', c + 30, top - 17.5 - i * 3.4, str(l), 2.1, 'left') }));
@@ -310,6 +321,110 @@ export function titleStrip(zones, title, profile) {
   out.push(label(c + 2, top - 18, 'SHEET'));
   out.push({ ...text('FRAME', c + cw / 2, top - 25, `${str(title.sheet)} / ${str(title.of)}`, 4), weight: 'bold' });
   return out;
+}
+
+// ─── T82 F20 · THE LOGO IN THE COMPANY CELL ─────────────────────────────────
+//
+// The owner, 25.10.2026, 11:40: *"do tego dodawanie loga do rysunkow musze
+// miec dzisiaj profesjonalne rysunki dla klientow"*. T71 left a 24 x 24 box in
+// the company cell ("LOGO (Settings)") and no way to fill it. The picture is
+// chosen in the Drawings window (`lib/drawingExport.js readLogoFile`) and kept
+// with the company, `project.titleBlock.company.logo`, which is remembered on
+// this computer with the company's name. It is held as
+// `{ href, width, height, raster? }`: the picture as a data URL, its own
+// pixel size, and for an SVG the PNG the PDF embeds (jsPDF reads no SVG).
+
+/** The pictures a logo may be: the three every browser and the PDF read. */
+export const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml'];
+
+/** The media type a data URL says it carries, lower case, or ''. */
+export function dataUrlType(href) {
+  const m = /^data:([^;,]+)[;,]/i.exec(String(href || ''));
+  return m ? m[1].trim().toLowerCase() : '';
+}
+
+/** The bytes (as a binary string) a data URL carries, the first `limit` of them. */
+function dataUrlBytes(href, limit = Infinity) {
+  const s = String(href || '');
+  const comma = s.indexOf(',');
+  if (comma < 0) return '';
+  const body = s.slice(comma + 1);
+  if (/;base64$/i.test(s.slice(0, comma))) {
+    const chars = Number.isFinite(limit) ? Math.ceil(limit / 3) * 4 : body.length;
+    try { return atob(body.slice(0, chars).replace(/\s+/g, '')); } catch { return ''; }
+  }
+  try { return decodeURIComponent(body); } catch { return body; }
+}
+
+/**
+ * The pixel size a picture says it is, read off its own header: a PNG's IHDR,
+ * a JPEG's frame marker, an SVG's width and height (or its viewBox). Null
+ * when the picture does not say.
+ */
+export function imageSizeOf(href) {
+  const type = dataUrlType(href);
+  const ok = (w, h) => (w > 0 && h > 0 && Number.isFinite(w) && Number.isFinite(h) ? { width: w, height: h } : null);
+  if (type === 'image/png') {
+    const b = dataUrlBytes(href, 33);
+    if (b.length < 24 || b.slice(1, 4) !== 'PNG' || b.slice(12, 16) !== 'IHDR') return null;
+    const u32 = (i) => ((b.charCodeAt(i) << 24) >>> 0) + (b.charCodeAt(i + 1) << 16) + (b.charCodeAt(i + 2) << 8) + b.charCodeAt(i + 3);
+    return ok(u32(16), u32(20));
+  }
+  if (type === 'image/jpeg') {
+    const b = dataUrlBytes(href);
+    const at = (i) => b.charCodeAt(i);
+    if (at(0) !== 0xFF || at(1) !== 0xD8) return null;
+    let i = 2;
+    while (i + 9 < b.length) {
+      if (at(i) !== 0xFF) { i += 1; continue; }
+      const m = at(i + 1);
+      if (m === 0xFF) { i += 1; continue; }
+      if (m === 0xD8 || m === 0x01 || (m >= 0xD0 && m <= 0xD7)) { i += 2; continue; }
+      // The frame markers (C0 to CF but for DHT C4, JPG C8 and DAC CC) carry
+      // the height and the width after the precision byte.
+      if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) {
+        return ok((at(i + 7) << 8) + at(i + 8), (at(i + 5) << 8) + at(i + 6));
+      }
+      i += 2 + (at(i + 2) << 8) + at(i + 3);
+    }
+    return null;
+  }
+  if (type === 'image/svg+xml') {
+    const tag = (/<svg\b[^>]*>/i.exec(dataUrlBytes(href)) || [''])[0];
+    const attr = (name) => (new RegExp(`\\s${name}\\s*=\\s*["']([^"']*)["']`, 'i').exec(tag) || [])[1];
+    const len = (v) => (v == null || /%/.test(v) ? NaN : parseFloat(v));
+    const vb = String(attr('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+    return ok(len(attr('width')), len(attr('height'))) || (vb.length === 4 ? ok(vb[2], vb[3]) : null);
+  }
+  return null;
+}
+
+/**
+ * The stored logo, read back for the sheet: `{ href, width, height, raster }`
+ * or null. Only a data URL of a PNG, a JPG or an SVG is a logo; a web address
+ * the paper cannot fetch, or a stray word, is no logo and the box stays.
+ */
+export function logoOf(raw) {
+  const href = typeof raw === 'string' ? raw : raw?.href;
+  if (!LOGO_TYPES.includes(dataUrlType(href))) return null;
+  const said = typeof raw === 'object' && Number(raw.width) > 0 && Number(raw.height) > 0
+    ? { width: Number(raw.width), height: Number(raw.height) } : null;
+  const size = said || imageSizeOf(href) || { width: 1, height: 1 };
+  const raster = typeof raw === 'object' && /^image\/(png|jpeg)$/.test(dataUrlType(raw.raster)) ? raw.raster : null;
+  return { href, width: size.width, height: size.height, raster };
+}
+
+/**
+ * The picture fitted INTO a box with its own proportions, centred: a 200 x
+ * 100 logo in the 24 x 24 box stands 24 x 12, 6 up from the box's foot.
+ */
+export function fitLogo(logo, box) {
+  const w = Number(logo?.width) > 0 ? Number(logo.width) : 1;
+  const h = Number(logo?.height) > 0 ? Number(logo.height) : 1;
+  const wide = w / h >= box.w / box.h;
+  const dw = wide ? box.w : (w * box.h) / h;
+  const dh = wide ? (h * box.w) / w : box.h;
+  return { x: box.x + (box.w - dw) / 2, y: box.y + (box.h - dh) / 2, w: dw, h: dh };
 }
 
 // ─── the caption ─────────────────────────────────────────────────────────────

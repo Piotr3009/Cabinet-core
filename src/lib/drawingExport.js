@@ -11,6 +11,7 @@ import { sheetToSvg } from '../engine/drawings/svg.js';
 import { DXF_AUTOCAD_ONLY, sheetToDxf } from '../engine/drawings/dxf.js';
 import { slug } from '../engine/render.js';
 import { exportFileName } from '../engine/naming.js';
+import { LOGO_TYPES, dataUrlType, imageSizeOf } from '../engine/drawings/setSheet.js';
 import { download } from './exporters.js';
 
 // ─── Getting a drawing off the screen (turn 6, CLAUDE.md F7; turn 7, F1) ───
@@ -243,8 +244,11 @@ function drawSheet(doc, sheet) {
       } else if (e.kind === 'image' && e.href) {
         // T71: the render on the visualisation sheet. A data URL from the scene;
         // anything jsPDF cannot read is skipped rather than failing the booklet.
+        // T82 F20: and the logo in the title strip, an SVG one by its raster.
         try {
-          doc.addImage(e.href, e.x, flip(e.y + e.h), e.w, e.h);
+          const picture = pdfImageOf(e);
+          if (!picture) throw new Error('an SVG picture with no PNG beside it: jsPDF reads PNG and JPEG');
+          doc.addImage(picture, e.x, flip(e.y + e.h), e.w, e.h);
         } catch (err) {
           // eslint-disable-next-line no-console
           console.warn('[drawings] image skipped', err);
@@ -281,6 +285,112 @@ function hexToRgb(hex) {
     parseInt(full.slice(2, 4), 16) || 0,
     parseInt(full.slice(4, 6), 16) || 0,
   ];
+}
+
+// ─── T82 F20 · THE LOGO, READ IN THE BROWSER AND EMBEDDED IN THE PDF ────────
+//
+// The owner, 25.10.2026, 11:40: *"do tego dodawanie loga do rysunkow musze
+// miec dzisiaj profesjonalne rysunki dla klientow"*. The sheet draws the logo
+// as an `image` entity (engine/drawings/setSheet.js titleStrip); the SVG
+// preview and the SVG file take its picture as it is, a vector stays a
+// vector. jsPDF embeds PNG and JPEG and no SVG, so an SVG logo is drawn ONCE,
+// when it is chosen, through a canvas into a PNG `profile.drawings.set.logo
+// .maxPx` on its long side, and that PNG rides beside it as `raster`: the PDF
+// embeds the raster, synchronously, in the same pass as every other entity.
+
+/**
+ * The picture the PDF embeds for an image entity: its `raster` when it has
+ * one (the SVG logo's PNG), else the picture itself, and null for an SVG with
+ * no raster (skipped in words on the console, the page still binds).
+ */
+export function pdfImageOf(e) {
+  if (/^image\/(png|jpeg)$/.test(dataUrlType(e?.raster))) return e.raster;
+  if (dataUrlType(e?.href) === 'image/svg+xml') return null;
+  return e?.href || null;
+}
+
+/** The type a chosen file is, by its own word or by its name. */
+function logoTypeOf(file) {
+  const said = String(file?.type || '').toLowerCase();
+  if (LOGO_TYPES.includes(said)) return said;
+  const ext = (/\.([a-z0-9]+)$/i.exec(String(file?.name || '')) || [])[1]?.toLowerCase();
+  return { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', svg: 'image/svg+xml' }[ext] || '';
+}
+
+/** The browser's three hands: read a file, load a picture, draw it smaller. */
+function browserLogoEnv() {
+  return {
+    readAsDataURL: (file) => new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result || ''));
+      r.onerror = () => reject(r.error || new Error('the file could not be read'));
+      r.readAsDataURL(file);
+    }),
+    loadImage: (href) => new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('the browser could not draw it'));
+      img.src = href;
+    }),
+    draw: (img, w, h, type) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      return canvas.toDataURL(type, 0.92);
+    },
+  };
+}
+
+/**
+ * A LOGO FILE, READ FOR THE TITLE BLOCK (the Drawings window's "Choose
+ * image"). A PNG or a JPG larger than `maxPx` on its long side is drawn down
+ * to it (24 mm at 400 px is past 400 dpi on the paper); an SVG keeps its own
+ * text for the sheet and gains its PNG for the PDF. What is kept may be at
+ * most `maxKb` as data URLs, because it is remembered on this computer and
+ * rides the project; past that the window says so and keeps nothing.
+ *
+ * @param {File} file
+ * @param {object} profile    reads `drawings.set.logo { maxPx, maxKb }`
+ * @param {object} [env]      the browser's hands (a node test hands its own)
+ * @returns {Promise<{href:string, width:number, height:number, raster?:string}>}
+ * @throws {Error} a sentence the window puts on the glass
+ */
+export async function readLogoFile(file, profile, env = browserLogoEnv()) {
+  const { maxPx, maxKb } = profile.drawings.set.logo;
+  const name = String(file?.name || 'the file');
+  const type = logoTypeOf(file);
+  if (!type) throw new Error(`A logo is a PNG, JPG or SVG picture; ${name} is not one.`);
+  let href = await env.readAsDataURL(file);
+  // A file the system did not type reads as octet-stream: it is named by its own extension.
+  if (dataUrlType(href) !== type) href = href.replace(/^data:[^;,]*/i, `data:${type}`);
+  let img;
+  try { img = await env.loadImage(href); } catch (err) {
+    throw new Error(`${name} could not be read as a picture (${drawingErrorText(err)}).`);
+  }
+  const size = imageSizeOf(href) || { width: Number(img?.naturalWidth) || 0, height: Number(img?.naturalHeight) || 0 };
+  if (!(size.width > 0 && size.height > 0)) throw new Error(`${name} does not say how big it is; save it with a width and a height and choose it again.`);
+  const long = Math.max(size.width, size.height);
+  const at = (k) => [Math.max(1, Math.round(size.width * k)), Math.max(1, Math.round(size.height * k))];
+  const logo = { href, width: size.width, height: size.height };
+  try {
+    if (type === 'image/svg+xml') {
+      const [w, h] = at(maxPx / long);
+      logo.raster = env.draw(img, w, h, 'image/png');
+    } else if (long > maxPx) {
+      const [w, h] = at(maxPx / long);
+      logo.href = env.draw(img, w, h, type);
+      logo.width = w;
+      logo.height = h;
+    }
+  } catch (err) {
+    throw new Error(`${name} could not be drawn into a picture for the PDF in this browser (${drawingErrorText(err)}); save it as a PNG and choose that.`);
+  }
+  const kb = Math.ceil((logo.href.length + (logo.raster || '').length) / 1024);
+  if (kb > maxKb) {
+    throw new Error(`${name} is ${kb} KB as the title block would keep it; a logo is kept up to ${maxKb} KB. Save it smaller and choose it again.`);
+  }
+  return logo;
 }
 
 

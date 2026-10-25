@@ -5114,6 +5114,13 @@ export const DEFAULT_CABINET_PROFILE = {
         tagline: '',
         lines: [],
       },
+      // T82 F20 · the logo in the company cell (*"dodawanie loga do
+      // rysunkow"*, 25.10.2026): a picture chosen in the Drawings window is
+      // kept at most `maxPx` on its long side (24 mm at 400 px is past 400
+      // dpi) and at most `maxKb` as data URLs, since it is remembered on this
+      // computer with the company and rides every job saved on its shelf.
+      // Both PROPOSED.
+      logo: { maxPx: 400, maxKb: 256 },
       // The colour a masked number stands on, and the hatch pitch of a cut
       // wall, in paper mm.
       hatchPitch: 2.2,

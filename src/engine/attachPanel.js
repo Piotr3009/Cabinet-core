@@ -46,11 +46,14 @@
 // typed edit of a panel does, so the two can never disagree.
 
 import { boxCorners, wallName } from './room.js';
-import { backStandoff, spanInWallFrame, unitSpan } from './collision.js';
+import {
+  backStandoff, maxDepthOnWall, spanInWallFrame, unitSpan,
+} from './collision.js';
 import { unitBase, unitTop, wallGapOf } from './runs.js';
 import { getUnitType, isFreePanel } from './types.js';
 import { freePanelOf, freePanelPatch } from './freePanel.js';
 import { unitName } from './naming.js';
+import { formatMm } from './format.js';
 
 const num = (v, fallback = 0) => (Number.isFinite(Number(v)) && v !== '' && v != null ? Number(v) : fallback);
 const round4 = (v) => Math.round(v * 1e4) / 1e4;
@@ -157,6 +160,32 @@ export function attachTargetByKey(key, args) {
 }
 
 /**
+ * ─── T82 F17 · HOW FAR OFF ITS WALL A FREE PANEL'S BACK MAY STAND ─────────
+ *
+ * The owner, 25.10.2026 13:36: *"jak mam frontowy komin to nie moge
+ * powiekszyc panela bo mi wchodzi w sciane"*. A panel stuck to a chimney 350
+ * deep stands 340 over the clearance, and `editor.maxInset` (300) is a
+ * CABINET's number: any later inset pulled the panel 40 into the chimney. A
+ * free panel's back inset is capped by the ROOM: the far wall, less the box
+ * the panel fills, less the clearance it keeps off its own wall. The one law:
+ * `setUnitInsets`, the right panel's Back field, the drag off the wall (F16)
+ * and `attachPlan` below all read it. Infinity where no far wall is met.
+ *
+ * @param {{panel:object, wall:object, walls:object[], profile:object}} args
+ * @returns {number}
+ */
+export function freePanelInsetMax({
+  panel, wall, walls = [], profile,
+}) {
+  if (!panel || !wall) return Infinity;
+  const reach = maxDepthOnWall({
+    wall, walls, x: num(panel.position?.x_mm, 0), width: num(panel.params?.width, 0),
+  });
+  if (!(reach > 0)) return Infinity;
+  return Math.max(0, round4(reach - wallGapOf(panel, profile) - num(panel.params?.depth, 0)));
+}
+
+/**
  * THE NUMBERS A SURFACE ASKS OF THE PANEL: `{ wall, x, params, label }`, or
  * `{ error }` in words. `params` is the whole patch for the unit's params (the
  * board's stance and the box it fills, through `freePanelPatch`, plus
@@ -173,7 +202,33 @@ export function attachTargetByKey(key, args) {
  * @param {object} args.profile
  * @param {number} args.roomHeight
  */
-export function attachPlan({
+export function attachPlan(args) {
+  const plan = surfacePlan(args);
+  if (plan.error) return plan;
+  // T82 F17 · the room refuses in words: a surface that would stand the panel
+  // past the far wall (its back inset over `freePanelInsetMax`, read at the
+  // place and in the stance the surface asks) is refused, never squashed.
+  const { panel, walls = [], profile } = args;
+  const at = {
+    ...panel,
+    position: { ...panel.position, wall: plan.wall, x_mm: plan.x },
+    params: { ...panel.params, ...plan.params },
+  };
+  const max = freePanelInsetMax({
+    panel: at, wall: walls[plan.wall], walls, profile,
+  });
+  const inset = num(plan.params?.inset_back_mm, 0);
+  if (inset > max + 1e-6) {
+    return {
+      error: `${plan.label} would stand the panel ${formatMm(inset)} mm off the wall; `
+        + `the room leaves it ${formatMm(max)} mm.`,
+    };
+  }
+  return plan;
+}
+
+/** `attachPlan`'s numbers, before the room has its say on how far out they reach. */
+function surfacePlan({
   panel, target, gap = 0, units = [], walls = [], obstacles = [], profile, roomHeight,
 }) {
   if (!panel || !isFreePanel(panel.type)) return { error: 'Only a free-standing panel can be attached.' };

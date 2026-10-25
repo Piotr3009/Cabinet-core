@@ -21,6 +21,13 @@
 // (`attachTargetsFor`, `attachFreePanel`) plus the `moveUnit` change that lets
 // a panel stood in front of a chimney slide along that chimney's face.
 //
+// T82 (CLAUDE.md PART D) extends it, never reverts it (FROZEN 5). F17, the
+// owner 25.10.2026 13:36: *"jak mam frontowy komin to nie moge powiekszyc
+// panela bo mi wchodzi w sciane"*: a panel stuck to a chimney's front grows
+// along that face, its thickness keeps its width, the size window and the
+// Check read the same obstacles the move reads, and its back inset is capped
+// by the room, not by a cabinet's 300.
+//
 // THE STAGE (every test builds it afresh): a 5000 x 3000 room, 2500 high; a
 // box bx1 at x 4400 (400 wide, 300 deep) on wall 1; a chimney on wall 1 at
 // x 2500, 600 wide, 350 deep; a BUD at x 600 widened to 800; a WUD at x 1600;
@@ -30,6 +37,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { rectCorners, roomWalls, wallPlanObstacles } from '../src/engine/room.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
@@ -39,7 +47,10 @@ import { boxCorners } from '../src/engine/room.js';
 import {
   attachTargets, attachTargetByKey, attachPlan, obstaclesBeyond, obstacleOnWall, UNIT_FACES, OBSTACLE_FACES,
 } from '../src/engine/attachPanel.js';
-import { useProjectStore } from '../src/stores/projectStore.js';
+// T82 F17 reads its new name through the module, so a missing one fails its
+// own test and leaves the chat-fix's rows standing.
+import * as ATTACH from '../src/engine/attachPanel.js';
+import { useProjectStore, validateUnit } from '../src/stores/projectStore.js';
 
 const S = () => useProjectStore.getState();
 const unit = (id) => S().units.find((u) => u.id === id);
@@ -378,4 +389,149 @@ test('CHAT-FIX 25.10 . a plain cabinet dragged towards the chimney still goes th
   assert.ok(res && Number.isFinite(res.x), 'moveUnit returned no x');
   assert.equal(unit(bud).position.x_mm, res.x);
   assert.ok(unit(bud).position.x_mm + unit(bud).params.width <= 5000, 'the cabinet left the wall');
+});
+
+// === 10 . T82 F17 . THE PANEL IN FRONT OF A CHIMNEY CAN GROW ================
+//
+// The probe (`verify/t82/f17-probe.md`): the three size roads of the store
+// (`updateUnitParams`' width spans, `unitSizeBoundsFor`, `validateUnit`) read
+// the plan's obstacles unfiltered, so the chimney a panel stands in front of
+// was its neighbour: 600 gave "Width limited to 0 mm", 900 slid the panel off
+// the chimney's face, `board_t 36` shrank it to 1, the size window said 0 and
+// the Check said UNIT_OVERLAP. They now read what `moveUnit` reads since the
+// chat-fix: only the obstacles that reach past the panel's own back line.
+
+/** Every notice of one size edit, and the panel after it. */
+function grow(id, patch) {
+  const res = S().updateUnitParams(id, patch);
+  return { notices: res.notices, s: stanceOf(id) };
+}
+
+test('T82 F17 . a panel on the chimney\'s front grows from 800 to 1200 with no notice and keeps x 2500 on the chimney\'s face', () => {
+  const { panel, chimney } = stage();
+  S().attachFreePanel(panel, `obstacle:${chimney}:front`, { gap: 0 });
+  assert.equal(stanceOf(panel).x, 2500);
+  for (const length of [600, 900, 1200]) {
+    const { notices, s } = grow(panel, { panel_length: length });
+    assert.deepEqual(notices, [], `${length}: the chimney behind the panel spoke`);
+    assert.equal(s.box.width, length, `${length}: the panel did not take its length`);
+    assert.equal(s.x, 2500, `${length}: the panel left the chimney's face`);
+    assert.equal(s.inset, 340, `${length}: the panel left the chimney's face`);
+  }
+});
+
+test('T82 F17 . board_t 36 on the panel in front of the chimney keeps its width and its place', () => {
+  const { panel, chimney } = stage();
+  S().attachFreePanel(panel, `obstacle:${chimney}:front`, { gap: 0 });
+  const { notices, s } = grow(panel, { board_t: 36 });
+  assert.deepEqual(notices, []);
+  assert.equal(unit(panel).params.board_t, 36);
+  assert.deepEqual(s.box, { width: 800, height: 400, depth: 36 }, 'the thickness shrank the panel');
+  assert.equal(s.x, 2500);
+  assert.equal(s.inset, 340);
+});
+
+test('T82 F17 . the size window reads the room\'s bounds for it, and the Check finds no overlap with the chimney behind it', () => {
+  const { panel, chimney } = stage();
+  S().attachFreePanel(panel, `obstacle:${chimney}:front`, { gap: 0 });
+  const bounds = S().unitSizeBoundsFor(panel);
+  // From x 2500 to the wall end less the 10 a free panel keeps off a wall: the
+  // chimney (far 350) and the box (far 300) both stand behind its back at 350.
+  assert.equal(bounds.width.max, 5000 - 2500 - CLEARANCE, `width max ${bounds.width.max} by ${bounds.width.by}`);
+  const check = () => validateUnit(unit(panel), S().unitResult(panel), {
+    room: S().project.room, units: S().units, wallSlopes: S().project.wallSlopes,
+  });
+  assert.deepEqual(check().filter((i) => i.code === 'UNIT_OVERLAP'), [], 'the Check says it overlaps the chimney');
+  grow(panel, { panel_length: 1200 });
+  assert.deepEqual(check().filter((i) => i.code === 'UNIT_OVERLAP'), []);
+});
+
+test('T82 F17 . a chimney in the corner: the panel on its front grows to 900 and 1200 with no notice (no "cannot grow either way")', () => {
+  S().newProject();
+  S().setRoom({ corners: rectCorners(5000, 3000), height: ROOM_H });
+  const chimney = S().addWallSlope({ kind: 'chimney', wall: 0, x_mm: 0, width: 600, depth: 350 });
+  const panel = S().addUnit('FREE_PANEL', { wall: 0, x: 3600 }).id;
+  const res = S().attachFreePanel(panel, `obstacle:${chimney}:front`, { gap: 0 });
+  assert.equal(res.ok, true);
+  // The wall end holds it the clearance off the side wall, and the store says by how much.
+  assert.equal(res.clamped, CLEARANCE);
+  assert.equal(stanceOf(panel).x, CLEARANCE);
+  for (const length of [900, 1200]) {
+    const { notices, s } = grow(panel, { panel_length: length });
+    assert.deepEqual(notices, [], `${length}: ${notices.join(' / ')}`);
+    assert.equal(s.box.width, length);
+    assert.equal(s.x, CLEARANCE);
+  }
+});
+
+test('T82 F17 . the refusal names the unit by its type: a panel boxed in is "this free-standing panel", never "this wardrobe"', () => {
+  S().newProject();
+  S().setRoom({ corners: rectCorners(5000, 3000), height: ROOM_H });
+  S().addWallSlope({ kind: 'chimney', wall: 0, x_mm: 2500, width: 600, depth: 350 });
+  const bud = S().addUnit('BUD', { wall: 0, x: 600 }).id;
+  S().updateUnitParams(bud, { width: 800 });
+  const panel = S().addUnit('FREE_PANEL', { wall: 0, x: 1400 }).id;
+  assert.equal(stanceOf(panel).x, 1400, 'the stage: the panel stands against the BUD');
+  // Flush to the wall it stands IN the chimney's band: the chimney holds it.
+  assert.deepEqual(grow(panel, { panel_length: 1100 }).notices, []);
+  const { notices, s } = grow(panel, { panel_length: 1200 });
+  assert.equal(s.box.width, 1100);
+  assert.equal(notices.length, 1);
+  assert.equal(notices[0], 'This free-standing panel cannot grow either way: a chimney on this wall is on the right and '
+    + '01 is on the left. 1100 mm is what it can be.');
+  assert.doesNotMatch(notices[0], /wardrobe/);
+});
+
+test('T82 F17 . kept: a panel ACROSS the wall beside the chimney grows in length to the room\'s far wall less the clearance', () => {
+  const { panel, chimney } = stage();
+  S().attachFreePanel(panel, `obstacle:${chimney}:left`, { gap: 0 });
+  for (const length of [900, 1200, 2000]) {
+    const { notices, s } = grow(panel, { panel_length: length });
+    assert.deepEqual(notices, [], `${length}`);
+    assert.equal(s.box.depth, length);
+    assert.equal(s.x, 2500 - BOARD);
+  }
+  const { notices, s } = grow(panel, { panel_length: 3500 });
+  assert.equal(s.box.depth, 3000 - CLEARANCE);
+  assert.match(notices.join(' '), /Depth limited to 2990 mm by the room/);
+});
+
+test('T82 F17 . the back inset of a free panel is capped by the ROOM (the far wall less the panel), not by a cabinet\'s 300', () => {
+  const { bud, panel, chimney } = stage();
+  S().attachFreePanel(panel, `obstacle:${chimney}:front`, { gap: 0 });
+  assert.equal(stanceOf(panel).inset, 340);
+  // The same number typed again stays where the attach put it: 340, not 300.
+  const again = S().setUnitInsets(panel, { back: 340 });
+  assert.equal(again.applied.inset_back_mm, 340, 'the panel was pulled 40 into the chimney');
+  assert.equal(stanceOf(panel).inset, 340);
+  assert.equal(stanceOf(panel).x, 2500);
+  // The room's own cap: 3000 deep, 10 off the wall, an 18 board.
+  const walls = roomWalls(S().project.room);
+  const cap = ATTACH.freePanelInsetMax({ panel: unit(panel), wall: walls[0], walls, profile: P });
+  assert.equal(cap, 3000 - CLEARANCE - BOARD);
+  const far = S().setUnitInsets(panel, { back: 5000 });
+  assert.equal(far.applied.inset_back_mm, 3000 - CLEARANCE - BOARD);
+  assert.match(far.notices.join(' '), /limited to 2972 mm by the room/, 'the room clamped in silence');
+  // A cabinet keeps the cabinet's number.
+  assert.equal(S().setUnitInsets(bud, { back: 400 }).applied.inset_back_mm, P.editor.maxInset);
+  // The right panel's Back field ends where the clamp does (the probe's row 14:
+  // its `max` was the cabinet's 300 for a panel too).
+  assert.equal(S().insetBackMaxFor(panel), 3000 - CLEARANCE - BOARD);
+  assert.equal(S().insetBackMaxFor(bud), P.editor.maxInset);
+  assert.equal(S().insetBackMaxFor('no-such-unit'), null);
+  const right = readFileSync(new URL('../src/components/RightPanel.jsx', import.meta.url), 'utf8');
+  assert.match(right, /const backMax = \(typeof insetBackMaxFor === 'function' \? insetBackMaxFor\(unit\.id\) : null\) \?\? profile\.editor\.maxInset;/);
+  assert.match(right, /max=\{Number\.isFinite\(backMax\) \? backMax : undefined\}/);
+});
+
+test('T82 F17 . the room refuses in words a surface that would stand the panel past the far wall, and nothing moves', () => {
+  const { panel } = stage();
+  S().setUnitInsets(panel, { back: 5000 });
+  assert.equal(stanceOf(panel).inset, 2972);
+  const before = JSON.stringify(S().units);
+  // Laid flat on the floor its box is 400 deep: 2972 + 10 + 400 passes 3000.
+  const res = S().attachFreePanel(panel, 'floor', { gap: 0 });
+  assert.equal(res.ok, false);
+  assert.equal(res.error, 'Floor would stand the panel 2972 mm off the wall; the room leaves it 2590 mm.');
+  assert.equal(JSON.stringify(S().units), before, 'a refusal changed the units');
 });

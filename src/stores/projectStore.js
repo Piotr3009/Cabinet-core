@@ -39,6 +39,8 @@ import {
 } from '../engine/hawaPocket.js';
 // CHAT-FIX 25.10.2026 · the free panel stuck to a surface of the owner's choice.
 import { attachPlan, attachTargetByKey, attachTargets, obstaclesBeyond } from '../engine/attachPanel.js';
+// T82 F17 · ...and the room's cap on how far off its wall a free panel stands.
+import { freePanelInsetMax } from '../engine/attachPanel.js';
 // T75 F7 · the corner notch: whether a kit takes one, and the engine's own
 // refusal (KIT_NOTCH.lsp, asked of the parent's cut) read before it is kept.
 // T79 F5 · ...and the edge notch's edges (KIT_NOTCH.lsp D22).
@@ -160,8 +162,6 @@ import {
 import { pocketCoverSides, pocketNeighbours, runPocketParams } from '../engine/runs.js';
 // T80 F3 · the in-frame frame of a run (KIT_INFRAME.lsp's mirror).
 import { runFrameParams } from '../engine/inframe.js';
-// T82 F16 · how far a free panel may be pulled off its wall: the far wall.
-import { maxDepthOnWall } from '../engine/collision.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
 import {
   runFor as shareOutRunFor, shareOutGapSpan, shareOutOffered, shareOutPlan,
@@ -4967,16 +4967,37 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{applied:object, notices:string[]}}
    */
+  /**
+   * T82 F17 · the end of a unit's Back inset field: a cabinet's
+   * `editor.maxInset`, a free panel's the room's (`freePanelInsetMax`), the
+   * same ceiling `setUnitInsets` clamps to. Null for no such unit.
+   */
+  insetBackMaxFor: (unitId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    return unit ? insetBackMaxOf(s, unit, getCabinetProfile()) : null;
+  },
+
   setUnitInsets: (unitId, patch) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return { applied: {}, notices: [] };
     const profile = getCabinetProfile();
     const max = profile.editor.maxInset;
+    // T82 F17 · a free panel's BACK inset is capped by the room, not by a
+    // cabinet's `maxInset` (`engine/attachPanel.js freePanelInsetMax`): a
+    // panel stuck 340 off the wall in front of a chimney stays at 340.
+    const backMax = insetBackMaxOf(s, unit, profile);
+    const capped = [];
     const applied = {};
     for (const [key, param] of [['left', 'inset_left_mm'], ['right', 'inset_right_mm'], ['back', 'inset_back_mm']]) {
       if (patch[key] == null) continue;
-      applied[param] = Math.min(max, Math.max(0, snapTo(Number(patch[key]) || 0, profile.editor.mmStep)));
+      const want = Math.max(0, snapTo(Number(patch[key]) || 0, profile.editor.mmStep));
+      const ceiling = key === 'back' ? backMax : max;
+      applied[param] = Math.min(ceiling, want);
+      if (key === 'back' && isFreePanel(unit.type) && want > ceiling + 1e-6) {
+        capped.push(`Back inset limited to ${formatMm(ceiling)} mm by the room.`);
+      }
     }
     if (!Object.keys(applied).length) return { applied: {}, notices: [] };
 
@@ -4988,7 +5009,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ),
     }));
 
-    const notices = [];
+    const notices = [...capped];
 
     // The unit is now WIDER IN PLAN where it already stands, and a unit butted
     // against its neighbour is suddenly 40 mm inside it. No drag can produce
@@ -6725,7 +6746,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       x: unit.position.x_mm,
       wallWidth: wall.width,
       others: wallObstacles({
-        wall, walls, depth: unit.params.depth, others, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
+        // T82 F17 · the same obstacles the width edit reads.
+        wall, walls, depth: unit.params.depth, others, boxes: planObstaclesInWayOf(unit, wall, s.project.room, s.project.wallSlopes, profile),
       }),
       wallMargin: wallMarginOf(s, unit),
       padRight: footprintPads(unit, unit.params.front_t, profile).right,
@@ -7276,7 +7298,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // it always has, so nothing drifts when a number is typed down.
     if (patch.width != null) {
       const spans = wallObstacles({
-        wall, walls, depth: unit.params.depth, others, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
+        // T82 F17 · a free panel stood in front of a chimney grows along its
+        // face: the obstacles behind its back line are not in its way.
+        wall, walls, depth: unit.params.depth, others, boxes: planObstaclesInWayOf(unit, wall, s.project.room, s.project.wallSlopes, profile),
         enter: notchEnterFor({ ...unit, params: { ...unit.params, width: patch.width } }),
       });
       const pads = footprintPads(unit, unit.params.front_t, profile);
@@ -7321,8 +7345,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           // F9 leaves — is when they gave NOTHING; otherwise this is a limit,
           // and either way the sentence names what is on EACH side rather than
           // pointing at one of them and leaving the other to be discovered.
+          // T82 F17 · the unit is named by its type, never "wardrobe" for a panel.
           notices.push(applied.width <= have + 1e-6
-            ? `This wardrobe cannot grow either way: ${clamp.by} is on the right and `
+            ? `This ${typeWordOf(unit)} cannot grow either way: ${clamp.by} is on the right and `
               + `${heldBy} is on the left. ${formatMm(applied.width)} mm is what it can be.`
             : `Width limited to ${formatMm(applied.width)} mm — ${clamp.by} on the right, `
               + `${heldBy} on the left.`);
@@ -7667,9 +7692,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // front of a chimney or a box (`attachFreePanel`, the obstacle's front)
       // is not stopped by what it stands in front of: only an obstacle that
       // reaches past the panel's own back line is in its way.
-      boxes: isFreePanel(unit.type)
-        ? obstaclesBeyond(planObstaclesOf(s.project.room, s.project.wallSlopes), wall, backStandoff(unit, getCabinetProfile()))
-        : planObstaclesOf(s.project.room, s.project.wallSlopes),
+      // T82 F17 · one road: `planObstaclesInWayOf` is that rule, read by the
+      // width edit, the size window and the Check as well.
+      boxes: planObstaclesInWayOf(unit, wall, s.project.room, s.project.wallSlopes, getCabinetProfile()),
       // ...unless the cabinet can be notched for it (15.10.2026): then it may
       // drive in as far as the widest notch its carcass takes.
       enter: notchEnterFor(unit),
@@ -11974,10 +11999,13 @@ const FREE_PANEL_KEYS = ['width', 'height', 'depth', 'panel_width', 'panel_lengt
  *   mount     the underside: the floor, 0, at least; the room height less the
  *             box at most (no upper limit in a room with no height)
  *   standoff  the back face off the wall line: the wall clearance every unit
- *             keeps at least; the far wall (`maxDepthOnWall` over its span,
- *             the depth clamp's own reach) less the panel's box at most
+ *             keeps at least; the far wall less the panel's box at most
  *   inset     the same, as the `inset_back_mm` it is written as: the standoff
- *             less the clearance
+ *             less the clearance. T82 F17 · its ceiling is
+ *             `engine/attachPanel.js freePanelInsetMax` (the far wall over the
+ *             panel's span, `maxDepthOnWall`, less its clearance and its box),
+ *             the one law the drag, the `fp-wall` chip, the right panel's Back
+ *             field and `setUnitInsets` all read
  *
  * `patch` is the edit in hand (its own height, depth or width, when it moves
  * them). Nothing here knows about obstacles: a panel is never stopped on these
@@ -11995,16 +12023,18 @@ export function freePanelReach(state, unit, profile, patch = {}) {
   const walls = roomWalls(room);
   const wall = walls[unit.position?.wall ?? 0] || walls[0];
   const clearance = wallGapOf(unit, profile);
-  const reach = wall ? maxDepthOnWall({ wall, walls, x: Number(unit.position?.x_mm) || 0, width }) : 0;
-  // No far wall found (a ray into the open): no limit, rather than none at all.
   // (`roundTo` reads Infinity as 0, so the open reach is kept off it.)
   const r4 = (v) => (Number.isFinite(v) ? roundTo(v, 4) : v);
-  const far = reach > 0 ? reach : Infinity;
-  const standoffMax = Math.max(clearance, r4(far - depth));
+  // T82 F17 · one law: the panel as the edit in hand would have it (its width
+  // and depth), asked of freePanelInsetMax. No far wall found (a ray into the
+  // open): Infinity, no limit, rather than none at all.
+  const insetMax = wall ? freePanelInsetMax({
+    panel: { ...unit, params: { ...unit.params, width, depth } }, wall, walls, profile,
+  }) : Infinity;
   return {
     mount: { min: 0, max: roomHeight > 0 ? Math.max(0, r4(roomHeight - height)) : Infinity },
-    standoff: { min: clearance, max: standoffMax },
-    inset: { min: 0, max: r4(standoffMax - clearance) },
+    standoff: { min: clearance, max: r4(clearance + insetMax) },
+    inset: { min: 0, max: insetMax },
     clearance,
   };
 }
@@ -12040,6 +12070,46 @@ function planObstaclesOf(room, wallSlopeList) {
       id: island.id, corners: islandCorners(island), label: `island ${k + 1}`,
     })),
   ];
+}
+
+/**
+ * ─── T82 F17 · …AND WHAT OF IT IS IN THIS UNIT'S WAY ──────────────────────
+ *
+ * The owner, 25.10.2026 13:36: *"jak mam frontowy komin to nie moge
+ * powiekszyc panela bo mi wchodzi w sciane"*. Every obstacle of the plan for a
+ * cabinet; for a FREE PANEL only those that reach past its own back line
+ * (`engine/attachPanel.js obstaclesBeyond`), so a panel stood in front of a
+ * chimney is not held off by the chimney it stands in front of. The chat-fix
+ * gave `moveUnit` this rule; the width edit, the size window, the Check and
+ * the inset settle read it from here, so the five cannot disagree
+ * (verify/t82/f17-probe.md rows 3 to 6).
+ */
+function planObstaclesInWayOf(unit, wall, room, wallSlopeList, profile = getCabinetProfile()) {
+  const all = planObstaclesOf(room, wallSlopeList);
+  return isFreePanel(unit?.type) && wall ? obstaclesBeyond(all, wall, backStandoff(unit, profile)) : all;
+}
+
+/**
+ * T82 F17 · the most a unit's BACK inset may be: a cabinet's `editor.maxInset`,
+ * a free panel's the room's (`freePanelInsetMax`). `setUnitInsets` clamps to it
+ * and the right panel's Back field shows it as its end.
+ */
+function insetBackMaxOf(state, unit, profile = getCabinetProfile()) {
+  const max = Number(profile.editor.maxInset) || 0;
+  if (!isFreePanel(unit?.type)) return max;
+  const walls = roomWalls(state.project.room);
+  return freePanelInsetMax({
+    panel: unit, wall: walls[unit.position?.wall ?? 0], walls, profile,
+  });
+}
+
+/**
+ * T82 F17 · a unit named in a sentence by its type: the label's first words
+ * with the capital lowered ("wardrobe", "free-standing panel", "base unit").
+ */
+function typeWordOf(unit) {
+  const label = String(getUnitType(unit?.type)?.label || 'unit').split(/,|\s[\u2013\u2014-]\s/)[0].trim();
+  return /^[A-Z][a-z]/.test(label) ? label[0].toLowerCase() + label.slice(1) : label;
 }
 
 function neighboursOf(state, unit) {
@@ -12270,7 +12340,8 @@ function freeBesideUnit(state, unit, side) {
     walls,
     depth: unit.params.depth,
     others: obstaclesFor(state, unit),
-    boxes: planObstaclesOf(state.project.room, state.project.wallSlopes),
+    // T82 F17 · the obstacles the move reads (a stood-off panel's insets).
+    boxes: planObstaclesInWayOf(unit, wall, state.project.room, state.project.wallSlopes),
   });
   // WHICH SIDE an obstacle is on is decided on the CARCASS, and how far away it
   // is on the padded span. That distinction is what lets this report a negative
@@ -12791,7 +12862,9 @@ export function validateUnit(unit, result, context = {}) {
       roomHeight: context.room.height,
       // Same wall or around the corner — both are an overlap on the floor.
       others: wallObstacles({
-        wall, walls, depth: unit.params?.depth ?? 0, others, boxes: planObstaclesOf(context.room, context.wallSlopes),
+        // T82 F17 · the obstacles the move reads: a free panel in front of a
+        // chimney does not overlap it.
+        wall, walls, depth: unit.params?.depth ?? 0, others, boxes: planObstaclesInWayOf(unit, wall, context.room, context.wallSlopes, profile),
         enter: notchEnterFor(unit, profile),
       })
         .map((o) => ({ left: o.left, right: o.right, label: o.label, ...(o.enter ? { enter: o.enter } : {}) })),

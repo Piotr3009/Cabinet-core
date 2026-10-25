@@ -2148,6 +2148,10 @@ function constructionBadge(unit, type) {
  */
 function Insets({ unit, profile, onSet }) {
   const value = Number(unit.params.inset_back_mm) || 0;
+  // T82 F17 · the field ends where the store's clamp does: a cabinet's
+  // `editor.maxInset`, a free panel's the room (the far wall less the panel).
+  const insetBackMaxFor = useProjectStore((s) => s.insetBackMaxFor);
+  const backMax = (typeof insetBackMaxFor === 'function' ? insetBackMaxFor(unit.id) : null) ?? profile.editor.maxInset;
   return (
     <div className="space-y-1">
       <div className="cc-row">
@@ -2160,7 +2164,7 @@ function Insets({ unit, profile, onSet }) {
           <NumberField
             className="cc-input text-right"
             min={0}
-            max={profile.editor.maxInset}
+            max={Number.isFinite(backMax) ? backMax : undefined}
             title="Stand it off the wall — a pipe, a bowed wall, a skirting"
             value={value}
             onCommit={(v) => onSet({ back: v })}

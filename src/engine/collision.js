@@ -500,12 +500,21 @@ export function spanInWallFrame(points, wall) {
  *
  * Its own function because two different questions ask it — the drag clamp
  * (through `wallObstacles`) and the PLACEMENT search, which takes bare spans.
+ *
+ * T82 F17, after the review: `back` is where that band STARTS off the wall
+ * line. 0 (the wall line) for every cabinet, as since turn 14; a free panel's
+ * own back line (`backStandoff`) for a panel, so a board stood 700 off the
+ * wall is checked at 700 to 718, never at 0 to 18: a box where the board
+ * really is stops it, a box behind it does not.
  */
-export function boxSpansOnWall({ wall, depth, boxes = [], enter = null }) {
+export function boxSpansOnWall({
+  wall, depth, boxes = [], enter = null, back = 0,
+}) {
   const out = [];
+  const from = Number(back) || 0;
   for (const box of boxes || []) {
     const span = spanInWallFrame(boxCorners(box), wall);
-    if (span.far <= 0 || span.near >= (Number(depth) || 0)) continue;
+    if (span.far <= from || span.near >= from + (Number(depth) || 0)) continue;
     if (span.right <= 0 || span.left >= wall.width) continue;
     // ─── CHAT-FIX 15.10.2026: THE OBSTACLE A NOTCH IS CUT FOR ─────────────
     // The owner: *"komin nie ma mozliwosci automatycznego wycinania w szafce
@@ -555,11 +564,18 @@ export function boxSpansOnWall({ wall, depth, boxes = [], enter = null }) {
  *            this wall's frame, ignored unless it reaches into the depth band
  *            this unit occupies — because to a cabinet being slid along a wall
  *            a chimney and a neighbour are the same fact.
+ *   back     T82 F17, after the review: where the band starts off the wall
+ *            line, 0 for a cabinet (unchanged), a free panel's own back line
+ *            (`backStandoff`): boxes and units round the corner count where
+ *            they reach into `[back, back + depth]`
  */
 export function wallObstacles({
-  wall, walls, depth, others = [], boxes = [], enter = null,
+  wall, walls, depth, others = [], boxes = [], enter = null, back = 0,
 }) {
-  const out = [...boxSpansOnWall({ wall, depth, boxes, enter })];
+  const from = Number(back) || 0;
+  const out = [...boxSpansOnWall({
+    wall, depth, boxes, enter, back: from,
+  })];
   for (const o of others) {
     if (o.wall === wall.index && !o.rotation) {
       out.push({ left: o.x_mm, right: o.x_mm + o.width, label: o.label, corner: false });
@@ -578,7 +594,9 @@ export function wallObstacles({
       continue;
     }
     // Behind this wall, or past the front of this unit: not in the way.
-    if (span.far <= 0 || span.near >= depth) continue;
+    // (T82 F17, after the review: behind a free panel's back line, or past its
+    // face, `from` its own back line.)
+    if (span.far <= from || span.near >= from + depth) continue;
     if (span.right <= 0 || span.left >= wall.width) continue;
     // ─── T75 F2 · THE CORNER STOP ──────────────────────────────────────────
     // *"A unit on wall B that approaches a corner where wall A's run ends in a
@@ -694,7 +712,10 @@ export function clampUnitDepth({ depth, x, width, wall, walls, others = [], back
     );
     // Only a neighbour standing in front of this unit's width can limit it.
     if (span.right <= x || span.left >= x + width) continue;
-    if (span.far <= 0) continue;
+    // T82 F17, after the review: a neighbour entirely BEHIND this unit's back
+    // line (a free panel stood 1000 off the wall in front of a corner cabinet)
+    // limits nothing in front of it; with no back inset this is the old `<= 0`.
+    if (span.far <= back) continue;
     const free = span.near - clearance - back;
     if (free < max) { max = Math.max(0, free); limitedBy = o.label || 'a neighbour'; }
   }

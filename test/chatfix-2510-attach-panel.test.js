@@ -630,3 +630,99 @@ test('T82 F19 . kept: back on the wall, the same panel is held off by the cabine
   assert.equal(stanceOf(panel).x, 1700);
   assert.equal(S().moveUnit(panel, 300, 0.5, { magnet: false }).x, 600 + 800, 'a panel at the wall drove into the BUD');
 });
+
+// === 12 . T82 F17, AFTER THE REVIEW . THE PANEL'S OWN BACK LINE ON EVERY ROAD
+//
+// The review of 25.10 (C/D/E, panel 0): a panel stood off its wall was still
+// measured as if its back were on the wall line. `obstaclesBeyond` took away
+// the obstacles wrongly kept (behind its back), but the band it was checked in
+// was `[0, depth]` from the WALL, so a box or a unit round the corner standing
+// where the board really is was dropped (the panel passed through it), and a
+// unit entirely BEHIND it limited its depth to 0 and squashed it. For a free
+// panel the band is `[back, back + depth]`, `back = backStandoff(panel)`, on
+// the move, the width, the size window, the Check and the depth clamp.
+
+/** A bare 5000 x 3000 room, 2500 high, with these plan boxes. */
+function bareRoom(boxes = []) {
+  S().newProject();
+  S().setRoom({ corners: rectCorners(5000, 3000), height: ROOM_H, boxes });
+}
+const overlaps = (id) => validateUnit(unit(id), S().unitResult(id), {
+  room: S().project.room, units: S().units, wallSlopes: S().project.wallSlopes,
+}).filter((i) => i.code === 'UNIT_OVERLAP');
+/** Put a unit somewhere by hand, past every clamp, the way a stale save could. */
+function placeAt(id, x) {
+  useProjectStore.setState((st) => ({
+    units: st.units.map((u) => (u.id === id ? { ...u, position: { ...u.position, x_mm: x } } : u)),
+  }));
+}
+
+test('T82 F17 after the review . a column standing 600 to 900 off the wall stops a panel whose back is at 700: the move, the width, the Check', () => {
+  bareRoom([{ id: 'col', x: 2000, y: 600, w: 400, d: 300 }]);
+  const panel = S().addUnit('FREE_PANEL', { wall: 0, x: 600 }).id;
+  S().setUnitInsets(panel, { back: 690 });
+  assert.equal(COLLISION.backStandoff(unit(panel), P), 700, 'the stage: the board at 700 to 718, inside the column');
+  // The move is held at the column, as it is for a panel and a box both at the wall.
+  assert.equal(S().moveUnit(panel, 1900, 0.5, { magnet: false }).x, 2000 - 800, 'the panel passed through the column');
+  // The width does not grow through it.
+  S().moveUnit(panel, 600, 0.5, { magnet: false });
+  const { notices, s } = grow(panel, { panel_length: 2500 });
+  assert.ok(s.x + s.box.width <= 2000 + 1e-6, `the panel grew into the column: ${s.x} + ${s.box.width}`);
+  assert.match(notices.join(' '), /Width limited to/);
+  // A panel standing in it (a stale save) is said in the Check.
+  placeAt(panel, 1900);
+  assert.equal(overlaps(panel).length, 1, 'the Check said nothing of the column the board crosses');
+  // Control: the same panel back at the wall passes in front of nothing it crosses.
+  S().setUnitInsets(panel, { back: 0 });
+  assert.deepEqual(overlaps(panel), [], 'the column 600 off the wall is not where a panel at the wall is');
+});
+
+test('T82 F17 after the review . a BUD round the corner (wall 2, 800 to 1400 off wall 1) stops a panel whose back is at 1000; the two Checks agree', () => {
+  bareRoom();
+  const bud = S().addUnit('BUD', { wall: 1, x: 800 }).id;
+  const panel = S().addUnit('FREE_PANEL', { wall: 0, x: 3000 }).id;
+  S().setUnitInsets(panel, { back: 990 });
+  assert.equal(COLLISION.backStandoff(unit(panel), P), 1000);
+  const moved = S().moveUnit(panel, 4190, 0.5, { magnet: false });
+  // The BUD's carcass reaches from 4990 back to 4432 along wall 1 (10 + 558).
+  assert.ok(moved.x + 800 <= 5000 - CLEARANCE - 558 + 1e-6, `the panel drove into the BUD: x ${moved.x}`);
+  placeAt(panel, 4190);
+  assert.equal(overlaps(panel).length, 1, 'only the BUD\'s Check spoke');
+  assert.equal(overlaps(bud).length, 1);
+  // Control: at the wall (back 10, the board at 10 to 28) the BUD 800 out is not in its way.
+  S().setUnitInsets(panel, { back: 0 });
+  placeAt(panel, 3000);
+  assert.equal(S().moveUnit(panel, 4190, 0.5, { magnet: false }).x, 4190);
+  assert.deepEqual(overlaps(panel), []);
+});
+
+test('T82 F17 after the review . a corner BUD entirely BEHIND a panel 1000 off the wall: no "Depth limited", no squash, and the across panel reaches x 4500', () => {
+  const fresh = (patch = null) => {
+    bareRoom();
+    const bud = S().addUnit('BUD', { wall: 1, x: 600 }).id;
+    S().moveUnit(bud, 0, 0.5, { magnet: false });
+    const panel = S().addUnit('FREE_PANEL', { wall: 0, x: 4000 }).id;
+    S().setUnitInsets(panel, { back: 990 });
+    return { bud, panel, res: patch ? S().updateUnitParams(panel, patch) : null };
+  };
+  const { bud, panel } = fresh();
+  // The stage: the BUD on wall 2 from 40 to 640 off wall 1, the board at 1000 to 1018.
+  assert.equal(unit(bud).position.wall, 1);
+  assert.ok(unit(bud).position.x_mm + 600 < 1000, 'the BUD reaches the panel: the test says nothing');
+  assert.equal(S().unitSizeBoundsFor(panel).depth.max, 3000 - 1000, 'the size window\'s depth was 0');
+  for (const patch of [{ board_t: 36 }, { panel_width: 600 }, { panel_length: 900 }]) {
+    const { res } = fresh(patch);
+    assert.deepEqual(res.notices, [], `${JSON.stringify(patch)}: ${res.notices.join(' / ')}`);
+  }
+  // Laid flat or leant, the board keeps its box: nothing behind it squashes it.
+  const flat = fresh({ panel_tilt_deg: 90 });
+  assert.deepEqual(flat.res.notices, []);
+  assert.equal(unit(flat.panel).params.depth, 400, 'the flat board was squashed by the BUD behind it');
+  const leant = fresh({ panel_tilt_deg: 60 });
+  assert.deepEqual(leant.res.notices, []);
+  assert.equal(S().unitResult(leant.panel).panels[0].box.h, 400, 'the leant board was squashed to 1');
+  assert.deepEqual(overlaps(leant.panel), []);
+  // Across the wall, 1000 out, it slides over the BUD's stretch of wall.
+  const across = fresh({ panel_facing: 'across' });
+  assert.equal(S().moveUnit(across.panel, 4500, 0.5, { magnet: false }).x, 4500, 'the BUD behind the panel stopped it');
+});

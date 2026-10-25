@@ -24,6 +24,13 @@ export const LICENSED = {
       + `refuses in words a surface that would stand the panel past the far wall. Placement only, nothing cut. ${OWNER}`,
     gates: [],
   },
+  'src/engine/collision.js': {
+    why: `T82 F17, after the review of 25.10 (panel 0): boxSpansOnWall and wallObstacles take \`back\`, where the band `
+      + `starts off the wall line (0 for every cabinet, unchanged; a free panel's own back line), and clampUnitDepth skips `
+      + `a neighbour entirely behind the unit's back line (the old far <= 0 with no inset). Placement only: `
+      + `computeCabinet imports none of it. ${OWNER}`,
+    gates: [],
+  },
 };
 
 export const LIVENESS = {};

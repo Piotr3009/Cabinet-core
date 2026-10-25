@@ -5948,7 +5948,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
             .map(unitSpan),
           // A box in the plan refuses a placement exactly as a neighbour does
           // (turn 14, CLAUDE.md F10.3): a unit is never DROPPED into a chimney.
-          ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes) }),
+          ...boxSpansOnWall({
+            wall, depth: unit.params.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes), back: bandBackOf(unit, profile),
+          }),
           // T75 F2 · …and a unit round the corner, at its corner stop. The
           // room refuses first: a placement is never dropped into an occupied
           // corner square (verify/t75/p01-probe.md measured it landing there).
@@ -6823,8 +6825,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       x: unit.position.x_mm,
       wallWidth: wall.width,
       others: wallObstacles({
-        // T82 F17 · the same obstacles the width edit reads.
+        // T82 F17 · the same obstacles the width edit reads, in the same band.
         wall, walls, depth: unit.params.depth, others, boxes: planObstaclesInWayOf(unit, wall, s.project.room, s.project.wallSlopes, profile),
+        back: bandBackOf(unit, profile),
       }),
       wallMargin: wallMarginOf(s, unit),
       padRight: footprintPads(unit, unit.params.front_t, profile).right,
@@ -7383,6 +7386,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // T82 F17 · a free panel stood in front of a chimney grows along its
         // face: the obstacles behind its back line are not in its way.
         wall, walls, depth: unit.params.depth, others, boxes: planObstaclesInWayOf(unit, wall, s.project.room, s.project.wallSlopes, profile),
+        back: bandBackOf(unit, profile),
         enter: notchEnterFor({ ...unit, params: { ...unit.params, width: patch.width } }),
       });
       const pads = footprintPads(unit, unit.params.front_t, profile);
@@ -7777,6 +7781,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // T82 F17 · one road: `planObstaclesInWayOf` is that rule, read by the
       // width edit, the size window and the Check as well.
       boxes: planObstaclesInWayOf(unit, wall, s.project.room, s.project.wallSlopes, getCabinetProfile()),
+      // T82 F17, after the review: a free panel is checked where it stands,
+      // from its own back line, never from the wall line.
+      back: bandBackOf(unit, getCabinetProfile()),
       // ...unless the cabinet can be notched for it (15.10.2026): then it may
       // drive in as far as the widest notch its carcass takes.
       enter: notchEnterFor(unit),
@@ -7978,6 +7985,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           .map(unitSpan),
         ...boxSpansOnWall({
           wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(get().project.room, get().project.wallSlopes),
+          back: bandBackOf(unit),
         }),
         // T75 F2 · the unit round the corner, at its corner stop.
         ...cornerSpansFor(get(), unit, walls[wallIndex], walls),
@@ -8075,6 +8083,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           .map(unitSpan),
         ...boxSpansOnWall({
           wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
+          back: bandBackOf(unit),
         }),
         // T75 F2 · the unit round the corner, at its corner stop.
         ...cornerSpansFor(s, unit, walls[wallIndex], walls),
@@ -12248,6 +12257,18 @@ function planObstaclesInWayOf(unit, wall, room, wallSlopeList, profile = getCabi
 }
 
 /**
+ * T82 F17, after the review · WHERE A UNIT'S BAND STARTS OFF ITS WALL for the
+ * plan's questions (`collision.js wallObstacles`, `boxSpansOnWall`): 0, the
+ * wall line, for every cabinet, as since turn 14; a FREE PANEL's own back line
+ * (`backStandoff`), so a board stood off its wall is checked where it stands:
+ * a box or a unit round the corner where the board is stops it, one behind it
+ * does not (the review of 25.10, panel 0).
+ */
+function bandBackOf(unit, profile = getCabinetProfile()) {
+  return isFreePanel(unit?.type) ? backStandoff(unit, profile) : 0;
+}
+
+/**
  * T82 F17 · the most a unit's BACK inset may be: a cabinet's `editor.maxInset`,
  * a free panel's the room's (`freePanelInsetMax`). `setUnitInsets` clamps to it
  * and the right panel's Back field shows it as its end.
@@ -12329,7 +12350,7 @@ function cornerSpansFor(state, unit, wall, walls, profile = getCabinetProfile())
     .map(toObstacleUnit);
   if (!others.length) return [];
   return wallObstacles({
-    wall, walls, depth: unit.params.depth, others,
+    wall, walls, depth: unit.params.depth, others, back: bandBackOf(unit, profile),
   }).filter((o) => o.corner && !o.box);
 }
 
@@ -12504,6 +12525,7 @@ function freeBesideUnit(state, unit, side) {
     others: obstaclesFor(state, unit),
     // T82 F17 · the obstacles the move reads (a stood-off panel's insets).
     boxes: planObstaclesInWayOf(unit, wall, state.project.room, state.project.wallSlopes),
+    back: bandBackOf(unit),
   });
   // WHICH SIDE an obstacle is on is decided on the CARCASS, and how far away it
   // is on the padded span. That distinction is what lets this report a negative
@@ -13029,6 +13051,7 @@ export function validateUnit(unit, result, context = {}) {
         // T82 F17 · the obstacles the move reads: a free panel in front of a
         // chimney does not overlap it.
         wall, walls, depth: unit.params?.depth ?? 0, others, boxes: planObstaclesInWayOf(unit, wall, context.room, context.wallSlopes, profile),
+        back: bandBackOf(unit, profile),
         enter: notchEnterFor(unit, profile),
       })
         .map((o) => ({ left: o.left, right: o.right, label: o.label, ...(o.enter ? { enter: o.enter } : {}) })),

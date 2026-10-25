@@ -62,8 +62,9 @@ export function labelKindOf(panel) {
   if (part === 'BACK' || part === 'EXT-BACK' || part === 'BACK-RAIL') return 'back';
   if (role === 'drawer_box') return 'drawer';
   // T80 F4 · the in-frame frame is numbered and stickered with the fronts it is sprayed with.
+  // T82 F4 · …and the HAWA pocket's panels and its door, which the tree lists with the fronts (groups.js).
   if (role === 'front' || role === 'false_front' || role === 'blind_blank' || role === 'end_panel' || role === 'mask' || role === 'pelmet'
-    || role === 'frame') return 'front';
+    || role === 'frame' || role === 'pocket_panel' || role === 'pocket_door') return 'front';
   return exportablePanels([panel]).length ? 'other' : null;
 }
 

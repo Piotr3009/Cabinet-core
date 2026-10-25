@@ -491,7 +491,10 @@ export function sheetsFor(m2, sheet) {
  * and asserts the two answers agree panel by panel.
  */
 // T76 F1 · the union: T75's `pelmet` and GPT's `front_moulding` both.
-const FRONT_SHEET_PARTS = new Set(['door', 'drawer_front', 'front_moulding', 'false_front', 'end_panel', 'mask', 'pelmet']);
+// T82 F4 · the HAWA pocket's panels are cut off the front board (the owner,
+// 25.10.2026: *"panele po bokach to jest nie carcas tylko front zawsze"*), as
+// groups.js files role `pocket_panel` with the fronts; its door is a `door`.
+const FRONT_SHEET_PARTS = new Set(['door', 'drawer_front', 'front_moulding', 'false_front', 'end_panel', 'mask', 'pelmet', 'pocket_panel']);
 
 export function sheetFamilyOfPart(partId) {
   return FRONT_SHEET_PARTS.has(partId) ? 'fronts' : 'carcasses';

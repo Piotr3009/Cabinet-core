@@ -253,6 +253,10 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f43-t82-f02.mjs',
   // T82 F3 (25.10.2026): the door, its width, its depth, the refusals in words
   'scripts/t78-classify.d/f43-t82-f03.mjs',
+  // T82 F4 (25.10.2026): the pocket in the BOM, its sets, its connector, its tracks, its parts
+  'src/engine/cnc/hawa.js',
+  'test/turn82-f04-hawa-bom-cnc.test.js',
+  'scripts/t78-classify.d/f43-t82-f04.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

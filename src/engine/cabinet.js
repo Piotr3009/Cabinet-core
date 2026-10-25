@@ -24,6 +24,8 @@
 import { freePanelOf, freePanelPlacement } from './freePanel.js';
 // T82 F2 F3 · the HAWA pocket, KIT_HAWA.lsp mirrored routine for routine.
 import { hawaPocketFigures } from './hawaPocket.js';
+// T82 F4 · the pocket's order lines, read off its figures (result.hawa).
+import { hawaHardwareLines } from './cnc/hawa.js';
 import { getCabinetProfile } from './profile.js';
 import { buildFrontDecoration } from './frontDecoration.js';
 import { getUnitType } from './types.js';
@@ -10826,6 +10828,24 @@ export function computeCabinet(params, profileOverride) {
   // T79 F14 · the drawer boxes' connectors, 4 or 8 a box, a line of their own.
   if (boxCabineoPlan) {
     for (const l of cabineoBoxHardwareLines(boxCabineoPlan)) hw(l.role, l.label, l.qty, l.unit, l.spec, l.spec_label);
+  }
+  // ─── T82 F4 · THE HAWA POCKET'S ORDER LINES ─────────────────────────────
+  // *"one set per door; "Hawa Connector 55" or "Connector 110", one per
+  // pocket; the hinges (3 or 4 per door) as the set's own; the top track and
+  // bottom track cut to T1 - 7 (one line, the length named); for III/35 the
+  // steel stiffening profile, length TB - M + 3; the adjustable foot"*
+  // (CLAUDE.md T82 F4). Read off the pocket's figures (engine/cnc/hawa.js,
+  // KIT_HAWA.lsp D22), each role written here by name so the registry's scan
+  // reads it; the hinges are their own role, never `hinges` (no plate).
+  if (hawaFigures) {
+    const hawaLines = hawaHardwareLines(hawaFigures, P);
+    const each = (role, put) => { for (const l of hawaLines) if (l.role === role) put(l); };
+    each('hawa_set', (l) => hw('hawa_set', l.label, l.qty, l.unit, l.spec, l.spec_label));
+    each('hawa_connector', (l) => hw('hawa_connector', l.label, l.qty, l.unit, l.spec, l.spec_label));
+    each('hawa_hinges', (l) => hw('hawa_hinges', l.label, l.qty, l.unit, l.spec, l.spec_label));
+    each('hawa_tracks', (l) => hw('hawa_tracks', l.label, l.qty, l.unit, l.spec, l.spec_label));
+    each('hawa_stiffener', (l) => hw('hawa_stiffener', l.label, l.qty, l.unit, l.spec, l.spec_label));
+    each('hawa_foot', (l) => hw('hawa_foot', l.label, l.qty, l.unit, l.spec, l.spec_label));
   }
 
   // Turn 32 (CLAUDE.md F4): the columns share the default ladder — the depth

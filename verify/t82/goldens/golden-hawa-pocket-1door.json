@@ -164,6 +164,31 @@
       "drills": [],
       "hardware": [
         {
+          "role": "hawa_set",
+          "qty": 1,
+          "label": "Hawa Concepta III 25 Push, left"
+        },
+        {
+          "role": "hawa_connector",
+          "qty": 1,
+          "label": "Hawa Connector 55"
+        },
+        {
+          "role": "hawa_hinges",
+          "qty": 3,
+          "label": "Hawa Concepta III hinges, the set's own"
+        },
+        {
+          "role": "hawa_tracks",
+          "qty": 1,
+          "label": "Hawa top and bottom track"
+        },
+        {
+          "role": "hawa_foot",
+          "qty": 1,
+          "label": "Adjustable foot under the pocket"
+        },
+        {
           "role": "legs",
           "qty": 4,
           "label": "Legs"

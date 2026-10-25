@@ -88,7 +88,8 @@ export const LICENSED = {
     why: 'T82 F3: the door: hawaPocketFigures per covered side (TB, TH, T1, M, E1, KT, the class by height and weight, '
       + 'the hinges, TA, the cups, the steel profile, the closed and the open box), check37 / check37Cover / check38 / '
       + `check47 in the kit\'s words, pocketCoverOf (span, KT1, the house\'s far clearance, drawer fronts refused). ${OWNER}`
-      + ' T82 F3, after the review: ONE KT1 per pocket (KIT_HAWA.lsp D8, the shallowest covered cabinet) for every door, KT the deeper door\'s T1 + RE capped at it; covered fronts out of one line refused in #38\'s words, each door\'s own depth as coverKT1.',
+      + ' T82 F3, after the review: ONE KT1 per pocket (KIT_HAWA.lsp D8, the shallowest covered cabinet) for every door, KT the deeper door\'s T1 + RE capped at it; covered fronts out of one line refused in #38\'s words, each door\'s own depth as coverKT1.'
+      + ' After the review (the front plane): pocketCoverOf gives each covered cabinet\'s front plane from the wall (frontPlanes), hawaPocketFigures publishes frontPlaneMm and backFromWallMm, so the store stands the pocket on that plane.',
     gates: ['hawaPocket'],
   },
 };

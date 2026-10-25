@@ -296,6 +296,8 @@
       "KT": 587,
       "KT1": 600,
       "frontAlignMm": 13,
+      "frontPlaneMm": 610,
+      "backFromWallMm": 23,
       "connectorName": "Hawa Connector 110",
       "zones": {
         "top": 63,

@@ -43,6 +43,9 @@
 // never reaches a line of this file.
 
 import { getUnitType } from './types.js';
+// The review of 25.10.2026: a covered cabinet's front plane is its back line
+// (the house's one reader of where a unit stands off its wall) plus its depth.
+import { wallGapOf } from './runs.js';
 import WEIGHT_25 from '../../reference/hawa/weight-25.json' with { type: 'json' };
 import WEIGHT_35 from '../../reference/hawa/weight-35.json' with { type: 'json' };
 
@@ -680,7 +683,11 @@ function hasDrawerFronts(unit) {
  *           | 'wall' | 'none'); absent is 'none' (a run end, 1.5). A covered
  *           unit's own end panel on its far side is 'endPanel'.
  * @returns {{doors: Array}|null}  one entry per covered side:
- *   { side, units, unitNums, spanMm, KT1, far, freeEndClearanceMm, drawerFronts }
+ *   { side, units, unitNums, spanMm, KT1, far, freeEndClearanceMm, drawerFronts,
+ *     frontPlanes: [{ unit, unitNum, depth, frontMm }] }
+ *   `frontPlanes` (after the review of 25.10.2026): each covered cabinet's
+ *   carcass front from the wall, `runs.js wallGapOf` plus its depth; the
+ *   figures stand the pocket on that plane and refuse a cover out of line.
  */
 export function pocketCoverOf(pocketUnit, covered, profile, { beyond = {} } = {}) {
   if (!pocketUnit) return null;
@@ -727,6 +734,12 @@ export function pocketCoverOf(pocketUnit, covered, profile, { beyond = {} } = {}
       far,
       freeEndClearanceMm: farClearanceMm(far, profile),
       drawerFronts: list.filter(hasDrawerFronts).map((u) => String(u.params?.unit_num ?? u.id)),
+      frontPlanes: list.map((u) => ({
+        unit: u.id,
+        unitNum: String(u.params?.unit_num ?? u.id),
+        depth: Number(u.params?.depth) || 0,
+        frontMm: wallGapOf(u, profile) + (Number(u.params?.depth) || 0),
+      })),
     });
   }
   return doors.length ? { doors } : null;
@@ -856,6 +869,14 @@ export function hawaPocketFigures(params, profile) {
   if (!doorsOut.length) KT = Number(params?.depth) || 0;
   else KT = Math.max(...doorsOut.map((d) => d.ktOwn));
   const KT1 = pocketKT1;
+  // ─── THE POCKET ON THE CABINETS' FRONT PLANE (the review of 25.10.2026) ──
+  // CLAUDE.md F3: "the pocket's and the cabinets' front edges in one plane".
+  // The plane is the covered cabinets' (their backs and depths, pocketCoverOf),
+  // the foremost where they disagree (then #38 above has said so), so the
+  // closed door never stands inside a carcass; the pocket's back stands KT
+  // behind it. The store reads `backFromWallMm` and stands the pocket there.
+  const frontPlaneMm = planes.length ? Math.max(...planes.map((q) => q.frontMm)) : null;
+  const backFromWallMm = frontPlaneMm == null ? null : frontPlaneMm - KT;
 
   const tbs = doors === 2
     ? Object.fromEntries(doorsOut.map((d) => [d.side, d.TB]))
@@ -920,10 +941,17 @@ export function hawaPocketFigures(params, profile) {
     TH,
     KT,
     KT1,
-    // How far the pocket's back stands in front of the covered cabinet's back,
-    // so its front plane is theirs (KIT_HAWA.lsp D8: a pocket shallower than
-    // the cabinet in the flush case). The store stands it off by this.
+    // How far the pocket's back stands in front of the shallowest covered
+    // cabinet's back (KIT_HAWA.lsp D8: a pocket shallower than the cabinet in
+    // the flush case). Kept for its readers; the store stands the pocket by
+    // `backFromWallMm` (the review of 25.10.2026), which is right whatever the
+    // covered cabinets' own depths and wall gaps are.
     frontAlignMm: KT1 == null ? 0 : KT1 - KT,
+    // The covered cabinets' front plane from the wall, and where the pocket's
+    // back must stand from the wall so its front is that plane (the pocket's
+    // `wallGapOf`). Null when the pocket covers nothing.
+    frontPlaneMm,
+    backFromWallMm,
     connectorName: connectorName(doors),
     zones: { top: Number(profile?.hawa?.zoneTopMm), bottom: Number(profile?.hawa?.zoneBottomMm), hardware: K.hawaHardwareZone },
     parts: partsOut,

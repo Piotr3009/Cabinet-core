@@ -55,8 +55,11 @@ import { buildUnitDxfFiles } from '../src/engine/cnc/dxf.js';
 import { panelPlacement } from '../src/engine/joinery.js';
 import { ELEMENT_TO_PART_ID } from '../src/engine/partRegistry.js';
 import {
-  vanityBoxesOf, vanityRailGeometry, vanitySpec, vanityTrapVerdict, vanityWallGap, vanityWastes,
+  vanityBoxesOf, vanityRailGeometry, vanitySpec, vanityTopBackDropped, vanityTopCutouts, vanityTrapVerdict,
+  vanityWallGap, vanityWastes,
 } from '../src/engine/vanity.js';
+import { fitBasins } from '../src/engine/worktop.js';
+import { notCutParts } from '../src/engine/readiness.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
 import { rectCorners } from '../src/engine/room.js';
 import { confirmDrawerBox } from './drawer-box-gate.js';
@@ -280,7 +283,10 @@ test('F9 . the rails keep the back\'s joint that lands inside them; the sides ke
     const holes = byId(r, rail).cnc.holes.filter((h) => h.kind === 'screw' && h.y === y);
     assert.deepEqual(holes.map((h) => h.x).sort((a, b) => a - b), [G / 2, 900 - G / 2], `${rail} at ${y}`);
   }
-  const geom = vanityRailGeometry({ W: 900, H: 600, G, puzzle: pz }, P)['RAIL-TOP'];
+  // (after the review, D26: the rail's screw into the TOP's back edge at 450 stands in the basin's oval)
+  const geom = vanityRailGeometry({
+    W: 900, H: 600, G, puzzle: pz, dropped: vanityTopBackDropped(900, G, [450], pz, P),
+  }, P)['RAIL-TOP'];
   const top = byId(r, 'RAIL-TOP').cnc;
   assert.deepEqual({ outline: top.outline, pockets: top.pockets, holes: top.holes }, geom);
   // And the drilling carries them: no hole on a BACK that is not there.
@@ -501,6 +507,65 @@ test('F9, after the review . D24: under a basin the top row and the row under it
   const r = kit('VANITY4', { height: 560, drawer_double: { 3: true, 4: true } });
   assert.ok(byId(r, 'D4-BB-1') && byId(r, 'D3-BB'));
   assert.ok(trapSaid(r).some((w) => w.kind === 'SHALLOW' && /59 mm/.test(w.message)));
+});
+
+test('F9, after the review . D18: the carcass TOP takes the oval of each basin the top takes, a NOTE the room reads, never on the CNC', () => {
+  const r = kit('VANITY3');
+  const fitted = fitBasins({ type: 'VANITY3', params: { ...defaultParamsFor('VANITY3', P), unit_num: 'VU01' } }, P).fitted.map((b) => b.cx);
+  assert.deepEqual(fitted, [450], 'engine/worktop.js fitBasins, the one source');
+  const top = byId(r, 'TOP');
+  const rec = top.meta.vanityBasins;
+  assert.ok(rec, 'the record the room draws the hole from: TOP.meta.vanityBasins');
+  // The LISP's oval, in the TOP's own frame: (432 182 520 400 "EDGE").
+  assert.deepEqual(rec.cutouts.map((c) => [c.cx, c.cz, c.w, c.d, c.opens]), L.call('vanity-top-cutouts', fitted, G));
+  assert.deepEqual(rec.cutouts.map((c) => [c.x, c.z]), [[450, 200]], 'and in the unit\'s frame: the waste');
+  assert.equal(rec.note, L.call('vanity-top-cutout-note', 'VU01'));
+  assert.equal(rec.note, 'Basin cut-out 520 x 400 oval in the carcass top of VU01: cut on site to the basin\'s template.');
+  assert.equal(rec.readiness, 'manual');
+  assert.equal(rec.machined, false);
+  assert.deepEqual(r.derived.vanity.top, rec);
+  assert.deepEqual(r.derived.vanity.basins, fitted);
+  // Never on the CNC: the TOP's outline is the parent's, no hole in it.
+  const budr = computeCabinet({ ...defaultParamsFor('BUDR', P), width: 900, height: 600, depth: 500 }, P);
+  assert.deepEqual(top.cnc.outline, byId(budr, 'TOP').cnc.outline);
+  // The joiner's list says it: the TOP is cut, its hole is fitted on site (#30).
+  assert.ok(notCutParts(r).some((x) => x.id === 'TOP basin cut-out' && x.state === 'manual'));
+  // A basin the top refuses is cut in neither: two on a 900 column take one oval.
+  const two = kit('VANITY3', { sinks: 2 });
+  assert.deepEqual(byId(two, 'TOP').meta.vanityBasins.cutouts.map((c) => c.x), [300]);
+  // No basin: no record, no note.
+  const none = kit('VANITY3', { sinks: 0 });
+  assert.equal(byId(none, 'TOP').meta?.vanityBasins, undefined);
+  assert.ok(!notCutParts(none).some((x) => x.part === 'BASIN-CUTOUT'));
+  assert.deepEqual(vanityTopCutouts([225, 675], G, P).map((c) => [c.cx, c.cz, c.w, c.d, c.opens]), L.call('vanity-top-cutouts', [225, 675], G));
+});
+
+test('F9, after the review . D26: the TOP\'s back joint the oval meets is not cut, on the TOP, on RAIL-TOP and in the drilling', () => {
+  const pz = P.puzzle;
+  // The LISP's: the default drops the rail's screw at 450; two basins on two columns both tenons.
+  for (const [W, xs] of [[900, [450]], [900, [225, 675]], [900, [300, 600]], [1200, [300, 900]], [380, [190]]]) {
+    assert.deepEqual(vanityTopBackDropped(W, G, xs, pz, P).map((f) => [f.kind, f.x]), L.call('vanity-top-back-dropped', W, G, xs) || [], `${W} ${xs}`);
+  }
+  const r = kit('VANITY3');
+  assert.deepEqual(byId(r, 'TOP').meta.vanityBasins.dropped, [{ kind: 'SCREW', x: 450 }]);
+  const railTop = byId(r, 'RAIL-TOP').cnc.holes.filter((h) => h.kind === 'screw').map((h) => [h.x, h.y]);
+  assert.ok(!railTop.some(([x, y]) => x === 450 && y === 100 - G / 2), 'the rail\'s screw into the TOP\'s back edge at 450 is not cut');
+  assert.ok(byId(r, 'RAIL-BOTTOM').cnc.holes.some((h) => h.x === 450 && h.y === G / 2), 'the bottom rail keeps its own');
+  assert.equal(byId(r, 'RAIL-TOP').cnc.pockets.length, 2, 'the tenons at 113 and 787 stay, with their sockets');
+  assert.ok(!r.drills.some((d) => d.panel === 'RAIL-TOP' && d.x === 450));
+  // A tenon the oval meets: a 300 basin on a 380 vanity (the basin's size is the profile's).
+  const P2 = { ...P, vanity: { ...P.vanity, basin: { ...P.vanity.basin, widthMm: 300 } } };
+  const small = computeCabinet({ ...defaultParamsFor('VANITY3', P2), width: 380, unit_num: 'VU01' }, P2);
+  const plain = computeCabinet({ ...defaultParamsFor('VANITY3', P2), width: 380, unit_num: 'VU01', sinks: 0 }, P2);
+  assert.deepEqual(byId(small, 'TOP').meta.vanityBasins.dropped.map((f) => [f.kind, f.x]), [['TENON', 113], ['TENON', 267], ['SCREW', 190]]);
+  const topOf = (x) => byId(x, 'TOP').cnc;
+  assert.equal(topOf(small).outline.length, topOf(plain).outline.length - 2 * 10, 'the two back tenons are off the TOP\'s outline');
+  assert.equal(topOf(small).pockets.length, topOf(plain).pockets.length - 2, '...with their dog bones');
+  assert.equal(byId(small, 'RAIL-TOP').cnc.pockets.length, 0, 'RAIL-TOP cuts no socket for them');
+  assert.equal(small.drills.filter((d) => d.panel === 'RAIL-TOP' && d.kind === 'puzzle').length, 0);
+  // The TOP's long edges (its tenons into the sides) are the parent's still.
+  const sideTabs = (cnc) => cnc.outline.filter(([, y]) => y < -1e-9 || y > cnc.drawn_h + 1e-9).length;
+  assert.equal(sideTabs(topOf(small)), sideTabs(topOf(plain)));
 });
 
 // ===========================================================================

@@ -126,8 +126,13 @@ import { applyCanopy } from './hoodCanopy.js';
 // T82 F9 · the vanity's own boards (KIT_VANITY.lsp part 5): the back cut out to
 // two rails, the trap's U and Check #39; a one-way read, as the canopy's.
 import { applyVanityTrap, vanityRailGeometry, vanityRails } from './vanity.js';
-// T82 F9, after the review · no double drawer under a basin (KIT_VANITY.lsp D24).
-import { vanityDoubleRefusal, vanityDoubleRefused } from './vanity.js';
+// T82 F9, after the review · the basins through the tops (KIT_VANITY.lsp D18,
+// D24, D26): which basins the vanity's top takes is engine/worktop.js
+// `fitBasins`, THE ONE SOURCE (B3's), asked with the unit's params alone.
+import {
+  applyVanityTop, vanityDoubleRefusal, vanityDoubleRefused, vanityTopBackDropped,
+} from './vanity.js';
+import { fitBasins } from './worktop.js';
 // T82 F13 · a floating vanity's hangers (KIT_VANITY.lsp D19, `vanity-hangers`).
 import { vanityHangers } from './vanity.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
@@ -3978,8 +3983,20 @@ export function computeCabinet(params, profileOverride) {
   // in its long edge's sockets, the back's end screws and its screw row; no
   // side socket (the sides keep no back tab, above). Drawn in the back's own
   // frame. Between the rails the back is open. Only a kit whose back is `cut`.
+  // ─── T82 F9, after the review · THE BASIN THROUGH THE TOPS (D18, D26) ────
+  // The carcass TOP takes each basin's oval the worktop takes (`fitBasins`,
+  // engine/worktop.js, the vanity's own top: the one source), as a NOTE on the
+  // TOP (`meta.vanityBasins`, readiness manual, never on its CNC); and the
+  // TOP's back joint the oval meets (a tenon with its dog bone and RAIL-TOP's
+  // socket for it, the rail's screw into the TOP's back edge) is not cut.
+  let vanityTopRecord = null;
+  let vanityBasinsFitted = [];
   if (backStyle === 'cut') {
-    const railGeom = vanityRailGeometry({ W, H, G, puzzle: pz }, P);
+    vanityBasinsFitted = type.vanity ? fitBasins({ type: type.id, params }, P).fitted.map((b) => b.cx) : [];
+    const vanityDropped = vanityTopBackDropped(W, G, vanityBasinsFitted, pz, P);
+    const railGeom = vanityRailGeometry({
+      W, H, G, puzzle: pz, dropped: vanityDropped,
+    }, P);
     // Each rail is its own part on the cut list, named as the LISP names it.
     const vanityRailPart = { 'RAIL-BOTTOM': { part: 'RAIL-BOTTOM' }, 'RAIL-TOP': { part: 'RAIL-TOP' } };
     for (const rail of vanityRails({ W, H, G }, P)) {
@@ -3991,6 +4008,9 @@ export function computeCabinet(params, profileOverride) {
         meta: { vanity: true, rail: rail.name === 'RAIL-TOP' ? 'top' : 'bottom' },
       }));
     }
+    vanityTopRecord = applyVanityTop({
+      panels, W, G, xs: vanityBasinsFitted, puzzle: pz, profile: P, unitNum, dropped: vanityDropped,
+    });
   }
 
   // ─── TURN 17 (CLAUDE.md F10): THE OVEN BASE UNIT ─────────────────────────
@@ -12584,6 +12604,9 @@ export function computeCabinet(params, profileOverride) {
       rails: vanityRails({ W, H, G }, P),
       columns: budr?.divider ? 2 : 1,
       trap: vanityTrap,
+      // T82 F9, after the review · the basins the top takes, through the TOP (D18, D26).
+      basins: vanityBasinsFitted,
+      top: vanityTopRecord,
     };
   }
   // T78 F17 . what the canopy is, for the drawing and the tests; BUL's hanger

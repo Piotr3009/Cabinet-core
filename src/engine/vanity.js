@@ -58,6 +58,10 @@ export function vanitySpec(profile) {
     // D23, after the review of 25.10.2026: no board of the back wall under it.
     backPieceMinMm: num(v.backPieceMinMm, 30),        // vanityBackPieceMin, PROPOSED
     wasteFromBackMm: num(v.wasteFromBackMm, 200),     // vanityWasteFromBack, PROPOSED
+    // The basin, to the eye only (vanityBasinW / D, PROPOSED): its rim's
+    // oval is the hole in the worktop and the carcass TOP (D18).
+    basinW: num(v.basin?.widthMm, 520),
+    basinD: num(v.basin?.depthMm, 400),
   };
 }
 
@@ -128,8 +132,13 @@ function vanityRailSideScrews(H, puzzle, profile) {
  * only where `vanitySideTabsKept` keeps their tab (none on a 100 rail); the
  * side screw rows only where `vanityRailSideScrews` keeps them.
  */
-export function vanityRailGeometry({ W, H, G, puzzle }, profile) {
+export function vanityRailGeometry({
+  W, H, G, puzzle, dropped = [],
+}, profile) {
   const w = Number(W);
+  // D26: the TOP's tenon (its socket here) and the rail's screw into the TOP's
+  // back edge, where a basin's oval takes that edge away, are not cut.
+  const gone = (kind, x) => dropped.some((f) => f.kind === kind && Math.abs(f.x - x) < EPS);
   const r = vanitySpec(profile).railHeightMm;
   const S = Number(G) / 2;
   const across = socketCentres(w - 2 * Number(G), puzzle).map((c) => Number(G) + c);
@@ -142,13 +151,16 @@ export function vanityRailGeometry({ W, H, G, puzzle }, profile) {
     const sideC = kept.filter((c) => vanityRailOf(c, c, H, profile) === rail).map((c) => c - base);
     const geom = socketPanelGeometry({
       w, h: r, G: Number(G), puzzle,
-      sockets: { left: sideC, right: sideC, ...(top ? { top: across } : { bottom: across }) },
+      sockets: {
+        left: sideC, right: sideC, ...(top ? { top: across.filter((x) => !gone('TENON', x)) } : { bottom: across }),
+      },
     });
     for (const s of sideScrews.filter((x) => x.rail === rail)) {
       geom.holes.push({ layer: puzzle.layers.screw, kind: 'screw', x: S, y: s.y, d: puzzle.screwDiameter });
       geom.holes.push({ layer: puzzle.layers.screw, kind: 'screw', x: w - S, y: s.y, d: puzzle.screwDiameter });
     }
     for (const x of [Number(G) + puzzle.screwFromEnd, w / 2, w - Number(G) - puzzle.screwFromEnd]) {
+      if (top && gone('SCREW', x)) continue;
       geom.holes.push({ layer: puzzle.layers.screw, kind: 'screw', x, y: top ? r - S : S, d: puzzle.screwDiameter });
     }
     out[rail] = geom;
@@ -362,6 +374,100 @@ export function vanityTrapVerdict({ boxes, n, columns, sinks, W, GB }, profile) 
     }
   }
   return out;
+}
+
+// --- (f) THE BASIN THROUGH THE TOPS (D18, D26, after the review) -----------
+
+/**
+ * The oval of each basin the worktop takes, in the carcass TOP's own frame
+ * (x from its left end at G, z from its back edge at G): [{ cx, cz, w, d,
+ * opens }], opens EDGE where the oval runs past the TOP's back edge, else HOLE
+ * (`vanity-top-cutouts`, D18).
+ */
+export function vanityTopCutouts(xs, G, profile) {
+  const T = vanitySpec(profile);
+  const zw = T.wasteFromBackMm;
+  return (xs || []).map((xw) => ({
+    cx: xw - G, cz: zw - G, w: T.basinW, d: T.basinD, opens: zw - T.basinD / 2 < G ? 'EDGE' : 'HOLE',
+  }));
+}
+
+/** The note it is, on the TOP and in the BOM (`vanity-top-cutout-note`, D18). */
+function vanityTopCutoutNote(num, profile) {
+  const T = vanitySpec(profile);
+  return `Basin cut-out ${vanityMm(T.basinW)} x ${vanityMm(T.basinD)} oval in the carcass top of ${num}: cut on site to the basin's template.`;
+}
+
+/** Does the extent lo .. hi along the line z = zEdge meet the oval of the basin at xw (`vanity-oval-meets-p`, D26)? */
+function vanityOvalMeets(lo, hi, xw, zEdge, profile) {
+  const T = vanitySpec(profile);
+  const a = T.basinW / 2;
+  const c = T.basinD / 2;
+  const dz = (zEdge - T.wasteFromBackMm) / c;
+  const k = 1 - dz * dz;
+  if (k <= 0) return false;
+  const dx = Math.max(0, lo - xw, xw - hi);
+  return (dx / a) * (dx / a) < k;
+}
+
+/**
+ * The TOP's back joint along x (`vanity-top-back-features`): its tenons with
+ * the rail's sockets (G + the socket centres over W - 2G, the dog bone either
+ * side) and the rail's screws into its back edge (G + 50, W / 2, W - G - 50).
+ */
+function vanityTopBackFeatures(W, G, puzzle) {
+  const h = Number(puzzle.dogboneHalfHeight) || 0;
+  const out = socketCentres(W - G - G, puzzle).map((c) => ({ kind: 'TENON', x: G + c, lo: G + c - h, hi: G + c + h }));
+  for (const c of [G + puzzle.screwFromEnd, W / 2, W - G - puzzle.screwFromEnd]) out.push({ kind: 'SCREW', x: c, lo: c, hi: c });
+  return out;
+}
+
+/** ...and those a basin takes away: [{ kind, x }] (`vanity-top-back-dropped`, D26). */
+export function vanityTopBackDropped(W, G, xs, puzzle, profile) {
+  return vanityTopBackFeatures(W, G, puzzle)
+    .filter((f) => (xs || []).some((xw) => vanityOvalMeets(f.lo, f.hi, xw, G, profile)))
+    .map((f) => ({ kind: f.kind, x: f.x }));
+}
+
+/**
+ * The carcass TOP under the basins the worktop takes (D18, D26), on the TOP
+ * cut in the BOTTOM's frame (drawn x the depth from the back edge, drawn y
+ * the width from the BUL end, before `topFrame.js` mirrors it): every tenon
+ * of its back edge the oval meets goes with its dog bone (its socket in
+ * RAIL-TOP is not cut, `vanityRailGeometry`'s `dropped`), and the TOP carries
+ * the ovals as a NOTE, `meta.vanityBasins`, never on its CNC: the room draws
+ * the hole from it, the cut list and Check #30 say it is cut on site.
+ */
+export function applyVanityTop({
+  panels, W, G, xs, puzzle, profile, unitNum, dropped,
+}) {
+  const top = (panels || []).find((p) => p.id === 'TOP' && p.part === 'TOP');
+  if (!top || !(xs || []).length) return null;
+  const tenons = (dropped || []).filter((f) => f.kind === 'TENON').map((f) => f.x - G);
+  if (tenons.length && top.cnc) {
+    const half = Math.max(Number(puzzle.tabHalfWidth) || 0, Number(puzzle.tabHalfOpening) || 0);
+    const h = Number(top.cnc.drawn_h) || 0;
+    const inTab = (x, y) => x <= EPS && y > EPS && y < h - EPS && tenons.some((cy) => Math.abs(y - cy) <= half + EPS);
+    top.cnc = {
+      ...top.cnc,
+      outline: (top.cnc.outline || []).filter(([x, y]) => !inTab(x, y)),
+      pockets: (top.cnc.pockets || []).filter((p) => !(Math.max(p.x1, p.x2) <= EPS
+        && tenons.some((cy) => Math.abs((p.y1 + p.y2) / 2 - cy) < EPS))),
+    };
+  }
+  const cutouts = vanityTopCutouts(xs, G, profile).map((c) => ({
+    ...c, cx: r4(c.cx), cz: r4(c.cz), x: r4(G + c.cx), z: r4(G + c.cz),
+  }));
+  const record = {
+    frame: 'the TOP\'s own: cx from its left end (x = G), cz from its back edge (z = G); x and z the unit\'s',
+    cutouts,
+    note: vanityTopCutoutNote(unitNum, profile),
+    readiness: 'manual',
+    machined: false,
+    dropped: (dropped || []).map((f) => ({ kind: f.kind, x: r4(f.x) })),
+  };
+  top.meta = { ...(top.meta || {}), vanityBasins: record };
+  return record;
 }
 
 // --- (g) NO DOUBLE DRAWER UNDER A BASIN (D24, after the review) -------------

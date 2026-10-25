@@ -168,7 +168,7 @@
           "d": 18
         },
         "outline": 4,
-        "holes": 9,
+        "holes": 8,
         "pockets": 2,
         "readiness": null
       },
@@ -496,7 +496,7 @@
       ],
       [
         "SCREWS_3MM|RAIL-TOP",
-        5
+        4
       ]
     ],
     "hardware": [

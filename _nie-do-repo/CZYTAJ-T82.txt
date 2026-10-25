@@ -1,0 +1,25 @@
+TURA T82 . SPEC DLA CLAUDE CODE (25.10.2026)
+
+CO JEST W PACZCE (sciezki repo)
+  CLAUDE.md                                  spec T82 (zastepuje spec T81 w repo, zaczyna sie naglowkiem tury)
+  verify/t82/hawa/hawa-numbers.md            liczby HAWA Concepta III z Twoich 5 PDF, kazda ze strona
+  verify/t82/hawa/pages/*.png                19 rysunkow z PDF (strony i wycinki z wymiarami)
+  verify/t82/mockups/hawa.png                makieta kieszeni (110 dwoje drzwi, 55 jedne, regula glebokosci)
+  verify/t82/mockups/vanity.png              makieta vanity (elewacja, 2 kolumny, przekroj, rzut)
+  verify/t82/mockups/chmurka.png             makieta fluted chmurka
+  verify/t82/silhouettes-live.json           sylwetki okuc z zywego bucketa (25.10), do F23
+
+KROKI
+  1. Rozpakuj do folderu repo (CLAUDE.md nadpisuje stary). Folder _nie-do-repo NIE kopiuj.
+  2. git add -A ; git commit -m "T82 spec" ; git push
+  3. Claude Code: nowa sesja z repo jako zrodlem (inaczej brak pusha, 403), model Opus 5.5, ultracode: agenci i tryb rownolegly ON.
+     Polecenie startowe: "Read CLAUDE.md whole. Run TURN 82 exactly as written: F0 first, then the 20 agents of THE AGENTS table,
+     one slice each, INT the only writer of the central files. Zero questions. PR at the end."
+  4. Rano: audyt (swiezy klon, pelna suita, goldeny, klasyfikator, walk), potem merge i eye-test.
+
+CZESCI (rownolegle, osobne pliki): A HAWA, B vanity + chest, C chmurka, D panel w reku, E rysunki dla klienta, F walk.
+Liczby oznaczone PROPOSED to moje odczyty tam, gdzie PDF milczy albo gdzie nie odpowiedziales; potwierdzasz po merge.
+
+ODPOWIEDZI Z 13:46 SA JUZ W SPECU: panele kieszeni z materialu frontow (18 -> 22, info min 19), drzwi wystaja normalnie,
+jedne drzwi nad dwiema szafkami, klasa 25/35 automat z nadpisaniem, Push domyslnie, U 160 x 120 R 20, nic nie odkladamy.
+AGENCI: 20 (19 wycinkow + integrator INT, jedyny pisarz plikow centralnych). Tabela w CLAUDE.md, sekcja THE AGENTS.

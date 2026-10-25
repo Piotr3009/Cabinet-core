@@ -24,6 +24,8 @@ import { chainH, chainV } from './setChains.js';
 import { projectRun, unitNumbers } from './projector.js';
 // T72 F14 · how far THIS unit stands off its wall — the one helper.
 import { wallGapOf } from '../runs.js';
+// T82 F7 · the HAWA pocket on its section: the tracks' two axes and T1.
+import { isPocketDoor, pocketSectionEntities } from '../pocketDoorPose.js';
 
 /**
  * WHERE THE KNIFE GOES on this wall: A-A through the first drawer unit of the
@@ -46,6 +48,10 @@ export function sectionStations(group, { chosenId = null } = {}) {
   out.push({ letter: 'A', x: centre(a), member: a });
   const b = floor.members.find((m) => isSink(m) && m !== a);
   if (b) out.push({ letter: 'B', x: centre(b), member: b });
+  // T82 F7 · *"the section through the pocket shows T1 and the tracks' zones"*:
+  // a run with a HAWA pocket is cut through it too, mid pocket (its clear space).
+  const pk = floor.members.find((m) => (m.result.panels || []).some(isPocketDoor) && !out.some((s) => s.member === m));
+  if (pk) out.push({ letter: String.fromCharCode(65 + out.length), x: centre(pk), member: pk });
   if (chosenId) {
     const c = (group.members || []).find((m) => m.unit.id === chosenId);
     if (c && !out.some((s) => s.member === c)) out.push({ letter: String.fromCharCode(65 + out.length), x: centre(c), member: c });
@@ -95,6 +101,8 @@ export function buildStation(group, station, {
     minEdge: ctx.mm(profile.drawings.projector.minEdgePaperMm),
   });
   entities.push(...drawn.entities);
+  // T82 F7 · a HAWA pocket the knife passes: its tracks' axes (22, 41) and T1.
+  entities.push(...pocketSectionEntities(members, { profile, ctx, gapOf: (u) => wallGapOf(u, profile) }));
   // ─── T80 F8 · THE FILLER ON THE SECTION ────────────────────────────────
   // The owner, 21.10.2026 (22:40): *"6 informacja i na pdf na przekroju pokaz
   // kawalek timber"*. Over a base carcass, behind the top rail, the joiner's

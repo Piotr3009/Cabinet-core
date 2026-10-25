@@ -25,6 +25,8 @@ import { wallGroups, wallLabel } from './wallElevation.js';
 import { chainH, chainV } from './setChains.js';
 import { sectionStations } from './setSection.js';
 import { unitBase, unitTop, wallGapOf } from '../runs.js';
+// T82 F7 · the HAWA pocket's own words on the plan: the open door dashed, TB and M.
+import { pocketPlanEntities } from '../pocketDoorPose.js';
 
 const AXIS = 1e-6;
 
@@ -257,6 +259,8 @@ export function buildPlan(entries, {
     });
     for (const e of drawn.entities) entities.push(throughWall(e, wall));
     for (const e of unitNumbers(group, { view: 'plan', profile, ctx })) entities.push(throughWall(e, wall));
+    // T82 F7 · *"wysuwasz pocket door"*: the door open in its pocket, dashed, with TB and M.
+    for (const e of pocketPlanEntities(group, { profile, ctx, gapOf })) entities.push(throughWall(e, wall));
   }
 
   // ── chains: along each run, outside its wall; the depth beside wall A's start ──

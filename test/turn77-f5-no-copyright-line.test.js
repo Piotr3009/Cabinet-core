@@ -263,6 +263,9 @@ export const NEW_FILES = [
   'src/engine/pocketDoorPose.js',
   'src/3d/PocketDoor.jsx',
   'scripts/t78-classify.d/f43-t82-f06.mjs',
+  // T82 F7 (25.10.2026): the HAWA pocket on the sheets
+  'test/turn82-f06-hawa-room.test.js',
+  'scripts/t78-classify.d/f43-t82-f07.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -58,10 +58,10 @@ const POCKET_DOOR_PART = 'POCKET-DOOR';
  * room's 4 mm glass pane (3d/UnitView.jsx GLASS_PANE_MM), it is the view's,
  * not the workshop's. Its section is the profile symbol's own (profile.hawa).
  */
-const EJECTOR_PICTURE_HEIGHT_MM = 100;
+export const EJECTOR_PICTURE_HEIGHT_MM = 100;
 
 /** Is this board the HAWA door? */
-function isPocketDoor(panel) {
+export function isPocketDoor(panel) {
   return panel?.part === POCKET_DOOR_PART && Boolean(panel.box);
 }
 
@@ -318,7 +318,7 @@ export function pocketHardwareBoxes(geometry) {
  * `cupY`), for every HAWA door of one member, in the run's frame. `off` is
  * the member's offset (the projector's own).
  */
-function pocketDoorBarMarks(m, off, profile) {
+export function pocketDoorBarMarks(m, off, profile) {
   const g = pocketDoorGeometry(m.result, profile);
   if (!g) return [];
   const bar = profile.drawings?.hingeBar || { width: 6, height: 70 };
@@ -347,7 +347,7 @@ function pocketDoorBarMarks(m, off, profile) {
  * projector's plan entities are, so the plan takes them through its wall.
  * `gapOf(unit)` is how far the unit stands off its wall.
  */
-function pocketPlanEntities(group, { profile, ctx, gapOf }) {
+export function pocketPlanEntities(group, { profile, ctx, gapOf }) {
   const out = [];
   for (const m of group?.members || []) {
     const g = pocketDoorGeometry(m.result, profile);
@@ -400,7 +400,7 @@ function pocketPlanEntities(group, { profile, ctx, gapOf }) {
  * frame (x off the wall, y up), as the projector's section entities are.
  * `gapOf(unit)` is how far the unit stands off its wall.
  */
-function pocketSectionEntities(members, { profile, ctx, gapOf }) {
+export function pocketSectionEntities(members, { profile, ctx, gapOf }) {
   const out = [];
   const seen = new Set();
   for (const m of members || []) {

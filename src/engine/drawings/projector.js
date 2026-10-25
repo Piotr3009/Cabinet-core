@@ -62,6 +62,8 @@ import { doorSwing, elevationOutline, frontDetail, panelStyle } from './frontEle
 import { frontDecorationElevation } from './frontDecorationDrawing.js';
 import { silhouetteMark } from './silhouettes.js';
 import { drawingLayer } from './layers.js';
+// T82 F7 · the HAWA door: a front of the sheets, its hinge bars and its symbols, from the room's one pose module.
+import { isPocketDoor, pocketDoorBarMarks, pocketDoorGeometry, pocketHardwareBoxes } from '../pocketDoorPose.js';
 
 // ═══ THE NUMBERS OF THE KERNEL ═════════════════════════════════════════════
 
@@ -616,7 +618,8 @@ function roomBoards(result) {
 
 /** Is this board a FRONT (a door or a drawer front), the room's `frontKind`? */
 function isRoomFront(panel) {
-  return panel?.part === 'FRONT' || panel?.part === 'DRAWER-FRONT';
+  // T82 F7 · the HAWA pocket door is a front: lifted with the fronts, drawn in their ink.
+  return panel?.part === 'FRONT' || panel?.part === 'DRAWER-FRONT' || isPocketDoor(panel);
 }
 
 /** The shell of a carcass: what the X-ray fades as carcass and every sheet draws in the carcass's own ink. */
@@ -784,6 +787,12 @@ function hardwareSolids(m, profile) {
     add('kit', 'APPLIANCE', [boxPrism({ x0: kit.x, x1: kit.x + kit.w, y0: kit.y, y1: kit.y + kit.h, z0: kit.z, z1: kit.z + kit.d })],
       { instance: kit, occludes: true, label: kit.label || null, sil: silhouetteMark('kit', kit) });
   }
+  // T82 F7 · the HAWA symbols the room draws (the two hardware zones on panel
+  // B, the vertical profile, the Push ejector), where they stand with the door
+  // shut; none is screwed to the door, so they stay when the fronts are off.
+  for (const b of pocketHardwareBoxes(pocketDoorGeometry(r, profile))) {
+    add(`hawa-${b.kind}`, 'HINGES', [boxPrism(b)], { instance: b });
+  }
   // The handles, standing proud of their fronts as the room models them
   // (3d/Hardware.jsx FrontHandle): seen from the front they are the owner's
   // circle of 30 (a mark), on a plan or a section their own side.
@@ -906,9 +915,11 @@ export function runSolids(group, {
       const host = `${m.unit.id}:${p.id}`;
       const face = (p.box.z + p.box.d) + off[2];
       const lift2 = (x, y) => [x + off[0], y + off[1], face];
-      const detail = p.meta?.frontDecoration
+      // T82 F7 · the HAWA door is plain in the room (its role takes no front style), so it is plain here.
+      // eslint-disable-next-line no-nested-ternary
+      const detail = isPocketDoor(p) ? [] : (p.meta?.frontDecoration
         ? frontDecorationElevation(p)
-        : frontDetail(p.box, p.meta?.frontType || style || profile.front.defaultType, profile, shakerFrame);
+        : frontDetail(p.box, p.meta?.frontType || style || profile.front.defaultType, profile, shakerFrame));
       for (const e of detail) {
         const pts = e.kind === 'rect'
           ? [[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]]
@@ -948,6 +959,8 @@ export function runSolids(group, {
         });
       }
     }
+    // T82 F7 · the HAWA door's bars: its hinge edge, at the cups the engine drills.
+    marks.push(...pocketDoorBarMarks(m, off, profile));
   }
   // The worktops of this wall (engine/worktop.js worktopsFor, the store's slabs).
   (worktops || []).forEach((w, i) => {

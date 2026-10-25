@@ -443,6 +443,43 @@ test('F9 . columns 2: one DIVIDER mid-width, a stack each side, six boxes at thr
 });
 
 // ===========================================================================
+// AFTER THE REVIEW OF 25.10.2026 (KIT_VANITY.lsp D23 to D26)
+// ===========================================================================
+
+/** The back-wall boards a vanity's top boxes were cut into, by width. */
+const backBoards = (r) => r.panels.filter((p) => /-BB-\d+$/.test(p.id)).map((p) => p.w);
+
+test('F9, after the review . D23: no U leaves a back-wall board under 30; a U that misses it is FIT, said, never cut', () => {
+  assert.equal(vanitySpec(P).backPieceMinMm, 30, 'PROPOSED, profile.vanity.backPieceMinMm');
+  // The review's cases: W 484 on two columns with two basins (0 x 104 boards), W 242 with one, W 480 with two on one column.
+  for (const [W, columns, sinks] of [[484, 2, 2], [242, 1, 1], [480, 1, 2]]) {
+    const r = kit('VANITY3', { width: W, columns, sinks });
+    const lisp = L.call('vanity-trap-verdict', W, 600, 500, G, GB, FT, 3, columns, sinks);
+    assert.deepEqual(trapSaid(r).map((w) => `#39 ${w.message}`), lisp.map((e) => e[2]), `${W} / ${columns} / ${sinks}`);
+    assert.ok(lisp.some((e) => e[0] === 'FIT'));
+    assert.ok(trapSaid(r).some((w) => w.kind === 'FIT'
+      && w.message === 'The trap\'s U does not fit the top drawer\'s box: every board of its back wall keeps 30'));
+    const cut = (L.call('vanity-trap-us', W, 600, 500, G, GB, FT, 3, columns, sinks) || []).map(([tag]) => tag);
+    assert.deepEqual(r.derived.vanity.trap.cuts.map((c) => c.tag), cut, 'the engine cuts exactly the LISP\'s U\'s');
+    for (const w of backBoards(r)) assert.ok(w >= 30, `${W}: a ${w} board`);
+  }
+  // The first widths that take the U's (B1's report): 302 on one basin, 604 on two columns with two.
+  assert.ok(byId(kit('VANITY3', { width: 302 }), 'D3-BB-1'));
+  assert.ok(byId(kit('VANITY3', { width: 604, columns: 2, sinks: 2 }), 'Z2D3-BB-2'));
+  // The sweep: every width, one and two columns, one and two basins: the LISP's U's, and no board under 30.
+  for (let W = 240; W <= 2400; W += 22) {
+    for (const [columns, sinks] of [[1, 1], [1, 2], [2, 1], [2, 2]]) {
+      const r = kit('VANITY3', { width: W, columns, sinks });
+      if (columns === 2 && !byId(r, 'DIVIDER')) continue;   // two columns refused in words below their walls (B5's)
+      const r4 = (v) => Math.round(v * 1e4) / 1e4;
+      const cut = (L.call('vanity-trap-us', W, 600, 500, G, GB, FT, 3, columns, sinks) || []).map(([tag, u]) => [tag, r4(u[1]), r4(u[2])]);
+      assert.deepEqual(r.derived.vanity.trap.cuts.flatMap((c) => c.us.map((u) => [c.tag, u.from, u.to])), cut, `${W} / ${columns} / ${sinks}`);
+      for (const w of backBoards(r)) assert.ok(w >= 30 - 1e-9, `${W} / ${columns} / ${sinks}: a ${w} board`);
+    }
+  }
+});
+
+// ===========================================================================
 // THE FOSSILS HOLD; THE NEW GOLDENS HOLD
 // ===========================================================================
 

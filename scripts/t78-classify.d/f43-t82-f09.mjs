@@ -102,7 +102,8 @@ export const LICENSED = {
   'src/engine/vanity.js': {
     why: `T82 F9: new. The mirror of KIT_VANITY.lsp part 5 (vanity-rails, vanity-rail-side-screws, vanity-wall-gap, `
       + `vanity-wastes, vanity-trap-plan, vanity-u-in-bottom, vanity-u-outline, vanity-back-pieces, vanity-trap-verdict), `
-      + `run by computeCabinet only under \`type.vanity\` / \`carcass.back === 'cut'\`. ${OWNER_B2}`,
+      + `run by computeCabinet only under \`type.vanity\` / \`carcass.back === 'cut'\`. ${OWNER_B2}`
+      + ' After the review: D23 vanity-u-fits-p with backPieceMinMm 30 (no U leaves a back-wall board under 30, said by #39).',
     gates: ['vanity'],
   },
   'src/engine/checks.js': {

@@ -55,6 +55,8 @@ export function vanitySpec(profile) {
     trapDepthMm: num(v.trapDepthMm, 120),             // vanityTrapD, CONFIRMED
     trapRadiusMm: num(v.trapRadiusMm, 20),            // vanityTrapR, CONFIRMED "6 - tak"
     trapClearMm: num(v.trapClearMm, 60),              // vanityTrapClear, PROPOSED
+    // D23, after the review of 25.10.2026: no board of the back wall under it.
+    backPieceMinMm: num(v.backPieceMinMm, 30),        // vanityBackPieceMin, PROPOSED
     wasteFromBackMm: num(v.wasteFromBackMm, 200),     // vanityWasteFromBack, PROPOSED
   };
 }
@@ -238,10 +240,15 @@ function vanityTrapU(b, xw, profile) {
   return { col: b.col, from: xw - half, to: xw + half, depth: T.trapDepthMm, r: T.trapRadiusMm };
 }
 
-/** Does the U stand inside the box's sides, clear of the U before it (`vanity-u-fits-p`)? */
-function vanityUFits(b, u, prev, GB) {
-  return u.from >= b.x0 + GB && u.to <= b.x0 + b.bw - GB
-    && (!prev || prev.col !== u.col || u.from >= prev.to);
+/**
+ * Does the U leave `backPieceMinMm` (30) of the back wall against each of the
+ * box's sides and after the U before it (`vanity-u-fits-p`, D23, after the
+ * review of 25.10.2026: no 0 or sliver board for the saw)?
+ */
+function vanityUFits(b, u, prev, GB, profile) {
+  const m = vanitySpec(profile).backPieceMinMm;
+  return u.from - (b.x0 + GB) >= m && (b.x0 + b.bw - GB) - u.to >= m
+    && (!prev || prev.col !== u.col || u.from - prev.to >= m);
 }
 
 /** Every waste's plan: [{ x, box, u, status }], status CUT | DIVIDER | FIT (`vanity-trap-plan`). */
@@ -252,7 +259,7 @@ function vanityTrapPlan({ boxes, n, columns, sinks, W, GB }, profile) {
     const b = vanityTopBoxUnder(boxes, n, xw, GB);
     if (!b) { out.push({ x: xw, box: null, u: null, status: 'DIVIDER' }); continue; }
     const u = vanityTrapU(b, xw, profile);
-    if (vanityUFits(b, u, prev, GB)) {
+    if (vanityUFits(b, u, prev, GB, profile)) {
       out.push({ x: xw, box: b, u, status: 'CUT' });
       prev = u;
     } else {
@@ -323,7 +330,11 @@ export function vanityTrapVerdict({ boxes, n, columns, sinks, W, GB }, profile) 
     if (e.status === 'DIVIDER') {
       out.push({ kind: 'DIVIDER', x: e.x, sentence: '#39 The trap stands over the divider: no top drawer can take its U' });
     } else if (e.status === 'FIT') {
-      out.push({ kind: 'FIT', x: e.x, sentence: '#39 The trap\'s U does not fit the top drawer\'s box' });
+      out.push({
+        kind: 'FIT',
+        x: e.x,
+        sentence: `#39 The trap's U does not fit the top drawer's box: every board of its back wall keeps ${vanityMm(T.backPieceMinMm)}`,
+      });
     } else {
       const reach = vanityTrapReach(b, T.wasteFromBackMm, profile);
       if (reach < 0) {

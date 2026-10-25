@@ -160,6 +160,8 @@ import {
 import { pocketCoverSides, pocketNeighbours, runPocketParams } from '../engine/runs.js';
 // T80 F3 · the in-frame frame of a run (KIT_INFRAME.lsp's mirror).
 import { runFrameParams } from '../engine/inframe.js';
+// T82 F16 · how far a free panel may be pulled off its wall: the far wall.
+import { maxDepthOnWall } from '../engine/collision.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
 import {
   runFor as shareOutRunFor, shareOutGapSpan, shareOutOffered, shareOutPlan,
@@ -6534,6 +6536,68 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * ─── T82 F16 · THE PANEL IN THE HAND: UP AND DOWN ────────────────────────
+   *
+   * The owner: *"bardziej chcialem grab and move"*. The room's drag reads the
+   * height off the same plane it reads the wall from and hands it here; the
+   * `fp-floor` figure types the same number through `updateUnitParams`. `y`
+   * is the panel's underside above the floor (its `mount_height`), on the
+   * hand's grid (`snapStep`, else the workshop's `mmStep`), held by the room
+   * (`freePanelReach`): the floor and the ceiling less the box. Nothing it
+   * stands in front of stops it. A height already there writes nothing.
+   *
+   * @returns {{y:number, blocked:boolean, by:string|null, notices:string[]}|null}
+   */
+  moveFreePanelY: (unitId, y, snapStep = null) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isFreePanel(unit.type)) return null;
+    const profile = getCabinetProfile();
+    const want = snapTo(Number(y) || 0, snapStep || profile.editor.mmStep);
+    const fit = withinReach(want, freePanelReach(s, unit, profile).mount, 'the floor', 'the ceiling');
+    if (fit.value !== (Number(unit.params.mount_height) || 0)) get().updateUnitParams(unitId, { mount_height: fit.value });
+    return {
+      y: fit.value,
+      blocked: fit.blocked,
+      by: fit.by,
+      notices: fit.blocked ? [`From the floor limited to ${formatMm(fit.value)} mm by ${fit.by}.`] : [],
+    };
+  }),
+
+  /**
+   * ─── T82 F16 · …AND OFF THE WALL ─────────────────────────────────────────
+   *
+   * The room's drag with Shift held, and the `fp-wall` figure. `z` is the
+   * distance of the panel's BACK FACE from the wall line (its `backStandoff`,
+   * what the eye and the figure read); it is written as `inset_back_mm`, z
+   * less the wall clearance, held by the room (`freePanelReach`): the
+   * clearance every unit keeps, and the far wall less the panel. Not the
+   * cabinet's `editor.maxInset` 300 (F17), and never through `setUnitInsets`,
+   * whose depth re-clamp would shorten a panel standing across the wall: the
+   * room moves the panel, it never squashes it.
+   *
+   * @returns {{z:number, inset:number, blocked:boolean, by:string|null, notices:string[]}|null}
+   */
+  moveFreePanelZ: (unitId, z, snapStep = null) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isFreePanel(unit.type)) return null;
+    const profile = getCabinetProfile();
+    const reach = freePanelReach(s, unit, profile);
+    const want = snapTo(Number(z) || 0, snapStep || profile.editor.mmStep);
+    const fit = withinReach(want, reach.standoff, 'the wall clearance', 'the far wall');
+    const inset = roundTo(fit.value - reach.clearance, 4);
+    if (inset !== (Number(unit.params.inset_back_mm) || 0)) get().updateUnitParams(unitId, { inset_back_mm: inset });
+    return {
+      z: fit.value,
+      inset,
+      blocked: fit.blocked,
+      by: fit.by,
+      notices: fit.blocked ? [`From the wall limited to ${formatMm(fit.value)} mm by ${fit.by}.`] : [],
+    };
+  }),
+
+  /**
    * ─── CHAT-FIX 25.10.2026 · THE SURFACES A FREE PANEL CAN BE STUCK TO ──────
    *
    * The owner: *"zebym ja mogl go przykleic do tej powierzchni jakiej chce"*.
@@ -7305,6 +7369,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       applied.wall_gap = Math.min(want, ceiling);
       if (applied.wall_gap < want) {
         notices.push(`From the wall limited to ${formatMm(applied.wall_gap)} mm by ${room.by || 'the room'}.`);
+      }
+    }
+    // ─── T82 F16 · A FREE PANEL'S HEIGHT AND DISTANCE OFF THE WALL ──────────
+    // *"grab and move"*: the hand moves both now (`moveFreePanelY`, `moveFreePanelZ`),
+    // and the probe found neither had a room behind it (mount_height 3000 in a
+    // 2500 room stored, no notice). Every road that types them lands here, so
+    // the law is one: the room's reach (`freePanelReach`), said in words. It
+    // runs BEFORE the height clamp, so a panel asked higher than the ceiling
+    // allows is held down whole rather than squashed by its own height. A
+    // cabinet's mount and inset are not this law.
+    if (isFreePanel(unit.type) && (patch.mount_height != null || patch.inset_back_mm != null)) {
+      const reach = freePanelReach(s, unit, profile, {
+        height: patch.height, width: applied.width, depth: applied.depth,
+      });
+      if (patch.mount_height != null) {
+        const fit = withinReach(Number(patch.mount_height) || 0, reach.mount, 'the floor', 'the ceiling');
+        applied.mount_height = fit.value;
+        if (fit.blocked) notices.push(`From the floor limited to ${formatMm(fit.value)} mm by ${fit.by}.`);
+      }
+      if (patch.inset_back_mm != null) {
+        const fit = withinReach(Number(patch.inset_back_mm) || 0, reach.inset, 'the wall clearance', 'the far wall');
+        applied.inset_back_mm = fit.value;
+        if (fit.blocked) notices.push(`Back inset limited to ${formatMm(fit.value)} mm by ${fit.by}.`);
       }
     }
     if (patch.height != null) {
@@ -11872,6 +11959,65 @@ function obstructs(unit, other, profile = getCabinetProfile()) {
 
 /** T74 F13 · the keys a size edit of a free panel is read through (`freePanelPatch`). */
 const FREE_PANEL_KEYS = ['width', 'height', 'depth', 'panel_width', 'panel_length', 'panel_tilt_deg', 'panel_facing', 'board_t'];
+
+/**
+ * ─── T82 F16 · HOW FAR A FREE PANEL MAY TRAVEL UP AND OFF ITS WALL ─────────
+ *
+ * The owner: *"bardziej chcialem grab and move"*. The probe
+ * (`verify/t82/f16-probe.md`, rows 6 and 7) found the two numbers the hand now
+ * moves with no room behind them: `mount_height` stored 3000, 2400 and -200 in
+ * a 2500 room with no notice, and the back inset held at the cabinet's
+ * `editor.maxInset` 300 where the room leaves 2972. The ROOM is the limit, and
+ * this is the one answer the drag (`moveFreePanelY`, `moveFreePanelZ`) and the
+ * typed road (`updateUnitParams`) both read:
+ *
+ *   mount     the underside: the floor, 0, at least; the room height less the
+ *             box at most (no upper limit in a room with no height)
+ *   standoff  the back face off the wall line: the wall clearance every unit
+ *             keeps at least; the far wall (`maxDepthOnWall` over its span,
+ *             the depth clamp's own reach) less the panel's box at most
+ *   inset     the same, as the `inset_back_mm` it is written as: the standoff
+ *             less the clearance
+ *
+ * `patch` is the edit in hand (its own height, depth or width, when it moves
+ * them). Nothing here knows about obstacles: a panel is never stopped on these
+ * two axes by what it stands in front of.
+ *
+ * @returns {{mount:{min:number,max:number}, standoff:{min:number,max:number},
+ *   inset:{min:number,max:number}, clearance:number}}
+ */
+export function freePanelReach(state, unit, profile, patch = {}) {
+  const room = state?.project?.room || {};
+  const roomHeight = Number(room.height) || 0;
+  const height = Number(patch.height ?? unit.params?.height) || 0;
+  const depth = Number(patch.depth ?? unit.params?.depth) || 0;
+  const width = Number(patch.width ?? unit.params?.width) || 0;
+  const walls = roomWalls(room);
+  const wall = walls[unit.position?.wall ?? 0] || walls[0];
+  const clearance = wallGapOf(unit, profile);
+  const reach = wall ? maxDepthOnWall({ wall, walls, x: Number(unit.position?.x_mm) || 0, width }) : 0;
+  // No far wall found (a ray into the open): no limit, rather than none at all.
+  // (`roundTo` reads Infinity as 0, so the open reach is kept off it.)
+  const r4 = (v) => (Number.isFinite(v) ? roundTo(v, 4) : v);
+  const far = reach > 0 ? reach : Infinity;
+  const standoffMax = Math.max(clearance, r4(far - depth));
+  return {
+    mount: { min: 0, max: roomHeight > 0 ? Math.max(0, r4(roomHeight - height)) : Infinity },
+    standoff: { min: clearance, max: standoffMax },
+    inset: { min: 0, max: r4(standoffMax - clearance) },
+    clearance,
+  };
+}
+
+/**
+ * T82 F16 · one number held inside its reach: `{ value, blocked, by }`, `by`
+ * naming what stopped it (`below` or `above`), null when nothing did.
+ */
+function withinReach(want, range, below, above) {
+  if (want < range.min) return { value: range.min, blocked: true, by: below };
+  if (want > range.max) return { value: range.max, blocked: true, by: above };
+  return { value: want, blocked: false, by: null };
+}
 
 /**
  * ─── TURN 51 (CLAUDE.md F1): EVERYTHING THE PLAN PUTS IN THE WAY ───────────

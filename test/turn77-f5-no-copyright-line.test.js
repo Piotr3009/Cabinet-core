@@ -289,6 +289,11 @@ export const NEW_FILES = [
   // T82 F15 (25.10.2026): the cloud, Fluted as convex reeds touching
   'test/turn82-f15-reed.test.js',
   'scripts/t78-classify.d/f43-t82-f15.mjs',
+  // T82 F16 (25.10.2026): grab and move, the free panel on three axes; the probes' shared reader and F16's probe
+  'scripts/t82-probe-lib.mjs',
+  'scripts/t82-probe-f16.mjs',
+  'src/3d/panelDrag.js',
+  'test/turn82-f16-panel-drag.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

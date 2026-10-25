@@ -1600,6 +1600,9 @@ export default function Scene({
   // it or, with Alt held, refusing it.
   const freePanelProposal = useProjectStore((s) => s.freePanelProposal);
   const acceptFreePanelSnap = useProjectStore((s) => s.acceptFreePanelSnap);
+  // T82 F16 · *"grab and move"*: up and down, and off the wall with Shift.
+  const moveFreePanelY = useProjectStore((s) => s.moveFreePanelY);
+  const moveFreePanelZ = useProjectStore((s) => s.moveFreePanelZ);
   const [snapProposal, setSnapProposal] = useState(null);
   // 15.10.2026 · the pluses wait for the hand (see `PLUS_GRACE_MS` above): the
   // unit id, or `island:<face index>`, the pointer is over, held a moment after.
@@ -2063,6 +2066,10 @@ export default function Scene({
             setSnapProposal(null);
           } : null}
           snapProposal={snapProposal?.unitId === unit.id ? snapProposal : null}
+          // T82 F16 · a free panel's other two axes, each through its store
+          // action and the room's own clamp (`freePanelReach`).
+          onMovePanelY={isFreePanel(unit.type) ? (y, step) => moveFreePanelY(unit.id, y, step) : null}
+          onMovePanelZ={isFreePanel(unit.type) ? (z, step) => moveFreePanelZ(unit.id, z, step) : null}
           // T74 F13 · 2klik on a free panel: PRO's own piece editor.
           onEditPart={(panelId, at) => openModal('part-detail', {
             unitId: unit.id, panelId, at,

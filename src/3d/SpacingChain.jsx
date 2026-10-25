@@ -6,7 +6,7 @@ import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { formatDimension } from '../engine/format.js';
 import { columnOfShelf } from '../engine/shelfHeights.js';
 import { bayGapsAround, xFromChain } from '../engine/partitionPositions.js';
-import { unitSpan } from '../engine/collision.js';
+import { backStandoff, unitSpan } from '../engine/collision.js';
 import { secondShoeItem } from '../engine/watchDrawer.js';
 import { chromeOn } from './chrome.js';
 import { useProjectStore } from '../stores/projectStore.js';
@@ -106,7 +106,7 @@ function touching(gap, piece) {
  * @returns {{rows:Array, plane:string, at:number, name:string}|null}
  */
 function chainFor({
-  panel, result, columns, boardT, unit = null, units = [],
+  panel, result, columns, boardT, unit = null, units = [], profile = null,
 }) {
   if (!panel?.box) return null;
 
@@ -156,12 +156,37 @@ function chainFor({
       commit: (want) => want,
       write: 'unit-mount',
     });
+    // ─── T82 F16 · …AND THE THIRD: FROM THE WALL ─────────────────────────
+    // *"grab and move"*, and the typed road gains what the hand gained: the
+    // distance of the panel's back face from the wall line, on the floor's
+    // own plane (`xz`) over its top, from the wall line (z = -standoff in its
+    // own frame) to its back (z = 0). Typing it moves the panel off the wall
+    // through `moveFreePanelZ`, the drag's own setter and its room's clamp.
+    const back = backStandoff(unit, profile);
+    const also = {
+      rows: [{
+        key: 'fp-wall',
+        from: [W / 2, -Math.max(back, 1)],
+        to: [W / 2, 0],
+        offset: 0,
+        label: formatDimension(back),
+        value: back,
+        commit: (want) => want,
+        write: 'unit-wall',
+        plane: 'xz',
+        at: H,
+      }],
+      plane: 'xz',
+      at: H,
+      name: `free-panel-wall-${unit.id}`,
+    };
     return {
       rows,
       plane: 'xy',
       at: Number(unit.params?.depth) || 0,
       name: `free-panel-${unit.id}`,
       itemId: unit.id,
+      also,
     };
   }
 
@@ -319,6 +344,8 @@ export default function SpacingChain({
   const units = useProjectStore((s) => s.units);
   const moveUnit = useProjectStore((s) => s.moveUnit);
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
+  // T82 F16 · …and its third figure, off the wall, through the drag's setter.
+  const moveFreePanelZ = useProjectStore((s) => s.moveFreePanelZ);
   const notify = useUiStore((s) => s.notify);
 
   const panel = useMemo(
@@ -329,9 +356,9 @@ export default function SpacingChain({
   const G = unit?.params?.board_t ?? profile?.board?.thickness ?? 18;
   const chain = useMemo(
     () => chainFor({
-      panel, result, columns, boardT: G, unit, units,
+      panel, result, columns, boardT: G, unit, units, profile,
     }),
-    [panel, result, columns, G, unit, units],
+    [panel, result, columns, G, unit, units, profile],
   );
 
   // A selection that moves takes the open field with it: an input standing on
@@ -342,7 +369,8 @@ export default function SpacingChain({
   if (!chain || !panel) return null;
 
   const itemId = chain.itemId || panel.meta?.itemId || null;
-  const row = editing ? chain.rows.find((r) => r.key === editing) : null;
+  // T82 F16 · a row may live on the chain's second plane (`also`: fp-wall).
+  const row = editing ? [...chain.rows, ...(chain.also?.rows || [])].find((r) => r.key === editing) || null : null;
 
   const commit = () => {
     const want = Number(draft);
@@ -354,6 +382,8 @@ export default function SpacingChain({
     }
     else if (row.write === 'unit-mount') {
       for (const note of updateUnitParams(unit.id, { mount_height: next })?.notices || []) notify(note, 'warn');
+    } else if (row.write === 'unit-wall') {
+      for (const note of moveFreePanelZ(unit.id, next)?.notices || []) notify(note, 'warn');
     } else if (chain.write === 'drawer-mount') setDrawerMount(unit.id, itemId, next);
     else if (panel.part === 'VPART') setPartitionX(unit.id, itemId, next);
     else setShelfPos(unit.id, itemId, next);
@@ -366,6 +396,15 @@ export default function SpacingChain({
   const at = row
     ? [(row.from[0] + row.to[0]) / 2, (row.from[1] + row.to[1]) / 2]
     : null;
+  // …on the row's own plane, which is the chain's unless the row says.
+  const rowPlane = row?.plane || chain.plane;
+  const rowAt = row?.at ?? chain.at;
+  const pick = (rows) => (picked) => {
+    const found = rows.find((r) => r.key === picked.key);
+    if (!found?.commit || !itemId) return;
+    setEditing(found.key);
+    setDraft(String(Math.round(found.value)));
+  };
 
   return (
     <group userData={{ ccHelper: true, ccNoBounds: true, ccSpacingChain: panelId }}>
@@ -377,18 +416,25 @@ export default function SpacingChain({
         colour={colour}
         name={chain.name}
         pickOn="click"
-        onPick={(picked) => {
-          const found = chain.rows.find((r) => r.key === picked.key);
-          if (!found?.commit || !itemId) return;
-          setEditing(found.key);
-          setDraft(String(Math.round(found.value)));
-        }}
+        onPick={pick(chain.rows)}
       />
+      {chain.also && (
+        <DimensionChain
+          rows={chain.also.rows}
+          style={style}
+          plane={chain.also.plane}
+          at={chain.also.at}
+          colour={colour}
+          name={chain.also.name}
+          pickOn="click"
+          onPick={pick(chain.also.rows)}
+        />
+      )}
       {row && at && (
         <group
-          position={chain.plane === 'xz'
-            ? [mm(at[0]), mm(chain.at), mm(at[1])]
-            : [mm(at[0]), mm(at[1]), mm(chain.at)]}
+          position={rowPlane === 'xz'
+            ? [mm(at[0]), mm(rowAt), mm(at[1])]
+            : [mm(at[0]), mm(at[1]), mm(rowAt)]}
           userData={{ ccHelper: true, ccNoBounds: true }}
         >
           <Html center zIndexRange={[45, 35]} style={{ pointerEvents: 'auto' }}>

@@ -352,8 +352,11 @@ test('F5 · EXAMPLE 2: B-L and B-R mirrored, each door drilled from its own hing
       assert.ok(of(id).cnc.pockets.some((k) => near(k.x1, Math.min(xa, xb)) && near(k.x2, Math.max(xa, xb)) && near(k.y1, v0) && near(k.y2, v1)));
     }
   }
-  // III/25 routes no groove.
-  assert.equal(computeCabinet(ONE_DOOR(), P).panels.find((p) => p.id === 'POCKET-DOOR').cnc.pockets?.length || 0, 0);
+  // III/25 routes no groove. (AMENDED AFTER THE REVIEW, 25.10.2026: the door wears the run's front finish,
+  // CLAUDE.md T82 F6 *"the door in the front finish of the run (spray, decoration, in-frame as the
+  // neighbours)"*, so the default shaker's recess is a pocket of its face; the GROOVES are what III/25 has none of.)
+  assert.equal((computeCabinet(ONE_DOOR(), P).panels.find((p) => p.id === 'POCKET-DOOR').cnc.pockets || [])
+    .filter((k) => k.layer === 'HAWA_GROOVE_12MM').length, 0);
 });
 
 test('F5 · hand L is hand R mirrored: B on the left in BUL\'s frame, A on the right in BUR\'s, the door hinged on its right edge', () => {

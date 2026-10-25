@@ -48,6 +48,7 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { CHECKS, runChecks } from '../src/engine/checks.js';
 import { ELEMENT_TO_PART_ID } from '../src/engine/partRegistry.js';
 import * as H from '../src/engine/hawaPocket.js';
+import { defaultFrontDecoration } from '../src/engine/frontDecoration.js';
 import { loadLisp } from './lisp-mini.js';
 
 const ROOT = new URL('../', import.meta.url).pathname;
@@ -638,9 +639,12 @@ test('F2 review (c) · a Pull pocket door takes the project\'s handle as a front
   // cut frame is the leaf's back, so a door hinged L carries its bar at the low x.
   assert.equal(door.meta.hinge, 'L', 'the hinge edge is the pocket side (hand R)');
   assert.equal(door.meta.handle.class, 'tall-door');
-  const house = computeCabinet({ ...defaultParamsFor('BUDTALL', P), project_handle: BAR, front_type: 'F', doors: { count: 1, hinge: 'L' } }, P)
+  // The house's tall door of the same front (the workshop's default style, and since the
+  // review's (d) the HAWA door wears it too: the bar on the shaker's stile).
+  const house = computeCabinet({ ...defaultParamsFor('BUDTALL', P), project_handle: BAR, doors: { count: 1, hinge: 'L' } }, P)
     .panels.find((p) => p.part === 'FRONT').meta.handle;
-  assert.equal(door.meta.handle.x, house.x, 'the bar where a flat tall door hinged L carries it');
+  assert.equal(door.meta.handle.x, house.x, 'the bar where a tall door of the run hinged L carries it');
+  assert.equal(door.meta.handle.rule, house.rule);
   assert.ok(door.meta.handle.x < door.w / 2, `the free edge (x ${door.meta.handle.x} of ${door.w})`);
   const push = at(true);
   assert.equal(push.drills.filter((d) => d.kind === 'handle').length, 0, 'Push: no handle');
@@ -648,4 +652,54 @@ test('F2 review (c) · a Pull pocket door takes the project\'s handle as a front
   // No project handle: nothing drilled on a Pull door either (R9: no handle, no drilling).
   const bare = computeCabinet(pocket({ push: false, cover: coverOne(500, 580) }), P);
   assert.equal(bare.drills.filter((d) => d.kind === 'handle').length, 0);
+});
+
+test('F6 review (d) · the HAWA door wears the run\'s front finish: a shaker run cuts SHAKER_PANEL_POCKET on POCKET-DOOR, a decorated run its decoration', () => {
+  const run = (extra) => computeCabinet({ ...pocket({ frontT: 22, cover: coverOne(500, 580) }), ...extra }, P);
+  const doorOf = (r) => r.panels.find((p) => p.part === 'POCKET-DOOR');
+  // The shaker, as the tall front beside it gets it, at the door's own size.
+  const shaker = doorOf(run({ front_type: 'S' }));
+  assert.equal(shaker.role, 'pocket_door', 'still its own role: no lay-on trim, no Blum ladder, no default knob');
+  assert.equal(shaker.meta.frontType, 'S');
+  const recess = shaker.cnc.pockets.find((k) => k.layer === 'SHAKER_PANEL_POCKET');
+  assert.ok(recess, 'the shaker recess on the HAWA door');
+  const house = computeCabinet({
+    ...defaultParamsFor('BUDTALL', P), front_t: 22, front_type: 'S', doors: { count: 1, hinge: 'L' },
+  }, P).panels.find((p) => p.part === 'FRONT');
+  const houseRecess = house.cnc.pockets.find((k) => k.layer === 'SHAKER_PANEL_POCKET');
+  assert.deepEqual([recess.x1, recess.y1, recess.depth], [houseRecess.x1, houseRecess.y1, houseRecess.depth], 'the run\'s own frame and depth');
+  assert.deepEqual([recess.x2, recess.y2], [shaker.w - houseRecess.x1, shaker.h - houseRecess.y1]);
+  assert.equal(shaker.meta.shaker.frame, house.meta.shaker.frame);
+  // A flat run: the door is flat.
+  const flat = doorOf(run({ front_type: 'F' }));
+  assert.equal(flat.cnc.pockets.filter((k) => k.layer === 'SHAKER_PANEL_POCKET').length, 0);
+  assert.equal(flat.meta.shaker, undefined);
+  // A decorated run (T76): the door carries the decoration as a front does.
+  const fl = doorOf(run({ front_type: 'FL', front_decoration: defaultFrontDecoration('FL', P) }));
+  assert.ok(fl.meta.frontDecoration, 'the run\'s decoration on the HAWA door');
+  // The cups and the LISP's holes are untouched by the finish.
+  assert.deepEqual(shaker.meta.pocket.holes, flat.meta.pocket.holes);
+});
+
+test('F6 review (d) · a III/35 door whose steel groove meets the shaker recess or the glass aperture is refused in words (#37), never clamped', () => {
+  const tall = (frontT, frontType) => computeCabinet({
+    ...pocket({ frontT, height: 2301 + 48.5, cover: coverOne(500, 580) }), front_type: frontType,
+  }, P);
+  const said = (r) => r.warnings.filter((w) => w.code === 'HAWA_OUT_OF_RANGE' && /steel profile/.test(w.message)).map((w) => w.message);
+  // S 18 shaker: 18 - 6 - 12 = 0 left between the groove (100 - Z1 below the top) and the recess.
+  const thin = tall(18, 'S');
+  assert.equal(thin.hawa.doors[0].cls, 35);
+  assert.deepEqual(said(thin), ['#37 HAWA door out of range: the III/35 steel profile\'s groove, 12 deep in the back of the 18 door, '
+    + 'meets the shaker recess, 6 deep in its face: nothing of the board is left between them; a flat front or a thicker board for this door']);
+  assert.ok(thin.panels.find((p) => p.part === 'POCKET-DOOR').cnc.pockets.some((k) => k.layer === 'SHAKER_PANEL_POCKET'), 'cut as asked');
+  const found = runChecks({ entries: [{ unit: { id: 'p', type: 'HAWA_POCKET', params: thin.params }, result: thin }], profile: P });
+  assert.ok(found.some((x) => x.check === 37 && x.level === 'red' && /steel profile/.test(x.message)));
+  // S 22 leaves 4: the door is made.
+  assert.deepEqual(said(tall(22, 'S')), []);
+  // Glass: the groove crosses the aperture.
+  assert.equal(said(tall(22, 'GL')).length, 1);
+  assert.match(said(tall(22, 'GL'))[0], /meets the glass aperture: nothing/);
+  // A flat III/35 door, and a III/25 shaker door, say nothing.
+  assert.deepEqual(said(tall(18, 'F')), []);
+  assert.deepEqual(said(computeCabinet({ ...pocket({ frontT: 18, cover: coverOne(500, 580) }), front_type: 'S' }, P)), []);
 });

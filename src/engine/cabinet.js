@@ -23,7 +23,7 @@
 // T74 F13 · the free panel's board and where it stands.
 import { freePanelOf, freePanelPlacement } from './freePanel.js';
 // T82 F2 F3 · the HAWA pocket, KIT_HAWA.lsp mirrored routine for routine.
-import { hawaPocketFigures } from './hawaPocket.js';
+import { hawaPocketFigures, hawaSpec } from './hawaPocket.js';
 // T82 F4 · the pocket's order lines, read off its figures (result.hawa).
 // T82 F5 · its holes and grooves, the LISP's own, seated in each board's CNC frame.
 import {
@@ -3840,6 +3840,11 @@ export function computeCabinet(params, profileOverride) {
           // room, in the house's own key, so the handle law puts a Pull door's
           // bar on its free edge as it puts a front's.
           ...(isDoor ? { hinge: hawaFigures.doors.find((d) => d.id === part.id)?.hingeEdge || null } : {}),
+          // ...and the run's front style, the piece's own fact the shaker, the
+          // glass and the decoration passes read (CLAUDE.md T82 F6: *"the
+          // door in the front finish of the run (spray, decoration, in-frame
+          // as the neighbours)"*).
+          ...(isDoor ? { frontType: cfg.frontType } : {}),
         },
       }));
     }
@@ -10966,7 +10971,9 @@ export function computeCabinet(params, profileOverride) {
   // Piotr, 09.10.2026: decorative fronts with editable defaults and CNC.
   // Check opposing cuts after the existing cup drilling and J edge exist.
   if (params?.front_decoration) {
-    const fronts = panels.filter((p) => p.role === 'front');
+    // T82 F6, after the review: the HAWA pocket door takes the run's
+    // decoration as a front does (its role keeps every other front law off it).
+    const fronts = panels.filter((p) => p.role === 'front' || p.role === 'pocket_door');
     // ─── T78 F14 · ONE ARCH ACROSS A DRAWER STACK ──────────────────────────
     // The owner: *"jak mamy szuflady to przez wszystkie szuflady przechodzi
     // arch."*  The drawer fronts standing in one column (same x and width, the
@@ -11008,6 +11015,42 @@ export function computeCabinet(params, profileOverride) {
       // Applied strips are real cut parts. Their scene geometry belongs to
       // the moving front, while these records feed the BOM, CSV and CNC.
       panels.push(...appliedFrontParts(front, P));
+    }
+  }
+  // ─── T82 F6, AFTER THE REVIEW: THE FINISH AND THE III/35 STEEL PROFILE ──
+  // The HAWA door now wears the run's finish (the shaker recess, the glass
+  // aperture, the decoration, on its face), and a III/35 door carries its
+  // steel profiles in grooves in its back (KIT_HAWA.lsp D11, 12 deep, 100 - Z1
+  // below the top). Where a groove's band crosses a face cut and nothing of
+  // the board is left between them, the door cannot be made: the room refuses
+  // in words (#37), the finish and the groove are cut as asked, never clamped.
+  if (hawaFigures) {
+    const K = hawaSpec(P);
+    for (const door of panels.filter((p) => p.role === 'pocket_door')) {
+      const grooves = (door.cnc?.pockets || []).filter((k) => k.layer === K.layers.groove);
+      const face = (door.cnc?.pockets || []).filter((k) => k.layer !== K.layers.groove);
+      for (const g of grooves) {
+        for (const k of face) {
+          const lo = Math.max(Math.min(g.y1, g.y2), Math.min(k.y1, k.y2));
+          const hi = Math.min(Math.max(g.y1, g.y2), Math.max(k.y1, k.y2));
+          if (!(hi > lo)) continue;
+          // A face cut as deep as the board goes through it (the glass pane's
+          // aperture); a recess leaves the board under it.
+          const through = (Number(k.depth) || 0) >= door.thickness;
+          const left = through ? 0 : roundTo(door.thickness - (Number(k.depth) || 0) - (Number(g.depth) || 0), 4);
+          if (left > 0) continue;
+          const what = through ? 'the glass aperture' : (door.meta?.shaker ? 'the shaker recess' : 'the front decoration');
+          warnings.push({
+            code: 'HAWA_OUT_OF_RANGE',
+            check: 37,
+            panel: door.id,
+            message: `#37 HAWA door out of range: the III/35 steel profile's groove, ${rtos(Number(g.depth) || 0, 0)} deep in the `
+              + `back of the ${rtos(door.thickness, 0)} door, meets ${what}${through ? '' : `, ${rtos(Number(k.depth) || 0, 0)} deep in its face`}: `
+              + 'nothing of the board is left between them; a flat front or a thicker board for this door',
+          });
+          break;
+        }
+      }
     }
   }
   // --- T78 F17 . THE CANOPY HOOD: THE WUD CARCASS MADE A CANOPY --------------

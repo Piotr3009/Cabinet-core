@@ -24,6 +24,14 @@ export const LICENSED = {
       + `marks (pocketDoorBarMarks, pocketPlanEntities, pocketSectionEntities). Read by the room and the sheets only. ${OWNER}`,
     gates: [],
   },
+  'src/engine/shaker.js': {
+    why: 'T82 F6, after the review (CLAUDE.md T82 F6: *"the door in the front finish of the run (spray, decoration, in-frame as the neighbours)"*): isShakerFront and isGlassFront answer for the role pocket_door as for front, so the HAWA door wears the run\'s shaker or glass, off the piece\'s own meta.frontType.',
+    gates: ['hawaPocket'],
+  },
+  'src/engine/cabinet.js': {
+    why: 'T82 F6, after the review: the pocket door carries meta.frontType and the decoration pass takes it; a III/35 door whose steel groove meets a face cut with no board left is refused in words (#37).',
+    gates: ['hawaPocket'],
+  },
 };
 
 export const LIVENESS = {};

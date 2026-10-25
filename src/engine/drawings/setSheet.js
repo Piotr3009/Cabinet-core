@@ -333,6 +333,9 @@ export function titleStrip(zones, title, profile) {
 // this computer with the company's name. It is held as
 // `{ href, width, height, raster? }`: the picture as a data URL, its own
 // pixel size, and for an SVG the PNG the PDF embeds (jsPDF reads no SVG).
+// That is the job IN MEMORY; in this computer's storage the picture is kept
+// once and a saved job names it by `{ ref }` (`lib/projectLibrary.js
+// keepLogo`), so a `{ ref }` read here is no logo and the box stays.
 
 /** The pictures a logo may be: the three every browser and the PDF read. */
 export const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml'];

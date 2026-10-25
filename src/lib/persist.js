@@ -39,8 +39,15 @@ export async function persistProject({ project, units, asName = null, at = Date.
 
   const row = saveLocalProject(shelf, { project: named, units, at });
   let saved = row.project;
+  // T82 F20, after the review: a job the browser would not take is NOT on
+  // this computer, and the save says so in words instead of "saved". The job
+  // stays open as it is; nothing in it is lost while the window is open.
+  const notHere = row.stored === false
+    ? `${row.storeError}, so this job is not on its shelf. Remove jobs you no longer need on the start screen and save again.`
+    : null;
 
   if (isMockMode) {
+    if (notHere) return { project: saved, message: `Not saved: ${notHere}`, tone: 'error', stored: false };
     return {
       project: saved,
       message: asName ? `Saved as “${saved.name}” on this computer.` : 'Project saved on this computer.',
@@ -49,6 +56,14 @@ export async function persistProject({ project, units, asName = null, at = Date.
   }
 
   const res = await saveCloudProject({ ...named }, units);
+  if (res.error && notHere) {
+    return {
+      project: saved,
+      message: `Not saved: the database refused it (${res.error.message || 'error'}) and ${notHere}`,
+      tone: 'error',
+      stored: false,
+    };
+  }
   if (res.error) {
     return {
       project: saved,
@@ -71,6 +86,9 @@ export async function persistProject({ project, units, asName = null, at = Date.
       useMaterialAssignmentStore.setState({ projectId: saved.id });
       await saveAssignments(saved.id, assignments);
     } catch { /* the local copy is the copy */ }
+  }
+  if (notHere) {
+    return { project: saved, message: `Saved in the database, but not on this computer: ${notHere}`, tone: 'warn', stored: false };
   }
   return {
     project: saved,

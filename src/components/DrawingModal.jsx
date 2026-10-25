@@ -270,8 +270,14 @@ export default function DrawingModal({ rig = null }) {
     if (!file) return;
     try {
       const picked = await readLogoFile(file, profile);
-      setTitleBlock({ company: { logo: picked } });
-      notify(`Logo ${file.name} is on every sheet of the set.`, 'ok');
+      const { remembered } = setTitleBlock({ company: { logo: picked } }) || {};
+      // T82 F20, after the review: the logo is kept once on this computer;
+      // when the browser refuses it, the window says so in words.
+      if (remembered === false) {
+        notify(`Logo ${file.name} is on this job's sheets, but this computer's storage refused to keep it, so the next job will not open with it.`, 'warn');
+      } else {
+        notify(`Logo ${file.name} is on every sheet of the set.`, 'ok');
+      }
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('[drawings] logo', err);

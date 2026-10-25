@@ -29,6 +29,19 @@ export const LICENSED = {
       + `an SVG; readLogoFile reads the chosen PNG, JPG or SVG in the browser for the Drawings window. ${OWNER}`,
     gates: [],
   },
+  // After the review (finds.sheets[4], verified): the logo is kept once and a refused save says so.
+  'src/lib/projectLibrary.js': {
+    why: `T82 F20, after the review: the shelf keeps a job's logo as a { ref } (keepLogo: the picture once, under `
+      + `its own key cabinet-core.titleBlock.logos) and reads it back whole; write() returns the browser's refusal `
+      + `and saveLocalProject says stored false, so a job that is not on the shelf is never reported saved. ${OWNER}`,
+    gates: [],
+  },
+  'src/lib/persist.js': {
+    why: `T82 F20, after the review: persistProject says "Not saved: ..." in words (tone error) when the shelf `
+      + `refused the job, instead of "Project saved on this computer.", and answers stored, so a road marks the job `
+      + `saved only when it was (notOnShelf, the one sentence for every road). ${OWNER}`,
+    gates: [],
+  },
   'src/engine/profile.js': {
     why: `T82 F20: profile.drawings.set gains logo { maxPx 400, maxKb 256 } (PROPOSED), the APP'S numbers as the `
       + `set's law is. computeCabinet reads no drawings key. ${OWNER}`,

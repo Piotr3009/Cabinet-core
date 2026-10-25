@@ -30,6 +30,10 @@ import { titleFor } from '../src/engine/drawings/wallSheets.js';
 import { sheetToSvg } from '../src/engine/drawings/svg.js';
 import { sheetToDxf } from '../src/engine/drawings/dxf.js';
 import { bookletDoc, pdfBytes, pdfImageOf, readLogoFile } from '../src/lib/drawingExport.js';
+import {
+  LIBRARY_KEY, LOGO_KEY, listLocalProjects, loadLocalProject, logoId, saveLocalProject,
+} from '../src/lib/projectLibrary.js';
+import { persistProject } from '../src/lib/persist.js';
 
 const jsPDF = jsPDFDefault?.jsPDF || jsPDFDefault;
 
@@ -249,10 +253,12 @@ test('F20 · the logo is kept with the company and recalled with it on the next 
     s.newProject('T82 F20');
     const logo = { href: PNG_200x100, width: 200, height: 100 };
     s.setTitleBlock({ company: { name: 'SKYLON JOINERY' } });
-    s.setTitleBlock({ company: { logo } });
+    assert.deepEqual(s.setTitleBlock({ company: { logo } }), { remembered: true }, 'this computer took it');
     assert.deepEqual(useProjectStore.getState().project.titleBlock.company, { name: 'SKYLON JOINERY', logo }, 'beside the name, in the same company');
+    // AMENDED after the review: the memory names the picture by its ref, kept once beside it.
     const remembered = JSON.parse(mem.get('cabinet-core.titleBlock.company'));
-    assert.deepEqual(remembered.logo, logo, 'remembered where the company name is');
+    assert.deepEqual(remembered.logo, { ref: logoId(logo) }, 'remembered where the company name is, as a reference');
+    assert.deepEqual(JSON.parse(mem.get(LOGO_KEY))[logoId(logo)], logo, 'the picture itself, once, under its own key');
     useProjectStore.getState().newProject('Next job');
     const next = useProjectStore.getState().project.titleBlock.company;
     assert.equal(next.name, 'SKYLON JOINERY');
@@ -278,4 +284,133 @@ test('F20 · the Drawings window has the LOGO row beside Company: Choose image a
   assert.match(modal, /setTitleBlock\(\{ company: \{ logo: picked \} \}\)/, 'kept with the company');
   assert.match(modal, /setTitleBlock\(\{ company: \{ logo: null \} \}\)/, 'and removed from it');
   assert.ok(!/[\u2013\u2014]/.test(modal.slice(row - 400, row + 2400)), 'no em or en dash in the row');
+});
+
+// ═══ 6. AFTER THE REVIEW: THE LOGO IS KEPT ONCE, A REFUSED SAVE SAYS SO ═══
+//
+// The review of 25.10.2026 (finds.sheets[4], verified): the logo, up to 256
+// KB, was copied into every saved job, so the shelf (one localStorage key)
+// filled at 19 jobs and the 20th was reported saved but lost.
+
+/** A browser's storage: 5 Mi characters across every key, then QuotaExceededError, as browsers do. */
+function quotaStorage(limit = 5 * 1024 * 1024) {
+  const map = new Map();
+  const used = () => [...map].reduce((n, [k, v]) => n + k.length + v.length, 0);
+  return {
+    map,
+    getItem: (k) => (map.has(k) ? map.get(k) : null),
+    setItem(k, v) {
+      const s = String(v);
+      const was = map.has(k) ? k.length + map.get(k).length : 0;
+      if (used() - was + k.length + s.length > limit) {
+        const err = new Error('The quota has been exceeded.'); err.name = 'QuotaExceededError'; throw err;
+      }
+      map.set(k, s);
+    },
+    removeItem: (k) => { map.delete(k); },
+  };
+}
+// A logo at the cap: 256 KB of data URL (the sheet reads its size off the object).
+const BIG = { href: `data:image/png;base64,${'A'.repeat(256 * 1024 - 22)}`, width: 200, height: 100 };
+const job = (i, logo = BIG) => ({
+  name: `Job ${i}`, number: String(i), room: { height: 2500 }, design: null,
+  titleBlock: { company: { name: 'SKYLON JOINERY', logo } },
+});
+
+test('F20 after the review · 40 jobs with a 256 KB logo all survive on the shelf, the picture kept once', async () => {
+  const shelf = quotaStorage();
+  const ids = [];
+  for (let i = 1; i <= 40; i += 1) {
+    const res = await persistProject({ project: job(i), units: [], at: i, storage: shelf });
+    assert.equal(res.tone, 'ok', `job ${i}: ${res.message}`);
+    assert.equal(res.message, 'Project saved on this computer.');
+    assert.deepEqual(res.project.titleBlock.company.logo, BIG, `job ${i} keeps its picture whole in memory`);
+    ids.push(res.project.id);
+  }
+  assert.equal(listLocalProjects(shelf).length, 40, 'every job is on the shelf');
+  const raw = shelf.getItem(LIBRARY_KEY);
+  assert.ok(!raw.includes(BIG.href), 'no job carries the picture');
+  assert.ok(raw.length < 40 * 2000, `the shelf is ${raw.length} characters for 40 jobs`);
+  assert.deepEqual(Object.keys(JSON.parse(shelf.getItem(LOGO_KEY))), [logoId(BIG)], 'the picture once');
+  for (const id of ids) {
+    assert.deepEqual(loadLocalProject(shelf, id).project.titleBlock.company.logo, BIG, `${id} opens with its logo`);
+  }
+});
+
+test('F20 after the review · a job the browser refuses is said in words, never "saved"', async () => {
+  // A storage that refuses every write.
+  const refusing = {
+    getItem: () => null,
+    setItem: () => { const err = new Error('The quota has been exceeded.'); err.name = 'QuotaExceededError'; throw err; },
+    removeItem: () => {},
+  };
+  const row = saveLocalProject(refusing, { project: job(1), units: [], at: 1 });
+  assert.equal(row.stored, false, 'the shelf says it did not take it');
+  const res = await persistProject({ project: job(1), units: [], at: 1, storage: refusing });
+  assert.equal(res.tone, 'error');
+  assert.match(res.message, /^Not saved: this computer's storage for the app is full, so this job is not on its shelf\./);
+  assert.doesNotMatch(res.message, /Project saved/);
+  // A storage already full of other things: the job that does not fit is said, the ones before it stand.
+  const full = quotaStorage(64 * 1024);
+  full.setItem('somebody.else', 'x'.repeat(60 * 1024));
+  const big = await persistProject({ project: { ...job(2), units: [], note: 'y'.repeat(8 * 1024) }, units: [], at: 2, storage: full });
+  assert.equal(big.tone, 'error', big.message);
+  assert.match(big.message, /^Not saved: /);
+  assert.equal(listLocalProjects(full).length, 0, 'and indeed it is not there');
+  // A storage that takes it: saved, as before.
+  const ok = await persistProject({ project: job(3), units: [], at: 3, storage: quotaStorage() });
+  assert.equal(ok.message, 'Project saved on this computer.');
+});
+
+test('F20 after the review · the sheet still draws the logo of a job read back, and of an old job that carries it', () => {
+  const shelf = quotaStorage();
+  const row = saveLocalProject(shelf, { project: job(7, { href: PNG_200x100, width: 200, height: 100 }), units: [], at: 7 });
+  const back = loadLocalProject(shelf, row.id).project;
+  const sheetOf = (project) => layoutSetSheet({
+    drawing: { paper: true, build: () => [] }, title: titleFor({ project, profile: P, no: '02', name: 'x' }), profile: P,
+  });
+  const img = sheetOf(back).entities.find((e) => e.kind === 'image');
+  assert.ok(img, 'the logo is on the sheet');
+  assert.equal(img.href, PNG_200x100);
+  near(img.w, 24, 'w'); near(img.h, 12, 'h');
+  // A job written by F20's first build: the picture inside the job.
+  const old = quotaStorage();
+  old.setItem(LIBRARY_KEY, JSON.stringify({ projects: [{ id: 'loc_old', name: 'Old', project: job(8, { href: PNG_200x100, width: 200, height: 100 }), units: [] }] }));
+  const opened = loadLocalProject(old, 'loc_old').project;
+  assert.equal(sheetOf(opened).entities.find((e) => e.kind === 'image')?.href, PNG_200x100, 'an old job still draws its logo');
+  // Its next save keeps the picture once.
+  saveLocalProject(old, { project: opened, units: [], at: 9 });
+  assert.ok(!old.getItem(LIBRARY_KEY).includes(PNG_200x100), 'and the shelf now names it by its ref');
+  assert.equal(loadLocalProject(old, 'loc_old').project.titleBlock.company.logo.href, PNG_200x100);
+  // A ref with no picture behind it is no logo: the box, never a crash.
+  assert.equal(logoOf({ ref: 'logo-gone' }), null);
+});
+
+test('F20 after the review · the company memory and the cache keep a ref; a refused memory is said', async () => {
+  const mem = quotaStorage();
+  globalThis.localStorage = mem;
+  try {
+    const { useProjectStore } = await import('../src/stores/projectStore.js');
+    const s = useProjectStore.getState();
+    s.newProject('Cache');
+    s.setTitleBlock({ company: { name: 'SKYLON JOINERY', logo: BIG } });
+    for (let i = 1; i <= 25; i += 1) {
+      useProjectStore.getState().newProject(`Job ${i}`);
+      assert.deepEqual(useProjectStore.getState().project.titleBlock.company.logo, BIG, `job ${i} opens with the logo`);
+    }
+    assert.ok(!mem.getItem('cabinet-core.titleBlock.company').includes(BIG.href), 'the memory names it by ref');
+    // The current-job cache is written 250 ms after a change, with the ref.
+    useProjectStore.getState().setProjectName('Cached job');
+    await new Promise((r) => setTimeout(r, 400));
+    const cache = mem.getItem('cc.project.cache.v1') || '';
+    assert.ok(cache.includes('Cached job'), 'the cache was written');
+    assert.ok(!cache.includes(BIG.href) && cache.includes(logoId(BIG)), 'with the logo as its ref');
+    // A computer that refuses: the store answers false, and the window says so.
+    globalThis.localStorage = { getItem: () => null, setItem: () => { throw Object.assign(new Error('full'), { name: 'QuotaExceededError' }); }, removeItem: () => {} };
+    assert.deepEqual(useProjectStore.getState().setTitleBlock({ company: { logo: { href: PNG_200x100, width: 200, height: 100 } } }), { remembered: false });
+    assert.equal(useProjectStore.getState().project.titleBlock.company.logo.href, PNG_200x100, 'the job still has it');
+  } finally { delete globalThis.localStorage; }
+  const modal = readFileSync(new URL('../src/components/DrawingModal.jsx', import.meta.url), 'utf8');
+  assert.match(modal, /if \(remembered === false\)/, 'the window reads the answer');
+  assert.match(modal, /this computer's storage refused to keep it, so the next job will not open with it/);
 });

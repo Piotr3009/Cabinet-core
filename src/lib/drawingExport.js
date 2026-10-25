@@ -347,8 +347,9 @@ function browserLogoEnv() {
  * image"). A PNG or a JPG larger than `maxPx` on its long side is drawn down
  * to it (24 mm at 400 px is past 400 dpi on the paper); an SVG keeps its own
  * text for the sheet and gains its PNG for the PDF. What is kept may be at
- * most `maxKb` as data URLs, because it is remembered on this computer and
- * rides the project; past that the window says so and keeps nothing.
+ * most `maxKb` as data URLs, because it is kept in this computer's storage
+ * (once, beside the company memory: `lib/projectLibrary.js keepLogo`; a job
+ * carries only its `{ ref }`); past that the window says so and keeps nothing.
  *
  * @param {File} file
  * @param {object} profile    reads `drawings.set.logo { maxPx, maxKb }`

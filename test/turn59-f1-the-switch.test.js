@@ -255,7 +255,8 @@ const EXEMPT = {
     + 'numbered sheet buttons. *"nie zapomnij zostawić w stopce miejsca na '
     + 'firmę, daty, nazwy"*.'
     + ' T81 F2 · the window says the set in the owner\'s order (the 3D, every wall\'s fronts, without fronts, X-ray, the plans, the sections, the visualisation, the cut list); its sheet buttons walk the list the engine returns. *"najpierw chce widziec 3d jak zrobiles pierwsza strona, pozniej chce widziec wszystkie fronty ... nastepnie widok wszystkich scian bez frontow ... pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu wizualizacja"* (22.10.2026, 21:23)'
-    + ' T82 F20 · the Title block gets a LOGO row beside Company ("Choose image", a PNG, JPG or SVG read by lib/drawingExport.js readLogoFile, and "Remove"), the logo kept with the company (`setTitleBlock({ company: { logo } })`), so it is remembered on this computer where the company name is. *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
+    + ' T82 F20 · the Title block gets a LOGO row beside Company ("Choose image", a PNG, JPG or SVG read by lib/drawingExport.js readLogoFile, and "Remove"), the logo kept with the company (`setTitleBlock({ company: { logo } })`), so it is remembered on this computer where the company name is. *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
+    + ' T82 F20, after the review · the logo is kept once on this computer, and when the browser refuses to keep it the window says so (setTitleBlock answers { remembered }). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
   'src/pages/ConfiguratorPage.jsx':
     'T75 F22 · the Output menu\'s DXF export says the same banner as the CNC view\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."* '
     + 'T75 F20 · a Media wall, Sideboard, Vanity, Utility or Hallway job\'s first plus puts its shipped set on the first wall (insertSet, Room refuses first). *"NEW PROJECT with one of them offers the set first (the first plus point on the first wall)."* '
@@ -397,7 +398,8 @@ const FROZEN = {
   'src/components/DrawRoomModal.jsx': '31107a5dc23977013675fed7d5392ed5c4f89e82e86f9dc1f5c94433bf19d260',
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/DrawingModal.jsx': 'bb848a6a12c38904e09ee985ff90a3153db90c9245b33e1600eaff885c27e182',
+  // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/DrawingModal.jsx': 'dcff9259c93f1b48c97f8841bdd2665705b93f80b2e2b0102a4524dc44307540',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.

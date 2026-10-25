@@ -108,6 +108,9 @@ import {
 // `src/engine/**` is closed byte-for-byte tonight (lib/ledSpec.js says it in
 // full). The day the engine reopens it moves into `design.lighting`.
 import { migrateLedSpec } from '../lib/ledSpec.js';
+// T82 F20, after the review: the logo is kept once beside the company memory;
+// the cache and the memory carry its `{ ref }` and read it back whole.
+import { companyWithLogo, companyWithLogoRef, projectWithLogo, projectWithLogoRef } from '../lib/projectLibrary.js';
 // T51 (CLAUDE.md F6 · decision 1): the light rig lives WITH THE PROJECT — *"a
 // room with one window and a showroom want different rigs, and a saved job
 // should reopen looking as it did."*
@@ -1727,7 +1730,8 @@ function loadCache() {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed?.project || !Array.isArray(parsed.units)) return null;
-    return parsed;
+    // T82 F20, after the review: the cached job's logo comes back whole.
+    return { ...parsed, project: projectWithLogo(localStorage, parsed.project) };
   } catch {
     return null;
   }
@@ -1762,9 +1766,19 @@ function openAssignmentsFor(project) {
 // persists nothing, never reads it.
 const TITLE_BLOCK_COMPANY_KEY = 'cabinet-core.titleBlock.company';
 
+// T82 F20, after the review: the company's logo is kept ONCE under its own
+// key (`lib/projectLibrary.js keepLogo`); the memory carries its `{ ref }`.
+// The answer is whether this computer took it: false when the browser
+// refused (its storage full), and the Drawings window says so.
 function rememberTitleBlockCompany(company) {
-  if (!persistenceOn() || typeof localStorage === 'undefined') return;
-  try { localStorage.setItem(TITLE_BLOCK_COMPANY_KEY, JSON.stringify(company || {})); } catch { /* quota or private mode */ }
+  if (!persistenceOn() || typeof localStorage === 'undefined') return false;
+  try {
+    const kept = companyWithLogoRef(localStorage, company || {}, { prune: true });
+    // A picture that could not be kept once is not copied into the memory either.
+    if (typeof kept?.logo?.href === 'string') return false;
+    localStorage.setItem(TITLE_BLOCK_COMPANY_KEY, JSON.stringify(kept || {}));
+    return true;
+  } catch { return false; /* quota or private mode */ }
 }
 
 function recallTitleBlockCompany() {
@@ -1772,7 +1786,7 @@ function recallTitleBlockCompany() {
   try {
     const raw = localStorage.getItem(TITLE_BLOCK_COMPANY_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
-    return parsed && typeof parsed === 'object' ? parsed : null;
+    return parsed && typeof parsed === 'object' ? companyWithLogo(localStorage, parsed) : null;
   } catch { return null; }
 }
 
@@ -1788,7 +1802,9 @@ function saveCache(state) {
   cacheTimer = setTimeout(() => {
     cacheTimer = null;
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(cachePending));
+      // T82 F20, after the review: the cache keeps the logo as its `{ ref }`.
+      const kept = { ...cachePending, project: projectWithLogoRef(localStorage, cachePending.project) };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(kept));
     } catch { /* quota or private mode — the DB is the real home anyway */ }
   }, 250);
 }
@@ -1869,11 +1885,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   setTitleBlock: (patch) => {
     const prev = get().project.titleBlock || {};
     const next = { ...prev, ...(patch || {}) };
+    // T82 F20, after the review: whether this computer remembered the
+    // company (false: the browser refused, the window says so).
+    let remembered = null;
     if (patch?.company) {
       next.company = { ...(prev.company || {}), ...patch.company };
-      rememberTitleBlockCompany(next.company);
+      remembered = rememberTitleBlockCompany(next.company);
     }
     set((s) => ({ project: { ...s.project, titleBlock: next } }));
+    return { remembered };
   },
 
   /**

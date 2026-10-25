@@ -302,6 +302,11 @@ export const UNIT_TYPES = {
     label: 'HAWA pocket (Concepta III)',
     lisp: 'KIT_HAWA.lsp',
     hawaPocket: true,
+    // T82 F2, after the review (store:0) · its width is the pocket's (panel +
+    // 55 + panel, panel + 110 + panel), worked out and never shared: a
+    // share-out lays the run out AROUND it, as it does around a hood or a
+    // fridge (`engine/shareOut.js widthFixed`).
+    widthFixed: true,
     hingeRule: 'tall',
     cupRule: 'hingeCentres',
     legs: true,

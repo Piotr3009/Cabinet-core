@@ -57,7 +57,8 @@ export const LICENSED = {
   'src/engine/types.js': {
     why: 'T82 F2: HAWA_POCKET (label "HAWA pocket (Concepta III)", lisp KIT_HAWA.lsp, heightGroup tall, mount floor, '
       + 'legs, carcass top pocket and sides, bottom, back none, supports cornice, prefix HP), in UNIT_TYPE_ORDER before '
-      + `the free panel, isHawaPocket, and its params spread in defaultParamsFor (hawaPocketDefaultParams). ${OWNER}`,
+      + `the free panel, isHawaPocket, and its params spread in defaultParamsFor (hawaPocketDefaultParams). ${OWNER}`
+      + ' T82 F2, after the review: HAWA_POCKET declares widthFixed, the flag the share-out reads for a hood or a fridge, so a share-out lays the run out around the pocket and never widens it.',
     gates: ['hawaPocket'],
   },
   'src/engine/cabinet.js': {

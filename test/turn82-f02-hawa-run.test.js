@@ -359,3 +359,49 @@ test('T82 F2 . RightPanel has the POCKET DOOR section, its figures read off the 
   assert.ok(section.length > 0, 'no PocketDoorSection');
   assert.doesNotMatch(section.slice(0, 6000), /\+ 92|TB - M|- 320/, 'the panel re-derives a HAWA figure');
 });
+
+// === 10 . AFTER THE REVIEW OF PART A =========================================
+//
+// Four faults the adversarial review of PART A reproduced (verify:store:0 to 3)
+// and CLAUDE.md's own laws decide: *"the room refuses in words, the engine
+// never squashes"*, *"never a silent change of the door the owner asked
+// for"*, *"the pocket's and the cabinets' front edges in one plane"* (F3).
+
+/** Every pair of units on wall 0 whose carcasses overlap along it, by number. */
+function overlapsOnWall() {
+  const us = S().units.filter((u) => (u.position?.wall ?? 0) === 0 && getUnitType(u.type).mount === 'floor');
+  const out = [];
+  for (let i = 0; i < us.length; i += 1) {
+    for (let j = i + 1; j < us.length; j += 1) {
+      const a = us[i];
+      const b = us[j];
+      const ov = Math.min(a.position.x_mm + a.params.width, b.position.x_mm + b.params.width)
+        - Math.max(a.position.x_mm, b.position.x_mm);
+      if (ov > 1e-6) out.push([a.params.unit_num, b.params.unit_num, ov]);
+    }
+  }
+  return out;
+}
+const rightOf = (id) => unit(id).position.x_mm + unit(id).params.width;
+
+test('T82 F2, after the review (store:0) . the share-out lays the run out AROUND the pocket: its width is worked out, never shared', () => {
+  S().newProject();
+  S().setRoom({ corners: rectCorners(1500, 3000), height: 2500 });
+  const w1 = S().addUnit('WARDROBE', { wall: 0, x: 500, params: { width: 500 } }).id;
+  S().moveUnit(w1, -100, 0);
+  const p = S().addUnit(POCKET, { near: w1, side: 'R' }).id;
+  S().setPocket(p, { hand: 'R' });
+  const w2 = S().addUnit('WARDROBE', { near: p, side: 'R', params: { width: 500 } }).id;
+  const width = unit(p).params.width;
+  assert.deepEqual(pocketElement(p)?.covers, [w2]);
+  const view = S().shareOutView(w2);
+  assert.ok(view?.plan, 'the stage offers no share-out (the gap is the review\'s 355)');
+  const res = S().shareOutRun(w2);
+  assert.equal(res.ok, true, res.message || '');
+  assert.equal(unit(p).params.width, width, 'the share-out changed the pocket\'s width');
+  const tol = P.autoParts.topInfill.runGap + 1e-6;
+  assert.ok(Math.abs(rightOf(w1) - unit(p).position.x_mm) <= tol, 'a hole opened left of the pocket');
+  assert.ok(Math.abs(rightOf(p) - unit(w2).position.x_mm) <= tol, 'a hole opened right of the pocket');
+  assert.deepEqual(overlapsOnWall(), []);
+  assert.deepEqual(pocketElement(p)?.covers, [w2], 'the covered wardrobe lost its door');
+});

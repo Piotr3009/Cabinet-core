@@ -43,9 +43,6 @@
 // never reaches a line of this file.
 
 import { getUnitType } from './types.js';
-// The review of 25.10.2026: a covered cabinet's front plane is its back line
-// (the house's one reader of where a unit stands off its wall) plus its depth.
-import { wallGapOf } from './runs.js';
 import WEIGHT_25 from '../../reference/hawa/weight-25.json' with { type: 'json' };
 import WEIGHT_35 from '../../reference/hawa/weight-35.json' with { type: 'json' };
 
@@ -585,18 +582,22 @@ export function checkPlanes(planes, K) {
   if (list.length < 2) return null;
   const front = Math.max(...list.map((q) => q.frontMm));
   const back = Math.min(...list.map((q) => q.frontMm));
-  if (front - back <= PLANE_TOLERANCE_MM) return null;
+  if (front - back < PLANE_TOLERANCE_MM) return null;
   const name = (q) => (q.unitNum ? `${q.unitNum}: ` : '');
   const said = list.map((q, i) => `${name(q)}${hawaMm(q.depth)} deep, its front ${hawaMm(q.frontMm)}${i === 0 ? ' from the wall' : ''}`);
-  const behind = list.filter((q) => front - q.frontMm > PLANE_TOLERANCE_MM);
+  const behind = list.filter((q) => front - q.frontMm >= PLANE_TOLERANCE_MM);
   const cure = behind.map((q) => `${q.unitNum || `the ${hawaMm(q.depth)} deep one`} ${hawaMm(front - q.frontMm)} forward`);
   return `#38 HAWA: the pocket covers cabinets whose fronts are not in one line (${said.join('; ')}); the door closes `
     + `${hawaMm(K.hawaZFront)} in front of the foremost and ${hawaMm(K.hawaZFront + front - back)} off the other`
     + `${behind.length > 1 ? 's' : ''}: give them one depth or stand ${cure.join(' and ')}`;
 }
 
-/** Fronts nearer than this are one plane: a floating sum's noise, never a millimetre a joiner sees. */
-const PLANE_TOLERANCE_MM = 0.01;
+/**
+ * Fronts nearer than this are one plane: the store's own law for "one plane"
+ * (slice A3, runs.js pocketFrontLine `equal`), so the store and the engine
+ * never disagree about whether a pocket's covered fronts are in one line.
+ */
+const PLANE_TOLERANCE_MM = 0.5;
 
 /** hawa-check-47: the 22 in place of an 18 front (D3). */
 export function check47(frontT, K) {
@@ -683,11 +684,12 @@ function hasDrawerFronts(unit) {
  *           | 'wall' | 'none'); absent is 'none' (a run end, 1.5). A covered
  *           unit's own end panel on its far side is 'endPanel'.
  * @returns {{doors: Array}|null}  one entry per covered side:
- *   { side, units, unitNums, spanMm, KT1, far, freeEndClearanceMm, drawerFronts,
- *     frontPlanes: [{ unit, unitNum, depth, frontMm }] }
- *   `frontPlanes` (after the review of 25.10.2026): each covered cabinet's
- *   carcass front from the wall, `runs.js wallGapOf` plus its depth; the
- *   figures stand the pocket on that plane and refuse a cover out of line.
+ *   { side, units, unitNums, spanMm, KT1, far, freeEndClearanceMm, drawerFronts, depths }
+ *   `depths` (after the review of 25.10.2026): each covered cabinet's depth,
+ *   in the order of `units`. The store adds `fronts` beside it (slice A3,
+ *   runs.js runPocketParams through `pocketFrontLine`: each covered cabinet's
+ *   front line from the wall, `wallGapOf` plus its depth); the figures stand
+ *   the pocket on the foremost and refuse a cover out of line, in words.
  */
 export function pocketCoverOf(pocketUnit, covered, profile, { beyond = {} } = {}) {
   if (!pocketUnit) return null;
@@ -734,12 +736,7 @@ export function pocketCoverOf(pocketUnit, covered, profile, { beyond = {} } = {}
       far,
       freeEndClearanceMm: farClearanceMm(far, profile),
       drawerFronts: list.filter(hasDrawerFronts).map((u) => String(u.params?.unit_num ?? u.id)),
-      frontPlanes: list.map((u) => ({
-        unit: u.id,
-        unitNum: String(u.params?.unit_num ?? u.id),
-        depth: Number(u.params?.depth) || 0,
-        frontMm: wallGapOf(u, profile) + (Number(u.params?.depth) || 0),
-      })),
+      depths: list.map((u) => Number(u.params?.depth) || 0),
     });
   }
   return doors.length ? { doors } : null;
@@ -792,13 +789,20 @@ export function hawaPocketFigures(params, profile) {
   const coverKT1 = (c) => Number(c.KT1) || Number(params?.depth) || 0;
   const pocketKT1 = entries.length ? Math.min(...entries.map((e) => coverKT1(e.c))) : null;
   const clearance = Math.max(0, Number(profile?.room?.wallBackClearance) || 0);
-  // Each covered cabinet's front plane from the wall: the cover's own (its
-  // units' backs and depths), else the house's: its back on the wall clearance.
-  const planes = entries.flatMap((e) => (Array.isArray(e.c.frontPlanes) && e.c.frontPlanes.length
-    ? e.c.frontPlanes.map((q) => ({ unitNum: q.unitNum ?? null, depth: Number(q.depth), frontMm: Number(q.frontMm) }))
-    : [{
+  // Each covered cabinet's front line from the wall: the store's `fronts`
+  // (slice A3, runs.js pocketFrontLine: its back line plus its depth, in the
+  // order of `units`), else the house's: its back on the wall clearance.
+  const planes = entries.flatMap((e) => {
+    const fronts = Array.isArray(e.c.fronts) ? e.c.fronts : [];
+    const read = fronts.map((mm, i) => ({
+      unitNum: e.c.unitNums?.[i] ?? null,
+      depth: Number(e.c.depths?.[i]) || coverKT1(e.c),
+      frontMm: Number(mm),
+    })).filter((q) => q.frontMm != null && Number.isFinite(q.frontMm) && fronts.length);
+    return read.length ? read : [{
       unitNum: (e.c.unitNums || []).join(' and ') || null, depth: coverKT1(e.c), frontMm: clearance + coverKT1(e.c),
-    }]));
+    }];
+  });
   const rPlanes = checkPlanes(planes, K);
   if (rPlanes) refusals.push({ n: HAWA_CHECKS.POCKET_DEPTH, code: HAWA_CODES.POCKET_DEPTH, side: null, message: rPlanes });
 

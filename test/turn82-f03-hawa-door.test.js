@@ -403,10 +403,8 @@ test('F3 · pocketCoverOf: the covered units in order become the kit\'s span, KT
       far: 'none',
       freeEndClearanceMm: 1.5,
       drawerFronts: [],
-      // AMENDED AFTER THE REVIEW (25.10.2026): each covered cabinet's front plane from the wall.
-      frontPlanes: [{
-        unit: 'b', unitNum: '01', depth: 580, frontMm: (Number(P.room.wallBackClearance) || 0) + 580,
-      }],
+      // AMENDED AFTER THE REVIEW (25.10.2026): each covered cabinet's depth, for #38's words.
+      depths: [580],
     }],
   });
   const two = H.pocketCoverOf(pocketUnit, [b, c], P, { beyond: { R: 'wall' } }).doors[0];
@@ -599,10 +597,17 @@ test('F2/F3 review (b) · the pocket stands ON the covered cabinets\' front plan
   const pocketUnit = { id: 'p', type: 'HAWA_POCKET', position: { wall: 0, x_mm: 0 }, params: { ...pocket({ frontT: 19 }), width: 93 } };
   const t1 = { id: 'a', type: 'BUDTALL', position: { wall: 0, x_mm: 93 }, params: { width: 300, depth: 600, wall_gap: 10, unit_num: 'T01' } };
   const t2 = { id: 'b', type: 'BUDTALL', position: { wall: 0, x_mm: 393 }, params: { width: 300, depth: 560, wall_gap: 50, unit_num: 'T02' } };
-  const cover = H.pocketCoverOf(pocketUnit, [t1, t2], P);
-  assert.deepEqual(cover.doors[0].frontPlanes, [
-    { unit: 'a', unitNum: 'T01', depth: 600, frontMm: 610 }, { unit: 'b', unitNum: 'T02', depth: 560, frontMm: 610 },
-  ]);
+  // The store hands each door its covered cabinets' front lines (slice A3, runs.js
+  // pocketFrontLine: `wallGapOf` plus the depth), as `fronts` beside pocketCoverOf's `depths`.
+  const withFronts = (pu, units) => {
+    const cover = H.pocketCoverOf(pu, units, P);
+    const line = (u) => (Number(u.params.wall_gap ?? P.room.wallBackClearance) || 0) + u.params.depth;
+    for (const d of cover.doors) d.fronts = d.units.map((id) => line(units.find((u) => u.id === id)));
+    return cover;
+  };
+  const cover = withFronts(pocketUnit, [t1, t2]);
+  assert.deepEqual(cover.doors[0].depths, [600, 560]);
+  assert.deepEqual(cover.doors[0].fronts, [610, 610]);
   const f = fig({ ...pocketUnit.params, pocket_cover: cover });
   assert.equal(f.KT1, 560, 'the pocket\'s one KT1');
   assert.equal(f.frontPlaneMm, 610, 'the plane the pocket stands on');
@@ -613,7 +618,7 @@ test('F2/F3 review (b) · the pocket stands ON the covered cabinets\' front plan
   const mid = { id: 'p', type: 'HAWA_POCKET', position: { wall: 0, x_mm: 450 }, params: { ...pocket({ doors: 2, frontT: 19 }), width: 148 } };
   const l = { id: 'l', type: 'BUDTALL', position: { wall: 0, x_mm: 0 }, params: { width: 450, depth: 600, unit_num: 'T01' } };
   const r = { id: 'r', type: 'BUDTALL', position: { wall: 0, x_mm: 598 }, params: { width: 450, depth: 580, unit_num: 'T02' } };
-  const two = fig({ ...mid.params, pocket_cover: H.pocketCoverOf(mid, [l, r], P) });
+  const two = fig({ ...mid.params, pocket_cover: withFronts(mid, [l, r]) });
   assert.equal(two.frontPlaneMm, 610, 'the foremost: no door closes inside a carcass');
   assert.equal(two.backFromWallMm, 610 - two.KT);
   assert.deepEqual(two.refusals.map((x) => x.message), ['#38 HAWA: the pocket covers cabinets whose fronts are not in one line '

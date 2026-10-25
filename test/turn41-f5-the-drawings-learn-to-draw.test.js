@@ -242,20 +242,44 @@ test('F5c — two chains that would say the same thing are drawn once', () => {
   assert.deepEqual(base.detailed, base.grouped);
 });
 
-test('F5c — a 3 mm gap between fronts is not dimensioned', () => {
+// ─── AMENDED 25.10.2026 (T82 F21): THE GAP IS A DIMENSION ──────────────────
+//
+// T41 F5c dropped every edge closer than the front gap, so "a 3 mm gap
+// between fronts is not dimensioned" and the two segments either side merged.
+// On the T81 fronts sheet that printed 360 · 366 for drawer fronts of 360 and
+// 363: the gap fell into the front above it. The owner, 24.10.2026 (19:34):
+// *"jak mamy szuflady to nie pokazuje dokladnie wymiarow frontow i przerw
+// pomiedzy nimi czy pomiedzy drzwiami tylko 207 i 200 co nie ma sensu"*.
+// CLAUDE.md T82 F21: "the height chain is FRONT, GAP, FRONT (363 · 3 · 360 on
+// the BUDR2), the gaps dimensioned as the owner's DXF dimensions them". The
+// 2026 law replaces T41's: the gap is dimensioned, and where its figure does
+// not fit its segment the set's chain lifts it beside the line on a leader
+// (`setChains.js`, T71's collision rule), never dropped. And a chain is ONE
+// unit's stack (verify/t82/f21-probe.md row 11: edges pooled across the wall
+// made a 3 from two units' fronts that is no gap at all). The same bank, the
+// same arithmetic: each unit's chain spans its own fronts, and every gap of
+// the BUDR4 is in its chain.
+test('F5c, AMENDED BY T82 F21: a 3 mm gap between fronts IS dimensioned, FRONT, GAP, FRONT', () => {
   const bank = [
     entry(unit('BUDR4', { unit_num: '01', width: 600 }, { wall: 0, x_mm: 0 })),
     entry(unit('BUD', { unit_num: '02', width: 800 }, { wall: 0, x_mm: 600 })),
   ];
   const group = wallGroups(bank, P)[0];
-  const raw = heightChains(group.members).fronts;
-  const drawn = heightChains(group.members, { floorMm: P.doors.gap }).fronts;
-  assert.ok(raw.some((v) => v <= P.doors.gap), `the gaps are really there: ${JSON.stringify(raw)}`);
-  assert.ok(!drawn.some((v) => v <= P.doors.gap), `and none is dimensioned: ${JSON.stringify(drawn)}`);
-  // THE CHAIN STILL SPANS THE RUN. Dropping an edge must not shorten the chain
-  // — the segments either side merge, which is what a draughtsman does by hand.
+  const { stacks, fronts: drawn } = heightChains(group.members);
+  const drawers = stacks.find((s) => s.ids.includes('u-01'));
+  const gaps = drawers.values.filter((v) => Math.abs(v - P.doors.gap) < 0.5);
+  assert.equal(gaps.length, 3, `the three gaps of the BUDR4 are in its chain: ${JSON.stringify(drawers.values)}`);
+  // The T41 option is retired: handing the gap in as a legibility floor
+  // drops nothing any more.
+  assert.deepEqual(heightChains(group.members, { floorMm: P.doors.gap }).fronts, drawn);
+  // EVERY CHAIN STILL SPANS ITS FRONTS, from the lowest front edge to the
+  // highest; the BUD's door is a chain of its own.
   const sum = (a) => Math.round(a.reduce((n, v) => n + v, 0) * 10) / 10;
-  assert.equal(sum(drawn), sum(raw), 'the chain still reaches the top of the run');
+  for (const s of stacks) {
+    assert.equal(sum(s.values), Math.round((s.edges[s.edges.length - 1] - s.edges[0]) * 10) / 10,
+      'the chain still reaches the top of its fronts');
+  }
+  assert.ok(stacks.some((s) => s.ids.includes('u-02') && s.values.length === 1), 'the BUD 800\'s doors, one figure');
 });
 
 // ═══ F5d — THE SHEET FILLS THE PAPER ════════════════════════════════════════

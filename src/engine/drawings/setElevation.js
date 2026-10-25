@@ -15,7 +15,9 @@
 import {
   boundsOf, entLine as line, entText as text,
 } from './primitives.js';
-import { heightChains, mountingBands, widthChains } from './wallElevation.js';
+import {
+  frontChainLines, leafChains, mountingBands, widthChains, widthGroups,
+} from './wallElevation.js';
 import { chainH, chainV } from './setChains.js';
 import { roomWalls } from '../room.js';
 // T81 · the sheets draw what the room draws, through the one projector.
@@ -146,12 +148,15 @@ function runChains(group, { withFronts, ends, worktops, ceiling, profile, ctx })
     const bandTop = Math.max(...topBand.members.map((m) => m.top));
     out.push(chainH({ edges, y: bandTop + ctx.chainFirst, yObj: bandTop, ctx, above: true }));
   }
-  // BOTTOM: the floor run with its scribes, and the overall.
+  // BOTTOM: the floor run with its scribes, and the overall. T82 F21: on a
+  // sheet with fronts the floor run's LEAF, GAP, LEAF hangs on the second line
+  // under its unit chain, and the overall steps out to the third.
+  const floorLeaves = withFronts && floor ? leafChains(floor.members).leafEdges : [];
   if (floor) {
     const edges = [...new Set([...ends, ...widthChains(floor.members, profile).detailedEdges])].sort((a, b) => a - b);
     out.push(chainH({ edges, y: -ctx.chainFirst, yObj: 0, ctx, above: false }));
     if (edges.length > 2) {
-      out.push(chainH({ edges: [edges[0], edges[edges.length - 1]], y: -ctx.chainSecond, ctx, above: false }));
+      out.push(chainH({ edges: [edges[0], edges[edges.length - 1]], y: floorLeaves.length > 1 ? -ctx.chainThird : -ctx.chainSecond, ctx, above: false }));
     }
   }
   // LEFT: heights.
@@ -163,10 +168,17 @@ function runChains(group, { withFronts, ends, worktops, ceiling, profile, ctx })
   const outer = [0, group.top];
   if (ceiling > group.top) outer.push(ceiling);
   if (outer[outer.length - 1] > 0) out.push(chainV({ edges: outer, x: left - ctx.chainSecond, ctx, left: true }));
-  // RIGHT.
+  // RIGHT. T82 F21: every unit's own FRONT, GAP, FRONT (never two units'
+  // edges pooled into one chain), one line per stack that overlaps another in
+  // height; the inner line takes the extension lines, as T71's inner chains do.
   if (withFronts) {
-    const { frontEdges } = heightChains(group.members, { floorMm: Number(profile?.doors?.gap) || 0 });
-    if (frontEdges.length > 1) out.push(chainV({ edges: frontEdges, x: right + ctx.chainFirst, xObj: right, ctx, left: false }));
+    frontChainLines(group.members).forEach((line, k) => {
+      for (const stack of line) {
+        out.push(chainV({
+          edges: stack.edges, x: right + ctx.chainFirst + k * (ctx.chainSecond - ctx.chainFirst), xObj: k === 0 ? right : null, ctx, left: false,
+        }));
+      }
+    });
   } else {
     const shelved = (floor?.members || []).find((m) => (m.result.assemblies?.shelves || []).length);
     if (shelved) {
@@ -175,6 +187,30 @@ function runChains(group, { withFronts, ends, worktops, ceiling, profile, ctx })
       const ys = new Set([base, base + H]);
       for (const s of shelved.result.assemblies.shelves) { ys.add(base + s.y); ys.add(base + s.y + (s.thickness || 18)); }
       out.push(chainV({ edges: [...ys].sort((a, b) => a - b), x: right + ctx.chainFirst, xObj: right, ctx, left: false }));
+    }
+  }
+  // T82 F21: the leaf chains, last, so every chain T71 hung keeps its place
+  // in the list. The floor run's on its second line below the floor.
+  if (floorLeaves.length > 1) out.push(chainH({ edges: floorLeaves, y: -ctx.chainSecond, ctx, above: false }));
+  // A hung run's under its own carcasses, in the open wall between it and
+  // what stands below, one chain per run of touching units (a tall unit
+  // between two wall runs is never crossed), first leaf to last (a figure at
+  // a carcass end would hang over the tall unit beside it). It needs the room
+  // of two chain lines there, `chainSecond`; where a unit or a worktop stands
+  // in that room the run's leaves are not hung over it.
+  if (withFronts) {
+    for (const band of bands.slice(1)) {
+      for (const run of widthGroups(band.members, profile)) {
+        const { leafEdges } = leafChains(run.members, { ends: false });
+        if (leafEdges.length < 2) continue;
+        const base = Math.min(...run.members.map((m) => m.base));
+        const room = { x0: run.from, x1: run.to, y0: base - ctx.chainSecond, y1: base };
+        // Half a millimetre, the house's "same edge" (wallElevation.js SAME).
+        const across = (x0, x1, y0, y1) => x0 < room.x1 - 0.5 && x1 > room.x0 + 0.5 && y0 < room.y1 - 0.5 && y1 > room.y0;
+        const blocked = group.members.some((m) => !run.members.includes(m) && across(m.x, m.x + m.width, m.base, m.top))
+          || worktops.some((w) => across(w.x, w.x + w.w, w.y, w.y + w.h));
+        if (!blocked) out.push(chainH({ edges: leafEdges, y: base - ctx.chainFirst, ctx, above: false }));
+      }
     }
   }
   void top;

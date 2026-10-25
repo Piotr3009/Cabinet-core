@@ -206,11 +206,34 @@ test('T71 · on the proof kitchen no two figures share a spot, and every chain s
     const built = buildRunElevation(group, { withFronts, room: HH_ROOM, worktops: onWall, profile: P, ctx });
     assert.equal(figureCollisions(built.chains, ctx.textHeight).length, 0, `${withFronts ? 'fronts' : 'internal'}: no two figures collide`);
     // Every figure is outside the run (in a band), never over the cabinets.
+    //
+    // AMENDED 25.10.2026 (T82 F21): CLAUDE.md T82 F21, "the width chain gains
+    // the same for doors: LEAF, GAP, LEAF" (the owner, 24.10.2026: *"nie
+    // pokazuje dokladnie wymiarow frontow i przerw pomiedzy nimi czy pomiedzy
+    // drzwiami"*). A hung run's leaf chain stands in the open wall under its
+    // wall units, over the worktop, where no cabinet is: inside the run's
+    // outer rectangle, so the law is asked of what it was always about. No
+    // figure's own box lies over a cabinet or over a worktop; every other
+    // figure is in a band, as T71 hung it.
     const run = { x: group.from, y: 0, w: group.to - group.from, h: Math.max(group.top, ...onWall.map((w) => w.y + w.h)) };
+    // The wall run's base: the second mounting level on the wall.
+    const bases = [...new Set(group.members.map((m) => m.base))].sort((a, b) => a - b);
+    const hungBase = bases.length > 1 ? bases[1] : -Infinity;
+    const solids = [
+      ...group.members.map((m) => ({ x0: m.x, x1: m.x + m.width, y0: m.base, y1: m.top })),
+      ...onWall.map((w) => ({ x0: w.x, x1: w.x + w.w, y0: w.y, y1: w.y + w.h })),
+    ];
     for (const ch of built.chains) {
+      const rot = ch.some((e) => e.kind === 'text' && e.rotate);
       for (const f of ch.figures) {
-        const over = f.x > run.x && f.x < run.x + run.w && f.y > run.y && f.y < run.y + run.h;
-        assert.ok(!over, `figure ${f.caption} at ${f.x},${f.y} sits over the run`);
+        const half = figureWidth(f.caption, ctx.textHeight) / 2;
+        const [hx, hy] = rot ? [ctx.textHeight / 2, half] : [half, ctx.textHeight / 2];
+        const onSolid = solids.some((r) => f.x + hx > r.x0 && f.x - hx < r.x1 && f.y + hy > r.y0 && f.y - hy < r.y1);
+        assert.ok(!onSolid, `figure ${f.caption} at ${f.x},${f.y} sits over a cabinet or a worktop`);
+        // Inside the run's rectangle, only in the open wall under the wall run.
+        const inRun = f.x > run.x && f.x < run.x + run.w && f.y > run.y && f.y < run.y + run.h;
+        const openWall = f.y < hungBase && f.y > Math.max(...onWall.map((w) => w.y + w.h));
+        assert.ok(!inRun || openWall, `figure ${f.caption} at ${f.x},${f.y} sits over the run`);
       }
     }
     // Each dimension once in its home: no chain repeats a segment, and the

@@ -305,6 +305,10 @@ export const NEW_FILES = [
   // T82 F20 (25.10.2026): the logo and the company on the sheet
   'test/turn82-f20-logo.test.js',
   'scripts/t78-classify.d/f43-t82-f20.mjs',
+  // T82 F21 (25.10.2026): the fronts' own dimensions; F21's probe
+  'scripts/t82-probe-f21.mjs',
+  'test/turn82-f21-chains.test.js',
+  'scripts/t78-classify.d/f43-t82-f21.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

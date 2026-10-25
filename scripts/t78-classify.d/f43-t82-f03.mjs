@@ -72,7 +72,8 @@ export const GATES = {
 export const LICENSED = {
   'src/engine/cabinet.js': {
     why: 'T82 F3: normalizeParams, a unit with `params.pocket_covered` cuts no door of its own (the HAWA door covers it, '
-      + `KIT_HAWA.lsp D17); nothing else of its cut moves. ${OWNER}`,
+      + `KIT_HAWA.lsp D17); nothing else of its cut moves. ${OWNER}`
+      + ' T82 F2, after the review: a Pull pocket door goes through the house\'s one handle law as the tall door it is (its holes, meta.handle, drillSummary.handles), a Push door takes none; the door carries its hinge edge as meta.hinge.',
     gates: ['pocketCovered'],
   },
   'src/engine/checks.js': {

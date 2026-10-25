@@ -3836,6 +3836,10 @@ export function computeCabinet(params, profileOverride) {
             holes: part.holes.map((hole) => [...hole]),
             ...(part.grooves ? { grooves: part.grooves.map((g) => [...g]) } : {}),
           },
+          // The review of 25.10.2026: the door's hinge edge, seen from the
+          // room, in the house's own key, so the handle law puts a Pull door's
+          // bar on its free edge as it puts a front's.
+          ...(isDoor ? { hinge: hawaFigures.doors.find((d) => d.id === part.id)?.hingeEdge || null } : {}),
         },
       }));
     }
@@ -9925,9 +9929,17 @@ export function computeCabinet(params, profileOverride) {
   // board the cabinet says so and drills neither — the same grammar F3 uses
   // for a frame that will not fit.
   const handlePlacements = [];
-  for (const pnl of panels.filter((x) => x.role === 'front')) {
+  // ─── T82 F2, AFTER THE REVIEW: A PULL POCKET DOOR IS GRIPPED AS A DOOR ───
+  // CLAUDE.md T82 NOT THIS TURN names what stands in for the Pull handle's
+  // own geometry: *"a handle as today's bar on the door, no collision study"*.
+  // So a Pull pocket door (`hawaFigures.push` false) takes the project's
+  // handle by this very law, asked as the tall door it is (a FRONT of its
+  // kit's class); a Push door takes none, and with no handle asked nothing is
+  // drilled (R9). Its role stays `pocket_door`: only this law is asked of it.
+  const pullPocketDoor = (x) => x.role === 'pocket_door' && hawaFigures && hawaFigures.push === false;
+  for (const pnl of panels.filter((x) => x.role === 'front' || pullPocketDoor(x))) {
     const resolved = resolveHandle({
-      panel: pnl,
+      panel: pnl.role === 'pocket_door' ? { ...pnl, role: 'front', part: 'FRONT' } : pnl,
       unitType: type,
       project: cfg.handle,
       own: cfg.frontHandles?.[pnl.id] || null,

@@ -621,3 +621,31 @@ test('F2/F3 review (b) · the pocket stands ON the covered cabinets\' front plan
   // A cover handed in with no planes (a bare kit, a golden): the house's clearance behind each cabinet.
   assert.equal(fig(pocket({ cover: coverOne(500, 580) })).frontPlaneMm, (Number(P.room.wallBackClearance) || 0) + 580);
 });
+
+test('F2 review (c) · a Pull pocket door takes the project\'s handle as a front does (a bar on the door, no collision study); Push takes none', () => {
+  const BAR = { type: 'bar', centres_mm: 128 };
+  const at = (push) => computeCabinet({
+    ...pocket({ push, cover: coverOne(500, 580) }), project_handle: BAR,
+  }, P);
+  const pull = at(false);
+  const door = pull.panels.find((p) => p.part === 'POCKET-DOOR');
+  const drills = pull.drills.filter((d) => d.kind === 'handle' && d.panel === door.id);
+  assert.equal(drills.length, 2, 'the bar\'s two holes on the door');
+  assert.equal(door.meta.handle?.type, 'bar');
+  assert.equal(pull.drillSummary.handles?.length, 1, 'the BOM counts it (drillSummary.handles)');
+  assert.equal(pull.drillSummary.handles[0].panel, door.id);
+  // On the free edge, as the house's own tall door hinged on the same side: the
+  // cut frame is the leaf's back, so a door hinged L carries its bar at the low x.
+  assert.equal(door.meta.hinge, 'L', 'the hinge edge is the pocket side (hand R)');
+  assert.equal(door.meta.handle.class, 'tall-door');
+  const house = computeCabinet({ ...defaultParamsFor('BUDTALL', P), project_handle: BAR, front_type: 'F', doors: { count: 1, hinge: 'L' } }, P)
+    .panels.find((p) => p.part === 'FRONT').meta.handle;
+  assert.equal(door.meta.handle.x, house.x, 'the bar where a flat tall door hinged L carries it');
+  assert.ok(door.meta.handle.x < door.w / 2, `the free edge (x ${door.meta.handle.x} of ${door.w})`);
+  const push = at(true);
+  assert.equal(push.drills.filter((d) => d.kind === 'handle').length, 0, 'Push: no handle');
+  assert.equal(push.drillSummary.handles, undefined);
+  // No project handle: nothing drilled on a Pull door either (R9: no handle, no drilling).
+  const bare = computeCabinet(pocket({ push: false, cover: coverOne(500, 580) }), P);
+  assert.equal(bare.drills.filter((d) => d.kind === 'handle').length, 0);
+});

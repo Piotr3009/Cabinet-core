@@ -26,7 +26,9 @@
 // panela bo mi wchodzi w sciane"*: a panel stuck to a chimney's front grows
 // along that face, its thickness keeps its width, the size window and the
 // Check read the same obstacles the move reads, and its back inset is capped
-// by the room, not by a cabinet's 300.
+// by the room, not by a cabinet's 300. F19: a panel on a cabinet's FRONT
+// (`standsInFrontOf`, collision.js) neither holds the cabinet off nor is held
+// off by it, and the list offers "Unit NN, front".
 //
 // THE STAGE (every test builds it afresh): a 5000 x 3000 room, 2500 high; a
 // box bx1 at x 4400 (400 wide, 300 deep) on wall 1; a chimney on wall 1 at
@@ -47,9 +49,10 @@ import { boxCorners } from '../src/engine/room.js';
 import {
   attachTargets, attachTargetByKey, attachPlan, obstaclesBeyond, obstacleOnWall, UNIT_FACES, OBSTACLE_FACES,
 } from '../src/engine/attachPanel.js';
-// T82 F17 reads its new name through the module, so a missing one fails its
-// own test and leaves the chat-fix's rows standing.
+// T82 F17 and F19 read the two new names through the modules, so a missing one
+// fails its own test and leaves the chat-fix's rows standing.
 import * as ATTACH from '../src/engine/attachPanel.js';
+import * as COLLISION from '../src/engine/collision.js';
 import { useProjectStore, validateUnit } from '../src/stores/projectStore.js';
 
 const S = () => useProjectStore.getState();
@@ -109,15 +112,17 @@ test('CHAT-FIX 25.10 . the stage: the numbers every assertion below is measured 
 
 // === 1 . THE LIST OF SURFACES ================================================
 
-test('CHAT-FIX 25.10 . attachTargetsFor: wall, floor, ceiling, every other unit\'s three faces, every chimney\'s and box\'s three faces, never the panel itself', () => {
+test('CHAT-FIX 25.10 . attachTargetsFor: wall, floor, ceiling, every other unit\'s four faces (T82 F19: its front), every chimney\'s and box\'s three faces, never the panel itself', () => {
   const { bud, wud, panel, chimney } = stage();
   const targets = S().attachTargetsFor(panel);
   assert.deepEqual(targets.slice(0, 3).map((t) => t.key), ['wall', 'floor', 'ceiling']);
   assert.deepEqual(targets.slice(0, 3).map((t) => t.label), ['Wall (flush)', 'Floor', 'Ceiling']);
   const keys = targets.map((t) => t.key);
   const labels = Object.fromEntries(targets.map((t) => [t.key, t.label]));
-  // The BUD (Unit 01) and the WUD (Unit WU01): left, right, top, labelled in words.
-  assert.deepEqual(UNIT_FACES, ['left', 'right', 'top']);
+  // The BUD (Unit 01) and the WUD (Unit WU01): left, right, top, labelled in
+  // words; and since T82 F19 their FRONT too (a panel covering a cabinet's
+  // front, the cladding the chat-fix left out).
+  assert.deepEqual(UNIT_FACES, ['left', 'right', 'top', 'front']);
   for (const face of UNIT_FACES) {
     assert.ok(keys.includes(`unit:${bud}:${face}`), `no unit:${bud}:${face}`);
     assert.ok(keys.includes(`unit:${wud}:${face}`), `no unit:${wud}:${face}`);
@@ -125,7 +130,9 @@ test('CHAT-FIX 25.10 . attachTargetsFor: wall, floor, ceiling, every other unit\
   assert.equal(labels[`unit:${bud}:left`], 'Unit 01, left side');
   assert.equal(labels[`unit:${bud}:right`], 'Unit 01, right side');
   assert.equal(labels[`unit:${bud}:top`], 'Unit 01, top');
+  assert.equal(labels[`unit:${bud}:front`], 'Unit 01, front');
   assert.equal(labels[`unit:${wud}:left`], 'Unit WU01, left side');
+  assert.equal(labels[`unit:${wud}:front`], 'Unit WU01, front');
   // The chimney and the box: front, left, right, on wall 1.
   assert.deepEqual(OBSTACLE_FACES, ['front', 'left', 'right']);
   for (const face of OBSTACLE_FACES) {
@@ -138,7 +145,7 @@ test('CHAT-FIX 25.10 . attachTargetsFor: wall, floor, ceiling, every other unit\
   for (const t of targets.filter((x) => x.kind === 'obstacle')) assert.equal(t.wall, 0);
   // Never itself; and nothing else is in the list.
   assert.ok(!keys.some((k) => k.startsWith(`unit:${panel}:`)), 'the panel offers itself');
-  assert.equal(targets.length, 3 + 2 * 3 + 2 * 3);
+  assert.equal(targets.length, 3 + 2 * 4 + 2 * 3);
   // A cabinet is not a panel: it has no surfaces to be stuck to.
   assert.deepEqual(S().attachTargetsFor(bud), []);
   assert.deepEqual(S().attachTargetsFor('no-such-unit'), []);
@@ -534,4 +541,92 @@ test('T82 F17 . the room refuses in words a surface that would stand the panel p
   assert.equal(res.ok, false);
   assert.equal(res.error, 'Floor would stand the panel 2972 mm off the wall; the room leaves it 2590 mm.');
   assert.equal(JSON.stringify(S().units), before, 'a refusal changed the units');
+});
+
+// === 11 . T82 F19 . THE FRONT OF A UNIT ======================================
+//
+// The chat-fix left out "unit, front" (a panel covering a cabinet's front:
+// the owner's cladding of 24.10's list). `obstructs` held a free panel off a
+// cabinet on its x span and height band and never read depth, so a panel in
+// FRONT of a cabinet was in the cabinet's way. `standsInFrontOf` (collision.js,
+// one predicate): a free panel whose back line stands at or beyond a unit's
+// front line (its wall gap, its depth, the door gap and its front) does not
+// obstruct that unit and is not obstructed by it.
+
+const BUD_FRONT = CLEARANCE + 558 + P.doors.gap + 25;   // 596: the BUD's door face off the wall
+const WUD_FRONT = CLEARANCE + 400 + P.doors.gap + 25;   // 438: the WUD's
+
+test('T82 F19 . the stage\'s front lines: the BUD\'s door face 596 off the wall, the WUD\'s 438', () => {
+  const { bud, wud } = stage();
+  assert.equal(unit(bud).params.depth, 558);
+  assert.equal(unit(bud).params.front_t, 25);
+  assert.equal(unit(wud).params.depth, 400);
+  assert.equal(P.doors.gap, 3);
+  assert.equal(BUD_FRONT, 596);
+  assert.equal(WUD_FRONT, 438);
+});
+
+test('T82 F19 . standsInFrontOf: a free panel whose back is at or past a unit\'s front line, on the same wall; never a cabinet, never two panels', () => {
+  const { standsInFrontOf } = COLLISION;
+  assert.equal(typeof standsInFrontOf, 'function', 'collision.js has no standsInFrontOf');
+  const bud = { type: 'BUD', position: { wall: 0, x_mm: 600 }, params: { width: 800, depth: 558, front_t: 25 } };
+  const fp = (inset, wall = 0) => ({
+    type: 'FREE_PANEL', position: { wall, x_mm: 600 }, params: { width: 800, depth: 18, inset_back_mm: inset },
+  });
+  assert.equal(standsInFrontOf(fp(BUD_FRONT - CLEARANCE), bud, P), true, 'its back on the door face');
+  assert.equal(standsInFrontOf(fp(BUD_FRONT - CLEARANCE + 50), bud, P), true, 'beyond it');
+  assert.equal(standsInFrontOf(fp(BUD_FRONT - CLEARANCE - 1), bud, P), false, '1 mm into the doors');
+  assert.equal(standsInFrontOf(fp(0), bud, P), false, 'flush to the wall');
+  assert.equal(standsInFrontOf(fp(BUD_FRONT, 1), bud, P), false, 'on another wall');
+  assert.equal(standsInFrontOf(bud, fp(BUD_FRONT), P), false, 'a cabinet is not a free panel');
+  assert.equal(standsInFrontOf(bud, bud, P), false);
+  assert.equal(standsInFrontOf(fp(BUD_FRONT), fp(0), P), false, 'two panels meet anyway (T74 F13)');
+  assert.equal(standsInFrontOf(null, bud, P), false);
+});
+
+test('T82 F19 . Attach "Unit 01, front": along, upright, its left on the unit\'s left, its back on the door face plus the gap, on the floor', () => {
+  const { bud, wud, panel } = stage();
+  const res = S().attachFreePanel(panel, `unit:${bud}:front`, { gap: 0 });
+  assert.deepEqual(res, { ok: true, label: 'Unit 01, front', clamped: 0, error: null });
+  assert.deepEqual(stanceOf(panel), {
+    wall: 0, x: 600, facing: 'along', tilt: 0, mount: 0, inset: BUD_FRONT - CLEARANCE, box: { width: 800, height: 400, depth: BOARD },
+  });
+  assert.equal(stanceOf(panel).inset, 586);
+  S().attachFreePanel(panel, `unit:${bud}:front`, { gap: 20 });
+  assert.equal(stanceOf(panel).inset, 586 + 20);
+  // A hanging unit's front: the panel at its base.
+  const onWud = S().attachFreePanel(panel, `unit:${wud}:front`, { gap: 0 });
+  assert.equal(onWud.ok, true);
+  assert.equal(onWud.label, 'Unit WU01, front');
+  const s = stanceOf(panel);
+  assert.equal(s.x, 1600);
+  assert.equal(s.mount, 1500);
+  assert.equal(s.inset, WUD_FRONT - CLEARANCE);
+});
+
+test('T82 F19 . the panel on the BUD\'s front slides across it, the BUD slides behind it, and the Check finds no overlap', () => {
+  const { bud, panel } = stage();
+  S().attachFreePanel(panel, `unit:${bud}:front`, { gap: 0 });
+  assert.equal(S().moveUnit(panel, 1700, 0.5, { magnet: false }).x, 1700);
+  // Back across the BUD's span: the cabinet it stands in front of is not in its way.
+  assert.equal(S().moveUnit(panel, 300, 0.5, { magnet: false }).x, 300, 'the BUD held the panel in front of it off');
+  assert.equal(stanceOf(panel).inset, 586);
+  S().moveUnit(panel, 1700, 0.5, { magnet: false });
+  // …and the BUD passes behind the panel.
+  assert.equal(S().moveUnit(bud, 1600, 1).x, 1600, 'the panel in front of the BUD held the BUD off');
+  const issues = (id) => validateUnit(unit(id), S().unitResult(id), {
+    room: S().project.room, units: S().units, wallSlopes: S().project.wallSlopes,
+  }).filter((i) => i.code === 'UNIT_OVERLAP');
+  assert.deepEqual(issues(panel), []);
+  assert.deepEqual(issues(bud), []);
+});
+
+test('T82 F19 . kept: back on the wall, the same panel is held off by the cabinet again (T74 F13: a cabinet holds a free panel off)', () => {
+  const { bud, panel } = stage();
+  S().attachFreePanel(panel, `unit:${bud}:front`, { gap: 0 });
+  S().moveUnit(panel, 1700, 0.5, { magnet: false });
+  S().attachFreePanel(panel, 'wall', { gap: 0 });
+  assert.equal(stanceOf(panel).inset, 0);
+  assert.equal(stanceOf(panel).x, 1700);
+  assert.equal(S().moveUnit(panel, 300, 0.5, { magnet: false }).x, 600 + 800, 'a panel at the wall drove into the BUD');
 });

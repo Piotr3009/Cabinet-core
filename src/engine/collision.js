@@ -16,6 +16,9 @@ import { boxCorners } from './room.js';
 // It lives in `runs.js` because CLAUDE.md F14 puts it there, and `runs.js`
 // imports nothing but `types.js`, so there is no cycle to weigh.
 import { wallGapOf } from './runs.js';
+// T82 F19 · whether a unit is a free panel (types.js is a leaf `runs.js`
+// already imports: no cycle).
+import { isFreePanel } from './types.js';
 
 /** Clamp that survives a reversed range: never returns a value outside [lo,hi]. */
 function clampTo(value, lo, hi) {
@@ -303,6 +306,41 @@ export function wallClearance(profile) {
  */
 export function backStandoff(unit, profile) {
   return wallGapOf(unit, profile) + insetPads(unit).back;
+}
+
+/**
+ * T82 F19 · how far a unit's FRONT FACE stands off its wall: its own back line
+ * (`backStandoff`, so a cabinet stood off for a pipe counts), its carcass, the
+ * door gap and its front. The house's sum for the plane of the doors
+ * (`projectStore refreshAutoParts frontFaceDepthOf`, `corners.js
+ * cornerFaceMm`), read from where the unit really stands.
+ */
+export function unitFrontLine(unit, profile) {
+  const depth = Math.max(0, Number(unit?.params?.depth) || 0);
+  const gap = Math.max(0, Number(profile?.doors?.gap) || 0);
+  const front = Number(unit?.params?.front_t) > 0 ? Number(unit.params.front_t) : Math.max(0, Number(profile?.front?.thickness) || 0);
+  return backStandoff(unit, profile) + depth + gap + front;
+}
+
+/**
+ * ─── T82 F19 · THE FRONT OF A UNIT ──────────────────────────────────────────
+ *
+ * CLAUDE.md T82 F19: *"a free panel whose back line stands at or beyond a
+ * unit's front line ... does not obstruct that unit and is not obstructed by
+ * it"*: a panel covering a cabinet's front (the owner's cladding of 24.10's
+ * list) is not in the cabinet's way. The store's `obstructs` held a free panel
+ * off a cabinet on its x span and height band and never read depth.
+ *
+ * True only for `panel` a FREE_PANEL and `unit` not one (two panels meet
+ * anyway, T74 F13), both on the same wall, `unit` square to it, and the
+ * panel's back line (`backStandoff`) at or past the unit's front line. The
+ * one predicate: `obstructs` asks it both ways round.
+ */
+export function standsInFrontOf(panel, unit, profile) {
+  if (!panel || !unit || !isFreePanel(panel.type) || isFreePanel(unit.type)) return false;
+  if ((panel.position?.wall ?? 0) !== (unit.position?.wall ?? 0)) return false;
+  if ((Number(unit.position?.rotation_deg) || 0) % 360) return false;
+  return backStandoff(panel, profile) >= unitFrontLine(unit, profile) - 1e-6;
 }
 
 /**

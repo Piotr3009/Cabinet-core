@@ -64,6 +64,8 @@ import {
   wallObstacles,
   bandsOverlap, unitBand, bandSegmentAt, bandSegments,
 } from '../engine/collision.js';
+// T82 F19 · a free panel standing in front of a unit is not in its way.
+import { standsInFrontOf } from '../engine/collision.js';
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, faceIndexOf, islandCorners, migrateRoom, plasterPosition, rehomeIslandUnits, roomBoxes,
   roomChangeGuard, roomIslands, roomWalls, wallName, wallPlanObstacles,
@@ -11979,6 +11981,9 @@ function obstructs(unit, other, profile = getCabinetProfile()) {
   // (np. box)."*  A box is four boards touching and crossing at its corners,
   // so a free panel never holds another off. Anything else still does.
   if (isFreePanel(unit?.type) && isFreePanel(other?.type)) return false;
+  // T82 F19 · a free panel whose back stands at or past a unit's door face is
+  // in FRONT of it (a cabinet's front clad): neither holds the other off.
+  if (standsInFrontOf(unit, other, profile) || standsInFrontOf(other, unit, profile)) return false;
   return bandsOverlap(bandOf(unit, profile), bandOf(other, profile), profile.editor.levelOverlapMm);
 }
 
@@ -12137,7 +12142,9 @@ function panelObstaclesFor(state, unit, profile = getCabinetProfile()) {
   const band = bandOf(unit, profile);
   const already = new Set(neighboursOf(state, unit).map((u) => u.id));
   const verticals = unitVerticals(
-    state.units.filter((u) => u.id !== unit.id && !already.has(u.id)),
+    // T82 F19 · a unit a free panel stands in front of is out of `neighboursOf`
+    // by `obstructs`, and its fillers and end panels with it.
+    state.units.filter((u) => u.id !== unit.id && !already.has(u.id) && !standsInFrontOf(unit, u, profile)),
     profile,
   )
     // ─── TURN 51 (CLAUDE.md F2): …EXCEPT THE ONES BEING RE-CUT ─────────────
@@ -12843,7 +12850,9 @@ export function validateUnit(unit, result, context = {}) {
     const others = [
       ...inTheWay.map(toObstacleUnit),
       ...verticalsInBand(
-        unitVerticals((context.units || []).filter((u) => u.id !== unit.id && !seen.has(u.id)), profile),
+        // T82 F19 · not the boards of a unit this free panel stands in front of.
+        unitVerticals((context.units || []).filter((u) => u.id !== unit.id && !seen.has(u.id)
+          && !standsInFrontOf(unit, u, profile)), profile),
         bandOf(unit, profile),
         profile.editor.levelOverlapMm,
       ).map((v) => ({

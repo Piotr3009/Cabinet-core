@@ -33,6 +33,10 @@
 //   unit right    the mirror of left
 //   unit top      flat, lying on the unit's top plus the gap, its left edge
 //                 on the unit's left span, its back on the unit's back line
+//   unit front    (T82 F19) along, upright, its back on the unit's door face
+//                 plus the gap, its left edge on the unit's left span, on the
+//                 floor when the unit stands on the floor, at its base when
+//                 it hangs
 //   obstacle      a chimney drawn on a wall, or a box typed in the plan, read
 //                 in the frame of the wall it stands against: front (along,
 //                 upright, in front of its face plus the gap), left and right
@@ -47,7 +51,7 @@
 
 import { boxCorners, wallName } from './room.js';
 import {
-  backStandoff, maxDepthOnWall, spanInWallFrame, unitSpan,
+  backStandoff, maxDepthOnWall, spanInWallFrame, unitFrontLine, unitSpan,
 } from './collision.js';
 import { unitBase, unitTop, wallGapOf } from './runs.js';
 import { getUnitType, isFreePanel } from './types.js';
@@ -58,8 +62,12 @@ import { formatMm } from './format.js';
 const num = (v, fallback = 0) => (Number.isFinite(Number(v)) && v !== '' && v != null ? Number(v) : fallback);
 const round4 = (v) => Math.round(v * 1e4) / 1e4;
 
-/** The faces a unit offers a panel, in the order the list shows them. */
-export const UNIT_FACES = Object.freeze(['left', 'right', 'top']);
+/**
+ * The faces a unit offers a panel, in the order the list shows them. T82 F19:
+ * its FRONT too, a panel covering a cabinet's front (the cladding the
+ * chat-fix left out), which `collision.js standsInFrontOf` lets stand there.
+ */
+export const UNIT_FACES = Object.freeze(['left', 'right', 'top', 'front']);
 /** The faces an obstacle (a chimney, a box) offers. */
 export const OBSTACLE_FACES = Object.freeze(['front', 'left', 'right']);
 
@@ -290,6 +298,14 @@ function surfacePlan({
     // Beside it: on the floor when the unit stands on the floor, at its base
     // when it hangs, so a cladding panel reaches the floor as a joiner's does.
     const mount = getUnitType(host.type).mount === 'wall' ? round4(unitBase(host, profile)) : 0;
+    // T82 F19 · in front of it: along and upright, its back on the plane of
+    // the unit's doors plus the gap (`unitFrontLine`), from the same floor.
+    if (target.face === 'front') {
+      return {
+        wall: wall.index, x: round4(span.left), label: target.label,
+        params: { ...stance('along', 0), mount_height: mount, inset_back_mm: insetFor(unitFrontLine(host, profile) + g) },
+      };
+    }
     const x = target.face === 'left' ? span.left - g - t : span.right + g;
     return {
       wall: wall.index, x: round4(x), label: target.label,

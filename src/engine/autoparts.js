@@ -24,7 +24,7 @@
 //
 // Pure functions — no React, no store imports.
 
-import { getUnitType } from './types.js';
+import { floatHeightOf, getUnitType, hungTypeOf } from './types.js';
 import { unitBase } from './runs.js';
 
 /**
@@ -125,6 +125,29 @@ export function endPanelDrop({
     return stated === 'extended' ? Math.max(0, Number(mountHeight) || 0) : 0;
   }
   return stated === 'floor' ? Math.max(0, Number(legHeight) || 0) : 0;
+}
+
+/**
+ * ─── T82 F13, AFTER THE REVIEW · ONE END PANEL OF A UNIT, AS IT IS CUT ──────
+ *
+ * The review of PART B (verify:panelfloat:1): the right panel's End panels row
+ * asked `endPanelDrop` with the kit as it STANDS, and a floating vanity is cut
+ * as its kit HUNG (`types.js hungTypeOf`, mount 'wall' at its float height), so
+ * its panel ends with the carcass while the row read 'to floor'. This is the
+ * unit's own answer, built as `computeCabinet` builds it (cabinet.js
+ * `normalizeParams`): the hung kit and the float height for a floating vanity,
+ * the kit and its mount height for every other unit.
+ */
+export function unitEndPanelDrop(unit, ep, profile) {
+  const floatH = floatHeightOf(unit?.type, unit?.params, profile);
+  const kit = getUnitType(unit?.type);
+  return endPanelDrop({
+    height: ep?.height,
+    type: floatH == null ? kit : hungTypeOf(kit),
+    mountHeight: floatH ?? unit?.params?.mount_height,
+    legHeight: unit?.params?.leg_height,
+    profile,
+  });
 }
 
 /**

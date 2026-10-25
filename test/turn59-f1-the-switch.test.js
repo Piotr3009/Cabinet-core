@@ -148,7 +148,8 @@ const EXEMPT = {
     + ' T82 F10 · the vanity\'s top is typed: one Top thickness field in the Worktop row, on a vanity\'s slab only, through the store\'s setWorktopThickness (a refusal said in words). *"dodanie blat grubosc do wyboru"*'
     + ' T82 F9 / F13 / F14 · the Vanity section of a vanity unit: Drawers 2 / 3 / 4 (the kit, swapped by the store\'s setVanityDrawers, the unit kept), Sinks 0 / 1 / 2 (CLAUDE.md F14\'s word), Floor / Floating with the height from the floor (setVanityFloating, refused in words where the room has no room), the plinth row as today (a floating vanity says it takes none); on every kit whose type takes drawer columns (the vanity and the chest of drawers) the drawer stack\'s Columns 1 / 2 row (updateUnitParams columns) and the "Equal" button (setDrawersEqual: drawer_split equal, drawer_heights null). *"vanity unit potrzebuje z szufladami nawierzchniowymi, wybor jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa rowne, do tego prosze external drawers ale wybor 2 rows, patrz szafa ... plinth do zmiany wysokosc, propozycja floating lub on the floor, dodanie 1 sink or 2 sink?"*; *"7 - tak"* (25.10.2026).'
     + ' T82 F17 · the Back inset field ends where the store\'s clamp does (insetBackMaxFor): a free panel\'s back inset is capped by the room, the far wall less the panel, never by a cabinet\'s 300; a cabinet\'s field is what it was. *"jak mam frontowy komin to nie moge powiekszyc panela bo mi wchodzi w sciane"*'
-    + ' T82 F2, after the review · the POCKET DOOR section says in red, in the Check\'s #37 sentences, a pocket the room could not re-cut to its front\'s width and a cabinet another pocket\'s door already closes. *"the room refuses in words, the engine never squashes"* (CLAUDE.md T82 LAWS)',
+    + ' T82 F2, after the review · the POCKET DOOR section says in red, in the Check\'s #37 sentences, a pocket the room could not re-cut to its front\'s width and a cabinet another pocket\'s door already closes. *"the room refuses in words, the engine never squashes"* (CLAUDE.md T82 LAWS)'
+    + ' T82 F13, after the review: the End panels row asks unitEndPanelDrop (the kit as computeCabinet cuts it), so a floating vanity\'s end panel, cut to end with the hung carcass, reads "ends with the cabinet", never "to floor". *"plinth do zmiany wysokosc, propozycja floating lub on the floor"* (25.10.2026); Turn 13: a label that disagrees with the piece is worse than no label.',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -442,7 +443,8 @@ const FROZEN = {
   // T82 F17 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F2 (after the review) re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F2 (after the review, one cabinet one door) re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/RightPanel.jsx': '2ab162b072dd22bdb2e9f92c0f8dfb3df6ed0876fceae59491fdad689ad3a858',
+  // T82 F13 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/RightPanel.jsx': '933ed6376f989e9e7da859d150870550f3ceecad60042c744ad856d42ae47987',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
   'src/components/RoomModal.jsx': '04bc0d7b944cac119f44aa1c562ef0a635f6e86ecee9b6ea26784e075b69d2a1',

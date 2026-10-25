@@ -7,7 +7,7 @@ import { HEIGHT_GROUPS, getUnitType, isFreePanel, isHawaPocket, isVanityKit, pro
 // T82 F13 · how a vanity stands: floating, at what height (KIT_VANITY.lsp D19).
 import { floatHeightOf } from '../engine/types.js';
 import { doorCountFor, leafCountRefusal, minDrawerFrontHeight } from '../engine/cabinet.js';
-import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
+import { takesPlinth, unitEndPanelDrop } from '../engine/autoparts.js';
 import { roomWalls, wallLabel } from '../engine/room.js';
 import {
   hasBottomMask, hasTopInfill, pocketClaimRefusal, pocketNeighbours, pocketRecutRefusal,
@@ -2201,7 +2201,6 @@ function Insets({ unit, profile, onSet }) {
 function EndPanels({
   unit, profile, design, onAdd, onRemove, onDefaults,
 }) {
-  const type = getUnitType(unit.type);
   const panels = unit.params.end_panels || [];
   const has = (side) => panels.some((ep) => ep.side === side);
   return (
@@ -2255,14 +2254,11 @@ function EndPanels({
               {/* Turn 13 (F4): a wall unit's panel ends with the cabinet
                   whatever the stored value claims, so the row reads the RULE
                   rather than the field — a label that disagrees with the piece
-                  is worse than no label. */}
-              {endPanelDrop({
-                height: ep.height,
-                type,
-                mountHeight: unit.params.mount_height,
-                legHeight: unit.params.leg_height,
-                profile,
-              }) > 0 ? 'to floor' : 'ends with the cabinet'}
+                  is worse than no label.
+                  T82 F13, after the review: …and the rule is asked of the kit
+                  as the engine cuts it, so a floating vanity's panel (cut to
+                  end with the hung carcass) says so (`unitEndPanelDrop`). */}
+              {unitEndPanelDrop(unit, ep, profile) > 0 ? 'to floor' : 'ends with the cabinet'}
               {' · '}
               {formatMm(ep.thickness || unit.params.front_t || profile.front.thickness)} mm
               {Number(ep.top_mm) > 0 ? ` · +${formatMm(ep.top_mm)} above` : ''}

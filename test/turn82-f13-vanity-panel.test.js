@@ -452,3 +452,44 @@ test('F14 · Equal: the heights typed by hand go, the equal split comes back; an
   assert.equal(S().setDrawersEqual(budr), false);
   assert.equal(U(budr).params.drawer_split, undefined);
 });
+
+// ═══ 7 · F13, AFTER THE REVIEW: THE END PANEL SAYS WHERE IT ENDS ═════════════
+//
+// The review of PART B (verify:panelfloat:1): a floating vanity's end panel is
+// cut by the engine to END WITH THE CABINET (the kit hung, `hungTypeOf`: a
+// wall unit's panel overrules a stored 'floor'), and the right panel's End
+// panels row read 'to floor', because it asked `endPanelDrop` with the kit as
+// it stands. The row's own rule (Turn 13): a label that disagrees with the
+// piece is worse than no label. One law, one path: the row asks
+// `autoparts.unitEndPanelDrop`, which resolves the kit and its height as
+// `computeCabinet` does, and the label and the cut agree.
+
+test('F13 · after the review: the End panels row and the engine agree, standing and floating', async () => {
+  const { unitEndPanelDrop } = await import('../src/engine/autoparts.js');
+  vanityJob();
+  const id = S().addUnit('VANITY3').id;
+  const added = S().addEndPanel(id, { side: 'L' });
+  assert.ok(!added?.error, added?.error);
+  const end = () => S().unitResult(id).panels.find((p) => p.part === 'END-PANEL');
+  const ep = () => U(id).params.end_panels[0];
+  // Standing: the panel runs to the floor, and the row says so.
+  assert.ok(end().box.y < 0, 'a standing vanity\'s end panel does not reach the floor');
+  assert.ok(unitEndPanelDrop(U(id), ep(), P) > 0);
+  // Floating at 300: the engine cuts it to end with the carcass; the row's drop is 0 too.
+  S().setVanityFloating(id, true, 300);
+  assert.equal(end().box.y, 0, 'the engine no longer cuts it to end with the carcass');
+  assert.equal(unitEndPanelDrop(U(id), ep(), P), 0, 'the row would still say "to floor"');
+  // The same answer the engine builds from, on every unit: a wall unit, a base unit.
+  for (const kit of ['WUD', 'BUD']) {
+    vanityJob();
+    const other = S().addUnit(kit).id;
+    assert.ok(!S().addEndPanel(other, { side: 'L' })?.error);
+    const otherEnd = S().unitResult(other).panels.find((p) => p.part === 'END-PANEL');
+    assert.equal(unitEndPanelDrop(U(other), U(other).params.end_panels[0], P) > 0, otherEnd.box.y < 0, kit);
+  }
+  // The panel's row reads the one function, never `endPanelDrop` with the standing kit.
+  const src = read('src/components/RightPanel.jsx');
+  const rows = src.slice(src.indexOf('function EndPanels('), src.indexOf('function contentsBadge('));
+  assert.match(rows, /unitEndPanelDrop\(unit, ep, profile\) > 0 \? 'to floor' : 'ends with the cabinet'/);
+  assert.doesNotMatch(rows, /endPanelDrop\(\{/, 'the row still asks the standing kit');
+});

@@ -59,6 +59,12 @@ export const LICENSED = {
       + `A Check reader, never read by computeCabinet. ${OWNER}`,
     gates: [],
   },
+  'src/engine/autoparts.js': {
+    why: `T82 F13, after the review (verify:panelfloat:1): \`unitEndPanelDrop\`, one end panel's drop asked of the kit `
+      + `as computeCabinet builds it (the hung kit and the float height for a floating vanity), so the right panel's End `
+      + `panels row and the cut agree. A reader for the panel; computeCabinet calls endPanelDrop as before. ${OWNER}`,
+    gates: [],
+  },
   'src/engine/roomFit.js': {
     why: `T82 F13: \`floorOf\` reads a floating vanity's height (the room's refusal over it). Never read by `
       + `computeCabinet. ${OWNER}`,

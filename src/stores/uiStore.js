@@ -1034,6 +1034,22 @@ export const useUiStore = create((set, get) => ({
     return { openFronts: next };
   }),
 
+  // ─── T82 F6 · THE HAWA DOOR'S OWN SWITCH ─────────────────────────────────
+  // CLAUDE.md T82 F6: "A toggle on the pocket (right panel: Door closed /
+  // open; the same in the viewer's "Open all")". The state is this same
+  // `openFronts` map (one switch: Open all, a double click on the leaf and the
+  // right panel all write it); this is the pocket's one press for its door or
+  // its two: any shut, all open; all open, all shut. Purely visual, nothing
+  // reaches the engine.
+  togglePocketDoor: (unitId, doorIds) => set((s) => {
+    const ids = (doorIds || []).filter(Boolean);
+    if (!unitId || !ids.length) return {};
+    const unit = { ...(s.openFronts[unitId] || {}) };
+    const anyShut = ids.some((id) => !((unit[id] ?? 0) > 0.5));
+    for (const id of ids) unit[id] = anyShut ? 1 : 0;
+    return { openFronts: { ...s.openFronts, [unitId]: unit } };
+  }),
+
   /** Is EVERY door in this set standing open? — what the button lights on. */
   allFrontsOpen: (entries) => {
     const rows = (entries || []).filter((e) => e?.unitId && e.panelIds?.length);

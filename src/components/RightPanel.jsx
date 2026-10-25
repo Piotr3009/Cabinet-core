@@ -1831,8 +1831,47 @@ function PocketDoorSection({ unit }) {
       {(fig?.notes || []).map((n) => (
         <p key={n.n} className="text-[11px] text-ink-400" data-pocket-note={n.n}>{n.message}</p>
       ))}
-      {/* T82 F6 (slice A5) · the "Door: Closed / Open" row stands here. */}
+      {/* T82 F6 (slice A5) · the "Door: Closed / Open" row, inside the section (A3's marked place). */}
+      <PocketDoorToggle unit={unit} />
     </section>
+  );
+}
+
+// ─── T82 F6 · THE HAWA DOOR, CLOSED OR OPEN ─────────────────────────────────
+// CLAUDE.md T82 F6: *"A toggle on the pocket (right panel: Door closed / open;
+// the same in the viewer's "Open all") slides the door into the pocket"*. A
+// way of LOOKING, as Open all is: it writes the room's own `openFronts` for
+// the pocket's door (or its two), and nothing about the project changes. The
+// doors are the engine's (`result.hawa.doors`), never counted here. This row
+// belongs inside the POCKET DOOR section (A3's); it is its own component so
+// that section can hold it as it is.
+function PocketDoorToggle({ unit }) {
+  const unitResult = useProjectStore((s) => s.unitResult);
+  const openFronts = useUiStore((s) => s.openFronts);
+  const togglePocketDoor = useUiStore((s) => s.togglePocketDoor);
+  const ids = (unitResult(unit.id)?.hawa?.doors || []).map((d) => d.id).filter(Boolean);
+  if (!ids.length || typeof togglePocketDoor !== 'function') return null;
+  const open = ids.every((id) => (openFronts[unit.id]?.[id] ?? 0) > 0.5);
+  const choose = (wantOpen) => { if (wantOpen !== open) togglePocketDoor(unit.id, ids); };
+  return (
+    <div className="cc-row" data-pocket-door-open={open ? '1' : '0'}>
+      <span className="cc-label flex-1">Door</span>
+      {[['Closed', false], ['Open', true]].map(([word, value]) => (
+        <button
+          key={word}
+          type="button"
+          aria-pressed={open === value}
+          data-pocket-door={word.toLowerCase()}
+          className={`cc-btn ${open === value ? 'border-gold text-gold' : ''}`}
+          title={value
+            ? 'Swing the door and slide it into its pocket (nothing about the project changes)'
+            : 'Bring the door out of its pocket and shut it'}
+          onClick={() => choose(value)}
+        >
+          {word}
+        </button>
+      ))}
+    </div>
   );
 }
 

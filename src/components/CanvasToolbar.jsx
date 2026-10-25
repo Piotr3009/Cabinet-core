@@ -76,7 +76,8 @@ export default function CanvasToolbar() {
   const doorEntries = useMemo(() => units.map((u) => ({
     unitId: u.id,
     panelIds: (unitResult(u.id)?.panels || [])
-      .filter((p) => p.part === 'FRONT')
+      // T82 F6 · the HAWA pocket door opens with every door (*"the same in the viewer's Open all"*).
+      .filter((p) => p.part === 'FRONT' || p.part === 'POCKET-DOOR')
       .map((p) => p.id),
   })).filter((e) => e.panelIds.length), [units, unitResult]);
   const everyDoorOpen = doorEntries.length > 0 && doorEntries.every(

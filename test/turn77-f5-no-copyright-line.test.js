@@ -259,6 +259,10 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f43-t82-f04.mjs',
   // T82 F5 (25.10.2026): the pocket on the CNC, the panels' pilots and the door's cups
   'scripts/t78-classify.d/f43-t82-f05.mjs',
+  // T82 F6 (25.10.2026): the HAWA door closed and open in the room
+  'src/engine/pocketDoorPose.js',
+  'src/3d/PocketDoor.jsx',
+  'scripts/t78-classify.d/f43-t82-f06.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -142,7 +142,8 @@ const EXEMPT = {
     + ' T79 F5 . the CUT CORNER row gains a second button, CUT EDGE (data-testid cut-edge): it lights the four horizontal side edges in the scene (`3d/NotchEdges.jsx`, `uiStore.edgeNotchPick`), a click on one opens EdgeNotchWindow at the click with EDGE (TB, BB, TF, BF), DEPTH and HEIGHT (the profile\'s `notch.edgeDefaults`), the help line "A rebate along the whole edge: skirting at the bottom-back, coving at the top-back." (data-testid edge-notch-help); Enter cuts through the store\'s one action `setUnitEdgeNotch` and a refusal shows in the engine\'s words (KIT_NOTCH.lsp D22); REMOVE takes it off. No retail copy (retail\'s SIZE step carries its own button). *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*'
     + ' T79 F13 . the shelf row\'s face button and the drawer cap\'s Partition front edge name the project\'s numbers (carcass.shelfSetbackMm 10, wardrobe.drawers.capSetbackMm 20), no longer the deleted interiorSetback nor the LISP\'s 20; its two tooltips lose their dashes. *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*'
     + ' CHAT-FIX 25.10.2026 · the Attach section of a free panel: an Attach to select (wall, floor, ceiling, a unit\'s left side, right side or top, a chimney or box face) and a Gap field, through the store\'s one action `attachFreePanel`; the panel stays put afterwards (*"nie jedzie"*). *"chce tez oblozyc boxy lub kominy tez prosze z odsunieciem od nich"*; *"ten panel musi byc w miare mozliwe do ustawienia gdzie bede chcial, naprzyklad bede chcial polozyc na szafkach jako daszek albo oblozyc komin w kacie"* (25.10.2026).'
-    + ' T82 F2 · the POCKET DOOR section of a HAWA pocket: Doors 1 / 2, Hand L / R (one door), Push / Pull, Class Auto / III/25 / III/35 (setPocket), Door covers (the units its door closes, the next one added beside the last or the last one left out through setPocketCovers, a refusal said in its words), and per door TB, T1, M, E1, the pocket\'s width and depth and the refusals read off the store\'s pocketFiguresFor (the engine\'s result.hawa, nothing worked out here); the Carcass Width and Depth of a pocket shown, not typed, and its Height while its door covers a cabinet. *"wysuwasz pocket door i zakrywasz szafke lub szafki"*; *"3 tak moga"*, *"4 - tak"*, *"5 - tak"* (25.10.2026).',
+    + ' T82 F2 · the POCKET DOOR section of a HAWA pocket: Doors 1 / 2, Hand L / R (one door), Push / Pull, Class Auto / III/25 / III/35 (setPocket), Door covers (the units its door closes, the next one added beside the last or the last one left out through setPocketCovers, a refusal said in its words), and per door TB, T1, M, E1, the pocket\'s width and depth and the refusals read off the store\'s pocketFiguresFor (the engine\'s result.hawa, nothing worked out here); the Carcass Width and Depth of a pocket shown, not typed, and its Height while its door covers a cabinet. *"wysuwasz pocket door i zakrywasz szafke lub szafki"*; *"3 tak moga"*, *"4 - tak"*, *"5 - tak"* (25.10.2026).'
+    + ' T82 F6 · the pocket\'s Door: Closed / Open row (PocketDoorToggle) inside its POCKET DOOR section, the doors the engine\'s, the state the room\'s openFronts. *"A toggle on the pocket (right panel: Door closed / open ...) slides the door into the pocket"*; *"wysuwasz pocket door i zakrywasz szafke lub szafki"* (25.10.2026)',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -321,6 +322,10 @@ const EXEMPT = {
   // CHAT FIX 19.10.2026: the second rod in a bay (KIT_HANGER_TWO.lsp).
   'src/components/RailModal.jsx':
     'T79 F11 (the rod alone), CHAT FIX 19.10.2026 (re-frozen): the window finds its rod BY ITEM ID first (the store\'s railTravelFor reads it so); a second unit-wide rod is published among the column rods with no column, and the zone alone would name the first. *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze"*.',
+  // CLAUDE.md T82 FROZEN 4: *"every PRO file edited is licensed in `EXEMPT` with the owner's words from this
+  // file and re-frozen in the same commit."*  T82 F6: the canvas toolbar's Open all takes the HAWA door.
+  'src/components/CanvasToolbar.jsx':
+    'T82 F6 · Open all takes the HAWA pocket door with every other door. *"A toggle on the pocket (right panel: Door closed / open; the same in the viewer\'s "Open all" of T69) slides the door into the pocket"*',
 };
 
 /**
@@ -350,7 +355,8 @@ const FROZEN = {
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/CabinetEditorModal.jsx': '3f080e23b09ce5c5018f89649264e77cb85e5f5594dafecd839673d6db9fd066',
-  'src/components/CanvasToolbar.jsx': 'ee85f7f7d4b3a64021f56cbea5fe36ff504136ace340216fdef71fcb316e2bd9',
+  // T82 F6 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CanvasToolbar.jsx': 'd7686d45b88c7a4121b2838e3bdbc5e128b38afd1608f2000ace8733677d4cbc',
   'src/components/CheckPanel.jsx': '65a991cbc4aed29b3c9a49ed613e715dd3d033106f8e5e9ded45e8125a8dc014',
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
   // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
@@ -409,7 +415,8 @@ const FROZEN = {
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT-FIX 25.10 re-frozen at the new hash (the free panel's Attach section); EXEMPT above carries the reason.
   // T82 F2 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/RightPanel.jsx': '8310a2c2121877daf2a1e9f2358843a2bed074a986c39903b30ff521006520fc',
+  // T82 F6 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/RightPanel.jsx': '90813aced15b05b08c2e4e225cd25f7bf41e490e7d53067b0d5f86267b39de63',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
   'src/components/RoomModal.jsx': '04bc0d7b944cac119f44aa1c562ef0a635f6e86ecee9b6ea26784e075b69d2a1',
@@ -632,6 +639,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/BomPanel.jsx',
     // T79 F12 · *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element"*: a click in the editor's canvas is the pick.
     'src/components/CabinetEditorModal.jsx',
+    // T82 F6 · *"the same in the viewer's "Open all" of T69"*: Open all takes the HAWA door.
+    'src/components/CanvasToolbar.jsx',
     // T75 F22 · *"the CNC export carries a banner counting the lines that are not 'cut'"*.
     'src/components/CncTree.jsx',
     'src/components/CncView.jsx',

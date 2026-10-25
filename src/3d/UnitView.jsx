@@ -120,6 +120,8 @@ import SpacingChain from './SpacingChain.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
+// T82 F6 · the HAWA door: carried open into its pocket by the one pose (engine/pocketDoorPose.js).
+import PocketDoor from './PocketDoor.jsx';
 import DrillRings from './DrillRings.jsx';
 import LedStrips from './LedStrips.jsx';
 import Props from './Props.jsx';
@@ -2789,6 +2791,8 @@ export default function UnitView({
           which is what makes it different in kind from "Remove doors". */}
       {result.panels.filter((p) => p.box && !p.meta?.frontDecorationParent
         && !(hideFronts && frontKind(p))
+        // T82 F6 · the HAWA door is a front to the eye: it leaves the picture with them.
+        && !(hideFronts && p.part === 'POCKET-DOOR')
         // T78 F8 · a bi-fold child leaf is rendered inside its carrier's group, not here.
         // T78 F18 · the HF lower half is rendered inside its upper half's group the same way.
         && !p.meta?.lift?.parent
@@ -2894,7 +2898,8 @@ export default function UnitView({
           ? (WATCH_FELT_COLOURS.find((c) => c.id === p.meta.watch_felt)?.hex || null)
           : null;
         const worn = feltHex ? feltSurface(surface, feltHex) : surface;
-        return (
+        // T82 F6 · the HAWA door is this same leaf, carried by <PocketDoor> (below).
+        const leaf = (
           <MovingPanel
             key={p.id}
             panel={p}
@@ -3157,6 +3162,8 @@ export default function UnitView({
               // leaf stands in front of, by geometry and by nothing else. The
               // store shuts them only when the leaf is SHUTTING — opening one
               // opens nothing.
+              // T82 F6 · the HAWA door: a double click slides it into its pocket and out (the one `openFronts` switch).
+              if (p.part === 'POCKET-DOOR' && onToggleFront) onToggleFront(p.id);
               if (front && onToggleFront) {
                 onToggleFront(p.id, {
                   fronts: coveredByLeaf(p, pullOutsOf(result.panels)),
@@ -3208,7 +3215,7 @@ export default function UnitView({
               // the card opens beside the piece the camera has just closed in
               // on. A front is the exception — it swings, and flying the camera
               // into a door that is opening is a way to see nothing.
-              if (onFocus && !front) {
+              if (onFocus && !front && p.part !== 'POCKET-DOOR') {
                 onFocus(panelWorldCentre(p), Math.max(p.box.w, p.box.h, p.box.d));
               }
             }}
@@ -3275,6 +3282,16 @@ export default function UnitView({
               : undefined}
           />
         );
+        // ─── T82 F6 · THE HAWA DOOR, CLOSED AND OPEN ──────────────────────
+        // *"wysuwasz pocket door i zakrywasz szafke lub szafki"*. The leaf is
+        // drawn as every front is (its finish, its outline, its gestures);
+        // <PocketDoor> turns it on its hinges and slides it E1 into the pocket
+        // on this door's own `openFronts` value, with the cups and the symbols.
+        return p.part === 'POCKET-DOOR' ? (
+          <PocketDoor key={p.id} door={p} result={result} profile={profile} open={openFronts?.[p.id] ?? 0}>
+            {leaf}
+          </PocketDoor>
+        ) : leaf;
       })}
 
       {/* ─── TURN 23 (CLAUDE.md F8.2): hover a PARTITION, read the bays ───

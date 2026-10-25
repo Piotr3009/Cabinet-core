@@ -1003,16 +1003,20 @@ function islandSlab({ record, units, walls, profile }) {
   const panels = onIsland.filter((u) => getUnitType(u.type)?.freePanel);
   const top = tops.length ? Math.max(...tops) : Math.max(0, ...panels.map((u) => Number(u.params?.height) || 0));
   const outline = [[u0, v0], [u1, v0], [u1, v1], [u0, v1]].map(([u, v]) => [r2(u), r2(v)]);
+  // T82 F10, after the review (topbasin 3) · the record's own thickness, as
+  // every other slab reads it (a vanity's typed top on an island is the
+  // island slab's); a record with none is the profile's, as it always was.
+  const thick = slabThickness(record, spec);
   const geometry = {
     wall: A.index,
     x: r2(u0),
     w: r2(u1 - u0),
     y: top,
-    h: spec.thickness,
+    h: thick,
     z: r2(v0),
     d: r2(v1 - v0),
     depth: r2(v1 - v0),
-    thickness: spec.thickness,
+    thickness: thick,
     decor: record?.decor ?? null,
     overhang: { front: over, side: over, wall: 0 },
     extensions: ext,

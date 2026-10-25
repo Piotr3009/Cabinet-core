@@ -22,8 +22,9 @@ export const LICENSED = {
   'src/engine/worktop.js': {
     why: 'T82 F10: serviceVoidOf (the carcass\'s stand-off beyond the house\'s clearance, for a vanity only; 0 for '
       + 'every other unit) and the slab\'s reach plus it, so the vanity\'s top reaches the wall over the pipes. A '
-      + 'design-layer slab: computeCabinet never reads worktop.js. After the review (topbasin 2): a lone vanity '
-      + `takes its own top as a desk does (isLoneTopUnit, at the gate and when a record is resolved). ${OWNER}`,
+      + 'design-layer slab: computeCabinet never reads worktop.js. After the review (topbasin 2, 3): a lone vanity '
+      + 'takes its own top as a desk does (isLoneTopUnit, at the gate and when a record is resolved), and the '
+      + `island's slab reads the record's thickness (slabThickness), as every other slab does. ${OWNER}`,
     gates: [],
   },
 };

@@ -235,6 +235,31 @@ test('F10 · review 2: two vanities under one top, one deleted: the other keeps 
   assert.equal(basinsOf(slab).length, 1);
 });
 
+test('F10 · review 3: an island\'s slab reads the record\'s thickness: the vanity\'s typed top is the slab\'s', () => {
+  S().newProject('T82 F10 island thickness');
+  S().setRoom({ corners: rectCorners(5000, 4000), height: 2500 });
+  confirmDrawerBox();
+  S().addIsland();
+  const faceA = roomWalls(S().project.room).find((w) => w.island && w.face === 'A');
+  const v = S().addUnit('VANITY3', { wall: faceA.index }).id;
+  const rec = records().find((w) => w.unitIds.includes(v));
+  assert.equal(slabOver(v).geometry.h, Number(V().defaults.top), 'born at the vanity\'s 20');
+  assert.equal(S().setWorktopThickness(rec.id, 30).ok, true);
+  const g = slabOver(v).geometry;
+  assert.equal(g.h, 30);
+  assert.equal(g.thickness, 30);
+  const bom = buildBom(S().allResults(), { design: migrateDesign(S().project.design), profile: P(), room: S().project.room });
+  const row = bom.units.find((x) => x.unitId === 'worktops').rows.find((r) => r.part === 'WORKTOP');
+  assert.equal(row.thickness, 30, 'the BOM line says what the slab is');
+});
+
+test('F10 · review 3: an island record with no thickness of its own is the profile\'s, as it always was', () => {
+  islandKitchen();
+  const g = S().worktopsOf()[0].geometry;
+  assert.equal(g.shape, 'island');
+  assert.equal(g.h, P().autoParts.worktop.thickness);
+});
+
 // ─── F11 · THE BASIN, ONLY TO THE EYE ──────────────────────────────────────
 
 test('F11 · sinks 0: no basin, no cut-out', () => {

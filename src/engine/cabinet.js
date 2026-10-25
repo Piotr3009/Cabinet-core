@@ -31,7 +31,7 @@ import {
 } from './cnc/hawa.js';
 import { getCabinetProfile } from './profile.js';
 import { buildFrontDecoration } from './frontDecoration.js';
-import { getUnitType } from './types.js';
+import { floatHeightOf, getUnitType, hungTypeOf } from './types.js';
 import { legCount, legLayout } from './legs.js';
 // T75 F4 · the true L carcass, KIT_CORNER_L.lsp mirrored line for line.
 import { cornerLPlan } from './cornerL.js';
@@ -126,6 +126,8 @@ import { applyCanopy } from './hoodCanopy.js';
 // T82 F9 · the vanity's own boards (KIT_VANITY.lsp part 5): the back cut out to
 // two rails, the trap's U and Check #39; a one-way read, as the canopy's.
 import { applyVanityTrap, vanityRailGeometry, vanityRails } from './vanity.js';
+// T82 F13 · a floating vanity's hangers (KIT_VANITY.lsp D19, `vanity-hangers`).
+import { vanityHangers } from './vanity.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
 // `trimOutlineOnSlope` are turn 46's (CLAUDE.md F3): the slope cut, ported 1:1
 // from SKYLON_COMMON's `SKY:slopeCutPts` — iron rule 3, the LISP states the
@@ -873,7 +875,14 @@ function normaliseSlopeCut(raw, width = 0) {
 
 function normalizeParams(raw, profile) {
   const p = raw || {};
-  const type = getUnitType(p.type);
+  // ─── T82 F13 · A FLOATING VANITY IS CUT AS IT HANGS ───────────────────────
+  // *"floating: true: no legs, no plinth, the carcass hung at float_height_mm"*
+  // (KIT_VANITY.lsp D19). `floatHeightOf` is null for every kit but a vanity
+  // with `params.floating`, so every other unit, every fixture and every golden
+  // resolves its type exactly as before; a floating vanity is its kit hung
+  // (`hungTypeOf`): no legs, no toe kick, no plinth, `mount` 'wall' at its height.
+  const floatHeight = floatHeightOf(p.type, p, profile);
+  const type = floatHeight == null ? getUnitType(p.type) : hungTypeOf(getUnitType(p.type));
   const G = Number(p.board_t) || profile.board.thickness;
   const frontT = Number(p.front_t) || profile.front.thickness;
   // ─── TURN 24 (CLAUDE.md F3.2): G IS A PROPERTY OF THE PART ────────────────
@@ -1402,7 +1411,9 @@ function normalizeParams(raw, profile) {
     ...(tower ? { tower } : {}),
     // T75 F14 · a drawer unit under a hob (its top front a fixed dummy).
     ...(p.hob === true ? { hob: true } : {}),
-    mountHeight: Number(p.mount_height ?? profile.wallUnit.defaults.mountHeight),
+    mountHeight: floatHeight ?? Number(p.mount_height ?? profile.wallUnit.defaults.mountHeight),
+    // T82 F13 · how high a floating vanity hangs, or null where it stands.
+    floatHeight,
     // Toe kick, per unit (turn 5, BACKLOG #29). The project sets it in Design
     // Settings and it arrives here as a parameter, so the plinth, the legs and
     // the floor drop all follow one number instead of three copies of it. Left
@@ -11710,6 +11721,19 @@ export function computeCabinet(params, profileOverride) {
   }
   hw('hangers', 'Wall hangers', type.hangers ? P.wallUnit.hangers.count : 0, 'pcs',
     { hole_diameter_mm: P.wallUnit.hangers.holeDiameter }, `⌀${P.wallUnit.hangers.holeDiameter}`);
+  // ─── T82 F13 · A FLOATING VANITY BUYS ITS HANGERS ───────────────────────────
+  // *"6 - do BOM tez"* (the owner, 13:03): `vanity.hangers.perUnit` cabinet
+  // hangers with their wall plates, biting on RAIL-TOP (KIT_VANITY.lsp D19,
+  // `vanity-hangers`). An order line, not a hole: no pattern of the hanger's
+  // fixing is in this repo. The article is the owner's to fill; empty, the line
+  // prints the name alone.
+  if (type.vanity) {
+    const VH = P.vanity?.hangers || {};
+    const article = String(VH.article || '');
+    hw('vanity_hangers', String(VH.name || 'Cabinet hanger'), vanityHangers(cfg.floatHeight != null, P), 'pcs',
+      { article: article || null, on: 'RAIL-TOP' },
+      article ? `${article} · on the top rail` : 'on the top rail');
+  }
   // ─── Turn 22 (CLAUDE.md F1.4): THE CORNICE IS ORDERED, NOT CUT ───────────
   // Linear metres — the front, the returns and the allowance a 45° corner
   // costs — against the moulding's own profile number, so two heights in one

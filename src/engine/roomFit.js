@@ -29,7 +29,7 @@
 //
 // Pure functions — no React, no store, no three.js.
 
-import { getUnitType } from './types.js';
+import { floatHeightOf, getUnitType } from './types.js';
 import { roomWalls, wallName } from './room.js';
 import { maxDepthOnWall } from './collision.js';
 import { unitTop, standsOnLegHeight, impliedLegHeight } from './runs.js';
@@ -47,6 +47,9 @@ const round1 = (v) => Math.round(Number(v) || 0);
  */
 export function floorOf(unit, profile, { host = null, patch = null } = {}) {
   const type = getUnitType(unit?.type);
+  // T82 F13 · a floating vanity hangs at its own height (`types.js floatHeightOf`, KIT_VANITY.lsp D19).
+  const floatH = floatHeightOf(unit?.type, { ...(unit?.params || {}), ...(patch || {}) }, profile);
+  if (floatH != null) return Math.max(0, floatH);
   if (type.mount === 'wall') {
     // A rider's mounting height IS its host's top and is re-derived on every
     // settle, so the host wins over a stored number that may be one edit stale.

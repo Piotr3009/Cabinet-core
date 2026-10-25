@@ -288,6 +288,12 @@ export const PART_REGISTRY = {
     id: 'hanger', name: 'Wall hangers', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'Two per hung unit',
   },
+  // T82 F13 · *"6 - do BOM tez"*: a floating vanity's cabinet hangers with
+  // their wall plates (`profile.vanity.hangers`, the article the owner's).
+  vanity_hanger: {
+    id: 'vanity_hanger', name: 'Vanity hangers', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'Two per floating vanity, on its top rail',
+  },
   top_box_connector: {
     id: 'top_box_connector', name: 'Top box connectors', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'What ties a top box to the wardrobe under it',
@@ -774,6 +780,8 @@ export const HARDWARE_TO_PART_ID = {
   hawa_tracks: 'hawa_track',
   hawa_stiffener: 'hawa_steel_profile',
   hawa_foot: 'hawa_foot',
+  // T82 F13 · `hw('vanity_hangers', ...)`, a floating vanity's hangers.
+  vanity_hangers: 'vanity_hanger',
 };
 
 /**

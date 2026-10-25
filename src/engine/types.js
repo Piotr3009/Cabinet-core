@@ -16,6 +16,8 @@ import { freePanelDefaultParams } from './freePanel.js';
 import { hawaPocketDefaultParams } from './hawaPocket.js';
 import { resolveApertures } from './applianceTower.js';
 import { KITCHEN_LIBRARY, WARDROBE_LIBRARY, libraryTypeIds } from './library.js';
+// T82 F13 · how a vanity stands (KIT_VANITY.lsp D19, part 5(e)).
+import { vanityBaseY, vanityMount, vanityPlinthP } from './vanity.js';
 
 /**
  * carcass.top      — 'panel' (TOP + BOTTOM) | 'holders' (SINK: 2 rails on edge)
@@ -1862,6 +1864,49 @@ export function isDeskKit(typeId) {
 /** T82 F9 · is this a vanity kit (KIT_VANITY.lsp: the drawer base with its back cut out)? */
 export function isVanityKit(typeId) {
   return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.vanity);
+}
+
+/**
+ * ─── T82 F13 · PLINTH OR FLOATING: THE ONE QUESTION ─────────────────────────
+ *
+ * CLAUDE.md T82 F13: *"`floating: true`: no legs, no plinth, the carcass hung
+ * at `float_height_mm` (PROPOSED default 300)"*; the owner, 25.10.2026
+ * (12:57): *"plinth do zmiany wysokosc, propozycja floating lub on the
+ * floor"*. KIT_VANITY.lsp D19, `vanity-base-y`.
+ *
+ * How far off the floor a FLOATING vanity's carcass underside stands, or null
+ * for every unit that stands (every kit but a vanity, and a vanity whose
+ * `params.floating` is not true: an old project, a new one on the floor). The
+ * height is the unit's own; unsaid, the profile's `vanity.defaults.
+ * floatHeightMm`. Every reader of "how high does it stand" asks this first:
+ * `cabinet.js normalizeParams` (the cut), `runs.js unitBase` (the run, the
+ * scene, the plan, the elevation), `projectStore floorYOf` (the bands, the
+ * height clamp), `roomFit.floorOf` (the room's refusal) and Check #6.
+ */
+export function floatHeightOf(typeId, params, profile) {
+  if (!isVanityKit(typeId) || params?.floating !== true) return null;
+  const said = params?.float_height_mm;
+  const stated = said != null && said !== '' && Number.isFinite(Number(said)) && Number(said) >= 0;
+  const own = stated ? Number(said) : Number(profile?.vanity?.defaults?.floatHeightMm) || 0;
+  return vanityBaseY(true, own, null);
+}
+
+const HUNG_TYPES = new Map();
+
+/**
+ * T82 F13 · the kit as a FLOATING vanity stands: no legs, no plinth, hung
+ * (`vanity-mount`, `vanity-plinth-p`). What `computeCabinet` builds a floating
+ * vanity from, so its legs, its toe kick, its plinth gate, its side infills
+ * and the room's `assemblies.mount` follow from one answer. The carcass is the
+ * same box: no board of it reads `mount`, `legs` or `plinth`.
+ */
+export function hungTypeOf(type) {
+  if (!HUNG_TYPES.has(type.id)) {
+    HUNG_TYPES.set(type.id, Object.freeze({
+      ...type, legs: false, legSource: null, plinth: vanityPlinthP(true), mount: vanityMount(true),
+    }));
+  }
+  return HUNG_TYPES.get(type.id);
 }
 
 /** T75 F3 · is this a blind corner kit (a blank beside one leaf)? */

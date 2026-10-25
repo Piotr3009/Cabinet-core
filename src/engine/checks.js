@@ -60,6 +60,8 @@ import { migrateDesign } from './design.js';
 import { shelfTypeOf } from './shelfTypes.js';
 import { railObstruction } from './railDatum.js';
 import { takesPlinth } from './autoparts.js';
+// T82 F13 · a floating vanity hangs: Check #6 asks it first.
+import { floatHeightOf } from './types.js';
 // Turn 36 (CLAUDE.md F7): is this top box standing on anything?
 import { riderIsOrphaned, riderOverlapMm } from './topBox.js';
 // Turn 50 (CLAUDE.md F3): …and is it standing INSIDE the room?
@@ -935,7 +937,9 @@ export function runChecks({
     }
 
     // ── #6 a base run standing with no plinth ─────────────────────────────
+    // T82 F13 · …never a floating vanity: it hangs, it stands on no legs.
     if (takesPlinth(unit.type, profile) && unit.params?.plinth !== true
+      && floatHeightOf(unit.type, unit.params, profile) == null
       && (Number(unitBase(unit, profile)) || 0) > 0) {
       out.push(finding(6, 'yellow', at(null, {
         message: `${unitNum}: standing on legs with no plinth.`,

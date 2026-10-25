@@ -283,6 +283,9 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f43-t82-f11.mjs',
   // T82 F12 (25.10.2026): the service void, a note in the Check and a hatch on the sheets
   'scripts/t78-classify.d/f43-t82-f12.mjs',
+  // T82 F13 (25.10.2026): the vanity on its plinth or floating, and its hangers in the BOM
+  'test/turn82-f13-vanity-panel.test.js',
+  'scripts/t78-classify.d/f43-t82-f13.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

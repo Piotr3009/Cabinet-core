@@ -23,9 +23,10 @@ import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 // them, so the menu and the sweep cannot disagree with the cabinet.
 import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
+// T82 F13 · floatHeightOf: a floating vanity's height, the one question (KIT_VANITY.lsp D19).
 import {
-  defaultParamsFor, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel, isHawaPocket,
-  isVanityKit, isWardrobeWallUnit, profilePath,
+  defaultParamsFor, floatHeightOf, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel,
+  isHawaPocket, isVanityKit, isWardrobeWallUnit, profilePath,
   resolveTypeId, TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
@@ -3977,6 +3978,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   addPlinth: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit || !takesPlinth(unit.type, getCabinetProfile())) return false;
+    // T82 F13 · a floating vanity takes no plinth (*"no legs, no plinth"*): it is put on the floor first.
+    if (floatHeightOf(unit.type, unit.params, getCabinetProfile()) != null) return false;
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, plinth: true } } : u)),
     }));
@@ -4063,6 +4066,66 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // Taking one out of the middle of a run splits the kick in two — the same
     // reason adding one joins them.
     get().refreshAutoParts();
+  },
+
+  /**
+   * ─── T82 F13 · PLINTH OR FLOATING ────────────────────────────────────────
+   *
+   * CLAUDE.md T82 F13: *"Plinth: the house plinth under the vanity ...;
+   * `floating: true`: no legs, no plinth, the carcass hung at `float_height_mm`
+   * (PROPOSED default 300)"*; the owner, 25.10.2026 (12:57): *"plinth do zmiany
+   * wysokosc, propozycja floating lub on the floor"*. KIT_VANITY.lsp D19.
+   *
+   * Floating writes the flag, the height (the one typed, else the unit's own,
+   * else the profile's) and takes the plinth off: a hung carcass has no toe
+   * kick, and the run's plinth (`runs.js`, `params.plinth`) closes over the gap
+   * it leaves. Back on the floor the plinth returns as a new unit is born with
+   * it (T48 F3, `takesPlinth`), and the toe kick is the one it stood on.
+   *
+   * THE ROOM REFUSES IN WORDS: a height that puts the carcass through the
+   * ceiling, or below the floor, is said and nothing moves. Any kit but a
+   * vanity is refused too: floating is the vanity's own.
+   *
+   * @returns {{ ok: boolean, said: string }}
+   */
+  setVanityFloating: (unitId, floating, heightMm = null) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, said: 'No such unit.' };
+    const profile = getCabinetProfile();
+    const label = unit.params?.unit_num ? `${unit.params.unit_num}: ` : '';
+    if (!isVanityKit(unit.type)) {
+      return { ok: false, said: `${label}only a vanity unit floats; this one stands on the floor.` };
+    }
+    let patch;
+    if (floating) {
+      const asked = heightMm != null && heightMm !== '' ? Number(heightMm) : null;
+      const own = Number(unit.params?.float_height_mm);
+      const h = asked != null ? asked
+        : (Number.isFinite(own) && unit.params?.float_height_mm != null ? own : Number(profile.vanity?.defaults?.floatHeightMm) || 0);
+      if (!Number.isFinite(h) || h < 0) {
+        return { ok: false, said: `${label}a vanity hangs at 0 mm or more off the floor.` };
+      }
+      const roomH = Number(s.project.room?.height) || 0;
+      const carcass = Number(unit.params?.height) || 0;
+      if (roomH > 0 && h + carcass > roomH + 1e-6) {
+        return {
+          ok: false,
+          said: `${label}the room is ${formatMm(roomH)} mm: a ${formatMm(carcass)} mm vanity hung at ${formatMm(h)} mm will not fit under the ceiling. `
+            + `${formatMm(Math.max(0, roomH - carcass))} mm is the highest it can hang.`,
+        };
+      }
+      patch = { floating: true, float_height_mm: h, plinth: false };
+    } else {
+      patch = { floating: false, plinth: takesPlinth(unit.type, profile) ? true : unit.params?.plinth === true };
+    }
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, ...patch } } : u)),
+    }));
+    // The run's plinth splits or joins, and the fronts are measured again.
+    get().refreshAutoParts();
+    get().healFrontGaps();
+    return { ok: true, said: '' };
   },
 
   /**
@@ -11676,6 +11739,9 @@ useUiStore.subscribe((ui) => {
  */
 function floorYOf(unit, applied, profile) {
   const type = getUnitType(unit.type);
+  // T82 F13 · a floating vanity hangs at its own height, whatever is being applied to it.
+  const floatH = floatHeightOf(unit.type, { ...unit.params, ...(applied || {}) }, profile);
+  if (floatH != null) return floatH;
   if (type.mount === 'wall') {
     return Number(applied?.mount_height ?? unit.params.mount_height ?? profile.wallUnit.defaults.mountHeight) || 0;
   }

@@ -532,3 +532,34 @@ export function applyVanityTrap({
     verdict: verdict.map((v) => ({ kind: v.kind, x: r4(v.x), sentence: v.sentence })),
   };
 }
+
+// --- (e) PLINTH OR FLOATING (T82 F13) ---------------------------------------
+//
+// KIT_VANITY.lsp D19, CONFIRMED (12:57 *"plinth do zmiany wysokosc, propozycja
+// floating lub on the floor"*; 13:03 *"6 - do BOM tez"*): on the floor, the
+// house plinth and legs at the height the unit is given; floating, no legs, no
+// plinth, mount "wall", the carcass underside at `float_height_mm`
+// (`vanity.defaults.floatHeightMm` 300, PROPOSED), and the BOM buys
+// `vanity.hangers.perUnit` hangers (2, PROPOSED), RAIL-TOP being where they
+// bite. `types.js floatHeightOf` is the one place a unit is asked whether it
+// floats; these four are the LISP's answers to it.
+
+/** How the unit stands (`vanity-mount`). */
+export function vanityMount(floating) {
+  return floating ? 'wall' : 'floor';
+}
+
+/** Does the house plinth run under it (`vanity-plinth-p`)? */
+export function vanityPlinthP(floating) {
+  return !floating;
+}
+
+/** The carcass underside above the floor (`vanity-base-y`). */
+export function vanityBaseY(floating, floatH, plinthH) {
+  return floating ? Number(floatH) : Number(plinthH);
+}
+
+/** How many hangers the BOM buys (`vanity-hangers`). */
+export function vanityHangers(floating, profile) {
+  return floating ? num(profile?.vanity?.hangers?.perUnit, 2) : 0;
+}

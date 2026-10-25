@@ -19,7 +19,7 @@
 //
 // Pure functions — no React, no store imports.
 
-import { getUnitType } from './types.js';
+import { floatHeightOf, getUnitType } from './types.js';
 // T82 F2 · the HAWA pocket's own choices and the shape its doors' cover takes
 // (engine/hawaPocket.js, KIT_HAWA.lsp's mirror): read, never re-derived here.
 import { pocketChoiceOf, pocketCoverOf } from './hawaPocket.js';
@@ -100,6 +100,10 @@ export function unitTop(unit, profile) {
  */
 export function unitBase(unit, profile) {
   const type = getUnitType(unit.type);
+  // T82 F13 · a floating vanity hangs at its own height (`types.js floatHeightOf`, KIT_VANITY.lsp D19):
+  // the run, the scene, the plan and the elevation read it here.
+  const floatH = floatHeightOf(unit.type, unit.params, profile);
+  if (floatH != null) return floatH;
   if (type.mount === 'wall') return Number(unit.params?.mount_height) || 0;
   if (!standsOnLegHeight(type)) return 0;
   return impliedLegHeight(unit?.params, type, profile);

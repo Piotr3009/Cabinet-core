@@ -333,6 +333,11 @@ export const NEW_FILES = [
   'test/turn82-f21-rotated-figures.test.js',
   // T82 F25 (25.10.2026): the walk, real mouse on the built app
   'scripts/t82-walk.mjs',
+  // T83 probes (25.10.2026): the tables of F7, F9 and F10 before the cuts (P1)
+  'scripts/t83-probe-lib.mjs',
+  'scripts/t83-probe-f07.mjs',
+  'scripts/t83-probe-f09.mjs',
+  'scripts/t83-probe-f10.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

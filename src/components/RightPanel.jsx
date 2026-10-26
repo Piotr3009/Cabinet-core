@@ -1762,6 +1762,8 @@ export default function RightPanel() {
       <NotchModal />
       {/* T79 F5 · the CUT EDGE window, opened at the click on a lit edge. */}
       <EdgeNotchModal />
+      {/* T83 F3 · MIRROR ON THE BACK?, opened at the click on a mirror cabinet's back. */}
+      <MirrorBackModal />
     </aside>
   );
 }
@@ -2643,6 +2645,45 @@ function EdgeNotchWindow({ args }) {
           <button type="submit" className="cc-btn" data-testid="edge-notch-cut">CUT</button>
         </div>
       </form>
+    </Modal>
+  );
+}
+
+// ─── T83 F3 · MIRROR ON THE BACK? (KIT_MIRROR.lsp D15) ──────────────────────
+// *"czasami jak ktos chce to bedzie mial na plecach tez, klikasz na plecy i
+// wyskakuje ci opcja chcesz lustro na plecach?"*. The small window the BACK's
+// click opens (3d/mirrorCabinetRoom.js askMirrorBack), beside the click: the
+// question, No and Yes (the answer the cabinet has lit), each through the
+// store's ONE action (`setMirrorBack`), a refusal said here in its words.
+function MirrorBackModal() {
+  const modal = useUiStore((s) => s.modal);
+  const args = useUiStore((s) => s.modalArgs);
+  if (modal !== 'mirror-back' || !args?.unitId) return null;
+  return <MirrorBackWindow key={args.unitId} args={args} />;
+}
+
+function MirrorBackWindow({ args }) {
+  const profile = useCabinetProfileStore((s) => s.profile);
+  const closeModal = useUiStore((s) => s.closeModal);
+  const setMirrorBack = useProjectStore((s) => s.setMirrorBack);
+  const unit = useProjectStore((s) => s.units.find((u) => u.id === args.unitId)) || null;
+  const [said, setSaid] = useState('');
+  const on = Boolean(unit?.params?.mirror?.mirror_back ?? profile?.mirror?.defaults?.mirrorBack);
+  const answer = (yes) => {
+    const res = setMirrorBack(args.unitId, yes);
+    if (!res?.ok) { setSaid(res?.said || ''); return; }
+    closeModal();
+  };
+  return (
+    <Modal name="mirror-back" title="MIRROR ON THE BACK" anchor={args.anchor || null} width="w-64" onClose={closeModal}>
+      <div className="space-y-2" data-testid="mirror-back-ask" data-mirror-back-unit={args.unitId} data-mirror-back-on={on ? 'yes' : 'no'}>
+        <p className="text-sm text-ink-100" data-testid="mirror-back-question">Mirror on the back?</p>
+        {said && <p className="text-[11px] text-status-danger" data-testid="mirror-back-said">{said}</p>}
+        <div className="flex justify-end gap-2">
+          <button type="button" className={on ? 'cc-btn' : 'cc-btn-gold'} data-testid="mirror-back-no" onClick={() => answer(false)}>No</button>
+          <button type="button" className={on ? 'cc-btn-gold' : 'cc-btn'} data-testid="mirror-back-yes" onClick={() => answer(true)}>Yes</button>
+        </div>
+      </div>
     </Modal>
   );
 }

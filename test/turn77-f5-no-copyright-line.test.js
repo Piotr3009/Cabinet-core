@@ -345,6 +345,11 @@ export const NEW_FILES = [
   'src/engine/mirrorCabinet.js',
   'test/turn83-f02-mirror-kit.test.js',
   'scripts/t78-classify.d/f44-t83-f02.mjs',
+  // T83 F3 (25.10.2026): the mirror cabinet in the room (M2)
+  'src/3d/MirrorCabinet.jsx',
+  'src/3d/mirrorCabinetRoom.js',
+  'test/turn83-f03-mirror-room.test.js',
+  'scripts/t78-classify.d/f44-t83-f03.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

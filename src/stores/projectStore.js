@@ -4207,6 +4207,30 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * ─── T83 F3 · MIRROR ON THE BACK? ───────────────────────────────────────────
+   *
+   * The owner, 25.10.2026 (14:09): *"czasami jak ktos chce to bedzie mial na
+   * plecach tez, klikasz na plecy i wyskakuje ci opcja chcesz lustro na
+   * plecach?"*. The answer of the window the BACK's click opens: the kit's one
+   * key `params.mirror.mirror_back` (KIT_MIRROR.lsp D15), written through the
+   * house's road (updateUnitParams: one Undo step, the unit recomputed), every
+   * other answer of `params.mirror` kept. Any kit but the mirror cabinet is
+   * refused in words.
+   *
+   * @returns {{ ok: boolean, said: string }}
+   */
+  setMirrorBack: (unitId, on) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, said: 'No such unit.' };
+    const label = unit.params?.unit_num ? `${unit.params.unit_num}: ` : '';
+    if (!isMirrorCabinet(unit.type)) {
+      return { ok: false, said: `${label}only a mirror cabinet takes a mirror on its back.` };
+    }
+    get().updateUnitParams(unitId, { mirror: { ...(unit.params?.mirror || {}), mirror_back: Boolean(on) } });
+    return { ok: true, said: '' };
+  },
+
+  /**
    * Add the top infill at the profile default, clamped to whatever the room has
    * left above the unit. Returns the height it got — 0 means the unit is already
    * at the ceiling, and the caller says so.

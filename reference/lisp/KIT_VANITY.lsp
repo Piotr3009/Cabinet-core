@@ -15,6 +15,11 @@
 ;;; WALL, THE VOID INSIDE (D5, D6, D7, D9, D15 and D21 amended, D27 written;
 ;;; the routines vanity-wall-gap, vanity-top-depth, vanity-void-note,
 ;;; vanity-box-room, vanity-box-depth and vanity-boxes, and part 6)
+;;; Turn 83 F7 (25.10.2026), the owner's words of 22:41 - THE TRAP'S GAP AT
+;;; TWO COLUMNS WITH ONE BASIN (D28 written; D10, D11, D17 and D21 amended;
+;;; the routines vanity-trap-gap, vanity-gap-box, vanity-gap-of,
+;;; vanity-boxes-cut and vanity-divider-cut, the GAP of vanity-trap-plan and
+;;; vanity-trap-verdict, and part 6)
 ;;; Derived from: KIT_BUDR_FULL.lsp (the parent: the drawer base), the BACK of
 ;;;               SKYLON_COMMON drawBACK (the rails are what is left of it),
 ;;;               KIT_SINK.lsp (a carcass with no puzzle at the back edge),
@@ -49,6 +54,11 @@
 ;;;   22:41  after the eye-test of T82: "jak mamy miejsce na rurki z tylu to
 ;;;           super ze szuflady sa mniejsze ale carcas powinien byc do sciany,
 ;;;           czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"
+;;;   22:41  the trap at two columns: "nie ma wyciecia na U na sinki nawet jak
+;;;           je wlacze ... jest wyciecie jak jest 1 szuflada ale nie jak sa 2
+;;;           szuflady a mamy jeden sink, albo mam pomysl: zmniejszmy szuflady
+;;;           na szerokosc, tylko fronty zostawmy szerokie i pomiedzy
+;;;           szufladami zrobi sie miejsce na syfon (tylko gorna row)"
 ;;;
 ;;; This is a NEW FILE. It touches no other kit. KIT_BUDR_FULL, SKYLON_COMMON
 ;;; and the six fossil kits are untouched; a bare drawer base cuts what it cut,
@@ -184,7 +194,9 @@
 ;;;     "a divider mid-width, a stack in each column, one fixed shelf over
 ;;;     both") with the carcass TOP as the board over both: a DIVIDER at
 ;;;     (W - G) / 2, the same n equal drawers in each column, each column's
-;;;     boxes the parent's law over the column's own clear width.
+;;;     boxes the parent's law over the column's own clear width. AMENDED
+;;;     25.10.2026 (T83 F7, D28): in the vanity with ONE basin the top row's
+;;;     two boxes are narrowed to the trap's gap (vanity-boxes-cut).
 ;;; D11 THE DIVIDER STANDS ON THE BOTTOM AND UNDER THE TOP (the house law:
 ;;;     material never enters another material). From the BOTTOM's top face
 ;;;     (G) to the TOP's underside (H - G), H - 2G high; from the back's
@@ -194,7 +206,10 @@
 ;;;     between them, in the chest it meets the BACK; its head and foot
 ;;;     jointed as the house's divider (cabinet.js, CHAT FIX 17.10.2026); the
 ;;;     runner rows of both columns on its two faces, as the wardrobe's
-;;;     divider between two drawer columns carries them.
+;;;     divider between two drawer columns carries them. AMENDED 25.10.2026
+;;;     (T83 F7, D28): under the trap's gap it stops at the top row's runner
+;;;     underside, a SHORT DIVIDER (vanity-divider-cut), and carries only the
+;;;     rows below it.
 ;;; D12 THE PAIR OF FRONTS (DERIVED, the house's pair, doors.doubleTotalGap 6):
 ;;;     two columns' fronts are (W - 6) / 2 wide, 1.5 in from the carcass's
 ;;;     outer faces and 3 apart on the divider's centre line.
@@ -234,7 +249,9 @@
 ;;;     trap").
 ;;; D17 A WASTE OVER THE DIVIDER (DERIVED): one basin on two columns puts its
 ;;;     waste on the divider; no box takes it, no U is cut and Check #39 says
-;;;     "The trap stands over the divider". A U that would leave less than 30
+;;;     "The trap stands over the divider". AMENDED 25.10.2026 (T83 F7): the
+;;;     vanity cuts the trap's gap there now (D28); the sentence stays for a
+;;;     unit too narrow for the gap. A U that would leave less than 30
 ;;;     of the back wall against a box's side or the U before it is not cut
 ;;;     either: "The trap's U does not fit the top drawer's box: every board of
 ;;;     its back wall keeps 30".
@@ -264,7 +281,7 @@
 ;;;     take D8 (equal by default, a birth answer: the bare kit keeps its
 ;;;     golden split) and section 5(c2) THE TWO COLUMNS whole. Nothing else of
 ;;;     this file: its back stays, no rails, no void, no basin, no U.
-;;; D21 THE CHECKS. #39 is the trap's (D15, D16, D17, D23), its sentences
+;;; D21 THE CHECKS. #39 is the trap's (D15, D16, D17, D23, and D28's gap), its sentences
 ;;;     written by vanity-trap-verdict; #48, the family of the basins a top
 ;;;     cannot take, also says the bowl (D25, vanity-bowl-verdict); the void is
 ;;;     the note #45 (CLAUDE.md's #40: the in-frame project holds #40 to #44
@@ -339,6 +356,34 @@
 ;;;     parent's (vd 0). The trap's U (D13) is cut from the shorter box's back
 ;;;     face and its reach is read there (D15).
 ;;;
+;;; TURN 83 F7, THE TRAP AT TWO COLUMNS WITH ONE BASIN (25.10.2026, 22:41;
+;;; D10, D11, D17 and D21 above are amended with it):
+;;;
+;;; D28 THE TRAP'S GAP (CONFIRMED 22:41 "zmniejszmy szuflady na szerokosc,
+;;;     tylko fronty zostawmy szerokie i pomiedzy szufladami zrobi sie
+;;;     miejsce na syfon (tylko gorna row)"; the 20 a side PROPOSED,
+;;;     vanityTrapGapClear). At two columns with ONE basin, the TOP ROW only:
+;;;     its two boxes are narrowed toward the centre, column 1's right outer
+;;;     face at W / 2 - (vanityTrapW / 2 + vanityTrapGapClear), column 2's
+;;;     left outer face at W / 2 + the same, a gap of 200 centred on the waste
+;;;     (W / 2); each box's walls and bottom follow its new width by the
+;;;     parent's law, its runner pair with it, its front unchanged (the pair
+;;;     of D12, wide). The trap stands in the gap's air: no U is cut in either
+;;;     box. The DIVIDER stops under the top row: a SHORT DIVIDER from the
+;;;     BOTTOM's top face to the top row's runner underside (y 400 on the
+;;;     default, 382 high), carrying the runner rows below it; its head
+;;;     stands free 28.5 under the trap's bottom line (D16), as no board of
+;;;     the columns rule spans the stacks under the TOP (D10: the TOP is the
+;;;     board over both; no fixed shelf and no rail is cut). The top row's
+;;;     two inner runners have no wall in the gap and none is cut for them (a
+;;;     wall beside the trap would stand under the bowl, D25): Check #39 says
+;;;     "The trap stands in the gap between the top drawers: no wall carries
+;;;     their two inner runners". The shallow-trap air (D16) is measured as
+;;;     before, from the top row's bottom line to the box under it. Where a
+;;;     narrowed box would keep walls shorter than vanityBackPieceMin, no gap
+;;;     is cut and D17 stands. Two basins on two columns keep a U in each
+;;;     column's top box (D13), and one column keeps its U.
+;;;
 ;;;========================================
 ;;; 3. CONSTANTS (the owner's numbers; profile.vanity mirrors them)
 ;;;========================================
@@ -355,6 +400,8 @@
 (defun vanityTrapR ( / ) 20.0)
 ;; profile.vanity.trapClearMm        PROPOSED (the sentence is the owner's, 12:57: "prosze uzyc shallow trap")
 (defun vanityTrapClear ( / ) 60.0)
+;; profile.vanity.trapGapClearMm     PROPOSED (T83 F7, CLAUDE.md "160 / 2 + 20 PROPOSED"; D28: the air a side of the trap's gap)
+(defun vanityTrapGapClear ( / ) 20.0)
 ;; profile.vanity.backPieceMinMm     PROPOSED (D23, the review of 25.10.2026: no 0 or sliver board for the saw)
 (defun vanityBackPieceMin ( / ) 30.0)
 ;; profile.vanity.wasteFromBackMm    PROPOSED (CLAUDE.md F11)
@@ -647,6 +694,60 @@
     (list "DIVIDER" (/ (- W G) 2.0) (float G) (float G) (float G) (- H G G) (- D G))
     nil))
 
+;;; The trap's gap (D28): at two columns with one basin, the air between the
+;;; top row's two boxes, (from to) centred on W / 2; nil on any other count.
+(defun vanity-trap-gap (W columns sinks / half)
+  (if (and (= columns 2) (= sinks 1))
+    (progn
+      (setq half (+ (/ (vanityTrapW) 2.0) (vanityTrapGapClear)))
+      (list (- (/ W 2.0) half) (+ (/ W 2.0) half)))
+    nil))
+
+;;; A top box narrowed to the gap (D28): column 1's right outer face at the
+;;; gap's left end, column 2's left outer face at its right end.
+(defun vanity-gap-box (b gap / x0 x1)
+  (setq x0 (nth 2 b)
+        x1 (+ (nth 2 b) (nth 3 b)))
+  (if (= (nth 0 b) 1)
+    (setq x1 (car gap))
+    (setq x0 (cadr gap)))
+  (list (nth 0 b) (nth 1 b) x0 (- x1 x0) (nth 4 b) (nth 5 b) (nth 6 b) (nth 7 b)))
+
+;;; Does every narrowed top box keep walls of vanityBackPieceMin (D28, D23)?
+(defun vanity-gap-fits-p (boxes n gap GB / ok b)
+  (setq ok T)
+  (foreach b boxes
+    (if (and (= (nth 1 b) n) (< (vanity-box-len (vanity-gap-box b gap) GB) (vanityBackPieceMin)))
+      (setq ok nil)))
+  ok)
+
+;;; The gap the cut takes (D28): the trap's gap where its boxes fit, else nil.
+(defun vanity-gap-of (boxes W n columns sinks GB / gap)
+  (setq gap (vanity-trap-gap W columns sinks))
+  (if (and gap (vanity-gap-fits-p boxes n gap GB)) gap nil))
+
+;;; Every box as the cut stands it (D9, D10, D27, D28): vanity-boxes, the top
+;;; row narrowed to the gap where the gap is cut. sinks nil is no basin.
+(defun vanity-boxes-cut (W H D G GB frontT n columns sinks vd / boxes gap out b)
+  (setq boxes (vanity-boxes W H D G GB frontT n columns vd)
+        gap (vanity-gap-of boxes W n columns sinks GB)
+        out nil)
+  (foreach b boxes
+    (setq out (cons (if (and gap (= (nth 1 b) n)) (vanity-gap-box b gap) b) out)))
+  (reverse out))
+
+;;; The divider as the cut stands it (D11, D28): under the gap a SHORT
+;;; DIVIDER, from the BOTTOM to the top row's runner underside; else the
+;;; divider of D11, or nil on one column.
+(defun vanity-divider-cut (W H D G GB frontT n columns sinks / dv gap top)
+  (setq dv (vanity-divider W H D G columns)
+        gap (vanity-gap-of (vanity-boxes W H D G GB frontT n columns (vanityServiceVoid)) W n columns sinks GB))
+  (if (and dv gap)
+    (progn
+      (setq top (nth (1- n) (vanity-runner-bottoms (vanity-front-ys (vanity-front-heights H n)) G)))
+      (list (nth 0 dv) (nth 1 dv) (nth 2 dv) (nth 3 dv) (nth 4 dv) (- top G) (nth 6 dv)))
+    dv))
+
 ;;; ---- (d) THE TRAP ----
 
 ;;; The wastes' x, left to right (D14).
@@ -680,15 +781,17 @@
        (>= (- (- (+ (nth 2 b) (nth 3 b)) GB) (nth 2 u)) m)
        (or (null prev) (/= (nth 0 prev) (nth 0 u)) (>= (- (nth 1 u) (nth 2 prev)) m))))
 
-;;; Every waste's plan: ((xw box u status) ...), status "CUT", "DIVIDER" or
-;;; "FIT" (D13, D17).
-(defun vanity-trap-plan (W H D G GB frontT n columns sinks / boxes out xw b u prev)
-  (setq boxes (vanity-boxes W H D G GB frontT n columns (vanityServiceVoid))
+;;; Every waste's plan: ((xw box u status) ...), status "CUT", "DIVIDER",
+;;; "FIT" or "GAP", the waste in the trap's gap, no U (D13, D17, D28).
+(defun vanity-trap-plan (W H D G GB frontT n columns sinks / boxes gap out xw b u prev)
+  (setq boxes (vanity-boxes-cut W H D G GB frontT n columns sinks (vanityServiceVoid))
+        gap (vanity-gap-of (vanity-boxes W H D G GB frontT n columns (vanityServiceVoid)) W n columns sinks GB)
         out nil
         prev nil)
   (foreach xw (vanity-wastes W columns sinks)
     (setq b (vanity-top-box-under boxes n xw GB))
     (cond
+      (gap (setq out (cons (list xw nil nil "GAP") out)))
       ((null b) (setq out (cons (list xw nil nil "DIVIDER") out)))
       (T
         (setq u (vanity-trap-u b xw))
@@ -756,14 +859,28 @@
 (defun vanity-trap-line (b) (vanity-box-under b))
 (defun vanity-trap-room (top below) (- (vanity-trap-line top) (vanity-box-top below)))
 
+;;; The shallow-trap sentence, the top box over the box below it, or nil (D16).
+(defun vanity-trap-shallow (top below / room)
+  (setq room (vanity-trap-room top below))
+  (if (< room (vanityTrapClear))
+    (strcat "#39 Use a shallow trap: the drawer under it stands " (vanity-mm room)
+            " mm under the trap's bottom, " (vanity-mm (vanityTrapClear)) " wanted")
+    nil))
+
 ;;; Check #39: ((kind xw sentence) ...), nil when the trap has its room
-;;; (D15, D16, D17).
-(defun vanity-trap-verdict (W H D G GB frontT n columns sinks / boxes out e b reach below room)
-  (setq boxes (vanity-boxes W H D G GB frontT n columns (vanityServiceVoid))
+;;; (D15, D16, D17, D28).
+(defun vanity-trap-verdict (W H D G GB frontT n columns sinks / boxes out e b reach below s)
+  (setq boxes (vanity-boxes-cut W H D G GB frontT n columns sinks (vanityServiceVoid))
         out nil)
   (foreach e (vanity-trap-plan W H D G GB frontT n columns sinks)
     (setq b (nth 1 e))
     (cond
+      ((= (nth 3 e) "GAP")
+        (setq out (cons (list "RUNNERS" (car e) "#39 The trap stands in the gap between the top drawers: no wall carries their two inner runners") out))
+        (if (> n 1)
+          (progn
+            (setq s (vanity-trap-shallow (vanity-box-of boxes 1 n) (vanity-box-of boxes 1 (1- n))))
+            (if s (setq out (cons (list "SHALLOW" (car e) s) out))))))
       ((= (nth 3 e) "DIVIDER")
         (setq out (cons (list "DIVIDER" (car e) "#39 The trap stands over the divider: no top drawer can take its U") out)))
       ((= (nth 3 e) "FIT")
@@ -782,12 +899,8 @@
         (if (> n 1)
           (progn
             (setq below (vanity-box-of boxes (car b) (1- n))
-                  room (vanity-trap-room b below))
-            (if (< room (vanityTrapClear))
-              (setq out (cons (list "SHALLOW" (car e)
-                                    (strcat "#39 Use a shallow trap: the drawer under it stands " (vanity-mm room)
-                                            " mm under the trap's bottom, " (vanity-mm (vanityTrapClear)) " wanted"))
-                              out))))))))
+                  s (vanity-trap-shallow b below))
+            (if s (setq out (cons (list "SHALLOW" (car e) s) out))))))))
   (reverse out))
 
 ;;; ---- (e) PLINTH OR FLOATING ----
@@ -948,8 +1061,17 @@
 ;;; wide at x 23 and 464, walls 377, bottoms 390; the wastes at 225 and 675, the
 ;;; U's 145..305 in Z1D3 and 595..755 in Z2D3; Z1D3's back wall (0 104) and
 ;;; (264 377).
-;;; ONE BASIN ON TWO COLUMNS. The waste at 450 stands on the divider: no U, "#39
-;;; The trap stands over the divider: no top drawer can take its U".
+;;; ONE BASIN ON TWO COLUMNS (T83 F7, D28). The trap's gap 350..550, 200
+;;; centred on the waste at 450; the top boxes Z1D3 at x 23 and Z2D3 at x 550,
+;;; 327 wide, walls 291, bottoms 304; the fronts 447 at x 1.5 and 451.5 as
+;;; before; the SHORT DIVIDER at x 441, 18 x 382 x 482 from y 18 and z 18, to
+;;; the top row's runner underside at 400, carrying the runner rows at 56 and
+;;; 238; no U; "#39 The trap stands in the gap between the top drawers: no
+;;; wall carries their two inner runners"; the trap's bottom line 428.5, the
+;;; box under it tops at 351.5: 77 of air, no shallow trap. Under T82 the
+;;; waste stood on the divider: no U, "#39 The trap stands over the divider:
+;;; no top drawer can take its U", the sentence D17 keeps for a unit too
+;;; narrow for the gap.
 ;;; TWO BASINS ON ONE COLUMN. The wastes at 300 and 600, the U's 220..380 and
 ;;; 520..680, the back wall D3-BB-1 (0 179), D3-BB-2 (339 479), D3-BB-3 (639 818).
 ;;;
@@ -1000,7 +1122,7 @@
   (setq sinks (getint "\nBasins 0, 1 or 2 <1>: "))
   (if (null sinks) (setq sinks 1))
   (setq rails (vanity-rails W H G)
-        dv (vanity-divider W H D G columns)
+        dv (vanity-divider-cut W H D G GB frontT n columns sinks)
         fronts (vanity-fronts W H n columns))
   ;; the front view: the rails behind, the divider, the fronts
   (foreach r rails

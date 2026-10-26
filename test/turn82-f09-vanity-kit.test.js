@@ -454,10 +454,12 @@ test('F9 . columns 2: one DIVIDER mid-width, a stack each side, six boxes at thr
   assert.equal(runnerPairs(r), 6);
   assert.deepEqual(r.derived.vanity.trap.cuts.map((c) => c.tag), ['Z1D3', 'Z2D3']);
   assert.ok(byId(r, 'Z1D3-BB-1') && byId(r, 'Z1D3-BB-2') && byId(r, 'Z2D3-BB-2'));
-  // One basin on two columns: its waste stands on the divider, no U, the sentence (D17).
+  // One basin on two columns: no U (D17). AMENDED BY T83 F7 (25.10.2026, 22:41): *"zmniejszmy szuflady na szerokosc, tylko fronty zostawmy szerokie i pomiedzy szufladami zrobi sie miejsce na syfon (tylko gorna row)"*:
+  // the top row's two boxes stand apart round the trap (KIT_VANITY.lsp D28), so #39 says the gap's RUNNERS, not the divider.
   const one = kit('VANITY3', { columns: 2, sinks: 1 });
   assert.equal(one.panels.filter((p) => p.meta?.vanityTrap).length, 0);
-  assert.deepEqual(trapSaid(one).map((x) => `#39 ${x.message}`), ['#39 The trap stands over the divider: no top drawer can take its U']);
+  assert.deepEqual(trapSaid(one).map((x) => `#39 ${x.message}`), L.call('vanity-trap-verdict', 900, 600, 500, G, GB, FT, 3, 2, 1).map((e) => e[2]));
+  assert.deepEqual(trapSaid(one).map((x) => x.kind), ['RUNNERS']);
 });
 
 // ===========================================================================

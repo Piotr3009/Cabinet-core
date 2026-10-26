@@ -2365,6 +2365,14 @@ export const DEFAULT_CABINET_PROFILE = {
     // bottom line (the top box's bottom underside), else Check #39 in the
     // owner's words *"prosze uzyc shallow trap"* (12:57).
     trapClearMm: 60,
+    // T83 F7 · PROPOSED (CLAUDE.md T83 F7 "160 / 2 + 20 PROPOSED", KIT_VANITY.lsp
+    // D28): at two columns with one basin the top row's two boxes are narrowed
+    // toward the centre, each outer face trapWidthMm / 2 + this from the waste,
+    // a 200 gap for the trap (the owner, 22:41: *"zmniejszmy szuflady na
+    // szerokosc, tylko fronty zostawmy szerokie i pomiedzy szufladami zrobi sie
+    // miejsce na syfon (tylko gorna row)"*). Its own key: trapClearMm is #39's
+    // shallow-trap air.
+    trapGapClearMm: 20,
     // PROPOSED (KIT_VANITY.lsp D23, after the review of 25.10.2026): the
     // shortest board a U may leave of the top box's back wall, against a box
     // side or between two U's; a U that would leave less is not cut (#39).

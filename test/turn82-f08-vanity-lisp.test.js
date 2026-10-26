@@ -151,6 +151,8 @@ const KEYS = {
   trapRadiusMm: 'vanityTrapR',
   trapClearMm: 'vanityTrapClear',
   backPieceMinMm: 'vanityBackPieceMin',
+  // T83 F7 (CLAUDE.md T83 F7 "160 / 2 + 20 PROPOSED"): the trap's gap a side, its own key and constant.
+  trapGapClearMm: 'vanityTrapGapClear',
   wasteFromBackMm: 'vanityWasteFromBack',
   'basin.shape': 'vanityBasinShape',
   'basin.widthMm': 'vanityBasinW',
@@ -198,11 +200,13 @@ test('F8 . every profile.vanity number is a LISP constant of the same value, und
   for (const name of ['vanityServiceVoid', 'vanityRailH', 'vanityTrapW', 'vanityTrapD', 'vanityTrapR']) {
     assert.match(sourceOf(name), /CONFIRMED/, name);
   }
-  for (const name of ['vanityTrapClear', 'vanityBackPieceMin', 'vanityWasteFromBack', 'vanityBasinW', 'vanityWidth', 'vanityFloatHeight']) {
+  for (const name of ['vanityTrapClear', 'vanityTrapGapClear', 'vanityBackPieceMin', 'vanityWasteFromBack', 'vanityBasinW', 'vanityWidth', 'vanityFloatHeight']) {
     assert.match(sourceOf(name), /PROPOSED/, name);
   }
   assert.deepEqual(V, {
     serviceVoidMm: 80, railHeightMm: 100, trapWidthMm: 160, trapDepthMm: 120, trapRadiusMm: 20, trapClearMm: 60,
+    // AMENDED BY T83 F7 (25.10.2026, 22:41): *"zmniejszmy szuflady na szerokosc, tylko fronty zostawmy szerokie i pomiedzy szufladami zrobi sie miejsce na syfon (tylko gorna row)"*: the gap's 20 a side (PROPOSED).
+    trapGapClearMm: 20,
     backPieceMinMm: 30, wasteFromBackMm: 200,
     basin: { shape: 'oval', widthMm: 520, depthMm: 400, heightMm: 150 },
     defaults: { width: 900, height: 600, depth: 500, plinth: 100, top: 20, floatHeightMm: 300 },
@@ -453,10 +457,13 @@ test('F8 (d) . Check #39 in words: the waste beyond the U, the shallow trap, the
   assert.deepEqual(L.call('vanity-trap-us', 900, 560, 500, 18, 18, 25, 4, 1, 1).map((x) => x[0]), ['D4'], 'no second U, ever');
   assert.deepEqual(verdict(4, 1, 1).map((x) => x[0]), reachSaid, 'at 600 the four have 62 of air');
   say('THE SHALLOW TRAP. VANITY4 W 900 H 560 D 500: fronts 137 137 137 137 at y 0 140 280 420; sides 96; the trap\'s bottom line 448.5, the box under it tops at 389.5: 59 of air: "#39 Use a shallow trap: the drawer under it stands 59 mm under the trap\'s bottom, 60 wanted". The same at H 600: 147 each, 62 of air, no sentence.');
-  // D17: one basin on two columns stands on the divider: no U.
-  assert.deepEqual(verdict(3, 2, 1), [['DIVIDER', 450, '#39 The trap stands over the divider: no top drawer can take its U']]);
+  // D17: one basin on two columns: no U. AMENDED BY T83 F7 (25.10.2026, 22:41): *"zmniejszmy szuflady na szerokosc, tylko fronty zostawmy szerokie i pomiedzy szufladami zrobi sie miejsce na syfon (tylko gorna row)"*:
+  // the top row's boxes stand apart round the trap (D28), the waste in the gap's air; D17's sentence stays for a unit
+  // too narrow for the gap.
+  assert.deepEqual(verdict(3, 2, 1), [['RUNNERS', 450, '#39 The trap stands in the gap between the top drawers: no wall carries their two inner runners']]);
   assert.equal(L.call('vanity-trap-us', ...EX, 3, 2, 1), null, 'no U is cut');
-  say('ONE BASIN ON TWO COLUMNS. The waste at 450 stands on the divider: no U, "#39 The trap stands over the divider: no top drawer can take its U".');
+  assert.deepEqual(verdict(3, 2, 1, [300, 600, 500, 18, 18, 25]), [['DIVIDER', 150, '#39 The trap stands over the divider: no top drawer can take its U']]);
+  say('Under T82 the waste stood on the divider: no U, "#39 The trap stands over the divider: no top drawer can take its U", the sentence D17 keeps for a unit too narrow for the gap.');
   // Two basins too close on a narrow carcass: the second U would leave under 30 between them (D23).
   const narrow = L.call('vanity-trap-plan', 480, 600, 500, 18, 18, 25, 3, 1, 2);
   assert.deepEqual(narrow.map((e) => e[3]), ['CUT', 'FIT']);

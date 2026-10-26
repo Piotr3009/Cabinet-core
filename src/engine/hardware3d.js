@@ -499,11 +499,16 @@ function runnerInstances(result, profile) {
       // column's drawers count after the first's, as the BOM counts them.
       const drawer = i + 1 + k * rows.length;
       const y = Number.isFinite(bottoms[i]) ? bottoms[i] : rowY;
+      // T83 F7 · a vanity's top row narrowed to the trap's gap (KIT_VANITY.lsp
+      // D28, `meta.trapGap` on its boards): its pair rides that box's own sides.
+      const own = group.filter((p) => p.meta?.trapGap && p.meta?.drawer === i + 1);
+      const lf = own.length ? Math.min(...own.map((p) => p.box.x)) : leftFace;
+      const rf = own.length ? Math.max(...own.map((p) => p.box.x + p.box.w)) : rightFace;
       out.push({
-        kind: 'runner', side: 'L', drawer, x: leftFace, y, rowY, z, length, thickness: HW.profileThickness,
+        kind: 'runner', side: 'L', drawer, x: lf, y, rowY, z, length, thickness: HW.profileThickness,
       });
       out.push({
-        kind: 'runner', side: 'R', drawer, x: rightFace, y, rowY, z, length, thickness: HW.profileThickness,
+        kind: 'runner', side: 'R', drawer, x: rf, y, rowY, z, length, thickness: HW.profileThickness,
       });
     }
   }

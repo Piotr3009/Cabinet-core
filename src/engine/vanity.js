@@ -38,6 +38,10 @@
 //         back wall cut into boards, the bottom notched) and Check #39's
 //         sentences (`vanityTrapVerdict`), applied on the cut by
 //         `applyVanityTrap` with the drilling, as the canopy's boards are.
+//   5(c2) THE TRAP'S GAP (T83 F7, D28). At two columns with one basin the top
+//         row's two boxes stand apart round the waste (`vanityTrapGap`,
+//         `vanityGapBox`, `vanityGapOf`), the divider stops under the top row
+//         (`cabinet.js drawerColumnsDivider`), and the waste's plan is GAP.
 //
 // Pure: no React, no store, no three.js. Reads the profile it is handed.
 
@@ -58,6 +62,8 @@ export function vanitySpec(profile) {
     trapDepthMm: num(v.trapDepthMm, 120),             // vanityTrapD, CONFIRMED
     trapRadiusMm: num(v.trapRadiusMm, 20),            // vanityTrapR, CONFIRMED "6 - tak"
     trapClearMm: num(v.trapClearMm, 60),              // vanityTrapClear, PROPOSED
+    // T83 F7 (D28): the air a side of the trap's gap at two columns with one basin.
+    trapGapClearMm: num(v.trapGapClearMm, 20),        // vanityTrapGapClear, PROPOSED
     // D23, after the review of 25.10.2026: no board of the back wall under it.
     backPieceMinMm: num(v.backPieceMinMm, 30),        // vanityBackPieceMin, PROPOSED
     wasteFromBackMm: num(v.wasteFromBackMm, 200),     // vanityWasteFromBack, PROPOSED
@@ -249,6 +255,53 @@ const vanityBoxUnder = (b, profile) => b.base + num(profile?.baseDrawerUnit?.run
 const vanityBoxLen = (b, GB) => b.bw - GB - GB;
 const vanityBoxBottomW = (b, GB, profile) => vanityBoxLen(b, GB) + num(profile?.baseDrawerUnit?.bottomOversize, 13);
 
+// --- (c2) THE TRAP'S GAP AT TWO COLUMNS WITH ONE BASIN (T83 F7, D28) ---------
+//
+// The owner, 25.10.2026 (22:41): *"nie ma wyciecia na U na sinki nawet jak je
+// wlacze ... jest wyciecie jak jest 1 szuflada ale nie jak sa 2 szuflady a mamy
+// jeden sink, albo mam pomysl: zmniejszmy szuflady na szerokosc, tylko fronty
+// zostawmy szerokie i pomiedzy szufladami zrobi sie miejsce na syfon (tylko
+// gorna row)"*. KIT_VANITY.lsp D28.
+
+/**
+ * The trap's gap (`vanity-trap-gap`): at two columns with one basin, the air
+ * between the top row's two boxes, [from, to] centred on W / 2, half of it
+ * `trapWidthMm / 2 + trapGapClearMm` (100 on the default); else null.
+ */
+export function vanityTrapGap({ W, columns, sinks }, profile) {
+  if (Number(columns) !== 2 || Math.trunc(Number(sinks) || 0) !== 1) return null;
+  const T = vanitySpec(profile);
+  const half = T.trapWidthMm / 2 + T.trapGapClearMm;
+  return [Number(W) / 2 - half, Number(W) / 2 + half];
+}
+
+/**
+ * A top box narrowed to the gap (`vanity-gap-box`): column 1's right outer
+ * face at the gap's left end, column 2's left outer face at its right end.
+ * `b` is `{ col, x0, bw }` (x0 the left side's outer face, bw the outer width).
+ */
+export function vanityGapBox(b, gap) {
+  let x0 = Number(b.x0);
+  let x1 = Number(b.x0) + Number(b.bw);
+  if (Number(b.col) === 1) x1 = gap[0]; else x0 = gap[1];
+  return { col: b.col, x0: r4(x0), bw: r4(x1 - x0) };
+}
+
+/**
+ * The gap the cut takes (`vanity-gap-of`, `vanity-gap-fits-p`): the trap's
+ * gap where every narrowed top box keeps walls of `backPieceMinMm` (D23's
+ * shortest board), else null (D17 stands: the waste over the divider). `tops`
+ * the top row's boxes as the column plan stands them, `{ col, x0, bw }`.
+ */
+export function vanityGapOf({
+  W, columns, sinks, tops, GB,
+}, profile) {
+  const gap = vanityTrapGap({ W, columns, sinks }, profile);
+  if (!gap) return null;
+  const m = vanitySpec(profile).backPieceMinMm;
+  return (tops || []).every((b) => vanityBoxLen(vanityGapBox(b, gap), Number(GB)) >= m - EPS) ? gap : null;
+}
+
 // --- (d) THE TRAP ------------------------------------------------------------
 
 /**
@@ -294,11 +347,18 @@ function vanityUFits(b, u, prev, GB, profile) {
     && (!prev || prev.col !== u.col || u.from - prev.to >= m);
 }
 
-/** Every waste's plan: [{ x, box, u, status }], status CUT | DIVIDER | FIT (`vanity-trap-plan`). */
-function vanityTrapPlan({ boxes, n, columns, sinks, W, GB }, profile) {
+/**
+ * Every waste's plan: [{ x, box, u, status }], status CUT | DIVIDER | FIT, or
+ * GAP: the waste in the trap's gap the cut took (`gap`, D28), no U
+ * (`vanity-trap-plan`).
+ */
+function vanityTrapPlan({
+  boxes, n, columns, sinks, W, GB, gap = null,
+}, profile) {
   const out = [];
   let prev = null;
   for (const xw of vanityWastes({ W, columns, sinks })) {
+    if (gap) { out.push({ x: xw, box: null, u: null, status: 'GAP' }); continue; }
     const b = vanityTopBoxUnder(boxes, n, xw, GB);
     if (!b) { out.push({ x: xw, box: null, u: null, status: 'DIVIDER' }); continue; }
     const u = vanityTrapU(b, xw, profile);
@@ -360,17 +420,41 @@ function vanityTrapReach(b, wasteZ, profile) {
 const vanityTrapLine = (b, profile) => vanityBoxUnder(b, profile);
 const vanityTrapRoom = (top, below, profile) => vanityTrapLine(top, profile) - vanityBoxTop(below);
 
+/** The shallow-trap sentence, the top box over the box below it, or null (`vanity-trap-shallow`, D16). */
+function vanityTrapShallow(top, below, profile) {
+  const T = vanitySpec(profile);
+  const room = vanityTrapRoom(top, below, profile);
+  return room < T.trapClearMm
+    ? `#39 Use a shallow trap: the drawer under it stands ${vanityMm(room)} mm under the trap's bottom, ${vanityMm(T.trapClearMm)} wanted`
+    : null;
+}
+
 /**
- * Check #39 (`vanity-trap-verdict`, D15, D16, D17): [{ kind, x, sentence }],
- * empty when the trap has its room. Kinds: DIVIDER, FIT, REACH, SHALLOW; the
- * sentences are the LISP's, to the letter.
+ * Check #39 (`vanity-trap-verdict`, D15, D16, D17, D28): [{ kind, x,
+ * sentence }], empty when the trap has its room. Kinds: DIVIDER, FIT, REACH,
+ * SHALLOW, and RUNNERS (the trap's gap: no wall carries the top row's inner
+ * runners); the sentences are the LISP's, to the letter.
  */
-export function vanityTrapVerdict({ boxes, n, columns, sinks, W, GB }, profile) {
+export function vanityTrapVerdict({
+  boxes, n, columns, sinks, W, GB, gap = null,
+}, profile) {
   const T = vanitySpec(profile);
   const out = [];
-  for (const e of vanityTrapPlan({ boxes, n, columns, sinks, W, GB }, profile)) {
+  for (const e of vanityTrapPlan({
+    boxes, n, columns, sinks, W, GB, gap,
+  }, profile)) {
     const b = e.box;
-    if (e.status === 'DIVIDER') {
+    if (e.status === 'GAP') {
+      out.push({
+        kind: 'RUNNERS',
+        x: e.x,
+        sentence: '#39 The trap stands in the gap between the top drawers: no wall carries their two inner runners',
+      });
+      const top = boxes.find((x) => x.col === 1 && x.idx === n);
+      const below = boxes.find((x) => x.col === 1 && x.idx === n - 1);
+      const s = n > 1 && top && below ? vanityTrapShallow(top, below, profile) : null;
+      if (s) out.push({ kind: 'SHALLOW', x: e.x, sentence: s });
+    } else if (e.status === 'DIVIDER') {
       out.push({ kind: 'DIVIDER', x: e.x, sentence: '#39 The trap stands over the divider: no top drawer can take its U' });
     } else if (e.status === 'FIT') {
       out.push({
@@ -390,17 +474,8 @@ export function vanityTrapVerdict({ boxes, n, columns, sinks, W, GB }, profile) 
       }
       if (n > 1) {
         const below = boxes.find((x) => x.col === b.col && x.idx === n - 1);
-        if (below) {
-          const room = vanityTrapRoom(b, below, profile);
-          if (room < T.trapClearMm) {
-            out.push({
-              kind: 'SHALLOW',
-              x: e.x,
-              sentence: `#39 Use a shallow trap: the drawer under it stands ${vanityMm(room)} mm under the trap's bottom, `
-                + `${vanityMm(T.trapClearMm)} wanted`,
-            });
-          }
-        }
+        const s = below ? vanityTrapShallow(b, below, profile) : null;
+        if (s) out.push({ kind: 'SHALLOW', x: e.x, sentence: s });
       }
     }
   }
@@ -638,10 +713,12 @@ function featuresIn(cnc, y0, y1) {
  * `derived.vanity.trap` publishes.
  */
 export function applyVanityTrap({
-  panels, drills, warnings, W, GB, n, columns, sinks, profile, mkPanel,
+  panels, drills, warnings, W, GB, n, columns, sinks, profile, mkPanel, gap = null,
 }) {
   const boxes = vanityBoxesOf(panels, { n, columns });
-  const args = { boxes, n, columns, sinks, W, GB };
+  const args = {
+    boxes, n, columns, sinks, W, GB, gap,
+  };
   const plan = vanityTrapPlan(args, profile);
   const verdict = vanityTrapVerdict(args, profile);
   const T = vanitySpec(profile);
@@ -742,6 +819,8 @@ export function applyVanityTrap({
   return {
     wastes: vanityWastes({ W, columns, sinks }).map(r4),
     wasteFromBackMm: T.wasteFromBackMm,
+    // T83 F7 (D28) · the trap's gap the cut took, [from, to], when it took one.
+    ...(gap ? { gap: gap.map(r4) } : {}),
     cuts,
     verdict: verdict.map((v) => ({ kind: v.kind, x: r4(v.x), sentence: v.sentence })),
   };

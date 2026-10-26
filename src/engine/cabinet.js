@@ -141,6 +141,9 @@ import { vanityHangers } from './vanity.js';
 // T83 F6 · the room a vanity's drawer box may take, the void kept behind it
 // (KIT_VANITY.lsp D9, D27, `vanity-box-room`).
 import { vanityBoxRoom } from './vanity.js';
+// T83 F7 · the trap's gap at two columns with one basin (KIT_VANITY.lsp D28,
+// `vanity-gap-of`, `vanity-gap-box`).
+import { vanityGapBox, vanityGapOf } from './vanity.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
 // `trimOutlineOnSlope` are turn 46's (CLAUDE.md F3): the slope cut, ported 1:1
 // from SKYLON_COMMON's `SKY:slopeCutPts` — iron rule 3, the LISP states the
@@ -820,7 +823,12 @@ function drawerColumnsPlan({ W, G, GB, unitNum, profile }) {
  * from the back's inside face (z G) to the carcass front, D - G deep: the
  * sides' depth, the runners' full-depth wall (T32 F4).
  */
-function drawerColumnsDivider({ W, H, D, G }) {
+function drawerColumnsDivider({
+  W, H, D, G, top = null,
+}) {
+  // T83 F7 · under the trap's gap (KIT_VANITY.lsp D28, `vanity-divider-cut`) a
+  // SHORT DIVIDER, from the BOTTOM to the top row's runner underside `top`.
+  if (top != null) return { id: 'DIVIDER', x: (W - G) / 2, y: G, z: G, w: G, h: top - G, d: D - G, short: true };
   return { id: 'DIVIDER', x: (W - G) / 2, y: G, z: G, w: G, h: H - G - G, d: D - G };
 }
 
@@ -3161,6 +3169,45 @@ export function computeCabinet(params, profileOverride) {
     // is not measured against a face it was never cut to fill.
     const stackSays = overlay ? null : frontStackWarning({ heights, gap: B.gap, available: H });
     if (stackSays) warnings.push(stackSays);
+    // ─── T83 F7 · THE TRAP'S GAP AT TWO COLUMNS WITH ONE BASIN (D28) ────────
+    // The owner, 25.10.2026 (22:41): *"zmniejszmy szuflady na szerokosc, tylko
+    // fronty zostawmy szerokie i pomiedzy szufladami zrobi sie miejsce na syfon
+    // (tylko gorna row)"*. A vanity on two columns with one basin: the TOP ROW's
+    // two boxes narrowed toward the centre to the trap's gap (`vanityGapOf`,
+    // `vanityGapBox`, the LISP's `vanity-gap-of`), their walls and bottom by
+    // the parent's law over the new width, their runners with them, their
+    // fronts the pair's, unchanged; the divider stops under the top row (its
+    // runner underside). Null on every other unit, so nothing below moves.
+    let trapGap = null;
+    if (type.vanity && columns === 2 && !dummy) {
+      const n = heights.length;
+      const gap = vanityGapOf({
+        W, columns, sinks: params?.sinks, GB, tops: cols.map((c) => ({ col: c.col, x0: c.boxLeftX, bw: c.boxW })),
+      }, P);
+      if (gap) {
+        const lawInset = G + B.boxWidthClearance / 2 - B.frontWidthDeduction / 2;
+        trapGap = {
+          gap,
+          row: n,
+          dividerTop: runnerBottomY[n - 1],
+          cols: cols.map((c) => {
+            const g = vanityGapBox({ col: c.col, x0: c.boxLeftX, bw: c.boxW }, gap);
+            const len = g.bw - 2 * GB;
+            return {
+              ...c,
+              boxLeftX: g.x0,
+              boxW: g.bw,
+              boxLen: len,
+              bottomW: len + B.bottomOversize,
+              screwShift: {
+                left: (g.x0 - c.frontX) - lawInset,
+                right: ((c.frontX + c.frontWidth) - (g.x0 + g.bw)) - lawInset,
+              },
+            };
+          }),
+        };
+      }
+    }
     budr = {
       heights, frontY, runnerRows, runnerBottomY, sideHs, boxFrontH,
       depth, maxDl, boxW, frontWidth, boxLen,
@@ -3179,7 +3226,11 @@ export function computeCabinet(params, profileOverride) {
       // T82 F9 · the stack's columns (one: the kit as it always was) and, on
       // two, the DIVIDER between them (KIT_VANITY.lsp 5(c2)).
       cols,
-      divider: columns === 2 ? drawerColumnsDivider({ W, H, D, G }) : null,
+      divider: columns === 2 ? drawerColumnsDivider({
+        W, H, D, G, top: trapGap ? trapGap.dividerTop : null,
+      }) : null,
+      // T83 F7 · the trap's gap and the top row's narrowed boxes, or null.
+      trapGap,
     };
     // T75 F14 · a dummy is not a drawer: no box, no runner pair, no rod.
     numDrawers = heights.length - (dummy ? 1 : 0);
@@ -6216,7 +6267,8 @@ export function computeCabinet(params, profileOverride) {
         meta: {
           index: 1,
           vertical: true,
-          fullHeight: true,
+          // T83 F7 · the short divider under the trap's gap stops under the top row.
+          fullHeight: !dv.short,
           itemId: null,
           x_mm: dv.x,
           front_mm: 0,
@@ -6225,17 +6277,25 @@ export function computeCabinet(params, profileOverride) {
           terminatesOn: null,
           locked: true,
           drawerColumns: 2,
+          ...(dv.short ? { trapGap: true } : {}),
         },
       }));
     }
     // T82 F9 · each column's own stack (one column: the kit as it always was).
     const colMeta = (c) => (c.col == null ? {} : { column: c.col });
+    // T83 F7 · the box of column c in row i: the top row's narrowed to the
+    // trap's gap (D28), every other the column's own. `trapGap: true` on its
+    // boards tells the room's runners where they ride.
+    const boxOf = (c, i) => (budr.trapGap && i === budr.trapGap.row && c.col != null
+      ? budr.trapGap.cols[c.col - 1] : c);
+    const gapMeta = (c, i) => (boxOf(c, i) === c ? {} : { trapGap: true });
     for (const c of budr.cols) {
       for (let i = 1; i <= budr.count; i += 1) {
         if (i === budr.dummy) continue;   // T75 F14 · no box behind the hob's dummy
         const sh = budr.sideHs[i - 1];
         const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
-        for (const [suffix, x] of [['SL', c.boxLeftX], ['SR', c.boxLeftX + c.boxW - GB]]) {
+        const bx = boxOf(c, i);
+        for (const [suffix, x] of [['SL', bx.boxLeftX], ['SR', bx.boxLeftX + bx.boxW - GB]]) {
           panels.push(panel({
             id: `${c.tag(i)}-${suffix}`, part: 'DRAWER-SIDE', role: 'drawer_box', w: budr.depth, h: sh, ...common,
             box: { x, y: boxY, z: boxZFront - budr.depth, w: GB, h: sh, d: budr.depth },
@@ -6245,6 +6305,7 @@ export function computeCabinet(params, profileOverride) {
               drawer: i,
               side: suffix === 'SL' ? 'L' : 'R',
               ...colMeta(c),
+              ...gapMeta(c, i),
               ...(budr.overlay && overlay.ids[i - 1] ? { itemId: overlay.ids[i - 1] } : {}),
             },
           }));
@@ -6256,28 +6317,29 @@ export function computeCabinet(params, profileOverride) {
         if (i === budr.dummy) continue;
         const bfH = budr.boxFrontH[i - 1];
         const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
+        const bx = boxOf(c, i);
         for (const suffix of ['BF', 'BB']) {
           const isFront = suffix === 'BF';
-          const geom = { rotated: true, drawn_w: bfH, drawn_h: c.boxLen, ...rectGeometry(bfH, c.boxLen) };
+          const geom = { rotated: true, drawn_w: bfH, drawn_h: bx.boxLen, ...rectGeometry(bfH, bx.boxLen) };
           if (isFront) {
             geom.holes = [
               { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: B.boxScrewFromEdge, d: pz.screwDiameter },
-              { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: c.boxLen - B.boxScrewFromEdge, d: pz.screwDiameter },
+              { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: bx.boxLen - B.boxScrewFromEdge, d: pz.screwDiameter },
             ];
           }
           panels.push(panel({
             id: `${c.tag(i)}-${suffix}`, part: isFront ? 'DRAWER-BOX-FRONT' : 'DRAWER-BOX-BACK', role: 'drawer_box',
-            w: c.boxLen, h: bfH, ...common,
+            w: bx.boxLen, h: bfH, ...common,
             box: {
               // Turn 18 (CLAUDE.md F3.4): standing ON the bottom, which stands in
               // the groove: the same correction the wardrobe's box gets above,
               // because it is the same box.
-              x: c.boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB,
+              x: bx.boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB,
               z: isFront ? boxZFront - GB : boxZFront - budr.depth,
-              w: c.boxLen, h: bfH, d: GB,
+              w: bx.boxLen, h: bfH, d: GB,
             },
             cnc: geom,
-            meta: { drawer: i, ...colMeta(c) },
+            meta: { drawer: i, ...colMeta(c), ...gapMeta(c, i) },
           }));
         }
         joinBoxWithCabineo(c.tag(i));
@@ -6287,20 +6349,21 @@ export function computeCabinet(params, profileOverride) {
       for (let i = 1; i <= budr.count; i += 1) {
         if (i === budr.dummy) continue;
         const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
-        const geom = rectGeometry(c.bottomW, budr.depth);
+        const bx = boxOf(c, i);
+        const geom = rectGeometry(bx.bottomW, budr.depth);
         geom.holes = [];
-        for (const x of [B.bottomScrewFromSide, c.bottomW - B.bottomScrewFromSide]) {
+        for (const x of [B.bottomScrewFromSide, bx.bottomW - B.bottomScrewFromSide]) {
           for (const y of [B.bottomScrewFromEnd, budr.depth - B.bottomScrewFromEnd]) {
             geom.holes.push({ layer: pz.layers.screw, kind: 'screw', x, y, d: pz.screwDiameter });
           }
         }
         panels.push(panel({
-          id: `${c.tag(i)}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: c.bottomW, h: budr.depth, ...common,
+          id: `${c.tag(i)}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: bx.bottomW, h: budr.depth, ...common,
           // Centred in its box, as in the wardrobe: the bottom sits in the side
           // grooves, and since turn 18 (F3.4) it sits at the HEIGHT of them,
           // `runnerPocketWidth` above the sides' bottom edge.
-          box: { x: c.boxLeftX + (c.boxW - c.bottomW) / 2, y: boxY + B.runnerPocketWidth, z: boxZFront - budr.depth, w: c.bottomW, h: GB, d: budr.depth },
-          cnc: geom, meta: { drawer: i, ...colMeta(c) },
+          box: { x: bx.boxLeftX + (bx.boxW - bx.bottomW) / 2, y: boxY + B.runnerPocketWidth, z: boxZFront - budr.depth, w: bx.bottomW, h: GB, d: budr.depth },
+          cnc: geom, meta: { drawer: i, ...colMeta(c), ...gapMeta(c, i) },
         }));
       }
     }
@@ -6458,7 +6521,9 @@ export function computeCabinet(params, profileOverride) {
         const screwX = B.frontScrewFromSide + G + GB + B.frontScrewExtra;
         // T82 F9 · in a column each screw keeps that distance from its OWN box
         // side (`screwShift`, drawerColumnsPlan); one column shifts nothing.
-        geom.holes = [screwX + c.screwShift.left, c.frontWidth - (screwX + c.screwShift.right)].map((x) => ({
+        // T83 F7 · the top row's box narrowed to the trap's gap: its own sides.
+        const shift = boxOf(c, i).screwShift;
+        geom.holes = [screwX + shift.left, c.frontWidth - (screwX + shift.right)].map((x) => ({
           layer: B.frontScrewLayer, kind: 'front_screw', x, y: screwY, d: B.frontScrewDiameter,
         }));
         panels.push(panel({
@@ -10242,8 +10307,10 @@ export function computeCabinet(params, profileOverride) {
     // (T21 F12.2's mirror rule for a partition's two faces).
     if (budr.divider) {
       const dv = budr.divider;
+      // T83 F7 · the short divider under the trap's gap carries the rows below the top row only (D28).
+      const onDivider = (rowY) => !dv.short || rowY < dv.y + dv.h;
       for (const face of ['L', 'R']) {
-        for (const rowY of budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy)) {
+        for (const rowY of budr.runnerRows.filter((y, i) => i + 1 !== budr.dummy && onDivider(y))) {
           for (const px of RN.holeXPattern) {
             addDrill(dv.id, 'runner', RN.layer, face === 'R' ? dv.d - px : px, rowY - dv.y, RN.holeDiameter);
           }
@@ -11166,6 +11233,8 @@ export function computeCabinet(params, profileOverride) {
       n: budr ? budr.count : 0,
       columns: budr?.divider ? 2 : 1,
       sinks: Number.isFinite(Number(params?.sinks)) ? Math.trunc(Number(params.sinks)) : 0,
+      // T83 F7 · the trap's gap the stack took (D28): the waste's plan is GAP, no U.
+      gap: budr?.trapGap ? budr.trapGap.gap : null,
     })
     : null;
   // ─── T82 F9, after the review · THE BOWL, CHECK #48 (KIT_VANITY.lsp D25) ──
@@ -12176,7 +12245,9 @@ export function computeCabinet(params, profileOverride) {
         B.frontScrewFromSide + 2 * G + B.frontScrewExtra + budr.cols[0].screwShift.left,
         budr.cols[0].frontWidth - (B.frontScrewFromSide + 2 * G + B.frontScrewExtra + budr.cols[0].screwShift.right),
       ],
-      divider_runner_rows_y: budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy).map((y) => y - budr.divider.y),
+      divider_runner_rows_y: budr.runnerRows
+        .filter((y, i) => i + 1 !== budr.dummy && (!budr.divider.short || y < budr.divider.y + budr.divider.h))
+        .map((y) => y - budr.divider.y),
     } : {}),
     ...(type.hangers ? {
       hanger_holes_bul: P.wallUnit.hangers.fromBackEdge.map((f) => [sideW - f, H - P.wallUnit.hangers.fromTop]),

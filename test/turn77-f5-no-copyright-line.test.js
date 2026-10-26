@@ -374,6 +374,8 @@ export const NEW_FILES = [
   // T83 F11 (25.10.2026): export the sheets you choose (E1)
   'test/turn83-f11-export-pick.test.js',
   'scripts/t78-classify.d/f44-t83-f11.mjs',
+  // T83 F12 (25.10.2026): the walk, real mouse on the built app (F1)
+  'scripts/t83-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

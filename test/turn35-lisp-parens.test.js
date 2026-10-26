@@ -433,3 +433,27 @@ test('T82 F8 · KIT_VANITY.lsp balances 0/0 and carries its sections, the two co
   assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
   assert.ok(/^[\x00-\x7F]*$/.test(text), 'ASCII');
 });
+
+// \u2500\u2500\u2500 T83 F1 \u00b7 THE MIRROR CABINET: KIT_MIRROR.lsp \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// CLAUDE.md T83 F1: *"Paren balance test; `test/turn35-lisp-parens.test.js`
+// lists the file."*  The owner, 25.10.2026 (14:09): *"teraz zaprojektujmy
+// dokladnie to co masz na rysunku szafka wiszaca"*. The walk above balances
+// it; this names it, its twenty-one decisions and its sections.
+test('T83 F1 \u00b7 KIT_MIRROR.lsp balances 0/0 with D1 to D21, its CONSTANTS, its NUMBERS and MIRROR_FULL', () => {
+  assert.ok(KITS.includes('KIT_MIRROR.lsp'), 'KIT_MIRROR.lsp is missing');
+  const text = readFileSync(join(LISP_DIR, 'KIT_MIRROR.lsp'), 'utf8');
+  const { balance, min, open } = parenScan(text);
+  assert.equal(balance, 0);
+  assert.equal(min, 0);
+  assert.ok(open > 100, 'a kit, not a stub');
+  for (let d = 1; d <= 21; d += 1) assert.match(text, new RegExp(`^;;; D${d} {1,2}[A-Z]`, 'm'), `D${d}`);
+  assert.match(text, /^;;; 3\. CONSTANTS/m);
+  assert.match(text, /^;;; 6\. NUMBERS/m);
+  assert.match(text, /\(defun mirror-carcass \(W H onL onR onT onB pt/);
+  assert.match(text, /\(defun mirror-zones \(x0 widths kinds sw/);
+  assert.match(text, /\(defun mirror-widths-refusal \(num Wc bays widths kinds sw/);
+  assert.match(text, /\(defun c:MIRROR_FULL /);
+  assert.doesNotMatch(text, /\(defun (drawRect|drawCircle|drawText)\b/, 'COMMON\'s routines are called, never redefined');
+  assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+  assert.ok(/^[\x00-\x7F]*$/.test(text), 'ASCII');
+});

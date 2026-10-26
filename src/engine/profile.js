@@ -2385,6 +2385,61 @@ export const DEFAULT_CABINET_PROFILE = {
     hangers: { perUnit: 2, name: 'Cabinet hanger 50 kg with wall plate', article: '' },
   },
 
+  // T83 F1 . THE MIRROR CABINET (reference/lisp/KIT_MIRROR.lsp)
+  //
+  // The owner, 25.10.2026 (14:09): *"teraz zaprojektujmy dokladnie to co masz
+  // na rysunku szafka wiszaca"*; *"lustro opcjonalnie, wtedy pamietaj ze
+  // drzwiczki 18 plus 4 mm lustro, przedluzamy panele do grubosci drzwiczek i
+  // lustra"*; (22:41) *"daj wszystkie mozliwosci z panelami, z ledami, bez,
+  // szerokosc ustawianych drzwiczek etc"*. Every number here is a constant of
+  // the kit's section 3 (mirrorWidth 1350 ...), held to it by
+  // test/turn83-f01-mirror-lisp.test.js; CONFIRMED in the owner's words or by
+  // the architect's drawing (elevation 34, section 33), or PROPOSED.
+  // computeCabinet reads none of it for any kit that existed before T83: only
+  // MIRROR_CABINET reads it, so every golden is what main cuts.
+  mirror: {
+    // CONFIRMED by elevation 34 and section 33: 1350 x 1100 with the panels,
+    // the carcass 215 deep, hung at 1250, 400 over the worktop; three bays,
+    // 330 / 480 / 330 (22:41 *"szerokosc ustawianych drzwiczek"*), LED stiles
+    // 75 (14:14, 14:29 *"4k"*), the panels round all on at 30 (14:09
+    // *"ustawiamy jakie grube"*), mirror doors on, the back's mirror off (14:09
+    // *"czasami"*), five glass shelves a bay (14:09 *"5 na kolumne"*), the LED
+    // under and inside on, the bottom box on, on the wall (recess 0).
+    defaults: {
+      width: 1350, height: 1100, depth: 215, mountHeight: 1250, overTopMm: 400,
+      bays: 3, doorWidths: [330, 480, 330], stile: 'led', stileWidthMm: 75,
+      panels: { L: true, R: true, top: true, bottom: true }, panelT: 30,
+      mirrorDoors: true, mirrorBack: false, shelvesPerBay: 5,
+      ledUnder: true, ledInside: true, bottomBox: true, recessMm: 0,
+    },
+    // CONFIRMED 14:09 *"drzwiczki 18 plus 4 mm lustro"*: the door's board and
+    // the mirror glued on it (the door is 22 in the room, 18 on the cut list).
+    doorBoardMm: 18,
+    mirrorMm: 4,
+    // CONFIRMED 14:09 *"polki szklane, rysujemy szklane 6 mm"*: toughened, bought.
+    glassShelfMm: 6,
+    // PROPOSED as a box (the drawing's 100): the carcass's lowest 100, the LED
+    // under on its underside and the driver in it (KIT_MIRROR.lsp D12).
+    bottomBoxMm: 100,
+    // PROPOSED (KIT_MIRROR.lsp D10): what the hinge ladder weighs a door by.
+    boardKgM3: 700,
+    mirrorKgM2: 10,
+    // CONFIRMED 14:29 *"4k"*: the LED light panel of a stile, made to measure.
+    ledKelvin: 4000,
+    // PROPOSED (KIT_MIRROR.lsp D16): the side the strip inside runs up.
+    ledInsideSide: 'L',
+    // CLAUDE.md T83 F4 *"LED driver 24 V"*.
+    ledDriverVolts: 24,
+    // PROPOSED, the vanity's (CLAUDE.md T83 F4 *"the hanging brackets as the
+    // vanity's"*): the count and the name; the article empty for the owner.
+    hangers: { perUnit: 2, name: 'Cabinet hanger 50 kg with wall plate', article: '' },
+    // CLAUDE.md T83 F4: every bought line's article, empty for the owner to fill.
+    articles: {
+      ledPanel: '', mirror: '', glassShelf: '', ledStripUnder: '', ledStripInside: '', ledDriver: '',
+      fusedSpur: '', shelfPin: '', hanger: '',
+    },
+  },
+
   // ─── T75 F17 · THE FLOATING DESK ──────────────────────────────────────────
   //
   // CLAUDE.md T75 F17: *"height `wardrobeDesk.defaults.height = 160` ...
@@ -6395,6 +6450,21 @@ export function migrateCabinetProfile(profile) {
       basin: { ...D.vanity.basin, ...profile.vanity?.basin },
       defaults: { ...D.vanity.defaults, ...profile.vanity?.defaults },
       hangers: { ...D.vanity.hangers, ...profile.vanity?.hangers },
+    },
+    // T83 F1 . the mirror cabinet's numbers, key by key: a profile saved before
+    // tonight comes back with all of them, one that tuned a number keeps it.
+    mirror: {
+      ...D.mirror,
+      ...profile.mirror,
+      defaults: {
+        ...D.mirror.defaults,
+        ...profile.mirror?.defaults,
+        panels: { ...D.mirror.defaults.panels, ...profile.mirror?.defaults?.panels },
+        doorWidths: Array.isArray(profile.mirror?.defaults?.doorWidths) && profile.mirror.defaults.doorWidths.length
+          ? [...profile.mirror.defaults.doorWidths] : [...D.mirror.defaults.doorWidths],
+      },
+      hangers: { ...D.mirror.hangers, ...profile.mirror?.hangers },
+      articles: { ...D.mirror.articles, ...profile.mirror?.articles },
     },
     // T75 F18 · the low unit's defaults, key by key.
     wardrobeLow: {

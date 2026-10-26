@@ -46,6 +46,7 @@ import HoverAura from './HoverAura.jsx';
 // hovered handle, in the drawing-office blue, replacing the orange number.
 import DimensionChain from './DimensionChain.jsx';
 import { handleCadRows } from '../engine/hoverAura.js';
+import { runnerSlide } from '../engine/drawerMotion.js';
 import { dimensionStyle } from '../engine/dimensionArrows.js';
 
 // ─── The hardware, in 3D (turn 7, CLAUDE.md F3 / BACKLOG #42) ───
@@ -1048,8 +1049,9 @@ function Runners({
   // The offset is an OFFSET and never an absolute position — the model is
   // placed on the drilled row by `hardwareInstances` and this adds to it, so a
   // downloaded file still cannot move a hole (F6.2).
-  const slideOf = (drawer) => (Number(slide?.open?.get?.(drawer)) || 0)
-    * (Number(slide?.travel?.get?.(drawer)) || 0);
+  // T83 F9 · a column's pair rides its OWN column's drawer: the key it carries
+  // (`ride`, hardware3d), read by the engine's `runnerSlide`; one stack: its number.
+  const slideOf = (drawer) => runnerSlide(slide, items, drawer);
 
   // One animated group per DRAWER: everything that drawer's runner is made of
   // hangs inside it and the group's own z is eased, so the slide costs no

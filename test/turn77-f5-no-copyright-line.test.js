@@ -365,6 +365,9 @@ export const NEW_FILES = [
   // T83 F8 (25.10.2026): the basin 50 forward, and it never enters a board (V2)
   'test/turn83-f08-vanity-basin.test.js',
   'scripts/t78-classify.d/f44-t83-f08.mjs',
+  // T83 F9 (25.10.2026): the open of a two-column vanity (V3)
+  'test/turn83-f09-open-columns.test.js',
+  'scripts/t78-classify.d/f44-t83-f09.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

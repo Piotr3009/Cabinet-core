@@ -54,16 +54,25 @@ const OVEN_STACK = 'An oven stands at eye level with cupboards under and over it
  * rows leave `label` out, so the row reads what the kit calls itself
  * (`engine/types.js`: "Vanity unit, N drawers"). A bathroom kit belongs to no
  * one job, so the project filter below keeps it in every one.
+ *
+ * T83 F5 · the mirror cabinet, beside the vanity. CLAUDE.md T83 F2:
+ * *"`MIRROR_CABINET`, family bathroom, library group Bathroom (beside the
+ * vanity), row "Mirror cabinet""*; T83 F5: *"Library rows in PRO's Kitchen
+ * and Wardrobe libraries under Bathroom"*. The owner, 25.10.2026 (14:09):
+ * *"teraz zaprojektujmy dokladnie to co masz na rysunku szafka wiszaca"*.
+ * One row more in the one group, so both libraries carry it; its name is the
+ * kit's own (`engine/types.js`: "Mirror cabinet").
  */
 const BATHROOM_GROUP = {
   kind: 'group',
   id: 'bathroom',
   label: 'Bathroom',
-  hint: 'The vanity unit: equal drawers under a basin, an open back for the pipes',
+  hint: 'The vanity unit (equal drawers under a basin, an open back for the pipes) and the mirror cabinet over it',
   items: [
     { kind: 'type', id: 'vanity-2', typeId: 'VANITY2' },
     { kind: 'type', id: 'vanity-3', typeId: 'VANITY3' },
     { kind: 'type', id: 'vanity-4', typeId: 'VANITY4' },
+    { kind: 'type', id: 'mirror-cabinet', typeId: 'MIRROR_CABINET', hint: 'Hung over the vanity: mirror doors, LED stiles, glass shelves, the panels round' },
   ],
 };
 

@@ -875,6 +875,25 @@ export default function RightPanel() {
           </Section>
         )}
 
+        {/* ─── T83 F5 · THE MIRROR CABINET ─────────────────────────────────────
+            The owner, 25.10.2026 (22:41): *"daj wszystkie mozliwosci z
+            panelami, z ledami, bez, szerokosc ustawianych drzwiczek etc"*.
+            CLAUDE.md T83 F5: Bays, Door widths, Stiles and their width,
+            Panels and Panel thickness, Mirror doors, Mirror back, Glass
+            shelves per bay, LED under, LED inside, Bottom box, Recess mm;
+            every answer through the store's ONE action (`setMirrorCabinet`),
+            each refusal said in its words. The figures are the engine's own
+            (`derived.mirror`): read, never worked out here. */}
+        {type.mirrorCabinet && (
+          <MirrorCabinetSection
+            key={unit.id}
+            unit={unit}
+            mirror={result?.derived?.mirror || null}
+            open={Boolean(panelOpen.mirror)}
+            onToggle={() => togglePanelSection('mirror')}
+          />
+        )}
+
         {/* ── add items: a list of TYPES, settings inline (BACKLOG #10) ── */}
         {(type.supports.shelves || type.supports.rail || (type.supports.drawers && !ratioDrawers)) && (
           <Section
@@ -2787,5 +2806,252 @@ function WorktopRow({ unit }) {
         );
       })}
     </div>
+  );
+}
+
+/**
+ * ─── T83 F5 · THE MIRROR CABINET SECTION ─────────────────────────────────────
+ *
+ * The owner, 25.10.2026 (22:41): *"daj wszystkie mozliwosci z panelami, z
+ * ledami, bez, szerokosc ustawianych drzwiczek etc"*; (14:09) *"5 na kolumne
+ * domyslnie ale oczywiscie z mozliwoscia dodawania, przesuwania"*; *"w tym
+ * przypadku to reces ale tez w standardzie normalnie wiszaca i dodajemy
+ * oczywiscie panele dookola i ustawiamy jakie grube"*.
+ *
+ * Every choice is the store's one action `setMirrorCabinet` and nothing else;
+ * a refusal is said here and in the notice, in the store's words. The Door
+ * widths are one field a bay: a width typed that does not make the carcass
+ * with the stiles is refused (the kit's own sentence, KIT_MIRROR.lsp D5) and
+ * stays in its field, so the next field typed can make the sum; the line
+ * under them reads the sum against the carcass. "Kit's widths" hands the
+ * doors back to the kit's own (D6). The figures are the engine's
+ * (`derived.mirror`: the carcass, the widths it cut, the stiles), never
+ * worked out here; no number is typed by the panel itself.
+ */
+const MIRROR_STILE_WORDS = [['led', 'LED'], ['timber', 'Timber'], ['none', 'None']];
+const MIRROR_WIDTH_DECIMALS = 1;
+const MIRROR_PANEL_WORDS = [['L', 'L'], ['R', 'R'], ['top', 'Top'], ['bottom', 'Bottom']];
+const MIRROR_FLAGS = [
+  ['mirror_doors', 'mirrorDoors', 'Mirror doors', 'A mirror glued on the door board\'s face: the panels round reach the mirror\'s face'],
+  ['mirror_back', 'mirrorBack', 'Mirror back', 'A mirror on the inside face of the back (also asked when the back is clicked in the room)'],
+  ['led_under', 'ledUnder', 'LED under', 'A LED strip on the underside, its driver in the bottom box'],
+  ['led_inside', 'ledInside', 'LED inside', 'A LED strip up the inside of a side'],
+  ['bottom_box', 'bottomBox', 'Bottom box', 'The box under the bays: its lid, its front strip, the LED driver in it'],
+];
+
+function MirrorCabinetSection({
+  unit, mirror, open, onToggle,
+}) {
+  const setMirrorCabinet = useProjectStore((s) => s.setMirrorCabinet);
+  const notify = useUiStore((s) => s.notify);
+  // The door widths typed and refused, kept in their fields until they add up.
+  const [draft, setDraft] = useState(null);
+  const [said, setSaid] = useState('');
+  if (typeof setMirrorCabinet !== 'function' || !mirror) return null;
+  const answer = (patch) => {
+    const res = setMirrorCabinet(unit.id, patch);
+    if (!res?.ok) {
+      setSaid(res?.said || '');
+      if (res?.said) notify(res.said, 'warn');
+      return res;
+    }
+    setSaid('');
+    if (res.said) notify(res.said, 'info');
+    return res;
+  };
+  const chip = (on) => `cc-btn px-2 ${on ? 'border-gold text-gold' : ''}`;
+  const widths = Array.isArray(draft) && draft.length === mirror.bays ? draft : mirror.doorWidths;
+  const stilesTotal = (mirror.stiles || []).reduce((t, s) => t + (Number(s.w) || 0), 0);
+  const sum = widths.reduce((t, w) => t + (Number(w) || 0), 0) + stilesTotal;
+  const adds = Math.abs(sum - mirror.carcass.w) <= 0.01;
+  const typed = Array.isArray(mirror.doorWidthsTyped) && mirror.doorWidthsTyped.length > 0;
+  // A field committed as it shows (one decimal) is no answer: only a width typed is.
+  const commitWidth = (i, v) => {
+    if (Math.abs(Number(v) - Number(widths[i])) < 0.5 * 10 ** -MIRROR_WIDTH_DECIMALS) return;
+    const next = [...widths];
+    next[i] = v;
+    const res = answer({ door_widths: next });
+    setDraft(res?.ok ? null : next);
+  };
+  return (
+    <Section
+      title="Mirror cabinet"
+      badge={`${mirror.bays} bay${mirror.bays > 1 ? 's' : ''}${mirror.recess?.mm > 0 ? `, recess ${formatMm(mirror.recess.mm)}` : ''}`}
+      open={open}
+      onToggle={onToggle}
+      hint="Bays and door widths, the stiles, the panels round, the mirrors, the glass shelves, the LED and the recess"
+    >
+      <div className="cc-row" data-mirror-bays={mirror.bays}>
+        <span className="text-sm text-ink-100">Bays</span>
+        <div className="flex gap-1">
+          {[1, 2, 3].map((n) => (
+            <button
+              key={n}
+              type="button"
+              className={chip(mirror.bays === n)}
+              aria-pressed={mirror.bays === n}
+              data-mirror-bays-count={n}
+              title={`${n} door${n > 1 ? 's' : ''}: the doors take the kit's own widths again`}
+              onClick={() => { setDraft(null); answer({ bays: n }); }}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-1" data-mirror-door-widths={widths.length}>
+        <div className="cc-row">
+          <span className="cc-label">Door widths (mm)</span>
+          <button
+            type="button"
+            className="cc-btn-ghost text-[11px]"
+            data-mirror-widths-own="1"
+            disabled={!typed && !draft}
+            title="The kit's own widths: the drawing's where they fit, else equal"
+            onClick={() => { setDraft(null); answer({ door_widths: null }); }}
+          >
+            Kit&apos;s widths
+          </button>
+        </div>
+        <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(1, widths.length)}, minmax(0, 1fr))` }}>
+          {widths.map((w, i) => (
+            <NumberField
+              key={`door-${i + 1}`}
+              className="cc-input text-right"
+              integer={false}
+              decimals={MIRROR_WIDTH_DECIMALS}
+              data-mirror-door-width={i + 1}
+              title={`Door ${i + 1}: its width with its half gaps, as the drawing gives it`}
+              value={w}
+              onCommit={(v) => commitWidth(i, v)}
+            />
+          ))}
+        </div>
+        <p className={`text-[11px] ${adds ? 'text-ink-400' : 'text-status-danger'}`} data-mirror-widths-sum={adds ? 'adds' : 'short'}>
+          {`${widths.map(formatMm).join(' + ')}${stilesTotal > 0 ? ` + stiles ${formatMm(stilesTotal)}` : ''} = ${formatMm(sum)}`}
+          {adds ? `, the carcass ${formatMm(mirror.carcass.w)}` : `: the carcass is ${formatMm(mirror.carcass.w)}`}
+        </p>
+        {said && <p className="text-[11px] text-status-danger" data-mirror-said="1">{said}</p>}
+      </div>
+
+      <div className="cc-row" data-mirror-stile={mirror.stile}>
+        <span className="text-sm text-ink-100">Stiles</span>
+        <div className="flex gap-1">
+          {MIRROR_STILE_WORDS.map(([k, word]) => (
+            <button
+              key={k}
+              type="button"
+              className={chip(mirror.stile === k)}
+              aria-pressed={mirror.stile === k}
+              data-mirror-stile-kind={k}
+              title={k === 'led' ? `A LED light panel made to measure, ${mirror.led?.kelvin} K, flush with the mirror face`
+                : (k === 'timber' ? 'A board in the carcass finish, flush with the mirror face' : 'No stile: the doors meet over the dividers')}
+              onClick={() => answer({ stile: k })}
+            >
+              {word}
+            </button>
+          ))}
+        </div>
+      </div>
+      {mirror.stile !== 'none' && (
+        <div className="cc-row">
+          <span className="text-[12px] text-ink-100">Stile width</span>
+          <div className="flex items-center gap-1">
+            <NumberField
+              className="cc-input w-20 text-right"
+              data-mirror-stile-width="1"
+              title="The stile's width (mm): the doors' widths must make the carcass with it"
+              value={mirror.stileWidth}
+              onCommit={(v) => { if (v !== mirror.stileWidth) answer({ stile_width_mm: v }); }}
+            />
+            <span className="text-[11px] text-ink-400">mm</span>
+          </div>
+        </div>
+      )}
+
+      <div className="cc-row" data-mirror-panels={MIRROR_PANEL_WORDS.filter(([k]) => mirror.panels?.[k]).map(([k]) => k).join(' ')}>
+        <span className="text-sm text-ink-100">Panels</span>
+        <div className="flex gap-1">
+          {MIRROR_PANEL_WORDS.map(([k, word]) => {
+            const on = Boolean(mirror.panels?.[k]);
+            return (
+              <button
+                key={k}
+                type="button"
+                className={chip(on)}
+                aria-pressed={on}
+                data-mirror-panel={k}
+                title={`The ${word === 'L' ? 'left' : (word === 'R' ? 'right' : word.toLowerCase())} panel round, ${on ? 'on: click to take it off' : 'off: click to put it on'}`}
+                onClick={() => answer({ panels: { [k]: !on } })}
+              >
+                {word}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="cc-row">
+        <span className="text-[12px] text-ink-100">Panel thickness</span>
+        <div className="flex items-center gap-1">
+          <NumberField
+            className="cc-input w-20 text-right"
+            data-mirror-panel-t="1"
+            title="The panels round (mm), in the front finish, reaching the mirror's face"
+            value={mirror.panelT}
+            onCommit={(v) => { if (v !== mirror.panelT) answer({ panel_t: v }); }}
+          />
+          <span className="text-[11px] text-ink-400">mm</span>
+        </div>
+      </div>
+
+      {MIRROR_FLAGS.map(([k, readKey, word, hint]) => {
+        const on = k === 'bottom_box' ? Boolean(mirror.bottomBox?.on)
+          : (k === 'led_under' ? Boolean(mirror.led?.under) : (k === 'led_inside' ? Boolean(mirror.led?.inside) : Boolean(mirror[readKey])));
+        return (
+          <div key={k} className="cc-row" data-mirror-flag={k} data-mirror-flag-on={on ? 'on' : 'off'}>
+            <span className="text-sm text-ink-100" title={hint}>{word}</span>
+            <div className="flex gap-1">
+              {[[true, 'On'], [false, 'Off']].map(([v, w]) => (
+                <button
+                  key={w}
+                  type="button"
+                  className={chip(on === v)}
+                  aria-pressed={on === v}
+                  data-mirror-flag-choice={v ? 'on' : 'off'}
+                  onClick={() => answer({ [k]: v })}
+                >
+                  {w}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="cc-row">
+        <span className="text-[12px] text-ink-100">Glass shelves per bay</span>
+        <NumberField
+          className="cc-input w-20 text-right"
+          data-mirror-shelves-per-bay="1"
+          title={`Glass shelves ${mirror.glassT} mm toughened, on the pins, a count for every bay: moved and added by hand as every shelf`}
+          value={mirror.shelvesPerBay}
+          onCommit={(v) => { if (v !== mirror.shelvesPerBay) answer({ shelves_per_bay: v }); }}
+        />
+      </div>
+      <div className="cc-row">
+        <span className="text-[12px] text-ink-100">Recess</span>
+        <div className="flex items-center gap-1">
+          <NumberField
+            className="cc-input w-20 text-right"
+            data-mirror-recess="1"
+            title="How far the cabinet stands into the wall (mm): 0 hangs it on the wall"
+            value={mirror.recess?.mm ?? 0}
+            onCommit={(v) => { if (v !== (mirror.recess?.mm ?? 0)) answer({ recess_mm: v }); }}
+          />
+          <span className="text-[11px] text-ink-400">mm</span>
+        </div>
+      </div>
+    </Section>
   );
 }

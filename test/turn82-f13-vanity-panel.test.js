@@ -320,7 +320,8 @@ test('F14 · the Bathroom group: "Vanity unit, N drawers", in the Kitchen librar
     assert.ok(group, 'no Bathroom group');
     assert.equal(group.kind, 'group');
     assert.equal(group.label, 'Bathroom');
-    assert.deepEqual(group.items.map((i) => i.typeId), VANITIES);
+    // AMENDED BY T83 F5: the mirror cabinet joins the group beside the vanity, *"`MIRROR_CABINET`, family bathroom, library group Bathroom (beside the vanity), row "Mirror cabinet""* (CLAUDE.md T83 F2); *"Library rows in PRO's Kitchen and Wardrobe libraries under Bathroom"* (CLAUDE.md T83 F5).
+    assert.deepEqual(group.items.map((i) => i.typeId), [...VANITIES, 'MIRROR_CABINET']);
     VANITIES.forEach((id, k) => {
       const row = group.items.find((i) => i.typeId === id);
       assert.equal(resolveEntry(row, P).enabled, true, `${id} is not placeable`);

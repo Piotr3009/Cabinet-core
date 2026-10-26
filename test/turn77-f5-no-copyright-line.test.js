@@ -353,6 +353,9 @@ export const NEW_FILES = [
   // T83 F4 (25.10.2026): the mirror cabinet's BOM (M2)
   'test/turn83-f04-mirror-bom.test.js',
   'scripts/t78-classify.d/f44-t83-f04.mjs',
+  // T83 F5 (25.10.2026): the mirror cabinet's right panel, library row and sheets (M3)
+  'test/turn83-f05-mirror-panel.test.js',
+  'scripts/t78-classify.d/f44-t83-f05.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

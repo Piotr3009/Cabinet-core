@@ -29,6 +29,8 @@ import { hawaPocketFigures, hawaSpec } from './hawaPocket.js';
 import {
   hawaDrills, hawaGroovesOnto, hawaHardwareLines, hawaSeatsOnto,
 } from './cnc/hawa.js';
+// T83 F2 . the mirror cabinet, KIT_MIRROR.lsp mirrored routine for routine.
+import { mirrorCabinetFigures } from './mirrorCabinet.js';
 import { getCabinetProfile } from './profile.js';
 import { buildFrontDecoration } from './frontDecoration.js';
 import { floatHeightOf, getUnitType, hungTypeOf } from './types.js';
@@ -1638,7 +1640,8 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
 // T78 F15 · `drawer_front` is the INNER front of a drawer behind doors (meta.inner).
 // T80 F3 · 'frame': the in-frame frame is sprayed with the fronts (the owner's green frame in the mockup).
 // T82 F2 · the HAWA pocket's panels and its door stand in the room in the front's finish (KIT_HAWA.lsp D3).
-const FINISH_EXPOSED_ROLES = new Set(['front', 'drawer_front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame', 'pocket_panel', 'pocket_door']);
+// T83 F2 . the mirror cabinet's doors, panels round and timber stiles are seen (KIT_MIRROR.lsp D3, D8, D9).
+const FINISH_EXPOSED_ROLES = new Set(['front', 'drawer_front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame', 'pocket_panel', 'pocket_door', 'mirror_door', 'mirror_panel', 'mirror_stile']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1670,7 +1673,9 @@ export function isFinishExposed(role) {
 // FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
 // T80 F3 · 'frame': material from the FRONT type of the project (CLAUDE.md T80 F3).
 // T82 F2 · the owner, 25.10.2026: *"panele po bokach to jest nie carcas tylko front zawsze"* (KIT_HAWA.lsp D3); the door is the front.
-const FRONT_MATERIAL_ROLES = new Set(['front', 'drawer_front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame', 'pocket_panel', 'pocket_door']);
+// T83 F2 . the mirror door's board and the panels round are the front finish (KIT_MIRROR.lsp D3, D9:
+// *"dodajemy oczywiscie panele dookola i ustawiamy jakie grube"*); a timber stile is the carcass's (D8).
+const FRONT_MATERIAL_ROLES = new Set(['front', 'drawer_front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame', 'pocket_panel', 'pocket_door', 'mirror_door', 'mirror_panel']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -3870,6 +3875,39 @@ export function computeCabinet(params, profileOverride) {
       });
     }
     for (const n of hawaFigures.notes) warnings.push({ code: n.code, message: n.message, check: n.n });
+  }
+  // T83 F2 . THE MIRROR CABINET: EVERY PART IS KIT_MIRROR.lsp's ──────────────
+  //
+  // *"teraz zaprojektujmy dokladnie to co masz na rysunku szafka wiszaca"*
+  // (the owner, 25.10.2026, 14:09). The kit declares its whole carcass as the
+  // mirror cabinet (`top: 'mirror'`), and every part is cut from the ONE
+  // derivation `engine/mirrorCabinet.js mirrorCabinetFigures` (KIT_MIRROR.lsp
+  // part 5, published below as `derived.mirror`): the parent's five boards
+  // with their puzzle and the parent's hanger holes, BOX-TOP (a FIX board, the
+  // house's set) and BOX-FRONT, the DIVIDERs (the house's VPART: their head
+  // and foot joint and their back screws come from the roads every divider
+  // takes, below), the doors (part FRONT, role `mirror_door`: the cups are the
+  // house's pass on `meta.cupY`, the plates the LISP's on the boards), the
+  // stiles, the panels round and the glass shelves. A bought part (the LED
+  // stile, the glass) carries no CNC and no board: `material_role` 'bought'.
+  // Only a kit whose top is 'mirror' runs a line of it.
+  let mirrorFigures = null;
+  if (type.carcass.top === 'mirror') {
+    const plateD = hingePlatePilotD(P, params);
+    mirrorFigures = mirrorCabinetFigures({ ...params, width: W, height: H, depth: D }, P, {
+      unitNum,
+      G,
+      plateD,
+      plateLayer: hingePlateLayer(plateD, P.hinges.layer),
+      partitionFace: String(P.shelfHoles?.partitionFace || 'L').toUpperCase() === 'R' ? 'R' : 'L',
+    });
+    for (const part of mirrorFigures.parts) {
+      const { bought, ...spec } = part;
+      const rec = panel(spec);
+      if (bought) rec.material_role = 'bought';
+      panels.push(rec);
+    }
+    for (const w of mirrorFigures.warnings) warnings.push({ ...w });
   }
   if (hasBottom) {
     panels.push(panel({
@@ -11190,7 +11228,8 @@ export function computeCabinet(params, profileOverride) {
     // license renaming one. It now equals `panels_lisp`, because there is no
     // railpart to include.
     panels_true_incl_railpart: boardPanels.length + drawerFrontsInPanels,
-    pieces_total: panels.length,
+    // T83 F2 . a mirror cabinet's bought parts (the LED stiles, the glass) are not pieces to cut.
+    pieces_total: mirrorFigures ? panels.filter((x) => x.material_role !== 'bought').length : panels.length,
     fronts: doorFrontCount + (drawerFrontCount - drawerFrontsInPanels),
     board_area_m2: roundTo(boardArea, 6),
     front_area_m2: roundTo(frontArea, 6),
@@ -12630,6 +12669,9 @@ export function computeCabinet(params, profileOverride) {
       bowl: vanityBowl,
     };
   }
+  // T83 F2 . what the mirror cabinet is, for the room, the BOM, the right
+  // panel, the sheets and the tests (KIT_MIRROR.lsp, the one derivation).
+  if (mirrorFigures) derived.mirror = mirrorFigures.derived;
   // T78 F17 . what the canopy is, for the drawing and the tests; BUL's hanger
   // summary follows its drilling, which moved with the frame.
   if (canopy) {
@@ -12743,7 +12785,9 @@ export function computeCabinet(params, profileOverride) {
     // A bare computeCabinet() passes nothing and cuts every board, as ever.
     csvLines: buildCsvLines(
       unitNum,
-      params?.drawer_boxes === 'ready' ? panels.filter((p) => p.role !== 'drawer_box') : panels,
+      // T83 F2 . a bought part of the mirror cabinet (the LED stile, the glass) is no label to cut.
+      (params?.drawer_boxes === 'ready' ? panels.filter((p) => p.role !== 'drawer_box') : panels)
+        .filter((p) => !(mirrorFigures && p.material_role === 'bought')),
       P,
     ),
     warnings,

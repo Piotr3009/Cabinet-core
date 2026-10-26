@@ -219,6 +219,10 @@
 ;;;     holes for them: two 5 in each side, 21 and 53 from its back edge and
 ;;;     53 under its top, and the BACK's two 30 x 58 cut-outs at its top
 ;;;     corners (KIT_WUD_FULL, BUL and BUR hanger holes, BACK hanger rects).
+;;;     The BACK's two end screws 50 under its top stand in those cut-outs
+;;;     (the parent drills them into air): here the cut-out takes them and
+;;;     they are not drilled (mirror-in-cut-p; DERIVED, material that is not
+;;;     there takes no hole).
 ;;; D19 NO HANDLE (DERIVED: the drawing and the client's render show none).
 ;;;     The mirror is the face; no handle hole is drilled.
 ;;; D20 THE NUMBERS AGREE WITH THE DRAWING (DECIDED here). CLAUDE.md F2's
@@ -699,6 +703,13 @@
   (list (list 0.0 (- Hc (mirrorHangerCutH)) (mirrorHangerCutW) Hc)
         (list (- Wc (mirrorHangerCutW)) (- Hc (mirrorHangerCutH)) Wc Hc)))
 
+;;; Does a hole at (x y) stand in one of the cut-outs (D18)?
+(defun mirror-in-cut-p (x y cuts / out c)
+  (setq out nil)
+  (foreach c cuts
+    (if (and (> x (car c)) (< x (caddr c)) (> y (cadr c)) (< y (cadddr c))) (setq out T)))
+  out)
+
 ;;; The LED strips' lengths and the inside strip's line (D16).
 (defun mirror-led-under-length (Wc G)
   (- Wc G G))
@@ -775,7 +786,8 @@
 ;;; their undersides at 130 + 922 / 6 x i: 283.6667, 437.3333, 591, 744.6667,
 ;;; 898.3333; the pins 70 and 127 from the boards' front edges.
 ;;; THE HANGERS. In BUL at x 176 and 144, in BUR at 21 and 53, y 987; the
-;;; BACK's cut-outs 0..30 and 1260..1290 by 982..1040.
+;;; BACK's cut-outs 0..30 and 1260..1290 by 982..1040; the BACK's end screws
+;;; at x 9 and 1281, y 990, stand in them and are not drilled.
 ;;; THE LIGHT. The strip under 1254 long, the strip inside 922 at z 205.
 ;;; THE RECESS. 155: the carcass 60 proud of the recess line, the mirror's
 ;;; face 82.

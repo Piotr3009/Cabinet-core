@@ -295,7 +295,9 @@ test('every library type is configured, available and buildable', () => {
   // pomiedzy 2 panele 110 mm przestrzen pomiedzy, wysuwasz pocket door"*), 41 became 42.
   // AMENDED BY T82 F9 (25.10.2026): the three vanity kits, VANITY2 / VANITY3 /
   // VANITY4 after the drawer units (the owner: *"wybor jak zawsze 2 3 i 4"*), and with the HAWA pocket 42 became 45.
-  assert.equal(UNIT_TYPE_ORDER.length, 45, 'every kit in the order, the free panel last');
+  // AMENDED BY T83 F2 (25.10.2026): the MIRROR CABINET, KIT_MIRROR.lsp, after the vanity kits (the owner:
+  // *"teraz zaprojektujmy dokladnie to co masz na rysunku szafka wiszaca"*), 45 became 46.
+  assert.equal(UNIT_TYPE_ORDER.length, 46, 'every kit in the order, the free panel last');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);
@@ -310,7 +312,10 @@ test('every library type is configured, available and buildable', () => {
     const params = defaultParamsFor(id, P);
     const r = computeCabinet(params, P);
     assert.ok(r.panels.length > 0, `${id} default unit produces no panels`);
-    assert.equal(r.csvLines.length, r.panels.length, `${id} one CSV row per piece`);
+    // AMENDED BY T83 F2 (25.10.2026): one CSV row per CUT piece. The mirror cabinet's glass shelves and LED
+    // stiles are bought (`material_role` 'bought', KIT_MIRROR.lsp D8, D14; the owner: *"nie wlasny box, ktos
+    // nam to zrobi na zamowienie"*), no label to cut; every kit before it has none, so its count is its panels'.
+    assert.equal(r.csvLines.length, r.panels.filter((p) => p.material_role !== 'bought').length, `${id} one CSV row per piece`);
     for (const p of r.panels) {
       assert.ok(p.w > 0 && p.h > 0, `${id} panel ${p.id} has a non-positive dimension`);
     }

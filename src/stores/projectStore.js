@@ -26,7 +26,7 @@ import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 // T82 F13 · floatHeightOf: a floating vanity's height, the one question (KIT_VANITY.lsp D19).
 import {
   defaultParamsFor, floatHeightOf, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel,
-  isHawaPocket, isVanityKit, isWardrobeWallUnit, profilePath,
+  isHawaPocket, isMirrorCabinet, isVanityKit, isWardrobeWallUnit, profilePath,
   resolveTypeId, TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
@@ -530,7 +530,10 @@ function projectHeightParams(type, design, profile) {
     // T78 F17 . a kit whose TOP meets the wall run's top line (`topLine: 'wall'`,
     // the two hoods whose height is their own) hangs at wallMount + wall less
     // its own height, so a 660 or a 500 box sits level with the 720 run's top.
-    ...(type.mount === 'wall' && !type.freePanel && !type.desk
+    // T83 F2 . …nor is the mirror cabinet: it hangs at its own 1250, 400 over
+    // the vanity's top (`mirror.defaults.mountHeight`, the architect's
+    // elevation 34), never the kitchen's wall line.
+    ...(type.mount === 'wall' && !type.freePanel && !type.desk && !type.mirrorCabinet
       ? { mount_height: type.topLine === 'wall' ? wallTopLineMount(type, heights, profile) : heights.wallMount }
       : {}),
     // ─── Turn 22 (CLAUDE.md F4.2) ───
@@ -3563,6 +3566,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const profile = getCabinetProfile();
     let changed = false;
     const next = s.units.map((u) => {
+      // T83 F2 . a mirror cabinet's recess is TYPED (KIT_MIRROR.lsp D17: *"w tym
+      // przypadku to reces ale tez w standardzie normalnie wiszaca"*): it stands
+      // in the wall that deep and its depth never grows, so this derivation
+      // neither writes nor clears its `recess_mm`.
+      if (isMirrorCabinet(u.type)) return u;
       const has = Number(u.params?.recess_mm) > 0;
       // T82 F16, after the review: the recess law is a CARCASS's (it goes
       // deeper by the recess, its back behind the wall line). A free panel is a
@@ -7730,8 +7738,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // kitchen's wall-unit line never moves it.
       // T75 F17 · …and neither does a desk: 720 is a sitting height, not a wall line.
       // T78 F17 . a top-line kit follows the wall line AND the wall height: its top stays on the run's top.
+      // T83 F2 . …and neither does the mirror cabinet: its 1250 is the drawing's, over the vanity.
       if ((applied.wallMount != null || (applied.wall != null && type.topLine === 'wall'))
-        && type.mount === 'wall' && !type.freePanel && !type.desk) {
+        && type.mount === 'wall' && !type.freePanel && !type.desk && !type.mirrorCabinet) {
         changes.mount_height = type.topLine === 'wall'
           ? wallTopLineMount(type, resolved, profile, unit.params.height)
           : resolved.wallMount;

@@ -72,7 +72,7 @@ test('F1 . KIT_MIRROR.lsp: the Skylon header of KIT_INFRAME, ASCII, no dash, no 
   const inframe = readFileSync(`${ROOT}reference/lisp/KIT_INFRAME.lsp`, 'utf8').split('\n').slice(0, 4).join('\n');
   assert.ok(TEXT.startsWith(`${inframe}\n`), 'the four copyright lines of KIT_INFRAME.lsp, byte for byte');
   assert.ok(/^[\x00-\x7F]*$/.test(TEXT), 'ASCII (AutoCAD\'s loader)');
-  assert.doesNotMatch(TEXT, /[–—]/, 'no em or en dash');
+  assert.doesNotMatch(TEXT, /[\u2013\u2014]/, 'no em or en dash');
   assert.doesNotMatch(TEXT.replace(/;.*$/gm, ''), /\(load\b/, 'nothing is loaded from here: the routines need nothing');
   assert.match(TEXT, /^;;; Command: MIRROR_FULL$/m);
   assert.match(TEXT, /^;;; Requires: SKYLON_COMMON\.lsp loaded first/m);
@@ -117,7 +117,7 @@ test('F1 . every routine is the kit\'s own: no name of another kit, no local or 
     'mirror-stiles', 'mirror-dividers', 'mirror-bays', 'mirror-door-kg', 'mirror-hinge-band', 'mirror-hinge-count',
     'mirror-cups', 'mirror-hinge-board', 'mirror-board-span', 'mirror-overlay', 'mirror-plate-ys', 'mirror-plate-x',
     'mirror-reach-note', 'mirror-shelf-ys', 'mirror-shelf-depth', 'mirror-shelf', 'mirror-shelf-fits-p', 'mirror-pin-ys',
-    'mirror-pin-xs', 'mirror-back-panes', 'mirror-hanger-holes', 'mirror-hanger-cuts', 'mirror-led-under-length',
+    'mirror-pin-xs', 'mirror-back-panes', 'mirror-hanger-holes', 'mirror-hanger-cuts', 'mirror-in-cut-p', 'mirror-led-under-length',
     'mirror-led-inside-length', 'mirror-led-inside-z', 'mirror-proud', 'mirror-face-proud', 'mirror-list-mm',
     'mirror-widths-refusal', 'c:mirror_full']) assert.ok(L.has(r), `${r} defined`);
   // Millimetres divide as reals: AutoLISP divides two integers to an integer.
@@ -287,7 +287,7 @@ test('F1 . profile.js says each mirror number\'s source beside it', () => {
     'PROPOSED (KIT_MIRROR.lsp D16)', 'PROPOSED, the vanity\'s']) {
     assert.ok(block.includes(s), `profile.mirror says: ${s}`);
   }
-  assert.doesNotMatch(block, /[–—]/, 'no em or en dash');
+  assert.doesNotMatch(block, /[\u2013\u2014]/, 'no em or en dash');
 });
 
 test('F1 . a profile saved before tonight comes back with profile.mirror, a tuned number kept key by key', () => {
@@ -515,7 +515,11 @@ test('F1 (h) . the hangers, the light and the recess', () => {
   assert.deepEqual(L.call('mirror-hanger-holes', 'BUL', 197, e.Hc), [[176, 987], [144, 987]]);
   assert.deepEqual(L.call('mirror-hanger-holes', 'BUR', 197, e.Hc), [[21, 987], [53, 987]]);
   assert.deepEqual(L.call('mirror-hanger-cuts', e.Wc, e.Hc), [[0, 982, 30, 1040], [1260, 982, 1290, 1040]]);
-  say('THE HANGERS. In BUL at x 176 and 144, in BUR at 21 and 53, y 987; the BACK\'s cut-outs 0..30 and 1260..1290 by 982..1040.');
+  say('THE HANGERS. In BUL at x 176 and 144, in BUR at 21 and 53, y 987; the BACK\'s cut-outs 0..30 and 1260..1290 by 982..1040; the BACK\'s end screws at x 9 and 1281, y 990, stand in them and are not drilled.');
+  const cuts = L.call('mirror-hanger-cuts', e.Wc, e.Hc);
+  assert.equal(L.call('mirror-in-cut-p', 9, 990, cuts), true);
+  assert.equal(L.call('mirror-in-cut-p', 1281, 990, cuts), true);
+  assert.equal(L.call('mirror-in-cut-p', 9, 945, cuts), null, 'the screw between the tabs stays');
   assert.deepEqual([L.call('mirror-led-under-length', e.Wc, G), L.call('mirror-led-inside-length', e.bf, e.bc), L.call('mirror-led-inside-z', D)],
     [1254, 922, 205]);
   say('THE LIGHT. The strip under 1254 long, the strip inside 922 at z 205.');

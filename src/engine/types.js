@@ -18,6 +18,8 @@ import { resolveApertures } from './applianceTower.js';
 import { KITCHEN_LIBRARY, WARDROBE_LIBRARY, libraryTypeIds } from './library.js';
 // T82 F13 · how a vanity stands (KIT_VANITY.lsp D19, part 5(e)).
 import { vanityBaseY, vanityMount, vanityPlinthP } from './vanity.js';
+// T83 F2 . what a mirror cabinet is born with (KIT_MIRROR.lsp section 3).
+import { mirrorDefaultParams } from './mirrorCabinet.js';
 
 /**
  * carcass.top      — 'panel' (TOP + BOTTOM) | 'holders' (SINK: 2 rails on edge)
@@ -545,6 +547,59 @@ export const UNIT_TYPES = {
       cornice: false,
     },
     countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+
+  // T83 F2 . THE MIRROR CABINET (reference/lisp/KIT_MIRROR.lsp)
+  //
+  // The owner, 25.10.2026 (14:09): *"teraz zaprojektujmy dokladnie to co masz
+  // na rysunku szafka wiszaca"*; *"w tym przypadku to reces ale tez w
+  // standardzie normalnie wiszaca i dodajemy oczywiscie panele dookola i
+  // ustawiamy jakie grube"*; (22:41) *"daj wszystkie mozliwosci z panelami, z
+  // ledami, bez, szerokosc ustawianych drzwiczek etc"*.
+  //
+  // KIT_WUD_FULL is the parent (D1): hung (`mount: 'wall'` at its own
+  // `mountHeight` 1250, no legs), its carcass the parent's five boards and
+  // their puzzle. The kit declares its whole carcass as the mirror cabinet
+  // (`top: 'mirror'`, sides, bottom and back 'none' for the standard box), and
+  // every part is KIT_MIRROR.lsp's through its mirror (`engine/mirrorCabinet.js
+  // mirrorCabinetFigures`, the ONE derivation, published as `derived.mirror`):
+  // the panels round, the carcass, the bottom box, the dividers that carry the
+  // doors, the mirror doors, the stiles, the glass shelves. W x H is the
+  // cabinet with its panels (D2), D the carcass's. No house door, shelf or
+  // drawer (`supports` all off): its doors, stiles and glass shelves are the
+  // kit's own, their answers on `params.mirror` (the right panel's MIRROR
+  // CABINET section) and its shelves the unit's shelf items when it has any.
+  // `heightGroup: null` and `ownDepth: true`: 1100 and 215 are its own (the
+  // drawing's), no project height or depth replaces them. The bathroom family,
+  // beside the vanity; the WUD's hangers are not the type's (`hangers: false`):
+  // the kit drills the parent's holes itself and the BOM takes the vanity's
+  // brackets (D18). `recess_mm` is T79's key, typed here (D17).
+  MIRROR_CABINET: {
+    id: 'MIRROR_CABINET',
+    heightGroup: null,
+    label: 'Mirror cabinet',
+    mirrorCabinet: true,
+    ownDepth: true,
+    family: 'bathroom',
+    lisp: 'KIT_MIRROR.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,
+    legSource: null,
+    hangers: false,
+    doorExtend: false,
+    mount: 'wall',
+    carcass: {
+      top: 'mirror', sides: 'none', bottom: 'none', back: 'none',
+    },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'mirror.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false,
+      topInfill: false, cornice: false,
+    },
     available: true,
   },
 
@@ -1793,7 +1848,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'VANITY2', 'VANITY3', 'VANITY4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'HAWA_POCKET', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'VANITY2', 'VANITY3', 'VANITY4', 'MIRROR_CABINET', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'HAWA_POCKET', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1864,6 +1919,11 @@ export function isBesideWardrobe(typeId) {
 /** T75 F17 · is this a desk: a wall-hung kit that takes a worktop of its own? */
 export function isDeskKit(typeId) {
   return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.desk);
+}
+
+/** T83 F2 . is this the mirror cabinet (KIT_MIRROR.lsp: the wall unit with its panels round, mirror doors and stiles)? */
+export function isMirrorCabinet(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.mirrorCabinet);
 }
 
 /** T82 F9 · is this a vanity kit (KIT_VANITY.lsp: the drawer base with its back cut out)? */
@@ -2085,6 +2145,11 @@ export function defaultParamsFor(typeId, profile) {
       float_height_mm: Number(d.floatHeightMm) || 0,
       wall_gap: Math.max(0, Number(profile.room?.wallBackClearance) || 0) + (Number(profile.vanity?.serviceVoidMm) || 0),
     } : {}),
+    // T83 F2 . THE MIRROR CABINET'S OWN ANSWERS (KIT_MIRROR.lsp section 3):
+    // `params.mirror`, the profile's defaults with no door width typed (the
+    // kit's own widths, D6, until the right panel types them). Spread, so no
+    // other kit carries the key.
+    ...(type.mirrorCabinet ? mirrorDefaultParams(profile) : {}),
     unit_num: '01',
   };
 }
@@ -2121,4 +2186,6 @@ export const UNIT_NUM_PREFIX = {
   HAWA_POCKET: 'HP',
   // T82 F9 · the vanity: VU01, whatever its count (KIT_VANITY.lsp D22), as DR is the drawer base's.
   VANITY2: 'VU', VANITY3: 'VU', VANITY4: 'VU',
+  // T83 F2 . the mirror cabinet: MC01 (KIT_MIRROR.lsp D21).
+  MIRROR_CABINET: 'MC',
 };

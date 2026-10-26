@@ -287,10 +287,13 @@ const NOTCH_SRC = readFileSync(new URL('../src/engine/notch.js', import.meta.url
 // shape, `[part, id, w, h, t, box]` (`engine/hawaPocket.js cutParts`), so it is
 // read here too: the first string of each part row.
 const HAWA_SRC = readFileSync(new URL('../src/engine/hawaPocket.js', import.meta.url), 'utf8');
+// T83 F2 . the mirror cabinet's parts are written in engine/mirrorCabinet.js (KIT_MIRROR.lsp's
+// mirror, `part:` literals), as the HAWA pocket's are in its own module.
+const MIRROR_SRC = readFileSync(new URL('../src/engine/mirrorCabinet.js', import.meta.url), 'utf8');
 
 function partNamesInSource() {
   const names = new Set();
-  for (const src of [ENGINE_SRC, INSERT_SRC]) {
+  for (const src of [ENGINE_SRC, INSERT_SRC, MIRROR_SRC]) {
     for (const m of src.matchAll(/part:\s*'([^']+)'/g)) names.add(m[1]);
     for (const m of src.matchAll(/push\('[^']*',\s*'([A-Z][A-Z0-9-]+)'/g)) names.add(m[1]);
     for (const m of src.matchAll(/push\(`[^`]*`,\s*'([A-Z][A-Z0-9-]+)'/g)) names.add(m[1]);

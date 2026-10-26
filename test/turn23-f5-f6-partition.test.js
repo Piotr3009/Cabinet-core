@@ -6,7 +6,7 @@ import {
   partitionBackScrewRun, partitionBackScrews, partitionBackSpec,
 } from '../src/engine/partitionFixings.js';
 import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engine/profile.js';
-import { defaultParamsFor, UNIT_TYPE_ORDER } from '../src/engine/types.js';
+import { defaultParamsFor, UNIT_TYPE_ORDER, UNIT_TYPES } from '../src/engine/types.js';
 import { panelDxf } from '../src/engine/cnc/dxf.js';
 
 // ─── TURN 23 · F5 (no borrowed biscuits) + F6 (screws in the back) ──────────
@@ -245,6 +245,13 @@ test('F6.3 — the rail keeps its own law: the side flange, and nothing of F6', 
 
 test('F5 + F6 — a cabinet with NO partition emits neither class, in any kit', () => {
   for (const id of UNIT_TYPE_ORDER) {
+    // AMENDED BY T83 F2 (25.10.2026) . the MIRROR CABINET is born WITH its two
+    // dividers and the FIX board over its bottom box (KIT_MIRROR.lsp D7, D12;
+    // the owner's mockup: *"karkas: 2 przegrody 18 za slupkami LED, na nich
+    // zawiasy"*), so it is no cabinet with no partition: its back screws and
+    // its set's marks are the house's for a divider and a FIX shelf, which the
+    // test below proves for a cabinet WITH a partition.
+    if (UNIT_TYPES[id].mirrorCabinet) continue;
     const result = computeCabinet(defaultParamsFor(id, P), P);
     assert.equal(result.drills.some((d) => d.kind === 'partition_back_screw'), false, `${id} grew a back screw`);
     assert.equal(result.drills.some((d) => d.kind === 'biscuit_screw'), false, `${id} grew a biscuit screw`);

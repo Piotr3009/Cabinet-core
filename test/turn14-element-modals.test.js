@@ -157,6 +157,15 @@ test('F4.3 — every wall-unit LIBRARY entry resolves to a type that carries doo
       assert.equal(type.doorExtend, false, `${id} must not run over the cabinet it stands on`);
       continue;
     }
+    // AMENDED BY T83 F2 (25.10.2026) . THE THIRD HONEST EXCEPTION: the MIRROR
+    // CABINET's doors stand on its bottom box (KIT_MIRROR.lsp D12, D13: the
+    // strip 3 under them, the LED under it), so a grab edge run below them
+    // would run down over the box's strip. The owner: *"podswietlenie pod
+    // spodem"* (14:09), the box that carries it.
+    if (type.mirrorCabinet) {
+      assert.equal(type.doorExtend, false, `${id} must not run over its bottom box`);
+      continue;
+    }
     assert.equal(type.doorExtend, true, `${id} hangs on a wall and has no door extend`);
   }
 });

@@ -341,6 +341,10 @@ export const NEW_FILES = [
   // T83 F1 (25.10.2026): KIT_MIRROR.lsp and profile.mirror (M1)
   'test/turn83-f01-mirror-lisp.test.js',
   'scripts/t78-classify.d/f44-t83-f01.mjs',
+  // T83 F2 (25.10.2026): the kit MIRROR_CABINET (M1)
+  'src/engine/mirrorCabinet.js',
+  'test/turn83-f02-mirror-kit.test.js',
+  'scripts/t78-classify.d/f44-t83-f02.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

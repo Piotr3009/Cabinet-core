@@ -83,7 +83,7 @@ test('F4 — the wizard’s sixth step is the SUMMARY, not a second Hardware', (
 });
 
 test('F4 — ONE button leaves step 6, and `Save as set & start` is gone', () => {
-  assert.match(FLOW, /data-start-designing="1"/);
+  assert.match(FLOW, /data-start-designing=\{step === 'summary' \? '1' : undefined\}/);
   assert.doesNotMatch(FLOW, /data-save-as-set/);
   assert.doesNotMatch(FLOW, /Save as set &amp; start<\/button>/);
   assert.doesNotMatch(FLOW, /Name this set…/, 'the footer’s naming detour went with it');
@@ -129,9 +129,9 @@ test('F4 — where the user stands in step 5 survives leaving it', () => {
   // That is only possible if the flow holds the position rather than the
   // component that unmounts.
   assert.match(FLOW, /const \[walk, setWalk\] = useState\(\{/);
-  assert.match(FLOW, /walk=\{walk\}\s*\n\s*onWalk=\{setWalk\}/);
+  assert.match(FLOW, /walk=\{walk\}\s+onWalk=\{setWalk\}/);
   assert.match(WIZ, /walk = null, onWalk = null/);
-  assert.match(WIZ, /const raw = \(walk && walk\.tab\) \? walk : ownWalk;/);
+  assert.match(WIZ, /const raw = walk \|\| ownWalk;/);
   // …and left out — the Settings ▸ Project settings door — it keeps its own.
   assert.match(WIZ, /const \[ownWalk, setOwnWalk\] = useState/);
 });

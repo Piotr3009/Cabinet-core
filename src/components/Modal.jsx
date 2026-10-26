@@ -89,6 +89,7 @@ export default function Modal({
   title, onClose, children, footer, width = 'w-[420px]',
   anchor = null, prefer = null, dim = null, className = '', maximised = false,
   onMaximisedChange = null, onBack = null, backLabel = '', name = '',
+  onEscape = null,
   // ─── TURN 33 (CLAUDE.md F1): A TOOL PANEL WORKS THE SCENE ─────────────────
   // `sticky` = this window is a placement TOOL, not a dialog about one thing:
   // pointer-downs OUTSIDE it pass through to the scene (the owner's lighting
@@ -127,6 +128,10 @@ export default function Modal({
   // dialog in the app opens beside the piece it is about, which is the rule
   // the owner marked "na zawsze".
   fullscreen = false,
+  // Project setup is a workspace: 90% of the viewport width and 85% of its
+  // height, with a fixed header/footer and independently scrolling content.
+  // Opt-in only; all existing object-side dialogs retain their geometry.
+  workspace = false,
 }) {
   const box = useRef(null);
   // ─── TURN 49 (CLAUDE.md F3): THIS WINDOW'S PLACE IN THE STACK ─────────────
@@ -177,17 +182,18 @@ export default function Modal({
   // exactly the class of duplicate the stack exists to kill.
   useEffect(() => {
     const onKey = (e) => {
+      if (workspace && covered) return;
       // T37-F4c: a window that has opted the key out (`escapeCloses: false`)
       // ignores it — unless there is a level UNDER it, because Back is not a
       // close and a stack the key cannot leave is a trap. The line below is
       // turn 23's own, untouched: the rule it states still holds for every
       // window that has not opted out, which is all of them but one.
-      if (!escapeCloses && !onBack) return;
-      if (e.key === 'Escape') (onBack || close)();
+      if (!escapeCloses && !onBack && !onEscape) return;
+      if (e.key === 'Escape' && (!onEscape || !e.defaultPrevented)) (onEscape || onBack || close)();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [close, onBack, escapeCloses]);
+  }, [close, onBack, onEscape, escapeCloses, workspace, covered]);
 
   const measure = useCallback(() => {
     const el = box.current;
@@ -195,6 +201,30 @@ export default function Modal({
     const rect = el.getBoundingClientRect();
     return { width: rect.width, height: rect.height };
   }, []);
+
+  useEffect(() => {
+    if (!workspace) return undefined;
+    const previousFocus = document.activeElement;
+    return () => { if (previousFocus?.isConnected) previousFocus.focus?.(); };
+  }, [workspace]);
+  useEffect(() => {
+    if (!workspace || covered) return undefined;
+    const keepFocus = (event) => {
+      if (event.key !== 'Tab') return;
+      const controls = [...(box.current?.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]') || [])]
+        .filter((el) => el.getClientRects().length > 0 && el.getAttribute('aria-hidden') !== 'true');
+      if (!controls.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !box.current.contains(document.activeElement))) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !box.current.contains(document.activeElement))) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    window.addEventListener('keydown', keepFocus);
+    return () => window.removeEventListener('keydown', keepFocus);
+  }, [workspace, covered]);
 
   const place = useCallback(() => {
     const size = measure();
@@ -215,7 +245,7 @@ export default function Modal({
       });
       return;
     }
-    if (!anchor) {
+    if (!anchor || workspace) {
       // No object: the middle of the screen, which is where a dialog about the
       // whole project belongs.
       setAt({
@@ -249,7 +279,7 @@ export default function Modal({
     setAt(placeAnchoredModal({
       anchor, size, viewport, offset: anchorOffset, gap: gapPx, margin: marginPx,
     }));
-  }, [anchor, dock, gapPx, marginPx, anchorOffset, measure]);
+  }, [anchor, dock, gapPx, marginPx, anchorOffset, measure, workspace]);
 
   // Placed on the way in, and re-placed if the window is resized — a modal
   // pinned to a corner that is no longer there is a modal you cannot close.
@@ -344,11 +374,12 @@ export default function Modal({
   return (
     <div
       className={`fixed inset-0 ${LAYER_CLASS.modal} ${darken && !sticky ? 'bg-black/45' : ''} ${sticky ? 'pointer-events-none' : ''}`}
-      onPointerDown={sticky ? undefined : close}
+      onPointerDown={sticky || workspace ? undefined : close}
     >
       <div
         ref={box}
         role="dialog"
+        aria-modal={workspace ? true : undefined}
         aria-label={typeof title === 'string' ? title : undefined}
         data-modal-shell="1"
         data-modal-name={name || undefined}
@@ -360,15 +391,21 @@ export default function Modal({
         data-modal-side={big ? 'maximised' : (at?.side || '')}
         data-modal-maximised={big ? '1' : '0'}
         data-modal-fullscreen={fullscreen && big ? '1' : undefined}
+        data-modal-workspace={workspace ? '1' : undefined}
         // T49 F3: a window with another one over it. Readable from outside,
         // like every other fact about the shell — the walk asserts on it.
         data-modal-covered={covered ? '1' : '0'}
-        className={`fixed cc-panel pointer-events-auto ${big ? '' : `${width} ${dock ? '' : 'max-h-[90vh]'}`} flex flex-col shadow-xl ${className}`}
+        className={`fixed cc-panel pointer-events-auto ${big || workspace ? '' : `${width} ${dock ? '' : 'max-h-[90vh]'}`} flex flex-col shadow-xl ${className}`}
         style={full ? {
           left: full.left, top: full.top, width: full.width, height: full.height, visibility: 'visible',
         } : {
           left: at?.left ?? 0,
           top: at?.top ?? 0,
+          ...(workspace ? {
+            width: screen.width < 760 ? 'calc(100vw - 16px)' : '90vw',
+            height: screen.width < 760 ? 'calc(100dvh - 16px)' : '85dvh',
+            maxWidth: 'calc(100vw - 16px)', maxHeight: 'calc(100dvh - 16px)',
+          } : {}),
           // A docked window is sized by the SCREEN, not by what is in it.
           ...(at?.height ? { height: at.height } : {}),
           visibility: at ? 'visible' : 'hidden',
@@ -426,12 +463,12 @@ export default function Modal({
           {/* Offered only to a window that ASKED to be maximised. Every other
               modal in the app is a side dialog and a maximise button on one
               would be an invitation to break rule 15. */}
-          {maximised && (
+          {(maximised || workspace) && (
             <button
               type="button"
               className="cc-btn-ghost"
               data-modal-maximise="1"
-              title={big ? 'Restore — put the window beside the cabinet' : 'Maximise'}
+              title={big ? (workspace ? 'Restore setup window' : 'Restore — put the window beside the cabinet') : 'Maximise'}
               onClick={() => (big ? restore() : setBig(true))}
             >
               {big ? '❐' : '▢'}
@@ -447,20 +484,20 @@ export default function Modal({
             type="button"
             className="cc-btn-ghost"
             data-modal-close="1"
-            title={escapeCloses ? 'Close (Esc)' : 'Close'}
+            title={escapeCloses && !onEscape ? 'Close (Esc)' : 'Close'}
             onClick={close}
           >
             ×
           </button>
         </div>
-        <div className={`${fullscreen && big ? 'p-0 overflow-hidden' : 'p-4 overflow-y-auto'} flex-1 min-h-0`}>{children}</div>
+        <div className={`${workspace ? 'cc-setup-modal-body p-0 overflow-hidden' : fullscreen && big ? 'p-0 overflow-hidden' : 'p-4 overflow-y-auto'} flex-1 min-h-0`}>{children}</div>
         {/* T49 F3: the lower window's footer is HIDDEN while a child stands
             over it — *"jak mamy otwarty modal to inne przyciski z glownego
             modalu nie powinny byc widoczne, to sie myli."* Nothing about where
             those buttons GO has changed; they are simply not drawn under the
             window the hand is actually using. */}
         {footer && !covered && (
-          <div className="px-4 py-3 border-t border-shell-600 flex justify-end gap-2" data-modal-footer="1">{footer}</div>
+          <div className="px-4 py-3 border-t border-shell-600 flex justify-end gap-2 shrink-0" data-modal-footer="1">{footer}</div>
         )}
       </div>
     </div>

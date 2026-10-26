@@ -77,13 +77,13 @@ test('F8 — Ustawienia → Settings, Produkcja → Production', () => {
   }
 });
 
-test('F8 — Podsumowanie → Summary', () => {
+test('F8 - the final review section and its navigation use English', () => {
   // T45 F4 folded the settings' own summary into the wizard's step 6; the word
   // it is called there is English.
   assert.equal(WIZARD_TABS.some((t) => t.label === 'Podsumowanie'), false);
   const FLOW = readFileSync(new URL('../src/components/NewProjectFlow.jsx', import.meta.url), 'utf8');
-  assert.match(FLOW, /summary: 'Summary',/);
-  assert.match(FLOW, /Next — summary/);
+  assert.match(FLOW, /review: \{ label: 'Review & start'/);
+  assert.match(FLOW, /stepNextLabel="Review project"/);
 });
 
 test('F8 — Ile kolorów frontów? → How many types and colours?', () => {

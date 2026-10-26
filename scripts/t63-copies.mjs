@@ -25,6 +25,9 @@ export const T62_COPIES = [
   { pro: 'src/components/NumberField.jsx', retail: 'src/retail/design/room/NumberField.jsx', why: 'T62 · the typed millimetre' },
   { pro: 'src/components/RoomModal.jsx', retail: 'src/retail/design/room/RoomModal.jsx', why: 'T62 F2 · the room' },
   { pro: 'src/components/WallElevationModal.jsx', retail: 'src/retail/design/room/WallElevationModal.jsx', why: 'T62 F3 · the wall, seen from the front' },
+  // Setup UI, 26.10.2026: the wall's optional embedded tools use these icons.
+  // Copied locally; retail callers keep embedded=false and their current skin.
+  { pro: 'src/components/SetupArt.jsx', retail: 'src/retail/design/room/SetupArt.jsx', why: 'Setup workspace: recursive presentation dependency of the existing wall copy; inactive in ordinary retail editors' },
 ];
 
 export const T63_COPIES = [

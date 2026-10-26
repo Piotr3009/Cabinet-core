@@ -4,6 +4,8 @@ import {
 import Modal from './Modal.jsx';
 import NumberField from './NumberField.jsx';
 import WallElevationModal from './WallElevationModal.jsx';
+import DrawRoomModal from './DrawRoomModal.jsx';
+import IslandPlan from '../../../3d/IslandPlan.jsx';
 import { useProjectStore } from '../../../stores/projectStore.js';
 import { useUiStore } from '../../../stores/uiStore.js';
 import {
@@ -159,11 +161,16 @@ const WALL_COUNTS = Object.freeze([
 
 export default function RoomModal({
   onClose = null, onApplied = null, anchor: anchorProp = null, wizard = false,
+  embedded = false, onNavigationChange = null, draftState = null, onDraftState = null,
 }) {
   const room = useProjectStore((s) => s.project.room);
   const units = useProjectStore((s) => s.units);
   const setRoom = useProjectStore((s) => s.setRoom);
   const beginIslandPlan = useProjectStore((s) => s.beginIslandPlan);
+  const islandPlan = useUiStore((s) => s.islandPlan);
+  const closeIslandPlan = useUiStore((s) => s.closeIslandPlan);
+  const [planningIsland, setPlanningIsland] = useState(false);
+  const ownsIslandPlan = useRef(false);
   // T75 F9 · ADD ISLAND is a kitchen job's: the gate is the job's family,
   // which retail (a wardrobe job) never meets.
   const islandsAllowed = useProjectStore((s) => s.islandsAllowed?.() === true);
@@ -183,14 +190,14 @@ export default function RoomModal({
   // T53 F10: the drawing window opens FROM here, beside its own button.
   const openModal = useUiStore((s) => s.openModal);
 
-  const [draft, setDraft] = useState(() => migrateRoom(room));
+  const [draft, setDraft] = useState(() => migrateRoom(draftState?.draft || room));
   // T69 F1 (VERDICT 1): the room AS IT WAS when this window opened. `apply`
   // diffs the draft against it and sends the difference, so the keys this
   // window never edited are left to whoever else is writing them — which since
   // T67 F1 is the elevation editor docked under the plan, live, in the same
   // window. A ref and not state: it never changes, and nothing re-renders on it.
   const base = useRef(null);
-  if (base.current === null) base.current = migrateRoom(room);
+  if (base.current === null) base.current = migrateRoom(draftState?.base || room);
   // ─── Turn 14 (CLAUDE.md F10): WHAT IS SELECTED, AND WHAT IS BEING DRAGGED ──
   //
   // The owner's verdict on corner-dragging: unusable, and he is describing the
@@ -211,9 +218,25 @@ export default function RoomModal({
   // that jumped back to wall 1 every time somebody let go would be unusable.
   // So the plan click WRITES this, and nothing clears it: *"Click a wall in
   // the plan → the elevation below swaps to it, in place."*
-  const [wallShown, setWallShown] = useState(0);
+  const [wallShown, setWallShown] = useState(draftState?.wallShown || 0);
+  useEffect(() => {
+    onDraftState?.({ draft, base: base.current, wallShown });
+  }, [draft, wallShown, onDraftState]);
   const drag = useRef(null);
   const [typed, setTyped] = useState('');
+  const [drawRoom, setDrawRoom] = useState(null);
+  useEffect(() => {
+    if (!embedded || !planningIsland || islandPlan) return;
+    const next = migrateRoom(useProjectStore.getState().project.room);
+    base.current = next;
+    setDraft(next);
+    onDraftState?.({ draft: next, base: next, wallShown });
+    ownsIslandPlan.current = false;
+    setPlanningIsland(false);
+  }, [embedded, planningIsland, islandPlan, onDraftState, wallShown]);
+  useEffect(() => () => {
+    if (ownsIslandPlan.current) closeIslandPlan();
+  }, [closeIslandPlan]);
 
   // T69 F1: through the vocabulary's own gate rather than a ternary that knows
   // one word — the row below offers three, and a scope this file could not
@@ -335,9 +358,16 @@ export default function RoomModal({
   /** How far the pointer has travelled along a wall's outward normal, in mm. */
   const alongNormal = (wall, dxMm, dyMm) => -(dxMm * wall.inward.x + dyMm * wall.inward.y);
 
+  const planPoint = (svg, x, y) => {
+    const inverse = svg.getScreenCTM()?.inverse();
+    if (inverse) return { x: inverse.a * x + inverse.c * y + inverse.e, y: inverse.b * x + inverse.d * y + inverse.f };
+    const rect = svg.getBoundingClientRect();
+    return { x: x - rect.left, y: y - rect.top };
+  };
+
   const startWallDrag = (e, index) => {
     e.stopPropagation();
-    const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+    const from = planPoint(e.currentTarget.ownerSVGElement, e.clientX, e.clientY);
     // The room AS IT WAS when this wall was picked travels with the selection,
     // not with the drag: "drag it a bit, then type 202" has to mean 202 from
     // where it started (CLAUDE.md F10.2 and the walk step that pins it), and
@@ -350,7 +380,7 @@ export default function RoomModal({
     drag.current = {
       kind: 'wall',
       index,
-      from: { x: e.clientX - rect.left, y: e.clientY - rect.top },
+      from,
       room: draft,
       wall: roomWalls(draft)[index],
     };
@@ -359,7 +389,7 @@ export default function RoomModal({
 
   const startBoxDrag = (e, boxId, side) => {
     e.stopPropagation();
-    const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+    const from = planPoint(e.currentTarget.ownerSVGElement, e.clientX, e.clientY);
     setPicked({
       kind: 'box', id: boxId, side, boxes,
     });
@@ -368,7 +398,7 @@ export default function RoomModal({
       kind: 'box',
       id: boxId,
       side,
-      from: { x: e.clientX - rect.left, y: e.clientY - rect.top },
+      from,
       box: boxes.find((b) => b.id === boxId) || null,
     };
     e.currentTarget.ownerSVGElement.setPointerCapture?.(e.pointerId);
@@ -407,6 +437,14 @@ export default function RoomModal({
   // window changed, as Apply sends them), then the plan opens over the canvas;
   // the island reaches the room only when the plan is inserted.
   const addIsland = () => {
+    if (embedded) {
+      if (!commitDraft()) return;
+      const began = beginIslandPlan(null);
+      if (!began.ok) { notify(began.message, 'warn'); return; }
+      ownsIslandPlan.current = true;
+      setPlanningIsland(true);
+      return;
+    }
     if (shapeIssues.length) { notify(shapeIssues[0], 'warn'); return; }
     const changed = Object.fromEntries(
       Object.entries(draft).filter(([key, value]) => !Object.is(
@@ -424,13 +462,13 @@ export default function RoomModal({
   const changeIsland = (id, change) => setIslands(islands.map((i) => (i.id === id ? { ...i, ...change } : i)));
   const startIslandDrag = (e, id) => {
     e.stopPropagation();
-    const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+    const from = planPoint(e.currentTarget.ownerSVGElement, e.clientX, e.clientY);
     setPicked({ kind: 'island', id });
     setTyped('');
     drag.current = {
       kind: 'island',
       id,
-      from: { x: e.clientX - rect.left, y: e.clientY - rect.top },
+      from,
       island: islands.find((i) => i.id === id) || null,
     };
     e.currentTarget.ownerSVGElement.setPointerCapture?.(e.pointerId);
@@ -445,9 +483,9 @@ export default function RoomModal({
   const onPlanPointerMove = (e) => {
     const d = drag.current;
     if (!d) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const dx = ((e.clientX - rect.left) - d.from.x) / scale;
-    const dy = ((e.clientY - rect.top) - d.from.y) / scale;
+    const at = planPoint(e.currentTarget, e.clientX, e.clientY);
+    const dx = (at.x - d.from.x) / scale;
+    const dy = (at.y - d.from.y) / scale;
     if (d.kind === 'wall') {
       const delta = grid(alongNormal(d.wall, dx, dy));
       if (!delta) return;
@@ -589,18 +627,38 @@ export default function RoomModal({
    * refusal is the STORE's, exactly as it always was, and it is simply said
    * out loud instead of being mimed by a grey rectangle.
    */
-  const apply = () => {
-    if (shapeIssues.length) { notify(shapeIssues[0], 'warn'); return; }
+  const commitDraft = () => {
+    if (shapeIssues.length) { notify(shapeIssues[0], 'warn'); return false; }
     const changed = Object.fromEntries(
       Object.entries(draft).filter(([key, value]) => !Object.is(
         JSON.stringify(value), JSON.stringify(base.current[key]),
       )),
     );
     const verdict = setRoom(changed);
-    if (!verdict.ok) { notify(verdict.message, 'error'); return; }
+    if (!verdict.ok) { notify(verdict.message, 'error'); return false; }
+    const appliedRoom = migrateRoom(useProjectStore.getState().project.room);
+    base.current = appliedRoom;
+    setDraft(appliedRoom);
+    onDraftState?.({ draft: appliedRoom, base: appliedRoom, wallShown });
+    return true;
+  };
+  const apply = () => {
+    if (!commitDraft()) return;
     if (onApplied) { onApplied(); return; }
     closeModal();
   };
+
+  const navigation = useRef(null);
+  navigation.current = { back: closeModal, next: apply };
+  const navigationHint = shapeIssues[0] || (!guard.ok ? guard.message : 'Confirm to apply the room plan. Wall openings update as you edit.');
+  useEffect(() => {
+    if (!embedded || !onNavigationChange) return;
+    onNavigationChange({
+      back: () => navigation.current.back(), next: () => navigation.current.next(),
+      nextLabel: 'Confirm space & continue', canNext: true, hint: navigationHint,
+    });
+  }, [embedded, onNavigationChange, navigationHint]);
+  const EditorFrame = embedded ? EmbeddedRoomFrame : Modal;
 
   // T75 F9 · what the line under the plan says, now that an island can be picked.
   const planHint = (() => {
@@ -610,7 +668,8 @@ export default function RoomModal({
   })();
 
   return (
-    <Modal
+    <>
+    <EditorFrame
       name="room"
       anchor={anchor}
       title="Room setup"
@@ -620,9 +679,9 @@ export default function RoomModal({
       // *"modal tylko powieksz"*: 860 x 1.5 = 1290. PLAN_W and PLAN_H stay.
       width="pbi-re-w1290"
     >
-      <style>{DOCK_CSS}</style>
-      <div className="pbi-re-stack-3" data-room-door={wizard ? 'wizard' : 'menu'} data-room-one-window="1">
-      <div className="pbi-re-grid pbi-re-grid-2 pbi-re-gap-4" data-room-plan-half="1">
+      {!embedded && <style>{DOCK_CSS}</style>}
+      <div className={`pbi-re-stack-3 ${embedded ? 'pbi-re-setup-room' : ''}`} data-room-door={wizard ? 'wizard' : 'menu'} data-room-one-window="1">
+      <div className={embedded ? 'pbi-re-setup-room-grid' : 'pbi-re-grid pbi-re-grid-2 pbi-re-gap-4'} data-room-plan-half="1">
         {/* ── plan ── */}
         <div>
           <div className="pbi-re-fieldrow pbi-re-mb2">
@@ -676,7 +735,11 @@ export default function RoomModal({
                 className="pbi-re-btn"
                 data-room-draw="1"
                 title="Draw the room wall by wall, as in CAD — a direction, a number, Enter"
-                onClick={(e) => openModal('draw-room', { anchor: anchorOfEvent(e) })}
+                onClick={(e) => {
+                  if (!embedded) { openModal('draw-room', { anchor: anchorOfEvent(e) }); return; }
+                  if (!commitDraft()) return;
+                  setDrawRoom({ anchor: anchorOfEvent(e), room: useProjectStore.getState().project.room });
+                }}
               >
                 Draw room…
               </button>
@@ -723,9 +786,10 @@ export default function RoomModal({
             </div>
           </div>
 
-          <div style={{ position: 'relative', width: PLAN_W }}>
+          <div style={{ position: 'relative', width: embedded ? '100%' : PLAN_W }}>
           <svg
-            width={PLAN_W} height={PLAN_H}
+            width={embedded ? '100%' : PLAN_W} height={embedded ? 340 : PLAN_H}
+            viewBox={`0 0 ${PLAN_W} ${PLAN_H}`}
             className="pbi-re-fill-ground pbi-re-line pbi-re-hair pbi-re-round pbi-re-notouch"
             data-room-plan="1"
             onPointerMove={onPlanPointerMove}
@@ -856,8 +920,11 @@ export default function RoomModal({
                       onPointerDown={(e) => {
                         e.stopPropagation();
                         setPicked({ kind: 'island', id: isl.id });
+                        const label = e.currentTarget.getBoundingClientRect();
+                        const canvas = e.currentTarget.ownerSVGElement.getBoundingClientRect();
                         setIslandEdit({
-                          id: isl.id, key, value: String(isl[key]), x: at.x, y: at.y,
+                          id: isl.id, key, value: String(isl[key]),
+                          x: label.left + label.width / 2 - canvas.left, y: label.top + label.height / 2 - canvas.top,
                         });
                       }}
                     >
@@ -1125,12 +1192,12 @@ export default function RoomModal({
             {'heights. It is drawn here because it is true, not because it is yours to change.'}
           </p>
         ))}
-        <WallElevationModal key={wallOnShow} wallIndex={wallOnShow} />
+        <WallElevationModal key={wallOnShow} wallIndex={wallOnShow} embedded={embedded} />
       </div>
 
       {/* The window's ONE row of navigation — see the note at the head of this
           file for why it is here and not in the shell's footer. */}
-      <div className="pbi-re-row pbi-re-end pbi-re-gap-2 pbi-re-line-t pbi-re-hair pbi-re-pt3" data-room-actions="1">
+      {!embedded && <div className="pbi-re-row pbi-re-end pbi-re-gap-2 pbi-re-line-t pbi-re-hair pbi-re-pt3" data-room-actions="1">
         <button type="button" className="pbi-re-btn" onClick={closeModal}>Cancel</button>
         {/* T69 F1 · VERDICT 2: LIVE. The store still refuses; `apply` now says
             so. See the note on `apply` above for the probe that convicted the
@@ -1138,8 +1205,35 @@ export default function RoomModal({
         <button type="button" className="pbi-re-btn-gold" onClick={apply} data-room-apply="1">
           Apply
         </button>
+      </div>}
       </div>
-      </div>
-    </Modal>
+    </EditorFrame>
+    {embedded && planningIsland && islandPlan && (
+      <Modal name="island-plan" title="Plan island" workspace className="pbi-re-setup pbi-re-setup-island-modal"
+        onClose={closeIslandPlan} escapeCloses={false}>
+        <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 0 }}>
+          <IslandPlan />
+        </div>
+      </Modal>
+    )}
+    {embedded && drawRoom && (
+      <DrawRoomModal anchor={drawRoom.anchor} onClose={() => {
+        const currentRoom = useProjectStore.getState().project.room;
+        if (currentRoom !== drawRoom.room) {
+          const next = migrateRoom(currentRoom);
+          base.current = next;
+          setDraft(next);
+          setWallShown(0);
+          onDraftState?.({ draft: next, base: next, wallShown: 0 });
+        }
+        setDrawRoom(null);
+      }} />
+    )}
+    </>
   );
+}
+
+
+function EmbeddedRoomFrame({ children }) {
+  return <>{children}</>;
 }

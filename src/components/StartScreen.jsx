@@ -154,7 +154,7 @@ export default function StartScreen() {
                 New project
               </button>
               <p className="text-[11px] text-ink-400">
-                Number, type, scope, room and settings — five steps, all of them already answered.
+                Set up the project, space and materials in one workspace. Start with your workshop defaults.
               </p>
             </section>
 

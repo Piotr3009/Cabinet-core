@@ -113,6 +113,8 @@ test('F4 — the panel has a place for it, under the board it is a sheet of', ()
   assert.match(PANEL, /\{boardSelect\}[\s\S]{0,160}\{sheetSize\}/, 'the sheet stands UNDER the board');
   assert.match(WIZ, /sheetSize=\{sheets \? sheetSizeRow\(kind, t\) : null\}/);
   // The carcass dialog asks for it; the front dialog is F6's.
-  const call = WIZ.slice(WIZ.indexOf("slotPicker('carcass', carcTypeAt, {"), WIZ.indexOf("carcAt === 'summary'"));
+  const start = WIZ.indexOf("slotPicker('carcass', carcTypeAt, {");
+  assert.ok(start >= 0, 'the material picker call is present');
+  const call = WIZ.slice(start, WIZ.indexOf("carcAt === 'summary'", start));
   assert.match(call, /sheets: true,/);
 });

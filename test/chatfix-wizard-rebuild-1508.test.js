@@ -25,11 +25,14 @@ test('cncCorner: dogbone is the default, square survives, junk falls back', () =
 });
 
 // ── two containers, and the fronts' lock ──
-test('step 4 is TWO containers, and the fronts are locked until the carcasses save', () => {
+test('materials keep separate containers; the setup workspace allows direct editing', () => {
   assert.match(ws, /data-carcass-container="1"/);
   assert.match(ws, /data-fronts-container="1"/);
-  assert.match(ws, /data-fronts-locked=\{carcSaved \? '0' : '1'\}/);
-  assert.match(ws, /pointer-events-none/, 'the lock is real, not decorative');
+  // The October approved sidebar makes sections directly accessible. The old
+  // standalone form keeps its lock; material validity still gates confirmation.
+  assert.match(ws, /data-fronts-locked=\{carcSaved \|\| embedded \? '0' : '1'\}/);
+  assert.match(ws, /aria-disabled=\{!carcSaved && !embedded\}/);
+  assert.match(ws, /nextBlocked = missing\.length > 0;/);
   assert.match(ws, /data-save-carcasses="1"/);
   assert.match(ws, /data-save-fronts="1"/);
 });
@@ -78,37 +81,27 @@ test('spray is the colour LISTS — the picker the sources already name', () => 
 });
 
 // ── the flow's gate and the footer's order ──
-test('the step-5 Next waits for BOTH saves — and for nothing else', () => {
-  // T45 F7: *"Next validates ONLY the current tab."* The mockup's own gate —
-  // both containers saved — is untouched; what left is T44's `blocked`, which
-  // held a joiner on step 5 for a number answered on another screen and said
-  // so in a tooltip. That conflict is stated at its field now, with a door
-  // beside it, and `Start designing` still refuses a job that cannot be built.
-  //
-  // ─── TURN 49 (CLAUDE.md F3): THE SAME GATE, ONE ROW LOWER ────────────────
-  // The button moved — the wizard's footer drew a second Back and a second
-  // Next an inch under the sequence's own row, and the owner pressed the wrong
-  // one — so the gate is asserted where the button now is. It is the SAME
-  // gate: both containers saved, and nothing else.
-  const wiz = readFileSync(new URL('../src/components/WizardSettings.jsx', import.meta.url), 'utf8');
-  assert.match(wiz, /nextBlocked = !carcSaved \|\| !frontsSaved;/);
-  assert.match(wiz, /'Save the carcasses and the fronts to continue'/);
-  // …and the flow is still told where the two saves stand.
-  assert.match(flow, /onGate=\{\(carcasses, fronts\) => setGates\(\{ carcasses, fronts \}\)\}/);
+test('review is reachable while Start requires both material confirmations', () => {
+  // The unified sidebar allows review before completion. Confirmation belongs
+  // to the data held by the flow, not an effect in a screen that may unmount.
+  assert.match(flow, /carcasses: Boolean\(walk\.carcSaved\), fronts: Boolean\(walk\.frontsSaved\)/);
+  assert.match(flow, /!gates\.carcasses \? \['Confirm the carcases section\.'/);
+  assert.match(flow, /!gates\.fronts \? \['Confirm the fronts section\.'/);
+  const expression = flow.match(/const canStart = ([^;]+);/)[1];
+  const canStart = new Function('created', 'blockers', 'confirmationHints', `return ${expression}`);
+  assert.equal(canStart(true, [], []), true);
+  assert.equal(canStart(false, [], []), false);
+  assert.equal(canStart(true, [{ code: 'materials' }], []), false);
+  assert.equal(canStart(true, [], ['Confirm the fronts section.']), false);
 });
-test('the footer is ONE button now, and it starts AT ONCE', () => {
-  // ─── TURN 45 (CLAUDE.md F4 / iron rule 4) ────────────────────────────────
-  // *"(`Save as set & start` is gone; the standard was already offered at the
-  // settings finale.)"* Two buttons that both started the job, one of which
-  // grew a name field in the footer first, are one button. The OFFER survives
-  // on the summary itself — `data-open-save-set`, with the naming done in
-  // `SaveSettingsSetModal`, which is where it has had room since T44 F8.
-  assert.equal(flow.indexOf('data-save-as-set="1"'), -1, 'the second button is gone by name');
-  assert.ok(flow.indexOf('data-start-designing="1"') > -1);
-  assert.match(flow, /data-start-designing="1"[\s\S]{0,120}onClick=\{\(\) => onStart\(\)\}/,
-    'the primary starts AT ONCE — no naming detour');
+test('one primary action starts immediately from review, without naming a set', () => {
+  assert.equal(flow.indexOf('data-save-as-set="1"'), -1);
+  assert.equal((flow.match(/data-setup-primary="1"/g) || []).length, 1);
+  assert.match(flow, /data-start-designing=\{step === 'summary' \? '1' : undefined\}/);
+  assert.match(flow, /step === 'summary' \? onStart : nav\?\.next/);
+  assert.match(flow, /disabled=\{primaryDisabled\} onClick=\{primaryAction\}/);
   const summary = readFileSync(new URL('../src/components/WizardSummary.jsx', import.meta.url), 'utf8');
-  assert.match(summary, /data-open-save-set="1"/, 'the offer is on the summary');
+  assert.match(summary, /data-open-save-set="1"/);
   assert.match(summary, /Save these as your standard\?/);
 });
 

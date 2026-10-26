@@ -57,10 +57,10 @@ test('F1 — the type still SUGGESTS, in a sentence, and the first type would ha
   assert.equal(PROJECT_TYPES[0].scope, 'room');
 });
 
-test('F1 — the scope is written into the project the moment it is created', () => {
-  // A job abandoned before step 3 is still a ONE WALL job: `commitInfo` writes
-  // it, so the store never carries the engine default's `room` for a project
-  // this wizard made.
-  const commitInfo = FLOW.slice(FLOW.indexOf('const commitInfo'), FLOW.indexOf('const commitType'));
-  assert.match(commitInfo, /setDesign\(\{ scope \}\)/);
+test('F1 - scope is written when the project is created, before entering space', () => {
+  const commit = FLOW.slice(FLOW.indexOf('const commitProject'), FLOW.indexOf('const completeSpace'));
+  assert.match(commit, /store\.newProject\(/);
+  assert.match(commit, /store\.setDesign\(\{ scope, projectType: typeId \}\)/);
+  assert.ok(commit.indexOf('store.setDesign') > commit.indexOf('store.newProject'));
+  assert.ok(commit.indexOf('store.setDesign') < commit.indexOf('resume(destination)'));
 });

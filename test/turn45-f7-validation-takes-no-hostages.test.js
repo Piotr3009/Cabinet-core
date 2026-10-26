@@ -159,22 +159,14 @@ test('F7 — a tab is gated by its OWN answer and by nothing else', () => {
   assert.equal(tabIsBlocked('production', {}), false);
 });
 
-test('F7 — the flow’s Next no longer holds a joiner for another screen’s number', () => {
-  // ─── TURN 49 (CLAUDE.md F3): THE SAME GATE, ONE ROW LOWER ────────────────
-  // The step-5 Next is drawn at the end of the SEQUENCE's own navigation row
-  // now, because the flow's footer drew a second Back and a second Next an inch
-  // under it. The gate did not move an inch: both containers saved, and F7's
-  // ruling — no hostage for another screen's number — holds exactly as it did.
+test('F7 - section confirmation validates its materials; final Start checks the whole project', () => {
   const WIZS = readFileSync(new URL('../src/components/WizardSettings.jsx', import.meta.url), 'utf8');
-  assert.match(WIZS, /nextBlocked = !carcSaved \|\| !frontsSaved;/);
-  assert.doesNotMatch(WIZS, /nextBlocked = blockers/, 'no all-blockers gate reappeared in the sequence');
-  assert.doesNotMatch(FLOW, /disabled=\{blocked \|\|/, 'T44’s all-blockers gate is gone');
-  assert.doesNotMatch(FLOW, /const blocked = /);
-  // `Start designing` — the one button that commits — still refuses a job that
-  // cannot be built.
-  const from = FLOW.indexOf("step === 'summary' && (");
-  const start = FLOW.slice(from, FLOW.indexOf('Start designing', from));
-  assert.match(start, /disabled=\{blockers\.length > 0\}/);
+  assert.match(WIZS, /if \(embedded && atSectionEnd\)/);
+  assert.match(WIZS, /nextBlocked = missing\.length > 0;/);
+  assert.doesNotMatch(WIZS, /nextBlocked = blockers/);
+  assert.match(FLOW, /const canStart = created && blockers\.length === 0 && confirmationHints\.length === 0;/);
+  assert.match(FLOW, /step === 'summary' \? !canStart/);
+  assert.match(FLOW, /disabled=\{primaryDisabled\}/);
 });
 
 // ══ the note, the door, and the way back ═══════════════════════════════════
@@ -202,20 +194,18 @@ test('F7 — the SUMMARY carries the same note, the same door, and its blockers 
   assert.match(SUM, /data-blocker-goto="carcases"/);
 });
 
-test('F7 — the jump is a DETOUR: it remembers the step it left from', () => {
-  assert.match(FLOW, /const \[detour, setDetour\] = useState\(null\);/);
-  assert.match(FLOW, /const jumpTo = \(culprit\) => \{\s*\n\s*setDetour\(\{ back: step \}\);/);
-  assert.match(FLOW, /setStep\(culprit === 'wall' \? 'wall' : 'room'\);/);
-  assert.match(FLOW, /const leaveEditor = \(fallback\) => \{/);
-  // Both editors return through it — the × as well as the Save, because a
-  // detour abandoned is still a detour.
-  assert.match(FLOW, /onClose=\{\(\) => leaveEditor\('scope'\)\}/);
-  assert.match(FLOW, /onApplied=\{\(\) => leaveEditor\('settings'\)\}/);
-  assert.match(FLOW, /onBack=\{\(\) => leaveEditor\('scope'\)\}/);
-  assert.match(FLOW, /onSave=\{\(\) => leaveEditor\('settings'\)\}/);
-  // …and both screens that can raise a conflict can raise the jump.
-  assert.match(FLOW, /onJump=\{jumpTo\}/);
-  assert.equal((FLOW.match(/onJump=\{jumpTo\}/g) || []).length, 2, 'step 5 AND the summary');
+test('F7 - a space detour remembers the original section and returns there', () => {
+  assert.match(FLOW, /const returnTo = useRef\(null\)/);
+  assert.match(FLOW, /returnTo\.current = \{ step, tab: activeTab \}/);
+  assert.match(FLOW, /setSpaceEditor\(culprit === 'wall' \? 'wall' : 'room'\)/);
+  assert.match(FLOW, /setStep\('space'\)/);
+  const resume = FLOW.slice(FLOW.indexOf('const resume ='), FLOW.indexOf('const editFromReview ='));
+  assert.match(resume, /const destination = returnTo\.current/);
+  assert.match(resume, /tab: destination\.tab/);
+  assert.match(resume, /setStep\(destination\.step\)/);
+  assert.match(FLOW, /onSave=\{completeSpace\}/);
+  assert.match(FLOW, /onApplied=\{completeSpace\}/);
+  assert.equal((FLOW.match(/onJump=\{jumpTo\}/g) || []).length, 2);
 });
 
 test('F7 — visited tabs stay clickable through any error state', () => {
@@ -229,5 +219,5 @@ test('F7 — visited tabs stay clickable through any error state', () => {
   // …and the walk survives the detour, so landing back on the strip finds it
   // exactly as it was (F4 lifted it; this is the reason it was lifted).
   assert.match(FLOW, /walk=\{walk\}/);
-  assert.match(WIZ, /const raw = \(walk && walk\.tab\) \? walk : ownWalk;/);
+  assert.match(WIZ, /const raw = walk \|\| ownWalk;/);
 });

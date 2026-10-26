@@ -26,7 +26,7 @@ test('F2 — the editor knows which door it came through, and the flow says so',
   assert.match(ROOM, /data-room-door=\{wizard \? 'wizard' : 'menu'\}/);
   // The flow's room step passes it. Everything else about the step is T7's.
   const step = FLOW.slice(FLOW.indexOf('<RoomModal'), FLOW.indexOf('/>', FLOW.indexOf('<RoomModal')));
-  assert.match(step, /\n\s+wizard\n/, 'the wizard door is declared');
+  assert.match(step, /<RoomModal embedded wizard\s/, 'the existing room editor is embedded through the wizard door');
 });
 
 // ─── SUPERSEDED BY TURN 50 · F12, AND REVERSED BY TURN 51 · F1 ─────────────

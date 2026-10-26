@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Modal from './Modal.jsx';
+import { SetupIcon } from './SetupArt.jsx';
 import NumberField from './NumberField.jsx';
 import { useProjectStore } from '../../../stores/projectStore.js';
 import { useUiStore } from '../../../stores/uiStore.js';
@@ -88,6 +89,7 @@ const ART_INK = {
  */
 export default function WallElevationModal({
   wallIndex = 0, anchor = null, onBack = null, onSave = null,
+  embedded = false, onNavigationChange = null,
 }) {
   const room = useProjectStore((s) => s.project.room);
   // T45 F1b: the DEPTH ZONE the plan draws is the project's own unit depth, so
@@ -233,7 +235,7 @@ export default function WallElevationModal({
     setWallSlopes([...all, slope]);
     setPicked(slope.id);
   };
-  const hasSlopeOn = (side) => slopes.some((s) => s.side === side);
+  const hasSlopeOn = (side) => slopesHere.some((s) => s.side === side);
 
   // ─── TURN 45 (CLAUDE.md F1b): THE TWO THE TOP VIEW ADDS ───────────────────
   //
@@ -302,6 +304,11 @@ export default function WallElevationModal({
    * exists. Same gesture rules as the elevation's: window listeners, no pointer
    * capture, one absolute move from where the hand went down.
    */
+  const drawingDelta = (dx, dy) => {
+    const inverse = svgRef.current?.getScreenCTM()?.inverse();
+    return inverse ? { x: inverse.a * dx + inverse.c * dy, y: inverse.b * dx + inverse.d * dy } : { x: dx, y: dy };
+  };
+
   const startPlanDrag = (e, el) => {
     e.stopPropagation();
     if (e.button !== 0) return;
@@ -310,8 +317,9 @@ export default function WallElevationModal({
     const start = plan.find((v) => v.id === el.id) || null;
     const move = (ev) => {
       if (!planScale || !start) return;
-      const dx = grid((ev.clientX - from.x) / planScale);
-      const dd = grid((ev.clientY - from.y) / planScale);
+      const delta = drawingDelta(ev.clientX - from.x, ev.clientY - from.y);
+      const dx = grid(delta.x / planScale);
+      const dd = grid(delta.y / planScale);
       if (!dx && !dd) return;
       const patch = movePlanElement(start, { dxMm: dx, ddMm: dd }, { wallWidth });
       setWallSlopes(normaliseWallElements(useProjectStore.getState().project.wallSlopes)
@@ -339,7 +347,8 @@ export default function WallElevationModal({
     const start = plan.find((v) => v.id === el.id) || null;
     const move = (ev) => {
       if (!scale || !start) return;
-      const dx = grid((ev.clientX - from.x) / scale);
+      const delta = drawingDelta(ev.clientX - from.x, (ev.clientY - (from.y ?? ev.clientY)));
+      const dx = grid(delta.x / scale);
       if (!dx) return;
       const patch = movePlanElement(start, { dxMm: dx, ddMm: 0 }, { wallWidth });
       setWallSlopes(normaliseWallElements(useProjectStore.getState().project.wallSlopes)
@@ -367,9 +376,10 @@ export default function WallElevationModal({
 
     const move = (ev) => {
       if (!scale) return;
-      const dx = grid((ev.clientX - from.x) / scale);
+      const delta = drawingDelta(ev.clientX - from.x, (ev.clientY - (from.y ?? ev.clientY)));
+      const dx = grid(delta.x / scale);
       // Screen-down is wall-DOWN, so the sill moves the other way.
-      const dy = grid(-(ev.clientY - from.y) / scale);
+      const dy = grid(-delta.y / scale);
       if (!dx && !dy) return;
       if (el.kind === 'slope') {
         if (!slope) return;
@@ -413,13 +423,94 @@ export default function WallElevationModal({
   // What this VIEW is a list of: the elevation's own elements, or the plan's.
   // 15.10.2026: the front view lists the plan's two kinds as well, since it draws them.
   const onThisWall = view === 'front' ? [...elements, ...plan] : plan;
-  const editingElement = editing
-    ? onThisWall.find((el) => el.id === editing.id) || null
-    : null;
+  const editingElement = onThisWall.find((el) => el.id === (embedded ? picked : editing?.id)) || null;
+  const navigation = useRef(null);
+  navigation.current = { back: onBack, next: onSave };
+  const issueMessage = issues.join(' ');
+  useEffect(() => {
+    if (!embedded || !onNavigationChange) return;
+    onNavigationChange({
+      back: () => navigation.current.back?.(),
+      next: () => navigation.current.next?.(),
+      nextLabel: 'Confirm space & continue', canNext: !issueMessage,
+      hint: issueMessage || 'Wall changes are applied to this project as you edit.',
+    });
+  }, [embedded, onNavigationChange, issueMessage]);
+
+  const elementEditor = editingElement && (
+    <ElementModal
+      embedded={embedded}
+      element={editingElement}
+      anchor={editing?.anchor}
+      wallWidth={wallWidth}
+      wallHeight={wallHeight}
+      slopeCount={slopesHere.length}
+      opening={editingElement.kind === 'door' || editingElement.kind === 'window'
+        ? openingsOf().find((o) => o.id === editingElement.id) || null : null}
+      onOpening={(patch) => updateOpening(editingElement.id, patch)}
+      onSlope={(patch) => updateSlope(editingElement.id, patch)}
+      onPlan={(patch) => updateElement(editingElement.id,
+        clampPlanElement({ ...editingElement, ...patch }, { wallWidth }) || patch)}
+      onRemove={() => removeElement(editingElement.id, editingElement.kind)}
+      onClose={() => { setEditing(null); if (embedded) setPicked(null); }}
+    />
+  );
+  const toolPanel = (
+
+              <div className={embedded ? 'pbi-re-setup-wall-tools' : 'pbi-re-stack-2'}>
+              {(embedded ? [
+                ['window', 'Window', 'Add an opening with a sill', () => { setView('front'); addOpening('window'); }],
+                ['door', 'Door', 'Add an opening from the floor', () => { setView('front'); addOpening('door'); }],
+                ['slope-left', 'Left slope', hasSlopeOn('left') ? 'Left slope already added' : 'Lower the left end of the ceiling', () => { setView('front'); addSlope('left'); }, hasSlopeOn('left')],
+                ['slope-right', 'Right slope', hasSlopeOn('right') ? 'Right slope already added' : 'Lower the right end of the ceiling', () => { setView('front'); addSlope('right'); }, hasSlopeOn('right')],
+                ['recess', 'Recess', 'An alcove set back into the wall', () => addPlanElement('recess')],
+                ['chimney', 'Chimney', 'A breast projecting into the room', () => addPlanElement('chimney')],
+              ] : view === 'front' ? [
+                ['door', 'Add door', 'A doorway — it stands on the floor', () => addOpening('door')],
+                ['window', 'Add window', 'A window — it has a sill', () => addOpening('window')],
+                ['slope-left', 'Slope left', hasSlopeOn('left')
+                  ? 'This wall already has a left slope'
+                  : 'A ceiling coming down at the LEFT end',
+                () => addSlope('left'), hasSlopeOn('left')],
+                ['slope-right', 'Slope right', hasSlopeOn('right')
+                  ? 'This wall already has a right slope'
+                  : 'A ceiling coming down at the RIGHT end',
+                () => addSlope('right'), hasSlopeOn('right')],
+              ] : [
+                ['recess', 'Add recess', `An alcove — ${RECESS_DEFAULTS.width} × ${RECESS_DEFAULTS.depth} to start`,
+                  () => addPlanElement('recess')],
+                ['chimney', 'Add chimney', `A breast standing proud — ${CHIMNEY_DEFAULTS.width} × ${CHIMNEY_DEFAULTS.depth}`,
+                  () => addPlanElement('chimney')],
+              ]).map(([id, label, hint, run, off = false]) => (
+                <button
+                  key={id}
+                  type="button"
+                  title={hint}
+                  disabled={off}
+                  data-elevation-add={id}
+                  className={embedded ? 'pbi-re-setup-wall-tool' : `pbi-re-wfull pbi-re-line pbi-re-round pbi-re-px25 pbi-re-py2 pbi-re-left pbi-re-fade ${
+                    off
+                      ? 'pbi-re-hair-soft pbi-re-fill-panel-soft pbi-re-dim pbi-re-nope'
+                      : 'pbi-re-hair pbi-re-fill-panel pbi-re-hair-gold-hover pbi-re-fill-hover'
+                  }`}
+                  onClick={run}
+                >
+                  {embedded ? <><SetupIcon name={id} /><span>{label}</span></> : <span className="pbi-re-row pbi-re-mid pbi-re-gap-2">
+                    <ToolArt kind={id.startsWith('slope') ? 'slope' : id} />
+                    <span className="pbi-re-minw">
+                      <span className="pbi-re-block pbi-re-t12 pbi-re-ink">{label}</span>
+                      <span className="pbi-re-block pbi-re-t10 pbi-re-quiet pbi-re-lead-snug">{hint}</span>
+                    </span>
+                  </span>}
+                </button>
+              ))}
+              </div>
+  );
+  const EditorFrame = embedded ? EmbeddedFrame : Modal;
 
   return (
     <>
-      <Modal
+      <EditorFrame
         name="wall-elevation"
         title="One wall — the elevation"
         anchor={anchor}
@@ -445,7 +536,7 @@ export default function WallElevationModal({
           </>
         )}
       >
-        <div className="pbi-re-stack-3" data-wall-elevation="1" data-wall-view={view}>
+        <div className={`pbi-re-stack-3 ${embedded ? 'pbi-re-setup-wall' : ''}`} data-wall-elevation="1" data-wall-view={view}>
           {/* ─── TURN 45 (CLAUDE.md F1b): FRONT / TOP ───────────────────────
               *"A `Front / Top` switch in the wall modal."* Two drawings of ONE
               wall, over one list: what the top view adds — a recess, a chimney
@@ -481,7 +572,8 @@ export default function WallElevationModal({
                 + ' chimney on it and drag it — sideways along the wall, up and down for its depth.'}
           </p>
 
-          <div className="pbi-re-grid pbi-re-grid-plan pbi-re-gap-3">
+          {embedded && toolPanel}
+          <div className={embedded ? 'pbi-re-setup-wall-grid' : 'pbi-re-grid pbi-re-grid-plan pbi-re-gap-3'}>
             {/* ── the elevation ── */}
             <div>
               <div className="pbi-re-grid pbi-re-grid-2 pbi-re-gap-3 pbi-re-mb2">
@@ -508,9 +600,10 @@ export default function WallElevationModal({
               {view === 'front' && (
               <svg
                 ref={svgRef}
-                width={VIEW_W}
-                height={VIEW_H}
-                className="pbi-re-fill-ground pbi-re-line pbi-re-hair pbi-re-round pbi-re-notouch pbi-re-noselect"
+                width={embedded ? '100%' : VIEW_W}
+                height={embedded ? 400 : VIEW_H}
+                viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+                className="pbi-re-setup-wall-drawing pbi-re-fill-ground pbi-re-line pbi-re-hair pbi-re-round pbi-re-notouch pbi-re-noselect"
                 data-wall-elevation-svg="1"
                 onPointerDown={() => setPicked(null)}
               >
@@ -701,6 +794,19 @@ export default function WallElevationModal({
                         onPointerDown={(e) => startDrag(e, el)}
                         onDoubleClick={() => openElement(el)}
                       />
+                      {embedded && (
+                        <g className="pbi-re-noptr" opacity="0.65" stroke={on ? '#e1bf82' : '#5C5B57'} strokeWidth="0.8">
+                          {isDoor ? (
+                            <circle cx={sx(el.x + el.w * 0.82)} cy={sy(el.y + el.h * 0.48)} r="1.8" fill="#806A44" stroke="none" />
+                          ) : (
+                            <>
+                              <line x1={sx(el.x + el.w / 2)} y1={sy(el.y)} x2={sx(el.x + el.w / 2)} y2={sy(el.y + el.h)} />
+                              <line x1={sx(el.x)} y1={sy(el.y + el.h / 2)} x2={sx(el.x + el.w)} y2={sy(el.y + el.h / 2)} />
+                              <line x1={sx(el.x + el.w * 0.1)} y1={sy(el.y + el.h * 0.72)} x2={sx(el.x + el.w * 0.36)} y2={sy(el.y + el.h * 0.92)} opacity="0.45" />
+                            </>
+                          )}
+                        </g>
+                      )}
                       <text
                         x={sx(el.x + el.w / 2)} y={sy(el.y + el.h) - 4}
                         textAnchor="middle" fontSize="9" fill="#090A09"
@@ -726,9 +832,10 @@ export default function WallElevationModal({
               {view === 'top' && (
               <svg
                 ref={svgRef}
-                width={VIEW_W}
-                height={VIEW_H}
-                className="pbi-re-fill-ground pbi-re-line pbi-re-hair pbi-re-round pbi-re-notouch pbi-re-noselect"
+                width={embedded ? '100%' : VIEW_W}
+                height={embedded ? 400 : VIEW_H}
+                viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+                className="pbi-re-setup-wall-drawing pbi-re-fill-ground pbi-re-line pbi-re-hair pbi-re-round pbi-re-notouch pbi-re-noselect"
                 data-wall-plan-svg="1"
                 onPointerDown={() => setPicked(null)}
               >
@@ -818,49 +925,11 @@ export default function WallElevationModal({
                 facts about the wall's PLAN — width and depth — and there is
                 nowhere in an elevation to drag one to, so they are offered in
                 the drawing that can show them. */}
-            <div className="pbi-re-stack-2" data-elevation-tools="1">
-              <span className="pbi-re-block pbi-re-t10 pbi-re-caps pbi-re-track pbi-re-quiet">Put on the wall</span>
-              {(view === 'front' ? [
-                ['door', 'Add door', 'A doorway — it stands on the floor', () => addOpening('door')],
-                ['window', 'Add window', 'A window — it has a sill', () => addOpening('window')],
-                ['slope-left', 'Slope left', hasSlopeOn('left')
-                  ? 'This wall already has a left slope'
-                  : 'A ceiling coming down at the LEFT end',
-                () => addSlope('left'), hasSlopeOn('left')],
-                ['slope-right', 'Slope right', hasSlopeOn('right')
-                  ? 'This wall already has a right slope'
-                  : 'A ceiling coming down at the RIGHT end',
-                () => addSlope('right'), hasSlopeOn('right')],
-              ] : [
-                ['recess', 'Add recess', `An alcove — ${RECESS_DEFAULTS.width} × ${RECESS_DEFAULTS.depth} to start`,
-                  () => addPlanElement('recess')],
-                ['chimney', 'Add chimney', `A breast standing proud — ${CHIMNEY_DEFAULTS.width} × ${CHIMNEY_DEFAULTS.depth}`,
-                  () => addPlanElement('chimney')],
-              ]).map(([id, label, hint, run, off = false]) => (
-                <button
-                  key={id}
-                  type="button"
-                  title={hint}
-                  disabled={off}
-                  data-elevation-add={id}
-                  className={`pbi-re-wfull pbi-re-line pbi-re-round pbi-re-px25 pbi-re-py2 pbi-re-left pbi-re-fade ${
-                    off
-                      ? 'pbi-re-hair-soft pbi-re-fill-panel-soft pbi-re-dim pbi-re-nope'
-                      : 'pbi-re-hair pbi-re-fill-panel pbi-re-hair-gold-hover pbi-re-fill-hover'
-                  }`}
-                  onClick={run}
-                >
-                  <span className="pbi-re-row pbi-re-mid pbi-re-gap-2">
-                    <ToolArt kind={id.startsWith('slope') ? 'slope' : id} />
-                    <span className="pbi-re-minw">
-                      <span className="pbi-re-block pbi-re-t12 pbi-re-ink">{label}</span>
-                      <span className="pbi-re-block pbi-re-t10 pbi-re-quiet pbi-re-lead-snug">{hint}</span>
-                    </span>
-                  </span>
-                </button>
-              ))}
+            <div className={embedded ? 'pbi-re-setup-wall-inspector pbi-re-stack-3' : 'pbi-re-stack-2'} data-elevation-tools="1">
+              {!embedded && <span className="pbi-re-block pbi-re-t10 pbi-re-caps pbi-re-track pbi-re-quiet">Put on the wall</span>}
+              {!embedded && toolPanel}
 
-              <div className="pbi-re-divider" />
+              {!embedded && <div className="pbi-re-divider" />}
               <span className="pbi-re-block pbi-re-t10 pbi-re-caps pbi-re-track pbi-re-quiet">On this wall</span>
               <ul className="pbi-re-stack-1" data-elevation-list="1">
                 {onThisWall.length === 0 && (
@@ -885,43 +954,25 @@ export default function WallElevationModal({
                       title="Take it off the wall"
                       data-elevation-remove={el.id}
                       onClick={() => removeElement(el.id, el.kind)}
+                      aria-label={`Remove ${el.kind}`}
                     >
                       ×
                     </button>
                   </li>
                 ))}
               </ul>
+              {embedded && elementEditor}
             </div>
           </div>
         </div>
-      </Modal>
-
-      {/* ── one element's own small window, BESIDE it (rule 4) ── */}
-      {editingElement && (
-        <ElementModal
-          element={editingElement}
-          anchor={editing.anchor}
-          wallWidth={wallWidth}
-          wallHeight={wallHeight}
-          // T49 F8: how many slopes THIS wall carries. With two the Flat field
-          // steps aside — *"jak beda 2 skosy to wtedy skosy musisz dac a nie
-          // flat"* — and each slope is entered by its own run.
-          slopeCount={slopesHere.length}
-          opening={editingElement.kind === 'door' || editingElement.kind === 'window'
-            ? openingsOf().find((o) => o.id === editingElement.id) || null
-            : null}
-          onOpening={(patch) => updateOpening(editingElement.id, patch)}
-          onSlope={(patch) => updateSlope(editingElement.id, patch)}
-          onPlan={(patch) => updateElement(
-            editingElement.id,
-            clampPlanElement({ ...editingElement, ...patch }, { wallWidth }) || patch,
-          )}
-          onRemove={() => removeElement(editingElement.id, editingElement.kind)}
-          onClose={() => setEditing(null)}
-        />
-      )}
+      </EditorFrame>
+      {!embedded && elementEditor}
     </>
   );
+}
+
+function EmbeddedFrame({ children }) {
+  return <>{children}</>;
 }
 
 /**
@@ -1021,7 +1072,7 @@ function ToolArt({ kind }) {
  */
 function ElementModal({
   element, opening, anchor, wallWidth, wallHeight, onOpening, onSlope, onPlan, onRemove, onClose,
-  slopeCount = 1,
+  slopeCount = 1, embedded = false,
 }) {
   const isSlope = element.kind === 'slope';
   // T45 F1b: *"rectangles with width + depth, double-click for numbers"* — the
@@ -1030,8 +1081,9 @@ function ElementModal({
   const TITLES = {
     slope: 'Slope', door: 'Door', window: 'Window', recess: 'Recess', chimney: 'Chimney',
   };
+  const ElementFrame = embedded ? EmbeddedFrame : Modal;
   return (
-    <Modal
+    <ElementFrame
       name="wall-element"
       title={TITLES[element.kind] || 'Wall element'}
       anchor={anchor}
@@ -1046,7 +1098,13 @@ function ElementModal({
         </>
       )}
     >
-      <div className="pbi-re-stack-2" data-element-modal={element.kind}>
+      <div className={embedded ? 'pbi-re-setup-element-inspector pbi-re-stack-3' : 'pbi-re-stack-2'} data-element-modal={element.kind}>
+        {embedded && (
+          <div className="pbi-re-setup-inspector-title">
+            <strong>{TITLES[element.kind] || 'Wall element'} dimensions</strong>
+            <button type="button" className="pbi-re-btn-ghost pbi-re-bad" onClick={onRemove} aria-label={`Remove ${element.kind}`}>Remove</button>
+          </div>
+        )}
         {isPlan && (
           <>
             <label className="pbi-re-fieldrow">
@@ -1261,6 +1319,6 @@ function ElementModal({
           </>
         ))}
       </div>
-    </Modal>
+    </ElementFrame>
   );
 }

@@ -45,9 +45,9 @@ test('F7 — 5.1 → 5.4 is one move, and the strip really does carry those numb
   assert.match(WIZ, /visited: visited\.includes\(id\) \? visited : \[\.\.\.visited, id\]/);
 });
 
-test('F7 — the submodal dots jump too, through the same door', () => {
-  assert.match(WIZ, /disabled=\{!editDoor && carcStops\.indexOf\(stop\) > carcStops\.indexOf\(carcAt\)\}/);
-  assert.match(WIZ, /disabled=\{!editDoor && frontStops\.indexOf\(stop\) > frontStops\.indexOf\(frontAt\)\}/);
+test('F7 - both the edit door and the embedded setup allow direct substep jumps', () => {
+  assert.match(WIZ, /disabled=\{!embedded && !editDoor && carcStops\.indexOf\(stop\) > carcStops\.indexOf\(carcAt\)\}/);
+  assert.match(WIZ, /disabled=\{!embedded && !editDoor && frontStops\.indexOf\(stop\) > frontStops\.indexOf\(frontAt\)\}/);
 });
 
 test('F7 — the chain in NEW-project mode is untouched', () => {

@@ -154,7 +154,7 @@ test('F8 — WITHOUT the SQL the app degrades gracefully, and says so in amber',
   assert.match(DB, /export const NO_TABLE_NOTE/);
   assert.match(NO_TABLE_NOTE, /t44_settings_sets\.sql/);
   assert.match(FINALE, /NO_TABLE_NOTE/);
-  assert.match(WIZ, /supabase\/migrations\/t44_settings_sets\.sql and they follow the account/);
+  assert.match(WIZ, /Settings sets saved on this computer\./, 'the setup explains local availability without deployment instructions');
   // The local shelf is written FIRST and unconditionally.
   assert.match(STORE, /const result = saveSettingsSet\(get\(\)\.storage, \{ name, design, at \}\);\s*\n\s*set\(/);
   assert.match(STORE, /const db = await saveSettingsSetDb\(name, design\);/);

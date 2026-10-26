@@ -254,12 +254,12 @@ export default function WizardSummary({
         audience={audience}
         title="The job"
         onChange={onChangeStep ? () => onChangeStep('info') : null}
-        changeLabel="Back to step 1"
+        changeLabel="Edit project"
       >
         <Row label="Number" value={project.number || '—'} />
         <Row label="Client" value={project.client || '—'} />
         <Row label="Type" value={type.label} />
-        <Row label="Scope" value={design.scope === 'room' ? 'Whole room' : 'One wall'} />
+        <Row label="Scope" value={({ room: 'Whole room', two: '2 walls', three: '3 walls', wall: 'One wall' })[design.scope] || 'One wall'} />
       </Section>
 
       <Section

@@ -76,17 +76,16 @@ test('F3 — the list is a snapshot with a stable identity, and it is subscribab
   resetWindows();
 });
 
-test('F3 — the shell hides the FOOTER of a covered window, and nothing else', () => {
+test('F3 - covered windows hide their footer and workspace Escape reaches only the top window', () => {
   assert.match(MODAL, /\{footer && !covered && \(/);
   assert.match(MODAL, /data-modal-covered=\{covered \? '1' : '0'\}/);
-  // The ticket is taken on the first RENDER, not in an effect: React renders
-  // parents before children and runs their effects the other way round.
   assert.match(MODAL, /useState\(\(\) => nextWindowSeq\(\)\)/);
-  // The × and Escape are untouched — a covered window is never one you cannot
-  // leave. Both are outside the footer and neither is gated on `covered`.
+  // The new workspace must stay open when Escape closes a nested picker.
+  assert.match(MODAL, /if \(workspace && covered\) return;/);
+  assert.match(MODAL, /if \(!escapeCloses && !onBack && !onEscape\) return;/);
+  assert.match(MODAL, /\(onEscape \|\| onBack \|\| close\)\(\)/, 'workspace Escape can return one section without cancelling');
   const close = MODAL.slice(MODAL.indexOf('data-modal-close="1"'), MODAL.indexOf('data-modal-close="1"') + 200);
   assert.doesNotMatch(close, /covered/);
-  assert.doesNotMatch(MODAL, /covered[^\n]*escapeCloses|escapeCloses[^\n]*covered/);
 });
 
 test('F3 — the wall dialog is the stack case, and it needs no line of its own', () => {
@@ -100,19 +99,20 @@ test('F3 — the wall dialog is the stack case, and it needs no line of its own'
 
 // ══ the wizard's own half: step 5 has one row ═══════════════════════════════
 
-test('F3 — the flow draws no Back and no Next on step 5', () => {
-  assert.match(FLOW, /index > 0 && step !== 'settings' &&/);
-  // The second Next is gone from this footer entirely: the only `Next` left in
-  // it belongs to steps 1–3, and `Start designing` to step 6.
-  const footer = FLOW.slice(FLOW.indexOf('footer={('), FLOW.indexOf('data-wizard-step={step}'));
-  assert.doesNotMatch(footer, /data-next-summary="1"/);
-  assert.doesNotMatch(footer, /step === 'settings' &&/);
-  assert.match(footer, /data-start-designing="1"/, 'step 6 keeps its one button');
+test('F3 - the workspace owns one Back and one primary action on every section', () => {
+  assert.equal((FLOW.match(/data-setup-primary="1"/g) || []).length, 1);
+  assert.equal((FLOW.match(/data-setup-back="1"/g) || []).length, 1);
+  assert.match(FLOW, /<WizardSettings embedded/);
+  assert.match(WIZ, /\{!embedded && <div[^\n]*data-wizard-nav="1"/);
+  assert.match(WIZ, /\{!embedded && <button[\s\S]*?data-save-carcasses="1"/);
+  assert.match(WIZ, /\{!embedded && <button[\s\S]*?data-save-fronts="1"/);
 });
 
-test('F3 — and hands the sequence the two ends of the walk', () => {
-  assert.match(FLOW, /onStepBack=\{\(\) => setStep\(backStep\(step, scope\)\)\}/);
-  assert.match(FLOW, /onStepNext=\{\(\) => setStep\('summary'\)\}/);
+test('F3 - settings publish navigation and preserve their two outer destinations', () => {
+  assert.match(FLOW, /onNavigationChange=\{settingsNavigation\}/);
+  assert.match(FLOW, /onStepBack=\{\(\) => goSection\('space'\)\}/);
+  assert.match(FLOW, /onStepNext=\{\(\) => goSection\('review'\)\}/);
+  assert.match(WIZ, /onNavigationChange\?\.\(\{/);
 });
 
 test('F3 — the sequence draws them, with the same gate and the same hooks', () => {

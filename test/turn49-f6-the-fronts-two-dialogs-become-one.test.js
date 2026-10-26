@@ -47,7 +47,9 @@ test('F6 — the sheet row is in the colour dialog, writing what it always wrote
   assert.match(row, /data-front-sheet-assign=\{t\.id\}/);
   assert.match(row, /data-wizard-node="fronts\.sheets"/);
   // The front dialog asks for it, exactly as the carcass one does.
-  const call = WIZ.slice(WIZ.indexOf("slotPicker('front', frontTypeAt, {"), WIZ.indexOf("frontAt === 'tail'"));
+  const start = WIZ.indexOf("slotPicker('front', frontTypeAt, {");
+  assert.ok(start >= 0, 'the material picker call is present');
+  const call = WIZ.slice(start, WIZ.indexOf("frontAt === 'tail'", start));
   assert.match(call, /sheets: true,/);
   // …and the engine's resolver is untouched: jumbo on the fronts is jumbo on
   // the fronts, and the carcasses' own answer does not move with it.

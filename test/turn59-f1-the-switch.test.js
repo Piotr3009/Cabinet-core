@@ -73,6 +73,10 @@ const SRC = join(ROOT, 'src');
  * is the failure this table is shaped to make obvious.
  */
 const EXEMPT = {
+  'src/components/SetupArt.jsx': 'Setup UI 26.10.2026 F1: approved illustrated furniture and setup tools. *"te grafiki zrob troche lkepsze"*; *"zakoduj mi prosze te zmiany"*.',
+  'src/components/Modal.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*.',
+  'src/components/NewProjectFlow.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*.',
+  'src/components/WizardSummary.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*.',
   'src/components/CncTree.jsx':
     'T75 F22 · after an export the CNC view says how many parts the machine does not finish (the export\'s readiness banner), one line beside the gate\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."*'
     + ' DECOR F3: await packaged front/back CNC exports. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
@@ -91,7 +95,7 @@ const EXEMPT = {
   // to nie widze kresek, gdzie jest komin i gdzie wneka"* and *"reces pionowy
   // ... na wysokosci 1000 mm ... dowolny"*. Licensed with his words, re-frozen
   // at the new hash below; the engine's half is KIT_RECESS.lsp.
-  'src/components/WallElevationModal.jsx':
+  'src/components/WallElevationModal.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' +
     'T78 F7 chat-fix 15.10.2026 · the FRONT view draws the top view\'s recess and chimney where they stand (a recess as its BAND, '
     + 'lib/wallElements.js recessBand), lists them, drags them sideways only and double-clicks them open; the element window of a '
     + 'recess gains Bottom and Top (mm off the floor; 0 and the wall height are the floor and the ceiling), written as bottom_mm / '
@@ -181,7 +185,7 @@ const EXEMPT = {
     + ' Chat fix 17.10.2026, 16:10 \u00b7 a mark is drawn and boxed as the open walk it is (its pts): the corner mark one L through the corner. *"jeden L wektor ... obok linii"*',
   'src/components/SettingsPanel.jsx': 'DECOR F1: project and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T80 F2 · the FRONTS row (InframeRow): Lay-on or In-frame (British), one write setDesign({ inframe }), the hint and its tooltip the engine\'s (inframeHint / inframeTooltip off profile.inframe), no number typed. *"3 per projekt."* (21.10.2026, 22:40)',
-  'src/components/WizardSettings.jsx': 'DECOR F1: material-slot and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
+  'src/components/WizardSettings.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' + 'DECOR F1: material-slot and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T80 F2 · the FRONTS row under the Sheen, SettingsPanel\'s own InframeRow imported (one row, two surfaces). *"3 per projekt."* (21.10.2026, 22:40)',
 
   // ─── ADDED BY TURN 74 · THE OWNER'S LIST OF 23.09 ────────────────────────
@@ -189,7 +193,7 @@ const EXEMPT = {
   // with the owner's words from this file and re-frozen at its new hash in the
   // same commit."*  Overturnable with one word each: the engine, the goldens
   // and the cut path are untouched by every entry below.
-  'src/components/DrawRoomModal.jsx':
+  'src/components/DrawRoomModal.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' +
     'T75 F9 · "the project\'s room has N walls today" counts the room\'s own walls, never an island\'s faces. *"A face is NOT plaster."* '
     + 'T74 F3 · the Wall length field opens with the focus and its whole number '
     + 'selected (T73 F3\'s ref, `focus()` then `select()`), a refused number stays '
@@ -281,7 +285,7 @@ const EXEMPT = {
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
   // tonight's hash. The map does NOT grow: the count below is still three.
-  'src/components/RoomModal.jsx':
+  'src/components/RoomModal.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' +
     'T75 F9 · the island\'s figure keeps the field it opens: the same press no longer takes the focus off it (the walk\'s one FAIL). *"the island draggable in the plan with its dimension labels clickable (T73 F3 field)"*. '
     + 'T75 F9 · Room setup gets ADD ISLAND (a kitchen job\'s only: the gate is the job\'s family, which retail never meets), the island drawn in the plan, dragged whole and refused in words where it would stand on a cabinet, a box or outside the room, its two figures clickable into a focused, selected field, Rotate 90° and Remove island. *"twoja droga, plus dodawanie szafek po bokach lub end panele, w całości."* '
     + 'T69 F1 · the preset row becomes 1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…, '
@@ -352,7 +356,7 @@ const EXEMPT = {
   'src/components/DesignSettingsModal.jsx':
     'T82 F20, after the review · Update and save marks the job saved only when the save was stored; a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
   // T82 F20, after the review: the start screen reads whether the shelf took the brand-new job.
-  'src/components/StartScreen.jsx':
+  'src/components/StartScreen.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' +
     'T82 F20, after the review · Start designing reads whether the shelf took the brand-new job; when the browser refused it the job opens marked unsaved (markUnsaved) and the start screen says the save\'s own red sentence (notOnShelf). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
 };
 
@@ -366,6 +370,8 @@ const EXEMPT = {
  * t58b merged). Not one of them is touched by this turn.
  */
 const FROZEN = {
+  // Setup UI 26.10.2026 F1, approved illustrated project setup.
+  'src/components/SetupArt.jsx': 'c2c70e0ea33beed219c3f32af8c7c8066686e4ba1d69f742c691f75cd58803f5',
   // T82 F15 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/FrontDecorationControls.jsx': 'b32660180217d45760e074f4fcd8932f90b9a57f11cb02121c59670225de2546',
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
@@ -408,7 +414,7 @@ const FROZEN = {
   'src/components/DesignSettingsModal.jsx': '7f4863ce3d4ec2bb8433a11a659377e809950fb3ab6ec956225ddc409683bc0b',
   'src/components/DoorModal.jsx': '4e5e539c734fe6ccf32f030f5c90e3678196828aad35be244248c0992e16efe7',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/DrawRoomModal.jsx': '31107a5dc23977013675fed7d5392ed5c4f89e82e86f9dc1f5c94433bf19d260',
+  'src/components/DrawRoomModal.jsx': 'fc048e2852c52ddeb48dce71f07cc5d3db3f5de0c3e5623e7d2799d23d4b3eb9',
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -439,9 +445,9 @@ const FROZEN = {
   // CHAT FIX 19.10.2026 re-frozen at the new hash, twice (the morning, the afternoon); EXEMPT above carries the reasons.
   'src/components/Messages.jsx': '319794dc58eec269c60e180e3565b463a7f9668de1af04156d549596a58476c0',
   'src/components/MockModeBadge.jsx': '081294a78610a7fd3baef730ca7a318d8d193e40ef66c5d278e45f9672c82826',
-  'src/components/Modal.jsx': '4bee3abfa7d391916931428869da887ea6e56c002ee1980b596413de5fc7ddbe',
+  'src/components/Modal.jsx': '1fe9eb73cd46a0e4560254da7cc3ed11458611fe0461717ae41c88df999d1ecc',
   'src/components/MultiUnitPanel.jsx': 'ad7d770b51042f0c2e8d9633df4067c5a7d8d4af6e358fad2e90cf62e631531c',
-  'src/components/NewProjectFlow.jsx': '504081eb2764b691da4209f87ac3d59dcc8643b7828ef26ba03aa870543d8966',
+  'src/components/NewProjectFlow.jsx': '8e8932c45eab1700afa29dee96d449ff82a3f3c114f12215cce112288c3e9ffb',
   'src/components/NumberField.jsx': 'ae2f9b89ea20a8da26fdf77db1cdb00cb487a2e5110128263f4c33f32eb5c176',
   'src/components/PartDetailModal.jsx': 'aaa5a376c870dd56a1d80ab4373bd4cc035a1d78570f943b0a3a4b32ffeb1eff',
   // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -466,7 +472,7 @@ const FROZEN = {
   'src/components/RightPanel.jsx': '73b0099a027c20d1cd766cda1621302ff01fa456d1a78c9873a37f1ed4f3f71b',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
-  'src/components/RoomModal.jsx': '04bc0d7b944cac119f44aa1c562ef0a635f6e86ecee9b6ea26784e075b69d2a1',
+  'src/components/RoomModal.jsx': 'cc9a92536ce6fa813da4d6523c4a41bb38375f066f92e6be4e118d662aab3598',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
   'src/components/SaveSettingsSetModal.jsx': 'e89dc83a41dbadbf472496c5674216171221f7bda5fa240c61dbaab09dd86951',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -479,7 +485,7 @@ const FROZEN = {
   'src/components/SheenSlider.jsx': 'ec09e0dd7ad835672e4c024dee3013e649dcfa8ad64a2da5c120ed78d5c94bfb',
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/StartScreen.jsx': '861cd8a0bf25008356969643d19dc9efa7e4116b482ed6c5d3c99c6dcec0f397',
+  'src/components/StartScreen.jsx': '366ca71d36eabc33926c1d092770cf06925b19102e660d4e40763cf17ce52a41',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/TopBar.jsx': 'c79b1e79ad886daed19c4d93a2860afe6624e708df0ed7c1fb28de1dc0c28ec2',
@@ -489,15 +495,15 @@ const FROZEN = {
   'src/components/UnitWarnings.jsx': 'f654c6abd287439ddd932fb8a4011784db34105312ce17bdc6416e701b5b74f8',
   'src/components/VeneerPicker.jsx': '05bbf6f2a8c54f546c3c7f19608c0193dc356323ff1a5a7e543ae57e039e9e7d',
   // 15.10.2026 (the evening) re-frozen at the new hash; `EXEMPT` above carries the owner's words.
-  'src/components/WallElevationModal.jsx': '3d7ddd431bf11e925962317d943feb247c394fe709799a260ec96c88b4bdb6fc',
+  'src/components/WallElevationModal.jsx': '37ea52de98268e2ceb01d100a53660b0c3e2d209e56c28251112ffb885e27bf5',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/WarehouseModal.jsx': 'ec5b747982b65fd246016f43484247f83d64cac86678f750b63147f84572e5ea',
   // T67 F9 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/WatchLayoutModal.jsx': 'ca2f0acd8e432d5890a185ca15a9b0bdff565827464652e3826668981b0a35ee',
   'src/components/WizardHardware.jsx': 'd0de5ca0c32de92feffef65a1a091cc2d45eaeb02a446a73c5389c2d03c377a8',
   // T80 F2 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/WizardSettings.jsx': 'f900b32cc42b0822a9b002b9f62aa98206db02053f195391829b8ea24c18694d',
-  'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
+  'src/components/WizardSettings.jsx': 'f78cbd96f67f4d13dbecb1d827522111bb4bc21cade6845b547e1f49126b96b7',
+  'src/components/WizardSummary.jsx': '989a13f6bff6213a787a2ed78db2533d320c1cd6a99e82e0ca435e4edc60a2e3',
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -627,7 +633,7 @@ const show = (abs) => relative(ROOT, abs);
 
 // ─── 1. THE PRO FROZEN-FILES ASSERTION ─────────────────────────────────────
 
-test('F1: the frozen surface, 69 files of PRO, byte for byte (T78 F21: the Spraying page joined; T80 F10: the in-frame rows)', () => {
+test('F1: the frozen surface, 70 files of PRO, byte for byte (approved setup illustrations included)', () => {
   const moved = [];
   for (const [rel, want] of Object.entries(FROZEN)) {
     const path = join(ROOT, rel);
@@ -685,6 +691,10 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
   // AMENDED BY T75 F23: `RightPanel`'s licence is RENEWED (the Joints row,
   // *"lisp najpierw."*) and re-frozen at its new hash; the list did not grow.
   assert.deepEqual(Object.keys(EXEMPT).sort(), [
+    'src/components/SetupArt.jsx',
+    'src/components/WizardSummary.jsx',
+    'src/components/NewProjectFlow.jsx',
+    'src/components/Modal.jsx',
     'src/components/AddItems.jsx',
     'src/components/AssignMaterialsModal.jsx',
     'src/components/BomPanel.jsx',
@@ -734,10 +744,10 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/WatchLayoutModal.jsx',
     'src/components/WizardSettings.jsx',
     'src/pages/ConfiguratorPage.jsx',
-], 'the exemption list is not the files CLAUDE.md names');
+].sort(), 'the exemption list is not the approved UI and CLAUDE.md paths');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
-    assert.match(why, /\b(?:T\d{2}|DECOR) F\d/, `${rel} does not say which turn and feature licensed it`);
+    assert.match(why, /\b(?:(?:T\d{2}|DECOR) F\d|Setup UI 26\.10\.2026 F1)/, `${rel} does not say which turn and feature licensed it`);
     assert.match(why, /\*"/, `${rel} does not carry the owner's own words`);
     const got = createHash('sha256').update(readFileSync(join(ROOT, rel))).digest('hex');
     assert.equal(got, FROZEN[rel], `${rel}'s new hash is not the one written down`);
@@ -754,7 +764,7 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // A tarball or a clone with no such ref. The manifest above already
     // answered; this assertion has nothing to add and says so out loud
     // rather than passing in silence.
-    assert.ok(Object.keys(FROZEN).length === 69, 'no base ref: the manifest is the whole proof here');
+    assert.ok(Object.keys(FROZEN).length === 70, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

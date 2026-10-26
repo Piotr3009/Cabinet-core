@@ -186,6 +186,18 @@ export const T78_PRO_EDITS = [
  */
 export const HAND_COPY_EDITS = [
   {
+    pro: 'src/components/Modal.jsx', retail: 'src/retail/design/room/Modal.jsx',
+    by: 'Setup UI 26.10.2026 F1',
+    why: 'Optional large workspace sizing and nested focus/Escape handling; default retail sizing stays unchanged.',
+    words: 'the owner: *"na 3/4 monitora"* and *"zakoduj mi prosze te zmiany"*.',
+  },
+  {
+    pro: 'src/components/SetupArt.jsx', retail: 'src/retail/design/room/SetupArt.jsx',
+    by: 'Setup UI 26.10.2026 F1',
+    why: 'The optional embedded wall editor imports the same illustrated tools; retail gets its local palette copy.',
+    words: 'the owner: *"te grafiki zrob troche lkepsze"* and *"zakoduj mi prosze te zmiany"*.',
+  },
+  {
     pro: 'src/components/RoomModal.jsx',
     retail: 'src/retail/design/room/RoomModal.jsx',
     by: 'chat fixes 14.10 and 17.10.2026, before T79',
@@ -302,10 +314,13 @@ export const T78_RETAIL_EDITS = [
 
 /**
  * THE COPY MACHINE'S OWN FILES EDITED THIS TURN, each `{ file, by, why, words }`.
- * None: the machine and its manifest stand as at the base, so "GPT's T63 copy
- * re-run" is T63's machine and nobody else's.
+ * The setup artwork dependency is registered in the manifest; the generator remains unchanged.
  */
-export const T78_MACHINE_EDITS = [];
+export const T78_MACHINE_EDITS = [{
+  file: 'scripts/t63-copies.mjs', by: 'Setup UI 26.10.2026 F1',
+  why: 'Register the local SetupArt dependency copied with the optional wall workspace; no generator behavior changes.',
+  words: 'the owner: *"te grafiki zrob troche lkepsze"* and *"zakoduj mi prosze te zmiany"*.',
+}];
 
 // ─── THE TOOLS ─────────────────────────────────────────────────────────────
 

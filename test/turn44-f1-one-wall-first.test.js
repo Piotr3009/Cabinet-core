@@ -27,22 +27,28 @@ const modal = readFileSync(new URL('../src/components/WallElevationModal.jsx', i
 
 // ── the card order, and the copy that did NOT change ──
 
-test('One wall is the FIRST card and takes the focus; Whole room is second', () => {
+test('One wall stays the first scope card and the initial selected choice', () => {
   const wallAt = flow.indexOf("['wall', 'One wall'");
   const roomAt = flow.indexOf("['room', 'Whole room'");
-  assert.ok(wallAt > -1 && roomAt > -1, 'both cards are still there');
-  assert.ok(wallAt < roomAt, 'One wall renders before Whole room');
-  assert.match(flow, /autoFocus=\{i === 0\}/, 'the first card is the default focus');
+  assert.ok(wallAt > -1 && roomAt > wallAt);
+  assert.match(flow, /useState\(DEFAULT_SCOPE\)/);
+  assert.match(flow, /data-scope-first=\{index === 0 \? '1' : undefined\}/);
+  assert.match(flow, /aria-pressed=\{id === 'wall' \? scope === 'wall' : scope !== 'wall'\}/);
 });
 
-test('the COPY is unchanged — F1 says so in as many words', () => {
-  assert.match(flow, /'Straight to the canvas — walls come later'/);
-  assert.match(flow, /'Four walls, a ceiling height, windows and doors'/);
+test('scope descriptions explain the editor that actually follows', () => {
+  assert.match(flow, /Set the elevation, dimensions, openings and wall features\./);
+  assert.match(flow, /Set the plan, working walls, ceiling height and openings\./);
+  assert.doesNotMatch(flow, /Straight to the canvas/);
 });
 
-test('choosing One wall opens the elevation at once', () => {
-  assert.match(flow, /if \(id === 'wall'\) \{ setDesign\(\{ scope: 'wall' \}\); setStep\('wall'\); \}/);
-  assert.match(flow, /<WallElevationModal/);
+test('both scope cards select consistently; confirmation opens the existing space editor', () => {
+  const cards = flow.slice(flow.indexOf('data-scope-card={id}'), flow.indexOf('<ScopeArt scope={id}'));
+  assert.match(cards, /setScope\(nextScope\)/);
+  assert.doesNotMatch(cards, /setStep\(/, 'selecting a card must not navigate away');
+  assert.match(flow, /step === 'space' && editor === 'wall' && <WallElevationModal embedded/);
+  assert.match(flow, /step === 'space' && editor === 'room' && <RoomModal embedded wizard/);
+  assert.match(flow, /const commitProject = \(destination = 'space'\)/);
 });
 
 test('Back from the wall returns to the scope card, and never to the room editor', () => {

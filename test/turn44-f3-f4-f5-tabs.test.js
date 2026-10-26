@@ -87,7 +87,8 @@ test('F3 — the owner’s baked-in defaults: 2100 · 100 · 568', () => {
   // wardrobe the six standard configs answer for.
   const flow = readFileSync(new URL('../src/components/NewProjectFlow.jsx', import.meta.url), 'utf8');
   assert.match(flow, /setProjectHeights\(\{ tall: seed\.height, toeKick: seed\.plinth \}\)/);
-  assert.match(flow, /if \(isWardrobeSeed\(type\.id\)\)/);
+  assert.match(flow, /if \(typeId === 'wardrobe'\)/);
+  assert.match(flow, /if \(!created \|\| seededType\.current !== typeId\)/, 'editing project identity preserves custom heights');
   // …and the profile it sits on is untouched: 2150 is still the workshop's.
   assert.equal(projectHeights(migrateDesign({ projectType: 'wardrobe' }), P).tall, 2150);
   assert.equal(projectHeights(migrateDesign({}), P).toeKick, wardrobeSeed(P).plinth);

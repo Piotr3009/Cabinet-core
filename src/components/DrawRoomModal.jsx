@@ -288,7 +288,7 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
             title="Finish the room with the shortest square path back to the start."
             onClick={close}
           >
-            Close
+            Close outline
           </button>
           <button
             type="button"

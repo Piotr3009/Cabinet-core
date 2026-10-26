@@ -71,6 +71,10 @@ const LICENSE = [
 
 /** Every code file made since the rule: each opens with the header. The list grows with every new file. */
 export const NEW_FILES = [
+  // Approved project setup workspace, 26.10.2026.
+  'src/components/SetupArt.jsx',
+  'src/components/setup-workspace.css',
+  'src/retail/design/room/SetupArt.jsx',
   // Chat-fix 12.10.2026 (the stutter)
   'src/stores/resultCache.js',
   'src/3d/frameDemand.jsx',

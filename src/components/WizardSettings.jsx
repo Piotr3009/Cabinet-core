@@ -25,6 +25,7 @@ import { loadDecorCatalogue } from '../lib/decorCatalogue.js';
 import { contrastInk } from '../lib/pswColors.js';
 import { getVeneers, veneerFinishId } from '../engine/veneers.js';
 import FrontStyleGallery, { FrontStyleArt } from './FrontStyleGallery.jsx';
+import { SetupSectionArt } from './SetupArt.jsx';
 import FrontDecorationControls from './FrontDecorationControls.jsx';
 import ColourPicker from './ColourPicker.jsx';
 import JoineryPreview from './JoineryPreview.jsx';
@@ -166,6 +167,9 @@ export default function WizardSettings({
   // Project settings door, which is not inside a wizard step) the row behaves
   // exactly as it did.
   onStepBack = null, onStepNext = null, stepNextLabel = 'Next — summary',
+  // Skylon Construction: the setup shell owns its sidebar and single footer.
+  embedded = false, onNavigationChange = null,
+  onSectionComplete = null, onSectionDirty = null,
 }) {
   // ─── TURN 36 (CLAUDE.md F1): TWO DOORS, ONE FORM ──────────────────────────
   //
@@ -340,7 +344,7 @@ export default function WizardSettings({
     tab: firstTab(audience), visited: [firstTab(audience)], carcStop: 'count', frontStop: 'count',
   }));
   const walkState = useMemo(() => {
-    const raw = (walk && walk.tab) ? walk : ownWalk;
+    const raw = walk || ownWalk;
     const at = raw?.tab || firstTab(audience);
     return {
       tab: at,
@@ -363,7 +367,25 @@ export default function WizardSettings({
   const frontStop = walkState.frontStop;
   const carcSaved = walkState.carcSaved;
   const frontsSaved = walkState.frontsSaved;
-  useEffect(() => { onGate?.(carcSaved, frontsSaved); }, [carcSaved, frontsSaved, onGate]);
+  const setupCallbacks = useRef({ onGate, onNavigationChange, onSectionComplete, onSectionDirty });
+  setupCallbacks.current = { onGate, onNavigationChange, onSectionComplete, onSectionDirty };
+  useEffect(() => { setupCallbacks.current.onGate?.(carcSaved, frontsSaved); }, [carcSaved, frontsSaved]);
+  // Completion describes confirmed data, not a screen that was merely visited.
+  // Observe store values so controls imported from other components count too.
+  const priorInputs = useRef({ storedDesign, profile, assignmentData, storedLedSpec });
+  useEffect(() => {
+    const previous = priorInputs.current;
+    const changed = previous.storedDesign !== storedDesign || previous.profile !== profile
+      || previous.assignmentData !== assignmentData || previous.storedLedSpec !== storedLedSpec;
+    priorInputs.current = { storedDesign, profile, assignmentData, storedLedSpec };
+    if (embedded && changed) {
+      setupCallbacks.current.onSectionDirty?.(tab);
+      // Imported controls (shine, in-frame, sheet size) write to the same
+      // stores and must invalidate confirmation just like the material picker.
+      if (tab === 'carcases' && carcSaved) patchWalk({ carcSaved: false });
+      if (tab === 'fronts' && frontsSaved) patchWalk({ frontsSaved: false });
+    }
+  }, [storedDesign, profile, assignmentData, storedLedSpec, tab, embedded]);
   const setTab = (id) => patchWalk({ tab: id });
   const setCarcStop = (stop) => patchWalk({ carcStop: stop });
   const setFrontStop = (stop) => patchWalk({ frontStop: stop });
@@ -489,8 +511,11 @@ export default function WizardSettings({
     const next = applyTo(design, id) || await applyToAsync(design, id);
     if (!next) { notify('That settings set is no longer on this computer.', 'warn'); return; }
     setDesign(next);
-    setCarcSaved(false); setFrontsSaved(false);
-    notify(`"${name}" loaded — check both containers and Save them.`, 'ok');
+    patchWalk({ carcSaved: false, frontsSaved: false });
+    if (embedded) tabs.forEach((item) => setupCallbacks.current.onSectionDirty?.(item.id));
+    notify(embedded
+      ? `"${name}" loaded. Review the affected sections and confirm your materials.`
+      : `"${name}" loaded — check both containers and Save them.`, 'ok');
   };
 
   const styleOf = (t) => FRONT_STYLE_OPTIONS.find((o) => o.id === (t.style || design.fronts.style)) || null;
@@ -745,8 +770,8 @@ export default function WizardSettings({
             onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetCarcass: size } })}
           />
           <p className="text-[10px] text-ink-400">
-            The biggest sheet the shop can buy this board in — jumbo included. One answer for every
-            carcass board, asked here because this is where the board is chosen.
+            Workshop standard: sheet size is shared by all carcass boards, including future projects.
+            Jumbo and custom sizes remain available.
           </p>
         </div>
       );
@@ -767,8 +792,8 @@ export default function WizardSettings({
           onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetFronts: size } })}
         />
         <p className="text-[10px] text-ink-400">
-          The biggest sheet the shop can buy this board in — jumbo included. One answer for every
-          front board, asked here because this is where the board is chosen.
+          Workshop standard: sheet size is shared by all front boards, including future projects.
+          Jumbo and custom sizes remain available.
         </p>
       </div>
     );
@@ -1076,9 +1101,53 @@ export default function WizardSettings({
     goBack = onStepBack;
   }
 
+  // Embedded mode keeps every form and substep, with one navigation row in
+  // the parent. Confirming materials and advancing share one atomic patch.
+  const atSectionEnd = tab === 'carcases' ? carcAt === 'summary'
+    : tab === 'fronts' ? frontAt === 'tail' : true;
+  if (embedded && atSectionEnd) {
+    const missing = tab === 'carcases' ? carcassMissing : tab === 'fronts' ? frontsMissing : [];
+    nextBlocked = missing.length > 0;
+    nextTarget = nextTab || (onStepNext ? 'step' : null);
+    nextLabel = nextTab ? 'Confirm section & continue' : 'Confirm & review project';
+    nextHint = missing.length
+      ? `Choose a stock board for ${missing.map((item) => item.label).join(', ')}. Generic is also available.`
+      : 'Confirm these settings when you are ready to continue.';
+    goNext = () => {
+      if (nextBlocked || !nextTarget) return;
+      patchWalk({
+        ...(tab === 'carcases' ? { carcSaved: true } : {}),
+        ...(tab === 'fronts' ? { frontsSaved: true } : {}),
+        ...(nextTab ? { tab: nextTab, visited: visited.includes(nextTab) ? visited : [...visited, nextTab] } : {}),
+      });
+      // A summary edit can unmount this form immediately. Publish confirmation
+      // before that return, rather than waiting for an effect on the next render.
+      setupCallbacks.current.onGate?.(tab === 'carcases' || carcSaved, tab === 'fronts' || frontsSaved);
+      setupCallbacks.current.onSectionComplete?.(tab);
+      if (!nextTab) onStepNext?.();
+    };
+  }
+  // Stable wrappers read the latest actions. Publishing only changed metadata
+  // prevents an effect/state loop when the parent supplies inline callbacks.
+  const navigationActions = useRef({ goBack, goNext });
+  navigationActions.current = { goBack, goNext };
+  const stableNavigation = useMemo(() => ({
+    back: () => navigationActions.current.goBack(),
+    next: () => navigationActions.current.goNext(),
+  }), []);
+  useEffect(() => {
+    if (!embedded) return;
+    setupCallbacks.current.onNavigationChange?.({
+      back: backTarget ? stableNavigation.back : null,
+      next: nextTarget ? stableNavigation.next : null,
+      nextLabel, canNext: Boolean(nextTarget) && !nextBlocked, hint: nextHint,
+      tab, atSectionEnd,
+    });
+  }, [embedded, backTarget, nextTarget, nextLabel, nextBlocked, nextHint, tab, atSectionEnd, stableNavigation]);
+
   return (
     <div
-      className="space-y-3"
+      className={`space-y-3 ${embedded ? 'setup-settings-embedded' : ''}`}
       data-wizard-settings="1"
       data-settings-surface="1"
       data-settings-door={door}
@@ -1090,7 +1159,7 @@ export default function WizardSettings({
           Ustawienia must never mean walking the whole thing again — and one
           ahead of the walk is not yet a place you can be. `visibleTabs` does
           the renumbering, so retail's five read 1…5 rather than 1,2,3,4,6. */}
-      <ol className="flex items-center gap-1 flex-wrap text-[11px]" data-wizard-tabs="1" data-wizard-jumpable={editDoor ? '1' : '0'}>
+      {!embedded && <ol className="flex items-center gap-1 flex-wrap text-[11px]" data-wizard-tabs="1" data-wizard-jumpable={editDoor ? '1' : '0'}>
         {tabs.map((t, i) => {
           // ─── TURN 49 (CLAUDE.md F7): EDITING IS NOT A CHAIN ───────────────
           //
@@ -1137,7 +1206,7 @@ export default function WizardSettings({
             twin to carry: the head is the DOOR (`lib/appEntry.js`), read once
             at boot, and this strip only reads `audience` to decide which of one
             tree's rows to draw. */}
-      </ol>
+      </ol>}
 
       <div className="space-y-3" data-wizard-tab-body={tab}>
       {tab === 'settings' && (
@@ -1176,7 +1245,7 @@ export default function WizardSettings({
                       ) : (
                         <span
                           className="cc-input flex items-center text-gold cursor-default select-none"
-                          title="Chosen in step 2 — go Back to change it"
+                          title={embedded ? 'Change the project type in Project' : 'Chosen in step 2 — go Back to change it'}
                           data-wizard-type-label="1"
                         >
                           {type.label}
@@ -1208,7 +1277,7 @@ export default function WizardSettings({
                     ) : (
                       <p className="text-[11px] text-ink-400 pb-2" data-identity-said="1">
                         {project.number ? `No. ${project.number}` : 'No number yet'}
-                        {project.client ? ` · ${project.client}` : ''} — asked on step 1, and changed there.
+                        {project.client ? ` · ${project.client}` : ''}{embedded ? ' - change these details in Project.' : ' — asked on step 1, and changed there.'}
                       </p>
                     )}
                   </div>
@@ -1261,8 +1330,8 @@ export default function WizardSettings({
               </div>
               <p className="text-[10px] text-ink-400 mt-1">
                 {setsSource === 'db'
-                  ? 'From cc_settings_sets — the sets this account has saved.'
-                  : 'Saved on this computer. Run supabase/migrations/t44_settings_sets.sql and they follow the account.'}
+                  ? 'Saved settings available to this account.'
+                  : 'Settings sets saved on this computer.'}
               </p>
             </div>
           )}
@@ -1473,8 +1542,8 @@ export default function WizardSettings({
                 data-carcass-container="1"
                 data-settings-section="carcass"
               >
-                <div className="absolute top-2 right-2.5"><CornerArt kind="carcass" /></div>
-                <div>
+                <div className="absolute top-2 right-2.5">{embedded ? <SetupSectionArt section="carcases" /> : <CornerArt kind="carcass" />}</div>
+                <div className={embedded ? 'min-h-[64px] pr-20' : undefined}>
                   <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Carcasses</span>
                   <span className="block text-[10px] text-ink-400">The boxes — boards, drawer boxes and the CNC corner.</span>
                 </div>
@@ -1485,20 +1554,24 @@ export default function WizardSettings({
                 <button
                   type="button"
                   title={carcStopLabel(stop)}
+                  aria-label={carcStopLabel(stop)}
+                  aria-current={stop === carcAt ? 'step' : undefined}
                   data-carcass-dot={stop}
-                  data-dot-state={stop === carcAt ? 'current' : (carcStops.indexOf(stop) < carcStops.indexOf(carcAt) ? 'done' : 'ahead')}
+                  data-dot-state={stop === carcAt ? 'current' : (embedded ? 'available' : (carcStops.indexOf(stop) < carcStops.indexOf(carcAt) ? 'done' : 'ahead'))}
                   // T49 F7: the same ruling one level down. A new project walks
                   // its chain; an existing one is already answered, so through
                   // the EDIT door a dot ahead of the walk is a place you can be.
-                  disabled={!editDoor && carcStops.indexOf(stop) > carcStops.indexOf(carcAt)}
-                  className={`w-2.5 h-2.5 rounded-full border ${stop === carcAt
+                  disabled={!embedded && !editDoor && carcStops.indexOf(stop) > carcStops.indexOf(carcAt)}
+                  className={`${embedded ? 'setup-substep' : 'w-2.5 h-2.5 rounded-full'} border ${stop === carcAt
                     ? 'bg-gold border-gold'
                     : (carcStops.indexOf(stop) < carcStops.indexOf(carcAt) ? 'bg-shell-600 border-shell-600' : 'border-shell-600')}`}
                   onClick={() => setCarcStop(stop)}
-                />
+                >
+                  {embedded && <><span>{carcStops.indexOf(stop) + 1}</span> {carcStopLabel(stop)}</>}
+                </button>
               </li>
             ))}
-            <li className="text-[10px] text-ink-400 ml-1">{carcStopLabel(carcAt)}</li>
+            {!embedded && <li className="text-[10px] text-ink-400 ml-1">{carcStopLabel(carcAt)}</li>}
           </ol>
 
           {carcAt === 'count' && show('carcases.count') && (
@@ -1676,10 +1749,10 @@ export default function WizardSettings({
                           </span>
                         ) : (
                           <span className="flex-1 text-[11px] text-status-ok" data-carcass-ok="1">
-                            {carcSaved ? 'Carcasses saved ✓' : 'All carcasses assigned — Save to open the fronts.'}
+                            {embedded ? (carcSaved ? 'Carcasses confirmed' : 'All boards assigned. Confirm this section below.') : (carcSaved ? 'Carcasses saved ✓' : 'All carcasses assigned — Save to open the fronts.')}
                           </span>
                         )}
-                        <button
+                        {!embedded && <button
                           type="button"
                           className="cc-btn-gold px-3"
                           disabled={carcassMissing.length > 0 || carcSaved}
@@ -1687,7 +1760,7 @@ export default function WizardSettings({
                           onClick={() => setCarcSaved(true)}
                         >
                           Save carcasses
-                        </button>
+                        </button>}
                       </div>
             </>
           )}
@@ -1697,17 +1770,17 @@ export default function WizardSettings({
       {tab === 'fronts' && (
               /* ══ 5 · FRONTS — locked until the carcasses are saved ══ */
               <section
-                className={`relative border rounded-lg p-3 pt-2.5 space-y-2 ${frontsSaved ? 'border-gold/70' : 'border-shell-600'} ${carcSaved ? '' : 'opacity-45 pointer-events-none select-none'}`}
+                className={`relative border rounded-lg p-3 pt-2.5 space-y-2 ${frontsSaved ? 'border-gold/70' : 'border-shell-600'} ${carcSaved || embedded ? '' : 'opacity-45 pointer-events-none select-none'}`}
                 data-fronts-container="1"
                 data-settings-section="fronts"
-                data-fronts-locked={carcSaved ? '0' : '1'}
-                aria-disabled={!carcSaved}
+                data-fronts-locked={carcSaved || embedded ? '0' : '1'}
+                aria-disabled={!carcSaved && !embedded}
               >
-                <div className="absolute top-2 right-2.5"><CornerArt kind="front" /></div>
-                <div>
+                <div className="absolute top-2 right-2.5">{embedded ? <SetupSectionArt section="fronts" /> : <CornerArt kind="front" />}</div>
+                <div className={embedded ? 'min-h-[64px] pr-20' : undefined}>
                   <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Fronts</span>
                   <span className="block text-[10px] text-ink-400">
-                    Shape first, colours second{carcSaved ? '' : ' — save the carcasses to open this'}.
+                    Shape first, colours second{carcSaved || embedded ? '' : ' — save the carcasses to open this'}.
                   </span>
                 </div>
           <ol className="flex items-center gap-1.5" data-front-dots="1">
@@ -1716,19 +1789,23 @@ export default function WizardSettings({
                 <button
                   type="button"
                   title={frontStopLabel(stop)}
+                  aria-label={frontStopLabel(stop)}
+                  aria-current={stop === frontAt ? 'step' : undefined}
                   data-front-dot={stop}
-                  data-dot-state={stop === frontAt ? 'current' : (frontStops.indexOf(stop) < frontStops.indexOf(frontAt) ? 'done' : 'ahead')}
+                  data-dot-state={stop === frontAt ? 'current' : (embedded ? 'available' : (frontStops.indexOf(stop) < frontStops.indexOf(frontAt) ? 'done' : 'ahead'))}
                   // T49 F7: as the carcasses' dots — jumpable through the EDIT
                   // door, a strict chain in a new project.
-                  disabled={!editDoor && frontStops.indexOf(stop) > frontStops.indexOf(frontAt)}
-                  className={`w-2.5 h-2.5 rounded-full border ${stop === frontAt
+                  disabled={!embedded && !editDoor && frontStops.indexOf(stop) > frontStops.indexOf(frontAt)}
+                  className={`${embedded ? 'setup-substep' : 'w-2.5 h-2.5 rounded-full'} border ${stop === frontAt
                     ? 'bg-gold border-gold'
                     : (frontStops.indexOf(stop) < frontStops.indexOf(frontAt) ? 'bg-shell-600 border-shell-600' : 'border-shell-600')}`}
                   onClick={() => setFrontStop(stop)}
-                />
+                >
+                  {embedded && <><span>{frontStops.indexOf(stop) + 1}</span> {frontStopLabel(stop)}</>}
+                </button>
               </li>
             ))}
-            <li className="text-[10px] text-ink-400 ml-1">{frontStopLabel(frontAt)}</li>
+            {!embedded && <li className="text-[10px] text-ink-400 ml-1">{frontStopLabel(frontAt)}</li>}
           </ol>
 
           {frontAt === 'count' && show('fronts.count') && (
@@ -1944,8 +2021,7 @@ export default function WizardSettings({
                   </div>
                   <p className="text-[10px] text-ink-400">
                     {FRONT_OPENINGS.find((o) => o.id === opening)?.hint}
-                    {' '}Not a new field: each of the four writes what this project already carries — the
-                    handle record, the shape, or the MOVENTO TIP-ON variant.
+                    {' '}The available runner options update to match the chosen opening.
                   </p>
                 </div>
               )}
@@ -1956,10 +2032,8 @@ export default function WizardSettings({
                         {/* ── T80 F2 · the fronts: lay-on or in-frame, per project (SettingsPanel's own row). ── */}
                         <InframeRow design={design} setDesign={setDesign} profile={profile} />
                   <p className="text-[10px] text-ink-400">
-                    The shine reaches the 3D material: `roughness = 1 − sheen ÷ 100`, on every sprayed
-                    AND VENEERED surface in the scene (src/3d/materials.js, T49 F9 — a veneer is a
-                    timber face under lacquer and the gloss of that lacquer is this number). A laminate
-                    is a foil and keeps the sheen that came on the board.
+                    Shine applies to sprayed and lacquered veneer surfaces in the 3D view.
+                    Laminate keeps its manufacturer finish.
                   </p>
                 </div>
               )}
@@ -2159,10 +2233,10 @@ export default function WizardSettings({
                           </span>
                         ) : (
                           <span className="flex-1 text-[11px] text-status-ok" data-fronts-ok="1">
-                            {frontsSaved ? 'Fronts saved ✓' : 'All fronts assigned — Save to open the hardware.'}
+                            {embedded ? (frontsSaved ? 'Fronts confirmed' : 'All boards assigned. Confirm this section below.') : (frontsSaved ? 'Fronts saved ✓' : 'All fronts assigned — Save to open the hardware.')}
                           </span>
                         )}
-                        <button
+                        {!embedded && <button
                           type="button"
                           className="cc-btn-gold px-3"
                           disabled={frontsMissing.length > 0 || frontsSaved}
@@ -2170,7 +2244,7 @@ export default function WizardSettings({
                           onClick={() => setFrontsSaved(true)}
                         >
                           Save fronts
-                        </button>
+                        </button>}
                       </div>
             </>
           )}
@@ -2280,6 +2354,7 @@ export default function WizardSettings({
                           <span className="text-[11px] text-ink-400">
                             What the plate is fixed with. ⌀5 knocks in, ⌀3 screws — the holes land on
                             HINGES_{platePilot === 3 ? '3' : '5'}MM, which is what the machine maps its tool by.
+                            {' '}Workshop standard: this also affects future projects.
                           </span>
                         </div>
                         <div className="flex gap-1">
@@ -2611,7 +2686,7 @@ export default function WizardSettings({
           own tab, with their own status sentence beside them. "Next validates
           only the current tab", which is F2's rule and the reason a missing
           board on Fronts cannot block Ustawienia. ══ */}
-      <div className="flex items-center gap-2 border-t border-shell-600 pt-2" data-wizard-nav="1">
+      {!embedded && <div className="flex items-center gap-2 border-t border-shell-600 pt-2" data-wizard-nav="1">
         <button
           type="button"
           className="cc-btn px-3"
@@ -2641,7 +2716,7 @@ export default function WizardSettings({
             {nextLabel}
           </button>
         )}
-      </div>
+      </div>}
 
       {/* T45 F4: the finale — *"Save these as your standard?"* — went with the
           summary it stood under, to the wizard's own step 6

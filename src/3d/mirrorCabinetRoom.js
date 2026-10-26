@@ -68,7 +68,7 @@ export const MIRROR_LOOK = Object.freeze({
  * The LED light panel's diffuser: milky (*"mleczne led panele"*), matt, no
  * environment in it. A picture number, PROPOSED.
  */
-export const LED_PANEL_ROUGHNESS = 0.6;
+const LED_PANEL_ROUGHNESS = 0.6;
 
 /** The glass kind a glass shelf is drawn in: T30 / T78 F12's clear pane, PROPOSED. */
 export const GLASS_SHELF_KIND = 'clear';
@@ -89,12 +89,12 @@ export function isMirrorDoor(panel) {
 }
 
 /** A mirror cabinet's LED stile (the bought light panel), not a timber one. */
-export function isLedStile(panel) {
+function isLedStile(panel) {
   return panel?.role === 'led_stile';
 }
 
 /** A mirror cabinet's glass shelf (`meta.glassShelf`, never the glass door's `meta.glass`). */
-export function isGlassShelf(panel) {
+function isGlassShelf(panel) {
   return Boolean(panel?.meta?.glassShelf);
 }
 

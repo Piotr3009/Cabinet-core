@@ -36,7 +36,12 @@ test('f09 · the island figure keeps the field it opens, in PRO and in the retai
 test('f04 / f11 · the one selected cabinet\'s Worktop row: Add worktop alone, Remove, Seating overhang per empty face', () => {
   const src = read('src/components/RightPanel.jsx');
   assert.match(src, /<WorktopRow unit=\{unit\} \/>/);
-  const row = src.slice(src.indexOf('function WorktopRow('));
+  // AMENDED BY T83 F5 (25.10.2026): the row is WorktopRow's own body, up to the next function. The
+  // MIRROR CABINET section (*"daj wszystkie mozliwosci z panelami, z ledami, bez, szerokosc ustawianych
+  // drzwiczek etc"*, 22:41) stands after it in the file with its own fields; they are not the worktop's.
+  const rowAt = src.indexOf('function WorktopRow(');
+  const rowEnd = src.indexOf('\nfunction ', rowAt + 1);
+  const row = src.slice(rowAt, rowEnd > rowAt ? rowEnd : undefined);
   assert.match(row, /worktopEligible\(\[unit\], profile, \{ walls \}\)/, 'the store\'s own gate decides who carries a slab alone');
   assert.match(row, /addWorktop\(\[unit\.id\]\)/);
   assert.match(row, /removeWorktop\(record\.id\)/);

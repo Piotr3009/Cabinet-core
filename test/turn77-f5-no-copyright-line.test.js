@@ -368,6 +368,9 @@ export const NEW_FILES = [
   // T83 F9 (25.10.2026): the open of a two-column vanity (V3)
   'test/turn83-f09-open-columns.test.js',
   'scripts/t78-classify.d/f44-t83-f09.mjs',
+  // T83 F10 (25.10.2026): the plan is not a mirror (E1)
+  'test/turn83-f10-plan.test.js',
+  'scripts/t78-classify.d/f44-t83-f10.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

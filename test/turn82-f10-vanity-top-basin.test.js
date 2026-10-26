@@ -674,7 +674,8 @@ test('F12 · E3 · the base plan hatches the void on SERVICE_VOID, between the w
   const x0 = Number(u.position.x_mm); const x1 = x0 + Number(u.params.width);
   const gap = wallGapOf(u, P());
   for (const e of hatch) {
-    for (const [x, y] of [[e.x1, e.y1], [e.x2, e.y2]]) {
+    // T83 F10 (*"przekroj z gory pokazuje jakby logike z dolu czyli lustrzane odbicie, sprawdz dokladnie"*): the plan looks down, the room's y down the paper, so the room's y is the plan's -y.
+    for (const [x, y] of [[e.x1, -e.y1], [e.x2, -e.y2]]) {
       assert.ok(x >= x0 - 0.01 && x <= x1 + 0.01, `hatch x ${x} inside the unit's span`);
       assert.ok(y >= -0.01 && y <= gap + 0.01, `hatch y ${y} inside the void`);
     }

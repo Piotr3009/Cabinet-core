@@ -32,7 +32,26 @@ import { serviceVoidOf } from '../worktop.js';
 
 const AXIS = 1e-6;
 
-/** A point in one wall's frame (`u` along, `v` into the room) in the room's. */
+// ─── T83 F10 · THE PLAN IS NOT A MIRROR ─────────────────────────────────────
+// The owner, 25.10.2026 (22:41): *"przekroj z gory pokazuje jakby logike z
+// dolu czyli lustrzane odbicie, sprawdz dokladnie"*. The probe
+// (verify/t83/f10-probe.md, rows 3 to 9): the room's plan (x, y), y the
+// world's Z into the room, was laid with y UP the paper, which is the room
+// seen from BELOW (cross -1 on every wall). Looking DOWN on the room, with x
+// to the right, the world's Z runs DOWN the paper, as the room editor and the
+// unit card's top view draw it. ONE sign, in ONE place: the plan's walls are
+// the room's with y turned over, and every entity, label, chain and marker
+// of the plan is placed through them, so all of it follows.
+/** The room's walls as the plan lays them: looking down, the room's y down the paper. */
+export const planWalls = (walls) => walls.map((w) => ({
+  ...w,
+  start: { x: w.start.x, y: -w.start.y },
+  end: { x: w.end.x, y: -w.end.y },
+  along: { x: w.along.x, y: -w.along.y },
+  inward: { x: w.inward.x, y: -w.inward.y },
+}));
+
+/** A point in one wall's frame (`u` along, `v` into the room) in the plan's. */
 const at = (wall, u, v) => [
   wall.start.x + wall.along.x * u + wall.inward.x * v,
   wall.start.y + wall.along.y * u + wall.inward.y * v,
@@ -53,7 +72,8 @@ export function cutEntries(entries, cut, profile) {
 /** The room's extent, for the scale: walls, plus a margin for the chains. */
 export function measurePlan({ room, profile }) {
   // T75 F9 · the extent is the building's: an island stands inside it.
-  const walls = realWalls(room);
+  // T83 F10 · in the plan's own frame, looking down.
+  const walls = planWalls(realWalls(room));
   const xs = walls.flatMap((w) => [w.start.x, w.end.x]);
   const ys = walls.flatMap((w) => [w.start.y, w.end.y]);
   // The walls themselves; the labels and the chains live in the bands the
@@ -118,7 +138,8 @@ function planGroups(cutList, profile) {
 function roomFabric(room, { ctx, profile }) {
   const out = [];
   // T75 F9 · plaster only: an island's face is not a cut wall.
-  const walls = realWalls(room);
+  // T83 F10 · in the plan's own frame, looking down.
+  const walls = planWalls(realWalls(room));
   for (const wall of walls) {
     const ops = openingsOnWall(room, wall.index);
     // The wall line, broken at each opening.
@@ -166,7 +187,8 @@ export function buildPlan(entries, {
   which = 'base', room, worktops = [], profile, ctx, frontTypeOf = null, shakerFrame = null,
 }) {
   const cut = cutHeight(which, profile);
-  const walls = roomWalls(room);
+  // T83 F10 · every wall in the plan's own frame, looking down (planWalls).
+  const walls = planWalls(roomWalls(room));
   const entities = [];
   const gap = Number(profile.doors?.gap) || 0;
   // ─── TURN 72 (CLAUDE.md F14): THE GAP IS THE UNIT'S OWN ──────────────────
@@ -258,7 +280,11 @@ export function buildPlan(entries, {
       entities.push({ ...line('FRAME', a[0], a[1], b[0], b[1]), pen: 'VISIBLE', hidden: true });
       for (const [p, dir] of [[a, -1], [b, 1]]) {
         const s = ctx.mm(2.2);
-        const nx = wall.along.x; const ny = wall.along.y;
+        // T83 F10 · the arrows point the way the section looks: along the wall
+        // towards its END (setSection.js buildStation, `beyond: [station.x,
+        // far]`); they pointed to its start (the probe, rows 10 to 13). The
+        // letter stays behind the arrow, at its base.
+        const nx = -wall.along.x; const ny = -wall.along.y;
         const ix = wall.inward.x * dir; const iy = wall.inward.y * dir;
         const tip = [p[0] - nx * s * 1.4, p[1] - ny * s * 1.4];
         entities.push({ ...poly('FRAME', [tip, [p[0] + nx * s * 0.2 + ix * s * 0.9, p[1] + ny * s * 0.2 + iy * s * 0.9], [p[0] + nx * s * 0.2 - ix * s * 0.9, p[1] + ny * s * 0.2 - iy * s * 0.9]], { fill: '#151515' }), pen: 'FINE' });

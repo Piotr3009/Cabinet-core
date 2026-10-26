@@ -474,9 +474,12 @@ export function keyPlan(zones, { room = null, highlight = null, arrow = true }, 
   const s = Math.max((bx1 - bx0) / inner.w, (by1 - by0) / inner.h, 1e-6);
   const ox = inner.x + (inner.w - (bx1 - bx0) / s) / 2;
   const oy = inner.y + (inner.h - (by1 - by0) / s) / 2;
-  // The room's plan y grows INTO the room from wall 0 in the engine's frame;
-  // on paper it is drawn as it lies, Y up, with wall A at the bottom.
-  const P = (px, py) => [ox + (px - bx0) / s, oy + (py - by0) / s];
+  // The room's plan y grows INTO the room from wall 0 in the engine's frame.
+  // T83 F10 (*"przekroj z gory pokazuje jakby logike z dolu czyli lustrzane
+  // odbicie, sprawdz dokladnie"*): looking DOWN, as the plan sheet now lays
+  // it (setPlan.js planWalls), the room's y runs DOWN the paper, wall A at the
+  // top; Y up with wall A at the bottom was the room seen from below.
+  const P = (px, py) => [ox + (px - bx0) / s, oy + (by1 - py) / s];
   for (const wl of walls) {
     const [x1, y1] = P(wl.start.x, wl.start.y); const [x2, y2] = P(wl.end.x, wl.end.y);
     out.push({ ...line('BUILDING', x1, y1, x2, y2), pen: 'VISIBLE' });

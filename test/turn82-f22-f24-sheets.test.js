@@ -39,7 +39,7 @@ import { wallDrawingSheets } from '../src/engine/drawings/wallSheets.js';
 import { wallGroups } from '../src/engine/drawings/wallElevation.js';
 import { buildRunElevation, worktopsOnWall } from '../src/engine/drawings/setElevation.js';
 import { drawingContext, SET_LEGEND } from '../src/engine/drawings/setSheet.js';
-import { buildPlan } from '../src/engine/drawings/setPlan.js';
+import { buildPlan, planWalls } from '../src/engine/drawings/setPlan.js';
 import { rectCorners, roomWalls } from '../src/engine/room.js';
 import { wallGapOf } from '../src/engine/runs.js';
 
@@ -242,7 +242,8 @@ test('F24 · the base plan: each plinth board is ONE dashed line at its face tow
     const ids = t81Kitchen({ inframe });
     const a = setArgs();
     const plan = buildPlan(a.entries, { which: 'base', room: a.room, worktops: a.worktops.map((w) => w.geometry || w), profile: P(), ctx: ctx(), frontTypeOf: a.frontTypeOf });
-    const wall = roomWalls(a.room)[0];
+    // T83 F10 (*"przekroj z gory pokazuje jakby logike z dolu czyli lustrzane odbicie, sprawdz dokladnie"*): the wall in the plan's own frame, looking down.
+    const wall = planWalls(roomWalls(a.room))[0];
     const at = (u, v) => [wall.start.x + wall.along.x * u + wall.inward.x * v, wall.start.y + wall.along.y * u + wall.inward.y * v];
     const e = a.entries.find((x) => x.unit.id === ids.a);
     const boards = e.result.panels.filter((p) => p.box && p.role === 'plinth');
@@ -280,7 +281,8 @@ test('F24 · a true L: each arm\'s toe kick is one line, at the face that looks 
     S().updateUnitParams(right, { plinth: true, corner_side: 'right', doors });
     const a = setArgs();
     const plan = buildPlan(a.entries, { which: 'base', room: a.room, worktops: [], profile: P(), ctx: ctx(), frontTypeOf: a.frontTypeOf });
-    const wall = roomWalls(a.room)[0];
+    // T83 F10 (*"przekroj z gory pokazuje jakby logike z dolu czyli lustrzane odbicie, sprawdz dokladnie"*): the wall in the plan's own frame, looking down.
+    const wall = planWalls(roomWalls(a.room))[0];
     const at = (u, v) => [wall.start.x + wall.along.x * u + wall.inward.x * v, wall.start.y + wall.along.y * u + wall.inward.y * v];
     for (const id of [left, right]) {
       const e = a.entries.find((x) => x.unit.id === id);

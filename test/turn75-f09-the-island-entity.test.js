@@ -96,7 +96,8 @@ test('F9 · a face is NOT plaster: never scoped, drawn, neighboured, opened or c
   });
   assert.equal(marks.filter((m) => m.wall === 4 && m.kind === 'wall').length, 0);
   // The drawings read the building as plaster only (licensed, FROZEN 2).
-  assert.match(read('src/engine/drawings/setPlan.js'), /const walls = realWalls\(room\);\n  for \(const wall of walls\) \{\n    const ops = openingsOnWall/);
+  // T83 F10 (*"przekroj z gory pokazuje jakby logike z dolu czyli lustrzane odbicie, sprawdz dokladnie"*): the plaster walls, in the plan's own frame looking down.
+  assert.match(read('src/engine/drawings/setPlan.js'), /const walls = planWalls\(realWalls\(room\)\);\n  for \(const wall of walls\) \{\n    const ops = openingsOnWall/);
   assert.match(read('src/engine/drawings/setSheet.js'), /realWalls\(room\)/);
   assert.match(read('src/engine/drawings/wallElevation.js'), /for \(const wall of walls\.filter\(\(w\) => !w\.island\)\)/);
 });

@@ -394,7 +394,8 @@ test('[F7 projector] the plan: the open door dashed inside the pocket, TB and M'
     assert.equal(e.pen, 'HIDDEN');
     assert.ok(e.hidden && !e.solid, 'dashed');
   }
-  const xs = ghost.flatMap((e) => [e.x1, e.x2]); const ys = ghost.flatMap((e) => [e.y1, e.y2]);
+  // T83 F10 (*"przekroj z gory pokazuje jakby logike z dolu czyli lustrzane odbicie, sprawdz dokladnie"*): the plan looks down, the room's y down the paper, so the room's y is the plan's -y.
+  const xs = ghost.flatMap((e) => [e.x1, e.x2]); const ys = ghost.flatMap((e) => [-e.y1, -e.y2]);
   const gap = wallGapOf(m.unit, P());
   assert.deepEqual([Math.min(...xs), Math.max(...xs)], [m.x + f.open.x, m.x + f.open.x + f.open.w], 'in the slot, inside the pocket');
   assert.deepEqual([Math.min(...ys), Math.max(...ys)], [gap + f.open.z, gap + f.open.z + f.open.d], 'E1 in, M out');

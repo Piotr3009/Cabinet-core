@@ -33,3 +33,23 @@ Per wall (rows 5 to 8), both readings of the one mirror: walls A and C (along x 
 CLAUDE.md's "wall C at the top, wall A at the bottom, wall D on the left, wall B on the right" is exactly what B0 draws (row 9), the view from below: no true plan has all four. The probe's reading: flip y (1), which keeps D left, B right and the fronts' order of wall A, and puts wall A at the top; it is said in the PR as a DECISION against the letter of "wall A at the bottom". BEWARE the test CLAUDE.md names: it reads x only and PASSES on B0 (the x order is the same before and after a y flip); the mirror is caught by y or by the turn (A, B, C, D clockwise on the paper, row 9).
 
 The lines that carry the sign for E1 (the plan's frame, B0): src/engine/drawings/setPlan.js:36 `at` (every entity of the plan but the chains); the chains, which read the walls' y and inward y directly: src/engine/drawings/setPlan.js:323 and src/engine/drawings/setPlan.js:326 (and the line between); the extent src/engine/drawings/setPlan.js:63 (`measurePlan`, for the centring); the marker's arrowhead src/engine/drawings/setPlan.js:263 (it reads along and inward directly); and the key plan's `P` at src/engine/drawings/setSheet.js:479. `place` (src/engine/drawings/setSheet.js:190) is shared by every sheet and must not move. Independently of the mirror, the marker's arrows point to the wall's START while the section looks to its END (rows 10 to 13, src/engine/drawings/setPlan.js:263 against src/engine/drawings/setSection.js:116): the tip's sign there is a second, separate finding for E1.
+
+## THE FIX (E1, T83 F10)
+
+Flip y, the probe's reading (1): looking DOWN, x to the right, the room's y runs DOWN the paper, as the room editor (src/components/RoomModal.jsx `toSvg`), the unit card's top view and the room's own camera (`presetPlacement`: the room seen from +Z, wall A at the back) all show it. DECISION, said in the PR: wall A is at the TOP of the plan, not at the bottom: no true plan has A at the bottom with D on the left and B on the right (row 9), and CLAUDE.md's test ("the unit numbers' x on the plan increase left to right as on the fronts sheet for wall A; for wall C ... they decrease") and "shows them in the SAME order" both hold only with A at the top.
+
+- ONE frame, src/engine/drawings/setPlan.js `planWalls`: the room's walls with y turned over (start, end, along, inward), read by `measurePlan`, `roomFabric` and `buildPlan`. `at`, `throughWall`, the chains (which read the walls' y and inward y), the depth chain, the worktop, the basin, the void hatch, the pocket door and the marker all go through those walls, so all of them follow; no second sign anywhere. `place` (setSheet.js) and the projector are untouched (the unit card keeps its own flip).
+- The key plan, src/engine/drawings/setSheet.js `keyPlan`: `P` lays y as `by1 - py`, so its ring, its letters, the highlight band and the arrow are the plan's.
+- The marker, src/engine/drawings/setPlan.js: the arrows point along the wall to its END, the way `buildStation` looks (`beyond: [station.x, far]`); the letter stays behind the arrow.
+
+Measured after the fix (paper mm, Y up, `wallDrawingSheets` as the window builds it):
+
+| stage | the numbers on the base plan | the wall's label | cross | A-A | key plan |
+| - | - | - | - | - | - |
+| the T81 kitchen (wall A) | 01 (111, 203.9); 02 (139, 203.9); DR01 (165, 203.9) | WALL A (179, 238.5), at the top | +1 | at 2650, both arrows toward the wall's end | A (379, 275.2) top, B (402.2, 262) right, C (379, 248.8) bottom, D (355.8, 262) left |
+| three base units on wall A | 01 (111, 223.9); 02 (139, 223.9); DR01 (165, 223.9): left to right | WALL A (179, 258.5) | +1 | toward the end | A top |
+| three base units on wall B | 01 (287.4, 183.5); 02 (287.4, 155.5); DR01 (287.4, 129.5): top to bottom | WALL B (322, 155.5), on the right | +1 | toward the end | B right |
+| three base units on wall C | 01 (247, 87.1); 02 (219, 87.1); DR01 (193, 87.1): right to left | WALL C (179, 52.5), at the bottom | +1 | toward the end | C bottom |
+| three base units on wall D | 01 (70.6, 127.5); 02 (70.6, 155.5); DR01 (70.6, 181.5): bottom to top | WALL D (36, 155.5), on the left | +1 | toward the end | D left |
+
+The plan's WALL A, B, C, D now run clockwise on the paper (A top, B right, C bottom, D left), as rectCorners runs seen from above. Proven by test/turn83-f10-plan.test.js (red on B0: all five tests fail there). `scripts/t83-probe-f10.mjs` measures B0: on this branch its line finder stops at the key plan's old comment, which the fix rewrote.

@@ -116,23 +116,28 @@ test('F10 · a vanity born in a room gets its worktop at birth: one record over 
   assert.equal(slabOver(id).geometry.thickness, top);
 });
 
-test('F10 · its depth reaches the WALL over the service void: the unit\'s reach + the void + the front overhang', () => {
+test('F10 · its depth reaches the WALL over the carcass, as any run\'s: the unit\'s reach + the front overhang (T83 F6)', () => {
   const id = vanity('VANITY3');
   const u = unitOf(id);
-  assert.equal(wallGapOf(u, P()), CLEARANCE() + VOID(), 'the carcass stands clearance + 80 off the wall (F8(b))');
-  assert.equal(serviceVoidOf(u, P()), VOID());
+  // AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // the carcass stands at the clearance like every unit and the void is inside it (KIT_VANITY.lsp D6, D27); the slab
+  // reaches the wall over the carcass as any run's, 548 (T82: the clearance + 80 off the wall, the slab 628 over the void).
+  assert.equal(wallGapOf(u, P()), CLEARANCE(), 'the carcass stands at the clearance (F8(b))');
+  assert.equal(serviceVoidOf(u, P()), 0, 'no air between the carcass and the wall');
   const g = slabOver(id).geometry;
   const reach = Number(u.params.depth) + (Number(P().doors?.gap) || 0) + (Number(u.params.front_t) || 0);
   const over = Number(P().autoParts?.worktop?.frontOverhang ?? 20);
   assert.equal(g.z, 0, 'flush at the wall: nothing hangs over a wall');
-  assert.ok(near(g.d, reach + VOID() + over), `d ${g.d} = ${reach} + ${VOID()} + ${over}`);
+  assert.ok(near(g.d, reach + over), `d ${g.d} = ${reach} + ${over}`);
+  assert.ok(near(g.d, 548), `d ${g.d}: 500 + 3 + 25 + 20`);
   // The slab's front edge stands as proud of the vanity's front as any slab of
   // the house stands of its run's (T30's law, the clearance included).
   // DECIDED after the review of PART B (topbasin 0): this 628 (900 x 500 x 600,
   // front 25, wall gap 90) is the house worktop's law, not the 638 the LISP's
   // vanity-top-depth first gave: the vanity's top IS the house worktop, the
   // fronts 10 under its edge as under every kitchen slab. KIT_VANITY.lsp D7 is
-  // amended to say so (slice B1, the same fix round).
+  // amended to say so (slice B1, the same fix round). T83 F6: the same law at
+  // the wall, 548 (D7 AMENDED), the fronts still 10 under its edge.
   const front = wallGapOf(u, P()) + reach;
   assert.ok(near(g.d - front, over - CLEARANCE()), 'the same overhang past the fronts as a kitchen slab');
 });
@@ -467,8 +472,10 @@ test('F11 · one basin on a narrow vanity, and on a shallow one: the width, the 
   S().updateUnitParams(id, { width: 900, depth: 350 });
   assert.equal(basinsOf(slabOver(id)).length, 0);
   const [f] = findings48();
-  assert.equal(f.message, `VU01: A basin ${BASIN().d} deep does not fit the top of a 350 deep vanity: make the vanity 390 deep.`);
-  S().updateUnitParams(id, { depth: 390 });
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*: the waste at 250
+  // (T82: 200) asks 50 more of depth: 440 (T82: 390).
+  assert.equal(f.message, `VU01: A basin ${BASIN().d} deep does not fit the top of a 350 deep vanity: make the vanity 440 deep.`);
+  S().updateUnitParams(id, { depth: 440 });
   assert.equal(basinsOf(slabOver(id)).length, 1);
   assertBasinsFit(slabOver(id));
 });
@@ -545,7 +552,7 @@ test('F11 · on an island the basin\'s centre rides into the slab\'s frame with 
 
 // ─── F12 · THE SERVICE VOID AS A NOTE ──────────────────────────────────────
 
-test('F12 · Check #45 lists the void as a NOTE, never a fault: "Service void 80 behind the vanity for the pipes"', () => {
+test('F12 · Check #45 lists the void as a NOTE, never a fault: "Service void 80 inside the vanity behind the drawers" (T83 F6)', () => {
   const id = vanity('VANITY3');
   const row = CHECKS.find((c) => c.n === 45);
   assert.ok(row, '#45 is in the list');
@@ -554,7 +561,9 @@ test('F12 · Check #45 lists the void as a NOTE, never a fault: "Service void 80
   assert.equal(found.length, 1);
   assert.equal(found[0].unitId, id);
   assert.equal(found[0].level, 'note');
-  assert.match(found[0].message, new RegExp(`Service void ${VOID()} behind the vanity for the pipes`));
+  // AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // CLAUDE.md T83 F6 *"The Check's note #45 says "Service void 80 inside the vanity behind the drawers""*.
+  assert.match(found[0].message, new RegExp(`Service void ${VOID()} inside the vanity behind the drawers`));
   // A note is not counted as a fault nor as something to look at.
   assert.equal(checkSummary(found), checkSummary([]));
 });
@@ -588,11 +597,17 @@ test('F12 · no vanity, no #45', () => {
 
 test('F12 · SHEETS · the section through the vanity: the two rails cut at the back, the void band hatched and named', () => {
   const id = vanity('VANITY3', { sinks: 1 });
+  const sec0 = sectionOf(id);
+  for (const rail of ['RAIL-TOP', 'RAIL-BOTTOM']) {
+    assert.ok(sec0.entities.some((e) => e.cut && String(e.src || '').endsWith(`:${rail}`)), `${rail} is cut`);
+  }
+  // AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // a vanity as it is born stands at the wall, its void inside it (KIT_VANITY.lsp D27): no band between the wall and
+  // the carcass back. The band is the stand-off's, as T82 drew it: hatched where the vanity is stood off the wall.
+  assert.equal(sec0.entities.filter((e) => e.layer === 'SERVICE_VOID').length, 0, 'no air behind a vanity at the wall');
+  S().updateUnitParams(id, { wall_gap: CLEARANCE() + VOID() });
   const u = unitOf(id);
   const sec = sectionOf(id);
-  for (const rail of ['RAIL-TOP', 'RAIL-BOTTOM']) {
-    assert.ok(sec.entities.some((e) => e.cut && String(e.src || '').endsWith(`:${rail}`)), `${rail} is cut`);
-  }
   // The band: from the wall (0) to the carcass back, over the carcass's height, on its own ink.
   const band = sec.entities.filter((e) => e.layer === 'SERVICE_VOID' && e.meta === 'service-void');
   assert.ok(band.length >= 3, 'hatched');
@@ -648,6 +663,10 @@ test('F11 · E3 · the wall plan draws the basin as an oval on the APPLIANCE ink
 
 test('F12 · E3 · the base plan hatches the void on SERVICE_VOID, between the wall and the carcass back', { skip: E3 }, () => {
   const id = vanity('VANITY3');
+  // AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // at the wall there is no air to hatch (the void is inside, KIT_VANITY.lsp D27); stood off the wall, the stand-off is.
+  assert.equal(planOf('base').entities.filter((e) => e.layer === 'SERVICE_VOID').length, 0, 'no air behind a vanity at the wall');
+  S().updateUnitParams(id, { wall_gap: CLEARANCE() + VOID() });
   const u = unitOf(id);
   const hatch = planOf('base').entities.filter((e) => e.layer === 'SERVICE_VOID');
   assert.ok(hatch.length >= 3, 'hatched');
@@ -655,7 +674,8 @@ test('F12 · E3 · the base plan hatches the void on SERVICE_VOID, between the w
   const x0 = Number(u.position.x_mm); const x1 = x0 + Number(u.params.width);
   const gap = wallGapOf(u, P());
   for (const e of hatch) {
-    for (const [x, y] of [[e.x1, e.y1], [e.x2, e.y2]]) {
+    // T83 F10 (*"przekroj z gory pokazuje jakby logike z dolu czyli lustrzane odbicie, sprawdz dokladnie"*): the plan looks down, the room's y down the paper, so the room's y is the plan's -y.
+    for (const [x, y] of [[e.x1, -e.y1], [e.x2, -e.y2]]) {
       assert.ok(x >= x0 - 0.01 && x <= x1 + 0.01, `hatch x ${x} inside the unit's span`);
       assert.ok(y >= -0.01 && y <= gap + 0.01, `hatch y ${y} inside the void`);
     }

@@ -124,6 +124,12 @@ import Cornice from './Cornice.jsx';
 import PocketDoor from './PocketDoor.jsx';
 import DrillRings from './DrillRings.jsx';
 import LedStrips from './LedStrips.jsx';
+// T83 F3 · the mirror cabinet: its two LED strips and the mirror on its back (MirrorCabinet.jsx), and
+// how the house's leaf draws its doors, its LED stiles and its glass shelves (mirrorCabinetRoom.js).
+import MirrorCabinet from './MirrorCabinet.jsx';
+import {
+  doorMirrorPlate, MIRROR_LOOK, mirrorBackClick, mirrorRoomPanel, mirrorRoomSurface,
+} from './mirrorCabinetRoom.js';
 import Props from './Props.jsx';
 import LedIcons from './LedIcons.jsx';
 
@@ -1184,19 +1190,21 @@ export function MovingPanel({
           position={[
             mm(p.box.x + p.box.w / 2) - pivot[0],
             mm(p.box.y + p.box.h / 2) - pivot[1],
-            (p.meta.mirror.face === 'outside'
-              ? mm(p.box.z + p.box.d) + 0.0012
-              : mm(p.box.z) - 0.0012) - pivot[2],
+            // T83 F3 · a mirror cabinet's door is the board 18 and the mirror 4 (KIT_MIRROR.lsp D3): its
+            // leaf is the board (mirrorRoomPanel) and its mirror the 4 in front of it (`flush`), the face
+            // at the kit's face, flush with the LED stiles (*"na rowno z drzwiami, nie wcisniete"*).
+            // eslint-disable-next-line no-nested-ternary
+            (p.meta.mirror.flush
+              ? mm(doorMirrorPlate(p).z0 + doorMirrorPlate(p).t / 2)
+              : (p.meta.mirror.face === 'outside'
+                ? mm(p.box.z + p.box.d) + 0.0012
+                : mm(p.box.z) - 0.0012)) - pivot[2],
           ]}
           userData={{ ccDoorMirror: p.meta.mirror.face, ccNoBounds: true }}
         >
-          <boxGeometry args={[mm(p.meta.mirror.w), mm(p.meta.mirror.h), 0.002]} />
-          <meshPhysicalMaterial
-            color="#e8edf0"
-            metalness={1}
-            roughness={0.03}
-            envMapIntensity={2.2}
-          />
+          <boxGeometry args={[mm(p.meta.mirror.w), mm(p.meta.mirror.h), p.meta.mirror.flush ? mm(doorMirrorPlate(p).t) : 0.002]} />
+          {/* T83 F3 · the one mirror of the app (T33's numbers, mirrorCabinetRoom.js MIRROR_LOOK). */}
+          <meshPhysicalMaterial {...MIRROR_LOOK} />
         </mesh>
       )}
       {/* ─── T78 F12 · THE PANE IS IN THE DOOR'S OWN FRAME, LIKE THE MIRROR ──
@@ -1341,7 +1349,8 @@ export function MovingPanel({
           // the way to ask for a new one is a new material. Without it the mode
           // was on in the store and off on the screen after the next redraw —
           // which is exactly what a mode that "resets" looks like.
-          key={`${decor ? 'decor' : 'plain'}-${translucent ? 'through' : 'solid'}`}
+          // T83 F3 · …and a glass shelf or a lit stile is a material of its own (the suffix is empty on every other board).
+          key={`${decor ? 'decor' : 'plain'}-${translucent ? 'through' : 'solid'}${surface.glass ? '-glass' : ''}${surface.emissive ? '-lit' : ''}`}
           ref={bevelRef}
           // An untinted scan sits on white so the figure comes through at its
           // own tone; a tinted procedural grain multiplies the decor's colour.
@@ -1368,6 +1377,22 @@ export function MovingPanel({
           // z-fighting it away. Nothing moves; only what the depth test
           // believes. Numbers from profile.appearance.outline.polygonOffset.
           {...panelFillOffset(profile)}
+          // ─── T83 F3 · A GLASS SHELF IS GLASS, AN LED STILE IS LIT ──────────
+          // *"polki szklane, rysujemy szklane 6 mm"*; *"w tym przypadku mamy
+          // mleczne led panele"*. Only a surface `mirrorRoomSurface` wrote
+          // carries `glass` or `emissive` (the mirror cabinet's glass shelves
+          // and LED stiles): the shelf wears T30's clear pane (the glazed door's
+          // own alpha glass, `paneMaterialFor`), the stile its light. Every
+          // other board's material is exactly what it was.
+          {...(surface.glass ? {
+            color: paneMaterialFor(surface.glass).color,
+            roughness: paneMaterialFor(surface.glass).roughness,
+            metalness: paneMaterialFor(surface.glass).metalness,
+            transparent: true,
+            opacity: paneMaterialFor(surface.glass).opacity * faded,
+            depthWrite: false,
+          } : {})}
+          {...(surface.emissive ? { emissive: surface.emissive, emissiveIntensity: surface.emissiveIntensity } : {})}
         />
         {/* Thin BLACK contours, switchable from the toolbar. In contour view
             they are the whole picture, so they are never off there. */}
@@ -2890,7 +2915,9 @@ export default function UnitView({
           is not recomputed, the BOM and the CNC sheet read it unchanged, and
           the params never hear about this. It is a lens over the same cabinet,
           which is what makes it different in kind from "Remove doors". */}
-      {result.panels.filter((p) => p.box && !p.meta?.frontDecorationParent
+      {/* T83 F3 · a mirror cabinet's door is drawn as its board 18 and the mirror 4 in front of it
+          (mirrorCabinetRoom.js mirrorRoomPanel); every other part is the engine's panel itself. */}
+      {result.panels.map(mirrorRoomPanel).filter((p) => p.box && !p.meta?.frontDecorationParent
         && !(hideFronts && frontKind(p))
         // T82 F6 · the HAWA door is a front to the eye: it leaves the picture with them.
         && !(hideFronts && p.part === 'POCKET-DOOR')
@@ -2998,7 +3025,9 @@ export default function UnitView({
         const feltHex = !contour && p.part === 'WATCH-BASE' && p.meta?.watch_felt
           ? (WATCH_FELT_COLOURS.find((c) => c.id === p.meta.watch_felt)?.hex || null)
           : null;
-        const worn = feltHex ? feltSurface(surface, feltHex) : surface;
+        // T83 F3 · a mirror cabinet's LED stile is lit and its glass shelf is glass (mirrorRoomSurface);
+        // every other surface comes back as the same object.
+        const worn = mirrorRoomSurface(p, feltHex ? feltSurface(surface, feltHex) : surface, { profile, design, contour });
         // T82 F6 · the HAWA door is this same leaf, carried by <PocketDoor> (below).
         const leaf = (
           <MovingPanel
@@ -3246,6 +3275,12 @@ export default function UnitView({
               e.stopPropagation();
               onAskSide(p.id, { x: e.clientX, y: e.clientY });
             } : undefined}
+            // ─── T83 F3 · THE BACK ASKS ON A CLICK ─────────────────────────────
+            // *"klikasz na plecy i wyskakuje ci opcja chcesz lustro na plecach?"*: a
+            // plain click on a mirror cabinet's BACK (the nearest board the ray
+            // meets) opens "Mirror on the back?" at the click. Every other part
+            // spreads nothing here.
+            {...(mirrorBackClick(p, unit.id) ? { onClick: mirrorBackClick(p, unit.id) } : {})}
             onDoubleClick={(e) => {
               e.stopPropagation();
               // ─── Turn 11 (CLAUDE.md F3.3) ───
@@ -3926,6 +3961,15 @@ export default function UnitView({
           only and a glowing strip is exactly what it exists to remove. */}
       {!contour && (
         <LedStrips unit={unit} result={result} design={design} />
+      )}
+
+      {/* ─── T83 F3 · THE MIRROR CABINET'S OWN LIGHT AND ITS BACK ──────────
+          *"podswietlenie pod spodem etc"*; *"czasami jak ktos chce to bedzie
+          mial na plecach tez"*. The LED under and the LED inside (the kit's
+          lines, the house's strip) and the mirror on the back when asked, in
+          the unit's own frame. Draws nothing on any other unit; not in contour. */}
+      {!contour && (
+        <MirrorCabinet unit={unit} result={result} design={design} profile={profile} />
       )}
 
       {/* ─── TURN 58b (CLAUDE.md F5 · T58 F8): THE DRAWERS GET DRESSED ────

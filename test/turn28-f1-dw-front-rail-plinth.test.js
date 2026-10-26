@@ -245,8 +245,12 @@ test('F1.4 the kit DECLARES what it is made of, in the keys every kit answers', 
     // AMENDED BY T82 F2: HAWA_POCKET declares its whole carcass as the pocket
     // (`top: 'pocket'`, KIT_HAWA.lsp's `hawa-cut`: two panels, a bottom, a top,
     // the door). The owner, 25.10.2026: *"wstawienie pomiedzy 2 panele"*.
+    // AMENDED BY T83 F2: MIRROR_CABINET declares its whole carcass as the
+    // mirror cabinet (`top: 'mirror'`, KIT_MIRROR.lsp's parts: the parent's
+    // five boards inside its panels round). The owner, 25.10.2026: *"mamy
+    // carcas w srodku i panele dookola tego"*.
     if (id === 'DW_PANEL' || getUnitType(id).corner || getUnitType(id).appliance === 'extractor' || id === 'FREE_PANEL'
-      || getUnitType(id).hawaPocket) continue;
+      || getUnitType(id).hawaPocket || getUnitType(id).mirrorCabinet) continue;
     const { carcass } = UNIT_TYPES[id];
     assert.equal(carcass.sides, undefined, `${id} says nothing about sides`);
     assert.equal(carcass.bottom, undefined, `${id} says nothing about a bottom`);

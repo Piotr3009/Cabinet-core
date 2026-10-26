@@ -3,7 +3,7 @@
     "name": "../verify/t82/goldens/golden-vanity3-columns2.json",
     "turn": "T78",
     "F": "F43",
-    "source": "KIT_VANITY.lsp (the parent KIT_BUDR_FULL): RAIL-BOTTOM and RAIL-TOP W x 100 x G where the back stood (D2 to D4), equal overlay fronts (D8), the box on the runner less ten (D9); VANITY3 900 x 600 x 500, columns 2 and two basins (D10 to D12, D14): the DIVIDER at x 441, 18 x 564 x 482, fronts 447 at x 1.5 and 451.5, six boxes 413 wide, the U's 145..305 in Z1D3 and 595..755 in Z2D3, Z1D3's back wall (0 104) and (264 377) (the columns cut by drawerColumnsPlan, B5's, once for every drawerColumns kit). The owner, 25.10.2026 (12:57): *\"vanity unit potrzebuje z szufladami nawierzchniowymi, wybor jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa rowne ... musimy miec tez wyciecie na trap, w razie czego jak nie bedzie miejsca to zostawimy informacje prosze uzyc shallow trap ... nie ma plecow na vanity unit tylko sa poziome poprzeczki na dole i na gorze, plecy sa jakby wyciete\"*; (13:03) *\"2 wyciecie u dookola zeby sie szuflada otwierala, 3 - 80, 4 - 100 na material carcasa grubosc\"*; (13:46) *\"6 - tak\"*.",
+    "source": "KIT_VANITY.lsp (the parent KIT_BUDR_FULL): RAIL-BOTTOM and RAIL-TOP W x 100 x G where the back stood (D2 to D4), equal overlay fronts (D8), the box on the runner less ten (D9); VANITY3 900 x 600 x 500, columns 2 and two basins (D10 to D12, D14): the DIVIDER at x 441, 18 x 564 x 482, fronts 447 at x 1.5 and 451.5, six boxes 413 wide, the U's 145..305 in Z1D3 and 595..755 in Z2D3, Z1D3's back wall (0 104) and (264 377) (the columns cut by drawerColumnsPlan, B5's, once for every drawerColumns kit). The owner, 25.10.2026 (12:57): *\"vanity unit potrzebuje z szufladami nawierzchniowymi, wybor jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa rowne ... musimy miec tez wyciecie na trap, w razie czego jak nie bedzie miejsca to zostawimy informacje prosze uzyc shallow trap ... nie ma plecow na vanity unit tylko sa poziome poprzeczki na dole i na gorze, plecy sa jakby wyciete\"*; (13:03) *\"2 wyciecie u dookola zeby sie szuflada otwierala, 3 - 80, 4 - 100 na material carcasa grubosc\"*; (13:46) *\"6 - tak\"*. RE-PINNED BY T83 F6 (scripts/t78-classify.d/f44-t83-f06.mjs), the owner 25.10.2026 (22:41): *\"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany\"*: KIT_VANITY.lsp D27, the carcass to the wall (no wall_gap at birth, the house clearance), the void 80 inside: every drawer box on the rung that keeps it (390 on the 400 runner at D 500, the back face at 85).",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
@@ -26,7 +26,6 @@
     "sinks": 2,
     "floating": false,
     "float_height_mm": 300,
-    "wall_gap": 90,
     "unit_num": "01"
   },
   "expected": {
@@ -38,18 +37,18 @@
       "01,RAIL-BOTTOM,900,100,,0,0.090",
       "01,RAIL-TOP,900,100,,0,0.090",
       "01,DIVIDER,564,482,>,0.56,0.272",
-      "01,Z1D1-SL,440,138,,0,0.061",
-      "01,Z1D1-SR,440,138,,0,0.061",
-      "01,Z1D2-SL,440,138,,0,0.061",
-      "01,Z1D2-SR,440,138,,0,0.061",
-      "01,Z1D3-SL,440,138,,0,0.061",
-      "01,Z1D3-SR,440,138,,0,0.061",
-      "01,Z2D1-SL,440,138,,0,0.061",
-      "01,Z2D1-SR,440,138,,0,0.061",
-      "01,Z2D2-SL,440,138,,0,0.061",
-      "01,Z2D2-SR,440,138,,0,0.061",
-      "01,Z2D3-SL,440,138,,0,0.061",
-      "01,Z2D3-SR,440,138,,0,0.061",
+      "01,Z1D1-SL,390,138,,0,0.054",
+      "01,Z1D1-SR,390,138,,0,0.054",
+      "01,Z1D2-SL,390,138,,0,0.054",
+      "01,Z1D2-SR,390,138,,0,0.054",
+      "01,Z1D3-SL,390,138,,0,0.054",
+      "01,Z1D3-SR,390,138,,0,0.054",
+      "01,Z2D1-SL,390,138,,0,0.054",
+      "01,Z2D1-SR,390,138,,0,0.054",
+      "01,Z2D2-SL,390,138,,0,0.054",
+      "01,Z2D2-SR,390,138,,0,0.054",
+      "01,Z2D3-SL,390,138,,0,0.054",
+      "01,Z2D3-SR,390,138,,0,0.054",
       "01,Z1D1-BF,377,104,,0,0.039",
       "01,Z1D1-BB,377,104,,0,0.039",
       "01,Z1D2-BF,377,104,,0,0.039",
@@ -64,12 +63,12 @@
       "01,Z2D3-BF,377,104,,0,0.039",
       "01,Z2D3-BB-1,113,104,,0,0.012",
       "01,Z2D3-BB-2,104,104,,0,0.011",
-      "01,Z1D1-DNO,390,440,,0,0.172",
-      "01,Z1D2-DNO,390,440,,0,0.172",
-      "01,Z1D3-DNO,390,440,,0,0.172",
-      "01,Z2D1-DNO,390,440,,0,0.172",
-      "01,Z2D2-DNO,390,440,,0,0.172",
-      "01,Z2D3-DNO,390,440,,0,0.172",
+      "01,Z1D1-DNO,390,390,,0,0.152",
+      "01,Z1D2-DNO,390,390,,0,0.152",
+      "01,Z1D3-DNO,390,390,,0,0.152",
+      "01,Z2D1-DNO,390,390,,0,0.152",
+      "01,Z2D2-DNO,390,390,,0,0.152",
+      "01,Z2D3-DNO,390,390,,0,0.152",
       "01,01-Z1D1-F,447,197,<>^v,1.29,0.088",
       "01,01-Z1D2-F,447,197,<>^v,1.29,0.088",
       "01,01-Z1D3-F,447,197,<>^v,1.29,0.088",
@@ -222,16 +221,16 @@
         "id": "Z1D1-SL",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 23,
           "y": 31.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -242,16 +241,16 @@
         "id": "Z1D1-SR",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 418,
           "y": 31.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -262,16 +261,16 @@
         "id": "Z1D2-SL",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 23,
           "y": 213.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -282,16 +281,16 @@
         "id": "Z1D2-SR",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 418,
           "y": 213.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -302,16 +301,16 @@
         "id": "Z1D3-SL",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 23,
           "y": 413.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -322,16 +321,16 @@
         "id": "Z1D3-SR",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 418,
           "y": 413.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -342,16 +341,16 @@
         "id": "Z2D1-SL",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 464,
           "y": 31.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -362,16 +361,16 @@
         "id": "Z2D1-SR",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 859,
           "y": 31.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -382,16 +381,16 @@
         "id": "Z2D2-SL",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 464,
           "y": 213.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -402,16 +401,16 @@
         "id": "Z2D2-SR",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 859,
           "y": 213.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -422,16 +421,16 @@
         "id": "Z2D3-SL",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 464,
           "y": 413.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -442,16 +441,16 @@
         "id": "Z2D3-SR",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 859,
           "y": 413.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -488,7 +487,7 @@
         "box": {
           "x": 41,
           "y": 64.5,
-          "z": 35,
+          "z": 85,
           "w": 377,
           "h": 104,
           "d": 18
@@ -528,7 +527,7 @@
         "box": {
           "x": 41,
           "y": 246.5,
-          "z": 35,
+          "z": 85,
           "w": 377,
           "h": 104,
           "d": 18
@@ -568,7 +567,7 @@
         "box": {
           "x": 41,
           "y": 446.5,
-          "z": 35,
+          "z": 85,
           "w": 104,
           "h": 104,
           "d": 18
@@ -588,7 +587,7 @@
         "box": {
           "x": 305,
           "y": 446.5,
-          "z": 35,
+          "z": 85,
           "w": 113,
           "h": 104,
           "d": 18
@@ -628,7 +627,7 @@
         "box": {
           "x": 482,
           "y": 64.5,
-          "z": 35,
+          "z": 85,
           "w": 377,
           "h": 104,
           "d": 18
@@ -668,7 +667,7 @@
         "box": {
           "x": 482,
           "y": 246.5,
-          "z": 35,
+          "z": 85,
           "w": 377,
           "h": 104,
           "d": 18
@@ -708,7 +707,7 @@
         "box": {
           "x": 482,
           "y": 446.5,
-          "z": 35,
+          "z": 85,
           "w": 113,
           "h": 104,
           "d": 18
@@ -728,7 +727,7 @@
         "box": {
           "x": 755,
           "y": 446.5,
-          "z": 35,
+          "z": 85,
           "w": 104,
           "h": 104,
           "d": 18
@@ -743,15 +742,15 @@
         "part": "DRAWER-BOTTOM",
         "role": "drawer_box",
         "w": 390,
-        "h": 440,
+        "h": 390,
         "thickness": 18,
         "box": {
           "x": 34.5,
           "y": 46.5,
-          "z": 35,
+          "z": 85,
           "w": 390,
           "h": 18,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 4,
@@ -763,15 +762,15 @@
         "part": "DRAWER-BOTTOM",
         "role": "drawer_box",
         "w": 390,
-        "h": 440,
+        "h": 390,
         "thickness": 18,
         "box": {
           "x": 34.5,
           "y": 228.5,
-          "z": 35,
+          "z": 85,
           "w": 390,
           "h": 18,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 4,
@@ -783,15 +782,15 @@
         "part": "DRAWER-BOTTOM",
         "role": "drawer_box",
         "w": 390,
-        "h": 440,
+        "h": 390,
         "thickness": 18,
         "box": {
           "x": 34.5,
           "y": 428.5,
-          "z": 35,
+          "z": 85,
           "w": 390,
           "h": 18,
-          "d": 440
+          "d": 390
         },
         "outline": 16,
         "holes": 4,
@@ -803,15 +802,15 @@
         "part": "DRAWER-BOTTOM",
         "role": "drawer_box",
         "w": 390,
-        "h": 440,
+        "h": 390,
         "thickness": 18,
         "box": {
           "x": 475.5,
           "y": 46.5,
-          "z": 35,
+          "z": 85,
           "w": 390,
           "h": 18,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 4,
@@ -823,15 +822,15 @@
         "part": "DRAWER-BOTTOM",
         "role": "drawer_box",
         "w": 390,
-        "h": 440,
+        "h": 390,
         "thickness": 18,
         "box": {
           "x": 475.5,
           "y": 228.5,
-          "z": 35,
+          "z": 85,
           "w": 390,
           "h": 18,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 4,
@@ -843,15 +842,15 @@
         "part": "DRAWER-BOTTOM",
         "role": "drawer_box",
         "w": 390,
-        "h": 440,
+        "h": 390,
         "thickness": 18,
         "box": {
           "x": 475.5,
           "y": 428.5,
-          "z": 35,
+          "z": 85,
           "w": 390,
           "h": 18,
-          "d": 440
+          "d": 390
         },
         "outline": 16,
         "holes": 4,

@@ -88,7 +88,8 @@ test('F4 · the LISP census is DERIVED, and it is 14/14', () => {
   // T80 F1 AMENDED (22.10.2026): the British frame is a kit of its own (KIT_INFRAME.lsp; the owner, 21.10.2026: *"raczej plyta"*, *"wszedzie ramke 38 mm"*, LISP first): the walk ends between 16 and 26.
   // T82 F1 AMENDED (25.10.2026): the HAWA pocket is a kit of its own (KIT_HAWA.lsp; the owner, 25.10.2026: *"zaczniemy od hawa dodanie"*; CLAUDE.md T82 LAWS: *"PART A and PART B each begin with a LISP kit"*): the walk ends between 16 and 27.
   // T82 F8 AMENDED (25.10.2026): the vanity is a kit of its own (KIT_VANITY.lsp; the owner, 25.10.2026: *"pozniej dodajemy vanity unit"*; CLAUDE.md T82 LAWS: *"PART A and PART B each begin with a LISP kit"*): the walk ends between 16 and 28.
-  assert.ok([16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28].includes(onDisk), `the census is ${onDisk}`);
+  // T83 F1 AMENDED (25.10.2026): the mirror cabinet is a kit of its own (KIT_MIRROR.lsp; the owner, 25.10.2026, 14:09: *"teraz zaprojektujmy dokladnie to co masz na rysunku szafka wiszaca"*; CLAUDE.md T83 LAWS: *"PART A and PART B begin with the LISP"*): the walk ends between 16 and 29.
+  assert.ok([16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29].includes(onDisk), `the census is ${onDisk}`);
 });
 
 test('F4 · the file argues BOTH turns, and names its two bases', () => {

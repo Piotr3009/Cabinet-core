@@ -29,6 +29,8 @@ import { hawaPocketFigures, hawaSpec } from './hawaPocket.js';
 import {
   hawaDrills, hawaGroovesOnto, hawaHardwareLines, hawaSeatsOnto,
 } from './cnc/hawa.js';
+// T83 F2 . the mirror cabinet, KIT_MIRROR.lsp mirrored routine for routine.
+import { mirrorCabinetFigures } from './mirrorCabinet.js';
 import { getCabinetProfile } from './profile.js';
 import { buildFrontDecoration } from './frontDecoration.js';
 import { floatHeightOf, getUnitType, hungTypeOf } from './types.js';
@@ -130,12 +132,18 @@ import { applyVanityTrap, vanityRailGeometry, vanityRails } from './vanity.js';
 // D24 to D26): which basins the vanity's top takes is engine/worktop.js
 // `fitBasins`, THE ONE SOURCE (B3's), asked with the unit's params alone.
 import {
-  applyVanityTop, vanityBowlVerdict, vanityBoxesOf, vanityDoubleRefusal, vanityDoubleRefused, vanitySpec,
+  applyVanityTop, vanityBowlVerdict, vanityDoubleRefusal, vanityDoubleRefused, vanitySpec,
   vanityTopBackDropped, vanityTopThickness,
 } from './vanity.js';
 import { fitBasins } from './worktop.js';
 // T82 F13 · a floating vanity's hangers (KIT_VANITY.lsp D19, `vanity-hangers`).
 import { vanityHangers } from './vanity.js';
+// T83 F6 · the room a vanity's drawer box may take, the void kept behind it
+// (KIT_VANITY.lsp D9, D27, `vanity-box-room`).
+import { vanityBoxRoom } from './vanity.js';
+// T83 F7 · the trap's gap at two columns with one basin (KIT_VANITY.lsp D28,
+// `vanity-gap-of`, `vanity-gap-box`).
+import { vanityGapBox, vanityGapOf } from './vanity.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
 // `trimOutlineOnSlope` are turn 46's (CLAUDE.md F3): the slope cut, ported 1:1
 // from SKYLON_COMMON's `SKY:slopeCutPts` — iron rule 3, the LISP states the
@@ -815,7 +823,12 @@ function drawerColumnsPlan({ W, G, GB, unitNum, profile }) {
  * from the back's inside face (z G) to the carcass front, D - G deep: the
  * sides' depth, the runners' full-depth wall (T32 F4).
  */
-function drawerColumnsDivider({ W, H, D, G }) {
+function drawerColumnsDivider({
+  W, H, D, G, top = null,
+}) {
+  // T83 F7 · under the trap's gap (KIT_VANITY.lsp D28, `vanity-divider-cut`) a
+  // SHORT DIVIDER, from the BOTTOM to the top row's runner underside `top`.
+  if (top != null) return { id: 'DIVIDER', x: (W - G) / 2, y: G, z: G, w: G, h: top - G, d: D - G, short: true };
   return { id: 'DIVIDER', x: (W - G) / 2, y: G, z: G, w: G, h: H - G - G, d: D - G };
 }
 
@@ -1638,7 +1651,8 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
 // T78 F15 · `drawer_front` is the INNER front of a drawer behind doors (meta.inner).
 // T80 F3 · 'frame': the in-frame frame is sprayed with the fronts (the owner's green frame in the mockup).
 // T82 F2 · the HAWA pocket's panels and its door stand in the room in the front's finish (KIT_HAWA.lsp D3).
-const FINISH_EXPOSED_ROLES = new Set(['front', 'drawer_front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame', 'pocket_panel', 'pocket_door']);
+// T83 F2 . the mirror cabinet's doors, panels round and timber stiles are seen (KIT_MIRROR.lsp D3, D8, D9).
+const FINISH_EXPOSED_ROLES = new Set(['front', 'drawer_front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame', 'pocket_panel', 'pocket_door', 'mirror_door', 'mirror_panel', 'mirror_stile']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1670,7 +1684,9 @@ export function isFinishExposed(role) {
 // FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
 // T80 F3 · 'frame': material from the FRONT type of the project (CLAUDE.md T80 F3).
 // T82 F2 · the owner, 25.10.2026: *"panele po bokach to jest nie carcas tylko front zawsze"* (KIT_HAWA.lsp D3); the door is the front.
-const FRONT_MATERIAL_ROLES = new Set(['front', 'drawer_front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame', 'pocket_panel', 'pocket_door']);
+// T83 F2 . the mirror door's board and the panels round are the front finish (KIT_MIRROR.lsp D3, D9:
+// *"dodajemy oczywiscie panele dookola i ustawiamy jakie grube"*); a timber stile is the carcass's (D8).
+const FRONT_MATERIAL_ROLES = new Set(['front', 'drawer_front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel', 'frame', 'pocket_panel', 'pocket_door', 'mirror_door', 'mirror_panel']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -2864,7 +2880,13 @@ export function computeCabinet(params, profileOverride) {
   let budr = null;
   if (budrDrawers) {
     const heights = overlay ? overlay.heights : cfg.drawerHeights;
-    const maxDl = D - G - B.depthAllowance;
+    // T83 F6 · THE CARCASS TO THE WALL, THE VOID INSIDE (KIT_VANITY.lsp D9,
+    // D27). The owner, 25.10.2026 (22:41): *"carcas powinien byc do sciany,
+    // czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*. A
+    // vanity's box keeps the service void behind it: the same ladder, the box
+    // the runner less ten, over the room `vanityBoxRoom` leaves. Every other
+    // kit reads the very line it always read.
+    const maxDl = type.vanity ? vanityBoxRoom({ D, G, frontT }, P) : D - G - B.depthAllowance;
     const depth = snapDrawerDepth(maxDl, DR.depthSteps) ?? DR.depthSteps[0];
     if (maxDl < DR.depthSteps[0]) {
       warnings.push({
@@ -3147,6 +3169,45 @@ export function computeCabinet(params, profileOverride) {
     // is not measured against a face it was never cut to fill.
     const stackSays = overlay ? null : frontStackWarning({ heights, gap: B.gap, available: H });
     if (stackSays) warnings.push(stackSays);
+    // ─── T83 F7 · THE TRAP'S GAP AT TWO COLUMNS WITH ONE BASIN (D28) ────────
+    // The owner, 25.10.2026 (22:41): *"zmniejszmy szuflady na szerokosc, tylko
+    // fronty zostawmy szerokie i pomiedzy szufladami zrobi sie miejsce na syfon
+    // (tylko gorna row)"*. A vanity on two columns with one basin: the TOP ROW's
+    // two boxes narrowed toward the centre to the trap's gap (`vanityGapOf`,
+    // `vanityGapBox`, the LISP's `vanity-gap-of`), their walls and bottom by
+    // the parent's law over the new width, their runners with them, their
+    // fronts the pair's, unchanged; the divider stops under the top row (its
+    // runner underside). Null on every other unit, so nothing below moves.
+    let trapGap = null;
+    if (type.vanity && columns === 2 && !dummy) {
+      const n = heights.length;
+      const gap = vanityGapOf({
+        W, columns, sinks: params?.sinks, GB, tops: cols.map((c) => ({ col: c.col, x0: c.boxLeftX, bw: c.boxW })),
+      }, P);
+      if (gap) {
+        const lawInset = G + B.boxWidthClearance / 2 - B.frontWidthDeduction / 2;
+        trapGap = {
+          gap,
+          row: n,
+          dividerTop: runnerBottomY[n - 1],
+          cols: cols.map((c) => {
+            const g = vanityGapBox({ col: c.col, x0: c.boxLeftX, bw: c.boxW }, gap);
+            const len = g.bw - 2 * GB;
+            return {
+              ...c,
+              boxLeftX: g.x0,
+              boxW: g.bw,
+              boxLen: len,
+              bottomW: len + B.bottomOversize,
+              screwShift: {
+                left: (g.x0 - c.frontX) - lawInset,
+                right: ((c.frontX + c.frontWidth) - (g.x0 + g.bw)) - lawInset,
+              },
+            };
+          }),
+        };
+      }
+    }
     budr = {
       heights, frontY, runnerRows, runnerBottomY, sideHs, boxFrontH,
       depth, maxDl, boxW, frontWidth, boxLen,
@@ -3165,7 +3226,11 @@ export function computeCabinet(params, profileOverride) {
       // T82 F9 · the stack's columns (one: the kit as it always was) and, on
       // two, the DIVIDER between them (KIT_VANITY.lsp 5(c2)).
       cols,
-      divider: columns === 2 ? drawerColumnsDivider({ W, H, D, G }) : null,
+      divider: columns === 2 ? drawerColumnsDivider({
+        W, H, D, G, top: trapGap ? trapGap.dividerTop : null,
+      }) : null,
+      // T83 F7 · the trap's gap and the top row's narrowed boxes, or null.
+      trapGap,
     };
     // T75 F14 · a dummy is not a drawer: no box, no runner pair, no rod.
     numDrawers = heights.length - (dummy ? 1 : 0);
@@ -3870,6 +3935,39 @@ export function computeCabinet(params, profileOverride) {
       });
     }
     for (const n of hawaFigures.notes) warnings.push({ code: n.code, message: n.message, check: n.n });
+  }
+  // T83 F2 . THE MIRROR CABINET: EVERY PART IS KIT_MIRROR.lsp's ──────────────
+  //
+  // *"teraz zaprojektujmy dokladnie to co masz na rysunku szafka wiszaca"*
+  // (the owner, 25.10.2026, 14:09). The kit declares its whole carcass as the
+  // mirror cabinet (`top: 'mirror'`), and every part is cut from the ONE
+  // derivation `engine/mirrorCabinet.js mirrorCabinetFigures` (KIT_MIRROR.lsp
+  // part 5, published below as `derived.mirror`): the parent's five boards
+  // with their puzzle and the parent's hanger holes, BOX-TOP (a FIX board, the
+  // house's set) and BOX-FRONT, the DIVIDERs (the house's VPART: their head
+  // and foot joint and their back screws come from the roads every divider
+  // takes, below), the doors (part FRONT, role `mirror_door`: the cups are the
+  // house's pass on `meta.cupY`, the plates the LISP's on the boards), the
+  // stiles, the panels round and the glass shelves. A bought part (the LED
+  // stile, the glass) carries no CNC and no board: `material_role` 'bought'.
+  // Only a kit whose top is 'mirror' runs a line of it.
+  let mirrorFigures = null;
+  if (type.carcass.top === 'mirror') {
+    const plateD = hingePlatePilotD(P, params);
+    mirrorFigures = mirrorCabinetFigures({ ...params, width: W, height: H, depth: D }, P, {
+      unitNum,
+      G,
+      plateD,
+      plateLayer: hingePlateLayer(plateD, P.hinges.layer),
+      partitionFace: String(P.shelfHoles?.partitionFace || 'L').toUpperCase() === 'R' ? 'R' : 'L',
+    });
+    for (const part of mirrorFigures.parts) {
+      const { bought, ...spec } = part;
+      const rec = panel(spec);
+      if (bought) rec.material_role = 'bought';
+      panels.push(rec);
+    }
+    for (const w of mirrorFigures.warnings) warnings.push({ ...w });
   }
   if (hasBottom) {
     panels.push(panel({
@@ -6169,7 +6267,8 @@ export function computeCabinet(params, profileOverride) {
         meta: {
           index: 1,
           vertical: true,
-          fullHeight: true,
+          // T83 F7 · the short divider under the trap's gap stops under the top row.
+          fullHeight: !dv.short,
           itemId: null,
           x_mm: dv.x,
           front_mm: 0,
@@ -6178,17 +6277,25 @@ export function computeCabinet(params, profileOverride) {
           terminatesOn: null,
           locked: true,
           drawerColumns: 2,
+          ...(dv.short ? { trapGap: true } : {}),
         },
       }));
     }
     // T82 F9 · each column's own stack (one column: the kit as it always was).
     const colMeta = (c) => (c.col == null ? {} : { column: c.col });
+    // T83 F7 · the box of column c in row i: the top row's narrowed to the
+    // trap's gap (D28), every other the column's own. `trapGap: true` on its
+    // boards tells the room's runners where they ride.
+    const boxOf = (c, i) => (budr.trapGap && i === budr.trapGap.row && c.col != null
+      ? budr.trapGap.cols[c.col - 1] : c);
+    const gapMeta = (c, i) => (boxOf(c, i) === c ? {} : { trapGap: true });
     for (const c of budr.cols) {
       for (let i = 1; i <= budr.count; i += 1) {
         if (i === budr.dummy) continue;   // T75 F14 · no box behind the hob's dummy
         const sh = budr.sideHs[i - 1];
         const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
-        for (const [suffix, x] of [['SL', c.boxLeftX], ['SR', c.boxLeftX + c.boxW - GB]]) {
+        const bx = boxOf(c, i);
+        for (const [suffix, x] of [['SL', bx.boxLeftX], ['SR', bx.boxLeftX + bx.boxW - GB]]) {
           panels.push(panel({
             id: `${c.tag(i)}-${suffix}`, part: 'DRAWER-SIDE', role: 'drawer_box', w: budr.depth, h: sh, ...common,
             box: { x, y: boxY, z: boxZFront - budr.depth, w: GB, h: sh, d: budr.depth },
@@ -6198,6 +6305,7 @@ export function computeCabinet(params, profileOverride) {
               drawer: i,
               side: suffix === 'SL' ? 'L' : 'R',
               ...colMeta(c),
+              ...gapMeta(c, i),
               ...(budr.overlay && overlay.ids[i - 1] ? { itemId: overlay.ids[i - 1] } : {}),
             },
           }));
@@ -6209,28 +6317,29 @@ export function computeCabinet(params, profileOverride) {
         if (i === budr.dummy) continue;
         const bfH = budr.boxFrontH[i - 1];
         const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
+        const bx = boxOf(c, i);
         for (const suffix of ['BF', 'BB']) {
           const isFront = suffix === 'BF';
-          const geom = { rotated: true, drawn_w: bfH, drawn_h: c.boxLen, ...rectGeometry(bfH, c.boxLen) };
+          const geom = { rotated: true, drawn_w: bfH, drawn_h: bx.boxLen, ...rectGeometry(bfH, bx.boxLen) };
           if (isFront) {
             geom.holes = [
               { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: B.boxScrewFromEdge, d: pz.screwDiameter },
-              { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: c.boxLen - B.boxScrewFromEdge, d: pz.screwDiameter },
+              { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: bx.boxLen - B.boxScrewFromEdge, d: pz.screwDiameter },
             ];
           }
           panels.push(panel({
             id: `${c.tag(i)}-${suffix}`, part: isFront ? 'DRAWER-BOX-FRONT' : 'DRAWER-BOX-BACK', role: 'drawer_box',
-            w: c.boxLen, h: bfH, ...common,
+            w: bx.boxLen, h: bfH, ...common,
             box: {
               // Turn 18 (CLAUDE.md F3.4): standing ON the bottom, which stands in
               // the groove: the same correction the wardrobe's box gets above,
               // because it is the same box.
-              x: c.boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB,
+              x: bx.boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB,
               z: isFront ? boxZFront - GB : boxZFront - budr.depth,
-              w: c.boxLen, h: bfH, d: GB,
+              w: bx.boxLen, h: bfH, d: GB,
             },
             cnc: geom,
-            meta: { drawer: i, ...colMeta(c) },
+            meta: { drawer: i, ...colMeta(c), ...gapMeta(c, i) },
           }));
         }
         joinBoxWithCabineo(c.tag(i));
@@ -6240,20 +6349,21 @@ export function computeCabinet(params, profileOverride) {
       for (let i = 1; i <= budr.count; i += 1) {
         if (i === budr.dummy) continue;
         const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
-        const geom = rectGeometry(c.bottomW, budr.depth);
+        const bx = boxOf(c, i);
+        const geom = rectGeometry(bx.bottomW, budr.depth);
         geom.holes = [];
-        for (const x of [B.bottomScrewFromSide, c.bottomW - B.bottomScrewFromSide]) {
+        for (const x of [B.bottomScrewFromSide, bx.bottomW - B.bottomScrewFromSide]) {
           for (const y of [B.bottomScrewFromEnd, budr.depth - B.bottomScrewFromEnd]) {
             geom.holes.push({ layer: pz.layers.screw, kind: 'screw', x, y, d: pz.screwDiameter });
           }
         }
         panels.push(panel({
-          id: `${c.tag(i)}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: c.bottomW, h: budr.depth, ...common,
+          id: `${c.tag(i)}-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: bx.bottomW, h: budr.depth, ...common,
           // Centred in its box, as in the wardrobe: the bottom sits in the side
           // grooves, and since turn 18 (F3.4) it sits at the HEIGHT of them,
           // `runnerPocketWidth` above the sides' bottom edge.
-          box: { x: c.boxLeftX + (c.boxW - c.bottomW) / 2, y: boxY + B.runnerPocketWidth, z: boxZFront - budr.depth, w: c.bottomW, h: GB, d: budr.depth },
-          cnc: geom, meta: { drawer: i, ...colMeta(c) },
+          box: { x: bx.boxLeftX + (bx.boxW - bx.bottomW) / 2, y: boxY + B.runnerPocketWidth, z: boxZFront - budr.depth, w: bx.bottomW, h: GB, d: budr.depth },
+          cnc: geom, meta: { drawer: i, ...colMeta(c), ...gapMeta(c, i) },
         }));
       }
     }
@@ -6411,7 +6521,9 @@ export function computeCabinet(params, profileOverride) {
         const screwX = B.frontScrewFromSide + G + GB + B.frontScrewExtra;
         // T82 F9 · in a column each screw keeps that distance from its OWN box
         // side (`screwShift`, drawerColumnsPlan); one column shifts nothing.
-        geom.holes = [screwX + c.screwShift.left, c.frontWidth - (screwX + c.screwShift.right)].map((x) => ({
+        // T83 F7 · the top row's box narrowed to the trap's gap: its own sides.
+        const shift = boxOf(c, i).screwShift;
+        geom.holes = [screwX + shift.left, c.frontWidth - (screwX + shift.right)].map((x) => ({
           layer: B.frontScrewLayer, kind: 'front_screw', x, y: screwY, d: B.frontScrewDiameter,
         }));
         panels.push(panel({
@@ -10195,8 +10307,10 @@ export function computeCabinet(params, profileOverride) {
     // (T21 F12.2's mirror rule for a partition's two faces).
     if (budr.divider) {
       const dv = budr.divider;
+      // T83 F7 · the short divider under the trap's gap carries the rows below the top row only (D28).
+      const onDivider = (rowY) => !dv.short || rowY < dv.y + dv.h;
       for (const face of ['L', 'R']) {
-        for (const rowY of budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy)) {
+        for (const rowY of budr.runnerRows.filter((y, i) => i + 1 !== budr.dummy && onDivider(y))) {
           for (const px of RN.holeXPattern) {
             addDrill(dv.id, 'runner', RN.layer, face === 'R' ? dv.d - px : px, rowY - dv.y, RN.holeDiameter);
           }
@@ -11119,21 +11233,27 @@ export function computeCabinet(params, profileOverride) {
       n: budr ? budr.count : 0,
       columns: budr?.divider ? 2 : 1,
       sinks: Number.isFinite(Number(params?.sinks)) ? Math.trunc(Number(params.sinks)) : 0,
+      // T83 F7 · the trap's gap the stack took (D28): the waste's plan is GAP, no U.
+      gap: budr?.trapGap ? budr.trapGap.gap : null,
     })
     : null;
   // ─── T82 F9, after the review · THE BOWL, CHECK #48 (KIT_VANITY.lsp D25) ──
-  // The bowl read as its rim's oval straight down below the worktop's top: a
-  // bowl that meets the top drawer's box or RAIL-TOP is said with the deepest
-  // that clears and the cure, never clamped (`vanity-bowl-verdict`). The top's
-  // thickness is its slab's (`params.vanity_top_mm`, the store's, from the
-  // vanity's worktop record), else the kit's own 20.
+  // Said, never clamped (`vanity-bowl-verdict`). The top's thickness is its
+  // slab's (`params.vanity_top_mm`, the store's, from the vanity's worktop
+  // record), else the kit's own 20.
+  // T83 F8 · THE BOWL NEVER ENTERS A BOARD (KIT_VANITY.lsp D29). The owner,
+  // 25.10.2026 (22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm,
+  // powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi
+  // w drugi material"*. The bowl's solid is the room's half ellipsoid, held
+  // against every board of the cut but the TOP (which takes its oval) and the
+  // fronts: #48 names each board it enters and by how much, in CLAUDE.md T83
+  // F8's sentence. A bowl that enters the shell (the rails, the sides) never gets
+  // here: fitBasins refused it with the worktop's refusals.
   const vanityBowl = type.vanity && budr
     ? vanityBowlVerdict({
       num: unitNum,
       H,
-      G,
-      n: budr.count,
-      boxes: vanityBoxesOf(panels, { n: budr.count, columns: budr.divider ? 2 : 1 }),
+      panels,
       xs: vanityBasinsFitted,
       wt: vanityTopThickness(params, P),
       bowlH: vanitySpec(P).basinH,
@@ -11190,7 +11310,8 @@ export function computeCabinet(params, profileOverride) {
     // license renaming one. It now equals `panels_lisp`, because there is no
     // railpart to include.
     panels_true_incl_railpart: boardPanels.length + drawerFrontsInPanels,
-    pieces_total: panels.length,
+    // T83 F2 . a mirror cabinet's bought parts (the LED stiles, the glass) are not pieces to cut.
+    pieces_total: mirrorFigures ? panels.filter((x) => x.material_role !== 'bought').length : panels.length,
     fronts: doorFrontCount + (drawerFrontCount - drawerFrontsInPanels),
     board_area_m2: roundTo(boardArea, 6),
     front_area_m2: roundTo(frontArea, 6),
@@ -12128,7 +12249,9 @@ export function computeCabinet(params, profileOverride) {
         B.frontScrewFromSide + 2 * G + B.frontScrewExtra + budr.cols[0].screwShift.left,
         budr.cols[0].frontWidth - (B.frontScrewFromSide + 2 * G + B.frontScrewExtra + budr.cols[0].screwShift.right),
       ],
-      divider_runner_rows_y: budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy).map((y) => y - budr.divider.y),
+      divider_runner_rows_y: budr.runnerRows
+        .filter((y, i) => i + 1 !== budr.dummy && (!budr.divider.short || y < budr.divider.y + budr.divider.h))
+        .map((y) => y - budr.divider.y),
     } : {}),
     ...(type.hangers ? {
       hanger_holes_bul: P.wallUnit.hangers.fromBackEdge.map((f) => [sideW - f, H - P.wallUnit.hangers.fromTop]),
@@ -12630,6 +12753,9 @@ export function computeCabinet(params, profileOverride) {
       bowl: vanityBowl,
     };
   }
+  // T83 F2 . what the mirror cabinet is, for the room, the BOM, the right
+  // panel, the sheets and the tests (KIT_MIRROR.lsp, the one derivation).
+  if (mirrorFigures) derived.mirror = mirrorFigures.derived;
   // T78 F17 . what the canopy is, for the drawing and the tests; BUL's hanger
   // summary follows its drilling, which moved with the frame.
   if (canopy) {
@@ -12743,7 +12869,9 @@ export function computeCabinet(params, profileOverride) {
     // A bare computeCabinet() passes nothing and cuts every board, as ever.
     csvLines: buildCsvLines(
       unitNum,
-      params?.drawer_boxes === 'ready' ? panels.filter((p) => p.role !== 'drawer_box') : panels,
+      // T83 F2 . a bought part of the mirror cabinet (the LED stile, the glass) is no label to cut.
+      (params?.drawer_boxes === 'ready' ? panels.filter((p) => p.role !== 'drawer_box') : panels)
+        .filter((p) => !(mirrorFigures && p.material_role === 'bought')),
       P,
     ),
     warnings,

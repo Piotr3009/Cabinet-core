@@ -1,0 +1,811 @@
+{
+  "meta": {
+    "name": "../verify/t83/goldens/golden-mirror.json",
+    "turn": "T78",
+    "F": "F44",
+    "source": "T83 F2 (M1). KIT_MIRROR.lsp on its parent KIT_WUD_FULL, the worked example of section 6 (elevation 34 and section 33): MC 1350 x 1100 x 215, panels 30 round, the carcass 1290 x 1040, the bottom box 100 (BOX-TOP, BOX-FRONT 1287 x 97), doors 327 / 477 / 327 x 937 (330 / 480 / 330 less the gaps) 18 + 4, LED stiles 75 x 937 x 22, DIVIDER-1 and DIVIDER-2 at 388.5 and 943.5, fifteen glass shelves 6, three hinges a door on the Blum table, the parent's hanger holes and cut-outs. The owner, 25.10.2026 (14:09): *\"teraz zaprojektujmy dokladnie to co masz na rysunku szafka wiszaca\"*; *\"lustro opcjonalnie, wtedy pamietaj ze drzwiczki 18 plus 4 mm lustro, przedluzamy panele do grubosci drzwiczek i lustra\"*; (14:14) *\"panele led trzeba bedzie zamontowac na rowno z drzwiami, nie wcisniete, mamy carcas w srodku i panele dookola tego\"*; (22:41) *\"daj wszystkie mozliwosci z panelami, z ledami, bez, szerokosc ustawianych drzwiczek etc\"*.",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "MIRROR_CABINET",
+    "width": 1350,
+    "height": 1100,
+    "depth": 215,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": null,
+    "mount_height": 1250,
+    "mirror": {
+      "bays": 3,
+      "stile": "led",
+      "stile_width_mm": 75,
+      "panels": {
+        "L": true,
+        "R": true,
+        "top": true,
+        "bottom": true
+      },
+      "panel_t": 30,
+      "mirror_doors": true,
+      "mirror_back": false,
+      "shelves_per_bay": 5,
+      "led_under": true,
+      "led_inside": true,
+      "bottom_box": true
+    },
+    "unit_num": "01"
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,197,1040,<,1.04,0.205",
+      "01,BUR,197,1040,>,1.04,0.205",
+      "01,TOP,1254,197,>,1.25,0.247",
+      "01,BOTTOM,1254,197,>,1.25,0.247",
+      "01,BACK,1290,1040,,0,1.342",
+      "01,BOX-TOP,1254,197,>,1.25,0.247",
+      "01,BOX-FRONT,1287,97,<>^v,2.77,0.125",
+      "01,DIVIDER-1,922,197,>,0.92,0.182",
+      "01,DIVIDER-2,922,197,>,0.92,0.182",
+      "01,01-F1,327,937,<>^v,2.53,0.306",
+      "01,01-F2,477,937,<>^v,2.83,0.447",
+      "01,01-F3,327,937,<>^v,2.53,0.306",
+      "01,PANEL-L,237,1100,<>^v,2.67,0.261",
+      "01,PANEL-R,237,1100,<>^v,2.67,0.261",
+      "01,PANEL-TOP,1290,237,<>^v,3.05,0.306",
+      "01,PANEL-BOTTOM,1290,237,<>^v,3.05,0.306"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 197,
+        "h": 1040,
+        "thickness": 18,
+        "box": {
+          "x": 30,
+          "y": 30,
+          "z": 18,
+          "w": 18,
+          "h": 1040,
+          "d": 197
+        },
+        "outline": 34,
+        "holes": 50,
+        "pockets": 5,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 197,
+        "h": 1040,
+        "thickness": 18,
+        "box": {
+          "x": 1302,
+          "y": 30,
+          "z": 18,
+          "w": 18,
+          "h": 1040,
+          "d": 197
+        },
+        "outline": 34,
+        "holes": 50,
+        "pockets": 5,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 1254,
+        "h": 197,
+        "thickness": 18,
+        "box": {
+          "x": 48,
+          "y": 1052,
+          "z": 18,
+          "w": 1254,
+          "h": 18,
+          "d": 197
+        },
+        "outline": 44,
+        "holes": 0,
+        "pockets": 4,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 1254,
+        "h": 197,
+        "thickness": 18,
+        "box": {
+          "x": 48,
+          "y": 30,
+          "z": 18,
+          "w": 1254,
+          "h": 18,
+          "d": 197
+        },
+        "outline": 44,
+        "holes": 0,
+        "pockets": 4,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 1290,
+        "h": 1040,
+        "thickness": 18,
+        "box": {
+          "x": 30,
+          "y": 30,
+          "z": 0,
+          "w": 1290,
+          "h": 1040,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 36,
+        "pockets": 12,
+        "readiness": null
+      },
+      {
+        "id": "BOX-TOP",
+        "part": "FIXED",
+        "role": "shelf",
+        "w": 1254,
+        "h": 197,
+        "thickness": 18,
+        "box": {
+          "x": 48,
+          "y": 112,
+          "z": 18,
+          "w": 1254,
+          "h": 18,
+          "d": 197
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "BOX-FRONT",
+        "part": "FALSE-FRONT",
+        "role": "false_front",
+        "w": 1287,
+        "h": 97,
+        "thickness": 18,
+        "box": {
+          "x": 31.5,
+          "y": 30,
+          "z": 215,
+          "w": 1287,
+          "h": 97,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "DIVIDER-1",
+        "part": "VPART",
+        "role": "shelf",
+        "w": 922,
+        "h": 197,
+        "thickness": 18,
+        "box": {
+          "x": 388.5,
+          "y": 130,
+          "z": 18,
+          "w": 18,
+          "h": 922,
+          "d": 197
+        },
+        "outline": 4,
+        "holes": 36,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "DIVIDER-2",
+        "part": "VPART",
+        "role": "shelf",
+        "w": 922,
+        "h": 197,
+        "thickness": 18,
+        "box": {
+          "x": 943.5,
+          "y": 130,
+          "z": 18,
+          "w": 18,
+          "h": 922,
+          "d": 197
+        },
+        "outline": 4,
+        "holes": 30,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-F1",
+        "part": "FRONT",
+        "role": "mirror_door",
+        "w": 327,
+        "h": 937,
+        "thickness": 18,
+        "box": {
+          "x": 31.5,
+          "y": 130,
+          "z": 215,
+          "w": 327,
+          "h": 937,
+          "d": 22
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-F2",
+        "part": "FRONT",
+        "role": "mirror_door",
+        "w": 477,
+        "h": 937,
+        "thickness": 18,
+        "box": {
+          "x": 436.5,
+          "y": 130,
+          "z": 215,
+          "w": 477,
+          "h": 937,
+          "d": 22
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-F3",
+        "part": "FRONT",
+        "role": "mirror_door",
+        "w": 327,
+        "h": 937,
+        "thickness": 18,
+        "box": {
+          "x": 991.5,
+          "y": 130,
+          "z": 215,
+          "w": 327,
+          "h": 937,
+          "d": 22
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "STILE-1",
+        "part": "MIRROR-STILE",
+        "role": "led_stile",
+        "w": 75,
+        "h": 937,
+        "thickness": 22,
+        "box": {
+          "x": 360,
+          "y": 130,
+          "z": 215,
+          "w": 75,
+          "h": 937,
+          "d": 22
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "STILE-2",
+        "part": "MIRROR-STILE",
+        "role": "led_stile",
+        "w": 75,
+        "h": 937,
+        "thickness": 22,
+        "box": {
+          "x": 915,
+          "y": 130,
+          "z": 215,
+          "w": 75,
+          "h": 937,
+          "d": 22
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "PANEL-L",
+        "part": "MIRROR-PANEL",
+        "role": "mirror_panel",
+        "w": 237,
+        "h": 1100,
+        "thickness": 30,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 30,
+          "h": 1100,
+          "d": 237
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "PANEL-R",
+        "part": "MIRROR-PANEL",
+        "role": "mirror_panel",
+        "w": 237,
+        "h": 1100,
+        "thickness": 30,
+        "box": {
+          "x": 1320,
+          "y": 0,
+          "z": 0,
+          "w": 30,
+          "h": 1100,
+          "d": 237
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "PANEL-TOP",
+        "part": "MIRROR-PANEL",
+        "role": "mirror_panel",
+        "w": 1290,
+        "h": 237,
+        "thickness": 30,
+        "box": {
+          "x": 30,
+          "y": 1070,
+          "z": 0,
+          "w": 1290,
+          "h": 30,
+          "d": 237
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "PANEL-BOTTOM",
+        "part": "MIRROR-PANEL",
+        "role": "mirror_panel",
+        "w": 1290,
+        "h": 237,
+        "thickness": 30,
+        "box": {
+          "x": 30,
+          "y": 0,
+          "z": 0,
+          "w": 1290,
+          "h": 30,
+          "d": 237
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "SHELF-1",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 336.5,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 50,
+          "y": 283.6667,
+          "z": 18,
+          "w": 336.5,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-2",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 336.5,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 50,
+          "y": 437.3333,
+          "z": 18,
+          "w": 336.5,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-3",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 336.5,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 50,
+          "y": 591,
+          "z": 18,
+          "w": 336.5,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-4",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 336.5,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 50,
+          "y": 744.6667,
+          "z": 18,
+          "w": 336.5,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-5",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 336.5,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 50,
+          "y": 898.3333,
+          "z": 18,
+          "w": 336.5,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-6",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 533,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 408.5,
+          "y": 283.6667,
+          "z": 18,
+          "w": 533,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-7",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 533,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 408.5,
+          "y": 437.3333,
+          "z": 18,
+          "w": 533,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-8",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 533,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 408.5,
+          "y": 591,
+          "z": 18,
+          "w": 533,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-9",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 533,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 408.5,
+          "y": 744.6667,
+          "z": 18,
+          "w": 533,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-10",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 533,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 408.5,
+          "y": 898.3333,
+          "z": 18,
+          "w": 533,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-11",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 336.5,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 963.5,
+          "y": 283.6667,
+          "z": 18,
+          "w": 336.5,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-12",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 336.5,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 963.5,
+          "y": 437.3333,
+          "z": 18,
+          "w": 336.5,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-13",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 336.5,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 963.5,
+          "y": 591,
+          "z": 18,
+          "w": 336.5,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-14",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 336.5,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 963.5,
+          "y": 744.6667,
+          "z": 18,
+          "w": 336.5,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      },
+      {
+        "id": "SHELF-15",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 336.5,
+        "h": 177,
+        "thickness": 6,
+        "box": {
+          "x": 963.5,
+          "y": 898.3333,
+          "z": 18,
+          "w": 336.5,
+          "h": 6,
+          "d": 177
+        },
+        "outline": null,
+        "holes": null,
+        "pockets": null,
+        "readiness": "bought"
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F1",
+        3
+      ],
+      [
+        "FRONT_HINGES_35MM|01-F2",
+        3
+      ],
+      [
+        "FRONT_HINGES_35MM|01-F3",
+        3
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F1",
+        6
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F2",
+        6
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F3",
+        6
+      ],
+      [
+        "HINGES_5MM|BUL",
+        8
+      ],
+      [
+        "HINGES_5MM|BUR",
+        8
+      ],
+      [
+        "HINGES_5MM|DIVIDER-1",
+        6
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        20
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        4
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        4
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        24
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        8
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|TOP",
+        4
+      ],
+      [
+        "SHELVES_7_5MM|BUL",
+        30
+      ],
+      [
+        "SHELVES_7_5MM|BUR",
+        30
+      ],
+      [
+        "SHELVES_7_5MM|DIVIDER-1",
+        30
+      ],
+      [
+        "SHELVES_7_5MM|DIVIDER-2",
+        30
+      ]
+    ],
+    "hardware": []
+  }
+}

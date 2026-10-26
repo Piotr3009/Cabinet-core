@@ -25,6 +25,8 @@
 //
 // THE STAGE: VANITY3 on the default profile, one sink (the default), its top
 // box's bottom D3-DNO 831 x 440 x 18, the U at 335.5 to 495.5 of its width.
+// AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+// the box is shortened by the void inside (KIT_VANITY.lsp D9, D27): D3-DNO is 831 x 390 x 18 now.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -92,9 +94,11 @@ test('T82 F9 . the room reads the U off the engine\'s record, and the same funct
   const r = vanity();
   const dno = panelOf(r, 'D3-DNO');
   assert.ok(dno, 'the top box\'s bottom');
-  assert.deepEqual(dno.meta.vanityTrap.notches, [[335.5, 495.5, 120, 20]], 'B2\'s U in the bottom\'s own frame');
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*, and CLAUDE.md T83 F8: *"The U of the top box (columns 1) follows the waste"*:
+  // the U 245 deep (250 + 80 - 85; T82: 120).
+  assert.deepEqual(dno.meta.vanityTrap.notches, [[335.5, 495.5, 245, 20]], 'B2\'s U in the bottom\'s own frame');
   const trap = trapCutNotches(dno);
-  assert.deepEqual(trap, { notches: [{ edge: 'bottom', from: 335.5, to: 495.5, depth: 120 }], radius: 20 });
+  assert.deepEqual(trap, { notches: [{ edge: 'bottom', from: 335.5, to: 495.5, depth: 245 }], radius: 20 });
   // The room's outline is the polygon the CNC sheet and the DXF cut, point for point.
   const room = notchedOutline({ ...cncRect(dno), ...trap });
   assert.equal(room.length, dno.cnc.outline.length);
@@ -127,26 +131,31 @@ test('T82 F9 . the notched bottom is a closed solid: its volume is the cut outli
   const volume = volumeMm3(solid);
   const outlineVolume = shoelace(dno.cnc.outline) * 18;
   assert.ok(Math.abs(volume - outlineVolume) < 2, `the outline extruded: ${volume} vs ${outlineVolume}`);
-  // Against the U as drawn: 160 x 120 less two corners of (1 - pi / 4) R^2.
-  const removed = (831 * 440 * 18 - volume) / 18;
-  const trueU = 160 * 120 - 2 * (1 - Math.PI / 4) * 20 * 20;
+  // Against the U as drawn: 160 x 245 less two corners of (1 - pi / 4) R^2.
+  // T83 F6: the bottom is 390 deep (T82: 440), the void kept behind the box. AMENDED BY T83 F8 (25.10.2026, 22:41):
+  // CLAUDE.md T83 F8: *"The U of the top box (columns 1) follows the waste"*: 245 deep (T82: 120).
+  const removed = (831 * 390 * 18 - volume) / 18;
+  const trueU = 160 * 245 - 2 * (1 - Math.PI / 4) * 20 * 20;
   assert.ok(Math.abs(removed - trueU) / trueU < 0.002, `the U removed ${removed} mm2, drawn ${trueU}`);
   // The board still fills its box: the U is inside it.
   solid.computeBoundingBox();
   const size = solid.boundingBox.getSize(new THREE.Vector3()).multiplyScalar(1000);
-  assert.deepEqual([size.x, size.y, size.z].map((v) => Math.round(v * 100) / 100), [831, 18, 440]);
+  assert.deepEqual([size.x, size.y, size.z].map((v) => Math.round(v * 100) / 100), [831, 18, 390]);
 });
 
 test('T82 F9 . the U opens at the BACK of the box (the wall side), round the waste, with or without the joint layers', () => {
   const dno = panelOf(vanity(), 'D3-DNO');
   const { solid } = panelSolids(dno, LAYERS, P, []);
   // The board's local frame: x about its centre (CNC x less 415.5), z about
-  // its centre with the back at -220 (CNC y less 220, DRAWER-BOTTOM's frame).
+  // its centre with the back at -195 (CNC y less 195, DRAWER-BOTTOM's frame).
+  // T83 F6: the bottom 390 deep (T82: 440, the back at -220).
   const x = (335.5 + 495.5) / 2 - 831 / 2;
-  assert.equal(solidAt(solid, x, -220 + 60), false, 'air in the U, 60 off the back');
-  assert.equal(solidAt(solid, x, -220 + 130), true, 'board beyond the U\'s 120');
-  assert.equal(solidAt(solid, x + 90, -220 + 60), true, 'board beside the U');
-  assert.equal(solidAt(solid, x, 220 - 10), true, 'board at the front');
+  assert.equal(solidAt(solid, x, -195 + 60), false, 'air in the U, 60 off the back');
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): CLAUDE.md T83 F8: *"The U of the top box (columns 1) follows the waste"*: the U 245 deep (T82: 120).
+  assert.equal(solidAt(solid, x, -195 + 230), false, 'air in the U, 230 off the back');
+  assert.equal(solidAt(solid, x, -195 + 255), true, 'board beyond the U\'s 245');
+  assert.equal(solidAt(solid, x + 90, -195 + 60), true, 'board beside the U');
+  assert.equal(solidAt(solid, x, 195 - 10), true, 'board at the front');
   // Asked without the joint layers it is the same board (one cached solid).
   assert.equal(panelSolids(dno, null, P, []).solid, solid);
 });

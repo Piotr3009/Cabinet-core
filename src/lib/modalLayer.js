@@ -198,6 +198,11 @@ export const MODAL_KINDS = Object.freeze({
   // window, about ONE lit horizontal edge of one carcass and opened at the
   // click on it: an OBJECT window, held to an anchor, as the corner's is.
   'edge-notch': { about: 'object', label: 'Cut edge' },
+  // ─── T83 F3 ────────────────────────────────────────────────────────────
+  // *"klikasz na plecy i wyskakuje ci opcja chcesz lustro na plecach?"*: the
+  // MIRROR ON THE BACK question, about ONE mirror cabinet's back and opened at
+  // the click on it: an OBJECT window, held to an anchor.
+  'mirror-back': { about: 'object', label: 'Mirror on the back' },
 });
 
 /** Every modal name the app knows, as a list. */

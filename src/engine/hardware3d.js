@@ -37,6 +37,9 @@ import { getUnitType } from './types.js';
 // T42-F1: two kinds of rail, and the scene routes on which. One law, imported
 // rather than re-spelled here.
 import { RAIL_MOUNT } from './railAssembly.js';
+// T83 F9 · the key a drawer's parts are paired on, so a column's pair rides
+// its own column's drawer.
+import { drawerKey } from './drawerMotion.js';
 
 export function hardwareInstances(result, profile) {
   return {
@@ -499,11 +502,22 @@ function runnerInstances(result, profile) {
       // column's drawers count after the first's, as the BOM counts them.
       const drawer = i + 1 + k * rows.length;
       const y = Number.isFinite(bottoms[i]) ? bottoms[i] : rowY;
+      // T83 F7 · a vanity's top row narrowed to the trap's gap (KIT_VANITY.lsp
+      // D28, `meta.trapGap` on its boards): its pair rides that box's own sides.
+      const own = group.filter((p) => p.meta?.trapGap && p.meta?.drawer === i + 1);
+      const lf = own.length ? Math.min(...own.map((p) => p.box.x)) : leftFace;
+      const rf = own.length ? Math.max(...own.map((p) => p.box.x + p.box.w)) : rightFace;
+      // T83 F9 · a column's pair names the drawer it carries as the room pairs
+      // a front and its box (`drawerKey`: its row and its column), so it rides
+      // when that column's front opens and no other. One stack: no key, the
+      // pair is its drawer number as before.
+      const col = group[0]?.meta?.column;
+      const ride = col == null ? {} : { ride: drawerKey({ drawer: i + 1, column: col }) };
       out.push({
-        kind: 'runner', side: 'L', drawer, x: leftFace, y, rowY, z, length, thickness: HW.profileThickness,
+        kind: 'runner', side: 'L', drawer, x: lf, y, rowY, z, length, thickness: HW.profileThickness, ...ride,
       });
       out.push({
-        kind: 'runner', side: 'R', drawer, x: rightFace, y, rowY, z, length, thickness: HW.profileThickness,
+        kind: 'runner', side: 'R', drawer, x: rf, y, rowY, z, length, thickness: HW.profileThickness, ...ride,
       });
     }
   }

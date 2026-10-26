@@ -25,6 +25,39 @@
 // out of step with the face screwed to it.
 //
 // Pure functions — no React, no three.js, no store (engine rule).
+//
+// ─── T83 F9 · ONE DRAWER IS ITS NUMBER AND ITS COLUMN ───────────────────────
+//
+// The owner, 25.10.2026, 22:41, of a vanity at two columns: *"jak wpieram 2
+// rows to otwieraja mi sie 2 szuflady ale jedna sie otwiera carcas tylko a
+// druga front tylko zamiast 2 carcasy i 2 fronty, sprawdz"*.
+//
+// The probe (verify/t83/f09-probe.md) found the cut right and this reader
+// wrong. The column stack (KIT_VANITY.lsp 5(c2), the vanity and the chest)
+// stamps `{ drawer, column }` on every box part AND on its front; a wardrobe's
+// bay drawer stamps `{ drawer, zone }` on both. Every map below keyed on
+// `meta.drawer` alone, so one front's open amount reached the box of that
+// number in EVERY column (and in every bay): the left front came out with both
+// boxes, the right column showed a box out behind a shut front. The pairing
+// now reads the drawer AND the column it stands in (`column` on the column
+// stack, `zone` on a wardrobe's bay): the very pair the engine already cut.
+// A drawer with neither keeps its bare number, so every unit with one stack
+// pairs, travels and opens exactly as it did.
+
+/**
+ * T83 F9 · the key a drawer's parts are paired on: its number where it stands
+ * alone, its number and its column (or its bay) where the stack has two.
+ *
+ * @param {object} meta  a panel's meta, or a hardware instance's own record
+ * @returns {number|string|null}
+ */
+export function drawerKey(meta) {
+  const n = Number(meta?.drawer);
+  if (!(n > 0)) return null;
+  if (meta?.column != null) return `${n}|column ${meta.column}`;
+  if (meta?.zone != null) return `${n}|zone ${meta.zone}`;
+  return n;
+}
 
 /** Which drawer a panel belongs to, or null where it is not part of one. */
 export function drawerOf(panel) {
@@ -64,6 +97,14 @@ export function drawerOf(panel) {
 }
 
 /**
+ * T83 F9 · the pairing key of a panel that travels with a drawer (the parts
+ * `drawerOf` names), or null: the drawer and its column, `drawerKey`.
+ */
+export function drawerKeyOf(panel) {
+  return drawerOf(panel) == null ? null : drawerKey(panel.meta);
+}
+
+/**
  * How far each drawer of this unit travels when it is opened, in mm.
  *
  * The BOX's own depth is the answer: `computeCabinet` cuts a drawer box to the
@@ -74,15 +115,18 @@ export function drawerOf(panel) {
  * A drawer with no box — a front the engine drew over a stack it refused — has
  * no travel and does not move, which is honest: there is nothing to pull out.
  *
+ * T83 F9 · keyed on `drawerKey`: the drawer index alone on one stack, the
+ * index and its column (or bay) on two, so each column travels its own box.
+ *
  * @param {Array} panels  result.panels
- * @returns {Map<number, number>} drawer index → travel in mm
+ * @returns {Map<number|string, number>} drawer key → travel in mm
  */
 export function drawerTravel(panels = []) {
   const out = new Map();
   for (const p of panels) {
     if (p?.part !== 'DRAWER-SIDE' || !p.box) continue;
-    const n = Number(p.meta?.drawer);
-    if (!(n > 0)) continue;
+    const n = drawerKey(p.meta);
+    if (n == null) continue;
     // T78 F7 · a box turned onto the adjacent wall of an L (its length in
     // box.w) states its own travel; the box's own depth otherwise.
     out.set(n, Math.max(out.get(n) || 0, Number(p.meta?.travel_mm) || Number(p.box.d) || 0));
@@ -98,17 +142,20 @@ export function drawerTravel(panels = []) {
  * to read, and its boxes therefore sit closed — which is what a joiner looking
  * at a stripped carcass expects.
  *
+ * T83 F9 · keyed on `drawerKey`, as the travel is: a front opens the box of
+ * its own column and of no other.
+ *
  * @param {Array} panels     result.panels
  * @param {object} openFronts  { [panelId]: 0..1 } for THIS unit
- * @returns {Map<number, number>} drawer index → 0..1
+ * @returns {Map<number|string, number>} drawer key → 0..1
  */
 export function drawerOpenAmounts(panels = [], openFronts = null) {
   const out = new Map();
   if (!openFronts) return out;
   for (const p of panels) {
     if (p?.part !== 'DRAWER-FRONT') continue;
-    const n = Number(p.meta?.drawer);
-    if (!(n > 0)) continue;
+    const n = drawerKey(p.meta);
+    if (n == null) continue;
     const amount = Number(openFronts[p.id]) || 0;
     if (amount > 0) out.set(n, amount);
   }
@@ -128,9 +175,31 @@ export function drawerMotion(panels = [], openFronts = null) {
     travel,
     open,
     forPanel(panel) {
-      const n = drawerOf(panel);
+      // T83 F9 · the drawer AND its column: the box of the front that opened.
+      const n = drawerKeyOf(panel);
       if (n == null) return null;
       return { open: open.get(n) || 0, travel: travel.get(n) || 0 };
     },
   };
+}
+
+/**
+ * T83 F9 · how far one runner pair rides out, in mm: the open amount times the
+ * travel of the drawer it carries.
+ *
+ * `engine/hardware3d.js` numbers a second column's pairs after the first's (as
+ * the BOM counts them) and states on each such pair the key of the drawer it
+ * carries (`ride`, `drawerKey` of its row and column); a pair with no `ride`
+ * (one stack) is its drawer number, as it always was. `3d/Hardware.jsx`
+ * groups the runners by that number and asks here for each group.
+ *
+ * @param {object} motion  `drawerMotion(...)` (or anything with `open` and `travel` maps)
+ * @param {Array} items    the runner instances
+ * @param {number} drawer  the group's drawer number
+ * @returns {number}
+ */
+export function runnerSlide(motion, items = [], drawer = 0) {
+  const pair = (items || []).find((r) => (r?.drawer ?? 0) === drawer);
+  const key = pair?.ride ?? drawer;
+  return (Number(motion?.open?.get?.(key)) || 0) * (Number(motion?.travel?.get?.(key)) || 0);
 }

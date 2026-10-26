@@ -150,7 +150,9 @@ const EXEMPT = {
     + ' T82 F9 / F13 / F14 · the Vanity section of a vanity unit: Drawers 2 / 3 / 4 (the kit, swapped by the store\'s setVanityDrawers, the unit kept), Sinks 0 / 1 / 2 (CLAUDE.md F14\'s word), Floor / Floating with the height from the floor (setVanityFloating, refused in words where the room has no room), the plinth row as today (a floating vanity says it takes none); on every kit whose type takes drawer columns (the vanity and the chest of drawers) the drawer stack\'s Columns 1 / 2 row (updateUnitParams columns) and the "Equal" button (setDrawersEqual: drawer_split equal, drawer_heights null). *"vanity unit potrzebuje z szufladami nawierzchniowymi, wybor jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa rowne, do tego prosze external drawers ale wybor 2 rows, patrz szafa ... plinth do zmiany wysokosc, propozycja floating lub on the floor, dodanie 1 sink or 2 sink?"*; *"7 - tak"* (25.10.2026).'
     + ' T82 F17 · the Back inset field ends where the store\'s clamp does (insetBackMaxFor): a free panel\'s back inset is capped by the room, the far wall less the panel, never by a cabinet\'s 300; a cabinet\'s field is what it was. *"jak mam frontowy komin to nie moge powiekszyc panela bo mi wchodzi w sciane"*'
     + ' T82 F2, after the review · the POCKET DOOR section says in red, in the Check\'s #37 sentences, a pocket the room could not re-cut to its front\'s width and a cabinet another pocket\'s door already closes. *"the room refuses in words, the engine never squashes"* (CLAUDE.md T82 LAWS)'
-    + ' T82 F13, after the review: the End panels row asks unitEndPanelDrop (the kit as computeCabinet cuts it), so a floating vanity\'s end panel, cut to end with the hung carcass, reads "ends with the cabinet", never "to floor". *"plinth do zmiany wysokosc, propozycja floating lub on the floor"* (25.10.2026); Turn 13: a label that disagrees with the piece is worse than no label.',
+    + ' T82 F13, after the review: the End panels row asks unitEndPanelDrop (the kit as computeCabinet cuts it), so a floating vanity\'s end panel, cut to end with the hung carcass, reads "ends with the cabinet", never "to floor". *"plinth do zmiany wysokosc, propozycja floating lub on the floor"* (25.10.2026); Turn 13: a label that disagrees with the piece is worse than no label.'
+    + ' T83 F3 · the MIRROR ON THE BACK window (MirrorBackModal, mounted beside the CUT EDGE window): the question "Mirror on the back?", No and Yes through the store\'s setMirrorBack, a refusal said in its words, opened at the click on a mirror cabinet\'s back (3d/mirrorCabinetRoom.js askMirrorBack). *"czasami jak ktos chce to bedzie mial na plecach tez, klikasz na plecy i wyskakuje ci opcja chcesz lustro na plecach?"*'
+    + ' T83 F5 · the MIRROR CABINET section for the mirror cabinet only: Bays 1 / 2 / 3; Door widths, one field a bay, the sum with the stiles checked against the carcass and refused in the kit\'s words (a refused width stays in its field until the next one makes the sum; Kit\'s widths hands the doors back); Stiles LED / Timber / None and their width; Panels L / R / Top / Bottom on or off and Panel thickness; Mirror doors, Mirror back, LED under, LED inside, Bottom box on or off; Glass shelves per bay; Recess mm. Every answer goes through the store\'s one action setMirrorCabinet, and the figures are read off the engine\'s derived.mirror; the panel types no number. No retail copy. *"daj wszystkie mozliwosci z panelami, z ledami, bez, szerokosc ustawianych drzwiczek etc"*',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -257,7 +259,8 @@ const EXEMPT = {
     + 'firmę, daty, nazwy"*.'
     + ' T81 F2 · the window says the set in the owner\'s order (the 3D, every wall\'s fronts, without fronts, X-ray, the plans, the sections, the visualisation, the cut list); its sheet buttons walk the list the engine returns. *"najpierw chce widziec 3d jak zrobiles pierwsza strona, pozniej chce widziec wszystkie fronty ... nastepnie widok wszystkich scian bez frontow ... pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu wizualizacja"* (22.10.2026, 21:23)'
     + ' T82 F20 · the Title block gets a LOGO row beside Company ("Choose image", a PNG, JPG or SVG read by lib/drawingExport.js readLogoFile, and "Remove"), the logo kept with the company (`setTitleBlock({ company: { logo } })`), so it is remembered on this computer where the company name is. *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
-    + ' T82 F20, after the review · the logo is kept once on this computer, and when the browser refuses to keep it the window says so (setTitleBlock answers { remembered }). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
+    + ' T82 F20, after the review · the logo is kept once on this computer, and when the browser refuses to keep it the window says so (setTitleBlock answers { remembered }). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
+    + ' T83 F11 · the Drawings window\'s Set tab: a check box per sheet beside its button (all on by default, the window keeping the names left out), All and None, the count of the ticked; Drawing set (PDF) and Wall DXF bind the ticked sheets in the set\'s order (engine/drawings/wallSheets.js pickedSheets), each page\'s SHEET cell counting the pages bound (numberPages); nothing ticked is refused in words; the choice is the window\'s own state, never the project. *"daj mozliwosc exportowania tylko naprzyklad frontow lub cos takiego, nie koniecznie wszystkie strony na raz"* (25.10.2026, 22:41)',
   'src/pages/ConfiguratorPage.jsx':
     'T75 F22 · the Output menu\'s DXF export says the same banner as the CNC view\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."* '
     + 'T75 F20 · a Media wall, Sideboard, Vanity, Utility or Hallway job\'s first plus puts its shipped set on the first wall (insertSet, Room refuses first). *"NEW PROJECT with one of them offers the set first (the first plus point on the first wall)."* '
@@ -408,7 +411,8 @@ const FROZEN = {
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/DrawingModal.jsx': 'dcff9259c93f1b48c97f8841bdd2665705b93f80b2e2b0102a4524dc44307540',
+  // T83 F11 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/DrawingModal.jsx': '255c4727ca327048e31883edf5dfdfe1a1615047d67a47f94c048b1dfd236b5b',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -455,7 +459,9 @@ const FROZEN = {
   // T82 F2 (after the review) re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F2 (after the review, one cabinet one door) re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F13 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/RightPanel.jsx': '933ed6376f989e9e7da859d150870550f3ceecad60042c744ad856d42ae47987',
+  // T83 F3 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T83 F5 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/RightPanel.jsx': '8c6ba0c8f0b2edca723c7da5a345bf330967e2d241ebb729a002de838355fd39',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
   'src/components/RoomModal.jsx': '04bc0d7b944cac119f44aa1c562ef0a635f6e86ecee9b6ea26784e075b69d2a1',

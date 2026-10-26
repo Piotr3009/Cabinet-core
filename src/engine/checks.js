@@ -54,7 +54,7 @@ import {
 import { roomWalls } from './room.js';
 // T75 F22 · what the machine does not finish, by unit.
 import { notCutParts, readinessCheckMessage, readinessOf } from './readiness.js';
-import { serviceVoidOf, worktopsFor } from './worktop.js';
+import { worktopsFor } from './worktop.js';
 // T78 F17 . the hood's clearance over the hob: the one measure the store's
 // proposal reads too (Check #34 says it, the store's button fixes it).
 import { hoodClearanceMessage, hoodClearanceShortfalls } from './hoodClearance.js';
@@ -64,6 +64,9 @@ import { railObstruction } from './railDatum.js';
 import { takesPlinth } from './autoparts.js';
 // T82 F13 · a floating vanity hangs: Check #6 asks it first.
 import { floatHeightOf } from './types.js';
+// T83 F6 · the vanity's void is inside it: #45 says so (KIT_VANITY.lsp D27).
+import { isVanityKit } from './types.js';
+import { vanityVoidNote, vanitySpec } from './vanity.js';
 // Turn 36 (CLAUDE.md F7): is this top box standing on anything?
 import { riderIsOrphaned, riderOverlapMm } from './topBox.js';
 // Turn 50 (CLAUDE.md F3): …and is it standing INSIDE the room?
@@ -333,7 +336,10 @@ export const CHECKS = Object.freeze([
   // level: grey, sorted after the yellows, counted by `checkSummary` as
   // neither a fault nor a thing to look at, and never a gate. Generic: any
   // later rule that only informs takes the same level.
-  { n: 45, level: 'note', label: 'Service void behind a vanity' },
+  // T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli
+  // wszystko w srodku carcasa mniejsze ale carcas do sciany"*: the void is
+  // inside the vanity now, behind its drawers (KIT_VANITY.lsp D27).
+  { n: 45, level: 'note', label: 'Service void inside a vanity, behind the drawers' },
   // ─── T82 F15 · THE REEDS (engine/frontDecoration.js) ─────────────────────
   // CLAUDE.md T82 F15 names it #41, which T80's in-frame row holds; the
   // night's brief gives the reeds #46. The owner, 25.10.2026: *"daj wariant b
@@ -356,7 +362,10 @@ export const CHECKS = Object.freeze([
   // width (or depth) that lets it in. CLAUDE.md names no number: the next
   // free one after the turn's own (#45 to #47, T82 BRIEF 6). YELLOW: nothing
   // the machine cuts changes, a person decides.
-  { n: 48, level: 'yellow', label: 'Basins that do not fit the vanity\'s top' },
+  // T83 F8 · ...and the bowl that enters a board (KIT_VANITY.lsp D29), in
+  // CLAUDE.md T83 F8's sentence: *"the bowl enters RAIL-TOP by N mm: move the
+  // basin forward or take a shallower bowl"*.
+  { n: 48, level: 'yellow', label: 'Basins that do not fit the vanity\'s top, or whose bowl enters a board' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -1533,17 +1542,18 @@ export function runChecks({
     entries, units: list, design, profile,
   }));
 
-  // ── #45 the service void behind a vanity (T82 F12), a NOTE ──────────────
-  // The one number the slab, the plan and the section read
-  // (`engine/worktop.js serviceVoidOf`): the carcass's stand-off beyond the
-  // house's clearance, 80 by the kit's own wall gap.
+  // ── #45 the service void inside a vanity (T82 F12, T83 F6), a NOTE ──────
+  // T83 F6 · the owner, 25.10.2026 (22:41): *"carcas powinien byc do sciany,
+  // czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*. The void
+  // is no longer the carcass's stand-off (T82's wall gap of 90) but the room
+  // the drawer boxes leave behind them (KIT_VANITY.lsp D9, D27,
+  // `vanity-void-note`): one note per vanity, in the LISP's words.
   for (const { unit, result } of entries) {
-    const v = unit ? serviceVoidOf(unit, profile) : 0;
-    if (!(v > 0)) continue;
+    if (!unit || !isVanityKit(unit.type) || !(vanitySpec(profile).serviceVoidMm > 0)) continue;
     out.push(finding(45, 'note', {
       unitId: unit.id,
       unitNum: result?.unitNum ?? unit.params?.unit_num ?? '',
-      message: `Service void ${round2(v)} behind the vanity for the pipes.`,
+      message: vanityVoidNote(profile),
     }));
   }
 

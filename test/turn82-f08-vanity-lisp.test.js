@@ -41,7 +41,11 @@ const V = P.vanity;
 
 // The worked example: VANITY3 900 x 600 x 500, G 18, box board 18, front 25.
 const EX = [900, 600, 500, 18, 18, 25];
-const boxes = (n, columns, dims = EX) => L.call('vanity-boxes', ...dims, n, columns);
+// AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+// the vanity's boxes keep the service void behind them (D9, D27): vanity-boxes takes the void, 80 for the vanity,
+// 0 for the parent and the chest.
+const VD = 80;
+const boxes = (n, columns, dims = EX, vd = VD) => L.call('vanity-boxes', ...dims, n, columns, vd);
 const verdict = (n, columns, sinks, dims = EX) => L.call('vanity-trap-verdict', ...dims, n, columns, sinks) || [];
 
 // ═══ THE FILE ════════════════════════════════════════════════════════════
@@ -92,7 +96,10 @@ test('F8 . every routine is the kit\'s own: no name of another kit, no local tha
     'vanity-top-depth', 'vanity-void-note', 'vanity-side-tabs-kept', 'vanity-rail-side-screws',
     'vanity-mount', 'vanity-base-y', 'vanity-hangers', 'vanity-top-cutouts', 'vanity-top-cutout-note',
     'vanity-oval-meets-p', 'vanity-socket-centres', 'vanity-top-back-features', 'vanity-top-back-dropped',
-    'vanity-bowl-verdict', 'vanity-double-refused-p', 'vanity-double-refusal', 'c:vanity_full']) assert.ok(L.has(r), `${r} defined`);
+    'vanity-bowl-verdict', 'vanity-double-refused-p', 'vanity-double-refusal', 'c:vanity_full',
+    // T83 F8 (D29): the bowl board by board, the U that follows the waste.
+    'vanity-u-depth', 'vanity-bowl-enters', 'vanity-bowl-shell', 'vanity-box-boards', 'vanity-bowl-boards', 'vanity-bowl-hits',
+    'vanity-bowl-sentence', 'vanity-bowl-refused']) assert.ok(L.has(r), `${r} defined`);
 });
 
 test('F8 . the owner\'s words of 25.10.2026 are its D-notes, folded to ASCII, D1 to D26', () => {
@@ -147,6 +154,8 @@ const KEYS = {
   trapRadiusMm: 'vanityTrapR',
   trapClearMm: 'vanityTrapClear',
   backPieceMinMm: 'vanityBackPieceMin',
+  // T83 F7 (CLAUDE.md T83 F7 "160 / 2 + 20 PROPOSED"): the trap's gap a side, its own key and constant.
+  trapGapClearMm: 'vanityTrapGapClear',
   wasteFromBackMm: 'vanityWasteFromBack',
   'basin.shape': 'vanityBasinShape',
   'basin.widthMm': 'vanityBasinW',
@@ -194,12 +203,15 @@ test('F8 . every profile.vanity number is a LISP constant of the same value, und
   for (const name of ['vanityServiceVoid', 'vanityRailH', 'vanityTrapW', 'vanityTrapD', 'vanityTrapR']) {
     assert.match(sourceOf(name), /CONFIRMED/, name);
   }
-  for (const name of ['vanityTrapClear', 'vanityBackPieceMin', 'vanityWasteFromBack', 'vanityBasinW', 'vanityWidth', 'vanityFloatHeight']) {
+  for (const name of ['vanityTrapClear', 'vanityTrapGapClear', 'vanityBackPieceMin', 'vanityWasteFromBack', 'vanityBasinW', 'vanityWidth', 'vanityFloatHeight']) {
     assert.match(sourceOf(name), /PROPOSED/, name);
   }
   assert.deepEqual(V, {
     serviceVoidMm: 80, railHeightMm: 100, trapWidthMm: 160, trapDepthMm: 120, trapRadiusMm: 20, trapClearMm: 60,
-    backPieceMinMm: 30, wasteFromBackMm: 200,
+    // AMENDED BY T83 F7 (25.10.2026, 22:41): *"zmniejszmy szuflady na szerokosc, tylko fronty zostawmy szerokie i pomiedzy szufladami zrobi sie miejsce na syfon (tylko gorna row)"*: the gap's 20 a side (PROPOSED).
+    trapGapClearMm: 20,
+    // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*: 200 to 250.
+    backPieceMinMm: 30, wasteFromBackMm: 250,
     basin: { shape: 'oval', widthMm: 520, depthMm: 400, heightMm: 150 },
     defaults: { width: 900, height: 600, depth: 500, plinth: 100, top: 20, floatHeightMm: 300 },
     hangers: { perUnit: 2, name: 'Cabinet hanger 50 kg with wall plate', article: '' },
@@ -252,7 +264,8 @@ test('F8 . the parent\'s numbers the kit restates are the house\'s, number for n
 test('F8 . at one column the kit\'s equal stack is the engine\'s BUDR2 and BUDR4, box for box', () => {
   for (const [type, n] of [['BUDR2', 2], ['BUDR4', 4]]) {
     const r = computeCabinet({ ...defaultParamsFor(type, P), type, width: 900, height: 600, depth: 500, front_t: 25 }, P);
-    const lisp = boxes(n, 1);
+    // T83 F6: the parent asks no void (vd 0), so the kit's routine is the BUDR's box for box.
+    const lisp = boxes(n, 1, EX, 0);
     const fronts = L.call('vanity-fronts', 900, 600, n, 1);
     for (let i = 1; i <= n; i += 1) {
       const b = lisp[i - 1];
@@ -305,35 +318,43 @@ test('F8 (a) . two rails W x 100 x G where the back stood; no side tab survives;
 
 // ═══ (b) THE VOID AND THE TOP ═════════════════════════════════════════════
 
-test('F8 (b) . wall_gap is the clearance + 80; the top is the house slab plus the void, 628; the void is a note, #45', () => {
+test('F8 (b) . the carcass to the wall at the clearance; the top is the house slab, 548; the void inside is a note, #45', () => {
   const clearance = P.room.wallBackClearance;
   assert.equal(clearance, 10);
+  // AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // the carcass stands at the house's clearance like every unit (D6, D27); T82's 90 (the clearance + 80) is gone.
   const wallGap = L.call('vanity-wall-gap', clearance);
-  assert.equal(wallGap, 90);
+  assert.equal(wallGap, 10);
   // AMENDED after the review of 25.10.2026 (D7): the house worktop's reach, worktop.js worktopGeometry,
-  // D + the door gap + the front + the front overhang, plus the void (wall_gap less the clearance).
+  // D + the door gap + the front + the front overhang, plus the stand-off (wall_gap less the clearance): 0 now, so
+  // T83 F6 moves 628 to 548, the top reaching the wall over the carcass as any run's.
   const top = L.call('vanity-top-depth', 500, P.doors.gap, P.front.thickness, P.autoParts.worktop.frontOverhang, wallGap - clearance);
-  assert.equal(top, 628);
+  assert.equal(top, 548);
   // The fronts stand 10 under the slab's edge, as every kitchen slab's: a BUD 558 slab is 606, its fronts at 596.
   assert.equal(top - (wallGap + 500 + P.doors.gap + P.front.thickness), 10);
   assert.equal(L.call('vanity-top-depth', 558, P.doors.gap, P.front.thickness, P.autoParts.worktop.frontOverhang, 0), 606);
-  assert.equal(L.call('vanity-void-note'), '#45 Service void 80 behind the vanity for the pipes');
-  say('THE VOID. wall_gap 90; the worktop 628 deep from the wall (500 + 3 + 25 + 20 + 80), the fronts 10 under its edge.');
-  say('500 + 3 + 25 + 20 + 80 = 628 on the default, as a BUD 558 kitchen\'s slab is 606 for fronts at 596.');
+  // T83 F6: CLAUDE.md F6 *"The Check's note #45 says "Service void 80 inside the vanity behind the drawers""*.
+  assert.equal(L.call('vanity-void-note'), '#45 Service void 80 inside the vanity behind the drawers');
+  say('THE VOID, INSIDE (T83 F6, D27). wall_gap 10, the house clearance: the carcass to the wall; the worktop 548 deep from the wall (500 + 3 + 25 + 20), the fronts 10 under its edge; the void 80 inside, the boxes\' back faces at 85 from the carcass back.');
+  say('reaches the wall over the carcass as any run\'s: 500 + 3 + 25 + 20 = 548 on the default (628 under T82, over the void), as a BUD 558 kitchen\'s slab is 606 for fronts at 596');
 });
 
 // ═══ (c) THE EQUAL DRAWERS ═══════════════════════════════════════════════
 
-test('F8 (c) . VANITY3 900 x 600 x 500: three equal fronts, the boxes on the 450 runner less ten', () => {
+test('F8 (c) . VANITY3 900 x 600 x 500: three equal fronts, the boxes on the 400 runner less ten (T83 F6: the void inside)', () => {
   assert.deepEqual(L.call('vanity-front-heights', 600, 3), [197, 197, 197]);
   assert.deepEqual(L.call('vanity-fronts', 900, 600, 3, 1), [
     [1, 1, 1.5, 0, 897, 197], [1, 2, 1.5, 200, 897, 197], [1, 3, 1.5, 400, 897, 197],
   ]);
-  assert.equal(L.call('vanity-box-depth', 500, 18), 440, 'the 450 runner less 10');
+  // AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // the box keeps the void behind it (D9, D27): at most 500 - 25 - 80 = 395, the 390 box on the 400 runner (T82: 440 on the 450).
+  assert.equal(L.call('vanity-box-room', 500, 18, 25, VD), 395);
+  assert.equal(L.call('vanity-box-depth', 500, 18, 25, VD), 390, 'the 400 runner less 10');
+  assert.equal(L.call('vanity-box-depth', 500, 18, 25, 0), 440, 'the parent, no void: the 450 runner less 10');
   const b = boxes(3, 1);
   assert.deepEqual(b.map((x) => x[5]), [31.5, 213.5, 413.5], 'the feet');
   assert.deepEqual(b.map((x) => L.call('vanity-box-top', x)), [169.5, 351.5, 551.5], 'the tops');
-  assert.deepEqual([b[0][2], b[0][3], b[0][4], b[0][6], b[0][7]], [23, 854, 138, 440, 35]);
+  assert.deepEqual([b[0][2], b[0][3], b[0][4], b[0][6], b[0][7]], [23, 854, 138, 390, 85]);
   assert.deepEqual([L.call('vanity-box-len', b[0], 18), L.call('vanity-box-wall-h', b[0], 18), L.call('vanity-box-bottom-w', b[0], 18)], [818, 104, 831]);
   // Equal, the top one taking the rounding (the parent's exact variants), and 3 under the top.
   for (const [H, n] of [[600, 2], [600, 4], [601, 3], [602, 4], [560, 4], [720, 3]]) {
@@ -342,7 +363,7 @@ test('F8 (c) . VANITY3 900 x 600 x 500: three equal fronts, the boxes on the 450
     assert.ok(hs.slice(0, -1).every((h) => h === hs[0]), `${n} over ${H}: equal but the top`);
   }
   say('THE FRONTS. 197 197 197 at y 0 200 400, 897 wide at x 1.5.');
-  say('THE BOXES. 440 deep (the 450 runner), the back face at z 35; 854 wide at x 23, the walls 818 long and 104 high, the bottom 831; the sides 138, their feet at 31.5 213.5 413.5, their tops 169.5 351.5 551.5.');
+  say('THE BOXES. 390 deep (the 400 runner, the rung at or under 500 - 80), the back face at z 85; 854 wide at x 23, the walls 818 long and 104 high, the bottom 831; the sides 138, their feet at 31.5 213.5 413.5, their tops 169.5 351.5 551.5. The parent (vd 0): 440 deep on the 450, the back face at 35.');
 });
 
 // ═══ (c2) THE TWO COLUMNS ════════════════════════════════════════════════
@@ -390,14 +411,17 @@ test('F8 (d) . the U: 160 x 120 R 20 in the top box under the waste, the back wa
   assert.deepEqual(L.call('vanity-wastes', 900, 1, 2), [300, 600]);
   assert.equal(L.call('vanity-wastes', 900, 1, 0), null, 'no basin, no trap');
   const us = L.call('vanity-trap-us', ...EX, 3, 1, 1);
-  assert.deepEqual(us, [['D3', [1, 370, 530, 120, 20]]], 'one U, in the TOP drawer only');
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*, and CLAUDE.md T83 F8: *"The U of the top box (columns 1) follows the waste"*:
+  // the U reaches a trap as wide as itself centred on the waste at 250 (D13, D15, D29): 250 + 80 - 85 = 245 (T82: 120).
+  assert.deepEqual(us, [['D3', [1, 370, 530, 245, 20]]], 'one U, in the TOP drawer only');
   const b3 = boxes(3, 1)[2];
+  assert.equal(L.call('vanity-u-depth', b3, 18), 245);
   const nt = L.call('vanity-u-in-bottom', b3, us[0][1], 18);
-  assert.deepEqual(nt, [335.5, 495.5, 120, 20]);
+  assert.deepEqual(nt, [335.5, 495.5, 245, 20]);
   assert.equal((nt[0] + nt[1]) / 2, L.call('vanity-box-bottom-w', b3, 18) / 2, 'centred on the bottom: the waste over the box\'s centre');
   assert.deepEqual(L.call('vanity-u-outline', nt), [
-    [[335.5, 0], [335.5, 100], [355.5, 120], [475.5, 120], [495.5, 100], [495.5, 0]],
-    [[355.5, 100], [475.5, 100]],
+    [[335.5, 0], [335.5, 225], [355.5, 245], [475.5, 245], [495.5, 225], [495.5, 0]],
+    [[355.5, 225], [475.5, 225]],
     20,
   ]);
   assert.deepEqual(L.call('vanity-back-pieces', b3, [us[0][1]], 18), [[0, 329], [489, 818]]);
@@ -410,33 +434,48 @@ test('F8 (d) . the U: 160 x 120 R 20 in the top box under the waste, the back wa
   const cols = L.call('vanity-trap-us', ...EX, 3, 2, 2);
   assert.deepEqual(cols.map((x) => [x[0], ...x[1].slice(1, 3)]), [['Z1D3', 145, 305], ['Z2D3', 595, 755]]);
   assert.deepEqual(L.call('vanity-back-pieces', boxes(3, 2)[2], [cols[0][1]], 18), [[0, 104], [264, 377]]);
-  say('The U 370..530 in the top box (D3), 120 deep, R 20; in the bottom\'s frame 335.5..495.5; the back wall cut as D3-BB-1 (0 329) and D3-BB-2 (489 818), 329 each.');
+  say('The U 370..530 in the top box (D3), 245 deep (it follows the waste, D29: 250 + 80 - 85), R 20; in the bottom\'s frame 335.5..495.5; the back wall cut as D3-BB-1 (0 329) and D3-BB-2 (489 818), 329 each.');
   say('the wastes at 225 and 675, the U\'s 145..305 in Z1D3 and 595..755 in Z2D3; Z1D3\'s back wall (0 104) and (264 377).');
   say('TWO BASINS ON ONE COLUMN. The wastes at 300 and 600, the U\'s 220..380 and 520..680, the back wall D3-BB-1 (0 179), D3-BB-2 (339 479), D3-BB-3 (639 818).');
 });
 
 test('F8 (d) . Check #39 in words: the waste beyond the U, the shallow trap, the divider, the U that does not fit', () => {
-  // D15: the confirmed U and the proposed waste disagree on every default, and the room says so.
+  // D15: a waste beyond the U's reach is said. AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // the shorter box's back face stands at 85, so the U reaches 205 (T82: 155); the waste, wherever the profile sets it
+  // (vanityWasteFromBack), is said only where it stands beyond that.
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*, and CLAUDE.md T83 F8: *"The U of the top box (columns 1) follows the waste"*:
+  // the U reaches the waste + 80 (D15, D29); REACH only where the box is too short to take it.
+  const zw = K('vanityWasteFromBack');
+  const uDepth = Math.min(390 - 18 - 30, Math.max(120, zw + 80 - 85));
+  const reach = 85 + uDepth - zw;
+  const said = reach < 0 ? [['REACH', 450, `#39 The trap stands ${-reach} mm beyond the U: the U reaches ${85 + uDepth} from the carcass back, the waste stands at ${zw}`]] : [];
   const v3 = verdict(3, 1, 1);
-  assert.deepEqual(v3, [['REACH', 450, '#39 The trap stands 45 mm beyond the U: the U reaches 155 from the carcass back, the waste stands at 200']]);
-  assert.equal(L.call('vanity-trap-reach', boxes(3, 1)[2], 200), -45);
-  say('"#39 The trap stands 45 mm beyond the U: the U reaches 155 from the carcass back, the waste stands at 200".');
-  say('A U that takes a trap as wide as itself centred on that waste is 200 + 80 - 35 = 245 deep: the owner\'s to set.');
+  assert.deepEqual(v3, said);
+  assert.equal(L.call('vanity-trap-reach', boxes(3, 1)[2], zw, 18), reach);
+  assert.equal(reach, 80, 'the waste at 250 stands 80 inside the U\'s 330');
+  say('the owner set it, "The U of the top box (columns 1) follows the waste": the U is that U (D13), 245 deep under the waste at 250, reaching 330: the trap stands inside it and nothing is said; REACH is said only where the box is too short to take it.');
+  say('the shorter box stands at 85 (500 - 25 - 390), the U reaches 205 and the waste at 200 stands 5 inside it: nothing is said on the default.');
+  say('A U that takes a trap as wide as itself centred on that waste is 200 + 80 - 85 = 195 deep: the owner\'s to set.');
   // D16: the trap's bottom line is the top box's bottom underside; 60 of air under it.
   const b = boxes(3, 1);
   assert.equal(L.call('vanity-trap-line', b[2]), 428.5);
   assert.equal(L.call('vanity-trap-room', b[2], b[1]), 77);
   say('The trap\'s bottom line 428.5, the box under it tops at 351.5: 77 of air, no shallow trap.');
   const v4 = verdict(4, 1, 1, [900, 560, 500, 18, 18, 25]);
-  assert.deepEqual(v4.map((x) => x[0]), ['REACH', 'SHALLOW']);
-  assert.equal(v4[1][2], '#39 Use a shallow trap: the drawer under it stands 59 mm under the trap\'s bottom, 60 wanted');
+  // T83 F6: REACH only where the waste stands beyond the shorter box's U (205), as above.
+  const reachSaid = reach < 0 ? ['REACH'] : [];
+  assert.deepEqual(v4.map((x) => x[0]), [...reachSaid, 'SHALLOW']);
+  assert.equal(v4.find((x) => x[0] === 'SHALLOW')[2], '#39 Use a shallow trap: the drawer under it stands 59 mm under the trap\'s bottom, 60 wanted');
   assert.deepEqual(L.call('vanity-trap-us', 900, 560, 500, 18, 18, 25, 4, 1, 1).map((x) => x[0]), ['D4'], 'no second U, ever');
-  assert.deepEqual(verdict(4, 1, 1).map((x) => x[0]), ['REACH'], 'at 600 the four have 62 of air');
+  assert.deepEqual(verdict(4, 1, 1).map((x) => x[0]), reachSaid, 'at 600 the four have 62 of air');
   say('THE SHALLOW TRAP. VANITY4 W 900 H 560 D 500: fronts 137 137 137 137 at y 0 140 280 420; sides 96; the trap\'s bottom line 448.5, the box under it tops at 389.5: 59 of air: "#39 Use a shallow trap: the drawer under it stands 59 mm under the trap\'s bottom, 60 wanted". The same at H 600: 147 each, 62 of air, no sentence.');
-  // D17: one basin on two columns stands on the divider: no U.
-  assert.deepEqual(verdict(3, 2, 1), [['DIVIDER', 450, '#39 The trap stands over the divider: no top drawer can take its U']]);
+  // D17: one basin on two columns: no U. AMENDED BY T83 F7 (25.10.2026, 22:41): *"zmniejszmy szuflady na szerokosc, tylko fronty zostawmy szerokie i pomiedzy szufladami zrobi sie miejsce na syfon (tylko gorna row)"*:
+  // the top row's boxes stand apart round the trap (D28), the waste in the gap's air; D17's sentence stays for a unit
+  // too narrow for the gap.
+  assert.deepEqual(verdict(3, 2, 1), [['RUNNERS', 450, '#39 The trap stands in the gap between the top drawers: no wall carries their two inner runners']]);
   assert.equal(L.call('vanity-trap-us', ...EX, 3, 2, 1), null, 'no U is cut');
-  say('ONE BASIN ON TWO COLUMNS. The waste at 450 stands on the divider: no U, "#39 The trap stands over the divider: no top drawer can take its U".');
+  assert.deepEqual(verdict(3, 2, 1, [300, 600, 500, 18, 18, 25]), [['DIVIDER', 150, '#39 The trap stands over the divider: no top drawer can take its U']]);
+  say('Under T82 the waste stood on the divider: no U, "#39 The trap stands over the divider: no top drawer can take its U", the sentence D17 keeps for a unit too narrow for the gap.');
   // Two basins too close on a narrow carcass: the second U would leave under 30 between them (D23).
   const narrow = L.call('vanity-trap-plan', 480, 600, 500, 18, 18, 25, 3, 1, 2);
   assert.deepEqual(narrow.map((e) => e[3]), ['CUT', 'FIT']);
@@ -482,40 +521,62 @@ test('F8 D23 . no U leaves a back-wall board under 30: the review\'s 0 and slive
 });
 
 test('F8 D18 D26 . the carcass TOP takes the worktop\'s oval, cut on site; the TOP\'s back joint under it is not cut', () => {
-  assert.deepEqual(L.call('vanity-top-cutouts', [450], 18), [[432, 182, 520, 400, 'EDGE']], 'centred on the waste, opening to the back edge');
-  assert.deepEqual(L.call('vanity-top-cutouts', [225, 675], 18).map((c) => c.slice(0, 2)), [[207, 182], [657, 182]]);
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*: the waste at 250 stands the oval
+  // 50 in front of the carcass back, 32 in front of the TOP's back edge: a HOLE, every back joint whole (T82: 182, EDGE).
+  assert.deepEqual(L.call('vanity-top-cutouts', [450], 18), [[432, 232, 520, 400, 'HOLE']], 'centred on the waste, a hole in the TOP');
+  assert.deepEqual(L.call('vanity-top-cutouts', [225, 675], 18).map((c) => c.slice(0, 2)), [[207, 232], [657, 232]]);
   assert.equal(L.call('vanity-top-cutouts', null, 18), null, 'no basin the worktop takes, no cut');
   assert.equal(L.call('vanity-top-cutout-note', 'VU01'), 'Basin cut-out 520 x 400 oval in the carcass top of VU01: cut on site to the basin\'s template.');
   // The TOP's back joint: its two tenons with the rail's sockets (socketCentres over 864), the rail's three screws.
   assert.deepEqual(L.call('vanity-top-back-features', 900, 18), [
     ['TENON', 113, 83, 143], ['TENON', 787, 757, 817], ['SCREW', 68, 68, 68], ['SCREW', 450, 450, 450], ['SCREW', 832, 832, 832],
   ]);
-  assert.deepEqual(L.call('vanity-top-back-dropped', 900, 18, [450]), [['SCREW', 450]], 'the screw at W / 2 stands in the hole');
-  // The oval crosses the TOP's back edge (z 18) from 342.2 to 557.8.
-  assert.equal(L.call('vanity-oval-meets-p', 342.3, 342.3, 450, 18), true);
-  assert.equal(L.call('vanity-oval-meets-p', 342.1, 342.1, 450, 18), null);
-  assert.equal(L.call('vanity-oval-meets-p', 557.7, 557.7, 450, 18), true);
-  assert.equal(L.call('vanity-oval-meets-p', 557.9, 557.9, 450, 18), null);
-  assert.equal(L.call('vanity-oval-meets-p', 0, 900, 450, 420), null, 'a line past the oval meets nothing');
-  // Two basins on two columns stand over the TOP's two tenons; on one column at a third they miss them.
-  assert.deepEqual(L.call('vanity-top-back-dropped', 900, 18, [225, 675]), [['TENON', 113], ['TENON', 787]]);
+  assert.equal(L.call('vanity-top-back-dropped', 900, 18, [450]), null, 'the oval no longer reaches the TOP\'s back edge: nothing goes');
+  // D26's law, on a line the oval does cross: 182 in front of the waste (T82's TOP edge, z 68 now), from 342.2 to 557.8.
+  assert.equal(L.call('vanity-oval-meets-p', 342.3, 342.3, 450, 68), true);
+  assert.equal(L.call('vanity-oval-meets-p', 342.1, 342.1, 450, 68), null);
+  assert.equal(L.call('vanity-oval-meets-p', 557.7, 557.7, 450, 68), true);
+  assert.equal(L.call('vanity-oval-meets-p', 557.9, 557.9, 450, 68), null);
+  assert.equal(L.call('vanity-oval-meets-p', 0, 900, 450, 18), null, 'the TOP\'s back edge past the oval meets nothing');
+  assert.equal(L.call('vanity-oval-meets-p', 0, 900, 450, 470), null, 'a line past the oval meets nothing');
+  // Two basins on two columns, and on one column at a third: the TOP's edge is whole under both.
+  assert.equal(L.call('vanity-top-back-dropped', 900, 18, [225, 675]), null);
   assert.equal(L.call('vanity-top-back-dropped', 900, 18, [300, 600]), null);
-  say('THE TOPS: the carcass TOP takes the oval 520 x 400 at 432, 182 in its own frame, opening to its back edge; "Basin cut-out 520 x 400 oval in the carcass top of VU01: cut on site to the basin\'s template."; the rail\'s screw at 450 into the TOP\'s back edge is not cut, the tenons at 113 and 787 stay.');
+  say('THE TOPS: the carcass TOP takes the oval 520 x 400 at 432, 232 in its own frame (T83 F8; 182 under T82), a HOLE 32 in front of its back edge; "Basin cut-out 520 x 400 oval in the carcass top of VU01: cut on site to the basin\'s template."; every tenon and screw of the TOP\'s back edge stays (under T82 the rail\'s screw at 450 was not cut).');
   say('D18 THE CARCASS TOP TAKES THE BASIN\'S OVAL (AMENDED 25.10.2026 after the review; the house law: material never enters another material).');
+  say('with the waste at 250 the oval no longer reaches the TOP\'s back edge on the default: nothing goes.');
 });
 
-test('F8 D25 . a bowl that meets the top drawer\'s box or RAIL-TOP is said in #48, with the deepest bowl that clears and the cure', () => {
-  const bowl = (h, xs = [450], dims = EX, n = 3, columns = 1) => L.call('vanity-bowl-verdict', 'VU01', ...dims, n, columns, xs, 20, h);
-  const both = 'VU01: A bowl 150 deep meets the top drawer\'s box and RAIL-TOP: the deepest bowl that clears the top drawer is 68.5, '
-    + 'and the oval stands over the rail (0 from the carcass back, the rail 18); take a shallower or a vessel basin, or a shallower top drawer.';
-  assert.equal(bowl(150), both);
-  // 68.5 = the worktop 20 + the carcass TOP 18 + the air 30.5 from its underside (582) to the top box's top (551.5).
-  assert.equal(20 + 18 + (600 - 18 - L.call('vanity-box-top', boxes(3, 1)[2])), 68.5);
-  assert.equal(bowl(60), 'VU01: A bowl 60 deep meets RAIL-TOP: the oval stands over the rail (0 from the carcass back, the rail 18); '
-    + 'take a vessel basin, or set the waste 218 from the carcass back.');
+test('F8 D25 D29 . the bowl never enters a board: every board it enters is said in #48, CLAUDE.md\'s sentence', () => {
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*; CLAUDE.md T83 F8: *"#48 grows the
+  // sentence: "the bowl enters RAIL-TOP by N mm: move the basin forward or take a shallower bowl""*. The bowl's solid is
+  // the room's half ellipsoid, held board by board (D29): the T82 reading of the box as a block and its three sentences
+  // are retired.
+  const bowl = (h, xs = [450], dims = EX, n = 3, columns = 1, sinks = 1) => L.call('vanity-bowl-verdict', 'VU01', ...dims, n, columns, sinks, xs, 20, h);
+  const def = 'VU01: The bowl enters D3-BB-1 by 21.1 mm, D3-BB-2 by 21.1 mm: move the basin forward or take a shallower bowl.';
+  assert.equal(bowl(150), def, 'RAIL-TOP clear at 250; the top box\'s back wall beside the U is not (F6 moved the boxes 50 forward)');
+  assert.equal(bowl(115), null, 'a bowl 115 deep clears it');
   assert.equal(bowl(20), null, 'a bowl no deeper than the worktop meets nothing under it');
   assert.equal(bowl(150, null), null, 'no basin the worktop takes, nothing to say');
-  say(`THE BOWL: "${both}"`);
+  // One basin on two columns (D28): the narrowed boxes' inner sides stand under the bowl.
+  assert.equal(bowl(150, [450], EX, 3, 2, 1), 'VU01: The bowl enters Z1D3-SR by 70 mm, Z2D3-SL by 70 mm, Z1D3-BB by 6.1 mm, '
+    + 'Z2D3-BB by 6.1 mm: move the basin forward or take a shallower bowl.');
+  // The board test itself: a board under the bowl's axis enters by the height it keeps under the rim.
+  assert.equal(L.call('vanity-bowl-enters', ['B', 440, 400, 240, 20, 300, 20], 450, 250, 620, 150), 150, 'to the rim, through the bowl');
+  assert.equal(L.call('vanity-bowl-enters', ['B', 0, 0, 0, 10, 10, 10], 450, 250, 620, 150), null, 'outside the oval');
+  // The shell refuses with the worktop's refusals (vanity-bowl-refused): at 250 none; the boards in the cut's order.
+  assert.equal(L.call('vanity-bowl-refused', 'VU01', 900, 600, 500, 18, [450], 20, 150), null);
+  assert.deepEqual(L.call('vanity-bowl-shell', 900, 600, 500, 18).map((b) => b[0]), ['BUL', 'BUR', 'RAIL-BOTTOM', 'RAIL-TOP']);
+  assert.deepEqual(L.call('vanity-bowl-boards', ...EX, 3, 1, 1).map((b) => b[0]).slice(0, 12), [
+    'BUL', 'BUR', 'RAIL-BOTTOM', 'RAIL-TOP', 'D1-SL', 'D1-SR', 'D2-SL', 'D2-SR', 'D3-SL', 'D3-SR', 'D1-BF', 'D1-BB']);
+  say('THE BOWL (T83 F8, D29): RAIL-TOP clear, the sides clear; "' + def + '"; the waste at 270, or a bowl 115 deep, enters nothing.');
+  say('THE SHELL: the waste at 210, the oval 10 from the carcass back: "VU01: The bowl enters RAIL-TOP by 22 mm: move the basin forward or take a shallower bowl.", refused with the worktop\'s refusals, cut in neither top.');
+  // The kit's own NUMBERS, run: the waste at 270 and at 210 (the constant moved, nothing else).
+  const at = (zw) => loadLisp(TEXT.replace('(defun vanityWasteFromBack ( / ) 250.0)', `(defun vanityWasteFromBack ( / ) ${zw}.0)`));
+  assert.equal(at(270).call('vanity-bowl-verdict', 'VU01', ...EX, 3, 1, 1, [450], 20, 150), null, '270 clears every board');
+  assert.equal(at(270).call('vanity-bowl-refused', 'VU01', 900, 600, 500, 18, [450], 20, 150), null);
+  assert.equal(at(210).call('vanity-bowl-refused', 'VU01', 900, 600, 500, 18, [450], 20, 150),
+    'VU01: The bowl enters RAIL-TOP by 22 mm: move the basin forward or take a shallower bowl.');
 });
 
 test('F8 D24 . a double drawer under a basin is refused in words on the top row and the row under it', () => {

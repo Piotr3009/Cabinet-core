@@ -98,7 +98,13 @@ test('every unit type either has a height group or says why not', () => {
         // (profile.vanity.defaults), which the kitchen's 770 base height would
         // silently replace. The owner: *"vanity unit potrzebuje z szufladami
         // nawierzchniowymi"*.
-        'VANITY2', 'VANITY3', 'VANITY4'].includes(id), `${id} has no height group and no reason`);
+        'VANITY2', 'VANITY3', 'VANITY4',
+        // AMENDED BY T83 F2 (25.10.2026) . and the MIRROR CABINET: 1100 with its
+        // panels round, hung at 1250, the architect's drawing (elevation 34,
+        // profile.mirror.defaults), which the project's wall-unit height would
+        // silently replace. The owner: *"teraz zaprojektujmy dokladnie to co
+        // masz na rysunku szafka wiszaca"*.
+        'MIRROR_CABINET'].includes(id), `${id} has no height group and no reason`);
       continue;
     }
     assert.ok(known.has(group), `${id} points at a group that does not exist: ${group}`);

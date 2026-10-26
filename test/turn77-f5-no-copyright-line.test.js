@@ -333,6 +333,49 @@ export const NEW_FILES = [
   'test/turn82-f21-rotated-figures.test.js',
   // T82 F25 (25.10.2026): the walk, real mouse on the built app
   'scripts/t82-walk.mjs',
+  // T83 probes (25.10.2026): the tables of F7, F9 and F10 before the cuts (P1)
+  'scripts/t83-probe-lib.mjs',
+  'scripts/t83-probe-f07.mjs',
+  'scripts/t83-probe-f09.mjs',
+  'scripts/t83-probe-f10.mjs',
+  // T83 F1 (25.10.2026): KIT_MIRROR.lsp and profile.mirror (M1)
+  'test/turn83-f01-mirror-lisp.test.js',
+  'scripts/t78-classify.d/f44-t83-f01.mjs',
+  // T83 F2 (25.10.2026): the kit MIRROR_CABINET (M1)
+  'src/engine/mirrorCabinet.js',
+  'test/turn83-f02-mirror-kit.test.js',
+  'scripts/t78-classify.d/f44-t83-f02.mjs',
+  // T83 F3 (25.10.2026): the mirror cabinet in the room (M2)
+  'src/3d/MirrorCabinet.jsx',
+  'src/3d/mirrorCabinetRoom.js',
+  'test/turn83-f03-mirror-room.test.js',
+  'scripts/t78-classify.d/f44-t83-f03.mjs',
+  // T83 F4 (25.10.2026): the mirror cabinet's BOM (M2)
+  'test/turn83-f04-mirror-bom.test.js',
+  'scripts/t78-classify.d/f44-t83-f04.mjs',
+  // T83 F5 (25.10.2026): the mirror cabinet's right panel, library row and sheets (M3)
+  'test/turn83-f05-mirror-panel.test.js',
+  'scripts/t78-classify.d/f44-t83-f05.mjs',
+  // T83 F6 (25.10.2026): the vanity's carcass to the wall, the void inside (V1)
+  'test/turn83-f06-vanity-depth.test.js',
+  'scripts/t78-classify.d/f44-t83-f06.mjs',
+  // T83 F7 (25.10.2026): the trap's gap at two columns with one basin (V2)
+  'test/turn83-f07-vanity-trap.test.js',
+  'scripts/t78-classify.d/f44-t83-f07.mjs',
+  // T83 F8 (25.10.2026): the basin 50 forward, and it never enters a board (V2)
+  'test/turn83-f08-vanity-basin.test.js',
+  'scripts/t78-classify.d/f44-t83-f08.mjs',
+  // T83 F9 (25.10.2026): the open of a two-column vanity (V3)
+  'test/turn83-f09-open-columns.test.js',
+  'scripts/t78-classify.d/f44-t83-f09.mjs',
+  // T83 F10 (25.10.2026): the plan is not a mirror (E1)
+  'test/turn83-f10-plan.test.js',
+  'scripts/t78-classify.d/f44-t83-f10.mjs',
+  // T83 F11 (25.10.2026): export the sheets you choose (E1)
+  'test/turn83-f11-export-pick.test.js',
+  'scripts/t78-classify.d/f44-t83-f11.mjs',
+  // T83 F12 (25.10.2026): the walk, real mouse on the built app (F1)
+  'scripts/t83-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

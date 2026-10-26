@@ -679,6 +679,11 @@ export const ELEMENT_TO_PART_ID = {
   'POCKET-TOP': 'carcase_horizontal',
   'POCKET-BOTTOM': 'carcase_horizontal',
   'POCKET-DOOR': 'door',
+  // T83 F2 . the mirror cabinet (KIT_MIRROR.lsp D3, D8): the panels round in the
+  // front material, bought as end panels are; a timber stile a post standing in
+  // the fronts' plane (a LED stile is bought, its line the BOM's).
+  'MIRROR-PANEL': 'end_panel',
+  'MIRROR-STILE': 'corner_post',
 
   // The drawer box: three boards that are one board to buy, and a bottom that
   // is not.

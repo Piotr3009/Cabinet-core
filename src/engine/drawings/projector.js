@@ -66,6 +66,8 @@ import { silhouetteMark } from './silhouettes.js';
 import { drawingLayer } from './layers.js';
 // T82 F7 · the HAWA door: a front of the sheets, its hinge bars and its symbols, from the room's one pose module.
 import { isPocketDoor, pocketDoorBarMarks, pocketDoorGeometry, pocketHardwareBoxes } from '../pocketDoorPose.js';
+// T83 F5 · the house's LED strip, read (never written): the mirror cabinet's strips on its section.
+import { lightingSpec } from '../ledStrips.js';
 
 // ═══ THE NUMBERS OF THE KERNEL ═════════════════════════════════════════════
 
@@ -625,7 +627,8 @@ function isRoomFront(panel) {
 }
 
 /** The shell of a carcass: what the X-ray fades as carcass and every sheet draws in the carcass's own ink. */
-const SHELL_ROLES = new Set(['side', 'top', 'bottom', 'back', 'frame', 'plinth', 'end_panel', 'infill', 'upstand']);
+// T83 F5 · + the mirror cabinet's panels round (KIT_MIRROR.lsp D3): its end panels, a role only that kit emits.
+const SHELL_ROLES = new Set(['side', 'top', 'bottom', 'back', 'frame', 'plinth', 'end_panel', 'infill', 'upstand', 'mirror_panel']);
 
 /**
  * The prism(s) of one board in its UNIT's frame: the seat and nominal outline
@@ -692,10 +695,15 @@ function boardPrisms(panel, profile) {
 
 /** The ink a board is drawn in on an opaque sheet (today's convention, CLAUDE.md "zostaw nasze"). */
 function boardLayer(panel, result) {
+  // T83 F5 · the mirror cabinet's LED stile is its light, on its own ink (one ink one layer).
+  if (isLedStile(panel)) return 'LED_STILE';
   if (isRoomFront(panel)) return 'DOORS';
   if (panel.role === 'frame') return 'FRAME_BOARD';
   if (panel.role === 'plinth') return 'CARCASE';
   if (panel.role === 'end_panel' || panel.role === 'infill' || panel.material_role === 'front') return 'DOORS';
+  // T83 F5 · the mirror cabinet's carcass stands inside its panels round, so it
+  // touches no side of the unit's outline: it is still the carcass (KIT_MIRROR.lsp D1).
+  if (panel.meta?.mirrorCabinet?.role === 'carcass') return 'CARCASE';
   const style = panelStyle(panel, { width: Number(result.params.width) || 0, height: Number(result.params.height) || 0 });
   return style.layer === 'SHELVES' ? 'SHELVES' : 'CARCASE';
 }
@@ -990,6 +998,26 @@ export function runSolids(group, {
         member: m,
       });
     }
+    // T83 F5 · a mirror cabinet's LED strips (under and inside), on its section.
+    for (const led of mirrorLedBoxes(r, profile)) {
+      const b = led.box;
+      solids.push({
+        key: `${m.unit.id}:${led.id}`,
+        unitId: m.unit.id,
+        num,
+        panelId: led.id,
+        part: 'LED-STRIP',
+        role: 'led_strip',
+        kind: 'led',
+        front: false,
+        shell: false,
+        layer: 'LED_STILE',
+        occludes: false,
+        views: ['section'],
+        prisms: [movePrism(boxPrism({ x0: b.x, x1: b.x + b.w, y0: b.y, y1: b.y + b.h, z0: b.z, z1: b.z + b.d }), off)],
+        member: m,
+      });
+    }
     for (const s of hardwareSolids(m, profile, defaultHandle)) {
       solids.push({ ...s, unitId: m.unit.id, num, prisms: s.prisms.map((pr) => movePrism(pr, off)), offset: off, member: m });
     }
@@ -1026,7 +1054,10 @@ export function runSolids(group, {
       // so its face is drawn as a front's (CLAUDE.md T82 F6, *"the door in the
       // front finish of the run"*). Its handle is the engine's (a Pull door's
       // drill summary); a Push door has none.
-      const detail = p.meta?.frontDecoration
+      // T83 F5 · a mirror door's face is its mirror (KIT_MIRROR.lsp D9): no
+      // front style is drawn on it, the leaf alone, as the room shows it.
+      // eslint-disable-next-line no-nested-ternary
+      const detail = isMirrorFace(p) ? [] : p.meta?.frontDecoration
         ? frontDecorationElevation(p)
         : frontDetail(p.box, p.meta?.frontType || style || profile.front.defaultType, profile, shakerFrame);
       for (const e of detail) {
@@ -1109,6 +1140,110 @@ export function runSolids(group, {
     });
   });
   return { solids, marks };
+}
+
+// ═══ T83 F5 · THE MIRROR CABINET ON THE SHEETS ═════════════════════════════
+//
+// The owner, 25.10.2026 (14:09): *"teraz zaprojektujmy dokladnie to co masz
+// na rysunku szafka wiszaca"*; (14:14) *"panele led trzeba bedzie zamontowac
+// na rowno z drzwiami, nie wcisniete"*; (22:41) *"daj wszystkie mozliwosci z
+// panelami, z ledami, bez, szerokosc ustawianych drzwiczek etc"*. CLAUDE.md
+// T83 F5: "the fronts sheet draws the three mirror doors and the two stiles
+// (a new ink `LED_STILE`, warm yellow, one ink one layer), the panels round,
+// the unit number; the section shows the recess, the bottom box and the LED;
+// the plan the stiles flush with the doors."
+//
+// Every part of the kit is a board of `result.panels` with its box, so the
+// doors, the stiles, the panels round, the bottom box and the carcass are on
+// every sheet by the one road every board takes. What is the kit's own here:
+// the ink of a LED stile (`boardLayer`), a mirror door drawn as its leaf with
+// no front style on it (its face is the mirror), the LED strips as solids of
+// the section (the room's strip, at the kit's lines `derived.mirror.led`),
+// and the recess where the knife meets it (`mirrorRecessLines`). Nothing of
+// it reaches a unit that is not a mirror cabinet.
+
+/** Is this board the mirror cabinet's LED stile, the made-to-measure light panel (KIT_MIRROR.lsp D8)? */
+function isLedStile(panel) {
+  return panel?.role === 'led_stile';
+}
+
+/** Is this front a mirror door whose face is its mirror (KIT_MIRROR.lsp D9)? */
+function isMirrorFace(panel) {
+  return panel?.role === 'mirror_door' && Boolean(panel.meta?.mirror);
+}
+
+/**
+ * THE LED STRIPS OF A MIRROR CABINET, as boxes in its unit frame: the strip
+ * under on the cabinet's underside along its line, the strip inside on the
+ * side's inner face from the floor of the bays to the TOP, the house's strip
+ * (`ledStrips.js lightingSpec`: its width and thickness, the side's line
+ * width), at the kit's own lines (`derived.mirror.led`, KIT_MIRROR.lsp D16).
+ * The room draws the same boxes (3d/mirrorCabinetRoom.js mirrorLedStrips,
+ * T83 F3); empty for every other unit.
+ *
+ * @returns {Array<{id:string, kind:'bottom'|'side', box:{x,y,z,w,h,d}}>}
+ */
+export function mirrorLedBoxes(result, profile) {
+  const led = result?.derived?.mirror?.led;
+  if (!led) return [];
+  const s = lightingSpec(profile).strip;
+  const t = s.thickness;
+  const out = [];
+  if (led.under) {
+    const u = led.under;
+    out.push({
+      id: 'LED-UNDER', kind: 'bottom', box: { x: u.x, y: u.y - t, z: u.z - s.width / 2, w: u.length, h: t, d: s.width },
+    });
+  }
+  if (led.inside) {
+    const i = led.inside;
+    const line = s.sideLineWidth;
+    out.push({
+      id: 'LED-INSIDE', kind: 'side', box: { x: i.side === 'R' ? i.x - t : i.x, y: i.y0, z: i.z - line / 2, w: t, h: i.length, d: line },
+    });
+  }
+  return out;
+}
+
+/**
+ * THE RECESS A MIRROR CABINET STANDS IN, WHERE THE KNIFE MEETS IT
+ * (KIT_MIRROR.lsp D17: *"w tym przypadku to reces ale tez w standardzie
+ * normalnie wiszaca"*). The wall's opening the kit writes
+ * (`derived.mirror.recess.wallOpening`: the cabinet's outline, `recess_mm`
+ * deep behind the wall line) cut by the plane of a section (along the wall,
+ * at the station) or a plan (at its cut height): the pocket's outline in
+ * that plane, its back and its two reveals, open on the room's side, as the
+ * wall's own cut line (BUILDING, the CUT pen). Three segments in the run's
+ * frame (x along the wall, y up, z from the wall line into the room), drawn
+ * as the lines that are not a solid's are (`renderScene` extras). Empty for
+ * any other view, any unit that is not a recessed mirror cabinet, and a
+ * plane that misses the opening.
+ *
+ * @returns {Array<{a:number[], b:number[], props:object}>}
+ */
+export function mirrorRecessLines(group, { view, cut = null, profile } = {}) {
+  if (cut == null || (view !== 'section' && view !== 'plan')) return [];
+  const c = Number(cut);
+  const out = [];
+  for (const m of group?.members || []) {
+    const op = m.result?.derived?.mirror?.recess?.wallOpening;
+    if (!op || !(Number(op.depth) > 0)) continue;
+    const [ox, oy] = memberOffset(m, profile);
+    const x0 = ox + Number(op.x);
+    const x1 = x0 + Number(op.w);
+    const y0 = oy + Number(op.y);
+    const y1 = y0 + Number(op.h);
+    const zb = -Number(op.depth);
+    const props = { layer: 'BUILDING', pen: 'CUT', cut: true, src: `${m.unit.id}:RECESS`, meta: 'mirror-recess' };
+    if (view === 'section') {
+      if (!(c > x0 && c < x1)) continue;
+      out.push({ a: [c, y0, zb], b: [c, y1, zb], props }, { a: [c, y0, zb], b: [c, y0, 0], props }, { a: [c, y1, zb], b: [c, y1, 0], props });
+    } else {
+      if (!(c > y0 && c < y1)) continue;
+      out.push({ a: [x0, c, zb], b: [x1, c, zb], props }, { a: [x0, c, zb], b: [x0, c, 0], props }, { a: [x1, c, zb], b: [x1, c, 0], props });
+    }
+  }
+  return out;
 }
 
 // ═══ T82 F24 · ONE DASHED LINE FOR A BOARD SEEN EDGE-ON ════════════════════
@@ -1655,7 +1790,11 @@ export function projectRun(group, {
   const scene = buildScene(group, {
     view: V.name, mode, cut, beyond, clipX, skipSolid, profile, worktops, frontTypeOf, shakerFrame, solidsIn, defaultHandle,
   });
-  const { entities, census } = renderScene(scene, V, { mode, hiddenAs, minEdge, profile });
+  // T83 F5 · a mirror cabinet's recess where the knife meets it (none for any other unit).
+  const extras = mirrorRecessLines(group, { view: V.name, cut, profile });
+  const { entities, census } = renderScene(scene, V, {
+    mode, hiddenAs, minEdge, profile, extras,
+  });
   return { entities, solids: scene.live, census, view: V };
 }
 

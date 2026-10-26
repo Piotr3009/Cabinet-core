@@ -123,6 +123,17 @@ export const DRAWING_LAYERS = {
   // FINE pen, dashed as the HIDDEN role is (SHELVES' dash). The shelves keep
   // theirs. The colour PROPOSED.
   PLINTH_HIDDEN: { aci: 253, colour: '#828282', width: 0.13, dash: [6, 4], pen: 'FINE' },
+  // ─── T83 F5 · THE LED OF THE MIRROR CABINET ─────────────────────────────
+  // The owner, 25.10.2026 (14:14): *"panele led trzeba bedzie zamontowac na
+  // rowno z drzwiami, nie wcisniete"*; (14:29) *"4k"*. CLAUDE.md T83 F5: "the
+  // fronts sheet draws the three mirror doors and the two stiles (a new ink
+  // `LED_STILE`, warm yellow, one ink one layer)". The made-to-measure LED
+  // light panel of a stile, and the strips under and inside the cabinet on
+  // its section: the one warm light of the kit, on one layer. ACI 40 (the
+  // orange yellow of the ladder, no other layer's index), printed as a warm
+  // yellow that reads on white; the VISIBLE pen, as the fronts it stands
+  // flush with. The colour PROPOSED.
+  LED_STILE: { aci: 40, colour: '#D9A21B', width: 0.25, pen: 'VISIBLE' },
 };
 
 export function drawingLayer(name) {
@@ -139,7 +150,7 @@ export function drawingLayer(name) {
  */
 export const LAYER_ORDER = Object.freeze([
   'MASK', 'WORKTOP', 'SERVICE_VOID', 'BUILDING', 'CARCASE', 'FRAME_BOARD', 'XRAY_CARCASE', 'XRAY_FRONT',
-  'SHELVES', 'PLINTH_HIDDEN', 'RUNNERS', 'HINGES', 'LEG_BLOCK', 'DOORS', 'DOOR_SWING', 'HANDLES', 'HINGE_MARK',
+  'SHELVES', 'PLINTH_HIDDEN', 'RUNNERS', 'HINGES', 'LEG_BLOCK', 'DOORS', 'LED_STILE', 'DOOR_SWING', 'HANDLES', 'HINGE_MARK',
   'DIMENSIONS', 'SHEET_MUTED', 'FRAME_LIGHT', 'SHEET_CUT', 'FRAME', 'UNIT_NUMBER', 'APPLIANCE', 'VIEW_TITLE',
 ]);
 

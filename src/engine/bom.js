@@ -6,7 +6,8 @@
 //
 // Pure functions — no React, no store imports.
 
-import { roundTo } from './format.js';
+// T83 F4 . formatMm: the mirror cabinet's order lines print a size as the app prints a millimetre.
+import { formatMm, roundTo } from './format.js';
 import { resolvePanelMaterial } from './materials.js';
 import { frontManufacturing } from './frontDecorationBom.js';
 import {
@@ -26,6 +27,216 @@ import { dowelNoteRow } from './dowels.js';
 import { cabineoNoteRow } from './cabineo.js';
 // T78 F21 - the paint of the sprayed sets, litres off the spray schedule (CLAUDE.md PART F).
 import { paintPurchaseQtys } from './spray.js';
+// T83 F4 . the profile the mirror cabinet's articles are read from when the caller hands none.
+import { getCabinetProfile } from './profile.js';
+
+// ─── T83 F4 · THE MIRROR CABINET IS BOUGHT AS MUCH AS IT IS CUT ─────────────
+//
+// The owner, 25.10.2026 (14:09): *"zobacz szafki z mirrorami na wierzchu i
+// szybkami w srodku czyli szklane polki, czasami lustro z tylu, podswietlenie
+// pod spodem etc"*; (14:29) *"nie wlasny box, ktos nam to zrobi na
+// zamowienie"*, *"4k"*. CLAUDE.md T83 F4: *"Lines per cabinet: "LED light
+// panel, made to measure, 4000 K, 75 x H" (one per LED stile), "Mirror 4 mm"
+// (m2, the doors and the back when on), "Glass shelf 6 mm toughened, W x D"
+// (one per shelf), "LED strip under" and "LED strip inside" (lm), "LED driver
+// 24 V" (one), "Fused spur by electrician" (a note), the hinges by weight, the
+// shelf pins, the hanging brackets as the vanity's. Articles empty strings
+// (`profile.mirror.articles`) for the owner to fill."*
+//
+// Every quantity is the KIT's (`derived.mirror` and the parts of
+// `engine/mirrorCabinet.js`, KIT_MIRROR.lsp): nothing is counted here that the
+// kit did not say. The lines are hardware lines in `computeCabinet`'s own
+// shape ({ role, label, qty, unit, spec, spec_label }), so the BOM merges them
+// as it merges every bought thing (role and spec label), the ironmongery block
+// prints them, and the purchase list reads the ones the registry knows (the
+// hinges, the pins, the strip, the vanity's hanger). The kit's BOUGHT parts
+// (the LED stiles, the glass shelves: `material_role` 'bought') leave the cut
+// rows: they are these order lines, never a board.
+
+/** Is this panel one of a mirror cabinet's bought parts (an order line, not a cut)? */
+function mirrorBought(result, panel) {
+  return Boolean(result?.derived?.mirror) && panel?.material_role === 'bought';
+}
+
+/** A size as the line prints it: 75 x 937, 336.5 x 177. */
+const mmText = (v) => formatMm(v);
+
+/**
+ * The mirror cabinet's order lines, in `result.hardware`'s shape; [] for every
+ * other unit.
+ *
+ * @param {object} result   computeCabinet's result
+ * @param {object} [profile] the cabinet profile (the articles, the pins)
+ */
+export function mirrorCabinetOrderLines(result, profile = null) {
+  const m = result?.derived?.mirror;
+  if (!m) return [];
+  const P = profile || getCabinetProfile();
+  const articles = P?.mirror?.articles || {};
+  const art = (k) => String(articles[k] || '');
+  const said = (k, text) => (art(k) ? `${art(k)} · ${text}` : text);
+  const lines = [];
+  const push = (role, label, qty, unit, spec, specLabel) => {
+    if (qty > 0) lines.push({ role, label, qty, unit, spec, spec_label: specLabel });
+  };
+  const kelvin = Number(m.led?.kelvin) || Number(P?.mirror?.ledKelvin) || 4000;
+
+  // ── the LED light panels: one a LED stile, made to measure, by size ──
+  const ledPanels = new Map();
+  for (const s of m.stiles || []) {
+    if (s.kind !== 'led') continue;
+    const key = `${mmText(s.w)} x ${mmText(s.h)}`;
+    const had = ledPanels.get(key);
+    if (had) had.n += 1; else ledPanels.set(key, { w: s.w, h: s.h, n: 1 });
+  }
+  for (const [size, g] of ledPanels) {
+    push('mirror_led_panel', `LED light panel, made to measure, ${kelvin} K, ${size}`, g.n, 'pcs',
+      {
+        width_mm: g.w, height_mm: g.h, thickness_mm: m.faceT, kelvin, made_to_measure: true, article: art('ledPanel') || null,
+      },
+      said('ledPanel', `${size} mm`));
+  }
+
+  // ── the mirror, 4 mm, in m2: the doors' and the back's when asked ──
+  const doorsM2 = Number(m.mirrorArea?.doors_m2) || 0;
+  const backM2 = Number(m.mirrorArea?.back_m2) || 0;
+  const back = (result.panels || []).find((p) => p.meta?.mirrorBack?.panes?.length);
+  const pieces = [
+    ...(m.mirrorDoors ? (m.doors || []).map((d) => ({ on: d.id, w: d.w, h: d.h })) : []),
+    ...(back ? back.meta.mirrorBack.panes.map((pn) => ({ on: `${back.id} bay ${pn.bay}`, w: pn.w, h: pn.h })) : []),
+  ];
+  // eslint-disable-next-line no-nested-ternary
+  const where = doorsM2 > 0 && backM2 > 0 ? 'on the doors and the back' : (backM2 > 0 ? 'on the back' : 'on the doors');
+  push('mirror_m2', `Mirror ${formatMm(m.mirrorT)} mm`, roundTo(doorsM2 + backM2, 4), 'm²',
+    {
+      thickness_mm: m.mirrorT, doors_m2: doorsM2, back_m2: backM2, pieces, article: art('mirror') || null,
+    },
+    said('mirror', where));
+
+  // ── the glass shelves, 6 mm toughened, one a shelf, by size ──
+  const glass = new Map();
+  for (const p of result.panels || []) {
+    if (!p.meta?.glassShelf) continue;
+    const key = `${mmText(p.w)} x ${mmText(p.h)}`;
+    const had = glass.get(key);
+    if (had) had.n += 1; else glass.set(key, { w: p.w, d: p.h, t: Number(p.meta.glassShelf.t) || Number(m.glassT) || 0, n: 1 });
+  }
+  for (const [size, g] of glass) {
+    push('mirror_glass_shelf', `Glass shelf ${formatMm(g.t)} mm toughened, ${size}`, g.n, 'pcs',
+      {
+        width_mm: g.w, depth_mm: g.d, thickness_mm: g.t, toughened: true, article: art('glassShelf') || null,
+      },
+      said('glassShelf', `${size} mm`));
+  }
+
+  // ── the LED strips, under and inside, in linear metres ──
+  const under = m.led?.under;
+  if (under) {
+    push('led_strip', 'LED strip under', roundTo(under.length / 1000, 3), 'm',
+      {
+        length_mm: under.length, kelvin, face: under.face, article: art('ledStripUnder') || null,
+      },
+      said('ledStripUnder', `${mmText(under.length)} mm, ${kelvin} K, under the cabinet`));
+  }
+  const inside = m.led?.inside;
+  if (inside) {
+    push('led_strip', 'LED strip inside', roundTo(inside.length / 1000, 3), 'm',
+      {
+        length_mm: inside.length, kelvin, side: inside.side, article: art('ledStripInside') || null,
+      },
+      said('ledStripInside', `${mmText(inside.length)} mm, ${kelvin} K, inside on the ${inside.side === 'R' ? 'right' : 'left'} side`));
+  }
+
+  // ── the one LED driver, 24 V, in the bottom box ──
+  const volts = Number(m.led?.driverVolts) || Number(P?.mirror?.ledDriverVolts) || 24;
+  push('mirror_led_driver', `LED driver ${volts} V`, Number(m.led?.driver) || 0, 'pcs',
+    {
+      volts, panels: m.led?.stiles || 0, under: Boolean(under), inside: Boolean(inside), article: art('ledDriver') || null,
+    },
+    said('ledDriver', m.bottomBox?.on ? 'in the bottom box, for the LED panels and the strips' : 'for the LED panels and the strips'));
+
+  // ── the hinges, by the door's weight with its mirror (the kit's ladder) ──
+  const hinges = new Map();
+  for (const d of m.doors || []) {
+    const onDivider = /^DIVIDER-/.test(String(d.hingeOn || ''));
+    const key = `${d.hinges}|${onDivider ? 'divider' : 'side'}|${d.band?.maxWeightKg ?? ''}|${d.band?.maxHeightMm ?? ''}`;
+    const had = hinges.get(key);
+    if (had) { had.doors.push(d); } else {
+      hinges.set(key, {
+        per: d.hinges, onDivider, band: d.band, doors: [d],
+      });
+    }
+  }
+  for (const g of hinges.values()) {
+    const n = g.doors.length;
+    const band = g.band ? `, the ladder's band to ${formatMm(g.band.maxWeightKg)} kg and ${formatMm(g.band.maxHeightMm)} mm` : '';
+    push('hinges', 'Hinges', g.per * n, 'pcs',
+      {
+        per_door: g.per,
+        doors: n,
+        cup_diameter_mm: P?.hinges?.cups?.diameter ?? null,
+        by_weight: true,
+        door_kg: g.doors.map((d) => d.weightKg),
+        band: g.band || null,
+        on_divider: g.onDivider,
+        angle: null,
+        family: 'standard',
+        article: null,
+        articles: [],
+        finish: null,
+        system: null,
+        assigned: false,
+      },
+      `${g.per} per door x ${n} door${n === 1 ? '' : 's'}, by the door's weight with its mirror${band}`
+        + (g.onDivider ? ', hung on a divider: the hinge is the owner\'s to name' : ''));
+  }
+
+  // ── the shelf pins, the house's, four a glass shelf ──
+  const SH = P?.shelfHoles || {};
+  const shelves = (result.panels || []).filter((p) => p.meta?.glassShelf).length;
+  push('shelf_pins', 'Shelf pins', shelves * (Number(SH.pinsPerShelf) || 0), 'pcs',
+    { diameter_mm: SH.diameter, per_shelf: SH.pinsPerShelf, article: art('shelfPin') || null },
+    said('shelfPin', `⌀${SH.diameter}`));
+
+  // ── the hanging brackets, the vanity's ──
+  const hang = m.hangers || {};
+  const hangArticle = art('hanger') || String(hang.article || '');
+  push('vanity_hangers', String(hang.name || 'Cabinet hanger'), Number(hang.count) || 0, 'pcs',
+    { article: hangArticle || null, on: 'the sides\' hanger cut-outs' },
+    hangArticle ? `${hangArticle} · in the sides' hanger cut-outs` : 'in the sides\' hanger cut-outs');
+
+  return lines;
+}
+
+/**
+ * The mirror cabinet's NOTE rows: the fused spur, by the electrician, where the
+ * cabinet carries anything lit (a note in the cut list's grammar, `manual`,
+ * counted in nothing, merged with nothing). [] for every other unit.
+ */
+export function mirrorCabinetNotes(result, profile = null) {
+  const m = result?.derived?.mirror;
+  if (!m || !(Number(m.led?.driver) > 0)) return [];
+  const P = profile || getCabinetProfile();
+  const article = String(P?.mirror?.articles?.fusedSpur || '');
+  const volts = Number(m.led?.driverVolts) || 24;
+  return [{
+    unit_num: result.unitNum,
+    id: `${result.unitNum} fused spur`,
+    part: 'MIRROR-SPUR',
+    role: 'mirror_note',
+    material_role: 'note',
+    material_label: `NOTE: Fused spur by electrician${article ? ` (${article})` : ''}: it feeds the LED driver ${volts} V`
+      + `${m.bottomBox?.on ? ' in the bottom box' : ''}`,
+    w: 0,
+    h: 0,
+    qty: 1,
+    thickness: 0,
+    edge: '',
+    edge_m: 0,
+    area_m2: 0,
+    readiness: 'manual',
+  }];
+}
 
 /**
  * What ONE piece is finished in, as a name a workshop can order against
@@ -87,9 +298,11 @@ export function buildBom(entries, {
     // ─── Turn 32 (CLAUDE.md F7): a BOUGHT box is not a cut part ────────────
     // Its purchase line is bomInvoice's business; here it simply leaves the
     // rows, the areas, the edging and the counts.
-    const counted = excludeDrawerBoxes
+    const counted = (excludeDrawerBoxes
       ? result.panels.filter((p) => p.role !== 'drawer_box')
-      : result.panels;
+      : result.panels)
+      // T83 F4 · a mirror cabinet's LED stile and glass shelf are BOUGHT: order lines below, never a cut row.
+      .filter((p) => !mirrorBought(result, p));
     const rows = counted.map((p) => {
       const resolved = design ? resolvePanelMaterial(p, unit, design, profile, materials) : null;
       const manufacturing = frontManufacturing(p);
@@ -181,8 +394,10 @@ export function buildBom(entries, {
       area_m2: 0,
       readiness: n.state,
     }));
+    // T83 F4 · the mirror cabinet's fused spur, by the electrician: a NOTE row, `manual`.
+    const mirrorNotes = mirrorCabinetNotes(result, profile);
     units.push({
-      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: [...rows, ...stripNotes, ...(dowelNote ? [dowelNote] : []), ...(cabineoNote ? [cabineoNote] : []), ...fillerNotes, ...basinNotes], totals: result.totals, warnings: result.warnings,
+      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: [...rows, ...stripNotes, ...(dowelNote ? [dowelNote] : []), ...(cabineoNote ? [cabineoNote] : []), ...fillerNotes, ...basinNotes, ...mirrorNotes], totals: result.totals, warnings: result.warnings,
     });
 
     for (const r of rows) {
@@ -220,7 +435,9 @@ export function buildBom(entries, {
 
     // Hardware merges on role AND spec: 440 mm runners and 490 mm runners are
     // two different things to buy, even though they are one BOM role.
-    for (const h of result.hardware || []) {
+    // T83 F4 · …and a mirror cabinet's order lines (its LED panels, mirror,
+    // glass, strips, driver, hinges, pins and hangers) are hardware lines too.
+    for (const h of [...(result.hardware || []), ...mirrorCabinetOrderLines(result, profile)]) {
       const key = `${h.role}|${h.spec_label}`;
       const merged = hardwareRows.get(key);
       if (merged) { merged.qty += h.qty; merged.units.add(result.unitNum); } else {
@@ -562,6 +779,8 @@ export function buildCabinetPartQtys(computed, unit, settings = {}) {
 
   // ── PANELS: area, and the banding the engine already measured ────────────
   for (const p of computed.panels || []) {
+    // T83 F4 · a mirror cabinet's bought part is an order line (below), never board area.
+    if (mirrorBought(computed, p)) continue;
     const partId = partIdForElement(p.part, { typeId });
     if (!partId) continue;                       // F1's test makes this unreachable
     const qty = Number(p.qty) || 1;
@@ -575,7 +794,8 @@ export function buildCabinetPartQtys(computed, unit, settings = {}) {
 
   // ── HARDWARE: the engine's own counts, never recomputed ──────────────────
   let hingeQty = 0;
-  for (const h of computed.hardware || []) {
+  // T83 F4 · the mirror cabinet's order lines, read where the registry knows them (hinges, pins, strip, hanger).
+  for (const h of [...(computed.hardware || []), ...mirrorCabinetOrderLines(computed, settings.profile || null)]) {
     const partId = HARDWARE_TO_PART_ID[h.role];
     if (!partId) continue;
     const qty = Number(h.qty) || 0;

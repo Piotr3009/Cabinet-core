@@ -496,6 +496,17 @@ test('F20 · a refused unit is the puzzle unit plus the sentence, and the dowel 
 
 test('F20 · the puzzle default is untouched: no default kit carries a mark or a biscuit screw', () => {
   for (const id of Object.keys(UNIT_TYPES)) {
+    // AMENDED BY T83 F2 (25.10.2026) . the MIRROR CABINET is born with two
+    // dividers and a FIX board (KIT_MIRROR.lsp D7, D12; the owner's mockup:
+    // *"karkas: 2 przegrody 18 za slupkami LED, na nich zawiasy"*): their marks
+    // are the house's divider and FIX-shelf sets (CHAT FIX 17.10.2026, T26 F7),
+    // never the biscuit system's; it carries no biscuit screw and no record.
+    if (UNIT_TYPES[id].mirrorCabinet) {
+      const m = computeCabinet({ ...defaultParamsFor(id, P), unit_num: '01' }, P);
+      assert.equal(m.drills.some((d) => d.kind === 'biscuit_screw'), false, `${id} grew a biscuit screw`);
+      assert.equal(m.derived?.joints, undefined, `${id} grew a joints record`);
+      continue;
+    }
     const r = computeCabinet({ ...defaultParamsFor(id, P), unit_num: '01' }, P);
     // CHAT FIX 17.10.2026: the L corner kits carry the owner's CORNER_4MM mark
     // on their L boards by default (KIT_CORNER_L.lsp section 4); not a biscuit.

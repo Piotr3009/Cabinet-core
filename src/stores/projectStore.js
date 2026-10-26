@@ -26,7 +26,7 @@ import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 // T82 F13 · floatHeightOf: a floating vanity's height, the one question (KIT_VANITY.lsp D19).
 import {
   defaultParamsFor, floatHeightOf, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel,
-  isHawaPocket, isVanityKit, isWardrobeWallUnit, profilePath,
+  isHawaPocket, isMirrorCabinet, isVanityKit, isWardrobeWallUnit, profilePath,
   resolveTypeId, TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
@@ -232,6 +232,11 @@ import { runBatch } from './historyBatch.js';
 // ─── Turn 31 (CLAUDE.md F2): ONE dirty gate, and 77 repeats deleted.
 import { dirtyGate } from './dirtyGate.js';
 import { persistenceOn } from './persistence.js';
+// T83 F5 · the mirror cabinet's answers, checked as KIT_MIRROR.lsp checks them (its mirror's own routines).
+import {
+  MIRROR_STILE_KINDS, mirrorCarcass, mirrorConstants, mirrorOwnWidths, mirrorParamsOf, mirrorStileKinds,
+  mirrorStilesTotal, mirrorWidthsRefusal,
+} from '../engine/mirrorCabinet.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -530,7 +535,10 @@ function projectHeightParams(type, design, profile) {
     // T78 F17 . a kit whose TOP meets the wall run's top line (`topLine: 'wall'`,
     // the two hoods whose height is their own) hangs at wallMount + wall less
     // its own height, so a 660 or a 500 box sits level with the 720 run's top.
-    ...(type.mount === 'wall' && !type.freePanel && !type.desk
+    // T83 F2 . …nor is the mirror cabinet: it hangs at its own 1250, 400 over
+    // the vanity's top (`mirror.defaults.mountHeight`, the architect's
+    // elevation 34), never the kitchen's wall line.
+    ...(type.mount === 'wall' && !type.freePanel && !type.desk && !type.mirrorCabinet
       ? { mount_height: type.topLine === 'wall' ? wallTopLineMount(type, heights, profile) : heights.wallMount }
       : {}),
     // ─── Turn 22 (CLAUDE.md F4.2) ───
@@ -1714,10 +1722,30 @@ const migrateUnitShoe = (u) => {
   return { ...u, params: { ...u.params, sections } };
 };
 
+/**
+ * ─── T83 F6 · A T82 VANITY LOADS TO THE WALL ───────────────────────────────
+ *
+ * The owner, 25.10.2026 (22:41): *"carcas powinien byc do sciany, czyli
+ * wszystko w srodku carcasa mniejsze ale carcas do sciany"*. T82 wrote the
+ * service void into a vanity's own `wall_gap` at birth (the clearance + 80, 90
+ * on the house's profile); the void is inside the carcass now (KIT_VANITY.lsp
+ * D27), so a vanity saved with exactly that birth number drops it and stands
+ * at the house's clearance like every unit. A gap anybody typed since (any
+ * other number) is his and stands.
+ */
+const migrateUnitVanityVoid = (u) => {
+  if (!isVanityKit(u?.type) || u?.params?.wall_gap == null) return u;
+  const P = getCabinetProfile();
+  const born = Math.max(0, Number(P.room?.wallBackClearance) || 0) + (Number(P.vanity?.serviceVoidMm) || 0);
+  if (!(born > 0) || Number(u.params.wall_gap) !== born) return u;
+  const { wall_gap: _t82, ...params } = u.params;
+  return { ...u, params };
+};
+
 const migrateUnits = (units) => (Array.isArray(units)
-  ? units.map((u) => migrateUnitShoe(migrateUnitWatch(migrateUnitRidden(
+  ? units.map((u) => migrateUnitVanityVoid(migrateUnitShoe(migrateUnitWatch(migrateUnitRidden(
     migrateUnitSetbacks(migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u)))),
-  ))))
+  )))))
   : []);
 
 function loadCache() {
@@ -3563,6 +3591,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const profile = getCabinetProfile();
     let changed = false;
     const next = s.units.map((u) => {
+      // T83 F2 . a mirror cabinet's recess is TYPED (KIT_MIRROR.lsp D17: *"w tym
+      // przypadku to reces ale tez w standardzie normalnie wiszaca"*): it stands
+      // in the wall that deep and its depth never grows, so this derivation
+      // neither writes nor clears its `recess_mm`.
+      if (isMirrorCabinet(u.type)) return u;
       const has = Number(u.params?.recess_mm) > 0;
       // T82 F16, after the review: the recess law is a CARCASS's (it goes
       // deeper by the recess, its back behind the wall line). A free panel is a
@@ -4196,6 +4229,32 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     get().refreshAutoParts();
     get().healFrontGaps();
     return { ok: true, said: '' };
+  },
+
+  /**
+   * ─── T83 F3 · MIRROR ON THE BACK? ───────────────────────────────────────────
+   *
+   * The owner, 25.10.2026 (14:09): *"czasami jak ktos chce to bedzie mial na
+   * plecach tez, klikasz na plecy i wyskakuje ci opcja chcesz lustro na
+   * plecach?"*. The answer of the window the BACK's click opens: the kit's one
+   * key `params.mirror.mirror_back` (KIT_MIRROR.lsp D15), written through the
+   * house's road (updateUnitParams: one Undo step, the unit recomputed), every
+   * other answer of `params.mirror` kept. Any kit but the mirror cabinet is
+   * refused in words.
+   *
+   * @returns {{ ok: boolean, said: string }}
+   */
+  setMirrorBack: (unitId, on) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, said: 'No such unit.' };
+    const label = unit.params?.unit_num ? `${unit.params.unit_num}: ` : '';
+    if (!isMirrorCabinet(unit.type)) {
+      return { ok: false, said: `${label}only a mirror cabinet takes a mirror on its back.` };
+    }
+    // T83 F5 (INT, one law one path): the answer goes through the section's one
+    // writer, setMirrorCabinet, so the back's question and the panel's row are
+    // the same road.
+    return get().setMirrorCabinet(unitId, { mirror_back: Boolean(on) });
   },
 
   /**
@@ -7730,8 +7789,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // kitchen's wall-unit line never moves it.
       // T75 F17 · …and neither does a desk: 720 is a sitting height, not a wall line.
       // T78 F17 . a top-line kit follows the wall line AND the wall height: its top stays on the run's top.
+      // T83 F2 . …and neither does the mirror cabinet: its 1250 is the drawing's, over the vanity.
       if ((applied.wallMount != null || (applied.wall != null && type.topLine === 'wall'))
-        && type.mount === 'wall' && !type.freePanel && !type.desk) {
+        && type.mount === 'wall' && !type.freePanel && !type.desk && !type.mirrorCabinet) {
         changes.mount_height = type.topLine === 'wall'
           ? wallTopLineMount(type, resolved, profile, unit.params.height)
           : resolved.wallMount;
@@ -10327,6 +10387,149 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     get().refreshAutoParts();
     get().healFrontGaps();
     return { ok: true, said: '' };
+  },
+
+  /**
+   * ─── T83 F5 · THE MIRROR CABINET'S ANSWERS ────────────────────────────────
+   *
+   * The owner, 25.10.2026 (22:41): *"daj wszystkie mozliwosci z panelami, z
+   * ledami, bez, szerokosc ustawianych drzwiczek etc"*; (14:09) *"5 na
+   * kolumne domyslnie ale oczywiscie z mozliwoscia dodawania, przesuwania"*;
+   * *"w tym przypadku to reces ale tez w standardzie normalnie wiszaca"*.
+   * CLAUDE.md T83 F5: the right panel's MIRROR CABINET section (Bays, Door
+   * widths, Stiles and their width, Panels and their thickness, Mirror doors,
+   * Mirror back, Glass shelves per bay, LED under, LED inside, Bottom box,
+   * Recess), every answer through this ONE action: the kit's own key
+   * `params.mirror` (KIT_MIRROR.lsp section 3, read by `mirrorParamsOf`) and
+   * T79's `recess_mm`, written by the house's road (`updateUnitParams`: one
+   * Undo step, the unit cut again). Each answer is checked first and refused
+   * in words, the unit untouched: 1, 2 or 3 bays; a stile LED, timber or
+   * none; a width or a thickness more than 0, that leaves the doors a width;
+   * on or off a yes or a no; a whole count of glass shelves; a recess no
+   * deeper than the cabinet; and the door widths, one a bay, that make the
+   * carcass with the stiles (*"the sum checked against the width with the
+   * stiles, refused in words when it does not add up"*), in the kit's own
+   * sentence (`mirrorWidthsRefusal`, D5). A new count of bays, or a change
+   * of the stiles or the panels that the typed widths no longer add up with,
+   * hands the doors back to the kit's own widths (D6) and says so. A count of
+   * glass shelves a bay takes the place of the shelves placed by hand. Any kit
+   * but the mirror cabinet is refused.
+   *
+   * @param {string} unitId
+   * @param {object} patch  any of bays, door_widths (one a bay, or null: the kit's own),
+   *   stile, stile_width_mm, panels ({ L, R, top, bottom }), panel_t, mirror_doors,
+   *   mirror_back, shelves_per_bay, led_under, led_inside, bottom_box, recess_mm
+   * @returns {{ ok: boolean, said: string }}
+   */
+  setMirrorCabinet: (unitId, patch = {}) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, said: 'No such unit.' };
+    const num = String(unit.params?.unit_num || '');
+    const label = num ? `${num}: ` : '';
+    if (!isMirrorCabinet(unit.type)) return { ok: false, said: `${label}only a mirror cabinet takes a mirror cabinet's answers.` };
+    const ask = patch && typeof patch === 'object' ? patch : {};
+    const profile = getCabinetProfile();
+    const K = mirrorConstants(profile);
+    const before = mirrorParamsOf(unit.params, profile);
+    const next = { ...(unit.params?.mirror && typeof unit.params.mirror === 'object' ? unit.params.mirror : {}) };
+    const top = {};
+    const isNum = (v) => v !== null && v !== '' && typeof v !== 'boolean' && Number.isFinite(Number(v));
+    const no = (said) => ({ ok: false, said: `${label}${said}` });
+    if ('bays' in ask) {
+      const n = Number(ask.bays);
+      if (![1, 2, 3].includes(n)) return no('a mirror cabinet has 1, 2 or 3 bays.');
+      // A typed width, a stile kind and a hinge side are a bay's: a new count starts from the kit's own.
+      if (n !== before.bays) Object.assign(next, { bays: n, door_widths: null, stiles: null, door_hinges: null });
+    }
+    if ('stile' in ask) {
+      if (!MIRROR_STILE_KINDS.includes(ask.stile)) return no('a stile is LED, timber or none.');
+      Object.assign(next, { stile: ask.stile, stiles: null });
+    }
+    if ('stile_width_mm' in ask) {
+      if (!isNum(ask.stile_width_mm) || !(Number(ask.stile_width_mm) > 0)) return no('type the stile\'s width in mm, more than 0.');
+      next.stile_width_mm = Number(ask.stile_width_mm);
+    }
+    if ('panels' in ask) {
+      const p = ask.panels;
+      const sides = ['L', 'R', 'top', 'bottom'];
+      if (!p || typeof p !== 'object' || Object.entries(p).some(([k, v]) => !sides.includes(k) || typeof v !== 'boolean')) {
+        return no('a panel round is L, R, top or bottom, each on or off.');
+      }
+      next.panels = { ...before.panels, ...p };
+    }
+    if ('panel_t' in ask) {
+      if (!isNum(ask.panel_t) || !(Number(ask.panel_t) > 0)) return no('type the panels\' thickness in mm, more than 0.');
+      next.panel_t = Number(ask.panel_t);
+    }
+    const FLAGS = [
+      ['mirror_doors', 'the mirror on the doors'], ['mirror_back', 'the mirror on the back'], ['led_under', 'the LED under'],
+      ['led_inside', 'the LED inside'], ['bottom_box', 'the bottom box'],
+    ];
+    for (const [k, word] of FLAGS) {
+      if (!(k in ask)) continue;
+      if (typeof ask[k] !== 'boolean') return no(`${word} is on or off.`);
+      next[k] = ask[k];
+    }
+    let handBack = false;
+    if ('shelves_per_bay' in ask) {
+      const n = Number(ask.shelves_per_bay);
+      if (!isNum(ask.shelves_per_bay) || !Number.isInteger(n) || n < 0) return no('type a whole number of glass shelves a bay, 0 or more.');
+      next.shelves_per_bay = n;
+      handBack = true;
+    }
+    if ('recess_mm' in ask) {
+      const r = Number(ask.recess_mm);
+      const D = Number(unit.params?.depth) || profile.mirror.defaults.depth;
+      if (!isNum(ask.recess_mm) || r < 0) return no('type the recess in mm, 0 on the wall.');
+      if (r > D) return no(`a recess of ${formatMm(r)} is deeper than the cabinet: type 0 to ${formatMm(D)}.`);
+      top.recess_mm = r;
+    }
+    if ('door_widths' in ask) {
+      const ws = ask.door_widths;
+      if (ws == null) next.door_widths = null;
+      else if (!Array.isArray(ws) || !ws.length || !ws.every(isNum)) return no('type a width in mm for every door.');
+      else next.door_widths = ws.map(Number);
+    }
+    // The answers as the kit will read them: the doors must have a width, and
+    // typed widths must make the carcass with the stiles (D4 to D6).
+    const nextParams = { ...unit.params, mirror: next, ...top };
+    const mp = mirrorParamsOf(nextParams, profile);
+    const W = Number(nextParams.width) || profile.mirror.defaults.width;
+    const H = Number(nextParams.height) || profile.mirror.defaults.height;
+    const [, , Wc] = mirrorCarcass(W, H, mp.panels.L, mp.panels.R, mp.panels.top, mp.panels.bottom, mp.panelT);
+    const kinds = mirrorStileKinds(mp.bays, mp.stile, mp.stiles);
+    const stiles = mirrorStilesTotal(kinds, mp.stileWidthMm);
+    if (!mirrorOwnWidths(Wc, mp.bays, kinds, mp.stileWidthMm, K).every((w) => w > K.gap)) {
+      return no(`${mp.bays} door${mp.bays > 1 ? 's' : ''} and stiles of ${formatMm(stiles)} do not go into a carcass `
+        + `${formatMm(Wc)} wide: take a narrower stile or thinner panels.`);
+    }
+    let said = '';
+    const widthsSaid = mirrorWidthsRefusal(num || 'MC', Wc, mp.bays, mp.doorWidths, kinds, mp.stileWidthMm, K);
+    if (widthsSaid) {
+      if (Array.isArray(ask.door_widths)) {
+        return { ok: false, said: widthsSaid.replace(' The doors are cut at the kit\'s own widths.', ' The doors stand as they were.') };
+      }
+      // A stile or a panel changed under widths typed for the old ones: the kit's own again, said.
+      said = `${label}the door widths typed (${(mp.doorWidths || []).map(formatMm).join(' + ')}) no longer make the carcass `
+        + 'with the stiles: the doors are back to the kit\'s own widths.';
+      next.door_widths = null;
+    }
+    const asked = { mirror: next, ...top };
+    if (handBack) {
+      // The count a bay is the shelves' law again: the ones placed by hand give way to it (KIT_MIRROR.lsp D14).
+      const isShelf = (it) => it && it.kind === 'shelf';
+      const had = [...(Array.isArray(unit.params?.items) ? unit.params.items : []),
+        ...(unit.params?.sections || []).flatMap((sc) => sc.items || [])].filter(isShelf).length;
+      if (had) {
+        if (Array.isArray(unit.params?.items)) asked.items = unit.params.items.filter((it) => !isShelf(it));
+        if (Array.isArray(unit.params?.sections)) {
+          asked.sections = unit.params.sections.map((sc) => ({ ...sc, items: (sc.items || []).filter((it) => !isShelf(it)) }));
+        }
+        said = [said, `${label}the ${had} glass shelves placed by hand give way to ${next.shelves_per_bay} a bay.`].filter(Boolean).join(' ');
+      }
+    }
+    get().updateUnitParams(unitId, asked);
+    return { ok: true, said };
   },
 
   /**

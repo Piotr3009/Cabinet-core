@@ -3,7 +3,7 @@
     "name": "../verify/t82/goldens/golden-vanity3.json",
     "turn": "T78",
     "F": "F43",
-    "source": "KIT_VANITY.lsp (the parent KIT_BUDR_FULL): RAIL-BOTTOM and RAIL-TOP W x 100 x G where the back stood (D2 to D4), equal overlay fronts (D8), the box on the runner less ten (D9); VANITY3 900 x 600 x 500, one basin (the LISP's worked example): fronts 197 x 3, D3-BB-1 and D3-BB-2 329 each, the bottom notched 335.5..495.5 R 20 (D13). The owner, 25.10.2026 (12:57): *\"vanity unit potrzebuje z szufladami nawierzchniowymi, wybor jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa rowne ... musimy miec tez wyciecie na trap, w razie czego jak nie bedzie miejsca to zostawimy informacje prosze uzyc shallow trap ... nie ma plecow na vanity unit tylko sa poziome poprzeczki na dole i na gorze, plecy sa jakby wyciete\"*; (13:03) *\"2 wyciecie u dookola zeby sie szuflada otwierala, 3 - 80, 4 - 100 na material carcasa grubosc\"*; (13:46) *\"6 - tak\"*.",
+    "source": "KIT_VANITY.lsp (the parent KIT_BUDR_FULL): RAIL-BOTTOM and RAIL-TOP W x 100 x G where the back stood (D2 to D4), equal overlay fronts (D8), the box on the runner less ten (D9); VANITY3 900 x 600 x 500, one basin (the LISP's worked example): fronts 197 x 3, D3-BB-1 and D3-BB-2 329 each, the bottom notched 335.5..495.5 R 20 (D13). The owner, 25.10.2026 (12:57): *\"vanity unit potrzebuje z szufladami nawierzchniowymi, wybor jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa rowne ... musimy miec tez wyciecie na trap, w razie czego jak nie bedzie miejsca to zostawimy informacje prosze uzyc shallow trap ... nie ma plecow na vanity unit tylko sa poziome poprzeczki na dole i na gorze, plecy sa jakby wyciete\"*; (13:03) *\"2 wyciecie u dookola zeby sie szuflada otwierala, 3 - 80, 4 - 100 na material carcasa grubosc\"*; (13:46) *\"6 - tak\"*. RE-PINNED BY T83 F6 (scripts/t78-classify.d/f44-t83-f06.mjs), the owner 25.10.2026 (22:41): *\"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany\"*: KIT_VANITY.lsp D27, the carcass to the wall (no wall_gap at birth, the house clearance), the void 80 inside: every drawer box on the rung that keeps it (390 on the 400 runner at D 500, the back face at 85).",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
@@ -26,7 +26,6 @@
     "sinks": 1,
     "floating": false,
     "float_height_mm": 300,
-    "wall_gap": 90,
     "unit_num": "01"
   },
   "expected": {
@@ -37,12 +36,12 @@
       "01,BOTTOM,864,482,>,0.86,0.416",
       "01,RAIL-BOTTOM,900,100,,0,0.090",
       "01,RAIL-TOP,900,100,,0,0.090",
-      "01,D1-SL,440,138,,0,0.061",
-      "01,D1-SR,440,138,,0,0.061",
-      "01,D2-SL,440,138,,0,0.061",
-      "01,D2-SR,440,138,,0,0.061",
-      "01,D3-SL,440,138,,0,0.061",
-      "01,D3-SR,440,138,,0,0.061",
+      "01,D1-SL,390,138,,0,0.054",
+      "01,D1-SR,390,138,,0,0.054",
+      "01,D2-SL,390,138,,0,0.054",
+      "01,D2-SR,390,138,,0,0.054",
+      "01,D3-SL,390,138,,0,0.054",
+      "01,D3-SR,390,138,,0,0.054",
       "01,D1-BF,818,104,,0,0.085",
       "01,D1-BB,818,104,,0,0.085",
       "01,D2-BF,818,104,,0,0.085",
@@ -50,9 +49,9 @@
       "01,D3-BF,818,104,,0,0.085",
       "01,D3-BB-1,329,104,,0,0.034",
       "01,D3-BB-2,329,104,,0,0.034",
-      "01,D1-DNO,831,440,,0,0.366",
-      "01,D2-DNO,831,440,,0,0.366",
-      "01,D3-DNO,831,440,,0,0.366",
+      "01,D1-DNO,831,390,,0,0.324",
+      "01,D2-DNO,831,390,,0,0.324",
+      "01,D3-DNO,831,390,,0,0.324",
       "01,01-F1,897,197,<>^v,2.19,0.177",
       "01,01-F2,897,197,<>^v,2.19,0.177",
       "01,01-F3,897,197,<>^v,2.19,0.177"
@@ -174,7 +173,7 @@
           "d": 18
         },
         "outline": 4,
-        "holes": 8,
+        "holes": 9,
         "pockets": 2,
         "readiness": null
       },
@@ -182,16 +181,16 @@
         "id": "D1-SL",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 23,
           "y": 31.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -202,16 +201,16 @@
         "id": "D1-SR",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 859,
           "y": 31.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -222,16 +221,16 @@
         "id": "D2-SL",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 23,
           "y": 213.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -242,16 +241,16 @@
         "id": "D2-SR",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 859,
           "y": 213.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -262,16 +261,16 @@
         "id": "D3-SL",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 23,
           "y": 413.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -282,16 +281,16 @@
         "id": "D3-SR",
         "part": "DRAWER-SIDE",
         "role": "drawer_box",
-        "w": 440,
+        "w": 390,
         "h": 138,
         "thickness": 18,
         "box": {
           "x": 859,
           "y": 413.5,
-          "z": 35,
+          "z": 85,
           "w": 18,
           "h": 138,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 0,
@@ -328,7 +327,7 @@
         "box": {
           "x": 41,
           "y": 64.5,
-          "z": 35,
+          "z": 85,
           "w": 818,
           "h": 104,
           "d": 18
@@ -368,7 +367,7 @@
         "box": {
           "x": 41,
           "y": 246.5,
-          "z": 35,
+          "z": 85,
           "w": 818,
           "h": 104,
           "d": 18
@@ -408,7 +407,7 @@
         "box": {
           "x": 41,
           "y": 446.5,
-          "z": 35,
+          "z": 85,
           "w": 329,
           "h": 104,
           "d": 18
@@ -428,7 +427,7 @@
         "box": {
           "x": 530,
           "y": 446.5,
-          "z": 35,
+          "z": 85,
           "w": 329,
           "h": 104,
           "d": 18
@@ -443,15 +442,15 @@
         "part": "DRAWER-BOTTOM",
         "role": "drawer_box",
         "w": 831,
-        "h": 440,
+        "h": 390,
         "thickness": 18,
         "box": {
           "x": 34.5,
           "y": 46.5,
-          "z": 35,
+          "z": 85,
           "w": 831,
           "h": 18,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 4,
@@ -463,15 +462,15 @@
         "part": "DRAWER-BOTTOM",
         "role": "drawer_box",
         "w": 831,
-        "h": 440,
+        "h": 390,
         "thickness": 18,
         "box": {
           "x": 34.5,
           "y": 228.5,
-          "z": 35,
+          "z": 85,
           "w": 831,
           "h": 18,
-          "d": 440
+          "d": 390
         },
         "outline": 4,
         "holes": 4,
@@ -483,15 +482,15 @@
         "part": "DRAWER-BOTTOM",
         "role": "drawer_box",
         "w": 831,
-        "h": 440,
+        "h": 390,
         "thickness": 18,
         "box": {
           "x": 34.5,
           "y": 428.5,
-          "z": 35,
+          "z": 85,
           "w": 831,
           "h": 18,
-          "d": 440
+          "d": 390
         },
         "outline": 16,
         "holes": 4,
@@ -634,7 +633,7 @@
       ],
       [
         "SCREWS_3MM|RAIL-TOP",
-        4
+        5
       ]
     ],
     "hardware": [

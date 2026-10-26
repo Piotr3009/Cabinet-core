@@ -301,6 +301,62 @@ function stamp(sheet, no, of) {
   sheet.sheetOf = of;
 }
 
+// ─── T83 F11 · EXPORT THE SHEETS YOU CHOOSE ──────────────────────────────────
+//
+// The owner, 25.10.2026 (22:41): *"daj mozliwosc exportowania tylko
+// naprzyklad frontow lub cos takiego, nie koniecznie wszystkie strony na
+// raz"*. CLAUDE.md T83 F11: the window ticks the sheets; "Drawing set (PDF)
+// exports the checked sheets in the set's order, the page numbers "n / N"
+// counting the exported ones; the Wall DXF the same". The choice is the
+// window's (ui state, never the project): these two readers only bind what
+// it hands them, and a set bound whole comes out byte for byte as before.
+
+/**
+ * The sheets of the set the window has ticked, in the SET's order whatever
+ * order they were ticked in.
+ *
+ * @param {Array<{no:string, name:string}>} list  the set (`wallDrawingSheets`)
+ * @param {null|((sheet:object) => boolean)|Iterable<string>} picked
+ *   null for every sheet; a predicate; or the names of the ticked sheets
+ * @returns {Array} the ticked entries of `list`, never a copy of a sheet
+ */
+export function pickedSheets(list = [], picked = null) {
+  const sheets = (list || []).filter(Boolean);
+  if (picked == null) return sheets;
+  if (typeof picked === 'function') return sheets.filter((s) => picked(s));
+  const names = new Set(picked);
+  return sheets.filter((s) => names.has(s.name));
+}
+
+/**
+ * Each laid-out sheet as the n-th page of what is bound: its title strip's
+ * SHEET cell reads `n / N`, counting the bound pages (`stamp`'s own two
+ * digits). The sheets are not touched (the window keeps showing the set's
+ * numbers); a page whose strip already reads its place is handed back as it
+ * is, so the whole set bound in order is the same objects, byte for byte. A
+ * sheet that was never stamped is left alone.
+ *
+ * @param {Array<object>} sheets  laid-out sheets, in the order they are bound
+ * @returns {Array<object>}
+ */
+export function numberPages(sheets = []) {
+  const pages = (sheets || []).filter(Boolean);
+  const of = String(pages.length).padStart(2, '0');
+  return pages.map((sheet, i) => {
+    if (sheet.sheetNo == null || sheet.sheetOf == null) return sheet;
+    const no = String(i + 1).padStart(2, '0');
+    const was = `${sheet.sheetNo} / ${sheet.sheetOf}`;
+    const now = `${no} / ${of}`;
+    if (was === now) return sheet;
+    return {
+      ...sheet,
+      entities: sheet.entities.map((e) => (e.kind === 'text' && e.layer === 'FRAME' && e.text === was ? { ...e, text: now } : e)),
+      pageNo: no,
+      pageOf: of,
+    };
+  });
+}
+
 /**
  * ─── TURN 42 (CLAUDE.md F0): THE SET STOPS LYING BY SILENCE ─────────────────
  *

@@ -259,7 +259,8 @@ const EXEMPT = {
     + 'firmę, daty, nazwy"*.'
     + ' T81 F2 · the window says the set in the owner\'s order (the 3D, every wall\'s fronts, without fronts, X-ray, the plans, the sections, the visualisation, the cut list); its sheet buttons walk the list the engine returns. *"najpierw chce widziec 3d jak zrobiles pierwsza strona, pozniej chce widziec wszystkie fronty ... nastepnie widok wszystkich scian bez frontow ... pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu wizualizacja"* (22.10.2026, 21:23)'
     + ' T82 F20 · the Title block gets a LOGO row beside Company ("Choose image", a PNG, JPG or SVG read by lib/drawingExport.js readLogoFile, and "Remove"), the logo kept with the company (`setTitleBlock({ company: { logo } })`), so it is remembered on this computer where the company name is. *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
-    + ' T82 F20, after the review · the logo is kept once on this computer, and when the browser refuses to keep it the window says so (setTitleBlock answers { remembered }). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
+    + ' T82 F20, after the review · the logo is kept once on this computer, and when the browser refuses to keep it the window says so (setTitleBlock answers { remembered }). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
+    + ' T83 F11 · the Drawings window\'s Set tab: a check box per sheet beside its button (all on by default, the window keeping the names left out), All and None, the count of the ticked; Drawing set (PDF) and Wall DXF bind the ticked sheets in the set\'s order (engine/drawings/wallSheets.js pickedSheets), each page\'s SHEET cell counting the pages bound (numberPages); nothing ticked is refused in words; the choice is the window\'s own state, never the project. *"daj mozliwosc exportowania tylko naprzyklad frontow lub cos takiego, nie koniecznie wszystkie strony na raz"* (25.10.2026, 22:41)',
   'src/pages/ConfiguratorPage.jsx':
     'T75 F22 · the Output menu\'s DXF export says the same banner as the CNC view\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."* '
     + 'T75 F20 · a Media wall, Sideboard, Vanity, Utility or Hallway job\'s first plus puts its shipped set on the first wall (insertSet, Room refuses first). *"NEW PROJECT with one of them offers the set first (the first plus point on the first wall)."* '
@@ -410,7 +411,8 @@ const FROZEN = {
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/DrawingModal.jsx': 'dcff9259c93f1b48c97f8841bdd2665705b93f80b2e2b0102a4524dc44307540',
+  // T83 F11 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/DrawingModal.jsx': '255c4727ca327048e31883edf5dfdfe1a1615047d67a47f94c048b1dfd236b5b',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.

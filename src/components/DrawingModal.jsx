@@ -21,7 +21,10 @@ import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js'
 // The list of cabinets a section may be taken through is the ENGINE's own
 // census (`wallSectionUnits`), so the dropdown on screen and the sheet the set
 // builds cannot offer two different answers.
-import { wallDrawingSheets, wallSectionUnits, wallSetReport, visualAspect } from '../engine/drawings/wallSheets.js';
+// T83 F11 · `pickedSheets`: the sheets the window ticked, in the set's order.
+import {
+  pickedSheets, wallDrawingSheets, wallSectionUnits, wallSetReport, visualAspect,
+} from '../engine/drawings/wallSheets.js';
 // ─── T71: THE SET, AS A JOINER'S SET ────────────────────────────────────────
 // The owner, Skylon's own AutoCAD set on the table: *"nasze w CC teraz się
 // nakładają, a tutaj jest wszystko osobno"*, and *"weź zakoduj"*. The set is
@@ -97,6 +100,14 @@ export default function DrawingModal({ rig = null }) {
   // it produces is part of the SET — so the PDF, the DXF and the preview all
   // carry it.
   const [sectionUnitId, setSectionUnitId] = useState('');
+  // ─── T83 F11 · EXPORT THE SHEETS YOU CHOOSE ────────────────────────────────
+  // The owner, 25.10.2026 (22:41): *"daj mozliwosc exportowania tylko
+  // naprzyklad frontow lub cos takiego, nie koniecznie wszystkie strony na
+  // raz"*. A check box per sheet of the set, all on by default: the window
+  // keeps the names it was told to LEAVE OUT, so a sheet the set grows while
+  // the window is open is ticked as every sheet starts. A drawing choice, not
+  // a design decision: never in the project, gone when the window closes.
+  const [leftOut, setLeftOut] = useState(() => new Set());
   // 'auto' is the default and it is not laziness: a card chooses between two
   // arrangements AND two paper sizes to draw the cabinet as big as it will go
   // (engine/drawings/card.js). Forcing A4 here would throw that away and hand a
@@ -221,6 +232,13 @@ export default function DrawingModal({ rig = null }) {
   const wallAt = wallSheetList.length
     ? wallSheetList[Math.min(wallPage, wallSheetList.length - 1)]
     : null;
+  // T83 F11 · what Drawing set (PDF) and Wall DXF bind: the ticked sheets, in the set's order.
+  const wallPicked = useMemo(() => pickedSheets(wallSheetList, (s) => !leftOut.has(s.name)), [wallSheetList, leftOut]);
+  const tickSheet = (name, on) => setLeftOut((was) => {
+    const next = new Set(was);
+    if (on) next.delete(name); else next.add(name);
+    return next;
+  });
 
   const sheet = useMemo(() => {
     if (kind === 'walls') return wallAt?.sheet || null;
@@ -293,19 +311,21 @@ export default function DrawingModal({ rig = null }) {
       // the braces — and it still says which of the two it is.
       if (wallError) { notify(`Wall drawings failed: ${drawingErrorText(wallError)}`, 'warn'); return; }
       if (!wallSheetList.length) { notify('No cabinet is standing against a wall yet.', 'warn'); return; }
+      // T83 F11 · nothing ticked is refused in words (the buttons stay live, as T42 F0 keeps them), never an empty file.
+      if (!wallPicked.length) { notify('No sheet is ticked: tick the sheets to export, or press All.', 'warn'); return; }
       try {
         if (target === 'walls-pdf') {
           // T42-F0: `exportWallDrawingsPdf` now LOOKS at the bytes it produced
           // — `%PDF`, and a page per sheet — so the word "Saved" is a
           // measurement rather than a claim. Anything else lands in the catch
           // below, which speaks.
-          const { filename, pages } = exportWallDrawingsPdf(wallSheetList.map((x) => x.sheet), {
+          const { filename, pages } = exportWallDrawingsPdf(wallPicked.map((x) => x.sheet), {
             project: project?.name,
           });
           notify(`Saved ${filename} — ${pages} sheets.`, 'ok');
           return;
         }
-        exportWallDrawingsDxf(wallSheetList, { project: project?.name })
+        exportWallDrawingsDxf(wallPicked, { project: project?.name })
           .then(({ filename, files }) => notify(
             `Saved ${filename} — ${files.length} DXF. AutoCAD only: do NOT open these in VCarve.`, 'ok',
           ))
@@ -368,8 +388,9 @@ export default function DrawingModal({ rig = null }) {
             type="button"
             className="cc-btn"
             data-wall-drawings-pdf="1"
+            data-wall-drawings-pages={wallPicked.length}
             disabled={!wallSheetList.length}
-            title="The whole set: the 3D, every wall's fronts, every wall without fronts, every wall in X-ray, the plans, the sections, the visualisation, the cut list"
+            title="The ticked sheets of the set, in its order: the 3D, every wall's fronts, every wall without fronts, every wall in X-ray, the plans, the sections, the visualisation, the cut list"
             onClick={() => save('walls-pdf')}
           >
             Drawing set (PDF)
@@ -458,17 +479,34 @@ export default function DrawingModal({ rig = null }) {
           {kind === 'walls' && wallSheetList.length ? (
             <div className="flex gap-1 flex-wrap" data-wall-sheets={wallSheetList.length}>
               {wallSheetList.map((page, i) => (
-                <button
-                  key={page.no || page.name}
-                  type="button"
-                  data-wall-sheet={page.name}
-                  aria-pressed={i === Math.min(wallPage, wallSheetList.length - 1)}
-                  className={`cc-btn px-2 text-[11px] ${i === Math.min(wallPage, wallSheetList.length - 1) ? 'border-gold text-gold' : ''}`}
-                  onClick={() => setWallPage(i)}
-                >
-                  {page.no ? `${page.no} · ${page.name}` : page.name}
-                </button>
+                <span key={page.no || page.name} className="inline-flex items-center gap-1">
+                  {/* T83 F11 · this sheet goes into the PDF and the DXF when ticked. */}
+                  <input
+                    type="checkbox"
+                    data-wall-sheet-pick={page.name}
+                    aria-label={`Export ${page.name}`}
+                    title="Export this sheet with Drawing set (PDF) and Wall DXF"
+                    checked={!leftOut.has(page.name)}
+                    onChange={(ev) => tickSheet(page.name, ev.target.checked)}
+                  />
+                  <button
+                    type="button"
+                    data-wall-sheet={page.name}
+                    aria-pressed={i === Math.min(wallPage, wallSheetList.length - 1)}
+                    className={`cc-btn px-2 text-[11px] ${i === Math.min(wallPage, wallSheetList.length - 1) ? 'border-gold text-gold' : ''}`}
+                    onClick={() => setWallPage(i)}
+                  >
+                    {page.no ? `${page.no} · ${page.name}` : page.name}
+                  </button>
+                </span>
               ))}
+            </div>
+          ) : null}
+          {kind === 'walls' && wallSheetList.length ? (
+            <div className="flex gap-2 items-center text-[11px] text-ink-400" data-wall-sheets-picked={wallPicked.length}>
+              <span>{`Export: ${wallPicked.length} of ${wallSheetList.length} sheets ticked, bound in the set's order and numbered 1 to ${wallPicked.length}.`}</span>
+              <button type="button" className="cc-btn px-2 text-[11px]" data-wall-sheets-all="1" onClick={() => setLeftOut(new Set())}>All</button>
+              <button type="button" className="cc-btn px-2 text-[11px]" data-wall-sheets-none="1" onClick={() => setLeftOut(new Set(wallSheetList.map((p) => p.name)))}>None</button>
             </div>
           ) : null}
 

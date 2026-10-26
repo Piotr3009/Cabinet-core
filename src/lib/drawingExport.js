@@ -12,6 +12,8 @@ import { DXF_AUTOCAD_ONLY, sheetToDxf } from '../engine/drawings/dxf.js';
 import { slug } from '../engine/render.js';
 import { exportFileName } from '../engine/naming.js';
 import { LOGO_TYPES, dataUrlType, imageSizeOf } from '../engine/drawings/setSheet.js';
+// T83 F11 · the pages of what is bound, counted as bound (`n / N`).
+import { numberPages } from '../engine/drawings/wallSheets.js';
 import { download } from './exporters.js';
 
 // ─── Getting a drawing off the screen (turn 6, CLAUDE.md F7; turn 7, F1) ───
@@ -492,9 +494,15 @@ export function assertPdfBytes(bytes, { pages, sheets, what = 'The PDF' }) {
 /**
  * The wall set as one PDF: a page per sheet, in the order they were built —
  * Wall A /1, Wall A /2, Wall B /1, …, then the horizontal section.
+ *
+ * T83 F11 (*"daj mozliwosc exportowania tylko naprzyklad frontow lub cos
+ * takiego, nie koniecznie wszystkie strony na raz"*): `sheets` is whatever
+ * the window ticked, in the set's order, and each page's SHEET cell counts
+ * the pages bound (`numberPages`): three sheets of nine print 01 / 03 to
+ * 03 / 03. The whole set bound in order prints exactly what it printed.
  */
 export function exportWallDrawingsPdf(sheets, { project }) {
-  const pages = (sheets || []).filter(Boolean);
+  const pages = numberPages((sheets || []).filter(Boolean));
   const doc = bookletDoc(pages);
   // T42-F0: looked at, not assumed. See the note above.
   const measured = assertPdfBytes(pdfBytes(doc), {
@@ -542,15 +550,18 @@ export function drawingErrorText(err) {
 export async function exportWallDrawingsDxf(sheets, { project }) {
   const pages = (sheets || []).filter((s) => s && s.sheet);
   if (!pages.length) throw new Error('There is nothing to draw yet — add a unit first.');
+  // T83 F11 · the ticked sheets, each title strip counting the files bound, as the PDF's pages.
+  const numbered = numberPages(pages.map((s) => s.sheet));
 
   const zip = new JSZip();
   const names = [];
-  for (const page of pages) {
+  for (const [i, page] of pages.entries()) {
     const name = `${slug(page.name, 'sheet')}-autocad-only.dxf`;
     names.push(name);
+    const sheet = numbered[i];
     // T81 F8: the painter's white is a fill with no stroke; R12 has no word for
     // a fill, so it leaves the file as dxf.js leaves every fill (no outline).
-    zip.file(name, sheetToDxf({ ...page.sheet, entities: (page.sheet.entities || []).filter((e) => e.layer !== 'MASK') }));
+    zip.file(name, sheetToDxf({ ...sheet, entities: (sheet.entities || []).filter((e) => e.layer !== 'MASK') }));
   }
   // The warning travels with the files as well as ON them, because the person
   // who unzips this is not always the person who opens a sheet.

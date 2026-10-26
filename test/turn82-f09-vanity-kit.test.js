@@ -83,6 +83,9 @@ const parts = (r, part) => r.panels.filter((p) => p.part === part);
 const byId = (r, id) => r.panels.find((p) => p.id === id);
 const runnerPairs = (r) => (r.hardware || []).find((h) => h.role === 'runner_pairs')?.qty ?? 0;
 const trapSaid = (r) => r.warnings.filter((w) => w.code === 'VANITY_TRAP');
+// AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+// the vanity's boxes keep the service void behind them (KIT_VANITY.lsp D9, D27): vanity-boxes takes the void.
+const VD = P.vanity.serviceVoidMm;
 
 // ===========================================================================
 // THE THREE KITS
@@ -129,7 +132,7 @@ test('F9 . three kits, the drawer unit\'s grammar, the bathroom family, KIT_VANI
   assert.ok(!isVanityKit('BUDR') && !isVanityKit('WARDROBE_CHEST3'));
 });
 
-test('F9 . born from profile.vanity.defaults: 900 x 600 x 500, one column, one basin, the void in wall_gap (D6)', () => {
+test('F9 . born from profile.vanity.defaults: 900 x 600 x 500, one column, one basin, at the wall (D6, D27)', () => {
   assert.equal(P.vanity.serviceVoidMm, 80, '"3 - 80"');
   assert.equal(vanityWallGap(P), L.call('vanity-wall-gap', P.room.wallBackClearance));
   for (const [id] of VANITIES) {
@@ -141,11 +144,11 @@ test('F9 . born from profile.vanity.defaults: 900 x 600 x 500, one column, one b
     assert.equal(p.sinks, 1, 'the LISP\'s worked example: one basin');
     assert.equal(p.floating, false, 'D19: on the floor (the room\'s, F13)');
     assert.equal(p.float_height_mm, P.vanity.defaults.floatHeightMm);
-    // "the unit's wall_gap is the project's clearance + 80, written by the kit's defaults (not typed)"
-    assert.equal(p.wall_gap, P.room.wallBackClearance + P.vanity.serviceVoidMm);
-    assert.equal(p.wall_gap, 90);
-    // ...so every reader of wallGapOf sees the void.
-    assert.equal(wallGapOf({ type: id, params: p }, P), 90);
+    // AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+    // no wall_gap is written at birth: the vanity stands at the house's clearance like every unit (T82: 90).
+    assert.equal(p.wall_gap, undefined);
+    assert.equal(wallGapOf({ type: id, params: p }, P), P.room.wallBackClearance);
+    assert.equal(wallGapOf({ type: id, params: p }, P), 10);
   }
   // No kit written before tonight is born with a vanity key.
   for (const id of UNIT_TYPE_ORDER) {
@@ -155,7 +158,7 @@ test('F9 . born from profile.vanity.defaults: 900 x 600 x 500, one column, one b
   }
 });
 
-test('F9 . born in a room by the road every unit takes: its own 600 x 500, the void 90 off the wall, #39 once', () => {
+test('F9 . born in a room by the road every unit takes: its own 600 x 500, at the wall (T83 F6), #39 as the LISP says', () => {
   const S = () => useProjectStore.getState();
   S().newProject();
   S().setRoom({ corners: rectCorners(4000, 3000), height: 2500 });
@@ -165,14 +168,17 @@ test('F9 . born in a room by the road every unit takes: its own 600 x 500, the v
   const u = S().units.find((x) => x.id === id);
   assert.equal(u.params.unit_num, 'VU01');
   assert.deepEqual([u.params.width, u.params.height, u.params.depth], [900, 600, 500], 'the project\'s 770 and 558 do not replace its own');
-  assert.equal(u.params.wall_gap, 90);
-  assert.equal(wallGapOf(u, P), 90, 'the room stands it 80 further off the wall');
+  // AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // the carcass to the wall at the house's clearance (T82: 90, the void as air behind it).
+  assert.equal(u.params.wall_gap, undefined);
+  assert.equal(wallGapOf(u, P), 10, 'the room stands it at the clearance, as every unit');
   assert.equal((u.params.sections?.[0]?.items || []).filter((i) => i.kind === 'drawer').length, 3, 'one drawer item a front');
   const r = S().unitResult(id);
   assert.ok(byId(r, 'RAIL-TOP') && byId(r, 'D3-BB-1') && !byId(r, 'BACK'));
   const found = S().runChecks().filter((f) => f.check === 39);
-  assert.equal(found.length, 1);
-  assert.equal(found[0].message, 'VU01: The trap stands 45 mm beyond the U: the U reaches 155 from the carcass back, the waste stands at 200');
+  // T83 F6: the shorter box's U reaches 205 (T82: 155); #39 says what the LISP says for the waste the profile sets.
+  const lispSaid = (L.call('vanity-trap-verdict', 900, 600, 500, G, GB, FT, 3, 1, 1) || []).map((e) => `VU01: ${e[2].replace(/^#39 /, '')}`);
+  assert.deepEqual(found.map((f) => f.message), lispSaid);
   // Nothing red on a vanity as it is born (the runner catalogue's amber aside).
   assert.deepEqual(S().runChecks().filter((f) => f.level === 'red' && f.unitId === id).map((f) => f.check), []);
 });
@@ -207,7 +213,7 @@ test('F9 . the boxes: the parent\'s law on the runner less ten, exactly the LISP
   for (const [id, n] of VANITIES) {
     for (const [W, H, D] of [[900, 600, 500], [600, 560, 450], [1200, 720, 560]]) {
       const r = kit(id, { width: W, height: H, depth: D, sinks: 0 });
-      const lisp = L.call('vanity-boxes', W, H, D, G, GB, FT, n, 1);
+      const lisp = L.call('vanity-boxes', W, H, D, G, GB, FT, n, 1, VD);
       const engine = vanityBoxesOf(r.panels, { n, columns: 1 });
       assert.deepEqual(engine.map((b) => [b.col, b.idx, b.x0, b.bw, b.side, b.base, b.depth, b.zBack]), lisp, `${id} ${W} x ${H} x ${D}`);
       for (const b of lisp) {
@@ -302,7 +308,7 @@ test('F9 . the U: the top drawer\'s back wall cut into boards and its bottom not
   const T = vanitySpec(P);
   assert.deepEqual([T.trapWidthMm, T.trapDepthMm, T.trapRadiusMm], [160, 120, 20], '"2 wyciecie u dookola", "6 - tak"');
   const r = kit('VANITY3', { sinks: 1 });
-  const boxes = L.call('vanity-boxes', 900, 600, 500, G, GB, FT, 3, 1);
+  const boxes = L.call('vanity-boxes', 900, 600, 500, G, GB, FT, 3, 1, VD);
   const [[tag, u]] = L.call('vanity-trap-us', 900, 600, 500, G, GB, FT, 3, 1, 1);
   assert.equal(tag, 'D3');
   const top = L.call('vanity-box-of', boxes, 1, 3);
@@ -356,7 +362,7 @@ test('F9 . two basins on one column: two U\'s at a third and two thirds, three b
   assert.deepEqual(vanityWastes({ W: 900, columns: 2, sinks: 2 }), L.call('vanity-wastes', 900, 2, 2));
   assert.deepEqual(vanityWastes({ W: 900, columns: 1, sinks: 0 }), []);
   const r = kit('VANITY3', { sinks: 2 });
-  const top = L.call('vanity-box-of', L.call('vanity-boxes', 900, 600, 500, G, GB, FT, 3, 1), 1, 3);
+  const top = L.call('vanity-box-of', L.call('vanity-boxes', 900, 600, 500, G, GB, FT, 3, 1, VD), 1, 3);
   const us = L.call('vanity-trap-us', 900, 600, 500, G, GB, FT, 3, 1, 2).map(([, u]) => u);
   const pieces = L.call('vanity-back-pieces', top, us, GB);
   assert.deepEqual(pieces, [[0, 179], [339, 479], [639, 818]]);
@@ -374,10 +380,15 @@ test('F9 . #39: the trap beyond the U (D15) and the shallow trap (D16), yellow, 
   assert.equal(row.level, 'yellow');
   assert.match(row.label, /shallow trap/i);
   const sentences = (r) => trapSaid(r).map((w) => `#39 ${w.message}`);
-  // The default sink vanity: the confirmed U (120) and the proposed waste (200) disagree (D15).
+  // The default sink vanity: the confirmed U (120) and the proposed waste disagree where the waste stands beyond
+  // the U (D15). AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // the shorter box's back face at 85, the U reaches 205 (T82: 155, "45 mm beyond" at the waste 200).
   const def = kit('VANITY3');
-  assert.deepEqual(sentences(def), L.call('vanity-trap-verdict', 900, 600, 500, G, GB, FT, 3, 1, 1).map((e) => e[2]));
-  assert.deepEqual(sentences(def), ['#39 The trap stands 45 mm beyond the U: the U reaches 155 from the carcass back, the waste stands at 200']);
+  const zw = P.vanity.wasteFromBackMm;
+  const reach = 85 + 120 - zw;
+  assert.deepEqual(sentences(def), (L.call('vanity-trap-verdict', 900, 600, 500, G, GB, FT, 3, 1, 1) || []).map((e) => e[2]));
+  assert.deepEqual(sentences(def), reach < 0
+    ? [`#39 The trap stands ${-reach} mm beyond the U: the U reaches 205 from the carcass back, the waste stands at ${zw}`] : []);
   // No basin, nothing to say.
   assert.deepEqual(trapSaid(kit('VANITY3', { sinks: 0 })), []);
   // Four drawers in a 560 carcass: the box under the top one stands 59 under the trap's bottom (D16).
@@ -397,10 +408,11 @@ test('F9 . #39: the trap beyond the U (D15) and the shallow trap (D16), yellow, 
   // The Check reads the engine's own words, once per sentence, yellow.
   const unit = { id: 'u1', type: 'VANITY4', params: { ...defaultParamsFor('VANITY4', P), height: 560, unit_num: 'VU01' } };
   const found = runChecks({ entries: [{ unit, result: tight }], units: [unit], profile: P }).filter((f) => f.check === 39);
-  assert.equal(found.length, 2);
+  // T83 F6: the REACH sentence only where the waste stands beyond the shorter box's U (205), as above.
+  assert.equal(found.length, reach < 0 ? 2 : 1);
   for (const f of found) assert.equal(f.level, 'yellow');
   assert.ok(found.some((f) => f.message === 'VU01: Use a shallow trap: the drawer under it stands 59 mm under the trap\'s bottom, 60 wanted'));
-  assert.ok(found.some((f) => f.trap === 'REACH'));
+  assert.equal(found.some((f) => f.trap === 'REACH'), reach < 0);
 });
 
 // ===========================================================================
@@ -438,7 +450,7 @@ test('F9 . columns 2: one DIVIDER mid-width, a stack each side, six boxes at thr
   assert.deepEqual([div.box.x, div.box.y, div.box.z, div.box.w, div.box.h, div.box.d], [x0, y0, z0, w, h, d]);
   assert.deepEqual(fronts(r).map((x) => [x.box.x, x.box.y, x.w, x.h]), L.call('vanity-fronts', 900, 600, 3, 2).map(([, , x, y, fw, fh]) => [x, y, fw, fh]));
   assert.deepEqual(vanityBoxesOf(r.panels, { n: 3, columns: 2 }).map((b) => [b.col, b.idx, b.x0, b.bw, b.side, b.base, b.depth, b.zBack]),
-    L.call('vanity-boxes', 900, 600, 500, G, GB, FT, 3, 2));
+    L.call('vanity-boxes', 900, 600, 500, G, GB, FT, 3, 2, VD));
   assert.equal(runnerPairs(r), 6);
   assert.deepEqual(r.derived.vanity.trap.cuts.map((c) => c.tag), ['Z1D3', 'Z2D3']);
   assert.ok(byId(r, 'Z1D3-BB-1') && byId(r, 'Z1D3-BB-2') && byId(r, 'Z2D3-BB-2'));

@@ -41,7 +41,11 @@ const V = P.vanity;
 
 // The worked example: VANITY3 900 x 600 x 500, G 18, box board 18, front 25.
 const EX = [900, 600, 500, 18, 18, 25];
-const boxes = (n, columns, dims = EX) => L.call('vanity-boxes', ...dims, n, columns);
+// AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+// the vanity's boxes keep the service void behind them (D9, D27): vanity-boxes takes the void, 80 for the vanity,
+// 0 for the parent and the chest.
+const VD = 80;
+const boxes = (n, columns, dims = EX, vd = VD) => L.call('vanity-boxes', ...dims, n, columns, vd);
 const verdict = (n, columns, sinks, dims = EX) => L.call('vanity-trap-verdict', ...dims, n, columns, sinks) || [];
 
 // ═══ THE FILE ════════════════════════════════════════════════════════════
@@ -252,7 +256,8 @@ test('F8 . the parent\'s numbers the kit restates are the house\'s, number for n
 test('F8 . at one column the kit\'s equal stack is the engine\'s BUDR2 and BUDR4, box for box', () => {
   for (const [type, n] of [['BUDR2', 2], ['BUDR4', 4]]) {
     const r = computeCabinet({ ...defaultParamsFor(type, P), type, width: 900, height: 600, depth: 500, front_t: 25 }, P);
-    const lisp = boxes(n, 1);
+    // T83 F6: the parent asks no void (vd 0), so the kit's routine is the BUDR's box for box.
+    const lisp = boxes(n, 1, EX, 0);
     const fronts = L.call('vanity-fronts', 900, 600, n, 1);
     for (let i = 1; i <= n; i += 1) {
       const b = lisp[i - 1];
@@ -305,35 +310,43 @@ test('F8 (a) . two rails W x 100 x G where the back stood; no side tab survives;
 
 // ═══ (b) THE VOID AND THE TOP ═════════════════════════════════════════════
 
-test('F8 (b) . wall_gap is the clearance + 80; the top is the house slab plus the void, 628; the void is a note, #45', () => {
+test('F8 (b) . the carcass to the wall at the clearance; the top is the house slab, 548; the void inside is a note, #45', () => {
   const clearance = P.room.wallBackClearance;
   assert.equal(clearance, 10);
+  // AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // the carcass stands at the house's clearance like every unit (D6, D27); T82's 90 (the clearance + 80) is gone.
   const wallGap = L.call('vanity-wall-gap', clearance);
-  assert.equal(wallGap, 90);
+  assert.equal(wallGap, 10);
   // AMENDED after the review of 25.10.2026 (D7): the house worktop's reach, worktop.js worktopGeometry,
-  // D + the door gap + the front + the front overhang, plus the void (wall_gap less the clearance).
+  // D + the door gap + the front + the front overhang, plus the stand-off (wall_gap less the clearance): 0 now, so
+  // T83 F6 moves 628 to 548, the top reaching the wall over the carcass as any run's.
   const top = L.call('vanity-top-depth', 500, P.doors.gap, P.front.thickness, P.autoParts.worktop.frontOverhang, wallGap - clearance);
-  assert.equal(top, 628);
+  assert.equal(top, 548);
   // The fronts stand 10 under the slab's edge, as every kitchen slab's: a BUD 558 slab is 606, its fronts at 596.
   assert.equal(top - (wallGap + 500 + P.doors.gap + P.front.thickness), 10);
   assert.equal(L.call('vanity-top-depth', 558, P.doors.gap, P.front.thickness, P.autoParts.worktop.frontOverhang, 0), 606);
-  assert.equal(L.call('vanity-void-note'), '#45 Service void 80 behind the vanity for the pipes');
-  say('THE VOID. wall_gap 90; the worktop 628 deep from the wall (500 + 3 + 25 + 20 + 80), the fronts 10 under its edge.');
-  say('500 + 3 + 25 + 20 + 80 = 628 on the default, as a BUD 558 kitchen\'s slab is 606 for fronts at 596.');
+  // T83 F6: CLAUDE.md F6 *"The Check's note #45 says "Service void 80 inside the vanity behind the drawers""*.
+  assert.equal(L.call('vanity-void-note'), '#45 Service void 80 inside the vanity behind the drawers');
+  say('THE VOID, INSIDE (T83 F6, D27). wall_gap 10, the house clearance: the carcass to the wall; the worktop 548 deep from the wall (500 + 3 + 25 + 20), the fronts 10 under its edge; the void 80 inside, the boxes\' back faces at 85 from the carcass back.');
+  say('reaches the wall over the carcass as any run\'s: 500 + 3 + 25 + 20 = 548 on the default (628 under T82, over the void), as a BUD 558 kitchen\'s slab is 606 for fronts at 596');
 });
 
 // ═══ (c) THE EQUAL DRAWERS ═══════════════════════════════════════════════
 
-test('F8 (c) . VANITY3 900 x 600 x 500: three equal fronts, the boxes on the 450 runner less ten', () => {
+test('F8 (c) . VANITY3 900 x 600 x 500: three equal fronts, the boxes on the 400 runner less ten (T83 F6: the void inside)', () => {
   assert.deepEqual(L.call('vanity-front-heights', 600, 3), [197, 197, 197]);
   assert.deepEqual(L.call('vanity-fronts', 900, 600, 3, 1), [
     [1, 1, 1.5, 0, 897, 197], [1, 2, 1.5, 200, 897, 197], [1, 3, 1.5, 400, 897, 197],
   ]);
-  assert.equal(L.call('vanity-box-depth', 500, 18), 440, 'the 450 runner less 10');
+  // AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // the box keeps the void behind it (D9, D27): at most 500 - 25 - 80 = 395, the 390 box on the 400 runner (T82: 440 on the 450).
+  assert.equal(L.call('vanity-box-room', 500, 18, 25, VD), 395);
+  assert.equal(L.call('vanity-box-depth', 500, 18, 25, VD), 390, 'the 400 runner less 10');
+  assert.equal(L.call('vanity-box-depth', 500, 18, 25, 0), 440, 'the parent, no void: the 450 runner less 10');
   const b = boxes(3, 1);
   assert.deepEqual(b.map((x) => x[5]), [31.5, 213.5, 413.5], 'the feet');
   assert.deepEqual(b.map((x) => L.call('vanity-box-top', x)), [169.5, 351.5, 551.5], 'the tops');
-  assert.deepEqual([b[0][2], b[0][3], b[0][4], b[0][6], b[0][7]], [23, 854, 138, 440, 35]);
+  assert.deepEqual([b[0][2], b[0][3], b[0][4], b[0][6], b[0][7]], [23, 854, 138, 390, 85]);
   assert.deepEqual([L.call('vanity-box-len', b[0], 18), L.call('vanity-box-wall-h', b[0], 18), L.call('vanity-box-bottom-w', b[0], 18)], [818, 104, 831]);
   // Equal, the top one taking the rounding (the parent's exact variants), and 3 under the top.
   for (const [H, n] of [[600, 2], [600, 4], [601, 3], [602, 4], [560, 4], [720, 3]]) {
@@ -342,7 +355,7 @@ test('F8 (c) . VANITY3 900 x 600 x 500: three equal fronts, the boxes on the 450
     assert.ok(hs.slice(0, -1).every((h) => h === hs[0]), `${n} over ${H}: equal but the top`);
   }
   say('THE FRONTS. 197 197 197 at y 0 200 400, 897 wide at x 1.5.');
-  say('THE BOXES. 440 deep (the 450 runner), the back face at z 35; 854 wide at x 23, the walls 818 long and 104 high, the bottom 831; the sides 138, their feet at 31.5 213.5 413.5, their tops 169.5 351.5 551.5.');
+  say('THE BOXES. 390 deep (the 400 runner, the rung at or under 500 - 80), the back face at z 85; 854 wide at x 23, the walls 818 long and 104 high, the bottom 831; the sides 138, their feet at 31.5 213.5 413.5, their tops 169.5 351.5 551.5. The parent (vd 0): 440 deep on the 450, the back face at 35.');
 });
 
 // ═══ (c2) THE TWO COLUMNS ════════════════════════════════════════════════
@@ -416,22 +429,29 @@ test('F8 (d) . the U: 160 x 120 R 20 in the top box under the waste, the back wa
 });
 
 test('F8 (d) . Check #39 in words: the waste beyond the U, the shallow trap, the divider, the U that does not fit', () => {
-  // D15: the confirmed U and the proposed waste disagree on every default, and the room says so.
+  // D15: a waste beyond the U's reach is said. AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+  // the shorter box's back face stands at 85, so the U reaches 205 (T82: 155); the waste, wherever the profile sets it
+  // (vanityWasteFromBack), is said only where it stands beyond that.
+  const zw = K('vanityWasteFromBack');
+  const reach = 85 + 120 - zw;
+  const said = reach < 0 ? [['REACH', 450, `#39 The trap stands ${-reach} mm beyond the U: the U reaches 205 from the carcass back, the waste stands at ${zw}`]] : [];
   const v3 = verdict(3, 1, 1);
-  assert.deepEqual(v3, [['REACH', 450, '#39 The trap stands 45 mm beyond the U: the U reaches 155 from the carcass back, the waste stands at 200']]);
-  assert.equal(L.call('vanity-trap-reach', boxes(3, 1)[2], 200), -45);
-  say('"#39 The trap stands 45 mm beyond the U: the U reaches 155 from the carcass back, the waste stands at 200".');
-  say('A U that takes a trap as wide as itself centred on that waste is 200 + 80 - 35 = 245 deep: the owner\'s to set.');
+  assert.deepEqual(v3, said);
+  assert.equal(L.call('vanity-trap-reach', boxes(3, 1)[2], zw), reach);
+  say('the shorter box stands at 85 (500 - 25 - 390), the U reaches 205 and the waste at 200 stands 5 inside it: nothing is said on the default.');
+  say('A U that takes a trap as wide as itself centred on that waste is 200 + 80 - 85 = 195 deep: the owner\'s to set.');
   // D16: the trap's bottom line is the top box's bottom underside; 60 of air under it.
   const b = boxes(3, 1);
   assert.equal(L.call('vanity-trap-line', b[2]), 428.5);
   assert.equal(L.call('vanity-trap-room', b[2], b[1]), 77);
   say('The trap\'s bottom line 428.5, the box under it tops at 351.5: 77 of air, no shallow trap.');
   const v4 = verdict(4, 1, 1, [900, 560, 500, 18, 18, 25]);
-  assert.deepEqual(v4.map((x) => x[0]), ['REACH', 'SHALLOW']);
-  assert.equal(v4[1][2], '#39 Use a shallow trap: the drawer under it stands 59 mm under the trap\'s bottom, 60 wanted');
+  // T83 F6: REACH only where the waste stands beyond the shorter box's U (205), as above.
+  const reachSaid = reach < 0 ? ['REACH'] : [];
+  assert.deepEqual(v4.map((x) => x[0]), [...reachSaid, 'SHALLOW']);
+  assert.equal(v4.find((x) => x[0] === 'SHALLOW')[2], '#39 Use a shallow trap: the drawer under it stands 59 mm under the trap\'s bottom, 60 wanted');
   assert.deepEqual(L.call('vanity-trap-us', 900, 560, 500, 18, 18, 25, 4, 1, 1).map((x) => x[0]), ['D4'], 'no second U, ever');
-  assert.deepEqual(verdict(4, 1, 1).map((x) => x[0]), ['REACH'], 'at 600 the four have 62 of air');
+  assert.deepEqual(verdict(4, 1, 1).map((x) => x[0]), reachSaid, 'at 600 the four have 62 of air');
   say('THE SHALLOW TRAP. VANITY4 W 900 H 560 D 500: fronts 137 137 137 137 at y 0 140 280 420; sides 96; the trap\'s bottom line 448.5, the box under it tops at 389.5: 59 of air: "#39 Use a shallow trap: the drawer under it stands 59 mm under the trap\'s bottom, 60 wanted". The same at H 600: 147 each, 62 of air, no sentence.');
   // D17: one basin on two columns stands on the divider: no U.
   assert.deepEqual(verdict(3, 2, 1), [['DIVIDER', 450, '#39 The trap stands over the divider: no top drawer can take its U']]);

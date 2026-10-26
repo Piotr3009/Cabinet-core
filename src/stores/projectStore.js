@@ -1722,10 +1722,30 @@ const migrateUnitShoe = (u) => {
   return { ...u, params: { ...u.params, sections } };
 };
 
+/**
+ * ─── T83 F6 · A T82 VANITY LOADS TO THE WALL ───────────────────────────────
+ *
+ * The owner, 25.10.2026 (22:41): *"carcas powinien byc do sciany, czyli
+ * wszystko w srodku carcasa mniejsze ale carcas do sciany"*. T82 wrote the
+ * service void into a vanity's own `wall_gap` at birth (the clearance + 80, 90
+ * on the house's profile); the void is inside the carcass now (KIT_VANITY.lsp
+ * D27), so a vanity saved with exactly that birth number drops it and stands
+ * at the house's clearance like every unit. A gap anybody typed since (any
+ * other number) is his and stands.
+ */
+const migrateUnitVanityVoid = (u) => {
+  if (!isVanityKit(u?.type) || u?.params?.wall_gap == null) return u;
+  const P = getCabinetProfile();
+  const born = Math.max(0, Number(P.room?.wallBackClearance) || 0) + (Number(P.vanity?.serviceVoidMm) || 0);
+  if (!(born > 0) || Number(u.params.wall_gap) !== born) return u;
+  const { wall_gap: _t82, ...params } = u.params;
+  return { ...u, params };
+};
+
 const migrateUnits = (units) => (Array.isArray(units)
-  ? units.map((u) => migrateUnitShoe(migrateUnitWatch(migrateUnitRidden(
+  ? units.map((u) => migrateUnitVanityVoid(migrateUnitShoe(migrateUnitWatch(migrateUnitRidden(
     migrateUnitSetbacks(migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u)))),
-  ))))
+  )))))
   : []);
 
 function loadCache() {

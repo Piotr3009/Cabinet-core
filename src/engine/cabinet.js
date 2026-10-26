@@ -138,6 +138,9 @@ import {
 import { fitBasins } from './worktop.js';
 // T82 F13 · a floating vanity's hangers (KIT_VANITY.lsp D19, `vanity-hangers`).
 import { vanityHangers } from './vanity.js';
+// T83 F6 · the room a vanity's drawer box may take, the void kept behind it
+// (KIT_VANITY.lsp D9, D27, `vanity-box-room`).
+import { vanityBoxRoom } from './vanity.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
 // `trimOutlineOnSlope` are turn 46's (CLAUDE.md F3): the slope cut, ported 1:1
 // from SKYLON_COMMON's `SKY:slopeCutPts` — iron rule 3, the LISP states the
@@ -2869,7 +2872,13 @@ export function computeCabinet(params, profileOverride) {
   let budr = null;
   if (budrDrawers) {
     const heights = overlay ? overlay.heights : cfg.drawerHeights;
-    const maxDl = D - G - B.depthAllowance;
+    // T83 F6 · THE CARCASS TO THE WALL, THE VOID INSIDE (KIT_VANITY.lsp D9,
+    // D27). The owner, 25.10.2026 (22:41): *"carcas powinien byc do sciany,
+    // czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*. A
+    // vanity's box keeps the service void behind it: the same ladder, the box
+    // the runner less ten, over the room `vanityBoxRoom` leaves. Every other
+    // kit reads the very line it always read.
+    const maxDl = type.vanity ? vanityBoxRoom({ D, G, frontT }, P) : D - G - B.depthAllowance;
     const depth = snapDrawerDepth(maxDl, DR.depthSteps) ?? DR.depthSteps[0];
     if (maxDl < DR.depthSteps[0]) {
       warnings.push({

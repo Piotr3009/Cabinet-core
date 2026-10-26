@@ -26,10 +26,13 @@
 //         the back's own plane, each keeping the part of the back's joint
 //         that lands wholly inside it (`vanityRailGeometry`). The sides keep
 //         no back tab (D4): `computeCabinet` cuts them with `backTabs: false`.
-//   5(b)  THE SERVICE VOID. `wall_gap` = the clearance + 80 (`vanityWallGap`),
-//         written at birth by `types.js defaultParamsFor`.
+//   5(b)  THE SERVICE VOID, INSIDE (T83 F6, D27). The carcass to the wall at
+//         the house's clearance (`vanityWallGap`; `defaultParamsFor` writes
+//         no `wall_gap`); the void is room taken behind the drawer boxes
+//         (`vanityBoxRoom`, read by `cabinet.js` for the box's rung) and
+//         Check #45 says so (`vanityVoidNote`).
 //   5(c)  THE EQUAL DRAWERS. `cabinet.js drawerSplitFor` (the kit's
-//         `equalDrawers`); the boxes are the parent's.
+//         `equalDrawers`); the boxes are the parent's, shortened by the void.
 //   5(d)  THE TRAP. The wastes (`vanityWastes`, THE ONE SOURCE the basin, the
 //         plan cut-out and the room read), the U in the top drawer's box (the
 //         back wall cut into boards, the bottom notched) and Check #39's
@@ -171,11 +174,36 @@ export function vanityRailGeometry({
   return out;
 }
 
-// --- (b) THE SERVICE VOID ---------------------------------------------------
+// --- (b) THE SERVICE VOID, INSIDE THE CARCASS --------------------------------
+//
+// T83 F6 · the owner, 25.10.2026 (22:41): *"jak mamy miejsce na rurki z tylu
+// to super ze szuflady sa mniejsze ale carcas powinien byc do sciany, czyli
+// wszystko w srodku carcasa mniejsze ale carcas do sciany"*. KIT_VANITY.lsp
+// D6, D9 and D27: the carcass stands at the house's clearance like every
+// unit; the void is the room the drawer boxes leave behind them.
 
-/** The unit's wall_gap, written by the kit's defaults (`vanity-wall-gap`, D6). */
+/** The unit's wall gap: the house's clearance, as every unit's (`vanity-wall-gap`, D6, D27). */
 export function vanityWallGap(profile) {
-  return Math.max(0, num(profile?.room?.wallBackClearance, 0)) + vanitySpec(profile).serviceVoidMm;
+  return Math.max(0, num(profile?.room?.wallBackClearance, 0));
+}
+
+/**
+ * The room a vanity's drawer box may take (`vanity-box-room`, D9, D27): the
+ * parent's D - G - 20 and no more than D - front - the void, so the box's back
+ * face (D - front - box from the carcass back, the parent's placement) keeps
+ * `serviceVoidMm` from the carcass back. A void of 0 is the parent's law to
+ * the millimetre. `cabinet.js` snaps it on the box ladder (the runner less
+ * ten): VANITY3 at D 500, 395, the 390 box on the 400 runner.
+ */
+export function vanityBoxRoom({ D, G, frontT }, profile) {
+  const parent = Number(D) - Number(G) - num(profile?.baseDrawerUnit?.depthAllowance, 20);
+  const v = vanitySpec(profile).serviceVoidMm;
+  return v > 0 ? Math.min(parent, Number(D) - Number(frontT) - v) : parent;
+}
+
+/** Check #45's words (`vanity-void-note`, D21, D27), without the LISP's "#45 ". */
+export function vanityVoidNote(profile) {
+  return `Service void ${vanityMm(vanitySpec(profile).serviceVoidMm)} inside the vanity behind the drawers.`;
 }
 
 // --- (c) THE BOXES, AS THE ENGINE CUT THEM -----------------------------------

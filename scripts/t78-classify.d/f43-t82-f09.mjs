@@ -180,14 +180,18 @@ export const LIVENESS = {
     const fronts = r.panels.filter((p) => p.part === 'DRAWER-FRONT').map((p) => p.h);
     const pieces = r.panels.filter((p) => /^D3-BB-\d$/.test(p.id)).map((p) => p.w);
     const trap = r.warnings.filter((w) => w.code === 'VANITY_TRAP').length;
+    // AMENDED BY T83 F6 (25.10.2026, 22:41: *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze
+    // ale carcas do sciany"*): the shorter box's U reaches 205, so the default's waste at 200 is no longer said in #39
+    // (KIT_VANITY.lsp D15 amended); the trap's delta is read off the U the engine cut (derived.vanity.trap.cuts).
+    const cuts = r.derived?.vanity?.trap?.cuts?.length || 0;
     const live = Boolean(top && bottom) && top.h === 100 && bottom.box.y === 0
       && !r.panels.some((p) => p.part === 'BACK')
       && JSON.stringify(fronts) === JSON.stringify([197, 197, 197])
-      && JSON.stringify(pieces) === JSON.stringify([329, 329]) && trap === 1;
+      && JSON.stringify(pieces) === JSON.stringify([329, 329]) && cuts === 1;
     return {
       live,
       said: `VANITY3 900 x 600 x 500 cuts RAIL-BOTTOM ${bottom?.w} x ${bottom?.h} and RAIL-TOP ${top?.w} x ${top?.h}, no BACK, `
-        + `fronts ${fronts.join(' / ')}, the top box's back wall as ${pieces.join(' + ')}, ${trap} #39 sentence`,
+        + `fronts ${fronts.join(' / ')}, the top box's back wall as ${pieces.join(' + ')}, ${cuts} U cut, ${trap} #39 sentence`,
     };
   },
 };

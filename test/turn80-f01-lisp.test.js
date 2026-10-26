@@ -58,6 +58,10 @@ const sha256 = (b) => createHash('sha256').update(b).digest('hex');
 // *"teraz zaprojektujmy dokladnie to co masz na rysunku szafka wiszaca"*; CLAUDE.md T83 LAWS: *"PART A and PART B
 // begin with the LISP"*). A new file held by its own test, outside T80's fingerprint like the two above.
 const LATER_KITS = ['KIT_HAWA.lsp', 'KIT_VANITY.lsp', 'KIT_MIRROR.lsp'];
+// T83 F6 AMENDED (25.10.2026): a later kit AMENDED on the owner's order, its amendment licensed by its turn's fragment
+// (scripts/t78-classify.d/f44-t83-f06.mjs LISP): KIT_VANITY.lsp's void moves inside the carcass. The owner, 25.10.2026,
+// 22:41: *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*.
+const AMENDED_LATER = ['M\treference/lisp/KIT_VANITY.lsp'];
 const lispFingerprint = () => sha256(readdirSync(`${ROOT}reference/lisp`).filter((n) => n !== KIT && !LATER_KITS.includes(n)).sort()
   .map((n) => `${n} ${sha256(readFileSync(`${ROOT}reference/lisp/${n}`))}`).join('\n'));
 /** The turn's base, where git can answer (origin/main, else main), or null. */
@@ -89,7 +93,7 @@ test('F1 · KIT_INFRAME.lsp: the Skylon header, ASCII, no dash, a NEW file and t
     const moved = spawnSync('git', ['diff', '--name-status', base, '--', 'reference/lisp'], { cwd: ROOT, encoding: 'utf8' })
       .stdout.split('\n').filter(Boolean);
     for (const row of moved) {
-      assert.ok([KIT, ...LATER_KITS].some((k) => row === `A\treference/lisp/${k}`), `only the new kits: ${row}`);
+      assert.ok([KIT, ...LATER_KITS].some((k) => row === `A\treference/lisp/${k}`) || AMENDED_LATER.includes(row), `only the new kits: ${row}`);
     }
   }
 });

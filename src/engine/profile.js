@@ -2345,8 +2345,11 @@ export const DEFAULT_CABINET_PROFILE = {
   // any kit that exists today: only the VANITY kits read it, so every golden
   // is what main cuts.
   vanity: {
-    // *"3 - 80"* (CONFIRMED): the carcass stands the house's wall clearance
-    // plus this off its wall, for the pipes (wall_gap, written at birth).
+    // *"3 - 80"* (CONFIRMED): the room for the pipes. T83 F6, INSIDE the
+    // carcass (CONFIRMED 22:41 *"carcas powinien byc do sciany, czyli
+    // wszystko w srodku carcasa mniejsze ale carcas do sciany"*): the carcass
+    // stands at the house's wall clearance like every unit and the drawer
+    // boxes keep this behind their back faces (KIT_VANITY.lsp D9, D27).
     serviceVoidMm: 80,
     // *"4 - 100 na material carcasa grubosc"* (CONFIRMED): RAIL-BOTTOM and
     // RAIL-TOP, in the carcass board, where the back stood.

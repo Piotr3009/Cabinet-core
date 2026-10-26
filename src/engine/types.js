@@ -2134,16 +2134,18 @@ export function defaultParamsFor(typeId, profile) {
     ...(type.hawaPocket ? hawaPocketDefaultParams(profile) : {}),
     // ─── T82 F9 · THE VANITY'S OWN ANSWERS (KIT_VANITY.lsp) ──────────────────
     // One column (D10), one basin (the LISP's worked example and its command's
-    // default, D14), on the floor (D19, the room's, F13), and THE SERVICE VOID
-    // in the unit's own wall gap: the project's clearance + 80 (D6,
-    // `vanity-wall-gap`), written here and never typed, so every reader of
-    // `runs.js wallGapOf` sees it. Spread, so no other kit carries a key.
+    // default, D14), on the floor (D19, the room's, F13). Spread, so no other
+    // kit carries a key.
+    // T83 F6 · THE CARCASS TO THE WALL (D6, D27): no `wall_gap` is written
+    // any more. The owner, 25.10.2026 (22:41): *"carcas powinien byc do
+    // sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
+    // the vanity stands at the house's clearance like every unit
+    // (`runs.js wallGapOf`, `vanity-wall-gap`) and the void is inside it.
     ...(type.vanity ? {
       columns: 1,
       sinks: 1,
       floating: false,
       float_height_mm: Number(d.floatHeightMm) || 0,
-      wall_gap: Math.max(0, Number(profile.room?.wallBackClearance) || 0) + (Number(profile.vanity?.serviceVoidMm) || 0),
     } : {}),
     // T83 F2 . THE MIRROR CABINET'S OWN ANSWERS (KIT_MIRROR.lsp section 3):
     // `params.mirror`, the profile's defaults with no door width typed (the

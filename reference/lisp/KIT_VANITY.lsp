@@ -11,6 +11,10 @@
 ;;; Command: VANITY_FULL
 ;;; Turn 82 (25.10.2026), the owner's words of 25.10.2026 - LISP FIRST
 ;;; ("lisp najpierw")
+;;; Turn 83 F6 (25.10.2026), the owner's words of 22:41 - THE CARCASS TO THE
+;;; WALL, THE VOID INSIDE (D5, D6, D7, D9, D15 and D21 amended, D27 written;
+;;; the routines vanity-wall-gap, vanity-top-depth, vanity-void-note,
+;;; vanity-box-room, vanity-box-depth and vanity-boxes, and part 6)
 ;;; Derived from: KIT_BUDR_FULL.lsp (the parent: the drawer base), the BACK of
 ;;;               SKYLON_COMMON drawBACK (the rails are what is left of it),
 ;;;               KIT_SINK.lsp (a carcass with no puzzle at the back edge),
@@ -42,6 +46,9 @@
 ;;;           carcasa grubosc, 5 - blat osobny element jak worktop, 6 - do BOM
 ;;;           tez, 7 - tak"
 ;;;   13:46  "6 - tak" (the U's corners R 20)
+;;;   22:41  after the eye-test of T82: "jak mamy miejsce na rurki z tylu to
+;;;           super ze szuflady sa mniejsze ale carcas powinien byc do sciany,
+;;;           czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"
 ;;;
 ;;; This is a NEW FILE. It touches no other kit. KIT_BUDR_FULL, SKYLON_COMMON
 ;;; and the six fossil kits are untouched; a bare drawer base cuts what it cut,
@@ -54,9 +61,13 @@
 ;;; A VANITY is the drawer base (KIT_BUDR_FULL) with its BACK cut out: what is
 ;;; left of the back is two RAILS, RAIL-BOTTOM and RAIL-TOP, 100 high in the
 ;;; carcass board, standing where the back stood, and each keeps exactly the
-;;; part of the back's joint that lands inside it. The carcass stands the
-;;; house's wall clearance plus 80 off the wall for the pipes ("3 - 80"), and
-;;; its top is the house worktop reaching the wall over that void. Its fronts
+;;; part of the back's joint that lands inside it. The carcass stands TO THE
+;;; WALL at the house's wall clearance like every unit (22:41 "carcas powinien
+;;; byc do sciany"), and the 80 for the pipes ("3 - 80") is room taken INSIDE
+;;; it: the drawer boxes give way, each standing 80 or more in front of the
+;;; carcass back, and the pipes rise behind them through the open back between
+;;; the rails (D27). Its top is the house worktop reaching the wall over the
+;;; carcass as any run's. Its fronts
 ;;; are 2, 3 or 4 EQUAL overlay drawers ("w vanity default to sa rowne"), in
 ;;; one column or in two with a DIVIDER mid-width ("patrz szafa"). Under a
 ;;; basin (to the eye only) the top drawer's box takes a U 160 wide and 120
@@ -112,31 +123,42 @@
 ;;;     obey the same band.
 ;;; D5  THE SIDES' DEPTH IS THE PARENT'S, D - G (DERIVED). The rails stand where
 ;;;     the back stood, so nothing in front of the back's plane moves: the
-;;;     sides, the TOP and the BOTTOM keep the parent's cut, the box keeps the
-;;;     parent's D - G - 20 (the rail's G is the back's G), and the carcass is D
-;;;     deep at the rails. In the open back the sides' back edges stand G in
-;;;     front of the rails' back face. The box's back face stands D - front -
-;;;     box from the carcass back (35 on the default), clear of the rails'
-;;;     inside face at G; the parent's placement (the box front a front's
-;;;     thickness behind the carcass front) lets it reach G + 20 - front when
-;;;     D - G - 20 lands on a rung (13 at D 528 on a 25 front: 5 into the
-;;;     back, the BUDR's own today), the parent's to mend, not this file's.
-;;; D6  THE SERVICE VOID 80 (CONFIRMED 13:03 "3 - 80"). The kit's defaults write
-;;;     wall_gap = the project's clearance + vanityServiceVoid (10 + 80 = 90 on
-;;;     the house's room.wallBackClearance), never typed, so every reader of
-;;;     wallGapOf (the room, the drag, the worktop, the plan, the section)
-;;;     sees the void behind the rails' back face. A note, never a fault:
-;;;     Check #45 "Service void 80 behind the vanity for the pipes".
+;;;     sides, the TOP and the BOTTOM keep the parent's cut, and the carcass is
+;;;     D deep at the rails, the rails' back face at the wall line (D27). In
+;;;     the open back the sides' back edges stand G in front of the rails' back
+;;;     face. AMENDED 25.10.2026 (T83 F6, 22:41 "wszystko w srodku carcasa
+;;;     mniejsze"): the box is no longer the parent's D - G - 20 but D9's, the
+;;;     void kept behind it, so its back face stands D - front - box from the
+;;;     carcass back (85 on the default: 500 - 25 - 390; 35 under T82), never
+;;;     less than vanityServiceVoid. The parent's placement (the box front a
+;;;     front's thickness behind the carcass front) is kept as it is; on the
+;;;     BUDR it lets the box reach G + 20 - front when D - G - 20 lands on a
+;;;     rung (13 at D 528 on a 25 front: 5 into the back), the parent's to
+;;;     mend, not this file's; in the vanity the void keeps it 80 clear.
+;;; D6  THE SERVICE VOID 80 (CONFIRMED 13:03 "3 - 80"), INSIDE THE CARCASS
+;;;     (AMENDED 25.10.2026, T83 F6, 22:41 "carcas powinien byc do sciany,
+;;;     czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"). T82
+;;;     wrote wall_gap = the clearance + 80 (90), the void as air between the
+;;;     carcass and the wall: the owner's 22:41 refuses it. The kit writes no
+;;;     wall_gap now: the vanity stands at the house's clearance like every
+;;;     unit (vanity-wall-gap, 10 on room.wallBackClearance), and the void is
+;;;     the room D9 and D27 keep behind the drawer boxes. A note, never a
+;;;     fault: Check #45 "Service void 80 inside the vanity behind the
+;;;     drawers".
 ;;; D7  THE TOP IS THE WORKTOP, TO THE WALL (CONFIRMED 13:03 "5 - blat osobny
 ;;;     element jak worktop"; AMENDED 25.10.2026 after the review: the house's
 ;;;     own reach, one number for the LISP and the engine). Not a board of this
 ;;;     kit: the house worktop (CLAUDE.md F10), its thickness typed (vanityTop
 ;;;     20 the default), its depth from the wall line the house slab's own
 ;;;     (worktop.js worktopGeometry): D + the door gap + the front + the front
-;;;     overhang, plus the service void, wall_gap less the clearance. Like
-;;;     every kitchen slab of the house it counts no clearance, so the fronts
-;;;     stand 10 under its edge: 500 + 3 + 25 + 20 + 80 = 628 on the default,
-;;;     as a BUD 558 kitchen's slab is 606 for fronts at 596.
+;;;     overhang, plus the carcass's stand-off beyond the clearance, wall_gap
+;;;     less the clearance. Like every kitchen slab of the house it counts no
+;;;     clearance, so the fronts stand 10 under its edge. AMENDED 25.10.2026
+;;;     (T83 F6, D27): the carcass is to the wall, its stand-off 0, so the top
+;;;     reaches the wall over the carcass as any run's: 500 + 3 + 25 + 20 = 548
+;;;     on the default (628 under T82, over the void), as a BUD 558 kitchen's
+;;;     slab is 606 for fronts at 596; a gap a joiner types since is reached
+;;;     over as T82 reached the void.
 ;;; D8  EQUAL OVERLAY DRAWERS (CONFIRMED 12:57 "wybor jak zawsze 2 3 i 4 ale
 ;;;     pamietaj ze w vanity default to sa rowne"). n = 2, 3 or 4 (VANITY2,
 ;;;     VANITY3, VANITY4), by the parent's equal variant: available = H - 3n,
@@ -148,7 +170,15 @@
 ;;; D9  THE BOX IS THE RUNNER LESS TEN (CONFIRMED, the owner 17.10.2026:
 ;;;     "wszedzie szuflada musi miec 10 mm mniej od prowadnicy"). The box is
 ;;;     the longest rung of the runner ladder whose box, the rung less 10,
-;;;     fits D - G - 20; its sides, walls and bottom are the parent's.
+;;;     fits D - G - 20; its sides, walls and bottom are the parent's. AMENDED
+;;;     25.10.2026 (T83 F6, 22:41 "super ze szuflady sa mniejsze", "wszystko w
+;;;     srodku carcasa mniejsze"): in a vanity the box ALSO keeps the service
+;;;     void behind it (D27): its back face, D - front - box from the carcass
+;;;     back, at least vanityServiceVoid, so the box is at most D - front - 80
+;;;     (vanity-box-room). VANITY3 at D 500: 395, the 390 box on the 400 runner
+;;;     (the ladder's rung at or under 500 - 80), its back face at 85. The
+;;;     runner is the box + 10 as everywhere. The chest (D20) asks no void and
+;;;     keeps the parent's law (vd 0).
 ;;; D10 THE TWO COLUMNS (CONFIRMED 12:57 "external drawers ale wybor 2 rows,
 ;;;     patrz szafa"; the chest 13:03 "7 - tak"). The wardrobe's rule (T79 F3:
 ;;;     "a divider mid-width, a stack in each column, one fixed shelf over
@@ -186,12 +216,15 @@
 ;;;     rails' back face).
 ;;; D15 THE NUMBERS DISAGREE AND THE ROOM SAYS SO (DECIDED here: the owner's
 ;;;     confirmed U rules, the proposed waste stays where it was proposed).
-;;;     The box's back face stands D - front - box from the carcass back (35 on
-;;;     the default: 500 - 25 - 440), so the U reaches 155 and the waste at 200
-;;;     stands 45 beyond it: the drawer would shut on the trap. Neither number
-;;;     moves here: the U is cut as confirmed and Check #39 says "The trap
-;;;     stands 45 mm beyond the U". A U that takes a trap as wide as itself
-;;;     centred on that waste is 200 + 80 - 35 = 245 deep: the owner's to set.
+;;;     The box's back face stands D - front - box from the carcass back, and
+;;;     a waste beyond the U's reach is said in Check #39: "The trap stands N
+;;;     mm beyond the U"; the U is cut as confirmed, never re-cut. Under T82
+;;;     the back face stood at 35 (500 - 25 - 440), the U reached 155 and the
+;;;     waste at 200 stood 45 beyond it. AMENDED 25.10.2026 (T83 F6, D27): the
+;;;     shorter box stands at 85 (500 - 25 - 390), the U reaches 205 and the
+;;;     waste at 200 stands 5 inside it: nothing is said on the default. A U
+;;;     that takes a trap as wide as itself centred on that waste is 200 + 80
+;;;     - 85 = 195 deep: the owner's to set.
 ;;; D16 THE TRAP'S BOTTOM LINE (PROPOSED reading; CLAUDE.md names no trap
 ;;;     height): the underside of the top drawer's BOTTOM board, its runner
 ;;;     line + 13.5 + 15, the plane the U opens through. The box under it must
@@ -235,8 +268,9 @@
 ;;;     written by vanity-trap-verdict; #48, the family of the basins a top
 ;;;     cannot take, also says the bowl (D25, vanity-bowl-verdict); the void is
 ;;;     the note #45 (CLAUDE.md's #40: the in-frame project holds #40 to #44
-;;;     since T80 F10); a double drawer under a basin is DOUBLE_DRAWER_REFUSED
-;;;     (D24).
+;;;     since T80 F10), AMENDED 25.10.2026 (T83 F6) to say where it is now:
+;;;     "Service void 80 inside the vanity behind the drawers"; a double drawer
+;;;     under a basin is DOUBLE_DRAWER_REFUSED (D24).
 ;;; D22 THE UNIT NUMBER is VU (VU01, VU02), one prefix for the three counts, as
 ;;;     the drawer base's DR is.
 ;;;
@@ -284,11 +318,32 @@
 ;;;     the TOP's back edge from 342.2 to 557.8, so the rail's screw at W / 2 =
 ;;;     450 goes and the tenons at 113 and 787 stay.
 ;;;
+;;; TURN 83 F6, THE OWNER AFTER THE EYE-TEST OF T82 (25.10.2026, 22:41; D5, D6,
+;;; D7, D9, D15 and D21 above are amended with it):
+;;;
+;;; D27 THE CARCASS TO THE WALL, THE VOID INSIDE (CONFIRMED 22:41 "jak mamy
+;;;     miejsce na rurki z tylu to super ze szuflady sa mniejsze ale carcas
+;;;     powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale
+;;;     carcas do sciany"; the turn's law: a service void is room taken INSIDE
+;;;     the carcass, never air between the carcass and the wall). The carcass
+;;;     is D deep at the rails and its back, the rails' back face, stands at
+;;;     the house's clearance from the wall like every unit's (vanity-wall-gap).
+;;;     The rails stay where D2 stands them, flush with the sides' back edges;
+;;;     the sides, the TOP, the BOTTOM, the fronts and the DIVIDER (D11, the
+;;;     runners' full-depth wall) keep their cut. What is inside gives way: the
+;;;     drawer BOXES, each the longest rung less 10 whose back face keeps
+;;;     vanityServiceVoid from the carcass back (D9, vanity-box-room), each
+;;;     runner the box + 10 with it. The pipes rise in that room behind the
+;;;     boxes, through the open back between the rails, as T82 cut it. The
+;;;     chest (D20) takes none of it: its back stays and its boxes are the
+;;;     parent's (vd 0). The trap's U (D13) is cut from the shorter box's back
+;;;     face and its reach is read there (D15).
+;;;
 ;;;========================================
 ;;; 3. CONSTANTS (the owner's numbers; profile.vanity mirrors them)
 ;;;========================================
 
-;; profile.vanity.serviceVoidMm      CONFIRMED 13:03 "3 - 80"
+;; profile.vanity.serviceVoidMm      CONFIRMED 13:03 "3 - 80"; INSIDE the carcass, CONFIRMED 22:41 "carcas powinien byc do sciany" (D27)
 (defun vanityServiceVoid ( / ) 80.0)
 ;; profile.vanity.railHeightMm       CONFIRMED 13:03 "4 - 100 na material carcasa grubosc"
 (defun vanityRailH ( / ) 100.0)
@@ -431,18 +486,21 @@
 
 ;;; ---- (b) THE SERVICE VOID AND THE TOP TO THE WALL ----
 
-;;; The unit's wall_gap, written by the kit's defaults (D6).
+;;; The unit's wall gap (D6, D27): the house's clearance, as every unit's.
+;;; The carcass is to the wall; the void is inside it (D9). Nothing is
+;;; written at birth.
 (defun vanity-wall-gap (clearance)
-  (+ clearance (vanityServiceVoid)))
+  clearance)
 
 ;;; The worktop's depth from the wall line (D7): the house slab's reach plus
-;;; the service void, never the clearance.
-(defun vanity-top-depth (D doorGap frontT overhang void)
-  (+ D doorGap frontT overhang void))
+;;; the carcass's stand-off beyond the clearance (0 at the wall, D27), never
+;;; the clearance.
+(defun vanity-top-depth (D doorGap frontT overhang standoff)
+  (+ D doorGap frontT overhang standoff))
 
-;;; The note (D6, D21).
+;;; The note (D6, D21, D27).
 (defun vanity-void-note ( / )
-  (strcat "#45 Service void " (vanity-mm (vanityServiceVoid)) " behind the vanity for the pipes"))
+  (strcat "#45 Service void " (vanity-mm (vanityServiceVoid)) " inside the vanity behind the drawers"))
 
 ;;; ---- (c) THE EQUAL OVERLAY DRAWERS AND THEIR BOXES ----
 
@@ -490,10 +548,18 @@
     (setq col (1+ col)))
   (reverse out))
 
-;;; The box's depth: the longest rung whose box, the rung less 10, fits
-;;; D - G - 20; the shortest when none does, as the parent does (D9).
-(defun vanity-box-depth (D G / maxDl best r)
-  (setq maxDl (- D G (vanityDepthAllowance))
+;;; The room a box may take (D9, D27): the parent's D - G - 20 and, where
+;;; the void vd is asked (the vanity's vanityServiceVoid), no more than
+;;; D - front - vd, so the box's back face keeps vd from the carcass back.
+;;; vd 0 is the parent's law to the millimetre, and the chest's.
+(defun vanity-box-room (D G frontT vd / dl)
+  (setq dl (- D G (vanityDepthAllowance)))
+  (if (> vd 0.0) (min dl (- D frontT vd)) dl))
+
+;;; The box's depth: the longest rung whose box, the rung less 10, fits the
+;;; room; the shortest when none does, as the parent does (D9).
+(defun vanity-box-depth (D G frontT vd / maxDl best r)
+  (setq maxDl (vanity-box-room D G frontT vd)
         best nil)
   (foreach r (vanityRunnerLadder)
     (if (<= (- r (vanityRunnerOverBox)) maxDl) (setq best (- r (vanityRunnerOverBox)))))
@@ -518,12 +584,13 @@
         h (max want lowest))
   (if (> h cap) (max 0.0 cap) (float h)))
 
-;;; Every box, column by column, bottom to top (D9, D10).
-(defun vanity-boxes (W H D G GB frontT n columns / hs ys rb depth zBack out col o x0 bw i base ceil side)
+;;; Every box, column by column, bottom to top (D9, D10, D27): vd the void
+;;; kept behind them, the vanity's vanityServiceVoid, 0 for the chest.
+(defun vanity-boxes (W H D G GB frontT n columns vd / hs ys rb depth zBack out col o x0 bw i base ceil side)
   (setq hs (vanity-front-heights H n)
         ys (vanity-front-ys hs)
         rb (vanity-runner-bottoms ys G)
-        depth (vanity-box-depth D G)
+        depth (vanity-box-depth D G frontT vd)
         zBack (- D frontT depth)
         out nil
         col 1)
@@ -564,7 +631,7 @@
 ;;;
 ;;; The section WARDROBE_CHEST2/3/4 take whole (D20): the openings, the
 ;;; divider, the pair of fronts (vanity-fronts at columns 2) and a stack of
-;;; boxes in each opening (vanity-boxes at columns 2). With columns 1 the
+;;; boxes in each opening (vanity-boxes at columns 2, vd 0). With columns 1 the
 ;;; carcass's one opening is the parent's, and nothing below moves.
 
 ;;; The clear openings, left to right: ((x0 x1) ...) (D10, D11).
@@ -616,7 +683,7 @@
 ;;; Every waste's plan: ((xw box u status) ...), status "CUT", "DIVIDER" or
 ;;; "FIT" (D13, D17).
 (defun vanity-trap-plan (W H D G GB frontT n columns sinks / boxes out xw b u prev)
-  (setq boxes (vanity-boxes W H D G GB frontT n columns)
+  (setq boxes (vanity-boxes W H D G GB frontT n columns (vanityServiceVoid))
         out nil
         prev nil)
   (foreach xw (vanity-wastes W columns sinks)
@@ -692,7 +759,7 @@
 ;;; Check #39: ((kind xw sentence) ...), nil when the trap has its room
 ;;; (D15, D16, D17).
 (defun vanity-trap-verdict (W H D G GB frontT n columns sinks / boxes out e b reach below room)
-  (setq boxes (vanity-boxes W H D G GB frontT n columns)
+  (setq boxes (vanity-boxes W H D G GB frontT n columns (vanityServiceVoid))
         out nil)
   (foreach e (vanity-trap-plan W H D G GB frontT n columns sinks)
     (setq b (nth 1 e))
@@ -796,7 +863,7 @@
 ;;; the basins the worktop takes, wt the worktop's thickness, bowlH the
 ;;; bowl's depth below the worktop's top.
 (defun vanity-bowl-verdict (num W H D G GB frontT n columns xs wt bowlH / boxes a c zw zb rail box clear xw b cl)
-  (setq boxes (vanity-boxes W H D G GB frontT n columns)
+  (setq boxes (vanity-boxes W H D G GB frontT n columns (vanityServiceVoid))
         a (/ (vanityBasinW) 2.0)
         c (/ (vanityBasinD) 2.0)
         zw (vanityWasteFromBack)
@@ -852,18 +919,22 @@
 ;;; side screws at 50 197.5 402.5 550: 50 kept in RAIL-BOTTOM and 550 in
 ;;; RAIL-TOP (50 down from its top), the two between the tabs gone. On Cabineo
 ;;; the sides' back pockets at 50 300 550: 50 and 550 kept.
-;;; THE VOID. wall_gap 90; the worktop 628 deep from the wall (500 + 3 + 25 +
-;;; 20 + 80), the fronts 10 under its edge.
+;;; THE VOID, INSIDE (T83 F6, D27). wall_gap 10, the house clearance: the
+;;; carcass to the wall; the worktop 548 deep from the wall (500 + 3 + 25 +
+;;; 20), the fronts 10 under its edge; the void 80 inside, the boxes' back
+;;; faces at 85 from the carcass back.
 ;;; THE FRONTS. 197 197 197 at y 0 200 400, 897 wide at x 1.5.
-;;; THE BOXES. 440 deep (the 450 runner), the back face at z 35; 854 wide at x
-;;; 23, the walls 818 long and 104 high, the bottom 831; the sides 138, their
-;;; feet at 31.5 213.5 413.5, their tops 169.5 351.5 551.5.
+;;; THE BOXES. 390 deep (the 400 runner, the rung at or under 500 - 80), the
+;;; back face at z 85; 854 wide at x 23, the walls 818 long and 104 high, the
+;;; bottom 831; the sides 138, their feet at 31.5 213.5 413.5, their tops 169.5
+;;; 351.5 551.5. The parent (vd 0): 440 deep on the 450, the back face at 35.
 ;;; THE TRAP. The waste at x 450, z 200. The U 370..530 in the top box (D3), 120
 ;;; deep, R 20; in the bottom's frame 335.5..495.5; the back wall cut as D3-BB-1
 ;;; (0 329) and D3-BB-2 (489 818), 329 each. The trap's bottom line 428.5, the
-;;; box under it tops at 351.5: 77 of air, no shallow trap. The U reaches 155:
-;;; "#39 The trap stands 45 mm beyond the U: the U reaches 155 from the carcass
-;;; back, the waste stands at 200".
+;;; box under it tops at 351.5: 77 of air, no shallow trap. The U reaches 205
+;;; from the carcass back (85 + 120): the waste at 200 stands 5 inside it and
+;;; nothing is said (under T82 the U reached 155: "#39 The trap stands 45 mm
+;;; beyond the U").
 ;;;
 ;;; THE SHALLOW TRAP. VANITY4 W 900 H 560 D 500: fronts 137 137 137 137 at y 0
 ;;; 140 280 420; sides 96; the trap's bottom line 448.5, the box under it tops

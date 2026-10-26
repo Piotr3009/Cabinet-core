@@ -211,7 +211,11 @@ test('F6 . the trap\'s U is cut from the shorter box\'s back face: it reaches 20
   const lisp = (L.call('vanity-trap-verdict', 900, 600, 500, G, GB, FT, 3, 1, 1) || []).map((e) => e[2]);
   const engine = vanityTrapVerdict({ boxes, n: 3, columns: 1, sinks: 1, W: 900, GB }, P).map((v) => v.sentence);
   assert.deepEqual(engine, lisp);
-  assert.equal(engine.some((s) => /beyond the U/.test(s)), zw > 205, `the waste at ${zw}`);
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*, and CLAUDE.md T83 F8: *"The U of the top box (columns 1) follows the waste"*:
+  // the U follows the waste (KIT_VANITY.lsp D29: 245 deep under the waste at 250, reaching 330), so REACH stays silent.
+  const reach = top.zBack + Math.min(top.depth - GB - 30, Math.max(120, zw + 80 - top.zBack)) - zw;
+  assert.equal(engine.some((s) => /beyond the U/.test(s)), reach < 0, `the waste at ${zw}`);
+  assert.equal(engine.length, 0);
 });
 
 // === THE WORKTOP TO THE WALL OVER THE CARCASS ================================

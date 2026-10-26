@@ -94,11 +94,13 @@ function solidAt(geometry, box, xMm, zMm) {
 
 test('T82 F11 . the TOP\'s oval is read off B2\'s record and mapped into the TOP\'s drawn frame', () => {
   const top = topOf(vanity());
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*: the waste at 250 (T82: 200),
+  // the oval a HOLE 32 in front of the TOP's back edge (T82: across it, EDGE).
   assert.deepEqual(top.meta.vanityBasins.cutouts.map(({ x, z, w, d, opens }) => ({ x, z, w, d, opens })),
-    [{ x: 450, z: 200, w: 520, d: 400, opens: 'EDGE' }], 'the record');
+    [{ x: 450, z: 250, w: 520, d: 400, opens: 'HOLE' }], 'the record');
   // Drawn x is the depth from the back (z less 18), drawn y the width from the
   // BUR end (882 less x); the oval's 400 runs along drawn x, its 520 along y.
-  assert.deepEqual(basinOvalsOf(top), [{ cx: 182, cy: 432, rx: 200, ry: 260 }]);
+  assert.deepEqual(basinOvalsOf(top), [{ cx: 232, cy: 432, rx: 200, ry: 260 }]);
   // No sink, no record, no oval; and no other board of the vanity has one.
   assert.deepEqual(basinOvalsOf(topOf(vanity({ sinks: 0 }))), []);
   for (const p of vanity().panels.filter((q) => q.id !== 'TOP')) assert.deepEqual(basinOvalsOf(p), [], p.id);
@@ -140,7 +142,9 @@ test('T82 F11 . cutOvals: an oval inside the board is a hole; one across the edg
 
 // === 3 . THE SOLID ===========================================================
 
-test('T82 F11 . the TOP\'s solid: closed and oriented, the oval taken through its 18, the back edge open over the bowl', () => {
+test('T82 F11 . the TOP\'s solid: closed and oriented, the oval taken through its 18, a hole before the back edge', () => {
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*: the waste at 250, the oval a
+  // HOLE 32 in front of the TOP's back edge, its back joint whole (T82: the back edge open over the bowl, a tenon gone).
   const r = vanity();
   const top = topOf(r);
   const { solid } = panelSolids(top, LAYERS, P, []);
@@ -148,16 +152,15 @@ test('T82 F11 . the TOP\'s solid: closed and oriented, the oval taken through it
   assert.equal(openEdges(solid), 0, 'closed and consistently oriented');
   const plain = panelSolids(topOf(vanity({ sinks: 0 })), LAYERS, P, []).solid;
   const taken = (volumeMm3(plain) - volumeMm3(solid)) / 18;
-  const theta = Math.acos(-182 / 200);
-  const exact = 200 * 260 * (theta - Math.sin(theta) * Math.cos(theta));
-  // The TOP of sinks 1 also lost the tenon its back edge had under the oval (B2's `dropped`).
+  const exact = Math.PI * 200 * 260;
   const tabArea = (t) => Math.abs(area(t));
   const tenon = tabOutlines(topOf(vanity({ sinks: 0 }))).reduce((s, t) => s + tabArea(t), 0)
     - tabOutlines(top).reduce((s, t) => s + tabArea(t), 0);
-  assert.ok(Math.abs(taken - exact - tenon) / exact < 0.01, `taken ${taken} mm2: the oval ${exact} and the tenon ${tenon}`);
-  // Air at the bowl, at the open back edge over it; board beside it and in front.
-  assert.equal(solidAt(solid, top.box, 450, 200), false, 'air at the basin\'s centre');
-  assert.equal(solidAt(solid, top.box, 450, 18 + 3), false, 'air at the back edge over the bowl');
+  assert.equal(Math.round(tenon), 0, 'no tenon of the back edge goes');
+  assert.ok(Math.abs(taken - exact) / exact < 0.01, `taken ${taken} mm2: the oval ${exact}`);
+  // Air at the bowl; board at the back edge before it, beside it and in front.
+  assert.equal(solidAt(solid, top.box, 450, 250), false, 'air at the basin\'s centre');
+  assert.equal(solidAt(solid, top.box, 450, 18 + 3), true, 'board at the back edge: the oval stands 32 in front of it');
   assert.equal(solidAt(solid, top.box, 100, 18 + 3), true, 'board at the back edge clear of the oval');
   assert.equal(solidAt(solid, top.box, 450, 18 + 470), true, 'board at the front');
   // No remaining tab stands in the oval (B2 dropped the one it met).

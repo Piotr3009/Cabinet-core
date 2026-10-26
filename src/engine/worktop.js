@@ -47,6 +47,9 @@ import { cornersOf } from './corners.js';
 // T82 F11 · the vanity's wastes, THE ONE SOURCE (KIT_VANITY.lsp D14): the
 // basin stands where the trap's U was cut for it, never the other way round.
 import { vanitySpec, vanityWastes } from './vanity.js';
+// T83 F8 · the bowl that enters the shell is refused with the basins the top
+// cannot take (KIT_VANITY.lsp D29, `vanity-bowl-refused`).
+import { vanityBowlRefused, vanityBowlSentence, vanityTopThickness } from './vanity.js';
 
 /**
  * Does this kit take a worktop at all?
@@ -881,13 +884,58 @@ export function fitBasins(unit, profile) {
     x0: left, x1: w + right, z0: zBack, z1: zFront,
   }, m);
   const now = lay(W);
+  // T83 F8 · THE BOWL NEVER ENTERS A BOARD (KIT_VANITY.lsp D29). The owner,
+  // 25.10.2026 (22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm,
+  // powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi
+  // w drugi material"*. A basin the stone takes whose bowl (the room's half
+  // ellipsoid, hung from the top's top) enters the shell the params fix, the
+  // rails or the sides (`vanityBowlRefused`), is refused in words with the
+  // others: cut in neither top, drawn nowhere. The boards inside (the drawer
+  // boxes, the divider) are the cut's, said by computeCabinet in #48.
+  const shellOf = (x) => vanityBowlRefused({
+    W,
+    H: Number(unit.params?.height) || 0,
+    D,
+    G: Number(unit.params?.board_t) || Number(profile?.board?.thickness) || 18,
+    xs: [x],
+    wt: vanityTopThickness(unit.params, profile),
+    bowlH: b.h,
+  }, profile);
+  const bowl = ovals(W).map((o, i) => (now[i].ok ? shellOf(o.x + o.w / 2) : []));
   const basins = ovals(W).map((o, i) => ({
-    n: i + 1, cx: o.x + o.w / 2, cz: o.z + o.d / 2, x: o.x, z: o.z, w: o.w, d: o.d, h: b.h, fits: now[i].ok,
+    n: i + 1, cx: o.x + o.w / 2, cz: o.z + o.d / 2, x: o.x, z: o.z, w: o.w, d: o.d, h: b.h, fits: now[i].ok && !bowl[i].length,
   }));
   const fitted = basins.filter((o) => o.fits);
   if (fitted.length === basins.length) return { basins, fitted, refusal: null };
   const asked = basins.length;
   const unitNum = unit.params?.unit_num || unit.id;
+  // The stone takes every one: the bowl is what refuses (CLAUDE.md T83 F8's sentence).
+  if (now.every((v) => v.ok)) {
+    const hits = vanityBowlRefused({
+      W,
+      H: Number(unit.params?.height) || 0,
+      D,
+      G: Number(unit.params?.board_t) || Number(profile?.board?.thickness) || 18,
+      xs: basins.filter((o) => !o.fits).map((o) => o.cx),
+      wt: vanityTopThickness(unit.params, profile),
+      bowlH: b.h,
+    }, profile);
+    return {
+      basins,
+      fitted,
+      refusal: {
+        unitId: unit.id,
+        unitNum: unit.params?.unit_num || null,
+        asked,
+        cut: fitted.length,
+        basinW: b.w,
+        basinD: b.d,
+        why: 'bowl',
+        need: null,
+        message: vanityBowlSentence(unitNum, hits),
+      },
+    };
+  }
   const base = {
     unitId: unit.id, unitNum: unit.params?.unit_num || null, asked, cut: fitted.length, basinW: b.w, basinD: b.d,
   };

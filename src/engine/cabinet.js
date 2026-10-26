@@ -132,7 +132,7 @@ import { applyVanityTrap, vanityRailGeometry, vanityRails } from './vanity.js';
 // D24 to D26): which basins the vanity's top takes is engine/worktop.js
 // `fitBasins`, THE ONE SOURCE (B3's), asked with the unit's params alone.
 import {
-  applyVanityTop, vanityBowlVerdict, vanityBoxesOf, vanityDoubleRefusal, vanityDoubleRefused, vanitySpec,
+  applyVanityTop, vanityBowlVerdict, vanityDoubleRefusal, vanityDoubleRefused, vanitySpec,
   vanityTopBackDropped, vanityTopThickness,
 } from './vanity.js';
 import { fitBasins } from './worktop.js';
@@ -11238,18 +11238,22 @@ export function computeCabinet(params, profileOverride) {
     })
     : null;
   // ─── T82 F9, after the review · THE BOWL, CHECK #48 (KIT_VANITY.lsp D25) ──
-  // The bowl read as its rim's oval straight down below the worktop's top: a
-  // bowl that meets the top drawer's box or RAIL-TOP is said with the deepest
-  // that clears and the cure, never clamped (`vanity-bowl-verdict`). The top's
-  // thickness is its slab's (`params.vanity_top_mm`, the store's, from the
-  // vanity's worktop record), else the kit's own 20.
+  // Said, never clamped (`vanity-bowl-verdict`). The top's thickness is its
+  // slab's (`params.vanity_top_mm`, the store's, from the vanity's worktop
+  // record), else the kit's own 20.
+  // T83 F8 · THE BOWL NEVER ENTERS A BOARD (KIT_VANITY.lsp D29). The owner,
+  // 25.10.2026 (22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm,
+  // powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi
+  // w drugi material"*. The bowl's solid is the room's half ellipsoid, held
+  // against every board of the cut but the TOP (which takes its oval) and the
+  // fronts: #48 names each board it enters and by how much, in CLAUDE.md T83
+  // F8's sentence. A bowl that enters the shell (the rails, the sides) never gets
+  // here: fitBasins refused it with the worktop's refusals.
   const vanityBowl = type.vanity && budr
     ? vanityBowlVerdict({
       num: unitNum,
       H,
-      G,
-      n: budr.count,
-      boxes: vanityBoxesOf(panels, { n: budr.count, columns: budr.divider ? 2 : 1 }),
+      panels,
       xs: vanityBasinsFitted,
       wt: vanityTopThickness(params, P),
       bowlH: vanitySpec(P).basinH,

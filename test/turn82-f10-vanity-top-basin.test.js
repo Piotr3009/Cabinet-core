@@ -472,8 +472,10 @@ test('F11 · one basin on a narrow vanity, and on a shallow one: the width, the 
   S().updateUnitParams(id, { width: 900, depth: 350 });
   assert.equal(basinsOf(slabOver(id)).length, 0);
   const [f] = findings48();
-  assert.equal(f.message, `VU01: A basin ${BASIN().d} deep does not fit the top of a 350 deep vanity: make the vanity 390 deep.`);
-  S().updateUnitParams(id, { depth: 390 });
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*: the waste at 250
+  // (T82: 200) asks 50 more of depth: 440 (T82: 390).
+  assert.equal(f.message, `VU01: A basin ${BASIN().d} deep does not fit the top of a 350 deep vanity: make the vanity 440 deep.`);
+  S().updateUnitParams(id, { depth: 440 });
   assert.equal(basinsOf(slabOver(id)).length, 1);
   assertBasinsFit(slabOver(id));
 });

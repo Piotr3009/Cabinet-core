@@ -328,12 +328,14 @@ test('F9 . the U: the top drawer\'s back wall cut into boards and its bottom not
   });
   // The bottom: its back edge takes the notch, the LISP's six key points and two quarter arcs.
   const nt = L.call('vanity-u-in-bottom', top, u, GB);
-  assert.deepEqual(nt, [335.5, 495.5, 120, 20]);
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*, and CLAUDE.md T83 F8: *"The U of the top box (columns 1) follows the waste"*:
+  // 245 deep under the waste at 250 (T82: 120, the least the U is cut to).
+  assert.deepEqual(nt, [335.5, 495.5, 245, 20]);
   const [keys, centres, rad] = L.call('vanity-u-outline', nt);
   const dno = byId(r, 'D3-DNO');
   const has = (x, y) => dno.cnc.outline.some(([px, py]) => near(px, x) && near(py, y));
   for (const [x, y] of keys) assert.ok(has(x, y), `the bottom's outline passes (${x}, ${y})`);
-  const between = dno.cnc.outline.filter(([, y]) => y > 100 + 1e-6 && y < 120 - 1e-6);
+  const between = dno.cnc.outline.filter(([, y]) => y > 225 + 1e-6 && y < 245 - 1e-6);
   assert.ok(between.length >= 4, 'the two quarter arcs are traced');
   for (const [x, y] of between) {
     assert.ok(centres.some(([cx, cy]) => near(Math.hypot(x - cx, y - cy), rad, 1e-3)), `(${x}, ${y}) on an R ${rad} arc`);
@@ -383,12 +385,16 @@ test('F9 . #39: the trap beyond the U (D15) and the shallow trap (D16), yellow, 
   // The default sink vanity: the confirmed U (120) and the proposed waste disagree where the waste stands beyond
   // the U (D15). AMENDED BY T83 F6 (25.10.2026, 22:41): *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*:
   // the shorter box's back face at 85, the U reaches 205 (T82: 155, "45 mm beyond" at the waste 200).
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*, and CLAUDE.md T83 F8: *"The U of the top box (columns 1) follows the waste"*:
+  // the U reaches the waste + 80 (D15, D29), so the default says nothing.
   const def = kit('VANITY3');
   const zw = P.vanity.wasteFromBackMm;
-  const reach = 85 + 120 - zw;
+  const uDepth = Math.min(390 - GB - 30, Math.max(120, zw + 80 - 85));
+  const reach = 85 + uDepth - zw;
   assert.deepEqual(sentences(def), (L.call('vanity-trap-verdict', 900, 600, 500, G, GB, FT, 3, 1, 1) || []).map((e) => e[2]));
   assert.deepEqual(sentences(def), reach < 0
-    ? [`#39 The trap stands ${-reach} mm beyond the U: the U reaches 205 from the carcass back, the waste stands at ${zw}`] : []);
+    ? [`#39 The trap stands ${-reach} mm beyond the U: the U reaches ${85 + uDepth} from the carcass back, the waste stands at ${zw}`] : []);
+  assert.deepEqual(sentences(def), [], 'the waste at 250 stands 80 inside the U\'s 330');
   // No basin, nothing to say.
   assert.deepEqual(trapSaid(kit('VANITY3', { sinks: 0 })), []);
   // Four drawers in a 560 carcass: the box under the top one stands 59 under the trap's bottom (D16).
@@ -530,9 +536,11 @@ test('F9, after the review . D18: the carcass TOP takes the oval of each basin t
   const top = byId(r, 'TOP');
   const rec = top.meta.vanityBasins;
   assert.ok(rec, 'the record the room draws the hole from: TOP.meta.vanityBasins');
-  // The LISP's oval, in the TOP's own frame: (432 182 520 400 "EDGE").
+  // The LISP's oval, in the TOP's own frame. AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*:
+  // (432 232 520 400 "HOLE"), the waste at 250 (T82: 182, "EDGE").
   assert.deepEqual(rec.cutouts.map((c) => [c.cx, c.cz, c.w, c.d, c.opens]), L.call('vanity-top-cutouts', fitted, G));
-  assert.deepEqual(rec.cutouts.map((c) => [c.x, c.z]), [[450, 200]], 'and in the unit\'s frame: the waste');
+  assert.deepEqual(rec.cutouts.map((c) => [c.cx, c.cz, c.opens]), [[432, 232, 'HOLE']]);
+  assert.deepEqual(rec.cutouts.map((c) => [c.x, c.z]), [[450, 250]], 'and in the unit\'s frame: the waste');
   assert.equal(rec.note, L.call('vanity-top-cutout-note', 'VU01'));
   assert.equal(rec.note, 'Basin cut-out 520 x 400 oval in the carcass top of VU01: cut on site to the basin\'s template.');
   assert.equal(rec.readiness, 'manual');
@@ -560,17 +568,22 @@ test('F9, after the review . D26: the TOP\'s back joint the oval meets is not cu
   for (const [W, xs] of [[900, [450]], [900, [225, 675]], [900, [300, 600]], [1200, [300, 900]], [380, [190]]]) {
     assert.deepEqual(vanityTopBackDropped(W, G, xs, pz, P).map((f) => [f.kind, f.x]), L.call('vanity-top-back-dropped', W, G, xs) || [], `${W} ${xs}`);
   }
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*: at 250 the oval stands 32 in
+  // front of the TOP's back edge, so the default drops nothing and RAIL-TOP keeps its screw at 450 (T82: dropped).
   const r = kit('VANITY3');
-  assert.deepEqual(byId(r, 'TOP').meta.vanityBasins.dropped, [{ kind: 'SCREW', x: 450 }]);
+  assert.deepEqual(byId(r, 'TOP').meta.vanityBasins.dropped, []);
   const railTop = byId(r, 'RAIL-TOP').cnc.holes.filter((h) => h.kind === 'screw').map((h) => [h.x, h.y]);
-  assert.ok(!railTop.some(([x, y]) => x === 450 && y === 100 - G / 2), 'the rail\'s screw into the TOP\'s back edge at 450 is not cut');
+  assert.ok(railTop.some(([x, y]) => x === 450 && y === 100 - G / 2), 'the rail\'s screw into the TOP\'s back edge at 450 is cut');
   assert.ok(byId(r, 'RAIL-BOTTOM').cnc.holes.some((h) => h.x === 450 && h.y === G / 2), 'the bottom rail keeps its own');
   assert.equal(byId(r, 'RAIL-TOP').cnc.pockets.length, 2, 'the tenons at 113 and 787 stay, with their sockets');
-  assert.ok(!r.drills.some((d) => d.panel === 'RAIL-TOP' && d.x === 450));
-  // A tenon the oval meets: a 300 basin on a 380 vanity (the basin's size is the profile's).
-  const P2 = { ...P, vanity: { ...P.vanity, basin: { ...P.vanity.basin, widthMm: 300 } } };
-  const small = computeCabinet({ ...defaultParamsFor('VANITY3', P2), width: 380, unit_num: 'VU01' }, P2);
-  const plain = computeCabinet({ ...defaultParamsFor('VANITY3', P2), width: 380, unit_num: 'VU01', sinks: 0 }, P2);
+  // D26's law held where the oval does cross the TOP's back edge: T82's waste at 200 behind a typed 20 stand-off (so
+  // the stone takes it with the carcass to the wall, T83 F6) and a bowl no deeper than the top (so it enters no rail,
+  // T83 F8's D29): a 300 basin on a 380 vanity (the basin's size is the profile's).
+  const P2 = {
+    ...P, vanity: { ...P.vanity, wasteFromBackMm: 200, basin: { ...P.vanity.basin, widthMm: 300, heightMm: 20 } },
+  };
+  const small = computeCabinet({ ...defaultParamsFor('VANITY3', P2), width: 380, unit_num: 'VU01', wall_gap: 30 }, P2);
+  const plain = computeCabinet({ ...defaultParamsFor('VANITY3', P2), width: 380, unit_num: 'VU01', wall_gap: 30, sinks: 0 }, P2);
   assert.deepEqual(byId(small, 'TOP').meta.vanityBasins.dropped.map((f) => [f.kind, f.x]), [['TENON', 113], ['TENON', 267], ['SCREW', 190]]);
   const topOf = (x) => byId(x, 'TOP').cnc;
   assert.equal(topOf(small).outline.length, topOf(plain).outline.length - 2 * 10, 'the two back tenons are off the TOP\'s outline');
@@ -582,29 +595,32 @@ test('F9, after the review . D26: the TOP\'s back joint the oval meets is not cu
   assert.equal(sideTabs(topOf(small)), sideTabs(topOf(plain)));
 });
 
-test('F9, after the review . D25: the bowl that meets the top drawer\'s box or RAIL-TOP is said in #48, in the LISP\'s words, never clamped', () => {
+test('F9, after the review . D25 D29: the bowl that enters a board is said in #48, in the LISP\'s words, never clamped', () => {
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): *"umywalki przesun bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula material nigdy nie wchodzi w drugi material"*; CLAUDE.md T83 F8: *"#48 grows the sentence: "the bowl enters RAIL-TOP by N mm: move the basin forward or take a shallower bowl""*.
+  // The bowl's solid is the room's half ellipsoid, held against every board of the cut (D29): the box as a block and its
+  // "deepest bowl that clears the top drawer" (T82's D25) are retired.
   const bowl = (r) => r.warnings.filter((w) => w.code === 'VANITY_BOWL').map((w) => w.message);
   const T = vanitySpec(P);
-  // The default: 150 deep under a 20 top, the oval over the rail and over the top box (68.5 clears).
+  // The default at 250: RAIL-TOP clear; the top box's back wall beside the U is not (F6 moved the boxes 50 forward).
   const def = kit('VANITY3');
-  assert.deepEqual(bowl(def), [L.call('vanity-bowl-verdict', 'VU01', 900, 600, 500, G, GB, FT, 3, 1, [450], 20, T.basinH)]);
+  assert.deepEqual(bowl(def), [L.call('vanity-bowl-verdict', 'VU01', 900, 600, 500, G, GB, FT, 3, 1, 1, [450], 20, T.basinH)]);
   assert.equal(def.derived.vanity.bowl, bowl(def)[0]);
-  assert.match(bowl(def)[0], /the deepest bowl that clears the top drawer is 68\.5/);
-  // The top's thickness is its slab's (the store hands `vanity_top_mm`): 40 clears 88.5.
+  assert.equal(bowl(def)[0], 'VU01: The bowl enters D3-BB-1 by 21.1 mm, D3-BB-2 by 21.1 mm: move the basin forward or take a shallower bowl.');
+  // The top's thickness is its slab's (the store hands `vanity_top_mm`): a 40 top lifts the bowl clear.
   assert.deepEqual(bowl(kit('VANITY3', { vanity_top_mm: 40 })),
-    [L.call('vanity-bowl-verdict', 'VU01', 900, 600, 500, G, GB, FT, 3, 1, [450], 40, T.basinH)]);
-  // A shallower bowl that clears the box still stands over the rail: the rail's sentence alone.
-  const P60 = { ...P, vanity: { ...P.vanity, basin: { ...P.vanity.basin, heightMm: 60 } } };
-  const r60 = computeCabinet({ ...defaultParamsFor('VANITY3', P60), unit_num: 'VU01' }, P60);
-  assert.deepEqual(bowl(r60), [L.call('vanity-bowl-verdict', 'VU01', 900, 600, 500, G, GB, FT, 3, 1, [450], 20, 60)]);
-  assert.match(bowl(r60)[0], /meets RAIL-TOP: .* set the waste 218 from the carcass back\./);
-  // Off the rail (a waste set 260 from the back), the box's sentence alone.
-  const P260 = { ...P, vanity: { ...P.vanity, wasteFromBackMm: 260 } };
-  const r260 = computeCabinet({ ...defaultParamsFor('VANITY3', P260), unit_num: 'VU01', depth: 560 }, P260);
-  assert.deepEqual(bowl(r260), ['VU01: A bowl 150 deep meets the top drawer\'s box: the deepest bowl that clears it is 68.5; take a shallower or a vessel basin, or a shallower top drawer.']);
+    [L.call('vanity-bowl-verdict', 'VU01', 900, 600, 500, G, GB, FT, 3, 1, 1, [450], 40, T.basinH)].filter(Boolean));
+  // A shallower bowl, 115 deep, enters nothing; one 116 deep enters the back wall by 0.6.
+  for (const [h, said] of [[115, []], [116, ['VU01: The bowl enters D3-BB-1 by 0.6 mm, D3-BB-2 by 0.6 mm: move the basin forward or take a shallower bowl.']]]) {
+    const Ph = { ...P, vanity: { ...P.vanity, basin: { ...P.vanity.basin, heightMm: h } } };
+    assert.deepEqual(bowl(computeCabinet({ ...defaultParamsFor('VANITY3', Ph), unit_num: 'VU01' }, Ph)), said, `${h}`);
+  }
+  // Moved forward to 270 it enters nothing.
+  const P270 = { ...P, vanity: { ...P.vanity, wasteFromBackMm: 270 } };
+  assert.deepEqual(bowl(computeCabinet({ ...defaultParamsFor('VANITY3', P270), unit_num: 'VU01' }, P270)), []);
   // No basin, nothing; never a clamp: the drawer and the rail are cut as asked.
   assert.deepEqual(bowl(kit('VANITY3', { sinks: 0 })), []);
   assert.deepEqual(byId(def, 'RAIL-TOP').box, byId(kit('VANITY3', { sinks: 0 }), 'RAIL-TOP').box);
+  assert.deepEqual(byId(def, 'D3-BB-1').box, { x: 41, y: 446.5, z: 85, w: 329, h: 104, d: 18 }, 'the board is cut as asked');
   // Check #48 says it, yellow, once, in the LISP's words.
   const unit = { id: 'u1', type: 'VANITY3', params: { ...defaultParamsFor('VANITY3', P), unit_num: 'VU01' } };
   const found = runChecks({ entries: [{ unit, result: def }], units: [unit], profile: P }).filter((f) => f.check === 48);
@@ -620,15 +636,16 @@ test('F9, after the review . the store hands the slab\'s thickness (vanity_top_m
   confirmDrawerBox();
   const { id } = S().addUnit('VANITY3');
   const said = () => S().unitResult(id).warnings.filter((w) => w.code === 'VANITY_BOWL').map((w) => w.message)[0];
-  assert.match(said(), /clears the top drawer is 68\.5/, 'born under its own 20 top');
+  // AMENDED BY T83 F8 (25.10.2026, 22:41): CLAUDE.md T83 F8: *"#48 grows the sentence: "the bowl enters RAIL-TOP by N mm: move the basin forward or take a shallower bowl""*: the boards entered, by how much.
+  assert.match(said(), /enters D3-BB-1 by 21\.1 mm/, 'born under its own 20 top');
   const slab = S().worktopsOf().find((w) => (w.unitIds || []).includes(id));
   assert.ok(slab, 'born under its own top');
   S().setWorktopThickness(slab.id, 40);
-  assert.match(said(), /clears the top drawer is 88\.5/, 'a typed 40 top reaches the bowl');
+  assert.match(said(), /enters D3-BB-1 by 1\.1 mm/, 'a typed 40 top lifts the bowl 20: 1.1 mm left in the back wall');
   // With no record over it the store hands nothing: the kit's own 20.
   S().removeWorktop(slab.id);
   assert.ok(!S().worktopsOf().some((w) => (w.unitIds || []).includes(id)));
-  assert.match(said(), /clears the top drawer is 68\.5/);
+  assert.match(said(), /enters D3-BB-1 by 21\.1 mm/);
 });
 
 // ===========================================================================

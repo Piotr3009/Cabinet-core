@@ -97,6 +97,8 @@ const BUILTINS = {
   max: (...a) => Math.max(...a),
   min: (...a) => Math.min(...a),
   abs: (a) => Math.abs(a),
+  // T83 F8 · AutoLISP's own `sqrt` (KIT_VANITY.lsp vanity-bowl-enters, the bowl's ellipsoid).
+  sqrt: (a) => Math.sqrt(a),
   fix: (a) => Math.trunc(a),
   float: (a) => a,
   '=': (...a) => (a.every((x) => x === a[0]) ? true : NIL),

@@ -20,6 +20,13 @@
 ;;; the routines vanity-trap-gap, vanity-gap-box, vanity-gap-of,
 ;;; vanity-boxes-cut and vanity-divider-cut, the GAP of vanity-trap-plan and
 ;;; vanity-trap-verdict, and part 6)
+;;; Turn 83 F8 (25.10.2026), the owner's words of 22:41 - THE BASIN 50
+;;; FORWARD, AND IT NEVER ENTERS A BOARD (D29 written; D13, D14, D15, D18,
+;;; D21, D25 and D26 amended; vanityWasteFromBack 250; the routines
+;;; vanity-u-depth, vanity-bowl-enters, vanity-bowl-shell, vanity-box-boards,
+;;; vanity-bowl-boards, vanity-bowl-hits, vanity-bowl-sentence and
+;;; vanity-bowl-refused, vanity-trap-u, vanity-trap-reach and
+;;; vanity-bowl-verdict amended, and part 6)
 ;;; Derived from: KIT_BUDR_FULL.lsp (the parent: the drawer base), the BACK of
 ;;;               SKYLON_COMMON drawBACK (the rails are what is left of it),
 ;;;               KIT_SINK.lsp (a carcass with no puzzle at the back edge),
@@ -59,6 +66,9 @@
 ;;;           szuflady a mamy jeden sink, albo mam pomysl: zmniejszmy szuflady
 ;;;           na szerokosc, tylko fronty zostawmy szerokie i pomiedzy
 ;;;           szufladami zrobi sie miejsce na syfon (tylko gorna row)"
+;;;   22:41  the basin: "umywalki przesun bardziej do przodu o jakies 50 mm,
+;;;           powod: wchodza w tylna scianke, zlamana regula material nigdy
+;;;           nie wchodzi w drugi material"
 ;;;
 ;;; This is a NEW FILE. It touches no other kit. KIT_BUDR_FULL, SKYLON_COMMON
 ;;; and the six fossil kits are untouched; a bare drawer base cuts what it cut,
@@ -224,11 +234,17 @@
 ;;;     back edge takes the notch, traced as socketFace.js notchPoints traces
 ;;;     a filleted notch. No drawer below the top one ever takes a U. A U is
 ;;;     cut only where every board it leaves of the back wall keeps
-;;;     vanityBackPieceMin (D23).
+;;;     vanityBackPieceMin (D23). AMENDED 25.10.2026 (T83 F8, D29: "The U of
+;;;     the top box (columns 1) follows the waste"): its depth follows the
+;;;     waste (vanity-u-depth): it reaches a trap as wide as itself centred
+;;;     on the waste (D15's U), never less than vanityTrapD 120, never past
+;;;     what keeps vanityBackPieceMin of the bottom behind the box's front
+;;;     wall: 245 on the default (250 + 80 - 85).
 ;;; D14 THE WASTES (PROPOSED, CLAUDE.md F11): one basin at W / 2; two at the
 ;;;     fronts' centres of two columns (W / 4 and 3W / 4) or at W / 3 and 2W / 3
 ;;;     on one; the waste vanityWasteFromBack 200 from the carcass back (the
-;;;     rails' back face).
+;;;     rails' back face). AMENDED 25.10.2026 (T83 F8, D29): 250 (22:41
+;;;     "umywalki przesun bardziej do przodu o jakies 50 mm").
 ;;; D15 THE NUMBERS DISAGREE AND THE ROOM SAYS SO (DECIDED here: the owner's
 ;;;     confirmed U rules, the proposed waste stays where it was proposed).
 ;;;     The box's back face stands D - front - box from the carcass back, and
@@ -239,7 +255,11 @@
 ;;;     shorter box stands at 85 (500 - 25 - 390), the U reaches 205 and the
 ;;;     waste at 200 stands 5 inside it: nothing is said on the default. A U
 ;;;     that takes a trap as wide as itself centred on that waste is 200 + 80
-;;;     - 85 = 195 deep: the owner's to set.
+;;;     - 85 = 195 deep: the owner's to set. AMENDED 25.10.2026 (T83 F8, D29):
+;;;     the owner set it, "The U of the top box (columns 1) follows the waste":
+;;;     the U is that U (D13), 245 deep under the waste at 250, reaching 330:
+;;;     the trap stands inside it and nothing is said; REACH is said only
+;;;     where the box is too short to take it.
 ;;; D16 THE TRAP'S BOTTOM LINE (PROPOSED reading; CLAUDE.md names no trap
 ;;;     height): the underside of the top drawer's BOTTOM board, its runner
 ;;;     line + 13.5 + 15, the plane the U opens through. The box under it must
@@ -268,7 +288,10 @@
 ;;;     manual, cut on site to the basin's template as the worktop's own, never
 ;;;     on the CNC. A centred basin's oval reaches the carcass back (200 less
 ;;;     half of 400), so the TOP's cut opens to its back edge. Its joint there
-;;;     is D26; what the bowl meets under the tops, D25.
+;;;     is D26; what the bowl meets under the tops, D25. AMENDED 25.10.2026
+;;;     (T83 F8, D29): the waste at 250 stands the oval 50 in front of the
+;;;     carcass back, 32 in front of the TOP's back edge: the TOP's cut is a
+;;;     HOLE, its back edge whole.
 ;;; D19 PLINTH OR FLOATING (CONFIRMED 12:57 "plinth do zmiany wysokosc,
 ;;;     propozycja floating lub on the floor"; 13:03 "6 - do BOM tez"). On the
 ;;;     floor: the house plinth and legs, the height typed (vanityPlinth 100
@@ -283,7 +306,8 @@
 ;;;     this file: its back stays, no rails, no void, no basin, no U.
 ;;; D21 THE CHECKS. #39 is the trap's (D15, D16, D17, D23, and D28's gap), its sentences
 ;;;     written by vanity-trap-verdict; #48, the family of the basins a top
-;;;     cannot take, also says the bowl (D25, vanity-bowl-verdict); the void is
+;;;     cannot take, also says the bowl (D25, vanity-bowl-verdict; every board
+;;;     it enters, D29, vanity-bowl-refused with the worktop's); the void is
 ;;;     the note #45 (CLAUDE.md's #40: the in-frame project holds #40 to #44
 ;;;     since T80 F10), AMENDED 25.10.2026 (T83 F6) to say where it is now:
 ;;;     "Service void 80 inside the vanity behind the drawers"; a double drawer
@@ -325,7 +349,12 @@
 ;;;     clamp: #48 says it, its sentence written by vanity-bowl-verdict with
 ;;;     the unit's number, with the cure: a shallower or a vessel basin, a
 ;;;     shallower top drawer; off the rail, a vessel basin, or the waste G +
-;;;     half the basin's depth from the carcass back.
+;;;     half the basin's depth from the carcass back. AMENDED 25.10.2026 (T83
+;;;     F8, D29): the bowl's solid is the room's, the lower half of the
+;;;     ellipsoid of its oval and its depth, and it is checked BOARD BY BOARD:
+;;;     a drawer box's inside is air, its boards are material; the reading of
+;;;     the box as a block ("the deepest bowl that clears the top drawer") is
+;;;     retired, and so are its three sentences: #48 says the boards entered.
 ;;; D26 THE TOP'S BACK JOINT UNDER A BASIN (DERIVED from D3). A feature of the
 ;;;     TOP's back joint (a tenon with RAIL-TOP's socket for it and its dog
 ;;;     bone, the rail's screw into the TOP's back edge, a Cabineo pocket and
@@ -333,7 +362,9 @@
 ;;;     extent meets a basin's oval where the oval crosses that edge (z G)
 ;;;     would stand in the hole, and is not cut. The default: the oval crosses
 ;;;     the TOP's back edge from 342.2 to 557.8, so the rail's screw at W / 2 =
-;;;     450 goes and the tenons at 113 and 787 stay.
+;;;     450 goes and the tenons at 113 and 787 stay. AMENDED 25.10.2026 (T83
+;;;     F8, D29): with the waste at 250 the oval no longer reaches the TOP's
+;;;     back edge on the default: nothing goes.
 ;;;
 ;;; TURN 83 F6, THE OWNER AFTER THE EYE-TEST OF T82 (25.10.2026, 22:41; D5, D6,
 ;;; D7, D9, D15 and D21 above are amended with it):
@@ -384,6 +415,36 @@
 ;;;     is cut and D17 stands. Two basins on two columns keep a U in each
 ;;;     column's top box (D13), and one column keeps its U.
 ;;;
+;;; TURN 83 F8, THE BASIN 50 FORWARD (25.10.2026, 22:41; D13, D14, D15, D18,
+;;; D21, D25 and D26 above are amended with it):
+;;;
+;;; D29 THE BOWL NEVER ENTERS A BOARD (CONFIRMED 22:41 "umywalki przesun
+;;;     bardziej do przodu o jakies 50 mm, powod: wchodza w tylna scianke,
+;;;     zlamana regula material nigdy nie wchodzi w drugi material"; the 250
+;;;     the PROPOSED reading of "about 50"). The waste, and the oval's centre
+;;;     with it, stands vanityWasteFromBack 250 from the carcass back (200
+;;;     under T82). The bowl's solid is the room's (3d/Basin.jsx): the lower
+;;;     half of the ellipsoid of the basin's oval (520 x 400) and its depth
+;;;     (150), hung from the worktop's top. It is held against every board of
+;;;     the cut but the TOP, which takes its oval (D18), by the house's box
+;;;     test: a board enters the bowl by N, the board's height inside the
+;;;     bowl over the board's point nearest the bowl's axis
+;;;     (vanity-bowl-enters). A bowl that enters the SHELL the params fix (the
+;;;     rails and the sides, vanity-bowl-shell) is refused in words with the
+;;;     worktop's refusals, cut in neither top and drawn nowhere
+;;;     (vanity-bowl-refused, worktop.js fitBasins); one that enters a board
+;;;     inside (a drawer box, the divider) is said in #48 by
+;;;     vanity-bowl-verdict (the worktop decides its basins from the params,
+;;;     before those boards are cut). CLAUDE.md's sentence: "the bowl enters
+;;;     RAIL-TOP by N mm: move the basin forward or take a shallower bowl".
+;;;     The U follows the waste (D13, D15). THE NUMBERS DISAGREE AND THE ROOM
+;;;     SAYS SO (D15's law): F6 moved the boxes 50 forward too (D27), so at
+;;;     250 the bowl clears RAIL-TOP (its oval 50 in front of the carcass
+;;;     back) but the top box's back wall beside the U stands 21.1 in it, as
+;;;     T82's stood at 200: #48 says "The bowl enters D3-BB-1 by 21.1 mm,
+;;;     D3-BB-2 by 21.1 mm"; the waste at 270, or a bowl 115 deep, clears it:
+;;;     the owner's to set.
+;;;
 ;;;========================================
 ;;; 3. CONSTANTS (the owner's numbers; profile.vanity mirrors them)
 ;;;========================================
@@ -404,8 +465,8 @@
 (defun vanityTrapGapClear ( / ) 20.0)
 ;; profile.vanity.backPieceMinMm     PROPOSED (D23, the review of 25.10.2026: no 0 or sliver board for the saw)
 (defun vanityBackPieceMin ( / ) 30.0)
-;; profile.vanity.wasteFromBackMm    PROPOSED (CLAUDE.md F11)
-(defun vanityWasteFromBack ( / ) 200.0)
+;; profile.vanity.wasteFromBackMm    PROPOSED (CLAUDE.md F11); T83 F8: 250, CONFIRMED 22:41 "umywalki przesun bardziej do przodu o jakies 50 mm" (the 50 the PROPOSED reading of "about 50")
+(defun vanityWasteFromBack ( / ) 250.0)
 ;; profile.vanity.basin              PROPOSED, to the eye only (12:57 "dodajesz tylko do widoku")
 (defun vanityBasinShape ( / ) "oval")
 (defun vanityBasinW ( / ) 520.0)
@@ -768,10 +829,18 @@
       (setq out b)))
   out)
 
-;;; The U round the trap at xw in box b (D13).
-(defun vanity-trap-u (b xw / half)
+;;; The U's depth into box b from its back face (D13, D15, D29): it follows
+;;; the waste, reaching a trap as wide as itself centred on it, never less
+;;; than vanityTrapD, never past what keeps vanityBackPieceMin of the bottom
+;;; behind the box's front wall.
+(defun vanity-u-depth (b GB)
+  (min (- (nth 6 b) GB (vanityBackPieceMin))
+       (max (vanityTrapD) (- (+ (vanityWasteFromBack) (/ (vanityTrapW) 2.0)) (nth 7 b)))))
+
+;;; The U round the trap at xw in box b (D13, D29).
+(defun vanity-trap-u (b xw GB / half)
   (setq half (/ (vanityTrapW) 2.0))
-  (list (nth 0 b) (- xw half) (+ xw half) (vanityTrapD) (vanityTrapR)))
+  (list (nth 0 b) (- xw half) (+ xw half) (vanity-u-depth b GB) (vanityTrapR)))
 
 ;;; Does the U leave vanityBackPieceMin of the back wall against each of the
 ;;; box's sides and after the U before it (D23)?
@@ -794,7 +863,7 @@
       (gap (setq out (cons (list xw nil nil "GAP") out)))
       ((null b) (setq out (cons (list xw nil nil "DIVIDER") out)))
       (T
-        (setq u (vanity-trap-u b xw))
+        (setq u (vanity-trap-u b xw GB))
         (if (vanity-u-fits-p b u prev GB)
           (setq out (cons (list xw b u "CUT") out)
                 prev u)
@@ -851,9 +920,9 @@
           i (1- i)))
   out)
 
-;;; How far the waste stands INSIDE the U's reach; negative, beyond it (D15).
-(defun vanity-trap-reach (b wasteZ)
-  (- (+ (nth 7 b) (vanityTrapD)) wasteZ))
+;;; How far the waste stands INSIDE the U's reach; negative, beyond it (D15, D29).
+(defun vanity-trap-reach (b wasteZ GB)
+  (- (+ (nth 7 b) (vanity-u-depth b GB)) wasteZ))
 
 ;;; The trap's bottom line (D16), and the air under it to the box below.
 (defun vanity-trap-line (b) (vanity-box-under b))
@@ -889,11 +958,11 @@
                                       (vanity-mm (vanityBackPieceMin))))
                         out)))
       (T
-        (setq reach (vanity-trap-reach b (vanityWasteFromBack)))
+        (setq reach (vanity-trap-reach b (vanityWasteFromBack) GB))
         (if (< reach 0.0)
           (setq out (cons (list "REACH" (car e)
                                 (strcat "#39 The trap stands " (vanity-mm (- reach)) " mm beyond the U: the U reaches "
-                                        (vanity-mm (+ (nth 7 b) (vanityTrapD))) " from the carcass back, the waste stands at "
+                                        (vanity-mm (+ (nth 7 b) (vanity-u-depth b GB))) " from the carcass back, the waste stands at "
                                         (vanity-mm (vanityWasteFromBack))))
                           out)))
         (if (> n 1)
@@ -972,41 +1041,119 @@
     (if hit (setq out (cons (list (car f) (cadr f)) out))))
   (reverse out))
 
-;;; Check #48 for the bowl (D25): the sentence, or nil. xs the wastes' x of
-;;; the basins the worktop takes, wt the worktop's thickness, bowlH the
-;;; bowl's depth below the worktop's top.
-(defun vanity-bowl-verdict (num W H D G GB frontT n columns xs wt bowlH / boxes a c zw zb rail box clear xw b cl)
-  (setq boxes (vanity-boxes W H D G GB frontT n columns (vanityServiceVoid))
-        a (/ (vanityBasinW) 2.0)
+;;; How far the bowl enters the board bx (name x0 y0 z0 w h d), or nil (D29):
+;;; the bowl's solid the lower half of the ellipsoid of the basin's oval
+;;; centred on (xw zw) and bowlH deep under yTop, the worktop's top. Over the
+;;; board's point nearest the bowl's axis (in the oval's own measure) the
+;;; bowl is deepest; the board enters it by the height it keeps between the
+;;; bowl's bottom there and the rim.
+(defun vanity-bowl-enters (bx xw zw yTop bowlH / a c dx dz s bottom lo hi)
+  (setq a (/ (vanityBasinW) 2.0)
         c (/ (vanityBasinD) 2.0)
-        zw (vanityWasteFromBack)
-        zb (- zw c)
-        rail nil
-        box nil
-        clear nil)
-  (foreach xw xs
-    (if (and (< zb G) (> bowlH wt)) (setq rail T))
-    (foreach b boxes
-      (if (and (= (nth 1 b) n)
-               (< (- xw a) (+ (nth 2 b) (nth 3 b))) (> (+ xw a) (nth 2 b))
-               (< zb (+ (nth 7 b) (nth 6 b))) (> (+ zw c) (nth 7 b)))
-        (progn
-          (setq cl (+ wt (- H (vanity-box-top b))))
-          (if (or (null clear) (< cl clear)) (setq clear cl))
-          (if (> bowlH cl) (setq box T))))))
+        dx (/ (- (max (nth 1 bx) (min xw (+ (nth 1 bx) (nth 4 bx)))) xw) a)
+        dz (/ (- (max (nth 3 bx) (min zw (+ (nth 3 bx) (nth 6 bx)))) zw) c)
+        s (+ (* dx dx) (* dz dz)))
+  (if (< s 1.0)
+    (progn
+      (setq bottom (- yTop (* bowlH (sqrt (- 1.0 s))))
+            lo (max bottom (nth 2 bx))
+            hi (min yTop (+ (nth 2 bx) (nth 5 bx))))
+      (if (> (- hi lo) 0.0001) (- hi lo) nil))
+    nil))
+
+;;; The shell the params fix (D29): the two sides and the two rails, as the
+;;; cut stands them, (name x0 y0 z0 w h d).
+(defun vanity-bowl-shell (W H D G / rails)
+  (setq rails (vanity-rails W H G))
+  (list (list "BUL" 0.0 0.0 (float G) (float G) (float H) (- D G))
+        (list "BUR" (- W G) 0.0 (float G) (float G) (float H) (- D G))
+        (car rails)
+        (cadr rails)))
+
+;;; A box's boards of one kind (D13, D29), (name x0 y0 z0 w h d): "SIDES" its
+;;; two sides, "WALLS" its front wall and its back wall (in the pieces its U's
+;;; leave), anything else its bottom. us the U's cut, ((tag u) ...).
+(defun vanity-box-boards (b us GB columns kind / tag x0 bw base depth zBack wy wh len mine e k out)
+  (setq tag (vanity-box-tag (nth 0 b) (nth 1 b) columns)
+        x0 (nth 2 b)
+        bw (nth 3 b)
+        base (nth 5 b)
+        depth (nth 6 b)
+        zBack (nth 7 b)
+        wy (+ base (vanityBottomGroove) GB)
+        wh (vanity-box-wall-h b GB)
+        len (vanity-box-len b GB)
+        mine nil
+        out nil)
+  (foreach e us
+    (if (= (car e) tag) (setq mine (append mine (list (cadr e))))))
   (cond
-    ((and box rail)
-      (strcat num ": A bowl " (vanity-mm bowlH) " deep meets the top drawer's box and RAIL-TOP: the deepest bowl that clears the top drawer is "
-              (vanity-mm clear) ", and the oval stands over the rail (" (vanity-mm zb) " from the carcass back, the rail "
-              (vanity-mm G) "); take a shallower or a vessel basin, or a shallower top drawer."))
-    (box
-      (strcat num ": A bowl " (vanity-mm bowlH) " deep meets the top drawer's box: the deepest bowl that clears it is "
-              (vanity-mm clear) "; take a shallower or a vessel basin, or a shallower top drawer."))
-    (rail
-      (strcat num ": A bowl " (vanity-mm bowlH) " deep meets RAIL-TOP: the oval stands over the rail (" (vanity-mm zb)
-              " from the carcass back, the rail " (vanity-mm G) "); take a vessel basin, or set the waste "
-              (vanity-mm (+ G c)) " from the carcass back."))
-    (T nil)))
+    ((= kind "SIDES")
+      (list (list (strcat tag "-SL") x0 base zBack (float GB) (nth 4 b) depth)
+            (list (strcat tag "-SR") (- (+ x0 bw) GB) base zBack (float GB) (nth 4 b) depth)))
+    ((= kind "WALLS")
+      (setq out (list (list (strcat tag "-BF") (+ x0 GB) wy (- (+ zBack depth) GB) len wh (float GB))))
+      (if mine
+        (progn
+          (setq k 0)
+          (foreach e (vanity-back-pieces b mine GB)
+            (setq k (1+ k)
+                  out (append out (list (list (strcat tag "-BB-" (itoa k)) (+ x0 GB (car e)) wy zBack (- (cadr e) (car e)) wh (float GB)))))))
+        (setq out (append out (list (list (strcat tag "-BB") (+ x0 GB) wy zBack len wh (float GB))))))
+      out)
+    (T
+      (list (list (strcat tag "-DNO") (+ x0 (/ (- bw (vanity-box-bottom-w b GB)) 2.0)) (+ base (vanityBottomGroove)) zBack
+                  (vanity-box-bottom-w b GB) (float GB) depth)))))
+
+;;; Every board of the cut a bowl could enter (D29), in the cut's own order:
+;;; the shell, the divider, every box's sides, then their walls, then their
+;;; bottoms. The TOP takes the oval (D18); the fronts stand before the carcass.
+(defun vanity-bowl-boards (W H D G GB frontT n columns sinks / boxes us dv out b)
+  (setq boxes (vanity-boxes-cut W H D G GB frontT n columns sinks (vanityServiceVoid))
+        us (vanity-trap-us W H D G GB frontT n columns sinks)
+        dv (vanity-divider-cut W H D G GB frontT n columns sinks)
+        out (vanity-bowl-shell W H D G))
+  (if dv (setq out (append out (list dv))))
+  (foreach b boxes (setq out (append out (vanity-box-boards b us GB columns "SIDES"))))
+  (foreach b boxes (setq out (append out (vanity-box-boards b us GB columns "WALLS"))))
+  (foreach b boxes (setq out (append out (vanity-box-boards b us GB columns "BOTTOM"))))
+  out)
+
+;;; Every board the bowls at xs enter: ((name n) ...), the deepest per board
+;;; to the tenth of a millimetre, in the boards' order (D29). yTop the
+;;; worktop's top in the carcass frame.
+(defun vanity-bowl-hits (boards xs yTop bowlH / out bx best xw e)
+  (setq out nil)
+  (foreach bx boards
+    (setq best nil)
+    (foreach xw xs
+      (setq e (vanity-bowl-enters bx xw (vanityWasteFromBack) yTop bowlH))
+      (if (and e (or (null best) (> e best))) (setq best e)))
+    (if best (setq out (cons (list (car bx) (/ (fix (+ (* best 10.0) 0.5)) 10.0)) out))))
+  (reverse out))
+
+;;; #48 in CLAUDE.md T83 F8's words (D29): "the bowl enters RAIL-TOP by N mm: move
+;;; the basin forward or take a shallower bowl", every board named.
+(defun vanity-bowl-sentence (num hits / s h)
+  (setq s "")
+  (foreach h hits
+    (setq s (strcat s (if (= s "") "" ", ") (car h) " by " (vanity-mm (cadr h)) " mm")))
+  (strcat num ": The bowl enters " s ": move the basin forward or take a shallower bowl."))
+
+;;; The bowl refused with the worktop's refusals (D29): the sentence where a
+;;; bowl at xs enters the shell, else nil; wt the worktop's thickness, bowlH
+;;; the bowl's depth below the worktop's top.
+(defun vanity-bowl-refused (num W H D G xs wt bowlH / hits)
+  (setq hits (vanity-bowl-hits (vanity-bowl-shell W H D G) xs (+ H wt) bowlH))
+  (if hits (vanity-bowl-sentence num hits) nil))
+
+;;; Check #48 for the bowl (D25, D29): the sentence where the bowls at xs, the
+;;; wastes' x of the basins the worktop takes, enter any board of the cut,
+;;; else nil; wt the worktop's thickness, bowlH the bowl's depth below the
+;;; worktop's top.
+(defun vanity-bowl-verdict (num W H D G GB frontT n columns sinks xs wt bowlH / hits)
+  (setq hits (vanity-bowl-hits (vanity-bowl-boards W H D G GB frontT n columns sinks) xs (+ H wt) bowlH))
+  (if hits (vanity-bowl-sentence num hits) nil))
 
 ;;; ---- (g) NO DOUBLE DRAWER UNDER A BASIN ----
 
@@ -1041,13 +1188,14 @@
 ;;; back face at z 85; 854 wide at x 23, the walls 818 long and 104 high, the
 ;;; bottom 831; the sides 138, their feet at 31.5 213.5 413.5, their tops 169.5
 ;;; 351.5 551.5. The parent (vd 0): 440 deep on the 450, the back face at 35.
-;;; THE TRAP. The waste at x 450, z 200. The U 370..530 in the top box (D3), 120
-;;; deep, R 20; in the bottom's frame 335.5..495.5; the back wall cut as D3-BB-1
+;;; THE TRAP. The waste at x 450, z 250 (T83 F8; 200 under T82). The U 370..530
+;;; in the top box (D3), 245 deep (it follows the waste, D29: 250 + 80 - 85),
+;;; R 20; in the bottom's frame 335.5..495.5; the back wall cut as D3-BB-1
 ;;; (0 329) and D3-BB-2 (489 818), 329 each. The trap's bottom line 428.5, the
-;;; box under it tops at 351.5: 77 of air, no shallow trap. The U reaches 205
-;;; from the carcass back (85 + 120): the waste at 200 stands 5 inside it and
-;;; nothing is said (under T82 the U reached 155: "#39 The trap stands 45 mm
-;;; beyond the U").
+;;; box under it tops at 351.5: 77 of air, no shallow trap. The U reaches 330
+;;; from the carcass back (85 + 245): the waste at 250 stands 80 inside it and
+;;; nothing is said (under T83 F6 the U, 120, reached 205 over the waste at
+;;; 200; under T82 it reached 155: "#39 The trap stands 45 mm beyond the U").
 ;;;
 ;;; THE SHALLOW TRAP. VANITY4 W 900 H 560 D 500: fronts 137 137 137 137 at y 0
 ;;; 140 280 420; sides 96; the trap's bottom line 448.5, the box under it tops
@@ -1083,13 +1231,19 @@
 ;;; On the floor: the plinth 100, no hanger.
 ;;;
 ;;; AFTER THE REVIEW. THE TOPS: the carcass TOP takes the oval 520 x 400 at 432,
-;;; 182 in its own frame, opening to its back edge; "Basin cut-out 520 x 400
-;;; oval in the carcass top of VU01: cut on site to the basin's template."; the
-;;; rail's screw at 450 into the TOP's back edge is not cut, the tenons at 113
-;;; and 787 stay. THE BOWL: "VU01: A bowl 150 deep meets the top drawer's box
-;;; and RAIL-TOP: the deepest bowl that clears the top drawer is 68.5, and the
-;;; oval stands over the rail (0 from the carcass back, the rail 18); take a
-;;; shallower or a vessel basin, or a shallower top drawer."
+;;; 232 in its own frame (T83 F8; 182 under T82), a HOLE 32 in front of its
+;;; back edge; "Basin cut-out 520 x 400 oval in the carcass top of VU01: cut
+;;; on site to the basin's template."; every tenon and screw of the TOP's back
+;;; edge stays (under T82 the rail's screw at 450 was not cut). THE BOWL (T83
+;;; F8, D29): RAIL-TOP clear, the sides clear; "VU01: The bowl enters D3-BB-1
+;;; by 21.1 mm, D3-BB-2 by 21.1 mm: move the basin forward or take a shallower
+;;; bowl."; the waste at 270, or a bowl 115 deep, enters nothing. ONE BASIN ON
+;;; TWO COLUMNS: "VU01: The bowl enters Z1D3-SR by 70 mm, Z2D3-SL by 70 mm,
+;;; Z1D3-BB by 6.1 mm, Z2D3-BB by 6.1 mm: move the basin forward or take a
+;;; shallower bowl." THE SHELL: the waste at 210, the oval 10 from the carcass
+;;; back: "VU01: The bowl enters RAIL-TOP by 22 mm: move the basin forward or
+;;; take a shallower bowl.", refused with the worktop's refusals, cut in
+;;; neither top.
 ;;; THE SMALLEST BOARD. W 484, columns 2, sinks 2: the U's would leave 0 and 9
 ;;; of the two back walls: neither is cut, "#39 The trap's U does not fit the
 ;;; top drawer's box: every board of its back wall keeps 30". W 242 with one
@@ -1139,6 +1293,6 @@
   ;; so the command takes every basin asked
   (foreach e (vanity-top-cutouts (vanity-wastes W columns sinks) G)
     (princ (strcat "\n" (vanity-top-cutout-note "VU01"))))
-  (setq e (vanity-bowl-verdict "VU01" W H D G GB frontT n columns (vanity-wastes W columns sinks) (vanityTop) (vanityBasinH)))
+  (setq e (vanity-bowl-verdict "VU01" W H D G GB frontT n columns sinks (vanity-wastes W columns sinks) (vanityTop) (vanityBasinH)))
   (if e (princ (strcat "\n" e)))
   (princ))

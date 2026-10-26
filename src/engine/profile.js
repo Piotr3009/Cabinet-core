@@ -2380,7 +2380,12 @@ export const DEFAULT_CABINET_PROFILE = {
     // PROPOSED (CLAUDE.md F11): the waste's centre from the carcass back (the
     // rails' back face). KIT_VANITY.lsp D15: a 120 U on a 500 carcass reaches
     // 155, so the trap stands 45 beyond it and Check #39 says so.
-    wasteFromBackMm: 200,
+    // T83 F8 · 250 (was 200), CONFIRMED 22:41 *"umywalki przesun bardziej do
+    // przodu o jakies 50 mm, powod: wchodza w tylna scianke, zlamana regula
+    // material nigdy nie wchodzi w drugi material"*, the 50 the PROPOSED
+    // reading of "about 50" (KIT_VANITY.lsp D29): the oval's centre with it,
+    // the U following it (D13, D15).
+    wasteFromBackMm: 250,
     // PROPOSED, to the eye only (*"dodajesz tylko do widoku"*): no part, no
     // CNC; its oval is cut on site in the worktop and in the carcass TOP
     // (KIT_VANITY.lsp D18), and a bowl that meets the top drawer or RAIL-TOP

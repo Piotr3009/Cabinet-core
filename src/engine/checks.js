@@ -362,7 +362,10 @@ export const CHECKS = Object.freeze([
   // width (or depth) that lets it in. CLAUDE.md names no number: the next
   // free one after the turn's own (#45 to #47, T82 BRIEF 6). YELLOW: nothing
   // the machine cuts changes, a person decides.
-  { n: 48, level: 'yellow', label: 'Basins that do not fit the vanity\'s top' },
+  // T83 F8 · ...and the bowl that enters a board (KIT_VANITY.lsp D29), in
+  // CLAUDE.md T83 F8's sentence: *"the bowl enters RAIL-TOP by N mm: move the
+  // basin forward or take a shallower bowl"*.
+  { n: 48, level: 'yellow', label: 'Basins that do not fit the vanity\'s top, or whose bowl enters a board' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as

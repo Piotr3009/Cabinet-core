@@ -2820,13 +2820,18 @@ function WorktopRow({ unit }) {
  *
  * Every choice is the store's one action `setMirrorCabinet` and nothing else;
  * a refusal is said here and in the notice, in the store's words. The Door
- * widths are one field a bay: a width typed that does not make the carcass
- * with the stiles is refused (the kit's own sentence, KIT_MIRROR.lsp D5) and
- * stays in its field, so the next field typed can make the sum; the line
- * under them reads the sum against the carcass. "Kit's widths" hands the
- * doors back to the kit's own (D6). The figures are the engine's
- * (`derived.mirror`: the carcass, the widths it cut, the stiles), never
- * worked out here; no number is typed by the panel itself.
+ * widths are one field a bay. CHAT FIX 26.10.2026 (KIT_MIRROR.lsp D5a; the
+ * owner 09:02 *"jesli uzytkownik zmienil to ten numer juz sie nie moze
+ * zmieniac, wtedy zmieniamy tylko te ktore nie byly ruszane"*, 09:03
+ * *"program odmawia ostatniej liczby bez sensu, musi zostawic"*): a width
+ * typed is one answer (`door_width`), HELD at its number and marked with a
+ * lock; the doors not typed give way so the sum always makes the carcass,
+ * and the one refusal left is a width that alone leaves the other doors
+ * nothing. The lock set free (a click) lets that door give way again;
+ * "Kit's widths" hands the doors back to the kit's own (D6) and forgets what
+ * was held. The figures are the engine's (`derived.mirror`: the carcass, the
+ * widths it cut, the stiles, the bays held), never worked out here; no
+ * number is typed by the panel itself.
  */
 const MIRROR_STILE_WORDS = [['led', 'LED'], ['timber', 'Timber'], ['none', 'None']];
 const MIRROR_WIDTH_DECIMALS = 1;
@@ -2844,8 +2849,6 @@ function MirrorCabinetSection({
 }) {
   const setMirrorCabinet = useProjectStore((s) => s.setMirrorCabinet);
   const notify = useUiStore((s) => s.notify);
-  // The door widths typed and refused, kept in their fields until they add up.
-  const [draft, setDraft] = useState(null);
   const [said, setSaid] = useState('');
   if (typeof setMirrorCabinet !== 'function' || !mirror) return null;
   const answer = (patch) => {
@@ -2860,19 +2863,20 @@ function MirrorCabinetSection({
     return res;
   };
   const chip = (on) => `cc-btn px-2 ${on ? 'border-gold text-gold' : ''}`;
-  const widths = Array.isArray(draft) && draft.length === mirror.bays ? draft : mirror.doorWidths;
+  const widths = mirror.doorWidths;
   const stilesTotal = (mirror.stiles || []).reduce((t, s) => t + (Number(s.w) || 0), 0);
   const sum = widths.reduce((t, w) => t + (Number(w) || 0), 0) + stilesTotal;
   const adds = Math.abs(sum - mirror.carcass.w) <= 0.01;
   const typed = Array.isArray(mirror.doorWidthsTyped) && mirror.doorWidthsTyped.length > 0;
+  // The bays the owner typed, each held at its number (D5a).
+  const held = Array.isArray(mirror.doorWidthsHeld) ? mirror.doorWidthsHeld : [];
   // A field committed as it shows (one decimal) is no answer: only a width typed is.
   const commitWidth = (i, v) => {
     if (Math.abs(Number(v) - Number(widths[i])) < 0.5 * 10 ** -MIRROR_WIDTH_DECIMALS) return;
-    const next = [...widths];
-    next[i] = v;
-    const res = answer({ door_widths: next });
-    setDraft(res?.ok ? null : next);
+    answer({ door_width: { bay: i, mm: v } });
   };
+  // The lock set free: the door keeps its width today and gives way the next time one is typed.
+  const setFree = (i) => answer({ door_free: i });
   return (
     <Section
       title="Mirror cabinet"
@@ -2892,7 +2896,7 @@ function MirrorCabinetSection({
               aria-pressed={mirror.bays === n}
               data-mirror-bays-count={n}
               title={`${n} door${n > 1 ? 's' : ''}: the doors take the kit's own widths again`}
-              onClick={() => { setDraft(null); answer({ bays: n }); }}
+              onClick={() => answer({ bays: n })}
             >
               {n}
             </button>
@@ -2907,26 +2911,44 @@ function MirrorCabinetSection({
             type="button"
             className="cc-btn-ghost text-[11px]"
             data-mirror-widths-own="1"
-            disabled={!typed && !draft}
-            title="The kit's own widths: the drawing's where they fit, else equal"
-            onClick={() => { setDraft(null); answer({ door_widths: null }); }}
+            disabled={!typed}
+            title="The kit's own widths: the drawing's where they fit, else equal; every lock set free"
+            onClick={() => answer({ door_widths: null })}
           >
             Kit&apos;s widths
           </button>
         </div>
         <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(1, widths.length)}, minmax(0, 1fr))` }}>
-          {widths.map((w, i) => (
-            <NumberField
-              key={`door-${i + 1}`}
-              className="cc-input text-right"
-              integer={false}
-              decimals={MIRROR_WIDTH_DECIMALS}
-              data-mirror-door-width={i + 1}
-              title={`Door ${i + 1}: its width with its half gaps, as the drawing gives it`}
-              value={w}
-              onCommit={(v) => commitWidth(i, v)}
-            />
-          ))}
+          {widths.map((w, i) => {
+            const locked = held.includes(i);
+            return (
+              <div key={`door-${i + 1}`} className="flex items-center gap-1" data-mirror-door={i + 1} data-mirror-door-held={locked ? '1' : '0'}>
+                <NumberField
+                  className={`cc-input text-right ${locked ? 'border-gold' : ''}`}
+                  integer={false}
+                  decimals={MIRROR_WIDTH_DECIMALS}
+                  data-mirror-door-width={i + 1}
+                  title={locked
+                    ? `Door ${i + 1}: typed by you and held at ${formatMm(w)}; the doors not typed give way`
+                    : `Door ${i + 1}: its width with its half gaps; type it and it is held, the others give way`}
+                  value={w}
+                  onCommit={(v) => commitWidth(i, v)}
+                />
+                {locked && (
+                  <button
+                    type="button"
+                    className="cc-btn-ghost text-[11px] px-1"
+                    data-mirror-door-free={i + 1}
+                    aria-label={`Door ${i + 1}: set free`}
+                    title={`Door ${i + 1} is held at ${formatMm(w)}: click to let it give way again`}
+                    onClick={() => setFree(i)}
+                  >
+                    &#128274;
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
         <p className={`text-[11px] ${adds ? 'text-ink-400' : 'text-status-danger'}`} data-mirror-widths-sum={adds ? 'adds' : 'short'}>
           {`${widths.map(formatMm).join(' + ')}${stilesTotal > 0 ? ` + stiles ${formatMm(stilesTotal)}` : ''} = ${formatMm(sum)}`}

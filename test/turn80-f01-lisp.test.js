@@ -61,7 +61,10 @@ const LATER_KITS = ['KIT_HAWA.lsp', 'KIT_VANITY.lsp', 'KIT_MIRROR.lsp'];
 // T83 F6 AMENDED (25.10.2026): a later kit AMENDED on the owner's order, its amendment licensed by its turn's fragment
 // (scripts/t78-classify.d/f44-t83-f06.mjs LISP): KIT_VANITY.lsp's void moves inside the carcass. The owner, 25.10.2026,
 // 22:41: *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*.
-const AMENDED_LATER = ['M\treference/lisp/KIT_VANITY.lsp'];
+// CHAT FIX 26.10.2026: KIT_MIRROR.lsp AMENDED on the owner's order, D5a and the constant mirrorMinDoor (held by
+// test/chatfix-2610-mirror-door-widths.test.js and test/turn83-f01-mirror-lisp.test.js). The owner, 26.10.2026, 09:02:
+// *"jesli uzytkownik zmienil to ten numer juz sie nie moze zmieniac, wtedy zmieniamy tylko te ktore nie byly ruszane"*.
+const AMENDED_LATER = ['M\treference/lisp/KIT_VANITY.lsp', 'M\treference/lisp/KIT_MIRROR.lsp'];
 const lispFingerprint = () => sha256(readdirSync(`${ROOT}reference/lisp`).filter((n) => n !== KIT && !LATER_KITS.includes(n)).sort()
   .map((n) => `${n} ${sha256(readFileSync(`${ROOT}reference/lisp/${n}`))}`).join('\n'));
 /** The turn's base, where git can answer (origin/main, else main), or null. */

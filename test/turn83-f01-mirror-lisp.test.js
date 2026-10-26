@@ -212,6 +212,7 @@ const KEYS = {
   mirrorMm: 'mirrorMirrorT',
   glassShelfMm: 'mirrorGlassShelf',
   bottomBoxMm: 'mirrorBottomBox',
+  minDoorMm: 'mirrorMinDoor',
   boardKgM3: 'mirrorBoardKgM3',
   mirrorKgM2: 'mirrorMirrorKgM2',
   ledKelvin: 'mirrorLedKelvin',
@@ -251,7 +252,7 @@ test('F1 . every profile.mirror number is a LISP constant of the same value, und
   // Millimetres are written as reals: AutoLISP divides two integers to an integer.
   for (const name of ['mirrorWidth', 'mirrorHeight', 'mirrorDepth', 'mirrorMountHeight', 'mirrorOverTop', 'mirrorStileW',
     'mirrorPanelT', 'mirrorDoorBoard', 'mirrorMirrorT', 'mirrorGlassShelf', 'mirrorBottomBox', 'mirrorBoardKgM3',
-    'mirrorMirrorKgM2', 'mirrorRecess']) {
+    'mirrorMirrorKgM2', 'mirrorRecess', 'mirrorMinDoor']) {
     assert.match(TEXT, new RegExp(`\\(defun ${name} \\( / \\) [0-9]+\\.[0-9]+\\)`), `${name} is written as a real`);
   }
   // The owner's and the drawing's numbers are CONFIRMED; the turn's readings are PROPOSED.
@@ -259,7 +260,7 @@ test('F1 . every profile.mirror number is a LISP constant of the same value, und
     'mirrorGlassShelf', 'mirrorShelvesPerBay', 'mirrorLedKelvin', 'mirrorRecess']) {
     assert.match(sourceOf(name), /CONFIRMED/, name);
   }
-  for (const name of ['mirrorBottomBox', 'mirrorBoardKgM3', 'mirrorMirrorKgM2', 'mirrorLedInsideSide', 'mirrorHangerName']) {
+  for (const name of ['mirrorBottomBox', 'mirrorBoardKgM3', 'mirrorMirrorKgM2', 'mirrorLedInsideSide', 'mirrorHangerName', 'mirrorMinDoor']) {
     assert.match(sourceOf(name), /PROPOSED/, name);
   }
   // CLAUDE.md T83 THE NUMBERS, as written.

@@ -76,6 +76,7 @@ export function mirrorConstants(profile) {
     mirrorT: M.mirrorMm,
     glassShelf: M.glassShelfMm,
     bottomBox: M.bottomBoxMm,
+    minDoor: M.minDoorMm,
     boardKgM3: M.boardKgM3,
     mirrorKgM2: M.mirrorKgM2,
   };
@@ -487,6 +488,69 @@ export function mirrorWidthsRefusal(num, Wc, bays, widths, kinds, sw, K) {
     + `type door widths that make ${mirrorMm(Wc)} with the stiles.${tail}`;
 }
 
+/**
+ * mirror-balance-widths (KIT_MIRROR.lsp D5a, the owner 26.10.2026): the door
+ * widths as the panel hands them to the kit, always filling the carcass.
+ *
+ * `widths` are the doors as they stand (one a bay); `order` the bays typed
+ * so far, the longest ago first, each one HELD at its number; `bay` and
+ * `mm` the one typed now (bay null: nothing typed, the stiles or the panels
+ * moved under the held doors). The typed door keeps its number; the free
+ * doors share what is left of `room` (the carcass less the stiles) to the
+ * tenth of a millimetre, the last free door taking the rest so the sum is
+ * exact; when there is no free door, or the free ones would fall under
+ * `minDoor`, the held door typed longest ago is set free, then the next.
+ * The typed number is never set free: when it alone leaves the other doors
+ * less than `minDoor` each it is refused, with the most it can be.
+ *
+ * @returns {{ widths: number[], order: number[], freed: number[], refused: null }
+ *          | { refused: string, most: number }}
+ */
+export function mirrorBalanceWidths(room, bays, widths, order, bay, mm, minDoor) {
+  const n = Math.max(1, Math.trunc(bays));
+  const base = Array.isArray(widths) && widths.length === n ? widths.map(Number) : null;
+  const w = base ? [...base] : Array.from({ length: n }, () => room / n);
+  let held = (Array.isArray(order) ? order : []).map((i) => Math.trunc(Number(i)))
+    .filter((i, k, a) => i >= 0 && i < n && a.indexOf(i) === k);
+  const tenth = (v) => Math.floor(v * 10 + 1e-6) / 10;
+  if (bay != null) {
+    const i = Math.trunc(Number(bay));
+    const most = room - (n - 1) * minDoor;
+    if (n === 1 && Math.abs(Number(mm) - room) > 1e-6) {
+      return { refused: `the one door is the carcass less the stiles: ${mirrorMm(tenth(room))}.`, most: tenth(room) };
+    }
+    if (!(Number(mm) > 0) || Number(mm) > most + 1e-6) {
+      return { refused: `door ${i + 1} at ${mirrorMm(Number(mm) || 0)} leaves the other door${n > 2 ? 's' : ''} less than `
+        + `${mirrorMm(minDoor)}: ${mirrorMm(tenth(most))} is the most it can be.`, most: tenth(most) };
+    }
+    w[i] = Number(mm);
+    held = [...held.filter((k) => k !== i), i];
+  }
+  const typed = bay != null ? Math.trunc(Number(bay)) : null;
+  const freed = [];
+  let free = Array.from({ length: n }, (_, i) => i).filter((i) => !held.includes(i));
+  for (;;) {
+    const rest = room - held.reduce((t, i) => t + w[i], 0);
+    // Every door held and the held ones fill the room: nothing to share, nothing to set free.
+    if (!free.length && Math.abs(rest) <= 0.01) return { widths: w, order: held, freed, refused: null };
+    if (free.length && rest / free.length >= minDoor - 1e-6) {
+      const each = tenth(rest / free.length);
+      let given = 0;
+      free.forEach((i, k) => {
+        w[i] = k < free.length - 1 ? each : Math.round((rest - given) * 10) / 10;
+        given += w[i];
+      });
+      return { widths: w, order: held, freed, refused: null };
+    }
+    const give = held.find((i) => i !== typed);
+    // Nothing held to set free (one bay, checked above): the doors as they stand.
+    if (give == null) return { widths: w, order: held, freed, refused: null };
+    held = held.filter((i) => i !== give);
+    free = Array.from({ length: n }, (_, i) => i).filter((i) => !held.includes(i));
+    freed.push(give);
+  }
+}
+
 // ─── THE UNIT'S ANSWERS ─────────────────────────────────────────────────────
 
 export const MIRROR_STILE_KINDS = Object.freeze(['led', 'timber', 'none']);
@@ -510,6 +574,9 @@ export function mirrorParamsOf(params, profile) {
     ? [...m.stiles] : null;
   const widths = Array.isArray(m.door_widths) && m.door_widths.length && m.door_widths.every((v) => Number.isFinite(Number(v)))
     ? m.door_widths.map(Number) : null;
+  // D5a: the bays the owner typed, longest ago first, each held at its number.
+  const order = widths && Array.isArray(m.door_widths_order)
+    ? m.door_widths_order.map((i) => Math.trunc(Number(i))).filter((i, k, a) => i >= 0 && i < bays && a.indexOf(i) === k) : [];
   const hands = Array.isArray(m.door_hinges) && m.door_hinges.length === bays && m.door_hinges.every((h) => h === 'L' || h === 'R')
     ? [...m.door_hinges] : null;
   const said = m.panels && typeof m.panels === 'object' ? m.panels : {};
@@ -522,6 +589,7 @@ export function mirrorParamsOf(params, profile) {
     stiles: kinds,
     stileWidthMm: posNum(m.stile_width_mm, d.stileWidthMm),
     doorWidths: widths,
+    doorWidthsOrder: order,
     doorHinges: hands,
     panels,
     panelT: posNum(m.panel_t, d.panelT),
@@ -932,6 +1000,7 @@ export function mirrorCabinetFigures(params, profile, opts = {}) {
     bays: mp.bays,
     doorWidths: widths.map(r4),
     doorWidthsTyped: mp.doorWidths,
+    doorWidthsHeld: mp.doorWidthsOrder,
     widthsRefused: Boolean(refusal),
     stile: mp.stile,
     stileKinds: kinds,

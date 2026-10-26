@@ -234,7 +234,7 @@ import { dirtyGate } from './dirtyGate.js';
 import { persistenceOn } from './persistence.js';
 // T83 F5 · the mirror cabinet's answers, checked as KIT_MIRROR.lsp checks them (its mirror's own routines).
 import {
-  MIRROR_STILE_KINDS, mirrorCarcass, mirrorConstants, mirrorOwnWidths, mirrorParamsOf, mirrorStileKinds,
+  MIRROR_STILE_KINDS, mirrorBalanceWidths, mirrorCarcass, mirrorConstants, mirrorOwnWidths, mirrorParamsOf, mirrorStileKinds,
   mirrorStilesTotal, mirrorWidthsRefusal,
 } from '../engine/mirrorCabinet.js';
 
@@ -10409,14 +10409,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * deeper than the cabinet; and the door widths, one a bay, that make the
    * carcass with the stiles (*"the sum checked against the width with the
    * stiles, refused in words when it does not add up"*), in the kit's own
-   * sentence (`mirrorWidthsRefusal`, D5). A new count of bays, or a change
-   * of the stiles or the panels that the typed widths no longer add up with,
-   * hands the doors back to the kit's own widths (D6) and says so. A count of
-   * glass shelves a bay takes the place of the shelves placed by hand. Any kit
-   * but the mirror cabinet is refused.
+   * sentence (`mirrorWidthsRefusal`, D5). A new count of bays hands the
+   * doors back to the kit's own widths (D6) and forgets what was held.
+   *
+   * CHAT FIX 26.10.2026 (KIT_MIRROR.lsp D5a; the owner 09:02 *"jesli
+   * uzytkownik zmienil to ten numer juz sie nie moze zmieniac, wtedy
+   * zmieniamy tylko te ktore nie byly ruszane"*, 09:03 *"program odmawia
+   * ostatniej liczby bez sensu, musi zostawic"*): ONE door typed at a time,
+   * `door_width: { bay, mm }`, is HELD at its number and the doors not typed
+   * give way (`mirrorBalanceWidths`), so the sum always makes the carcass and
+   * nothing typed is refused but a width that alone leaves the other doors
+   * less than `profile.mirror.minDoorMm` each; a held door set free to make
+   * room is said. The bays held live in `mirror.door_widths_order`, longest
+   * ago first. A change of the stiles or the panels under held doors balances
+   * them the same way (nothing typed), and hands the doors back to the kit's
+   * own only when even that cannot fill the carcass. The whole list
+   * `door_widths` (one a bay) is still taken as it was, checked as D5 has it.
+   * A count of glass shelves a bay takes the place of the shelves placed by
+   * hand. Any kit but the mirror cabinet is refused.
    *
    * @param {string} unitId
    * @param {object} patch  any of bays, door_widths (one a bay, or null: the kit's own),
+   *   door_width ({ bay, mm }: one door typed, the untouched doors give way),
+   *   door_free (a bay: its hold let go, its width kept until the next one typed),
    *   stile, stile_width_mm, panels ({ L, R, top, bottom }), panel_t, mirror_doors,
    *   mirror_back, shelves_per_bay, led_under, led_inside, bottom_box, recess_mm
    * @returns {{ ok: boolean, said: string }}
@@ -10439,7 +10454,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const n = Number(ask.bays);
       if (![1, 2, 3].includes(n)) return no('a mirror cabinet has 1, 2 or 3 bays.');
       // A typed width, a stile kind and a hinge side are a bay's: a new count starts from the kit's own.
-      if (n !== before.bays) Object.assign(next, { bays: n, door_widths: null, stiles: null, door_hinges: null });
+      if (n !== before.bays) Object.assign(next, { bays: n, door_widths: null, door_widths_order: null, stiles: null, door_hinges: null });
     }
     if ('stile' in ask) {
       if (!MIRROR_STILE_KINDS.includes(ask.stile)) return no('a stile is LED, timber or none.');
@@ -10486,14 +10501,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }
     if ('door_widths' in ask) {
       const ws = ask.door_widths;
-      if (ws == null) next.door_widths = null;
+      if (ws == null) Object.assign(next, { door_widths: null, door_widths_order: null });
       else if (!Array.isArray(ws) || !ws.length || !ws.every(isNum)) return no('type a width in mm for every door.');
-      else next.door_widths = ws.map(Number);
+      else Object.assign(next, { door_widths: ws.map(Number), door_widths_order: null });
+    }
+    if ('door_width' in ask) {
+      const d = ask.door_width;
+      if (!d || typeof d !== 'object' || !Number.isInteger(Number(d.bay)) || !isNum(d.mm)) return no('type one door\'s width in mm, the door named.');
+    }
+    if ('door_free' in ask) {
+      const i = Number(ask.door_free);
+      if (!Number.isInteger(i) || i < 0 || i >= before.bays) return no(`door ${i + 1}: this cabinet has ${before.bays} door${before.bays > 1 ? 's' : ''}.`);
+      if (!before.doorWidthsOrder.includes(i)) return no(`door ${i + 1} is not held.`);
+      // The hold let go, the widths as they stand: they fill the carcass today.
+      next.door_widths_order = before.doorWidthsOrder.filter((k) => k !== i);
     }
     // The answers as the kit will read them: the doors must have a width, and
     // typed widths must make the carcass with the stiles (D4 to D6).
     const nextParams = { ...unit.params, mirror: next, ...top };
-    const mp = mirrorParamsOf(nextParams, profile);
+    let mp = mirrorParamsOf(nextParams, profile);
     const W = Number(nextParams.width) || profile.mirror.defaults.width;
     const H = Number(nextParams.height) || profile.mirror.defaults.height;
     const [, , Wc] = mirrorCarcass(W, H, mp.panels.L, mp.panels.R, mp.panels.top, mp.panels.bottom, mp.panelT);
@@ -10504,15 +10530,43 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         + `${formatMm(Wc)} wide: take a narrower stile or thinner panels.`);
     }
     let said = '';
+    // D5a: one door typed, held; the doors not typed give way; a held door set free is said.
+    const room = Wc - stiles;
+    const doorsSaid = (ws) => ws.map(formatMm).join(' + ');
+    if ('door_width' in ask) {
+      const i = Number(ask.door_width.bay);
+      if (i < 0 || i >= mp.bays) return no(`door ${i + 1}: this cabinet has ${mp.bays} door${mp.bays > 1 ? 's' : ''}.`);
+      const stand = mp.doorWidths && mp.doorWidths.length === mp.bays ? mp.doorWidths
+        : mirrorOwnWidths(Wc, mp.bays, kinds, mp.stileWidthMm, K);
+      const bal = mirrorBalanceWidths(room, mp.bays, stand, mp.doorWidthsOrder, i, Number(ask.door_width.mm), K.minDoor);
+      if (bal.refused) return no(bal.refused);
+      Object.assign(next, { door_widths: bal.widths, door_widths_order: bal.order });
+      if (bal.freed.length) {
+        said = `${label}door ${bal.freed.map((k) => k + 1).join(' and ')} gave way to door ${i + 1}: the doors are ${doorsSaid(bal.widths)}.`;
+      }
+      mp = mirrorParamsOf({ ...nextParams, mirror: next }, profile);
+    }
     const widthsSaid = mirrorWidthsRefusal(num || 'MC', Wc, mp.bays, mp.doorWidths, kinds, mp.stileWidthMm, K);
     if (widthsSaid) {
       if (Array.isArray(ask.door_widths)) {
         return { ok: false, said: widthsSaid.replace(' The doors are cut at the kit\'s own widths.', ' The doors stand as they were.') };
       }
-      // A stile or a panel changed under widths typed for the old ones: the kit's own again, said.
-      said = `${label}the door widths typed (${(mp.doorWidths || []).map(formatMm).join(' + ')}) no longer make the carcass `
-        + 'with the stiles: the doors are back to the kit\'s own widths.';
-      next.door_widths = null;
+      // A stile or a panel changed under the typed widths: the held doors stay,
+      // the free ones give way (D5a); a list typed whole holds no door and is
+      // the kit's own again, as is a held list that even set free cannot fill.
+      const bal = mp.doorWidths && mp.doorWidths.length === mp.bays && mp.doorWidthsOrder.length
+        ? mirrorBalanceWidths(room, mp.bays, mp.doorWidths, mp.doorWidthsOrder, null, null, K.minDoor) : null;
+      const fits = bal && !bal.refused && bal.widths.every((w) => w >= K.minDoor - 1e-6)
+        && Math.abs(bal.widths.reduce((t, w) => t + w, 0) - room) <= 0.01;
+      if (fits) {
+        Object.assign(next, { door_widths: bal.widths, door_widths_order: bal.order });
+        said = `${label}the doors give way to the stiles and the panels: ${doorsSaid(bal.widths)}`
+          + `${bal.freed.length ? ` (door ${bal.freed.map((k) => k + 1).join(' and ')} set free)` : ''}.`;
+      } else {
+        said = `${label}the door widths typed (${(mp.doorWidths || []).map(formatMm).join(' + ')}) no longer make the carcass `
+          + 'with the stiles: the doors are back to the kit\'s own widths.';
+        Object.assign(next, { door_widths: null, door_widths_order: null });
+      }
     }
     const asked = { mirror: next, ...top };
     if (handBack) {

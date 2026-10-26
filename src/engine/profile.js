@@ -2437,6 +2437,11 @@ export const DEFAULT_CABINET_PROFILE = {
     // PROPOSED as a box (the drawing's 100): the carcass's lowest 100, the LED
     // under on its underside and the driver in it (KIT_MIRROR.lsp D12).
     bottomBoxMm: 100,
+    // PROPOSED (KIT_MIRROR.lsp D5a, the owner 26.10.2026 *"program odmawia
+    // ostatniej liczby bez sensu, musi zostawic"*): when a typed door width
+    // makes the untouched doors give way, none of them is made narrower than
+    // this; the owner to confirm the number.
+    minDoorMm: 100,
     // PROPOSED (KIT_MIRROR.lsp D10): what the hinge ladder weighs a door by.
     boardKgM3: 700,
     mirrorKgM2: 10,

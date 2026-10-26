@@ -376,6 +376,8 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f44-t83-f11.mjs',
   // T83 F12 (25.10.2026): the walk, real mouse on the built app (F1)
   'scripts/t83-walk.mjs',
+  // Chat fix 26.10.2026: the typed door width of the mirror cabinet stays, the untouched doors give way (KIT_MIRROR.lsp D5a)
+  'test/chatfix-2610-mirror-door-widths.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

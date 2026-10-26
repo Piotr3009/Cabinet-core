@@ -118,6 +118,21 @@
 ;;;     sum with the stiles is not the carcass width, are said by
 ;;;     mirror-widths-refusal, and the doors are cut at the kit's OWN widths
 ;;;     (D6), never at the typed ones stretched.
+;;; D5a THE TYPED WIDTH STAYS, THE UNTOUCHED DOORS GIVE WAY (the owner,
+;;;     26.10.2026, 09:02: "jesli uzytkownik zmienil to ten numer juz sie nie
+;;;     moze zmieniac, wtedy zmieniamy tylko te ktore nie byly ruszane";
+;;;     09:03: "program odmawia ostatniej liczby bez sensu, musi zostawic").
+;;;     The kit still cuts only widths that fill the carcass (D5): it is the
+;;;     PANEL (the store, engine/mirrorCabinet.js mirror-balance-widths) that
+;;;     makes them fill before the kit sees them. A door the owner types is
+;;;     HELD at its number, and every door he typed before stays held; the
+;;;     doors never typed share the carcass less the stiles and the held doors,
+;;;     equally, to the tenth of a millimetre. When no door is free, the held
+;;;     door typed longest ago is set free, then the next, until every free
+;;;     door is at least mirrorMinDoor wide. The number just typed is never
+;;;     set free: it is refused only when it alone leaves the other doors less
+;;;     than mirrorMinDoor each, and the refusal names the most it can be.
+;;;     "Kit's widths" and a new count of bays forget what was held (D6).
 ;;; D6  THE KIT'S OWN WIDTHS (PROPOSED). Unsaid or refused: the profile's 330 /
 ;;;     480 / 330 at three bays where they fill the carcass with the stiles
 ;;;     (the drawing's cabinet); else the carcass width less the stiles shared
@@ -270,6 +285,8 @@
 (defun mirrorGlassShelf ( / ) 6.0)
 ;; profile.mirror.bottomBoxMm   PROPOSED as a box (the drawing's 100, D12)
 (defun mirrorBottomBox ( / ) 100.0)
+;; profile.mirror.minDoorMm   PROPOSED (D5a, the owner 26.10.2026): the narrowest a door set free may be made; the owner to confirm
+(defun mirrorMinDoor ( / ) 100.0)
 ;; profile.mirror.boardKgM3, mirrorKgM2   PROPOSED (D10)
 (defun mirrorBoardKgM3 ( / ) 700.0)
 (defun mirrorMirrorKgM2 ( / ) 10.0)

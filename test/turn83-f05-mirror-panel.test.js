@@ -334,7 +334,8 @@ test('F5 · the MIRROR CABINET section: every row the owner asked for, each thro
     assert.match(src, new RegExp(hook), `${hook} is not in the panel`);
   }
   assert.match(src, /\[1, 2, 3\]\.map\(\(n\) =>/);
-  for (const call of ['answer({ bays: n })', 'answer({ door_widths: next })', 'answer({ door_widths: null })', 'answer({ stile: k })',
+  // CHAT FIX 26.10.2026 (D5a): one door typed is `door_width`, its lock set free `door_free`; the list whole is the test's road.
+  for (const call of ['answer({ bays: n })', 'answer({ door_width: { bay: i, mm: v } })', 'answer({ door_free: i })', 'answer({ door_widths: null })', 'answer({ stile: k })',
     'answer({ stile_width_mm: v })', 'answer({ panels: { [k]: !on } })', 'answer({ panel_t: v })', 'answer({ [k]: v })',
     'answer({ shelves_per_bay: v })', 'answer({ recess_mm: v })']) {
     assert.ok(src.includes(call), `the panel does not call ${call}`);

@@ -382,6 +382,8 @@ export const NEW_FILES = [
   'scripts/t83-walk.mjs',
   // Chat fix 26.10.2026: the typed door width of the mirror cabinet stays, the untouched doors give way (KIT_MIRROR.lsp D5a)
   'test/chatfix-2610-mirror-door-widths.test.js',
+  // T84 P1 (27.10.2026): the census of main, the parity gate's numbers (PART P)
+  'scripts/t84-census.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

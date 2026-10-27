@@ -1,0 +1,316 @@
+<!doctype html>
+<!--
+Skylon / Cabinet Core PRO
+Studio Stage 1 - shell handoff, 27 October 2026
+
+PURPOSE
+One standalone HTML/CSS layout reference. No npm, network, React runtime,
+image-generation assets, path tracing, persistence or production exports.
+The small script only exercises shell states using explicit sample data.
+Numeric inputs are READ ONLY: no parallel implementation of engine setters.
+Target CSS viewports: 1920x1080 and 1440x900 at browser zoom 100%.
+13px base; 30px fields; 32px ordinary buttons; 4px radii.
+
+INTEGRATION BOUNDARY
+New PRO-only components: StudioShell, StudioRail, SelectionBreadcrumb,
+QuickSelectionCard, InspectorHost, SceneLinks. Never modify Retail copies.
+The scene-slot receives the EXISTING viewport. The sample SVG is schematic.
+The technical-panel slot receives the existing RightPanel/MultiUnitPanel.
+All original menus remain mounted until every item has been mapped/reviewed.
+The legacy-menu slot is intentionally NOT an exhaustive rewritten menu model.
+Existing outputMenu.js remains the source of output entries and enablement.
+The shell owns layout and selection display, never cabinet geometry or materials.
+
+IMPORTANT IMPLEMENTATION LIMIT
+RightPanel currently positions itself absolute right/top/bottom. A new wrapper
+alone cannot guarantee resized canvas or remove its header. The integrator must
+verify positioning, layering and duplicate headers; use a narrow licensed host
+adaptation if necessary. Do not query/hide arbitrary children with CSS or DOM.
+Stage 1 does NOT provide new tabs/search over the existing 3000-line editor.
+
+ACTION CONTRACT (reuse current branch handlers, not these demo functions)
+design: useUiStore.setViewMode('3d')
+add: existing Library; categories from current registry incl saved items/sets
+select: closeLibrary(); retain selection; clear insertion through existing API
+room: openModal('room', {anchor})
+selected-finish: openModal('unit-finish', {unitIds,anchor})
+project-finish: openModal('design', {anchor})
+assign-materials: openModal('assign-materials', {anchor})
+stock: openModal('warehouse', {anchor})
+open-cabinet: openModal('cabinet', {unitId,anchor}) - one cabinet only
+open-panel: existing free-panel/element editor, exact target ID
+drawings: openModal('drawing',{kind:'walls',anchor}) to PREVIEW the set;
+          onDrawing('walls') exports PDF and must NOT be used as preview.
+cnc-sheet: setViewMode('cnc')
+other-outputs: buildOutputMenu(existing handlers), all entries preserved
+
+QUICK CARD BINDING RULES
+Dimensions: roomFitRefusalFor -> updateUnitParams -> surface notices;
+preserve project inheritance/custom height and reset to project.
+Base/Wall L-corner exception: Width/Depth are Arm A/Arm B.
+Finish: existing finish dialog, never replace stock assignments with colours.
+Plinth: addPlinth/removePlinth, height derived, not a new height setter.
+Wardrobe Bays: read-only bayWidthsOf summary, edit actual dividers.
+Vanity: setVanityDrawers; updateUnitParams({sinks}); setVanityFloating.
+Mirror: setMirrorCabinet; changing bays resets door widths: preserve warning.
+HAWA: setPocket/setPocketCovers and existing refusals; size is derived.
+Free panel: freePanelOf/freePanelPatch; panel_length/panel_width/board_t,
+panel_facing/panel_tilt_deg/mount_height. Do not edit its bounding box.
+Unsupported/not-applicable fields disappear; never invent generic options.
+
+PIN / SELECTION CONTRACT
+Pin keeps inspector open and FOLLOWING SELECTION; it never locks unit ID.
+No selection -> empty state; multi-selection -> existing bulk controls.
+Commit a valid pending edit to its ORIGINAL ID before following new selection;
+invalid edit blocks that transition with visible validation. Escape cancels.
+Part dialogs retain their own unitId/partId even if inspector changes selection.
+Keep existing part-click handlers and modal anchor/at, drag, z-order behaviour.
+For an object wider than available free space, reposition camera or reserve
+space before opening; do not silently place a modal over the selected object.
+
+LEGACY MENU / ADVANCED
+Nothing is removed, renamed Advanced or made optional in this stage.
+Discuss one function at a time with Piotr. Valid workshop defaults may be used
+without opening advanced sections; validation errors remain visible globally.
+
+PROTOTYPE USE
+The 'Prototype' button opens layout fixtures (all 7 types, multi/empty).
+Open Full settings and pin; use Next cabinet to test following selection.
+Click highlighted front to open a draggable beside-object sample window.
+Output buttons describe their existing destination; they create no files.
+Document event 'studio:action' is an integration hint, not a production API.
+URL: ?type=base|wall|wardrobe|vanity|mirror|hawa|panel
+     &inspector=full&pin=1&fixture=none|multi
+The existing repo is not modified by this file.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cabinet Core PRO - Studio Stage 1</title>
+<style>
+/* Standalone compiled equivalents of existing Tailwind tokens. PRO scope only. */
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1a1a1a}
+.studio-pro{--shell-900:#1a1a1a;--shell-800:#252526;--shell-700:#2d2d30;--shell-600:#3e3e42;--ink-50:#f2f2f0;--ink-100:#d6d6d2;--ink-200:#a8a8a2;--ink-400:#7a7a74;--gold:#AA8E68;--gold-hover:#C8A678;--gold-dark:#8F7654;--warn:#d9a441;--danger:#c9524b;--ok:#5f9e6e;--rail-width:112px;--inspector-width:344px;--topbar-height:48px;--context-height:34px;--status-height:30px;--radius:4px;color:var(--ink-50);font:13px/1.4 system-ui,-apple-system,'Segoe UI',sans-serif;width:100%;height:100dvh;display:grid;grid-template-rows:var(--topbar-height) var(--context-height) minmax(0,1fr) var(--status-height);background:var(--shell-900)}
+.studio-pro *{box-sizing:border-box}.studio-pro [hidden]{display:none!important}.studio-pro button,.studio-pro input,.studio-pro select{font:inherit;color:inherit}.studio-pro button{cursor:pointer}.studio-pro button:disabled{cursor:default;opacity:.45}.studio-pro button:focus-visible,.studio-pro input:focus-visible,.studio-pro select:focus-visible,.studio-pro summary:focus-visible{outline:2px solid var(--gold-hover);outline-offset:2px}.studio-pro h1,.studio-pro h2,.studio-pro h3,.studio-pro p{margin:0}.studio-pro h1{font-size:16px;font-weight:600}.studio-pro h2{font-size:14px;font-weight:600}.studio-pro h3{font-size:13px;font-weight:600}.studio-pro svg{display:block}.studio-pro .icon{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}.studio-pro .cc-btn,.studio-pro .cc-btn-gold,.studio-pro .cc-btn-ghost{height:32px;min-height:32px;border-radius:var(--radius);display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 10px;white-space:nowrap;text-decoration:none}.studio-pro .cc-btn{border:1px solid var(--shell-600);background:var(--shell-700);color:var(--ink-100)}.studio-pro .cc-btn:hover{background:#39393c;color:var(--ink-50)}.studio-pro .cc-btn-gold{border:1px solid var(--gold);background:var(--gold);color:var(--shell-900);font-weight:600}.studio-pro .cc-btn-gold:hover{background:var(--gold-hover)}.studio-pro .cc-btn-ghost{background:transparent;border:1px solid transparent;color:var(--ink-200)}.studio-pro .cc-btn-ghost:hover{background:var(--shell-700);color:var(--ink-50)}.studio-pro .cc-input{width:100%;height:30px;border:1px solid var(--shell-600);background:var(--shell-900);border-radius:var(--radius);padding:0 8px;color:var(--ink-50)}.studio-pro .cc-label{font-size:12px;color:var(--ink-100);display:block;margin-bottom:4px}.studio-pro .cc-frame{border:1px solid rgba(170,142,104,.3);border-radius:var(--radius);padding:10px}.studio-pro .cc-frame-active{border-color:rgba(170,142,104,.7)}.studio-pro .muted{color:var(--ink-200)}.studio-pro .subtle{color:var(--ink-400)}.studio-pro .small{font-size:12px}.studio-pro .mono{font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}.studio-pro .flex{display:flex;align-items:center;gap:8px}.studio-pro .grow{flex:1;min-width:0}.studio-pro .gold{color:var(--gold-hover)}.studio-pro .rule{height:18px;width:1px;background:var(--shell-600);margin:0 6px}.studio-pro .icon-btn{width:32px;padding:0}.studio-pro .topbar{display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid var(--shell-600);background:var(--shell-900);z-index:10;min-width:0}.studio-pro .wordmark{display:flex;align-items:center;gap:9px;letter-spacing:2px;font-size:12px;white-space:nowrap;color:var(--ink-100)}.studio-pro .wordmark .icon{width:23px;height:23px;color:var(--gold)}.studio-pro .pro-label{font-size:11px;letter-spacing:.5px;color:var(--gold);border-left:1px solid var(--shell-600);padding-left:9px}.studio-pro .project-name{white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}.studio-pro .project-name small{display:block;color:var(--ink-200);font-size:11px}.studio-pro .legacy-menu{display:flex;align-items:center;gap:1px;margin-left:8px}.studio-pro .legacy-menu .cc-btn-ghost{padding:0 8px;color:var(--ink-100)}.studio-pro .context{display:flex;align-items:center;padding:0 14px 0 calc(var(--rail-width) + 16px);gap:8px;border-bottom:1px solid var(--shell-600);color:var(--ink-200);background:var(--shell-800);z-index:2;min-width:0}.studio-pro .breadcrumb{display:flex;gap:7px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.studio-pro .breadcrumb .icon{width:12px;height:12px;color:var(--ink-400)}.studio-pro .breadcrumb strong{font-weight:500;color:var(--ink-50)}.studio-pro .selection-scope{font-size:12px;padding-left:10px;border-left:1px solid var(--shell-600);white-space:nowrap}.studio-pro .workspace{min-height:0;display:grid;grid-template-columns:var(--rail-width) minmax(0,1fr) var(--inspector-width);position:relative}.studio-pro .rail{border-right:1px solid var(--shell-600);padding:14px 8px;background:var(--shell-800);display:flex;flex-direction:column;gap:6px;z-index:3}.studio-pro .rail .cc-btn-ghost{justify-content:flex-start;padding:0 8px;color:var(--ink-100)}.studio-pro .rail .cc-btn-ghost[aria-pressed="true"]{background:var(--shell-700);border-color:rgba(170,142,104,.65);color:var(--gold-hover)}.studio-pro .rail-separator{height:1px;background:var(--shell-600);margin:9px 4px}.studio-pro .rail-bottom{margin-top:auto;display:grid;gap:8px}.studio-pro .rail-caption{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-400);padding:0 8px}.studio-pro .scene-slot{position:relative;min-width:0;min-height:0;overflow:hidden;background:#deded9;color:#3c3e3b}.studio-pro .scene-caption{position:absolute;top:14px;left:16px;z-index:1;display:flex;align-items:center;gap:10px;font-size:12px;color:#555951}.studio-pro .sample-chip{border:1px solid #b7b9b1;border-radius:4px;background:#eaeae5;padding:2px 7px;font-size:11px;color:#5c5f58}.studio-pro .scene-tools{position:absolute;right:14px;top:12px;display:flex;gap:5px;z-index:1}.studio-pro .scene-tools .cc-btn{color:var(--ink-100);background:var(--shell-800)}.studio-pro .scene-art{width:100%;height:100%;padding:40px 18px 70px}.studio-pro .scene-art text{font:13px system-ui,sans-serif;fill:#555951}.studio-pro .scene-art .selected-part{stroke:var(--gold-dark);stroke-width:3}.studio-pro .scene-art [data-part]{cursor:pointer}.studio-pro .scene-art [data-part]:hover{filter:brightness(1.07)}.studio-pro .scene-art [data-part]:focus-visible{outline:none;stroke:#675438;stroke-width:5}.studio-pro .scene-links{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:var(--shell-800);border:1px solid var(--shell-600);border-radius:4px;padding:5px;display:flex;align-items:center;gap:5px;box-shadow:0 4px 12px #0002;white-space:nowrap}.studio-pro .active-view{border-color:var(--gold);color:var(--gold-hover)}.studio-pro .inspector{min-height:0;background:var(--shell-800);border-left:1px solid var(--shell-600);display:flex;flex-direction:column}.studio-pro .inspector-head{padding:16px 14px 12px;border-bottom:1px solid var(--shell-600)}.studio-pro .object-title{display:flex;align-items:center;justify-content:space-between;gap:10px}.studio-pro .object-thumb{width:48px;height:48px;background:var(--shell-700);border:1px solid var(--shell-600);border-radius:4px;display:grid;place-items:center;color:var(--gold)}.studio-pro .object-thumb .icon{width:28px;height:28px}.studio-pro .object-id{font-size:11px;letter-spacing:.7px;color:var(--gold-hover);margin-bottom:3px}.studio-pro .scope-row{display:flex;align-items:center;gap:7px;margin-top:11px;color:var(--ink-200);font-size:12px}.studio-pro .scope-pill{border:1px solid var(--shell-600);border-radius:4px;padding:2px 7px;color:var(--ink-100)}.studio-pro .inspector-body{padding:12px 14px;min-height:0;overflow:auto;overscroll-behavior:contain}.studio-pro .card-section-title{font-size:11px;letter-spacing:.8px;color:var(--gold-hover);text-transform:uppercase;margin-bottom:10px}.studio-pro .field-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(136px,1.1fr);gap:10px;align-items:center;min-height:42px}.studio-pro .field-row .cc-label{margin:0}.studio-pro .value-wrap{position:relative;min-width:0}.studio-pro .value-wrap input{padding-right:40px;text-align:right;font-variant-numeric:tabular-nums}.studio-pro .value-wrap .unit{position:absolute;right:9px;top:6px;font-size:12px;color:var(--ink-200)}.studio-pro .value-action{height:30px;min-height:30px;justify-content:space-between;max-width:100%;padding:0 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.studio-pro .value-action span{overflow:hidden;text-overflow:ellipsis}.studio-pro .readonly-value{min-height:30px;display:flex;align-items:center;justify-content:flex-end;gap:5px;font-size:12px;color:var(--ink-200)}.studio-pro .inheritance{display:flex;gap:6px;align-items:center;color:var(--ink-200);font-size:12px;margin:8px 0 0}.studio-pro .inheritance .icon{width:13px;height:13px}.studio-pro .inline-note{font-size:12px;color:var(--ink-200);margin-top:10px;line-height:1.5}.studio-pro .card-actions{display:flex;flex-direction:column;gap:8px;margin-top:16px}.studio-pro .card-actions .cc-btn,.studio-pro .card-actions .cc-btn-gold{width:100%}.studio-pro .issue-strip{border-left:2px solid var(--warn);background:rgba(217,164,65,.06);padding:9px 10px;display:flex;gap:8px;margin-top:14px;color:#dfbf85;font-size:12px}.studio-pro .inspector-bottom{margin-top:auto;padding:12px 14px;border-top:1px solid var(--shell-600);display:flex;align-items:center;justify-content:space-between;color:var(--ink-200);font-size:12px}.studio-pro .pin-button[aria-pressed="true"]{color:var(--gold-hover);border-color:var(--gold)}.studio-pro .full-head{display:flex;align-items:center;gap:7px;padding:10px 12px;border-bottom:1px solid var(--shell-600)}.studio-pro .full-head h2{flex:1}.studio-pro .technical-context{padding:9px 14px;border-bottom:1px solid var(--shell-600);font-size:12px;color:var(--ink-200)}.studio-pro .technical-slot{overflow:auto;min-height:0;padding:12px;display:grid;align-content:start;gap:10px;overscroll-behavior:contain}.studio-pro .technical-slot details summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:24px}.studio-pro .technical-slot details summary::after{content:'+';color:var(--gold)}.studio-pro .technical-slot details[open] summary::after{content:'−'}.studio-pro .technical-slot .field-row{grid-template-columns:minmax(0,1fr) 140px;min-height:38px}.studio-pro .slot-notice{font-size:11px;color:var(--ink-200);border-bottom:1px dashed var(--shell-600);padding-bottom:10px}.studio-pro .empty-state{padding:24px 16px;color:var(--ink-200)}.studio-pro .empty-state h2{color:var(--ink-50);margin-bottom:8px}.studio-pro .statusbar{display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--shell-900);border-top:1px solid var(--shell-600);color:var(--ink-200);font-size:12px;z-index:6}.studio-pro .statusbar .cc-btn-ghost{height:26px;min-height:26px;font-size:11px}.studio-pro .statusbar .status-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);display:inline-block;margin-right:6px}.studio-pro .popup{position:absolute;z-index:30;background:var(--shell-800);border:1px solid var(--shell-600);border-radius:4px;box-shadow:0 12px 36px #0006;color:var(--ink-50);width:292px;max-height:calc(100dvh - 120px);overflow:auto}.studio-pro .popup-head{padding:10px 12px;border-bottom:1px solid var(--shell-600);display:flex;align-items:center;gap:8px}.studio-pro .popup-content{padding:5px}.studio-pro .menu-item{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;min-height:32px;border:none;background:transparent;border-radius:4px;padding:6px 9px;color:var(--ink-100);gap:10px}.studio-pro .menu-item:hover{background:var(--shell-700)}.studio-pro .menu-separator{height:1px;background:var(--shell-600);margin:5px}.studio-pro .menu-caption{font-size:11px;color:var(--ink-200);padding:5px 9px 3px}.studio-pro .library-popup{width:284px}.studio-pro .library-item{display:flex;gap:10px;align-items:center;padding:9px;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--shell-600);color:var(--ink-100)}.studio-pro .library-item:hover{background:var(--shell-700)}.studio-pro .library-item .icon{width:27px;height:27px;color:var(--gold)}.studio-pro .library-item small{display:block;font-size:11px;color:var(--ink-200);margin-top:2px}.studio-pro .floating-window{position:absolute;z-index:40;width:290px;border-radius:4px;background:var(--shell-800);border:1px solid var(--gold-dark);box-shadow:0 10px 30px #0005}.studio-pro .window-head{height:38px;display:flex;align-items:center;gap:8px;padding:0 8px 0 11px;border-bottom:1px solid var(--shell-600);cursor:move;touch-action:none;user-select:none}.studio-pro .window-head strong{font-size:13px;font-weight:500;flex:1}.studio-pro .window-body{padding:11px}.studio-pro .window-body .field-row{grid-template-columns:1fr 130px}.studio-pro .window-actions{padding:0 11px 11px;display:flex;justify-content:flex-end}.studio-pro .demo-drawer{position:absolute;z-index:50;right:14px;bottom:42px;width:360px;max-width:calc(100% - 28px);background:var(--shell-800);border:1px solid var(--gold-dark);border-radius:4px;box-shadow:0 10px 30px #0007;padding:14px;max-height:calc(100dvh - 70px);overflow:auto}.studio-pro .demo-drawer label{display:block;margin:12px 0 5px}.studio-pro .fixture-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.studio-pro .demo-drawer p{margin-top:10px;font-size:12px;color:var(--ink-200)}.studio-pro .demo-drawer .measurements{margin-top:12px;padding-top:10px;border-top:1px solid var(--shell-600);font-size:12px;line-height:1.7}.studio-pro .toast{position:absolute;bottom:75px;left:calc(var(--rail-width) + 16px);z-index:45;max-width:min(440px,calc(100% - var(--rail-width) - var(--inspector-width) - 32px));background:var(--shell-800);color:var(--ink-100);border:1px solid var(--shell-600);border-left:2px solid var(--gold);border-radius:4px;padding:10px 12px;font-size:12px;box-shadow:0 5px 15px #0003}.studio-pro[data-inspector="full"]{--inspector-width:400px}.studio-pro[data-inspector="none"]{--inspector-width:0px}.studio-pro[data-inspector="none"] .inspector{display:none}.studio-pro .workspace.cnc-mode .scene-slot{background:#efefeb}.studio-pro .cnc-preview{padding:70px 50px;color:#53564f}.studio-pro .cnc-preview svg{width:100%;max-height:650px}.studio-pro ::-webkit-scrollbar{width:8px;height:8px}.studio-pro ::-webkit-scrollbar-track{background:var(--shell-800)}.studio-pro ::-webkit-scrollbar-thumb{background:var(--shell-600);border-radius:4px}
+@media(max-width:1500px){.studio-pro[data-inspector="full"]{--inspector-width:360px}.studio-pro .topbar{gap:7px;padding:0 10px}.studio-pro .project-name{max-width:180px}.studio-pro .legacy-menu{margin-left:0}.studio-pro .legacy-menu .cc-btn-ghost{padding:0 6px}.studio-pro .wordmark{letter-spacing:1.5px}.studio-pro .topbar .rule{margin:0 3px}}
+@media(max-width:1150px){.studio-pro{--rail-width:96px;--inspector-width:316px}.studio-pro .project-name{max-width:150px}.studio-pro{grid-template-rows:auto var(--context-height) minmax(0,1fr) var(--status-height)}.studio-pro .topbar{flex-wrap:wrap;padding:8px 10px}.studio-pro .legacy-menu{order:5;width:100%;flex-wrap:wrap}.studio-pro .wordmark .brand-text{display:none}.studio-pro .scene-tools{display:none}}
+@media(max-width:760px){html,body{overflow:auto}.studio-pro{height:auto;min-height:100dvh;grid-template-rows:auto auto minmax(400px,1fr) 30px}.studio-pro .topbar{flex-wrap:wrap;padding:8px;gap:6px}.studio-pro .legacy-menu{order:5;width:100%;flex-wrap:wrap}.studio-pro .context{padding:8px;flex-wrap:wrap;min-height:34px}.studio-pro .workspace{grid-template-columns:64px minmax(0,1fr);grid-template-rows:400px auto}.studio-pro .rail{grid-row:1/3;padding:12px 5px}.studio-pro .rail .cc-btn-ghost{justify-content:center;padding:0}.studio-pro .rail .rail-text,.studio-pro .rail-caption{display:none}.studio-pro .inspector{grid-column:2;max-height:none;min-height:440px;border-top:1px solid var(--shell-600)}.studio-pro .inspector-body,.studio-pro .technical-slot{max-height:600px}.studio-pro .scene-art{padding:35px 4px 65px}.studio-pro .scene-caption{left:8px;gap:5px}.studio-pro .scene-caption .scene-location{display:none}.studio-pro .scene-links{bottom:12px}.studio-pro .scene-links .cc-btn{padding:0 7px}.studio-pro .statusbar{gap:5px;padding:0 8px}.studio-pro .statusbar .viewport-status{display:none}.studio-pro .toast{left:75px;max-width:calc(100% - 90px);bottom:45px}.studio-pro .popup{max-width:calc(100% - 20px)}.studio-pro .floating-window{max-width:calc(100% - 20px)}}
+</style>
+</head>
+<body>
+<div class="studio-pro" id="studio-pro" data-inspector="quick">
+ <svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+  <symbol id="i-cube" viewBox="0 0 24 24"><path d="m12 3 9 5v8l-9 5-9-5V8zM3 8l9 5 9-5m-9 5v8M7.5 5.5l9 5v8"/></symbol>
+  <symbol id="i-select" viewBox="0 0 24 24"><path d="m5 3 14 10-7 1-3 7z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
+  <symbol id="i-room" viewBox="0 0 24 24"><path d="M3 21V4h18v17h-6v-7H9v7z"/></symbol>
+  <symbol id="i-material" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5zM3 12l9 5 9-5M3 16l9 5 9-5"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="m8 3 8 0-1 6 4 4v2H5v-2l4-4zM12 15v7"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 3h7v7m0-7L10 14M10 4H4v16h16v-6"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h7m4 0h5M4 17h3m4 0h9M11 4v6M7 14v6"/></symbol>
+  <symbol id="i-drawing" viewBox="0 0 24 24"><path d="M5 3h11l4 4v14H5zM16 3v5h4M8 12h9M8 16h9M8 19h5"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="m8 4-5 5 5 5M3 9h11a6 6 0 0 1 0 12"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="m10 7 3-3a5 5 0 0 1 7 7l-3 3M14 17l-3 3a5 5 0 0 1-7-7l3-3m1 6 8-8"/></symbol>
+  <symbol id="i-warning" viewBox="0 0 24 24"><path d="m12 3 10 18H2zM12 9v5m0 3v1"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><path d="M3 4h18v16H3zM14 4v16M17 8h1m-1 4h1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M4 3h14l3 3v15H3V3zM7 3v6h10V3M7 21v-8h10v8"/></symbol>
+ </defs></svg>
+ <header class="topbar">
+  <div class="wordmark"><svg class="icon"><use href="#i-cube"/></svg><span class="brand-text">CABINET CORE</span><span class="pro-label">PRO</span></div>
+  <span class="rule"></span>
+  <div class="project-name">Hampstead kitchen<small>Sample project · Studio layout</small></div>
+  <nav class="legacy-menu" data-slot="legacy-menu" aria-label="Application menus">
+   <button class="cc-btn-ghost" data-popup="file">File</button>
+   <button class="cc-btn-ghost" data-popup="view">View</button>
+   <button class="cc-btn-ghost optional" data-popup="library">Library</button>
+   <button class="cc-btn-ghost" data-popup="settings">Settings</button>
+   <button class="cc-btn-ghost optional" data-popup="database">Database</button>
+   <button class="cc-btn-ghost optional" data-existing="Spraying">Spraying</button>
+   <button class="cc-btn-ghost optional" data-existing="Lighting">Lighting</button>
+   <button class="cc-btn-ghost" data-popup="output">Output <svg class="icon"><use href="#i-down"/></svg></button>
+  </nav>
+  <div class="grow"></div>
+  <button class="cc-btn-ghost icon-btn" aria-label="Undo" data-existing="Undo"><svg class="icon"><use href="#i-undo"/></svg></button>
+  <button class="cc-btn" data-existing="Save"><svg class="icon"><use href="#i-save"/></svg>Save</button>
+ </header>
+ <div class="context">
+  <div class="breadcrumb" id="breadcrumb" aria-label="Selection location"></div>
+  <div class="grow"></div>
+  <span class="selection-scope" id="selection-count">1 cabinet selected</span>
+  <button class="cc-btn-ghost icon-btn" style="height:28px;min-height:28px" id="show-inspector" aria-label="Show selection settings"><svg class="icon"><use href="#i-panel"/></svg></button>
+ </div>
+ <main class="workspace" id="workspace">
+  <nav class="rail" aria-label="Design tools">
+   <button class="cc-btn-ghost" id="select-tool" aria-pressed="true" data-action="select"><svg class="icon"><use href="#i-select"/></svg><span class="rail-text">Select</span></button>
+   <button class="cc-btn-ghost" data-popup="library"><svg class="icon"><use href="#i-plus"/></svg><span class="rail-text">Add</span></button>
+   <button class="cc-btn-ghost" data-existing="Room"><svg class="icon"><use href="#i-room"/></svg><span class="rail-text">Room</span></button>
+   <button class="cc-btn-ghost" data-popup="materials"><svg class="icon"><use href="#i-material"/></svg><span class="rail-text">Materials</span></button>
+   <div class="rail-separator"></div>
+   <button class="cc-btn-ghost" data-existing="Project checks"><svg class="icon"><use href="#i-check"/></svg><span class="rail-text">Check</span></button>
+   <div class="rail-bottom"><span class="rail-caption">Workspace</span><button class="cc-btn-ghost" data-action="design"><svg class="icon"><use href="#i-cube"/></svg><span class="rail-text">Design</span></button></div>
+  </nav>
+  <section class="scene-slot" id="scene-slot" data-slot="scene" aria-label="Existing 3D viewport integration slot">
+   <div class="scene-caption"><span class="scene-location" id="scene-location">Kitchen / Island</span><span class="sample-chip">Schematic preview</span></div>
+   <div class="scene-tools"><button class="cc-btn" data-existing="View options">View <svg class="icon"><use href="#i-down"/></svg></button></div>
+   <svg id="scene-art" class="scene-art" viewBox="0 0 1200 750" role="img" aria-label="Schematic kitchen with a selectable drawer front; not a Three.js render">
+    <defs><linearGradient id="front-tone" x2="0" y2="1"><stop stop-color="#b7b9ac"/><stop offset="1" stop-color="#a7aa9b"/></linearGradient></defs>
+    <path d="M95 530 730 660 1125 445 492 317Z" fill="#d1d2ca" stroke="#b8bbb1"/>
+    <path d="M95 530V190L490 0v317Z" fill="#e9e9e3" stroke="#c5c8bf"/><path d="M490 0 1125 130v315L490 317Z" fill="#e1e2da" stroke="#c5c8bf"/>
+    <g fill="none" stroke="#c2c5ba" stroke-width="1"><path d="m180 548 395-213m-270 239 395-213m-270 239 395-213m-270 239 395-213m-270 239 395-213M170 489l635 130M245 449l635 130M320 408l635 130M395 368l635 130"/></g>
+    <g stroke="#787e70" stroke-width="1.3">
+     <path d="M168 493V203L365 109v287Z" fill="#acaa92"/><path d="m365 109 95 21v287l-95-21Z" fill="#959580"/><path d="m168 203 95 21 197-94-95-21Z" fill="#cecebc"/>
+     <path d="M263 224v287l197-94V130Z" fill="#b8b5a0"/><path d="m328 193 0 287m66-319v287"/>
+     <path d="m500 338 520 107v-159L500 179Z" fill="url(#front-tone)"/><path d="m500 179 65-34 520 106-65 35Z" fill="#f0efe7"/><path d="m1020 286 65-35v159l-65 35Z" fill="#979e8c"/>
+     <path d="m587 197v159m87-141v159m87-141v159m87-141v159m87-141v159"/>
+     <path d="m544 188 64-33 88 18-64 33Z" fill="#858b81"/><path d="m567 182 27-14 66 13-27 14Z" fill="#b9c0b3"/>
+     <path d="m390 518 405 84V420l-405-84Z" fill="#b7a78d"/><path d="m795 420 185-99v182l-185 99Z" fill="#998e78"/>
+     <path d="m378 333 189-101 425 88-189 102Z" fill="#f1f0e8"/>
+     <path d="m378 333 425 89v10l-425-88Z" fill="#d9d8d0"/><path d="m803 422 189-102v10L803 432Z" fill="#c3c5bc"/>
+     <path d="M401 353v149l121 25V378Z" fill="#bbaa8d"/><path d="m401 407 121 25M401 454l121 25"/>
+     <path id="selected-front" data-part="front" role="button" tabindex="0" aria-label="Open selected cabinet front settings" d="M536 381v149l121 25V406Z" fill="#bfad90" class="selected-part"/>
+     <path d="m536 435 121 25M536 482l121 25" pointer-events="none"/>
+     <path d="M671 409v149l111 23V432Z" fill="#bbaa8d"/><path d="m671 463 111 23M671 510l111 23"/>
+     <path d="m390 518 405 84v16l-405-84Z" fill="#757765"/>
+    </g>
+    <g stroke="#8f7654" fill="none" stroke-width="1.3"><path d="m536 551 0 28m121-3v28m-121-31 121 25m-124-30 6 10m115 14 6 10"/></g>
+    <text x="578" y="607" transform="rotate(12 578 607)" fill="#675438">800 mm</text>
+    <text x="586" y="472" id="scene-unit-id" style="fill:#4d473a;font-weight:600" pointer-events="none">B07</text>
+   </svg>
+   <div class="cnc-preview" id="cnc-preview" hidden><h2>CNC sheet</h2><p style="margin:8px 0 15px">Schematic preview of the existing CNC workspace</p><svg viewBox="0 0 1000 600" role="img" aria-label="Schematic sheet with cabinet parts"><g fill="#ddd4bb" stroke="#7d7769"><rect x="10" y="10" width="980" height="570" fill="#fff"/><rect x="35" y="35" width="275" height="325"/><rect x="325" y="35" width="275" height="325"/><rect x="615" y="35" width="340" height="150"/><rect x="615" y="200" width="340" height="150"/><rect x="35" y="375" width="465" height="170"/><rect x="515" y="375" width="440" height="170"/></g><g font-size="15" fill="#555"><text x="115" y="190">Left side</text><text x="405" y="190">Right side</text><text x="745" y="110">Shelf</text><text x="735" y="280">Bottom</text><text x="215" y="460">Back</text><text x="700" y="460">Front</text></g></svg></div>
+   <div class="scene-links"><button class="cc-btn active-view" id="design-view" data-action="design" aria-pressed="true"><svg class="icon"><use href="#i-cube"/></svg>3D</button><span class="rule"></span><button class="cc-btn-ghost" data-existing="Drawings preview"><svg class="icon"><use href="#i-drawing"/></svg>Drawings…</button></div>
+  </section>
+  <aside class="inspector" id="inspector" aria-label="Selection settings"></aside>
+ </main>
+ <footer class="statusbar"><span><span class="status-dot"></span><span id="selection-status">B07 · This cabinet</span></span><span class="grow"></span><span class="viewport-status mono" id="viewport-size"></span><span>mm</span><button class="cc-btn-ghost" id="prototype-toggle" aria-expanded="false">Prototype</button></footer>
+ <div class="popup" id="popup" hidden></div>
+ <section class="floating-window" id="part-window" role="dialog" aria-labelledby="part-window-title" hidden>
+  <div class="window-head" id="drag-handle"><svg class="icon"><use href="#i-panel"/></svg><strong id="part-window-title">B07 · Front</strong><button class="cc-btn-ghost icon-btn" aria-label="Close front settings" id="close-part"><svg class="icon"><use href="#i-close"/></svg></button></div>
+  <div class="window-body"><span class="scope-pill" id="part-target">This front · B07</span><div class="field-row" style="margin-top:8px"><span class="cc-label">Style</span><span class="readonly-value">Project default</span></div><div class="field-row"><label class="cc-label" for="part-thickness">Thickness</label><div class="value-wrap"><input id="part-thickness" class="cc-input" value="18" readonly><span class="unit">mm</span></div></div><div class="inline-note">Sample part window. The original part editor and its behaviour remain unchanged.</div></div>
+  <div class="window-actions"><button class="cc-btn" id="done-part">Close</button></div>
+ </section>
+ <section class="demo-drawer" id="prototype-drawer" aria-label="Prototype fixtures" hidden>
+  <div class="flex"><h2 class="grow">Prototype controls</h2><button class="cc-btn-ghost icon-btn" id="close-prototype" aria-label="Close prototype controls"><svg class="icon"><use href="#i-close"/></svg></button></div>
+  <p>Layout fixtures only. No changes to a real project. The schematic scene stays the same when testing card types.</p>
+  <label class="cc-label" for="fixture-type">Quick-card type</label><select class="cc-input" id="fixture-type"><option value="base">Base cabinet</option><option value="wall">Wall cabinet</option><option value="wardrobe">Wardrobe</option><option value="vanity">Vanity</option><option value="mirror">Mirror cabinet</option><option value="hawa">HAWA pocket</option><option value="panel">Free panel</option></select>
+  <div class="fixture-row"><button class="cc-btn" data-fixture="single">One cabinet</button><button class="cc-btn" data-fixture="multi">Two cabinets</button><button class="cc-btn" data-fixture="none">No selection</button><button class="cc-btn" id="next-cabinet">Next cabinet</button></div>
+  <div class="measurements" id="measurements"></div>
+  <p>Use Full settings → Pin, then Next cabinet. Click the highlighted front for a draggable adjacent window. Fields are read-only sample values; production handlers are documented in the source.</p>
+ </section>
+ <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</div>
+<script>
+(() => {
+ 'use strict';
+ const root=document.getElementById('studio-pro');
+ const $=s=>root.querySelector(s);
+ const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const icon=n=>'<svg class="icon" aria-hidden="true"><use href="#i-'+n+'"/></svg>';
+ const cards={
+  base:{name:'Drawer base cabinet',id:'B07',group:'Island',fields:[['Width','800','mm'],['Height','720','mm'],['Depth','560','mm'],['Front type','Project default','action'],['Finish','Type A · Natural oak','action'],['Plinth','On · 150 mm','action']],inherit:'Height follows project default'},
+  wall:{name:'Wall cabinet',id:'W02',group:'Wall A',fields:[['Width','800','mm'],['Height','720','mm'],['Depth','350','mm'],['Mount height','1450','mm'],['Front opening','Hinged','action'],['Finish','Type A · Natural oak','action']]},
+  wardrobe:{name:'Wardrobe',id:'WR03',group:'Wall B',fields:[['Width','1800','mm'],['Height','2400','mm'],['Depth','600','mm'],['Front type','Project default','action'],['Finish','Type A · Natural oak','action'],['Bays','3 · derived widths','summary']],note:'Bays are a summary. Edit dividers in the full settings.'},
+  vanity:{name:'Vanity cabinet',id:'V01',group:'Bathroom',fields:[['Width','1200','mm'],['Height','550','mm'],['Depth','500','mm'],['Drawers','2 rows','action'],['Sinks','1 sink','action'],['Mounting','Floating · 400 mm','action']],note:'Mounting changes use the existing floating / floor-standing operation.'},
+  mirror:{name:'Mirror cabinet',id:'M01',group:'Bathroom',fields:[['Width','1350','mm'],['Height','1100','mm'],['Depth','215','mm'],['Mount height','1250','mm'],['Bays','3','action'],['Recess','0','mm']],warning:'Changing bays resets door widths to the kit defaults.'},
+  hawa:{name:'HAWA pocket',id:'H01',group:'Wall A',fields:[['Doors','1 door','action'],['Hand','Left','action'],['Opening','Push','action'],['Covered cabinets','B05, B06','action'],['Hardware class','Auto','action'],['Calculated size','W 160 · H 2400 · D 650','summary']],note:'Size is calculated by the pocket and covered cabinets. Sample values only.'},
+  panel:{name:'Free panel',id:'P01',group:'Island',fields:[['Length','900','mm'],['Width','600','mm'],['Thickness','18','mm'],['Facing','Along','action'],['Tilt','0','deg'],['Height above floor','150','mm']],note:'These are board dimensions, not the rotated bounding box.'}
+ };
+ const q=new URLSearchParams(location.search);
+ const state={type:cards[q.get('type')]?q.get('type'):'base',selection:q.get('fixture')||'single',pinned:q.get('pin')==='1',inspector:q.get('inspector')==='full'?'full':'quick',next:false,view:'3d',partTarget:null};
+ if(!['single','multi','none'].includes(state.selection))state.selection='single';
+ let toastTimer;
+ const panelPreferences={};
+ function current(){
+  const source=cards[state.type],d={...source,fields:source.fields.map(f=>[...f])};
+  if(state.next){d.id=state.type==='base'?'B08':source.id+'B';if(['base','wall','wardrobe','vanity','mirror'].includes(state.type))d.fields[0][1]=state.type==='base'?'600':String(Number(d.fields[0][1])+100);}
+  return d;
+ }
+ function dispatch(action,payload={}){root.dispatchEvent(new CustomEvent('studio:action',{bubbles:true,detail:{action,...payload}}));}
+ function notice(msg){$('#toast').textContent=msg;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,5200);}
+ function field(f,i,prefix='q'){
+  const [label,value,kind]=f,id=prefix+'-field-'+i;
+  let control=kind==='action'?'<button class="cc-btn value-action" data-field="'+esc(label)+'"><span>'+esc(value)+'</span>'+icon('right')+'</button>':kind==='summary'?'<span class="readonly-value">'+esc(value)+'</span>':'<div class="value-wrap"><input class="cc-input" id="'+id+'" value="'+esc(value)+'" readonly aria-label="'+esc(label)+' (sample value)"><span class="unit">'+(kind==='deg'?'°':esc(kind))+'</span></div>';
+  return '<div class="field-row"><'+(kind==='action'||kind==='summary'?'span':'label')+' class="cc-label"'+(kind==='action'||kind==='summary'?'':' for="'+id+'"')+'>'+esc(label)+'</'+(kind==='action'||kind==='summary'?'span':'label')+'>'+control+'</div>';
+ }
+ function scope(){return state.type==='panel'?'This panel':'This cabinet';}
+ function quickCard(d){return '<div class="inspector-head"><div class="object-title"><div><div class="object-id">'+esc(d.id)+'</div><h1>'+esc(d.name)+'</h1></div><div class="object-thumb">'+icon(state.type==='panel'?'panel':'cube')+'</div></div><div class="scope-row"><span class="scope-pill">'+scope()+'</span><span>Quick settings</span></div></div><div class="inspector-body"><div class="cc-frame cc-frame-active"><div class="card-section-title">'+(state.type==='panel'?'Board & position':state.type==='hawa'?'Pocket configuration':'Size & setup')+'</div>'+d.fields.map((f,i)=>field(f,i)).join('')+'</div>'+(d.inherit?'<div class="inheritance">'+icon('link')+esc(d.inherit)+'</div>':'')+(d.note?'<p class="inline-note">'+esc(d.note)+'</p>':'')+(d.warning?'<div class="issue-strip">'+icon('warning')+'<span>'+esc(d.warning)+'</span></div>':'')+'<div class="card-actions"><button class="cc-btn-gold" data-action="open-object">'+icon('open')+(state.type==='panel'?'Open panel':'Open cabinet')+'</button><button class="cc-btn" data-action="full">'+icon('sliders')+'Full settings</button></div></div><div class="inspector-bottom"><span>Project defaults remain available</span><button class="cc-btn-ghost icon-btn" data-action="hide-inspector" aria-label="Hide settings">'+icon('close')+'</button></div>';}
+ function technicalCard(d){
+  const sections=state.type!=='base'?[[d.name+' settings',d.fields]]:[['Carcass',d.fields.slice(0,3)],['Fronts',[['Front type','Project default','action'],['Front gap','3','mm'],['Finish','Type A · Natural oak','action']]],['Construction',[['Board','18','mm'],['Back','9','mm'],['Joint','Cabineo','action']]],['Doors & hardware',[['Hinges','Project default','action'],['Runner','500','mm']]],['Interior',[['Shelves','Edit in scene','action'],['Dividers','Edit in scene','action']]],['Lighting',[['LED','Existing controls','action']]]];
+  return '<div class="full-head"><h2>Full settings</h2><button class="cc-btn icon-btn pin-button" data-action="pin" aria-label="Keep panel open and follow selection" aria-pressed="'+state.pinned+'">'+icon('pin')+'</button><button class="cc-btn-ghost icon-btn" data-action="quick" aria-label="Return to quick settings">'+icon('close')+'</button></div><div class="technical-context"><strong>'+esc(d.id)+' · '+esc(d.name)+'</strong><div>'+(state.pinned?'Pinned · follows selection':'This cabinet · current selection')+'</div></div><div class="technical-slot" data-slot="technical-panel"><div class="slot-notice">Existing technical panel slot · sample rows for layout only. Actual fields and behaviour stay unchanged.</div>'+sections.map((s,k)=>'<details class="cc-frame" data-section="'+k+'" '+((panelPreferences[state.type]?.groups?.[k]??(k<3))?'open':'')+'><summary>'+esc(s[0])+'</summary>'+s[1].map((f,i)=>field(f,i,'t'+k)).join('')+'</details>').join('')+'</div><div class="inspector-bottom"><span>No new panel tabs in Stage 1</span><button class="cc-btn-ghost" data-action="open-object">Open cabinet '+icon('open')+'</button></div>';
+ }
+ function emptyOrBulk(){const none=state.selection==='none';return (state.pinned?'<div class="full-head"><h2>Full settings</h2><button class="cc-btn icon-btn pin-button" data-action="pin" aria-label="Keep panel open and follow selection" aria-pressed="true">'+icon('pin')+'</button></div>':'')+'<div class="empty-state"><h2>'+(none?'Select a cabinet or part':'2 cabinets selected')+'</h2><p>'+(none?'The panel will show the current selection.':'Use the existing shared controls for multiple cabinets.')+'</p>'+(none?'':'<div class="cc-frame" data-slot="multi-unit-panel" style="margin-top:16px"><strong>Shared settings</strong><p class="inline-note">Existing MultiUnitPanel slot. No primary-cabinet-only edits.</p><button class="cc-btn" style="margin-top:12px" data-existing="Selected finishes">Selected finishes…</button></div>')+'</div>';}
+ function render(){
+  const oldSlot=$('#inspector .technical-slot'),oldType=$('#inspector').dataset.renderedType;
+  if(oldSlot&&oldType)panelPreferences[oldType]={groups:Array.from(oldSlot.querySelectorAll('details')).map(x=>x.open),scroll:oldSlot.scrollTop};
+  const d=current();root.dataset.inspector=state.inspector;$('#inspector').innerHTML=state.selection==='single'?(state.inspector==='full'?technicalCard(d):quickCard(d)):emptyOrBulk();$('#breadcrumb').innerHTML='Kitchen '+icon('right')+esc(d.group)+' '+icon('right')+'<strong>'+(state.selection==='single'?esc(d.id):state.selection==='multi'?'2 cabinets':'No selection')+'</strong>';$('#selection-count').textContent=state.selection==='single'?(state.type==='panel'?'1 panel selected':'1 cabinet selected'):state.selection==='multi'?'2 cabinets selected':'Nothing selected';$('#selection-status').textContent=state.selection==='single'?d.id+' · '+scope():state.selection==='multi'?'Shared selection':'No selection';$('#scene-unit-id').textContent=d.id;$('#scene-location').textContent='Kitchen / '+d.group;$('#selected-front').style.stroke=state.selection==='none'?'#787e70':'';$('#fixture-type').value=state.type;
+  $('#inspector').dataset.renderedType=state.type;
+  const restored=$('#inspector .technical-slot');if(restored)restored.scrollTop=panelPreferences[state.type]?.scroll||0;
+  measure();}
+
+ function measure(){const b=$('#scene-slot').getBoundingClientRect(),panel=$('#inspector').getBoundingClientRect();$('#viewport-size').textContent=innerWidth+' × '+innerHeight;$('#measurements').innerHTML='Viewport: <span class="mono">'+innerWidth+' × '+innerHeight+'</span><br>Scene slot: <span class="mono">'+Math.round(b.width)+' × '+Math.round(b.height)+'</span><br>Inspector: <span class="mono">'+Math.round(panel.width)+' px</span><br>Base / field / button: <span class="mono">13 / 30 / 32 px</span>';}
+ const menuData={
+  file:[['New project…','File: New project'],['Open…','File: Open'],['Save','Save'],['Save as…','Save as'],['Close project','Close project']],
+  view:[['3D','@design'],['CNC sheet','@cnc'],['Dimensions','View: Dimensions'],['Outlines','View: Outlines'],['X-ray','View: X-ray'],['Hide fronts','View: Hide fronts'],['All existing view options…','Existing View menu']],
+  settings:[['Project settings…','Project settings'],['Room setup…','Room'],['Snap…','Existing Snap controls'],['All existing settings…','Existing Settings menu']],
+  database:[['Stock…','Stock'],['Assign materials…','Assign materials'],['Company defaults…','Company defaults'],['All existing database entries…','Existing Database menu']],
+  materials:[['Selected finishes…','Selected finishes'],['Project finishes…','Project finishes'],['Assign materials…','Assign materials'],['Stock…','Stock']],
+  output:[['Drawings preview…','Drawings preview'],['CNC sheet','@cnc'],['Bill of materials…','Bill of materials'],['Spraying…','Spraying'],['Visualisation…','Visualisation'],['Unit card · PDF','Unit card PDF'],['Unit card · SVG','Unit card SVG'],['All units · PDF','All units PDF'],['Drawing set · PDF','Drawing set PDF'],['Drawing set · DXF (AutoCAD)','Drawing set DXF'],['CNC / DXF ZIP','CNC DXF'],['Cutting list · CSV','Cutting list CSV'],['BOM · PDF','BOM PDF'],['Part labels · 21 per sheet','Labels 21'],['Part labels · 44 per sheet','Labels 44']]
+ };
+ function closePopup(){const p=$('#popup');p.hidden=true;root.querySelectorAll('[data-popup]').forEach(b=>b.setAttribute('aria-expanded','false'));}
+ function openPopup(kind,trigger){const p=$('#popup'),r=trigger.getBoundingClientRect();const already=!p.hidden&&p.dataset.kind===kind;closePopup();if(already)return;p.dataset.kind=kind;p.classList.toggle('library-popup',kind==='library');trigger.setAttribute('aria-expanded','true');let contents;if(kind==='library'){contents='<div class="popup-head"><strong class="grow">Library</strong><span class="sample-chip">Fixture</span></div><div class="popup-content">'+[['Kitchen','base'],['Wardrobe','wardrobe'],['Bathroom','vanity'],['Saved sets','base'],['Sets','base']].map(([n,t])=>'<button class="library-item" data-library="'+t+'">'+icon('cube')+'<span>'+n+'<small>Category preview</small></span></button>').join('')+'<p class="inline-note" style="padding:8px">Sample categories. Integration uses the current registry, including every saved type and set.</p></div>';}else{contents='<div class="popup-head"><strong>'+esc(kind==='output'?'Output':kind==='materials'?'Materials':kind.charAt(0).toUpperCase()+kind.slice(1))+'</strong></div><div class="popup-content">'+menuData[kind].map(([label,action])=>'<button class="menu-item" data-menu-action="'+esc(action)+'">'+esc(label)+icon('right')+'</button>').join('')+'</div>';}p.innerHTML=contents;p.hidden=false;const pr=p.getBoundingClientRect();let x=r.left,y=r.bottom+5;if(trigger.closest('.rail')){x=r.right+10;y=r.top;}p.style.left=Math.max(8,Math.min(x,innerWidth-pr.width-8))+'px';p.style.top=Math.max(8,Math.min(y,innerHeight-pr.height-38))+'px';}
+ const destinations={
+  'Drawings preview':'Open the existing Drawings window. This action previews the set; it does not export PDF.',
+  'Selected finishes':'Open the existing finish dialog for the selected IDs. Stock assignments stay separate.',
+  'Project finishes':'Open the existing project finish settings.',
+  'Assign materials':'Open the existing board/material assignment dialog.',
+  Stock:'Open the existing stock / warehouse window.',
+  Room:'Open the existing draggable Room editor with its current anchor.',
+  Spraying:'Open the existing spray schedule.',
+  'Bill of materials':'Open the existing live BOM panel.',
+  'Labels 21':'Run the existing L7160 PDF export. This prototype does not create a PDF.',
+  'Labels 44':'Run the existing generic44 PDF export. This prototype does not create a PDF.',
+  'Drawing set DXF':'Use the existing AutoCAD drawing export, with its warning. This is not CNC DXF.'
+ };
+ function existing(label){dispatch(label,{unitId:state.selection==='single'?current().id:null,selection:state.selection});notice(destinations[label]||'Existing action: '+label+'. This shell prototype does not execute project operations.');}
+ function setView(v){state.view=v;$('#scene-art').hidden=v!=='3d';$('#cnc-preview').hidden=v!=='cnc';$('#workspace').classList.toggle('cnc-mode',v==='cnc');$('#design-view').setAttribute('aria-pressed',String(v==='3d'));$('#design-view').classList.toggle('active-view',v==='3d');closePopup();dispatch('view',{view:v});}
+ function showPart(){if(state.selection!=='single'){notice('Select one cabinet for this part-window fixture.');return;}const target=$('#selected-front'),r=target.getBoundingClientRect(),w=$('#part-window');state.partTarget=current().id;$('#part-window-title').textContent=state.partTarget+' · Front';$('#part-target').textContent='This front · '+state.partTarget;w.hidden=false;const wr=w.getBoundingClientRect(),scene=$('#scene-slot').getBoundingClientRect();const gap=14;const clamp=(v,lo,hi)=>Math.max(lo,Math.min(v,hi));
+  const candidates=[
+   {x:r.right+gap,y:clamp(r.top,scene.top+gap,scene.bottom-wr.height-gap)},
+   {x:r.left-wr.width-gap,y:clamp(r.top,scene.top+gap,scene.bottom-wr.height-gap)},
+   {x:clamp(r.left,scene.left+gap,scene.right-wr.width-gap),y:r.bottom+gap},
+   {x:clamp(r.left,scene.left+gap,scene.right-wr.width-gap),y:r.top-wr.height-gap}
+  ];
+  const pos=candidates.find(c=>c.x>=scene.left+gap&&c.y>=scene.top+gap&&c.x+wr.width<=scene.right-gap&&c.y+wr.height<=scene.bottom-gap&&(c.x>=r.right||c.x+wr.width<=r.left||c.y>=r.bottom||c.y+wr.height<=r.top));
+  if(!pos){w.hidden=true;notice('Not enough space beside the part. In the live scene, zoom out or move the view before opening.');return;}
+  w.style.left=pos.x+'px';w.style.top=pos.y+'px';dispatch('part',{unitId:state.partTarget,partId:'front',anchor:{x:r.left,y:r.top,width:r.width,height:r.height}});}
+ root.addEventListener('click',e=>{
+  const popup=e.target.closest('[data-popup]');if(popup){openPopup(popup.dataset.popup,popup);return;}
+  const existingButton=e.target.closest('[data-existing]');if(existingButton){existing(existingButton.dataset.existing);return;}
+  const menu=e.target.closest('[data-menu-action]');if(menu){const a=menu.dataset.menuAction;closePopup();a==='@design'?setView('3d'):a==='@cnc'?setView('cnc'):existing(a);return;}
+  const library=e.target.closest('[data-library]');if(library){closePopup();existing('Library category: '+library.textContent.trim().replace('Category preview',''));return;}
+  const f=e.target.closest('[data-field]');if(f){existing(f.dataset.field==='Finish'?'Selected finishes':'Edit '+f.dataset.field+' for '+current().id);return;}
+  const a=e.target.closest('[data-action]');if(a){switch(a.dataset.action){case'select':closePopup();dispatch('select');break;case'design':setView('3d');break;case'full':state.inspector='full';render();break;case'quick':state.inspector='quick';state.pinned=false;render();break;case'pin':state.pinned=!state.pinned;render();break;case'hide-inspector':state.inspector='none';render();break;case'open-object':existing(state.type==='panel'?'Open panel':'Open cabinet');break;}return;}
+  const fixture=e.target.closest('[data-fixture]');if(fixture){state.selection=fixture.dataset.fixture;render();return;}
+  if(!e.target.closest('#popup'))closePopup();
+ });
+ $('#prototype-toggle').addEventListener('click',()=>{const d=$('#prototype-drawer');d.hidden=!d.hidden;$('#prototype-toggle').setAttribute('aria-expanded',String(!d.hidden));measure();});
+ $('#close-prototype').addEventListener('click',()=>{$('#prototype-drawer').hidden=true;$('#prototype-toggle').setAttribute('aria-expanded','false');});
+ $('#fixture-type').addEventListener('change',e=>{state.type=e.target.value;state.selection='single';state.next=false;render();});
+ $('#next-cabinet').addEventListener('click',()=>{state.next=!state.next;state.selection='single';if(!state.pinned)state.inspector='quick';render();});
+ $('#show-inspector').addEventListener('click',()=>{if(state.inspector==='none')state.inspector=state.pinned?'full':'quick';render();});
+ $('#selected-front').addEventListener('click',showPart);$('#selected-front').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showPart();}});
+ ['close-part','done-part'].forEach(id=>$('#'+id).addEventListener('click',()=>$('#part-window').hidden=true));
+ let drag=null;$('#drag-handle').addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;const r=$('#part-window').getBoundingClientRect();drag={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};e.currentTarget.setPointerCapture(e.pointerId);});
+ $('#drag-handle').addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const w=$('#part-window'),r=w.getBoundingClientRect();w.style.left=Math.max(0,Math.min(e.clientX-drag.dx,innerWidth-r.width))+'px';w.style.top=Math.max(0,Math.min(e.clientY-drag.dy,innerHeight-r.height-30))+'px';});
+ ['pointerup','pointercancel'].forEach(name=>$('#drag-handle').addEventListener(name,()=>drag=null));
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePopup();$('#part-window').hidden=true;$('#prototype-drawer').hidden=true;$('#prototype-toggle').setAttribute('aria-expanded','false');$('#toast').hidden=true;}});
+ window.addEventListener('resize',()=>{closePopup();$('#part-window').hidden=true;measure();});
+ render();
+})();
+</script>
+</body>
+</html>

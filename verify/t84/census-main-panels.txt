@@ -1,0 +1,14 @@
+BUD              sel=true visible=53 {"input:text":6,"button":40,"select":6,"input:checkbox":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2
+  asides: [{"cls":"absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-n","labels":11,"ctrls":53}]
+BUDR             sel=true visible=39 {"input:text":9,"button":20,"select":6,"input:checkbox":4} labels=11 sections=Carcass:1:16|Section 1:1:7|Construction:1:12|Doors:1:1
+WUD              sel=true visible=58 {"input:text":7,"button":44,"select":6,"input:checkbox":1} labels=12 sections=Carcass:1:19|Add items:1:17|Section 1:1:1|Construction:1:16|Doors:1:2
+WARDROBE         sel=true visible=53 {"input:text":6,"button":40,"select":6,"input:checkbox":1} labels=11 sections=Carcass:1:18|Add items:1:13|Section 1:1:1|Construction:1:16|Doors:1:2
+VANITY2          sel=true visible=50 {"input:text":9,"button":32,"select":6,"input:checkbox":3} labels=11 sections=Carcass:1:15|Vanity:1:9|Section 1:1:8|Construction:1:14|Doors:1:1
+MIRROR_CABINET   sel=true visible=62 {"input:text":14,"button":41,"select":6,"input:checkbox":1} labels=13 sections=Carcass:1:16|Mirror cabinet:1:29|Section 1:1:1|Construction:1:12|Doors:1:1
+CORNER_L_BASE    sel=true visible=52 {"input:text":6,"button":39,"select":6,"input:checkbox":1} labels=11 sections=Carcass:1:16|Add items:1:17|Section 1:1:1|Construction:1:13|Doors:1:2
+HAWA_POCKET      sel=true visible=45 {"input:text":6,"button":32,"select":6,"input:checkbox":1} labels=12 sections=Pocket door:null:9|Carcass:1:16|Section 1:1:1|Construction:1:15|Doors:1:1
+BLIND_BASE       sel=true visible=53 {"input:text":6,"button":40,"select":6,"input:checkbox":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2
+PANTRY           sel=true visible=57 {"input:text":6,"button":44,"select":6,"input:checkbox":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:16|Doors:1:2
+BUD_INT          sel=true visible=53 {"input:text":6,"button":40,"select":6,"input:checkbox":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2
+WUD_HOOD         sel=true visible=39 {"input:text":7,"button":25,"select":6,"input:checkbox":1} labels=12 sections=Carcass:1:17|Section 1:1:1|Construction:1:16|Doors:1:2
+FREE_PANEL       sel=true visible=35 {"input:text":8,"button":19,"select":7,"input:checkbox":1} labels=14 sections=Attach:null:2|Carcass:1:16|Section 1:1:1|Construction:1:12|Doors:1:1

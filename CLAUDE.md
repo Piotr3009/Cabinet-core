@@ -1,402 +1,552 @@
-# CLAUDE.md, TURN 83 · THE MIRROR CABINET, THE VANITY MADE RIGHT, THE PLAN THAT IS NOT A MIRROR
+# CLAUDE.md, TURN 84 · STUDIO PRO, STAGE 1: THE SHELL, THE QUICK CARDS, THE PINNED PANEL, THE ERRORS YOU CAN SEE
 
 Run autonomously. Zero questions, zero stops: every decision below is the
-owner's own (25.10.2026, 14:09 to 22:41, over the architect's drawings of
-36 Holland Park in `verify/t83/holland-park/`, the client's own render
-`verify/t83/mockups/client-render.png`, the mockups agreed in chat and his
-eye-test of T82 after the merge of PR #81; his words are quoted where they
-decide), so nothing here is asked again. Where a number is marked PROPOSED
-it is the turn's best reading and is used as written: the owner confirms
-or changes it after the merge, never during the run. If a point cannot be
-done, skip it WHOLE, write why in the PR, and go on to the next. Full
-suite, never `--silent`. Frames under `verify/t83/`. Branch
-`claude/t83-mirror-vanity`, one commit per F, PR at the end; the owner
-merges. Nothing lands in Petros from this session.
+owner's own (27.10.2026, 16:01 to 22:25, over the designer's two HTML
+handoffs in `verify/t84/astra/`, the before-and-after sheet
+`verify/t84/studio-dzis-vs-etap1.png`, the census of main taken at 22:23
+and his answers in chat; his words are quoted where they decide), or the
+designer's (Astra, the owner's second AI, whose contract the owner adopted
+at 16:27), so nothing here is asked again. Where a number is marked
+PROPOSED it is the designer's or the turn's best reading and is used as
+written: the owner confirms or changes it after the merge, never during
+the run. If a point cannot be done, skip it WHOLE, write why in the PR,
+and go on to the next. Full suite, never `--silent`. Frames under
+`verify/t84/`. Branch `claude/t84-studio-stage1`, one commit per F, PR at
+the end; the owner merges. Nothing lands in Petros from this session.
 
-## THE COST OF THE NIGHT (a law of this turn, from T82's bill)
-T82 (PR #81) took the owner's whole weekly allowance: 79 commits, 220
-files, 41 767 lines; 40 of the 79 commits were a second "after the review"
-wave, each with its own run of 1 500 to 2 500 tests. This turn is run to
-cost: (1) TEN agents and one integrator, never twenty; (2) NO review wave:
-an agent's slice is reviewed ONCE by INT when its patch lands, and the
-morning audit is the owner's; (3) targeted tests while writing, the full
-suite ONCE per PART when it lands and ONCE at the end, never after every
-patch; (4) every agent reads this file and its PART, never the whole repo
-on its own: INT hands each agent the files it OWNS and the three or four
-it must read; (5) a report is twenty lines, the six stations of DONE, not
-an essay. Agents and parallel mode ON (Opus 5.5, ultracode).
+THIS TURN TOUCHES NO ENGINE FILE. It is a shell over the PRO app: new
+components, one host adaptation of the right panel, the header and the
+scene toolbar re-homed, every function kept. The owner, 22:19: *"wiem ze
+silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac
+wszystkie"*; 22:13: *"czy zadna funkcja nam nie zginie? np corners etc"*.
+The answer is THE CENSUS at the end of this file and the parity gate of
+F7: not one of the 91 controls, 51 library types, 26 windows or the
+panel's rows may be missing when the night ends.
+
+## THE COST OF THE NIGHT (the law of T83, kept)
+TEN agents and one integrator, never twenty. NO review wave: a slice is
+reviewed ONCE by INT when its patch lands; the morning audit is the
+owner's. Targeted tests while writing; the full suite ONCE per PART when
+it lands and ONCE at the end. Every agent reads this file and its PART,
+never the whole repo: INT hands each agent the files it OWNS and the ones
+it must read. A report is twenty lines, the six stations of DONE. Agents
+and parallel mode ON (Opus 5.5, ultracode).
 
 ## THE AGENTS (10 slices and one integrator)
 | Agent | Slice | OWNS (writes) | Hands patches to |
 | - | - | - | - |
-| INT | the only writer of `engine/types.js`, `engine/profile.js`, `engine/cabinet.js`, `stores/projectStore.js`, `components/RightPanel.jsx`; applies patches in F order; the full suite once per PART and at the end; classifier, copy check, walk; the PR | the five central files, `scripts/t78-classify.d/f44-t83-*`, the freeze test, NEW_FILES | nobody |
-| M1 | F1: `KIT_MIRROR.lsp` and `profile.mirror`; F2: the kit MIRROR_CABINET and its engine mirror (bays, dividers in the fronts' plane, LED stiles, the panels round, the door 18 + 4, the glass shelves, the back and its mirror) | `reference/lisp/KIT_MIRROR.lsp`, `engine/mirrorCabinet.js` (new, the arithmetic), `test/turn83-f01-mirror-lisp.test.js`, `test/turn83-f02-mirror-kit.test.js` | INT (types.js, cabinet.js, profile.mirror) |
-| M2 | F3: the mirror cabinet in the room (the mirror finish, the LED stiles lit, the glass shelves, the LED under and inside), the recess into the wall; F4: the BOM lines | `3d/MirrorCabinet.jsx` (new) and the one mount point in `3d/UnitView.jsx` (M2 is the only writer of UnitView this turn), `engine/bom.js` (the mirror rows), `test/turn83-f03-mirror-room.test.js`, `test/turn83-f04-mirror-bom.test.js` | INT (the store's back-mirror question) |
-| M3 | F5: the right panel MIRROR CABINET section, the library rows (PRO and the retail copy), the sheets (elevation with the stiles, the section with the recess) | `engine/library.js`, `engine/drawings/projector.js` (the mirror rows only; E1 reads it), `test/turn83-f05-mirror-panel.test.js` | INT (RightPanel.jsx, the EXEMPT row, the copy script) |
-| V1 | F6: the vanity's carcass to the wall, the void INSIDE the carcass | `reference/lisp/KIT_VANITY.lsp` (the D rows of the void), `engine/vanity.js`, `test/turn82-f08-vanity.test.js` (amended), `test/turn83-f06-vanity-depth.test.js` | INT (cabinet.js, profile.vanity) |
-| V2 | F7: the trap's U at columns 2 with one basin (the narrowed top boxes, the short divider); F8: the basin 50 forward and the clash with the rails said | `engine/vanity.js` (after V1's patch lands: V2 starts on F8 and takes F7 when V1 is in), `test/turn83-f07-vanity-trap.test.js`, `test/turn83-f08-vanity-basin.test.js` | INT (cabinet.js) |
-| V3 | F9: the 3D open of a two-column vanity (box and front of the same drawer in the same column) | `engine/cabinet.js` (ONE patch: `zone` on every drawer-box part's meta, lines 5697 to 5728 on 25.10), `3d/*` only through M2 if a line is needed there, `test/turn83-f09-open-columns.test.js` | INT (cabinet.js), M2 (UnitView.jsx) |
-| E1 | F10: the plan is not a mirror (probe, then fix); F11: the sheet picker on the PDF export | `engine/drawings/setPlan.js`, `engine/drawings/wallSheets.js`, `components/DrawingModal.jsx` (the EXEMPT row through INT), `lib/drawingExport.js`, `verify/t83/f10-probe.md`, `test/turn83-f10-plan.test.js`, `test/turn83-f11-export-pick.test.js` | INT (the EXEMPT row) |
-| P1 | the PROBES of F7, F9, F10 in the first hour, committed as tables | `verify/t83/f07-probe.md`, `f09-probe.md`, `f10-probe.md`, `scripts/t83-probe-*.mjs` | nobody |
-| F1 | F12: the walk | `scripts/t83-walk.mjs`, `verify/t83/walk.txt`, `verify/t83/f12-*.png` | nobody |
+| INT | the only writer of `src/App.jsx`, `components/RightPanel.jsx`, `components/TopBar.jsx`, `components/CanvasToolbar.jsx`, `stores/uiStore.js`, `engine/profile.js` (the `ui.studio` block only); applies patches in F order; the EXEMPT rows and the re-freeze; NEW_FILES; the full suite once per PART and at the end; classifier, copy check, census, walk; the PR | the six central files, `scripts/t78-classify.d/f45-t84-*.mjs`, the freeze test | nobody |
+| P1 | the PROBES of the first hour, committed as tables before any Studio line: (a) THE CENSUS of main by script, (b) the Escape map, (c) the right panel's host, (d) the registry diff against the designer's snapshot | `scripts/t84-census.mjs`, `verify/t84/census-main.json`, `verify/t84/p1-census.md`, `p1-escape.md`, `p1-host.md`, `p1-registry.md` | nobody |
+| D1 | F1: the skin: the Studio stylesheet and icons from the designer's Stage-1 (tokens, 13 / 30 / 32 / 4, the dark shell), compared with the HTML at the three sizes; reads the setup workspace of 26.10 for the same tokens, writes nothing in it | `components/studio/studio.css`, `components/studio/StudioIcons.jsx`, `verify/t84/f01-skin-*.png` | S1 |
+| S1 | F2: the shell: `StudioShell`, `StudioRail`, `SelectionBreadcrumb`, `StatusBar`, the top bar re-homed (the legacy menus mounted whole, Undo / Redo, Save, BOM, Account, the project name), Design / CNC at the rail's foot, the mount in `App.jsx` through INT | `components/studio/StudioShell.jsx`, `StudioRail.jsx`, `SelectionBreadcrumb.jsx`, `StatusBar.jsx`, `test/turn84-f02-shell.test.js` | INT (App.jsx, TopBar.jsx) |
+| S2 | F3: the quick cards: `QuickSelectionCard` with the seven typed cards and the generic card for every other type, the capability guards, the summary rows, Open cabinet / Full settings | `components/studio/QuickSelectionCard.jsx`, `components/studio/cards/*.jsx`, `lib/studioCards.js` (the capability table), `test/turn84-f03-cards.test.js` | INT (uiStore: `inspector` state) |
+| S3 | F4: the inspector host: the existing RightPanel and MultiUnitPanel embedded, one header, Pin that follows the selection, the pending edit committed to its original id first, the empty, multi and CNC states | `components/studio/InspectorHost.jsx`, `test/turn84-f04-inspector.test.js`; the host adaptation of RightPanel.jsx (`layout="embedded"`, `headerActions`) as ONE patch to INT | INT (RightPanel.jsx, MultiUnitPanel.jsx through the copy rule) |
+| S4 | F5: the errors you can see: the marker beside the unit number in the scene, the issue strip in the card with Show, the counters on the status bar opening the filtered Check, the field refused in red with its reason | `components/studio/UnitIssueMarker.jsx`, `components/studio/IssueStrip.jsx`, `components/studio/RefusedField.jsx`, `lib/studioIssues.js`, `test/turn84-f05-issues.test.js` | S1 (status bar), S2 (the card), INT (the scene's one mount point in `3d/UnitView.jsx` or `3d/Scene.jsx`: INT applies it) |
+| S5 | F6: the scene's edge: the four toggles, View ▾ with the other ten, the camera bar (Plan, Iso, A, B, C, D, Frame selection) through the room's camera | `components/studio/SceneToggles.jsx`, `components/studio/SceneViewMenu.jsx`, `components/studio/CameraBar.jsx`, `lib/cameraPresets.js`, `test/turn84-f06-scene.test.js` | INT (CanvasToolbar.jsx, the camera handle if a line is needed in `3d/`) |
+| S6 | F7: Add, Room, Materials and Check on the rail; Output and Drawings… as a preview; the Escape ownership; the PARITY TEST and the census on the branch | `components/studio/RailMenus.jsx`, `lib/studioEscape.js`, `test/turn84-f07-parity.test.js`, `test/turn84-f07-escape.test.js` | INT (uiStore) |
+| S7 | the licences: every PRO file edited named in EXEMPT with the owner's words from this file; the retail copy check; NEW_FILES; the Skylon header on every new file; the classifier fragments naming NO engine file | `test/turn59-f1-the-switch.test.js` (the EXEMPT rows, through INT), `test/turn77-f5-no-copyright-line.test.js` NEW_FILES, `scripts/t78-classify.d/f45-t84-f*.mjs` | INT |
+| F1 | F8: the walk, real mouse, at 1280 x 800, 1440 x 900 and 1920 x 1080 | `scripts/t84-walk.mjs`, `verify/t84/walk.txt`, `verify/t84/f08-*.png` | nobody |
 
 ## THE ORDER
-The owner, 25.10.2026, in his words where they decide:
-- 14:09 to 14:40, the mirror cabinet over the architect's drawing
-  (`holland-park/page-2.png`, elevation 34 and section 33): *"zobacz
-  szafki z mirrorami na wierzchu i szybkami w srodku czyli szklane polki,
-  czasami lustro z tylu, podswietlenie pod spodem etc, teraz zaprojektujmy
-  dokladnie to co masz na rysunku szafka wiszaca"*; *"w tym przypadku to
-  reces ale tez w standardzie normalnie wiszaca i dodajemy oczywiscie
-  panele dookola i ustawiamy jakie grube"*; *"polki szklane, rysujemy
-  szklane 6 mm"*; *"lustro opcjonalnie, wtedy pamietaj ze drzwiczki 18
-  plus 4 mm lustro, przedluzamy panele do grubosci drzwiczek i lustra"*;
-  *"w tym przypadku mamy mleczne led panele, ale tez beda nakladane na
-  scianki boczne, ktore musza w tym przypadku byc, zeby przykryc te
-  panele"*; *"czasami jak ktos chce to bedzie mial na plecach tez,
-  klikasz na plecy i wyskakuje ci opcja chcesz lustro na plecach?"*; *"5
-  na kolumne domyslnie ale oczywiscie z mozliwoscia dodawania,
-  przesuwania"*; 14:14: *"panele led trzeba bedzie zamontowac na rowno z
-  drzwiami, nie wcisniete, mamy carcas w srodku i panele dookola tego"*;
-  14:29: *"nie wlasny box, ktos nam to zrobi na zamowienie"*, *"4k"* (the
-  LED panel made to measure, 4000 K); 22:41: *"daj wszystkie mozliwosci z
-  panelami, z ledami, bez, szerokosc ustawianych drzwiczek etc"*.
-- 22:41, the vanity after the eye-test of T82: *"jak mamy miejsce na
-  rurki z tylu to super ze szuflady sa mniejsze ale carcas powinien byc do
-  sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany"*;
-  *"nie ma wyciecia na U na sinki nawet jak je wlacze ... jest wyciecie
-  jak jest 1 szuflada ale nie jak sa 2 szuflady a mamy jeden sink, albo
-  mam pomysl: zmniejszmy szuflady na szerokosc, tylko fronty zostawmy
-  szerokie i pomiedzy szufladami zrobi sie miejsce na syfon (tylko gorna
-  row)"*; *"jak wpieram 2 rows to otwieraja mi sie 2 szuflady ale jedna
-  sie otwiera carcas tylko a druga front tylko zamiast 2 carcasy i 2
-  fronty, sprawdz"*; *"umywalki przesun bardziej do przodu o jakies 50 mm,
-  powod: wchodza w tylna scianke, zlamana regula material nigdy nie
-  wchodzi w drugi material"*.
-- 22:41, the drawings: *"przekroj z gory pokazuje jakby logike z dolu
-  czyli lustrzane odbicie, sprawdz dokladnie"*; *"daj mozliwosc
-  exportowania tylko naprzyklad frontow lub cos takiego, nie koniecznie
-  wszystkie strony na raz"*.
-- 22:41, the client's render (`mockups/client-render.png`): *"zobacz jaki
-  sobie wymarzyla klientka zestaw, zobacz na gorna szafke i pamietaj ze to
-  tylko wizualizacja"*: the reeded vanity with two columns of drawers, a
-  marble top with its upstand, the mirror cabinet over it with its two lit
-  stiles flush in the mirror doors, a timber frame round, the LED under.
+The owner, 27.10.2026, in his words where they decide:
+- 16:15, the whole of it: *"nie chodzilo mi o calkowite zmiany w cabinet
+  core, calkowite zmiany od Astry, przeczytaj ... pomysl i daj znac co
+  myslisz"*; the designer's transcript (`verify/t84/astra/transcript.txt`)
+  carries the owner's own line to her: *"skupiamy sie teraz wylacznie na
+  PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"*,
+  and *"w menu jest kilka funkcji ktore sa zupelnie nie potrzebne ... jak
+  naprzyklad advance setup ktore moga byc pomijane ok? ale musimy
+  przegadac jeden po drugim"* (so NOTHING moves to an Advanced setup this
+  turn: it is discussed one function at a time, later).
+- 16:27, his five answers: Petros written; the Stage-1 attached; *"ty"*,
+  the spec is this chat's; *"nie, juz jest przy wyborze"* (NO Studio
+  switch in the UI: PRO is chosen at the start, Studio is PRO's face);
+  *"tak"* to the header's Export renamed BOM; and the two asks that shape
+  F5: *"chcialbym jako uzytkownik widziec jakie beda zmiany"* and
+  *"napewno naprzyklad wszystkie bledy zolte i czerwone sa totalnie
+  niewidoczne, mala czcionka etc"*.
+- 17:01, the designer's eight answers to the chat's eight questions,
+  adopted whole (`verify/t84/astra/transcript.txt`, the last message):
+  the errors in three places with 13 px text on a coloured ground; Undo,
+  Redo, Changes and CNC back; the four toggles X-ray, Hide fronts,
+  Outlines, Open all / Close all (PROPOSED, her set); the camera bar Plan /
+  Iso / A / B / C / D / Frame selection; the door window beside the part,
+  sticky, the Escape exception kept (PROPOSED: her recommendation; the
+  dock-left variant stays available by the profile); the refusal shown at
+  the field with the engine's exact reason; Materials with Stock and the
+  Joinery Core hand-over PREVIEW (the preview is NOT this turn: Materials
+  opens the four existing windows only); Studio as PRO's interface with no
+  switch; the local demo kept.
+- 22:11 to 22:25: *"czy juz samo kodujemy?"*, *"ok jak juz bedziesz
+  wiedzial dokladnie to tabela porownaj ze mamy wszystko nic nie
+  zgubilismy, teraz daj do tury"*, *"zipa"*. THE CENSUS below is that
+  table, counted on main 9a441f13 at 22:23, and F7 is the test that
+  compares it.
+
+## THE DESIGNER'S CONTRACT (adopted; `verify/t84/astra/`)
+`Cabinet-Core-PRO-Studio-Stage-1.html` is the shell (the layout, the
+rail, the card, the pinned panel, the status bar, the part window beside
+the part, the Prototype fixtures: `?type=base|wall|wardrobe|vanity|mirror|
+hawa|panel&inspector=full&pin=1`). `Cabinet-Core-PRO-T84-Cards-and-Menu.
+html` is the contract: the seven cards row by row with the TARGET ACTION,
+the value read and the guard of each; the capability table per type; the
+48 menu leaves, 14 scene controls, 7 header controls and 65 library leaves
+of her snapshot with their actual handler and their Studio destination;
+the layout evidence (RightPanel at 316 and 360 px without overflow); the
+Escape order. Where the contract names a line of code it names the
+designer's snapshot of T83's day: P1's registry diff (p1-registry.md)
+says what moved since (on main: Measure EXISTS on the toolbar, the mirror
+door widths hold the typed one, the setup workspace of 26.10 exists); the
+branch follows main, never the snapshot. Her words that are law here:
+"Hide inapplicable rows; never invent a capability to fill the card";
+"DoorModal is a leaf editor, it does not configure cabinet door count";
+"Pin keeps inspector open and FOLLOWING SELECTION; it never locks unit
+ID"; "Nothing is removed, renamed Advanced or made optional in this
+stage"; "No new dependencies, no engine rewrite, no menu deletions".
 
 ## LAWS
-Every law of T75 to T82 holds in full: LISP IS LAW (this turn cuts: PART A
-and PART B begin with the LISP); the fossil six untouchable, a bare
-`computeCabinet()` byte for byte its LISP; diagnose before you cut (every
-BUG starts with a committed PROBE table); test the way the client clicks;
-one law one path; 1:1 = COPY; numbers in the profile; no em or en dash;
-the Skylon header on every new file; nothing invented; the drawings are
-the model; one ink one layer; the room refuses in words, the engine never
-squashes; material never enters material (*"material nigdy nie wchodzi w
-drugi material"*, the law since 08.09.2026, broken by T82's basin and
-mended here). One law is this turn's own: **the carcass is to the wall**
-(PART B): a service void is room taken INSIDE the carcass, never air
-between the carcass and the wall; what hangs on the wall or stands at it
-has its back at the wall line like every unit, and what is inside it
-gives way.
+Every law of T75 to T83 holds in full: the fossil six untouchable, a bare
+`computeCabinet()` byte for byte its LISP; diagnose before you cut (P1's
+four tables come first); test the way the client clicks; one law one path;
+1:1 = COPY (the retail copies untouched, `t78-copy --check` CLEAN); numbers
+in the profile; no em or en dash; the Skylon header on every new file;
+nothing invented; the room refuses in words. Four laws are this turn's
+own:
+1. **ZERO KASOWANIA.** Every control of THE CENSUS stays, by label and by
+   the SAME handler (the same function reference or the same store action
+   name). Studio adds a second road to a function; it never closes the
+   first. The legacy menus stay mounted whole (File / View / Library /
+   Settings / Database / Spraying / Lighting / Output) with every leaf and
+   every guard they have today.
+2. **ONE PANEL, ONE HEADER.** The full panel IS `RightPanel.jsx` embedded,
+   every row, every section, the UnitNameField; no second header over it,
+   no row hidden by CSS, no DOM query that hides children. Grouping its
+   rows is NOT this turn.
+3. **THE CARD NEVER LIES.** A quick card shows only what the type supports
+   (`type.supports.*`, `takesPlinth`, `liftTakesKit`, the corner's Arm A /
+   Arm B); a field the type does not have is absent, never disabled as a
+   promise. Every card row commits through the existing setter with the
+   existing refusal (`roomFitRefusalFor` first), and surfaces the notice
+   it returns.
+4. **BESIDE THE OBJECT, STILL.** Part windows (door, drawer, shelf, hinge,
+   notch, rail...) keep their own openers, anchors, drag and z-order; the
+   shell owns layout and selection display, never a part. The door
+   window's conduct is the profile's: `ui.studio.doorWindow` = 'beside'
+   (PROPOSED, the designer's recommendation) or 'dock-left' (today's T37
+   exception); in BOTH it is sticky, follows the clicked leaf, and never
+   stands over the door it is about.
 
 ## FROZEN
-1. The existing kits' cuts, the fixtures, the six goldens, the T75 to T82
-   goldens (the HAWA pocket, the vanity at columns 1 with one basin and the
-   U, the reeds): identical, proven by `scripts/t78-classify.mjs` strict
-   with this turn's fragments `scripts/t78-classify.d/f44-t83-f*.mjs`.
-   PART B changes the vanity's cut on the owner's order: its T82 goldens
-   are RE-PINNED with his words of 22:41 quoted in the fragment, every
-   other golden untouched.
-2. The CNC export of every existing part, `engine/cnc/*`, the DXF path:
-   untouched but for the new mirror parts and the vanity's re-cut boxes.
-3. The room (`3d/*`): M2 is the only writer of `UnitView.jsx`; V3's line,
-   if any, goes through M2. Lighting untouched, the gloss ride untouched.
-4. PRO freeze: every PRO file edited is licensed in EXEMPT with the owner's
-   words from this file and re-frozen in the same commit; retail through
-   the copy script.
-5. The suite is green at the start (7590 on 25.10 after PR #81) and at the
-   end.
+1. EVERY engine file: `src/engine/**` untouched but for `profile.js`'s new
+   `ui.studio` block (INT, one patch, numbers only). The classifier strict
+   with `f45-t84-f*.mjs` names NO engine or lib delta; the six base
+   goldens IDENTICAL; T75, T78, T80 to T83 goldens IDENTICAL; REPINNED
+   empty.
+2. The CNC export, the DXF, the drawings module, the cut list, the BOM
+   maths: untouched. `lib/outputMenu.js` and `lib/topMenu.js` are READ
+   (the Output entries and their enablement come from them), not edited.
+3. The room (`3d/*`): ONE mount point for the unit issue marker (S4's
+   component, applied by INT) and, only if the camera bar needs it, one
+   exported function on the existing camera handle. Lighting untouched,
+   the gloss ride untouched, FROZEN 4 of T80 untouched: Brightness,
+   Realistic lighting and Turn on the light stay three controls.
+4. PRO freeze: every PRO file edited is licensed in EXEMPT with the
+   owner's words from this file and re-frozen in the same commit. The
+   retail copies (`src/retail/**`, and the PRO files the copy rule names:
+   Modal, RoomModal, WallElevationModal, SetupArt, ElementProperties,
+   AddItems, PartDetailModal, RailModal, UnitSizeModal,
+   FrontDecorationControls) are NOT edited: `scripts/t78-copy.mjs --check`
+   stays CLEAN. `NumberField.jsx` is not edited: the refused field (F5) is
+   a wrapper round it.
+5. The setup workspace of 26.10 (`NewProjectFlow.jsx`, `SetupArt.jsx`,
+   `setup-workspace.css`, the owner's CSS of 27.10): untouched. D1 reads
+   its tokens.
+6. `ContextMenu.jsx`, `lib/contextActions.js` (the 22 right-click
+   actions), the 26 modal kinds and their openers: untouched.
+7. The suite is green at the start (the count on main at the start of the
+   run, written in the PR) and at the end, plus this turn's tests.
+8. The designer's files under `verify/t84/astra/` are hers, as received
+   (her HTML and her transcript carry her own punctuation); nothing this
+   turn WRITES carries an em or en dash, and no gate scans her files.
 
-## PART A · THE MIRROR CABINET (F1 to F5)
+## PART P · THE PROBES (P1, the first hour, before any Studio line)
+- (a) THE CENSUS of main: `scripts/t84-census.mjs` drives the BUILT app
+  (the CDP harness of `scripts/cdp.mjs`, as `t83-walk.mjs` does) and
+  writes `verify/t84/census-main.json`: the menu leaves of every top menu
+  by label and by the handler's name (`run.name` or the store action it
+  calls, read from the `menus` array of TopBar.jsx and `buildOutputMenu` /
+  `buildDatabaseMenu`); the 14 toolbar buttons by label; the 7 header
+  controls; the 22 context actions by id (`lib/contextActions.js`); the
+  26 modal kinds (`openModal('x')` in src); the library types per category
+  (`UNIT_CATEGORIES`); and, for the thirteen default units below placed
+  on wall A at x 1200 and selected, with every panel section opened by
+  `setPanelSection(id, true)` for `carcass, add, contents, construction,
+  doors, vanity, mirror`, the count of VISIBLE controls (`button, input,
+  select, textarea` with `offsetParent !== null`) inside the right panel
+  and per section. The numbers of THE CENSUS below were taken this way on
+  main 9a441f13 at 22:23; the probe re-takes them on the branch's base
+  commit and they must agree, or the probe says why (a count that moved
+  on main since 22:23 is written down, not argued with).
+- (b) THE ESCAPE MAP: every `keydown` listener that reads Escape in `src`
+  (file, line, what it closes or cancels, the order they fire in today),
+  the door window's T37 exception (`DoorModal.jsx` lines 158 to 177:
+  dock left, sticky, `escapeCloses` false), the Modal's own handling, the
+  text edit of the project name, `selectedElement` and `selectedUnitId`.
+  Written as the order F7 must keep: focused edit or local operation
+  first, then the topmost submenu or popup, then a closable window, then
+  a scene operation, then the part selection, then the cabinet selection;
+  one key event, one action; never unpin.
+- (c) THE HOST: `RightPanel.jsx` renders `<aside className="absolute
+  right-0 top-0 bottom-0 w-[310px] ...">` (lines 257 and 268 on main) and
+  lays itself over the canvas; the probe lists every place that assumes
+  it (the canvas width, `LAYER_CLASS.panel`, the brightness slider, the
+  library's placement in `lib/menuPlacement.js`, the modal anchors) and
+  writes the smallest licensed change that lets a host give it a width
+  and a header (`layout="embedded"`, `headerActions`), with the duplicate
+  inline ElementSection of the Studio inspector named (the designer:
+  "Suppress only the duplicate inline ElementSection in the Studio
+  inspector; the existing part editor remains independent").
+- (d) THE REGISTRY DIFF: the designer's inventory (48 / 14 / 7 / 65 and
+  the capability table) against main: what is the same, what moved
+  (Measure exists; the mirror cabinet's door widths hold the typed one,
+  26.10; the Database menu's Clients and Projects are "coming"), what the
+  branch follows. One table, no prose.
 
-What it is (`verify/t83/mockups/mirror2.png`, the agreed mockup; the
-architect's elevation 34 and section 33): a wall-hung cabinet, here 1350 x
-1100 x 215 at 1250 off the floor, 400 over the worktop; a CARCASS of the
-house board (sides, top, bottom, two DIVIDERS in the fronts' plane, a
-back) with PANELS round it (left, right, top, bottom, each on or off,
-their thickness typed, 30 here) that reach forward to the face of the
-mirror; three MIRROR DOORS (a board 18 with a mirror 4 glued on) 330, 480
-and 330 wide, overlaid on the carcass, hung on the sides and the dividers;
-two LED STILES 75 wide standing on the dividers, FLUSH with the mirror
-face (*"na rowno z drzwiami, nie wcisniete"*), each a made-to-measure LED
-light panel 4000 K; five adjustable GLASS SHELVES 6 mm per bay on pins; a
-LED strip under the bottom in a 100 mm bottom box; a LED strip inside
-along a side; optionally a mirror on the back (asked when the back is
-clicked); optionally recessed into the wall (155 here, 60 proud).
+## PART A · THE SKIN AND THE SHELL (F1, F2)
+### F1 · THE SKIN (D1)
+- `components/studio/studio.css`: the designer's compiled tokens from
+  Stage-1 (`shell-900/800/700/600`, `ink-50/100/200/400`, `gold`,
+  `gold-hover`, `gold-dark`, `warn`, `danger`, `ok`), the scale 13 px text,
+  30 px fields, 32 px buttons, 4 px radius, the rail, the context strip,
+  the inspector, the status bar, the popup, the floating window, the toast
+  (every number in `profile.ui.studio` and read from there into CSS
+  variables at mount, not typed twice). Scoped under `.studio-pro`; the
+  classes `cc-btn`, `cc-input`, `cc-label`, `cc-frame` keep their meaning.
+  `StudioIcons.jsx`: the Stage-1 SVG symbols as one sprite component.
+- Proof: `verify/t84/f01-skin-1440.png`, `-1920.png`, `-1280.png` beside
+  the designer's HTML at the same sizes (`verify/t84/astra/stage1-*.png`
+  are the chat's own frames of her file); the report names every
+  deviation in px.
 
-### F1 · THE LISP, FIRST: `reference/lisp/KIT_MIRROR.lsp`
-- Parent KIT_WUD_FULL, with these differences, each a named section D1 to
-  Dn with its source: (a) BAYS 1, 2 or 3 with the door widths typed
-  (*"szerokosc ustawianych drzwiczek"*): the dividers stand where the door
-  widths and the stile widths put them, in the fronts' plane (setback 0, a
-  divider carries doors, T21 F12's law), full height; (b) the LED STILE: a
-  board 75 x (door height) x 22 (the door 18 + mirror 4, so the stile's
-  face is the mirror's face) standing on the divider's front edge, its
-  width `mirror.stileWidthMm` typed (75), on or off per divider
-  (*"z ledami, bez"*); it is a bought LED light panel in the BOM and a cut
-  board in the carcass finish only where the owner says "timber stile"
-  (`stile: 'led' | 'timber' | 'none'`); (c) the DOOR: the board 18 in the
-  front finish plus, when `mirror_doors` is on, a mirror 4 (a bought part,
-  m2) glued to its face: the door's thickness in the room and on the
-  sheets is 22, the hinge ladder reads the door's weight with the mirror
-  (board 700 kg/m3 PROPOSED plus mirror 10 kg/m2); the cups as WUD's;
-  (d) the PANELS ROUND: `panels: { L, R, top, bottom }` each on or off,
-  thickness `panel_t` typed (30), in the front finish, standing on the
-  carcass's outside and reaching forward to the mirror face (depth = the
-  carcass depth + 22 when the doors carry a mirror, + 18 otherwise), the
-  top and bottom panels between the side panels when both are on, over
-  the carcass when they are off; (e) GLASS SHELVES: the shelf item with
-  `material: 'glass'` (6 mm toughened, a bought part, no CNC), 5 per bay
-  by default on the pin ladder, movable and addable as every shelf
-  (*"z mozliwoscia dodawania, przesuwania"*), the pins the house's; (f)
-  the BACK: the house back, with `mirror_back` on it a mirror 4 (a bought
-  part, m2) on its inside face; (g) the BOTTOM BOX: 100 mm (PROPOSED
-  `mirror.bottomBoxMm`) under the bottom board, closed by a front strip in
-  the front finish, the LED under on its underside and the driver in it;
-  (h) the RECESS: `recess_mm` typed (0 is on the wall): the cabinet stands
-  that far into the wall, read by the room as T79's recess is (the wall
-  element), the panels and the mirror face proud by depth - recess.
-- Paren balance test; `test/turn35-lisp-parens.test.js` lists the file.
+### F2 · THE SHELL (S1)
+- `App.jsx` (INT): when the entry is `factory` (PRO, `lib/appEntry.js`)
+  and `profile.ui.studio.enabled` is true (PROPOSED true: the owner,
+  *"nie, juz jest przy wyborze"*, no switch in the UI; the flag exists for
+  the walk and the tests to run both faces and for the owner to turn the
+  face back by the profile, never by a button), the editor renders inside
+  `StudioShell`. The retail entry never mounts it.
+- `StudioShell`: the grid of Stage-1 (top bar 48, context strip 34, the
+  workspace `rail | scene | inspector`, status bar 30). The scene slot
+  receives the EXISTING canvas and its overlays; nothing in `3d/` learns
+  the shell exists.
+- The top bar: the wordmark (leaveProject, the unsaved warning kept), the
+  PRO label, the project name with its rename (Enter / Escape / blur end
+  the edit first, the Escape map), the legacy `MenuBar` with
+  `orderMenus(menus)` WHOLE (every leaf of THE CENSUS, same `run`, same
+  `disabled`, same `checked`), then Undo and Redo (useHistoryStore, the
+  same depth guards as the toolbar's), Save with its three states,
+  Brightness (the same slider, the same state), Account, and **BOM** (the
+  gold button that today says Export and calls `setBomOpen(!bomOpen)`:
+  the owner, *"tak"*, renamed, same call). The MockModeBadge moves to the
+  status bar.
+- `StudioRail`: Select (closes the library, keeps the selection, clears
+  the insertion through the existing API), Add (opens the EXISTING
+  LibraryPanel beside the button, 8 px off its right edge, clamped to the
+  screen; the categories from `UNIT_CATEGORIES` including Saved sets and
+  Sets; the insertion context of the scene's "+" kept), Room
+  (`openModal('room', { anchor })`), Materials (a popup of the four
+  existing windows: Selected finishes `unit-finish` for the selected ids,
+  Project finishes `design`, Assign materials `assign-materials`, Stock
+  `warehouse`), a separator, Check (`toggleCheck`, the badge
+  `findingsToAct(checkFindings).length`, red when a red finding is in
+  it). The foot: Design (`setViewMode('3d')`) and CNC (`setViewMode
+  ('cnc')`), the same guards as the toolbar's two buttons. The rail is 112
+  wide with labels at 1440 and up, 56 icon-only below (PROPOSED).
+- `SelectionBreadcrumb`: room name, wall or island, the unit number in
+  bold; "1 cabinet selected" / "2 cabinets selected" / "Nothing
+  selected"; the panel-show button when the inspector is hidden.
+- `StatusBar`: the selection in words, MockModeBadge, the dirty marker,
+  the Changes drawer (today's bottom-left `Changes · N` control, the same
+  component, re-homed), the issue counters of F5, the viewport size.
+- Tests `test/turn84-f02-shell.test.js`: the shell mounts only on the
+  factory entry; the legacy `menus` array is rendered through the same
+  `MenuBar` with the same length as TopBar's (read from source: the test
+  imports nothing from React); the BOM button calls `setBomOpen`; Undo and
+  Redo are the history store's; the MockModeBadge is in the status bar
+  and nowhere else.
 
-### F2 · THE KIT: MIRROR_CABINET
-- `engine/types.js`: `MIRROR_CABINET`, family bathroom, library group
-  Bathroom (beside the vanity), row "Mirror cabinet", `mount: 'wall'`,
-  defaults `profile.mirror.defaults` (width 1350, height 1100, depth 215,
-  mount 1250, bays 3, door widths [330, 480, 330], stile 75 led, panels
-  all on at 30, mirror doors on, mirror back off, glass shelves 5 a bay,
-  LED under on, LED inside on, bottom box 100, recess 0; PROPOSED where
-  not the owner's). `engine/cabinet.js` mirrors KIT_MIRROR.lsp byte for
-  byte; `engine/mirrorCabinet.js` holds the arithmetic the kit shares
-  (the bay layout from door widths and stiles, the panel depths, the
-  weight). A new golden `verify/t83/goldens/golden-mirror.json`.
-- Tests `test/turn83-f02-mirror-kit.test.js`: the default cabinet gives
-  three doors 330 / 480 / 330 x 1100 less the gaps, two dividers at the
-  stile centres, two stiles 75 x 22, four panels 30 reaching 237 deep,
-  fifteen glass shelves, the bottom box, the back; `stile: 'none'` gives
-  no stiles and the doors meeting over the dividers as WUD's; `panels`
-  off gives the bare carcass; `mirror_doors` off gives 18 doors and the
-  panels 233 deep; the weight class and hinge count for a 480 mirror
-  door.
+## PART B · THE INSPECTOR (F3, F4)
+### F3 · THE QUICK CARDS (S2)
+- `lib/studioCards.js`: the capability table of the contract, read from
+  `engine/types.js` at run time, never typed: `supports.doors`,
+  `supports.drawers`, `mount`, `corner`, `takesPlinth(type, profile)`,
+  `liftTakesKit(type)`, the special builders (VANITY*: `setVanityDrawers`,
+  `updateUnitParams({ sinks })`, `setVanityFloating`; MIRROR_CABINET:
+  `setMirrorCabinet`, the bays warning "Changing bays resets door widths
+  to the kit defaults" kept, the typed widths of 26.10 held; HAWA_POCKET:
+  `setPocket`, `setPocketCovers`, the size derived; FREE_PANEL:
+  `freePanelOf` / `freePanelPatch`, the board's own length, width and
+  thickness, never its rotated box).
+- The seven cards, six rows at most, in the contract's order:
+  Base: Width · Height · Depth · Doors (summary `2 doors · L / R ›` to
+  `openRightPanel(); setPanelSection('doors', true)`) · Drawers (summary
+  to `setPanelSection('contents', true)`) · Plinth (Add / Remove, the
+  height derived). BUD hides Drawers, BUDR hides Doors, BUD_INT shows
+  both. Wall: Width · Height · Depth · Mount height · Doors · Front
+  opening (only `liftTakesKit && derived.doors > 0`). Wardrobe: Width ·
+  Height · Depth · Front type · Finish · Bays (`bayWidthsOf`, read-only,
+  to the contents section). Vanity: Width · Height · Depth · Drawers
+  (2 / 3 / 4) · Sinks (0 / 1 / 2) · Mounting. Mirror cabinet: Width ·
+  Height · Depth · Mount height · Bays (1 / 2 / 3) · Recess. HAWA pocket:
+  Doors (1 / 2) · Hand · Opening · Covered cabinets · Hardware class ·
+  Calculated size (read-only). Free panel: Length · Width · Thickness ·
+  Facing · Tilt · Height above floor.
+- THE GENERIC CARD for every other type (corners L, blind, carousel, hoods,
+  appliances, sink, pantry, tall, low, desk, chests, wine, bin, cargo,
+  twin...): Width · Height · Depth (Arm A · Height · Arm B for a corner
+  type) · Front type (where `supports.doors` or `supports.drawers`) ·
+  Finish · Plinth (where `takesPlinth` and `mount === 'floor'`); a row
+  without a setter is absent. The card's title is the type's library row
+  name and the unit number; the thumb its library icon.
+- Every dimension row: the wrapper of F5 round `NumberField`, committing
+  `roomFitRefusalFor(unit.id, { key: v })` then `updateUnitParams`, the
+  notice surfaced; Height keeps the project default / custom status and
+  `resetUnitHeight`. Finish: `openModal('unit-finish', { unitIds, anchor
+  })`. Front type: `frontStyleSelection` + `updateUnitParams({ front_type,
+  front_decoration })`, never `front_type` alone.
+- Under the rows: "Height follows project default" when it does; the
+  type's note; the issue strip of F5; then **Open cabinet** (gold,
+  `openModal('cabinet', { unitId, anchor })`) and **Full settings** (the
+  inspector to `full`).
+- Tests `test/turn84-f03-cards.test.js`: every type in `UNIT_TYPES` yields
+  a card of at most six rows; a BUD card has no Drawers row and a BUDR no
+  Doors row; a corner's first and third rows read Arm A and Arm B; every
+  row's action is one of the store's own names (a list in the test, no
+  new setter); a type with no plinth has no Plinth row; the seven typed
+  cards match the contract row for row.
 
-### F3 · THE ROOM
-- `3d/MirrorCabinet.jsx` (new, M2) through the one mount point in
-  `UnitView.jsx`: the mirror doors with a mirror material (a reflective
-  grey with an environment reflection, PROPOSED, as the owner's render
-  shows), the LED stiles lit (an emissive warm white 4000 K panel, flush),
-  the glass shelves translucent (as T30's glass doors are), the LED under
-  and inside as `ledStrips.js` draws them, the bottom box, the panels
-  round, the recess into the wall (the wall element the kit writes). The
-  back's click: `openModal('mirror-back', ...)` asks "Mirror on the back?"
-  (Yes / No, the store's `setMirrorBack`).
-- Tests `test/turn83-f03-mirror-room.test.js`: the solids the room draws
-  equal the kit's parts by id; the mirror door 22 thick in the room; the
-  stile's face at the mirror's face (z equal to 0.01); the recess moves
-  the whole cabinet into the wall by `recess_mm`.
+### F4 · THE INSPECTOR HOST (S3)
+- `InspectorHost`: `quick` (the card, 344 px, 316 below 1440), `full`
+  (RightPanel embedded, 400 px, 360 below 1500), `none` (hidden, the
+  breadcrumb's button brings it back). The widths PROPOSED, in
+  `profile.ui.studio.inspector`.
+- RightPanel.jsx (INT, P1's host table): `layout="embedded"` makes the
+  panel fill its host instead of positioning itself; `headerActions`
+  renders Pin and "back to quick settings" INSIDE its existing header
+  beside UnitNameField; every branch (unit, empty, CNC, MultiUnitPanel)
+  honours both. No second header. The duplicate inline ElementSection is
+  suppressed in the embedded layout ONLY (the part editors stay).
+- Pin: the inspector stays `full` and FOLLOWS the selection: another
+  cabinet, its rows, the open sections kept per type and the scroll kept;
+  several cabinets, MultiUnitPanel; none, "Select a cabinet or part";
+  a part clicked, the part's own window opens as today and the panel
+  shows the part's parent; a part of another cabinet, the panel switches
+  to that parent. Pin never freezes an id. Before the selection changes,
+  a pending valid edit is committed to its ORIGINAL unit id; an invalid
+  one blocks the switch with its refusal visible; Escape cancels it.
+- Tests `test/turn84-f04-inspector.test.js`: RightPanel's source has the
+  `layout` and `headerActions` props on every branch; the embedded
+  layout has no `absolute right-0`; the pin's reducer follows the
+  selection and never stores an id; the commit-before-switch in the
+  store.
 
-### F4 · THE BOM
-- Lines per cabinet: "LED light panel, made to measure, 4000 K, 75 x H"
-  (one per LED stile), "Mirror 4 mm" (m2, the doors and the back when
-  on), "Glass shelf 6 mm toughened, W x D" (one per shelf), "LED strip
-  under" and "LED strip inside" (lm), "LED driver 24 V" (one), "Fused
-  spur by electrician" (a note), the hinges by weight, the shelf pins,
-  the hanging brackets as the vanity's. Articles empty strings
-  (`profile.mirror.articles`) for the owner to fill.
+## PART C · THE ERRORS YOU CAN SEE (F5, S4)
+The owner: *"wszystkie bledy zolte i czerwone sa totalnie niewidoczne,
+mala czcionka"*. Today a finding lives only in the Check panel: 11 px
+uppercase titles, gold on dark, no mark on the cabinet, the count hidden
+at the toolbar's end. From tonight a finding is in three places at once,
+13 px, dark text on the warn or danger ground:
+- THE MARKER: `UnitIssueMarker`, one per unit with findings, beside the
+  unit number in the scene (the same anchor the number uses), a red
+  triangle for a red finding, a yellow one for yellow only, with the
+  count; click = select the unit and open its card with the strip. One
+  mount point in `3d/` (INT applies). `lib/studioIssues.js` groups
+  `checkFindings` by `unitId` and `level` (`red`, `yellow`; `note`
+  ignored), by the engine's own `findingsToAct`.
+- THE STRIP: `IssueStrip` in the quick card and over the full panel's
+  rows: "#48 · the bowl enters a board" in the finding's own words
+  (`message`), its level colour, and **Show**: the camera frames the unit
+  (the camera bar's Frame selection) and, for a panel finding, selects
+  the part (`subject`). Several findings stack, the red first.
+- THE COUNTERS: on the status bar, `1 red · 3 yellow` in their colours;
+  click opens Check filtered to that level (a `checkFilter` in uiStore,
+  'all' | 'red' | 'yellow'; the Check panel reads it and shows "Show all").
+- THE REFUSED FIELD: `RefusedField` wraps `NumberField` in the cards (and
+  nowhere else this turn): when the setter returns a refusal
+  (`roomFitRefusalFor`'s notice, the leaf count's, the pocket's `said`),
+  the field turns red with the reason under it in 13 px, the typed value
+  stays unapplied, Escape restores the last applied one; a refused change
+  never enters the history. The reason is the engine's exact sentence,
+  never a Studio paraphrase.
+- Tests `test/turn84-f05-issues.test.js`: the grouping by unit and level
+  from a fixture of findings (red, yellow, note), the note dropped; the
+  marker's colour law; the counters' text; the refused field keeps the
+  old value and shows the reason; the Check filter reducer.
 
-### F5 · THE RIGHT PANEL, THE LIBRARY, THE SHEETS
-- Right panel (EXEMPT with the owner's words): section MIRROR CABINET:
-  Bays 1 / 2 / 3; Door widths (one field a bay, the sum checked against
-  the width with the stiles, refused in words when it does not add up);
-  Stiles LED / timber / none and their width; Panels L / R / top / bottom
-  on or off and Panel thickness; Mirror doors on / off; Mirror back on /
-  off; Glass shelves per bay; LED under on / off; LED inside on / off;
-  Bottom box on / off; Recess mm. Library rows in PRO's Kitchen and
-  Wardrobe libraries under Bathroom; retail through the copy script.
-- Sheets: the fronts sheet draws the three mirror doors and the two
-  stiles (a new ink `LED_STILE`, warm yellow, one ink one layer), the
-  panels round, the unit number; the section shows the recess, the
-  bottom box and the LED; the plan the stiles flush with the doors.
+## PART D · THE SCENE'S EDGE (F6, S5)
+- `SceneToggles`: four at the scene's top edge: X-ray, Hide fronts,
+  Outlines, Open all / Close all (PROPOSED, the designer's set; the owner
+  may swap one by the profile list `profile.ui.studio.sceneToggles`), each
+  with its title and its pressed state, the SAME handlers and the SAME
+  guards as CanvasToolbar's (`viewMode !== '3d' || contourView` where it
+  is so today; the TopBar / CanvasToolbar guard differences P1 names are
+  kept as they are, never silently widened).
+- `SceneViewMenu`: View ▾ at the scene's top right with the other scene
+  controls: Dimensions, Front dimensions, Dimension colour (from
+  `profile.dimensions.colours`), Props (with its disabled reason from
+  `propsReason`), Measure, Contour view, Brightness, Realistic lighting,
+  Turn on the light. Of today's 14 toolbar controls the rest live
+  elsewhere by F2: Undo / Redo in the top bar, BOM on the top bar and in
+  Output, Check on the rail, 3D / CNC at the rail's foot. CanvasToolbar.
+  jsx stays in the tree for the retail entry and for `profile.ui.studio.
+  enabled === false`; under Studio it is not rendered (INT, one guard).
+- `CameraBar` at the scene's foot: Plan, Iso, A, B, C, D, Frame selection,
+  beside 3D | Drawings…. Through the room's camera and controls (the
+  registered handle of `3d/viewHandle.js`, the one the walk reads as
+  `window.__cc.views.room`; the component uses the same registration
+  through a small exported `lib/cameraPresets.js`: the wall's facing
+  direction from `project.room` and the wall index, the plan from above
+  at the room's centre, the iso from the first run's corner, Frame
+  selection fits the selected units' boxes with 10 % margin, PROPOSED).
+  Drawings… is `openModal('drawing', { kind: 'walls', anchor })`, the
+  PREVIEW, never the direct export.
+- Tests `test/turn84-f06-scene.test.js`: the four toggles call the four
+  toolbar handlers by name; the View menu lists exactly the nine; the
+  camera presets compute the six directions from a fixture room and
+  Frame selection from two boxes.
 
-## PART B · THE VANITY MADE RIGHT (F6 to F9)
+## PART E · THE RAIL'S MENUS, ESCAPE, THE PARITY GATE (F7, S6, S7)
+- `RailMenus`: the Materials popup and the Output popup (built from
+  `buildOutputMenu` with the existing handlers: the 14 leaves, same
+  enablement), the Library placement beside Add.
+- `lib/studioEscape.js`: one keydown owner for the shell: P1's order,
+  one event one action, the door window's conduct by the profile, never
+  unpin; the existing listeners keep their own windows (the shell does
+  not re-implement the Modal's Escape, it yields to it: a handled event
+  does not also clear the selection under it).
+- THE PARITY TEST `test/turn84-f07-parity.test.js` (S6 with S7): reads
+  `verify/t84/census-main.json` and the SOURCE of the Studio components
+  and asserts: every menu leaf of the census is rendered by the shell's
+  MenuBar with the same label and handler name (the `menus` array is one
+  module, `lib/studioMenus.js` or TopBar's own, imported by both faces);
+  every toolbar control of the census has a Studio home (a table in the
+  test: label, today's handler, the Studio component); every header
+  control; the 22 context actions untouched (the file's hash); the 26
+  modal kinds still opened by name somewhere in `src`; the library
+  categories and type counts equal. THE LIVE CENSUS `scripts/t84-census.
+  mjs --studio` re-takes the thirteen panel counts on the branch with the
+  embedded panel and `--legacy` with the profile flag off; both must
+  equal `census-main.json` (the embedded panel shows every control it
+  showed on main, counted the same way, with the same sections open). A
+  difference is RED, named in the PR with the row that moved.
+- S7: every PRO file edited is in EXEMPT with the owner's words from THE
+  ORDER and re-frozen in the same commit; NEW_FILES lists every new file;
+  every new file carries the Skylon header; no em or en dash; the
+  fragments `f45-t84-f*.mjs` name NO engine or lib file (the classifier's
+  table shows the engine/lib deltas at zero).
 
-### F6 · THE CARCASS TO THE WALL, THE VOID INSIDE
-- *"carcas powinien byc do sciany, czyli wszystko w srodku carcasa
-  mniejsze"*. T82 stood the carcass 80 off the wall (`wall_gap` = 10 +
-  80). Now: the vanity's `wall_gap` is the house clearance like every
-  unit (10), its carcass depth the typed depth (500) TO THE WALL; the
-  service void `vanity.serviceVoidMm` (80) is taken INSIDE: the two rails
-  stand at the carcass back as today (flush with the sides' back edges),
-  the DRAWER BOXES are shortened by the void (their runner chosen for
-  depth - void on the ladder, the box 10 shorter than the runner, the
-  17.10 law), the fronts unchanged, the worktop reaches the wall over the
-  carcass as any run's; the pipes run behind the boxes between the rails
-  (the back is open between them as T82 cut it). KIT_VANITY.lsp's D rows
-  of the void are re-written by V1 with the owner's words; the T82 vanity
-  goldens RE-PINNED. The Check's note #45 says "Service void 80 inside the
-  vanity behind the drawers".
-- Tests: a VANITY3 900 x 600 x 500: `wall_gap` 10, sides 500 deep, boxes
-  on the runner for 420 (the ladder's rung at or under 500 - 80), rails at
-  the back; the chest (T82's columns rule) untouched.
-
-### F7 · THE TRAP'S U AT TWO COLUMNS WITH ONE BASIN
-- PROBE (P1, `verify/t83/f07-probe.md`): `engine/vanity.js vanityWastes`
-  puts one basin's waste at W / 2; at `columns: 2` the divider stands
-  there, `vanityTopBoxUnder` finds no box under the waste and the plan's
-  row is `status: 'DIVIDER'`: no U is cut, no sentence is said (the owner:
-  *"nie ma wyciecia na U na sinki nawet jak je wlacze ... jest wyciecie jak
-  jest 1 szuflada ale nie jak sa 2 szuflady a mamy jeden sink"*).
-- The owner's road (*"zmniejszmy szuflady na szerokosc, tylko fronty
-  zostawmy szerokie i pomiedzy szufladami zrobi sie miejsce na syfon,
-  tylko gorna row"*): at columns 2 with one basin, the TOP ROW only: the
-  divider stops under the top row (a short divider from the bottom to the
-  underside of the top row's runner line, the top row's bearer a rail or
-  the fixed shelf the columns rule already fixes over both stacks), the
-  two top boxes are each NARROWED toward the centre by `vanity.trapWidthMm
-  / 2 + vanity.trapClearMm` (160 / 2 + 20 PROPOSED), their runners moved
-  with them, their fronts unchanged (wide, as the columns rule has them),
-  and the trap stands in the gap between the two boxes, which also takes
-  the U of F8 out of neither (no U needed where there is air). Check #39
-  stays for the second row as before. At columns 2 with TWO basins the
-  T82 road holds (one U in each column's top box).
-- Tests `test/turn83-f07-vanity-trap.test.js`: VANITY3 at columns 2,
-  sinks 1: the divider's height, the two top boxes' widths, the gap 200
-  between them centred on W / 2, the fronts' widths unchanged, the
-  runners' positions; sinks 2: two U cuts as T82; columns 1: the U as
-  T82.
-
-### F8 · THE BASIN 50 FORWARD, AND IT NEVER ENTERS A BOARD
-- *"umywalki przesun bardziej do przodu o jakies 50 mm, powod wchodza w
-  tylna scianke, zlamana regula material nigdy nie wchodzi w drugi
-  material"*. `profile.vanity.basin.wasteFromBack` 200 becomes 250
-  (PROPOSED reading of "about 50"), the oval's centre with it; and the
-  engine CHECKS the bowl's solid against every board of the carcass (the
-  rails, the sides, the back pieces, the top drawer's box after F7) with
-  the house's clash test: a bowl that would enter a board is refused in
-  words (#48 grows the sentence: "the bowl enters RAIL-TOP by N mm: move
-  the basin forward or take a shallower bowl"), never drawn through it.
-  The U of the top box (columns 1) follows the waste.
-- Tests `test/turn83-f08-vanity-basin.test.js`: the default VANITY3 with
-  one basin: no board enters the bowl's oval or its depth; the waste 250
-  from the back; a bowl pushed to 50 from the back says #48 in words.
-
-### F9 · THE OPEN OF A TWO-COLUMN VANITY
-- PROBE (P1, `verify/t83/f09-probe.md`): the drawer-box parts of a column
-  stack carry `meta: { drawer: i }` with NO `zone` (cabinet.js 5697 to
-  5728 on 25.10: sides, back, front, bottom), while the drawer front
-  carries `meta: { drawer: i, zone }` (5896); the room's open gesture
-  pairs a front and its box by `meta.drawer`, so with two columns drawer
-  3's front of column 1 opens with the box of column 2 (the owner: *"jedna
-  sie otwiera carcas tylko a druga front tylko"*). Fix: every box part of
-  a column stack carries `zone` as its front does (one line a part), and
-  the room's pairing reads `drawer` AND `zone`. The chest of T82 (columns
-  2) is fixed by the same line.
-- Tests `test/turn83-f09-open-columns.test.js`: at columns 2 every box
-  part's `meta.zone` equals its front's; the walk opens the top left
-  drawer and reads the box and the front of the same column moving.
-
-## PART C · THE DRAWINGS (F10, F11)
-
-### F10 · THE PLAN IS NOT A MIRROR
-- *"przekroj z gory pokazuje jakby logike z dolu czyli lustrzane odbicie,
-  sprawdz dokladnie"*. PROBE (P1, `verify/t83/f10-probe.md`): the base
-  plan of the T81 kitchen (BUD 600, BUD 800, BUDR2 500 from the left on
-  wall A, the room's wall A at the bottom of the key plan): where does
-  each unit's number land on the plan sheet, and is the order left to
-  right the same as the fronts sheet's (a viewer standing in the room
-  facing wall A sees 01, 02, DR01 left to right; the plan seen from above
-  with wall A at the bottom shows them in the SAME order)? Read the
-  projector's plan view (`projector.js` 1804 on 25.10, `at = [ox + W / 2,
-  oz + D / 2]`) and `setPlan.js`'s frame: the sign of the plan's y axis
-  (into the room) and of x along the wall for walls B, C, D. The probe
-  names the mirrored axis per wall; the fix flips the one sign so the plan
-  reads as a plan (looking DOWN, north up: wall C at the top, wall A at
-  the bottom, wall D on the left, wall B on the right, every unit where
-  the key plan's arrow says). The key plan and the section markers follow.
-- Tests `test/turn83-f10-plan.test.js`: the unit numbers' x on the plan
-  increase left to right as on the fronts sheet for wall A; for wall C
-  (the opposite wall) they decrease, as a real plan has them; the section
-  marker A-A stands where the section is cut.
-
-### F11 · EXPORT THE SHEETS YOU CHOOSE
-- *"daj mozliwosc exportowania tylko naprzyklad frontow lub cos takiego,
-  nie koniecznie wszystkie strony na raz"*. The Drawings window's Set tab
-  gets a check box per sheet (all on by default, "All" and "None"
-  buttons); "Drawing set (PDF)" exports the checked sheets in the set's
-  order, the page numbers "n / N" counting the exported ones; the Wall
-  DXF the same. The choice lives in the window (ui state), not in the
-  project.
-- Tests `test/turn83-f11-export-pick.test.js`: `exportWallDrawingsPdf`
-  given three of nine sheets writes three pages numbered 1 / 3 to 3 / 3;
-  the walk unticks all but Fronts and reads a one-page PDF.
-
-## PART D · THE WALK (F12)
-- `scripts/t83-walk.mjs`, real mouse, the built app, ledger
-  `verify/t83/walk.txt`, frames `verify/t83/f12-*.png`: (1) Library >
-  Bathroom > Mirror cabinet: the cabinet in the room over a vanity, the
-  stiles lit, the doors opened (the viewer's Open all), the back clicked
-  and "Mirror on the back?" answered Yes, Recess 155 typed, Panels bottom
-  off; the BOM read (LED panels 2, mirror m2, glass 15); the fronts sheet
-  with the stiles; (2) Vanity 3 drawers: sides 500 deep at the wall, the
-  boxes on the shorter runner, the worktop to the wall; Columns 2 and
-  Sinks 1: the gap between the top boxes read, the top left drawer opened
-  (box and front together); the basin 250 from the back, no #48 clash;
-  (3) the base plan of the T81 kitchen: 01, 02, DR01 left to right under
-  wall A, the section marker; the Set tab with only Fronts ticked, the
-  PDF read back with one page.
+## PART F · THE WALK (F8, F1)
+- `scripts/t84-walk.mjs`, real mouse, the built app, ledger
+  `verify/t84/walk.txt`, frames `verify/t84/f08-*.png`, at 1280 x 800,
+  1440 x 900 and 1920 x 1080: (1) the T81 kitchen loaded (`scripts/t81-
+  kitchen.mjs`), the shell up, every legacy menu opened and its leaves
+  counted against the census; (2) a BUD clicked: the quick card, Width
+  typed 920 refused in red with the engine's words, 760 applied, Undo,
+  Redo; Doors › to the panel's doors section; Full settings, Pin, another
+  cabinet clicked and the panel following, a part double-clicked and the
+  part window beside it (and the door window by the profile's conduct);
+  (3) a finding made (a basin that enters a board, as T83's walk did):
+  the marker on the unit, the strip in the card, Show framing the unit,
+  the counter on the status bar opening the filtered Check; (4) the four
+  toggles and View ▾, the camera bar A to D, Plan, Iso, Frame selection;
+  (5) Add beside the rail and a corner L added from the library, its
+  generic card with Arm A / Arm B; a mirror cabinet's card with its bays
+  warning; (6) Materials, Output, Drawings… preview; BOM in the top bar;
+  (7) Escape, one level at a time, from a field edit to the cabinet
+  selection; (8) the 1280 layout without horizontal scroll in the panel.
+  Every frame compared with the designer's HTML at the same size in the
+  ledger (what differs, in px, and why).
 
 ## NOT THIS TURN
-- The WC unit, the tallboy, the vanity with doors: the next Bathroom turn.
-- The mirror's own hinge article (the ladder by weight stands); a mirror
-  on the shelves; a shaver socket; a demister pad (a BOM note at most).
-- The 1:1 model-space DXF.
+- Groups, tabs or search in the full panel (T85, after a week of use).
+- The part windows in the Studio skin (the door first; the inventory is
+  in `verify/t84/DoorModal-inventory.md` for the designer).
+- Advanced setup, any move of a function out of a menu (one at a time,
+  with the owner, later).
+- New keyboard shortcuts (S / A / R / M / C), a live 2D plan or elevation
+  view, a right-click menu redesign, tooltips on hover.
+- Materials: the Stock as Joinery Core's warehouse and "Send to Joinery
+  Core" (the JC turn; Materials opens the four existing windows only).
+- The setup workspace's alignment with the skin (the designer gets the
+  frames `verify/t84/kreator-2610-arkusz.png`; T85).
+- The corner L's TOP-L drawing frame (the probe of 27.10, a chat fix).
 
 ## LINEAGE (one line a test reads from this file)
 T79's horizontal notch stays as built and its owner's words stay here
 because `test/turn79-f05-edge-notch.test.js` reads them from CLAUDE.md:
 *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut?
-wszystkich 4 rogów?"* (18.10.2026). T82 (merged as PR #81 on 25.10.2026)
-is the base of this turn; its numbers hold but for the vanity's void and
-the basin's place, changed here on the owner's order.
+wszystkich 4 rogów?"* (18.10.2026). T83 (merged as PR #82 on 26.10.2026)
+and the chat fixes of 26.10 (the mirror door widths, the setup workspace)
+and 27.10 (the setup CSS) are the base of this turn; their numbers hold
+untouched.
 
 ## TESTS AND PROOF
-Full suite once per PART and at the end; the goldens proven (`t78-classify`
-strict with `f44-t83-f*.mjs`, REPINNED only the vanity's T82 goldens with
-the owner's words, the new mirror golden NEW); the six base goldens
-IDENTICAL; `t78-copy --check`; `t83-walk.mjs`; the LISP paren balance of
-KIT_MIRROR and the amended KIT_VANITY; NEW_FILES lists every new file;
-every F the six stations of DONE in twenty lines.
+Full suite once per PART and at the end; the classifier strict with
+`f45-t84-f*.mjs` showing zero engine and lib deltas and REPINNED empty;
+the six base goldens IDENTICAL (`scripts/t64-classify.mjs --dump` vs
+`verify/t70/goldens-base.json`); `t75-goldens --check`, `t78-goldens
+--check`; `t78-copy --check` CLEAN; `t84-census.mjs --studio` and
+`--legacy` equal to `census-main.json`; `t84-walk.mjs` at three sizes;
+NEW_FILES; the Skylon header; no em or en dash; every F the six stations
+of DONE in twenty lines.
 
 ## PR BODY
-The probe tables (F7, F9, F10); files and lines per F; the LISP sections;
-the EXEMPT entries; the goldens proven and the re-pinned ones named with
-the owner's words; the test count before and after; the walk result;
-DECISIONS TAKEN; SKIPPED AND WHY; RED AT THE END; THE NUMBERS below.
+P1's four tables; files and lines per F; the EXEMPT entries; the census
+before (main) and after (branch) side by side, every row equal or the
+difference named; the test count before and after; the walk result at
+three sizes; DECISIONS TAKEN; SKIPPED AND WHY; RED AT THE END; THE
+NUMBERS below.
 
-## THE NUMBERS (all in profile.js; none typed in the UI without the owner)
+## THE NUMBERS (all in `profile.ui.studio`; none typed in the UI without the owner)
 | Number | Value | Source |
 | - | - | - |
-| Mirror cabinet defaults | 1350 x 1100 x 215, at 1250, 400 over the top | Holland Park elevation 34 and section 33; CONFIRMED by the drawing |
-| Doors | 330 / 480 / 330, widths typed per bay | the drawing; owner 22:41 "szerokosc ustawianych drzwiczek"; CONFIRMED |
-| LED stile | 75 wide, 22 thick, flush with the mirror face, made to measure, 4000 K | owner 14:14, 14:29; CONFIRMED |
-| Mirror | 4 mm on an 18 door; optional; on the back when asked | owner 14:09; CONFIRMED |
-| Panels round | L, R, top, bottom each on or off, thickness typed (30), to the mirror face | owner 14:09, 14:14; CONFIRMED |
-| Glass shelves | 6 mm toughened, 5 a bay, movable | owner 14:09; CONFIRMED |
-| Bottom box | 100 | the drawing's 100; PROPOSED as a box |
-| Recess | typed, 155 here | the drawing; CONFIRMED |
-| Mirror weight | 10 kg per m2 added to the door | PROPOSED |
-| Vanity void | 80, INSIDE the carcass, the carcass to the wall | owner 22:41; CONFIRMED |
-| Trap gap at columns 2 | the top boxes narrowed by 80 + 20 each, a 200 gap centred | owner 22:41 "zmniejszmy szuflady na szerokosc"; the 20 PROPOSED |
-| Basin waste from the back | 250 (was 200) | owner 22:41 "o jakies 50 mm"; CONFIRMED |
-| Bowl vs boards | refused in words, never drawn through | the law of 08.09.2026; CONFIRMED |
-| Plan orientation | looking down, wall A at the bottom, units as the fronts sheet | owner 22:41; CONFIRMED |
-| PDF sheet picker | check boxes, all on by default | owner 22:41; CONFIRMED |
+| Studio on for PRO | `enabled: true`, no UI switch | owner 16:27 "nie, juz jest przy wyborze"; CONFIRMED |
+| Scale | text 13, field 30, button 32, radius 4 | owner 27.10 (the setup CSS); CONFIRMED |
+| Bars | top 48, context 34, status 30 | the designer's Stage-1; PROPOSED |
+| Rail | 112 with labels at 1440 and up, 56 icons below | Stage-1 and her 1280 note; PROPOSED |
+| Quick card | 344, 316 below 1440 | the designer; PROPOSED |
+| Full panel | 400, 360 below 1500 | the designer, measured without overflow; PROPOSED |
+| Minimum screen | 1280 x 800, no horizontal panel scroll | the designer; PROPOSED |
+| Scene toggles | X-ray, Hide fronts, Outlines, Open all / Close all | the designer 17:01; PROPOSED |
+| Door window | 'beside' (sticky, follows the leaf, Escape as today); 'dock-left' kept | the designer's recommendation; PROPOSED |
+| Issue colours | warn #d9a441, danger #c9524b, text 13 px dark on the ground | the designer's palette; PROPOSED |
+| Marker | a triangle beside the unit number, 16 px, with the count | this turn; PROPOSED |
+| Frame selection margin | 10 % | this turn; PROPOSED |
+| Library beside Add | 8 px off the button, clamped to the screen | the designer; PROPOSED |
+| Export button | renamed BOM, same call | owner 16:27 "tak"; CONFIRMED |
 | Agents | 10 and INT, no review wave | T82's bill; CONFIRMED |
+
+## THE CENSUS (main 9a441f13, 27.10.2026 22:23; the parity gate of F7)
+The owner: *"przelicz ile teraz mamy funkcji w menu i ile bedzie pozniej
+... nie pisz mi okolo tylko dokladnie"*. Counted from the source and from
+the built app, not from memory. After this turn every number is the same
+or larger; a smaller one is RED.
+| Where | Count | The list |
+| - | - | - |
+| Top menu leaves | 48 | File 5 (New project…, Open…, Save, Save as…, Close project); View 13 (Outlines, Dimensions, Show front dimensions, Dimension colour › Navy, Red, 3D, CNC sheet, Brightness, Realistic lighting, Turn on the light, X-ray, Hide fronts, Contour view); Library 4 (Kitchen, Wardrobes, Saved sets, Sets); Settings 5 (Settings…, Room setup…, Snap › 0.5 mm, 1 mm, 32 mm system); Database 5 (Materials…, Assign materials…, Company defaults…, Clients… coming, Projects… coming); Spraying 1; Lighting 1; Output 14 (Render…, Drawings › Preview…, Unit card (PDF), Unit card (SVG), All units (PDF), Drawing set (PDF), Drawing set (DXF), CNC / DXF, Cutting list CSV, BOM PDF, Part labels · 21, Part labels · 44, Bill of materials…, Spraying…) |
+| Scene toolbar | 14 | Undo, Redo, Show dimensions, Front dimensions, Outlines, X-ray, Props, Hide fronts, Measure, Open all / Close all, BOM, Check · N, 3D, CNC |
+| Header | 7 | CABINET CORE (start), project name (rename), Save, MOCK DATA MODE, Bright, Account, Export (= BOM) |
+| Right-click on a unit | 22 | Edit cabinet…, Edit drawer…, Rename, End panel L, End panel R, Top infill, Top cornice (the height ladder), Side infill, Pin infill L, Pin infill R, Bottom mask, Plinth, Upstand, Drawer fronts, Unit colour, Save as template, Center shelves, Rotate 90°, Back to wall, Side to wall, Close all fronts, Delete |
+| Library types | 51 + sets | Kitchen 36, Wardrobes 15 (`UNIT_CATEGORIES`), Saved sets, Sets (the five shipped and the workshop's own) |
+| Windows (modal kinds) | 26 | add-items, assign-materials, auth, cabinet, company-defaults, design, draw-room, drawing, edge-notch, element, front-gap, jpull-run, lighting, mirror-back, notch, part-detail, rail, render, room, save-as, save-template, spraying, unit-finish, unit-size, warehouse, watch-layout |
+| Right panel, visible controls, every section open, the default unit | BUD 53 · BUDR 39 · WUD 58 · WARDROBE 53 · VANITY2 50 · MIRROR_CABINET 62 · CORNER_L_BASE 52 · HAWA_POCKET 45 · BLIND_BASE 53 · PANTRY 57 · BUD_INT 53 · WUD_HOOD 39 · FREE_PANEL 35 (649 in all) | by section on BUD: Carcass 18, Add items 17, Section 1 (contents) 1, Construction 12, Doors 2, plus the name field and the five section heads; MIRROR_CABINET's own section 29; VANITY2's 9; HAWA's Pocket door 9; FREE_PANEL's Attach 2 |
+| Panel sources, control tags | 173 | RightPanel.jsx 108 (21 NumberField, 15 select, 66 button, 6 input), ElementProperties.jsx 49 (20, 7, 21, 1), MultiUnitPanel.jsx 16 (3, 1, 11, 1) |
+In all: 91 controls outside the panels (48 + 14 + 7 + 22), 51 library
+types and the sets, 26 windows, 649 visible panel controls over the
+thirteen default units, 173 control tags in the panel sources. After T84:
+the same 91 by label and handler, the same 51, the same 26, the same 649
+in the embedded panel, the same 173 tags plus the host's two props; and
+NEW: the rail (5 + 2), the breadcrumb, the status bar (counters, Changes,
+badge), seven typed cards and the generic card, Pin, the marker, the
+strip, the refused field, four toggles, View ▾, the camera bar (7), the
+Materials popup (4), Drawings… preview.

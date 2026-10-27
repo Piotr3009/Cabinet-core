@@ -122,6 +122,11 @@ plus redo, camera, eye, frame, plan, iso, output.
 ## 4. uiStore (INT writes; slices call these names and nothing else new)
 Existing actions keep their names and behaviour. NEW, each landing at its F:
 ```js
+// F4 · P1's host table (p1-host.md F): the legacy roads that open or close the panel reach the Studio inspector
+//   openRightPanel()  -> { rightPanelOpen: true,  inspector: 'full' }  (Rename, openPanelSection, the inner +,
+//                        the card's Doors / Drawers / Bays rows: every road that opens the panel to show a row)
+//   closeRightPanel() -> { rightPanelOpen: false, inspector: 'none' }  (the panel's own x; addDoors' last step)
+//   selectUnit / selectElement keep writing rightPanelOpen directly (they never call openRightPanel).
 // F3 / F4 · the Studio inspector (the legacy face never reads these)
 inspector: 'quick',                  // 'quick' | 'full' | 'none'
 inspectorPinned: false,

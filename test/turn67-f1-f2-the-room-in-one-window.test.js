@@ -21,7 +21,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
@@ -38,6 +38,29 @@ const uncomment = (t) => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\
 const PRO = 'src/components/RoomModal.jsx';
 const RETAIL = 'src/retail/design/room/RoomModal.jsx';
 const BOTH = [PRO, RETAIL];
+// AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): RoomModal gained two
+// opt-in props for the setup workspace, `embedded` and `draftState` (RoomModal.jsx:164, false and null by
+// default), and NewProjectFlow.jsx:334 is the one door that passes them. These are the two ORDINARY doors,
+// Settings ▸ Room setup (ConfiguratorPage.jsx:747) and retail's route (RoomEditor.jsx:34), named so the F1
+// tests below can hold them to passing neither. The owner: *"zakoduj mi prosze te zmiany"* (26.10, the
+// setup UI); *"ok robie merge a ty prosze napraw ten fail"* (28.10).
+const ORDINARY_DOORS = ['src/pages/ConfiguratorPage.jsx', 'src/retail/design/room/RoomEditor.jsx'];
+// CHAT FIX 28.10.2026: each ordinary door's `<RoomModal ... />` is read the way the every-door scan below reads
+// it (comments out, the whole tag to its `/>`), so a harmless prop or a comment never breaks the match.
+const ordinaryDoor = (rel) => {
+  const tags = roomDoors().filter(([file]) => file === rel).map(([, tag]) => tag);
+  assert.ok(tags.length, `${rel} no longer opens the room window`);
+  return tags.join('\n');
+};
+// AMENDED BY CHAT FIX 28.10.2026: the two doors above are not taken on trust. Every `<RoomModal ... />` tag in
+// src is read, and only the setup workspace (components/NewProjectFlow.jsx) may hand the room window the
+// setup's `embedded` or `draftState`; a third door that opts in that way fails here.
+const SETUP_DOOR = 'src/components/NewProjectFlow.jsx';
+const srcFiles = (dir) => readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory()
+  ? srcFiles(`${dir}/${e.name}`)
+  : (/\.(js|jsx)$/.test(e.name) ? [`${dir}/${e.name}`] : [])));
+const roomDoors = () => srcFiles('src').flatMap((rel) => [...uncomment(read(rel)).matchAll(/<RoomModal\b[\s\S]*?\/>/g)]
+  .map((m) => [rel, m[0]]));
 
 // ═══ F1 · THE WINDOW ════════════════════════════════════════════════════════
 
@@ -51,11 +74,45 @@ test('F1 · plan on top, elevation below, ONE window — in both apps', () => {
     assert.ok(dock > plan, `${rel} draws the elevation above the plan`);
     assert.ok(acts > dock, `${rel}: the window's buttons are not at its foot`);
     // ONE window: the elevation is INSIDE this modal's children, not beside it.
-    assert.match(src, /<WallElevationModal key=\{wallOnShow\} wallIndex=\{wallOnShow\} \/>/,
+    // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): RoomModal.jsx:1195
+    // hands the docked editor the room window's own `embedded` flag and nothing else. Only the setup
+    // workspace sets it (NewProjectFlow.jsx:334); in Settings ▸ Room setup and in retail it is false and the
+    // editor is docked here, inside this window's children, as at T83. 4f3e33c amended this line's twin
+    // itself (test/turn62-f2-f3-the-copy.test.js:484). The owner: *"zakoduj mi prosze te zmiany"* (26.10,
+    // the setup UI); *"ok robie merge a ty prosze napraw ten fail"* (28.10).
+    assert.match(src, /<WallElevationModal key=\{wallOnShow\} wallIndex=\{wallOnShow\} embedded=\{embedded\} \/>/,
       `${rel} does not dock the elevation`);
     // …and the room modal is still ONE `Modal`, not two.
     assert.equal((uncomment(src).match(/<Modal\b/g) || []).length, 1,
       `${rel} opens a second window`);
+    // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): the room window is now
+    // drawn by ONE `<EditorFrame>` (RoomModal.jsx:661, :672), which IS `Modal` in every ordinary door and a
+    // bare fragment inside the setup workspace's own window (RoomModal.jsx:1237), so the count above no longer
+    // sees it. The one `<Modal` it counts is the setup workspace's island plan (RoomModal.jsx:1211), drawn only
+    // behind `embedded`. Both are named here: the room is still ONE window in both doors, and no second window
+    // can hide behind the island plan's count. The owner: *"zakoduj mi prosze te zmiany"* (26.10, the setup
+    // UI); *"ok robie merge a ty prosze napraw ten fail"* (28.10).
+    const body = uncomment(src);
+    assert.equal((body.match(/<EditorFrame\b/g) || []).length, 1, `${rel} draws the room in two frames`);
+    assert.match(body, /const EditorFrame = embedded\s*\?\s*EmbeddedRoomFrame\s*:\s*Modal;/,
+      `${rel}: an ordinary room window is not the shell's one Modal`);
+    assert.match(body, /function EmbeddedRoomFrame\(\{ children \}\) \{\s*return <>\{children\}<\/>;\s*\}|const EmbeddedRoomFrame = \(\{ children \}\) => <>\{children\}<\/>;/,
+      `${rel}: inside the setup workspace the room opens a window of its own`);
+    assert.match(body, /\{embedded && planningIsland && islandPlan && \(\s*<Modal name="island-plan"/,
+      `${rel}: its one other Modal is not the setup workspace's island plan`);
+    // AMENDED BY CHAT FIX 28.10.2026: ONE window means the docked editor stands INSIDE that one frame's
+    // children, between `<EditorFrame` and `</EditorFrame>`, never a sibling drawn after it; and the window's
+    // Cancel / Apply row is left out in the setup workspace alone (`{!embedded && ...}`), so an ordinary room
+    // window keeps its foot.
+    const frameOpen = body.indexOf('<EditorFrame');
+    const frameClose = body.indexOf('</EditorFrame>');
+    const docked = body.indexOf('<WallElevationModal key={wallOnShow}');
+    assert.ok(frameOpen >= 0 && docked > frameOpen && frameClose > docked,
+      `${rel}: the docked elevation stands outside the room window`);
+    assert.match(body, /\{!embedded && \(?\s*<div[^>]*data-room-actions="1">/,
+      `${rel}: the room window's Cancel and Apply are not drawn in an ordinary room window`);
+    const acts2 = body.indexOf('data-room-actions="1"');
+    assert.ok(acts2 > docked && frameClose > acts2, `${rel}: the Cancel and Apply row is not at the window's own foot`);
   }
 });
 
@@ -67,9 +124,41 @@ test('F1 · the elevation editor is UNCHANGED — *"który jest super, nie zmien
   for (const rel of BOTH) {
     const src = read(rel);
     const call = src.slice(src.indexOf('<WallElevationModal'), src.indexOf('/>', src.indexOf('<WallElevationModal')) + 2);
+    // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): the editor learnt two
+    // opt-in props, `embedded` and `onNavigationChange` (WallElevationModal.jsx:76, false and null by default;
+    // licensed in the freeze test's EXEMPT as "Setup UI 26.10.2026 F1" and re-frozen there), and the room
+    // window passes only the first, its own flag, through (RoomModal.jsx:1195): still no `onBack`, no
+    // `onSave`, no callback, no wrapper. The flag is false
+    // by default (RoomModal.jsx:164) and false in both ordinary doors, so in an ordinary room window the
+    // editor runs the path it ran at T83 (rendered old against new on one fixture, its markup differs only
+    // in class strings that style nothing outside `.cc-setup`, a viewBox equal to the svg's own size, one
+    // spacing wrapper and an aria-label on the remove buttons). The owner: *"zakoduj mi prosze te zmiany"*
+    // (26.10, the setup UI); *"ok robie merge a ty prosze napraw ten fail"* (28.10).
     assert.equal(call.replace(/\s+/g, ' ').trim(),
-      '<WallElevationModal key={wallOnShow} wallIndex={wallOnShow} />',
+      '<WallElevationModal key={wallOnShow} wallIndex={wallOnShow} embedded={embedded} />',
       `${rel} passes the elevation editor something it has to learn`);
+    for (const def of [/\bembedded = false\b/, /\bonNavigationChange = null\b/, /\bdraftState = null\b/]) {
+      assert.match(src, def, `${rel}: an ordinary room window docks the setup workspace's editor (${def})`);
+    }
+  }
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): `embedded={embedded}` is
+  // false in an ordinary room window BY NAME, not by luck: the editor's own default is that same false
+  // (WallElevationModal.jsx:75-76, and the retail copy), and neither ordinary door passes the flag. The
+  // owner: *"zakoduj mi prosze te zmiany"* (26.10, the setup UI); *"ok robie merge a ty prosze napraw ten
+  // fail"* (28.10).
+  for (const rel of ['src/components/WallElevationModal.jsx', 'src/retail/design/room/WallElevationModal.jsx']) {
+    assert.match(read(rel), /wallIndex = 0, anchor = null, onBack = null, onSave = null,\s*embedded = false,/,
+      `${rel}: the editor's default path is not the ordinary one`);
+  }
+  for (const rel of ORDINARY_DOORS) {
+    assert.doesNotMatch(ordinaryDoor(rel), /\bembedded\b/,
+      `${rel} opens an ordinary room window as the setup workspace`);
+  }
+  const doors = roomDoors();
+  assert.ok(doors.some(([rel]) => rel === SETUP_DOOR), 'the setup workspace no longer opens the room window');
+  for (const [rel, tag] of doors) {
+    if (rel === SETUP_DOOR) continue;
+    assert.doesNotMatch(tag, /\b(?:embedded|draftState)\b/, `${rel} opens the room window as the setup workspace`);
   }
   // And the docking is a DISPLAY layer, in the licensed file, scoped to one
   // attribute — never a class, so PRO's Tailwind and retail's `pbi-re-*` are
@@ -89,12 +178,29 @@ test('F1 · a click on a wall in the plan swaps the elevation, in place', () => 
     assert.match(src, /const startWallDrag = \(e, index\) => \{[\s\S]{0,600}setWallShown\(index\)/,
       `${rel}: a plan click does not choose the wall`);
     // …and it is NOT `picked`, which Escape and a background click clear.
-    assert.match(src, /const \[wallShown, setWallShown\] = useState\(0\)/, `${rel} has no wall of its own`);
+    // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): RoomModal.jsx:221 seeds
+    // the wall on show from `draftState?.wallShown`, the draft the setup workspace keeps while its steps
+    // change (NewProjectFlow.jsx:335 is the one door that passes it). `draftState` is null by default
+    // (RoomModal.jsx:164) and neither ordinary door passes it, so an ordinary room window still opens on the
+    // first wall, and the wall on show is still its own state, never `picked`. The owner: *"zakoduj mi
+    // prosze te zmiany"* (26.10, the setup UI); *"ok robie merge a ty prosze napraw ten fail"* (28.10).
+    assert.match(src, /const \[wallShown, setWallShown\] = useState\(draftState\?\.wallShown \|\| 0\)/,
+      `${rel} has no wall of its own`);
+    assert.match(src, /\bdraftState = null\b/, `${rel}: an ordinary room window does not open on the first wall`);
     assert.match(src, /const wallOnShow = editable\.some\(\(w\) => w\.index === wallShown\)/,
       `${rel} can dock an editor on a wall the room has not got`);
     // The active wall is highlighted and NAMED, as the mockup draws it.
     assert.match(src, /Wall \{w\.index \+ 1\} · \{formatMm\(w\.width\)\}/, `${rel} does not label the wall`);
     assert.match(src, /data-plan-wall-active=/, `${rel} does not highlight the active wall`);
+  }
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): the `draftState` that
+  // seeds the wall on show (RoomModal.jsx:221) is passed by the setup workspace alone; neither ordinary
+  // door passes it, so Settings ▸ Room setup and retail open on the first wall as before. The owner:
+  // *"zakoduj mi prosze te zmiany"* (26.10, the setup UI); *"ok robie merge a ty prosze napraw ten fail"*
+  // (28.10).
+  for (const door of ORDINARY_DOORS) {
+    assert.doesNotMatch(ordinaryDoor(door), /\bdraftState\b/,
+      `${door} opens an ordinary room window on the setup workspace's wall`);
   }
 });
 

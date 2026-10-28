@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+// AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): `readdirSync` joins the
+// import for F1.3's walk of src, which names the one window that hands the shell an Escape of its own
+// (Modal.jsx:92 `onEscape`). The owner: *"zakoduj mi prosze te zmiany"* (26.10, the setup UI); *"ok robie
+// merge a ty prosze napraw ten fail"* (28.10).
+import { readFileSync, readdirSync } from 'node:fs';
 
 import {
   EMPTY_NAV, canGoBack, closeNav, navDepth, openNav, parentView, popNav, pushNav,
@@ -147,10 +151,35 @@ test('F1.3 — the shell owns Back and Escape, and no nested view keeps a histor
   // path, defaulted to the store's `closeModal` so a window cannot ship
   // without one. The rule this asserts is unchanged: Escape is BACK where
   // there is a back, and close where there is not.
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): Modal.jsx:192 now reads
+  // `if (e.key === 'Escape' && (!onEscape || !e.defaultPrevented)) (onEscape || onBack || close)();` with
+  // `onEscape = null` (Modal.jsx:92), so a window that passes no `onEscape` runs turn 23's own
+  // `(onBack || close)()`, unchanged. ONE window passes it, named below: the setup workspace
+  // (NewProjectFlow.jsx:249), the start screen's flow and no nested editor view, whose Escape is its own
+  // footer Back where it draws one and its cancel on the first section, which draws none: the same rule,
+  // kept by that window. A nested view handing the shell an Escape of its own would be a history of its
+  // own, and fails here.
+  // The owner: *"zakoduj mi prosze te zmiany"* (26.10, the setup UI); *"ok robie merge a ty prosze napraw
+  // ten fail"* (28.10).
   assert.match(
     modal,
-    /Escape'\)\s*\(onBack \|\| close\)\(\)/,
+    /Escape' && \(!onEscape \|\| !e\.defaultPrevented\)\)\s*\(onEscape \|\| onBack \|\| close\)\(\)/,
     'Escape is BACK where there is a back, and close where there is not',
+  );
+  assert.match(modal, /onEscape = null,/, 'a window that says nothing keeps the shell\'s Escape');
+  const root = new URL('../src/', import.meta.url).pathname;
+  const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory()
+    ? walk(`${dir}${e.name}/`)
+    : (/\.(js|jsx)$/.test(e.name) ? [`${dir}${e.name}`] : [])));
+  const takers = walk(root)
+    .filter((path) => /(?<![-\w])onEscape=/.test(readFileSync(path, 'utf8')))
+    .map((path) => path.slice(root.length));
+  assert.deepEqual(takers, ['components/NewProjectFlow.jsx'],
+    'only the setup workspace hands the shell an Escape of its own');
+  assert.match(
+    src('components/NewProjectFlow.jsx'),
+    /onEscape=\{\(\) => \{ if \(backAction\) backAction\(\); else if \(step === 'project'\) onCancel\(\); \}\}/,
+    'the setup workspace\'s Escape is its own Back, and its cancel where there is no Back',
   );
   assert.match(modal, /const close = onClose \|\| closeModal;/, 'one close path');
 });

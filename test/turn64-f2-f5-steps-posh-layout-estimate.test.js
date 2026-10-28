@@ -267,8 +267,21 @@ test('F3 · the copies are reskinned through the GENERATED sheet, and their mark
   // panels were unreachable from the client's room.
   // AMENDED BY T74 F13: + PRO's piece editor, copied for the free panel's 2klik.
   // Decorative front controls use the same copy generator, approved 09.10.2026.
-  assert.equal(ALL_COPIES.length, 28);
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c):
+  // scripts/t63-copies.mjs:30 adds the twenty-ninth copy to T62_COPIES, PRO's
+  // `SetupArt.jsx` (the setup workspace's illustrated tools) copied to
+  // `src/retail/design/room/SetupArt.jsx`, because the wall copy now imports its
+  // `SetupIcon` (src/retail/design/room/WallElevationModal.jsx:3) and the method
+  // is recursive; the copy machine's own record names it with the owner's words
+  // (scripts/t78-copy.mjs:195 HAND_COPY_EDITS, :319 T78_MACHINE_EDITS). The rule
+  // holds: the count is still exact, the newcomer is named by both its paths,
+  // and the sheet and the markup asserted above did not move.
+  // The owner: *"zakoduj mi prosze te zmiany"* (26.10, the setup UI);
+  // *"ok robie merge a ty prosze napraw ten fail"* (28.10).
+  assert.equal(ALL_COPIES.length, 29);
   assert.ok(ALL_COPIES.some((entry) => entry.pro === 'src/components/FrontDecorationControls.jsx'));
+  assert.ok(ALL_COPIES.some((entry) => entry.pro === 'src/components/SetupArt.jsx'
+    && entry.retail === 'src/retail/design/room/SetupArt.jsx'), 'the twenty-ninth copy is not the setup workspace art');
 });
 
 // ═══ F4 · LAYOUT B ═══════════════════════════════════════════════════════════

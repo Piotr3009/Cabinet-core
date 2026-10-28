@@ -383,6 +383,12 @@ const EXEMPT = {
     'T84 F2 · NEW, the status bar: the selection in words, the MockModeBadge, the dirty marker, the Changes bar (the same component, re-homed) and the viewport size. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)',
   'src/components/studio/lib/studioFace.js':
     'T84 F2 · NEW, pure: isStudioFace(audience, profile), the factory entry with profile.ui.studio.enabled; no switch in the UI. *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)',
+  'src/components/studio/QuickSelectionCard.jsx':
+    'T84 F3 · NEW, the quick card: at most six rows the type supports, each through the store\'s own setter with the room\'s refusal first and its notice said, then Open cabinet and Full settings. *"Hide inapplicable rows; never invent a capability to fill the card"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27)',
+  'src/components/studio/lib/studioCards.js':
+    'T84 F3 · NEW, pure: the quick cards as data, the capability table read at run time from engine/types.js, takesPlinth and liftTakesKit, each row naming the store action it writes through; never typed. *"Hide inapplicable rows; never invent a capability to fill the card"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27)',
+  'src/components/studio/cards/CardRow.jsx':
+    'T84 F3 · NEW, one row of a quick card (cards/CardRow.jsx): the row is data from lib/studioCards.js, drawn here (a field, chips, a select, or a summary that opens the full panel at its section), every press handed to the card\'s own call of the store\'s action by its own name; nothing here decides what a cabinet can do. *"Hide inapplicable rows; never invent a capability to fill the card"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27)',
 };
 
 /**
@@ -550,6 +556,10 @@ const FROZEN = {
   'src/components/studio/SelectionBreadcrumb.jsx': '29dfd5f6748b83a8d6b8ac36c778e40c2d6971b7290cf8ff3a8c9c92a86e7dc0',
   'src/components/studio/StatusBar.jsx': '7c6651108bbeab5b7263eee8732fe73c461bdf859bbc626ccfab377182dd1106',
   'src/components/studio/lib/studioFace.js': '550ae67a86068132c172498c49715dba928da790ca7846b799e15d642d647a6a',
+  // T84 F3 · NEW PRO files (the quick cards), frozen at their first hash; EXEMPT above carries the reason.
+  'src/components/studio/QuickSelectionCard.jsx': '0c7118bd4dddeec80cc7f99bbae70c0a34c23151f846b0651c21debd2678a441',
+  'src/components/studio/lib/studioCards.js': 'a82035e89469de0d410326d021cd8b2f354f6b57df77db855d2f2a49b454c062',
+  'src/components/studio/cards/CardRow.jsx': 'e2d1a1ea847cf8b5d0b35312f5b2cb495e9325e2fecd854dd73e5b8e3168ba43',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -672,7 +682,7 @@ const show = (abs) => relative(ROOT, abs);
 
 // ─── 1. THE PRO FROZEN-FILES ASSERTION ─────────────────────────────────────
 
-test('F1: the frozen surface, 78 files of PRO, byte for byte (approved setup illustrations and the Studio included)', () => {
+test('F1: the frozen surface, 81 files of PRO, byte for byte (approved setup illustrations and the Studio included)', () => {
   const moved = [];
   for (const [rel, want] of Object.entries(FROZEN)) {
     const path = join(ROOT, rel);
@@ -799,6 +809,10 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/studio/SelectionBreadcrumb.jsx',
     'src/components/studio/StatusBar.jsx',
     'src/components/studio/lib/studioFace.js',
+    // T84 F3 · the quick cards: licensed in EXEMPT above with the owner's words (CLAUDE.md T84 FROZEN 4).
+    'src/components/studio/QuickSelectionCard.jsx',
+    'src/components/studio/lib/studioCards.js',
+    'src/components/studio/cards/CardRow.jsx',
 ].sort(), 'the exemption list is not the approved UI and CLAUDE.md paths');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
@@ -819,7 +833,7 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // A tarball or a clone with no such ref. The manifest above already
     // answered; this assertion has nothing to add and says so out loud
     // rather than passing in silence.
-    assert.ok(Object.keys(FROZEN).length === 78, 'no base ref: the manifest is the whole proof here');
+    assert.ok(Object.keys(FROZEN).length === 81, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

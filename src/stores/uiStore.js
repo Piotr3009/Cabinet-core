@@ -186,6 +186,22 @@ function readSnapshot(s) {
   }
 }
 
+// ─── T84 F3, F4 (CLAUDE.md PART B): THE STUDIO'S INSPECTOR ─────────────────
+//
+// Where the Studio's inspector stands when the selection moves. CLAUDE.md T84
+// F4 adopts the designer's law: *"Pin keeps inspector open and FOLLOWING
+// SELECTION; it never locks unit ID"*. Pinned, the inspector stays where it is
+// (the full panel, following whatever is selected now); unpinned, a new
+// cabinet (or none) brings the quick card back, as her Stage-1 prototype does
+// from every mode, hidden included. It answers a MODE and nothing else: there
+// is no unit id in it to freeze. The legacy face never reads it.
+const INSPECTOR_MODES = Object.freeze(['quick', 'full', 'none']);
+function inspectorAfterSelect({ inspector = 'quick', inspectorPinned = false } = {}, changed = true) {
+  const mode = INSPECTOR_MODES.includes(inspector) ? inspector : 'quick';
+  if (!changed || inspectorPinned) return mode;
+  return 'quick';
+}
+
 export const useUiStore = create((set, get) => ({
   // Which screen the app is on (turn 4, BACKLOG #7). The canvas is reached
   // THROUGH a project — start screen first, always.
@@ -234,6 +250,26 @@ export const useUiStore = create((set, get) => ({
   openRightPanel: () => set({ rightPanelOpen: true }),
   closeRightPanel: () => set({ rightPanelOpen: false }),
   toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
+
+  // ─── T84 F3 (CLAUDE.md PART B): THE STUDIO'S INSPECTOR ───────────────────
+  // 'quick' the card, 'full' the RightPanel embedded, 'none' hidden (the
+  // breadcrumb's button brings it back). Pinned, the full panel stays and
+  // follows the selection (`inspectorAfterSelect` above). Read by the Studio
+  // face only; the legacy face never looks at it.
+  inspector: 'quick',
+  inspectorPinned: false,
+  setInspector: (mode) => set({ inspector: INSPECTOR_MODES.includes(mode) ? mode : 'quick' }),
+  /** "Back to quick settings": the card, unpinned (the designer's prototype). */
+  showQuickSettings: () => set({ inspector: 'quick', inspectorPinned: false }),
+  /** "Full settings": the RightPanel, embedded. */
+  showFullSettings: () => set({ inspector: 'full' }),
+  hideInspector: () => set({ inspector: 'none' }),
+  /** The breadcrumb's button: back from hidden, to the full panel when pinned. */
+  showInspector: () => set((s) => (s.inspector === 'none'
+    ? { inspector: s.inspectorPinned ? 'full' : 'quick' }
+    : {})),
+  /** Pin: the full panel stays open and FOLLOWS the selection; it stores no unit id. */
+  toggleInspectorPin: () => set((s) => ({ inspectorPinned: !s.inspectorPinned, inspector: 'full' })),
 
   // BOM panel — computed live, shown on demand (SPEC 4.11)
   bomOpen: false,

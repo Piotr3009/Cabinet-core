@@ -398,6 +398,12 @@ export const NEW_FILES = [
   'src/components/studio/lib/studioFace.js',
   'test/turn84-f02-shell.test.js',
   'scripts/t78-classify.d/f45-t84-f02.mjs',
+  // T84 F3 (27.10.2026): the quick cards
+  'src/components/studio/QuickSelectionCard.jsx',
+  'src/components/studio/lib/studioCards.js',
+  'src/components/studio/cards/CardRow.jsx',
+  'test/turn84-f03-cards.test.js',
+  'scripts/t78-classify.d/f45-t84-f03.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

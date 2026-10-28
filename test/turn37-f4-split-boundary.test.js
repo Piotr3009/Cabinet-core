@@ -48,6 +48,9 @@ const src = (p) => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8')
 const SRC_DIR = new URL('../src/', import.meta.url).pathname;
 
 const DOOR = src('components/DoorModal.jsx');
+// CHAT FIX 28.10.2026: the door's code with its comments taken out, so a comment that NAMES a prop never reads
+// as the prop (the checks on `onEscape` and `workspace` below).
+const DOOR_CODE = DOOR.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
 const SHELL = src('components/Modal.jsx');
 const RIGHT = src('components/RightPanel.jsx');
 
@@ -376,17 +379,38 @@ test('F4c — a scene click does not close it: sticky, and only for a door', () 
   assert.match(DOOR, /sticky=\{isDoor\}/);
   // T33's own prop, unchanged: the backdrop takes no pointer events and does
   // not close, so the click reaches the scene under it.
-  assert.match(SHELL, /onPointerDown=\{sticky \? undefined : close\}/);
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): Modal.jsx:377 now reads
+  // `onPointerDown={sticky || workspace ? undefined : close}`. `workspace` is opt-in (`workspace = false`,
+  // Modal.jsx:134), worn tonight by the setup workspace's own windows (NewProjectFlow.jsx:247,
+  // RoomModal.jsx:1212 and its retail copy), so a stray click on their margin does not throw the setup
+  // away. The door's half holds as it was: `sticky` still skips the close, and the pass-through
+  // (`pointer-events-none`, Modal.jsx:376) is still keyed on `sticky` ALONE, so only a sticky window lets
+  // the click reach the scene, and a window that says nothing still closes on a click outside it.
+  // The owner: *"zakoduj mi prosze te zmiany"* (26.10, the setup UI); *"ok robie merge a ty prosze napraw
+  // ten fail"* (28.10).
+  assert.match(SHELL, /onPointerDown=\{sticky \|\| workspace \? undefined : close\}/);
   assert.match(SHELL, /\$\{sticky \? 'pointer-events-none' : ''\}/);
+  assert.match(SHELL, /workspace = false,/, 'a window that says nothing still closes on a click outside it');
+  // AMENDED BY CHAT FIX 28.10.2026: and the door window never wears `workspace`, so "only for a door" still
+  // means the door's `sticky` and nothing else (a review of this fix found that bypass open).
+  assert.doesNotMatch(DOOR_CODE, /\bworkspace\b/, 'the door window became a workspace: every piece window would ignore a scene click');
 });
 
 test('F4c — Escape is off for THIS window, and on for every other one', () => {
   assert.match(DOOR, /escapeCloses=\{!isDoor\}/);
   // The listener is untouched — it is one window's law, not fourteen's.
   assert.match(SHELL, /window\.addEventListener\('keydown', onKey\)/);
-  assert.match(SHELL, /if \(!escapeCloses && !onBack\) return;/);
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): Modal.jsx:191 now reads
+  // `if (!escapeCloses && !onBack && !onEscape) return;` and Modal.jsx:192 calls
+  // `(onEscape || onBack || close)();`. `onEscape` (default null, Modal.jsx:92) is the setup workspace's
+  // own Escape (NewProjectFlow.jsx:249, the one caller test/turn23-f1-nav-stack.test.js names); without it
+  // both lines are T37's own. The door window passes no `onEscape` (asserted here), so its key is still
+  // off, and Back still leaves a nested stack. The owner: *"zakoduj mi prosze te zmiany"* (26.10, the
+  // setup UI); *"ok robie merge a ty prosze napraw ten fail"* (28.10).
+  assert.match(SHELL, /if \(!escapeCloses && !onBack && !onEscape\) return;/);
+  assert.doesNotMatch(DOOR_CODE, /\bonEscape\b/, 'the door window hands the shell an Escape of its own');
   // Back still leaves a nested stack, or the key would be a trap.
-  assert.match(SHELL, /\(onBack \|\| close\)\(\);/);
+  assert.match(SHELL, /\(onEscape \|\| onBack \|\| close\)\(\);/);
   // The default is ON, so no other caller changes behaviour by saying nothing.
   assert.match(SHELL, /escapeCloses = true,/);
 });
@@ -397,7 +421,13 @@ test('F4c — the × still closes it, and it is the only thing that does', () =>
   // tooltip stopped promising Escape to the one window that has declined the
   // key. The handler is the same `close` it has always been.
   assert.match(SHELL, /data-modal-close="1"/);
-  assert.match(SHELL, /title=\{escapeCloses \? 'Close \(Esc\)' : 'Close'\}/);
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): Modal.jsx:487 now reads
+  // `title={escapeCloses && !onEscape ? 'Close (Esc)' : 'Close'}`: a window whose Escape is its own (the
+  // setup workspace, where the key is a step back) does not promise that the key closes it either. The
+  // door window declines the key and passes no `onEscape`, so its close button still says 'Close' and is
+  // still its one way out. The owner: *"zakoduj mi prosze te zmiany"* (26.10, the setup UI); *"ok robie
+  // merge a ty prosze napraw ten fail"* (28.10).
+  assert.match(SHELL, /title=\{escapeCloses && !onEscape \? 'Close \(Esc\)' : 'Close'\}/);
   assert.match(SHELL, /onClick=\{close\}/);
   assert.match(DOOR, /onClose=\{closeModal\}/);
 });
@@ -435,6 +465,24 @@ test('F4c — rule 15 stands: no OTHER window docks or turns the key off', () =>
   const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory()
     ? walk(`${dir}${e.name}/`)
     : (/\.(js|jsx)$/.test(e.name) ? [`${dir}${e.name}`] : [])));
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): RoomModal.jsx:1211-1215
+  // opens the island plan INSIDE the setup workspace, `{embedded && planningIsland && islandPlan && (` then
+  // `<Modal name="island-plan" title="Plan island" workspace ... onClose={closeIslandPlan}
+  // escapeCloses={false}>` round `<IslandPlan />`, and the retail copy carries the same lines (the copy
+  // machine's record of them, `t78-copy --check` CLEAN; retail never mounts the room `embedded`). That window
+  // declines the SHELL's key only: its content, 3d/IslandPlan.jsx:173-178 (15.10.2026), already shuts the
+  // plan on Escape through the same `closeIslandPlan`, so the key still closes the window (one key, one
+  // action, not a trap) and nothing docks. That ONE window, in those two files, is cut out of the text
+  // before the rule reads it; any other `escapeCloses=` there or anywhere, any `dock=`, and the plan losing
+  // its own Escape all still fail. The owner: *"zakoduj mi prosze te zmiany"* (26.10, the setup UI); *"ok
+  // robie merge a ty prosze napraw ten fail"* (28.10).
+  const SETUP_ROOM = new Set([`${SRC_DIR}components/RoomModal.jsx`, `${SRC_DIR}retail/design/room/RoomModal.jsx`]);
+  const ISLAND_PLAN = /\{embedded && planningIsland && islandPlan && \(\s*<Modal name="island-plan" title="Plan island" workspace className="[^"]*"\s+onClose=\{closeIslandPlan\} escapeCloses=\{false\}>(?:\s*<div[^>]*>)?\s*<IslandPlan \/>/;
+  const PLAN = src('3d/IslandPlan.jsx');
+  assert.match(PLAN, /const closePlan = useUiStore\(\(s\) => s\.closeIslandPlan\);/,
+    'the island plan closes through the store action its window closes with');
+  assert.match(PLAN, /useEffect\(\(\) => \{\s*if \(!plan\) return undefined;\s*const onKey = \(e\) => \{\s*if \(e\.key === 'Escape'\) closePlan\(\);\s*\};\s*window\.addEventListener\('keydown', onKey\);/,
+    'the island plan lost its own Escape (or registers it only some of the time): its window would trap the key');
   for (const path of walk(SRC_DIR)) {
     // ─── AMENDED BY T62 F2 ─────────────────────────────────────────────
     // `retail/design/room/Modal.jsx` is `components/Modal.jsx`, COPIED — the
@@ -453,7 +501,17 @@ test('F4c — rule 15 stands: no OTHER window docks or turns the key off', () =>
       || path.endsWith('components/Modal.jsx')
       || path.endsWith('retail/design/room/Modal.jsx')
       || path.endsWith('retail/design/detail/DoorModal.jsx')) continue;
-    const text = readFileSync(path, 'utf8');
+    // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): the setup's island-plan
+    // window (RoomModal.jsx:1211-1215 and its retail copy) is cut out here, ONCE, as the note above the loop
+    // says; the rest of both files is read as before. The owner: *"zakoduj mi prosze te zmiany"* (26.10, the
+    // setup UI); *"ok robie merge a ty prosze napraw ten fail"* (28.10).
+    const raw = readFileSync(path, 'utf8');
+    // CHAT FIX 28.10.2026: when the island plan's window changes shape, say so here, instead of blaming the
+    // whole file for a key it does not turn off.
+    if (SETUP_ROOM.has(path)) {
+      assert.match(raw, ISLAND_PLAN, `${path}: the setup's island-plan window changed shape; update rule 15's cut-out above`);
+    }
+    const text = SETUP_ROOM.has(path) ? raw.replace(ISLAND_PLAN, '') : raw;
     // ─── AMENDED BY T67 F1 ─────────────────────────────────────────────
     // The rule being guarded is the SHELL PROP `dock=` — "no other window
     // asks the shell to stand at an edge". `\b` also matched inside a data

@@ -44,8 +44,20 @@ test('F8 · ContextMenu is COPIED, not re-written — same line count, same labe
   assert.ok(isCopy('src/retail/design/detail/ContextEdits.jsx'), 'the copy is not in the manifest');
   // AMENDED BY T74 F13: + PRO's piece editor, copied for the free panel's 2klik.
   // Decorative front controls use the same copy generator, approved 09.10.2026.
-  assert.equal(ALL_COPIES.length, 28);
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c):
+  // scripts/t63-copies.mjs:30 registers one more copy, src/components/SetupArt.jsx
+  // as src/retail/design/room/SetupArt.jsx, the illustrated tools the wall copy's
+  // optional embedded editor imports (WallElevationModal.jsx:3). The copy
+  // machine's own record names it (scripts/t78-copy.mjs:195 HAND_COPY_EDITS and
+  // :319 T78_MACHINE_EDITS, by 'Setup UI 26.10.2026 F1'), and `t78-copy --check`
+  // stays CLEAN. ContextMenu's copy is untouched: the same 339 lines, the same
+  // manifest row, the same shared action table. So the count is 29, and the one
+  // copy it grew by is named here. The owner: *"zakoduj mi prosze te zmiany"*
+  // (26.10, the setup UI); *"ok robie merge a ty prosze napraw ten fail"* (28.10).
+  assert.equal(ALL_COPIES.length, 29);
   assert.ok(ALL_COPIES.some((entry) => entry.pro === 'src/components/FrontDecorationControls.jsx'));
+  assert.ok(ALL_COPIES.some((entry) => entry.pro === 'src/components/SetupArt.jsx'
+    && entry.retail === 'src/retail/design/room/SetupArt.jsx'), 'the setup artwork is not the copy the count grew by');
   // The four the owner could not find are not strings in this file at all —
   // they are rows in the SHARED action table, and the copy reaches the same
   // one PRO reaches. That is what makes it a copy rather than a lookalike.

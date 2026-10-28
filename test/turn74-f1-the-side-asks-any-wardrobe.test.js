@@ -104,8 +104,23 @@ test('T74 F1 · a click elsewhere closes it and adds nothing (the anchored shell
   const win = uncomment(read('src/retail/design/detail/AddPanelAsk.jsx'));
   assert.match(win, /onClose=\{A\.closeEditor\}/);
   assert.match(win, /anchor=\{args\?\.anchor \|\| null\}/);
-  assert.match(uncomment(read('src/retail/design/room/Modal.jsx')), /onPointerDown=\{sticky \? undefined : close\}/,
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c):
+  // retail/design/room/Modal.jsx:377 (the copy of components/Modal.jsx:377, named
+  // in scripts/t78-copy.mjs:189 HAND_COPY_EDITS) now reads `onPointerDown={sticky
+  // || workspace ? undefined : close}`: the setup workspace, a window of 90% of
+  // the screen, is not closed by a click beside it. `workspace` is opt-in and
+  // false by default (Modal.jsx:131 to :134), and the question does not pass it
+  // (asserted below), so a click elsewhere still closes it through `onClose` and
+  // adds nothing. The exception is `workspace` BY NAME. The owner: *"zakoduj mi
+  // prosze te zmiany"* (26.10, the setup UI); *"ok robie merge a ty prosze napraw
+  // ten fail"* (28.10).
+  assert.doesNotMatch(win, /\b(?:workspace|sticky)\b/, 'the question became a workspace or a tool, and a click beside it no longer closes it');
+  assert.match(uncomment(read('src/retail/design/room/Modal.jsx')), /onPointerDown=\{sticky \|\| workspace \? undefined : close\}/,
     'the anchored shell no longer closes on a click outside');
+  assert.match(uncomment(read('src/retail/design/room/Modal.jsx')), /\bworkspace = false,/,
+    'the retail shell made every window a workspace: no click elsewhere would close one');
+  assert.match(uncomment(read('src/retail/design/room/Modal.jsx')), /\bsticky = false,/,
+    'the retail shell made every window a tool: no click elsewhere would close one');
   A.closeEditor();
   assert.equal(U().modal ?? null, null);
   assert.equal(JSON.stringify(S().units.map((u) => u.params.end_panels || [])), before);

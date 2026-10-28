@@ -795,7 +795,7 @@ export default function WallElevationModal({
                         onDoubleClick={() => openElement(el)}
                       />
                       {embedded && (
-                        <g className="pbi-re-noptr" opacity="0.65" stroke={on ? '#e1bf82' : '#5C5B57'} strokeWidth="0.8">
+                        <g className="pbi-re-noptr" opacity="0.65" stroke={on ? '#806A44' : '#5C5B57'} strokeWidth="0.8">
                           {isDoor ? (
                             <circle cx={sx(el.x + el.w * 0.82)} cy={sy(el.y + el.h * 0.48)} r="1.8" fill="#806A44" stroke="none" />
                           ) : (

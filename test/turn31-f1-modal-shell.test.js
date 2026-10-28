@@ -55,10 +55,38 @@ const short = (p) => p.slice(SRC.length);
 test('every *Modal component in the app renders the shell, and nothing else does its own', () => {
   const windows = FILES.filter((p) => /components\/\w*Modal\.jsx$/.test(p) && !p.endsWith('/Modal.jsx'));
   assert.ok(windows.length >= 12, `only ${windows.length} modal components found`);
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c):
+  // components/WallElevationModal.jsx:493 and :1016 and components/RoomModal.jsx:661
+  // now draw their window through a local frame, `const EditorFrame = embedded ?
+  // EmbeddedFrame : Modal;`, so the file no longer spells `<Modal` for it. With
+  // `embedded` false (Settings > Room setup, the drawn room's wall) that frame IS
+  // the shell; with `embedded` true the editor is a section of the setup
+  // workspace, NewProjectFlow.jsx:246, which is itself a shell window (the test
+  // below), and its frame is a bare fragment (WallElevationModal.jsx:906,
+  // RoomModal.jsx:1237) that draws no window of its own. So every window still
+  // goes through the shell. The exception is these two files and these frames BY
+  // NAME, each frame held to the shell whenever it is not embedded. The owner:
+  // *"zakoduj mi prosze te zmiany"* (26.10, the setup UI); *"ok robie merge a ty
+  // prosze napraw ten fail"* (28.10).
+  const SETUP_FRAMES = {
+    'components/WallElevationModal.jsx': { inline: 'EmbeddedFrame', frames: ['EditorFrame', 'ElementFrame'] },
+    'components/RoomModal.jsx': { inline: 'EmbeddedRoomFrame', frames: ['EditorFrame'] },
+  };
   for (const path of windows) {
     const text = read(path);
     assert.match(text, /import Modal from '\.\/Modal\.jsx'/, `${short(path)} does not import the shell`);
-    assert.match(text, /<Modal\b/, `${short(path)} imports the shell but does not render it`);
+    const setup = SETUP_FRAMES[short(path)] || { inline: null, frames: [] };
+    for (const frame of setup.frames) {
+      assert.match(text, new RegExp(`const ${frame} = embedded\\s*\\?\\s*${setup.inline}\\s*:\\s*Modal;`),
+        `${short(path)}: ${frame} is not the shell outside the setup workspace`);
+    }
+    if (setup.inline) {
+      assert.match(text, new RegExp(`(?:function ${setup.inline}\\(\\{ children \\}\\) \\{\\s*return <>\\{children\\}</>;\\s*\\}`
+        + `|const ${setup.inline} = \\(\\{ children \\}\\) => <>\\{children\\}</>;)`),
+        `${short(path)}: ${setup.inline} draws a frame of its own inside the setup window`);
+    }
+    assert.match(text, new RegExp(`<(?:${['Modal', ...setup.frames].join('|')})\\b`),
+      `${short(path)} imports the shell but does not render it`);
   }
 });
 
@@ -73,8 +101,20 @@ test('every shell window names itself, and every name it gives is in the registr
   for (const path of FILES) {
     if (!path.endsWith('.jsx')) continue;
     const text = read(path);
-    if (!/<Modal\b/.test(text)) continue;
-    for (const m of text.matchAll(/<Modal\b[\s\S]{0,400}?name="([^"]+)"/g)) seen.add(m[1]);
+    // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c):
+    // components/WallElevationModal.jsx:497 and :1018 and components/RoomModal.jsx:672
+    // (and their retail copies) now give their names through a local frame that IS
+    // the shell outside the setup workspace (`const EditorFrame = embedded ?
+    // EmbeddedFrame : Modal;`, held to it by the first test above), so a scan for
+    // `<Modal` alone stopped reading "wall-elevation", "wall-element" and "room".
+    // The scan reads those frames too, in every file that binds one to the shell,
+    // so every name a window gives is held to the registry as it was before. The
+    // owner: *"zakoduj mi prosze te zmiany"* (26.10, the setup UI); *"ok robie
+    // merge a ty prosze napraw ten fail"* (28.10).
+    const tags = ['Modal', ...[...text.matchAll(/const (\w+) = [^;]*?\?\s*\w+\s*:\s*Modal\b/g)].map((m) => m[1])];
+    const open = `<(?:${tags.join('|')})\\b`;
+    if (!new RegExp(open).test(text)) continue;
+    for (const m of text.matchAll(new RegExp(`${open}[\\s\\S]{0,400}?name="([^"]+)"`, 'g'))) seen.add(m[1]);
   }
   // Every window that the app can put on screen has said which one it is…
   assert.ok(seen.size >= 15, `only ${seen.size} named windows`);
@@ -229,6 +269,9 @@ test('the registry says which windows are about an object, and means it', () => 
   assert.equal(modalNeedsAnchor('unit-finish'), true);
   assert.equal(modalNeedsAnchor('auth'), false);
   assert.equal(modalNeedsAnchor('save-as'), false);
+  // CHAT FIX 28.10.2026: the setup workspace's island planner (RoomModal.jsx, embedded only) is a PROJECT
+  // window, centred as every workspace, under its own title; pinned like every row added since T33.
+  assert.deepEqual(MODAL_KINDS['island-plan'], { about: 'project', label: 'Plan island' });
   for (const name of MODAL_NAMES) {
     assert.ok(['object', 'project'].includes(MODAL_KINDS[name].about), name);
     assert.ok(MODAL_KINDS[name].label, `${name} has no label`);

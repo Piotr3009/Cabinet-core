@@ -432,6 +432,8 @@ export const NEW_FILES = [
   'scripts/t84-walk.mjs',
   'scripts/t84-skin-frames.mjs',
   'scripts/t78-classify.d/f45-t84-f08.mjs',
+  // Chat fix 28.10.2026: the fifteen tests the setup workspace of 26.10 left red
+  'scripts/t78-classify.d/f46-owner-2810.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

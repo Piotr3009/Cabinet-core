@@ -226,7 +226,21 @@ test('F1 — the wizard door still gates the fronts behind the carcass save', ()
   assert.match(WIZ, /frontsSaved: raw\?\.frontsSaved \?\? editDoor,/);
   assert.match(WIZ, /const touchCarcass = \(\) => \{ if \(!editDoor\) setCarcSaved\(false\); \};/);
   assert.match(WIZ, /const touchFronts = \(\) => \{ if \(!editDoor\) setFrontsSaved\(false\); \};/);
-  assert.match(WIZ, /data-fronts-locked=\{carcSaved \? '0' : '1'\}/);
+  // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c):
+  // WizardSettings.jsx:1776 now reads `data-fronts-locked={carcSaved || embedded ?
+  // '0' : '1'}` (:1773 and :1777 the same). The standalone wizard form keeps the
+  // lock exactly as it was; inside the setup workspace (`embedded`,
+  // NewProjectFlow.jsx:337) the owner's approved sidebar opens every section
+  // directly and the gate is the confirmation instead: a section confirms only
+  // with its boards assigned (WizardSettings.jsx:1110), a later edit un-confirms
+  // it (:381 to :386, and the four lines above), and Start designing waits for
+  // both (NewProjectFlow.jsx:223 to :229). 4f3e33c re-scoped this same line in
+  // test/chatfix-wizard-rebuild-1508.test.js: "The old standalone form keeps its
+  // lock; material validity still gates confirmation." The exception is
+  // `embedded` BY NAME and nothing else. The owner: *"zakoduj mi prosze te
+  // zmiany"* (26.10, the setup UI); *"ok robie merge a ty prosze napraw ten
+  // fail"* (28.10).
+  assert.match(WIZ, /data-fronts-locked=\{carcSaved \|\| embedded \? '0' : '1'\}/);
 });
 test('F1 — the project TYPE is editable from the edit door and a label in the wizard', () => {
   assert.match(WIZ, /data-project-type="1"/);

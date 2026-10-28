@@ -203,6 +203,15 @@ export const MODAL_KINDS = Object.freeze({
   // MIRROR ON THE BACK question, about ONE mirror cabinet's back and opened at
   // the click on it: an OBJECT window, held to an anchor.
   'mirror-back': { about: 'object', label: 'Mirror on the back' },
+  // Setup UI 26.10.2026 F1 (the owner: *"zakoduj mi prosze te zmiany"*),
+  // registered by the chat fix of 28.10.2026 (the owner: *"ok robie merge a ty
+  // prosze napraw ten fail"*). The setup workspace's island planner, drawn by
+  // RoomModal.jsx (both apps, embedded only) as a workspace window over the
+  // new-project flow when ADD ISLAND is pressed. It plans a NEW island for the
+  // room being set up, and it stands centred as every workspace does
+  // (Modal.jsx: `!anchor || workspace`), so it is a PROJECT window: no anchor
+  // is asked of it. The label is the window's own title (T67 F9's rule).
+  'island-plan': { about: 'project', label: 'Plan island' },
 });
 
 /** Every modal name the app knows, as a list. */

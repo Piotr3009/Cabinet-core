@@ -413,6 +413,98 @@
 ;;;     recess-end-cuts over the carcass's whole height, ed = recess_mm.
 ;;;     Proposed (one line to veto): the band's own height, not the side's.
 ;;;
+;;; 28.10.2026, THE OWNER'S EVENING (chat fix; the mockups "wneka szuflady" v1
+;;; and v2 and "plecy podkowa 1 mm"):
+;;;
+;;; D22 THE DRAWERS IN THE RECESS. The owner: *"szafa ma 1000 mm a wneka 800,
+;;;     to po prawej i po lewej szafa jest o 100 mm plytka a reszta gleboka, i
+;;;     co ja potrzebuje to ustawic szuflady tylko w tej wnece i odsunac
+;;;     diverted po lewej i po prawej rowno z wneka, zeby zamontowac
+;;;     szuflady"*; the first mockup: *"dokladnie tak"*, and *"pamietaj zeby
+;;;     diverted byl tylko do wysokosci polki nad szufladami"*, *"polka nad
+;;;     szufladami powinna byc wycieta jak inne polki az do tylu, w L shape lub
+;;;     z cornerami"*; the second: *"dokladnie o to mi chodzi"*; then
+;;;     *"dokladnie, mozesz zakodowac prosze"*, *"szuflady tez prosze"*.
+;;;     A RECESS COLUMN is a column of drawers (the kit's column stack) whose
+;;;     two walls are dividers standing ON the band's edges, the left one's
+;;;     outer face at ex0 and the right one's at ex1, where the RETURNs stand.
+;;;     recess-col-refusal asks the rest: the band reaches neither side and
+;;;     starts on the floor, and ends at least notch.minInterior over the board
+;;;     over the drawers; the engine asks that the two dividers are the unit's
+;;;     only ones, the column its only stack, and nothing is notched. Then
+;;;     (section I):
+;;;       THE DIVIDERS  replace the RETURNs under the board over the drawers:
+;;;                     each grows back by ed to the EXT-BACK's face, through
+;;;                     the BACK's plane, its own setback kept at the front,
+;;;                     and stops under that board (recess-col-divider).
+;;;       THE DRAWERS   take the depth the recess gives: the column's usable
+;;;                     depth plus ed, on the kit's own ladder
+;;;                     (recess-col-drawer-depth; a 568 wardrobe: 440 -> 590).
+;;;       THE BOARD OVER THE DRAWERS  is ONE fixed board from BUL to BUR (the
+;;;                     owner's "jak inne polki"), cut as a fixed shelf in the
+;;;                     band is (D16), its bump END TO END between the band's
+;;;                     OUTER faces ex0 .. ex1: the dividers stand under its
+;;;                     ends, the RETURNs on them (recess-col-cap-bump); its
+;;;                     two re-entrant corners marked (D18, D20).
+;;;       THE RETURNS   start on that board and run up to bz1, ed deep: through
+;;;                     the BACK's plane, their front ends flush with its inner
+;;;                     face (recess-col-box-places). D6 gives way there: the
+;;;                     BACK's cut edge meets a RETURN's face, not its end.
+;;;       THE BOTTOM    grows between the band's OUTER faces ex0 .. ex1, the
+;;;                     dividers standing on its bump (recess-col-plan-bump);
+;;;                     the TOP's bump stays ix0 .. ix1 (the RETURNs beside
+;;;                     it). Both back edges are re-planned on the runs the
+;;;                     BACK leaves of them, 0 .. ex0 - g and ex1 - g .. tw
+;;;                     (recess-col-top-joints; D7: a run under 96 is screwed).
+;;;       THE BACK      loses the window ex0 .. ex1 across (recess-col-window):
+;;;                     the dividers and the RETURNs pass through its plane.
+;;;                     Its rows run to the window's edges (recess-back-joints:
+;;;                     every other band's window edges are ix0 and ix1, so
+;;;                     nothing else moves).
+;;;       THE SLOTS     between each carcass side and its divider are CLOSED as
+;;;                     the wardrobe's 30 behind a hinged door is (*"nie
+;;;                     zapomnij zablokowac to jak w przypadku 30 mm, ale teraz
+;;;                     bedzie varius w zaleznosci od wneki i diverted"*): two
+;;;                     fillers each on the DP's own two lines (KIT_WARDROBE_
+;;;                     FULL: the front one the drawers' setback plus the
+;;;                     filler's offset back from the face, the back one on the
+;;;                     BACK), as wide as the slot, from the BOTTOM to the
+;;;                     board over the drawers (recess-col-fillers). The
+;;;                     drawers stand the slot clear of the hinges, so no DP
+;;;                     stands in the column.
+;;;     Any other column of drawers the band reaches keeps the carcass's depth
+;;;     and the Check says why in words (RECESS_DRAWERS_SHALLOW). Proposed (one
+;;;     line to veto): the RETURN through the BACK's plane, not the BACK
+;;;     stepped round it.
+;;; D23 THE HAND EDGE. The owner, 19:44: *"plecy, jak mamy wyciecie na recess
+;;;     w plecach, mowie tylko do srodka, to tam robimy edging; w zwiazku ze to
+;;;     jest w ksztalcie U to ja nie moge puscic tego na edge bander, wiec nie
+;;;     zrobie scribe na edging, wiec w tym miejscu musimy pomniejszyc o 1 mm
+;;;     plecy, ale tylko w podkowie U"*; on the mockup: *"dokladnie, mozesz
+;;;     zakodowac prosze"*. A cut INSIDE the BACK is edged by hand, so the
+;;;     cutter takes recess.handEdge (1) MORE of the board on each of the cut's
+;;;     own edges and the edge brings it back to the nominal line
+;;;     (recess-hand-cut): the U (a bite) on its three, the window (D9, the
+;;;     same hand) on its four, the corner (an L: no bander takes an inside
+;;;     corner) on its two. NOT on an edge a board covers (a recess column's
+;;;     ex0 and ex1, D22), NOT on the piece's own edges, NOT on a whole piece
+;;;     (BACK and BACK-2 of D8, a shorter back: the edge bander's own scribe).
+;;;     CASE B's window, 344 x 344, is cut 346 x 346. Proposed (one line to
+;;;     veto): the window and the corner as the U.
+;;; D24 THE BOARD OVER THE DRAWERS STANDS BACK 10. The owner, 19:36:
+;;;     *"wszystkie polki teraz sa 10 mm, to polke nad szufladami tez zrob 10
+;;;     mm jak reszta"*. Not a number of this file: the project's
+;;;     (wardrobe.drawers.capSetbackMm 20 -> 10, every drawer stack's board, in
+;;;     a recess or not, the engine's paramsForEngine); a bare kit call keeps
+;;;     the LISP's full depth. The NUMBERS of section I take it as 10.
+;;; D25 THE BACK'S HOLES FOLLOW ITS PIECES. A hole the kit drills into the BACK
+;;;     (a fixed shelf's row, the three of a stack's board, a DP's two, a
+;;;     divider's back row) is drilled into the piece it falls on, in that
+;;;     piece's frame, and into none where the window took the board away
+;;;     (recess-piece-at). The probe of this evening: a board over a stack in
+;;;     front of a band from the floor to the top drilled x 932 on a BACK 118
+;;;     wide and x 500 in the window.
+;;;
 ;;;========================================
 ;;; 4. NOT HERE
 ;;;========================================
@@ -429,6 +521,8 @@
 ;;; the same clearance, the same minimum interior. Nothing new is read.
 ;;; 17.10.2026: and the corner mark's leg, cnc.cornerMarkLeg (40), from the
 ;;; same table (D18); the mark itself is the notch's routine, notch-corner-marks.
+;;; 28.10.2026: and the hand edge round a cut inside the BACK,
+;;; recess.handEdge (1), from the same table (D23; profile.recess.handEdgeMm).
 
 (defun recess-p (key)
   (notch-p key))
@@ -654,9 +748,14 @@
 
 ;;; THE PIECES the window leaves: a list of (x0 z0 x1 z1), one or two, in the
 ;;; BACK's frame. nil when the window is the whole back (D2, never here).
-(defun recess-back-pieces (cw ch g ex0 ex1 ez0 ez1 / w wx0 wz0 wx1 wz1 L R F U)
-  (setq w (recess-window cw ch g ex0 ex1 ez0 ez1)
-        wx0 (car w) wz0 (cadr w) wx1 (caddr w) wz1 (cadddr w)
+(defun recess-back-pieces (cw ch g ex0 ex1 ez0 ez1)
+  (recess-window-pieces cw ch (recess-window cw ch g ex0 ex1 ez0 ez1)))
+
+;;; ...of ANY window w (wx0 wz0 wx1 wz1): the band's own (recess-window) or a
+;;; recess column's (recess-col-window, D22, 28.10.2026). The law of the
+;;; pieces is the window's, whoever cut it.
+(defun recess-window-pieces (cw ch w / wx0 wz0 wx1 wz1 L R F U)
+  (setq wx0 (car w) wz0 (cadr w) wx1 (caddr w) wz1 (cadddr w)
         L (<= wx0 0.0) R (>= wx1 cw) F (<= wz0 0.0) U (>= wz1 ch))
   (cond ((and L R F U) nil)
         ;; three edges reached: the back is shorter
@@ -802,11 +901,13 @@
     (foreach z (recess-side-row bh z0 right nb window (and nb (>= (caddr nb) cw)) (recess-right-p ex1 cw) sfe)
       (setq scr (cons (list (- bw S) z) scr))))
   ;; drawBACK's top and bottom rows, on the straight runs of the TOP's and the
-  ;; BOTTOM's back edge within this piece (a grown board's run ends at the bump)
+  ;; BOTTOM's back edge within this piece (a grown board's run ends at the
+  ;; WINDOW's edge: ix0 and ix1 for the band's own window, ex0 and ex1 for a
+  ;; recess column's, D22, 28.10.2026; ix0 and ix1 stay bound for the record)
   (setq runs '(lambda (grown)
                 (if grown
-                  (append (if (recess-left-p ex0) nil (list (list g ix0)))
-                          (if (recess-right-p ex1 cw) nil (list (list ix1 (- cw g)))))
+                  (append (if (recess-left-p ex0) nil (list (list g wx0)))
+                          (if (recess-right-p ex1 cw) nil (list (list wx1 (- cw g)))))
                   (list (list g (- cw g))))))
   (if (>= z1 ch)
     (foreach run (apply runs (list (recess-top-p ez1 ch)))
@@ -1097,13 +1198,16 @@
 ;;; of the cabinet, carcass x 100..500 and z 200..600, clearance 10:
 ;;;   ex0 110  ex1 490  ez0 210  ez1 590  ed 150.  ix0 128, ix1 472.
 ;;;   bz0 228, bz1 572.  WINDOW (128 228 472 572): no edge reached: ONE piece
-;;;   (0 0 600 770) with a THROUGH POCKET 344 x 344 on RECESS_WINDOW (D9).
+;;;   (0 0 600 770) with a THROUGH POCKET on RECESS_WINDOW (D9), 344 x 344 as
+;;;   the edge leaves it, CUT 346 x 346 (D23, 28.10.2026: the hand edge, 1 on
+;;;   each of its four edges; 344 x 344 until that evening).
 ;;;
 ;;; BOARD      PARENT       EXTENDED
 ;;; BUL, BUR   540 x 770    unchanged (no side reached)
 ;;; TOP        564 x 540    unchanged (the top not reached)
 ;;; BOTTOM     564 x 540    unchanged (the floor not reached)
-;;; BACK       600 x 770    600 x 770, the pocket x 128..472, z 228..572, 18 deep;
+;;; BACK       600 x 770    600 x 770, the pocket x 127..473, z 227..573, 18 deep
+;;;                         (D23; x 128..472, z 228..572 until 28.10.2026);
 ;;;                         every parent socket and row kept (none in the window)
 ;;;   NO rows round the window (D17: none since 17.10.2026; drilled again from
 ;;;   18.10 to 19.10.2026: into RETURN-L's end x 119 and RETURN-R's end x 481,
@@ -1265,6 +1369,11 @@
 ;;; BOARD      PARENT       EXTENDED
 ;;; BUR        540 x 770    690 x 770 less 150 x 228 at "x0y0" and 150 x 198 at
 ;;;                         "x0y1" (the bump over 228..572)
+;;; BACK       600 x 770    the BITE (328 228 600 572) at its right edge, CUT
+;;;                         (327 227 600 573): 1 more on its three edges, the
+;;;                         hand edge (D23, 28.10.2026):
+;;;                         (0 0) (600 0) (600 227) (327 227) (327 573)
+;;;                         (600 573) (600 770) (0 770)
 ;;; END-R      596 x 870    746 x 870, its box z -160..586 (the recess's back
 ;;;                         wall at -10 - 150): the bump over the band's own
 ;;;                         height, 210 + 100 .. 590 + 100 = 310 .. 690 on the
@@ -1369,6 +1478,11 @@
             w (recess-window cw ch g ex0 ex1 ez0 ez1))
       (foreach piece pieces
         (setq cut (recess-back-cut piece w))
+        ;; D23 (28.10.2026): the cut as the cutter takes it, recess.handEdge
+        ;; more of the board on its own edges (the edge is applied by hand)
+        (if cut
+          (setq cut (recess-hand-cut cut (- (caddr piece) (car piece)) (- (cadddr piece) (cadr piece))
+                                     (recess-p "recess.handEdge") nil)))
         (setq outline (recess-back-outline piece cut) dbs (recess-back-dogbones piece cut r))
         (recess-draw-board x y outline dbs (if (equal piece (car pieces)) "BACK" "BACK-2"))
         ;; D9 amended 19.10.2026: a cut-out, CLOCKWISE (x0 y0) (x0 y1) (x1 y1) (x1 y0).
@@ -1683,3 +1797,277 @@
         ((= name "FLOOR") "EXT-FLOOR")
         ((= name "LID") "EXT-LID")
         (T name)))
+
+;;;========================================
+;;; I. THE DRAWERS IN THE RECESS (D22, D23, D25; 28.10.2026)
+;;;========================================
+;;;
+;;; The owner's evening: a column of drawers between two dividers standing on
+;;; the band's edges goes INTO the recess (D22), a cut inside the BACK is cut
+;;; one hand edge bigger (D23), and the BACK's holes follow its pieces (D25).
+;;; Every routine here asks sections B to E and none of section H: a recess
+;;; column is never notched (D22). The column is the kit's own (the engine's
+;;; column stack, T32): dl and dr are its two dividers' LEFT faces (carcass x
+;;; from the left face), gd their board, capy the underside of the board over
+;;; the drawers (carcass z up), capt = capy + g its top, capd its depth.
+
+;;; D22: is this column of drawers a RECESS COLUMN? nil, or the sentence the
+;;; Check prints (RECESS_DRAWERS_SHALLOW). A divider stands ON an edge within
+;;; half a millimetre (the editor's own step, 0.5: a face typed or snapped there).
+(defun recess-col-refusal (cw ch g ex0 ex1 ez0 ez1 dl dr gd capy / minI)
+  (setq minI (recess-p "notch.minInterior"))
+  (cond ((or (recess-left-p ex0) (recess-right-p ex1 cw))
+         "RECESS DRAWERS: the recess reaches a side of the carcass; the drawers keep the carcass's depth.")
+        ((not (recess-floor-p ez0))
+         "RECESS DRAWERS: the recess does not start on the floor; the drawers keep the carcass's depth.")
+        ((or (> (abs (- dl ex0)) 0.5) (> (abs (- (+ dr gd) ex1)) 0.5))
+         "RECESS DRAWERS: the dividers do not stand on the recess's edges; the drawers keep the carcass's depth.")
+        ((< (- (recess-bz1 ez1 ch g) (+ capy g)) minI)
+         "RECESS DRAWERS: the recess ends too close over the board over the drawers; the drawers keep the carcass's depth.")
+        (T nil)))
+
+;;; D22: THE WINDOW of a recess column: the band's OUTER faces across (the
+;;; dividers and the RETURNs pass through the BACK's plane), bz0 .. bz1 up.
+(defun recess-col-window (cw ch g ex0 ex1 ez0 ez1)
+  (list ex0 (recess-bz0 ez0 g) ex1 (recess-bz1 ez1 ch g)))
+
+;;; ...and the pieces it leaves (section D's law of the pieces).
+(defun recess-col-back-pieces (cw ch g ex0 ex1 ez0 ez1)
+  (recess-window-pieces cw ch (recess-col-window cw ch g ex0 ex1 ez0 ez1)))
+
+;;; D22: the BOTTOM's bump between the band's OUTER faces (the dividers stand
+;;; on it): (bw bh b0 b1 ext), its plan frame (x from BUL's inner face, y from
+;;; the front edge).
+(defun recess-col-plan-bump (cw cd g ex0 ex1 ed)
+  (list (- cw (* 2.0 g)) (- cd g) (- ex0 g) (- ex1 g) ed))
+
+(defun recess-col-bottom-outline (cw cd g ex0 ex1 ed / b)
+  (setq b (recess-col-plan-bump cw cd g ex0 ex1 ed))
+  (recess-bump-outline (car b) (cadr b) (caddr b) (cadddr b) (nth 4 b)))
+
+;;; D22: the TOP's and the BOTTOM's joints in a recess column. No side grows,
+;;; so the long edges are the parent's; the back edge's two straight runs are
+;;; the ones the BACK's pieces leave, 0 .. ex0 - g and ex1 - g .. tw (a
+;;; divider's or a RETURN's end stands between them and the bump), each
+;;; re-planned on its own (D7: none under the D6 minimum, screwed).
+(defun recess-col-top-joints (cw cd g ex0 ex1 / e below inset minEdge sideW tw)
+  (setq e       (recess-p "puzzle.tabCentresFromEnd")
+        below   (recess-p "puzzle.singleSocketBelow")
+        inset   (notch-joint-inset cd e (recess-p "puzzle.singleJointMaxDepth"))
+        minEdge (notch-min-joint-edge (recess-p "puzzle.dogboneHalfHeight") g)
+        sideW   (- cd g)
+        tw      (- cw (* 2.0 g)))
+  (list (list "LEFT" (notch-replan-sockets sideW inset below))
+        (list "RIGHT" (notch-replan-sockets sideW inset below))
+        (list "BACK" (append (recess-run-sockets (- ex0 g) 0.0 e below minEdge)
+                             (recess-run-sockets (- tw (- ex1 g)) (- ex1 g) e below minEdge)))))
+
+;;; D22: where the added boards stand in a recess column, carcass frame (x from
+;;; the left face, y from the FRONT face, z up): the RETURNs on the board over
+;;; the drawers (capt) up to bz1, ed deep, their front ends on the BACK's
+;;; inner face (y = cd - g: through its plane); the LID and the EXT-BACK as
+;;; ever. The band starts on the floor: no FLOOR.
+(defun recess-col-box-places (cw cd ch g ex0 ex1 ez0 ez1 ed capt / bz1 out)
+  (setq bz1 (recess-bz1 ez1 ch g)
+        out (list (list "RETURN-L" (list ex0 (- cd g) capt (+ ex0 g) (- (+ cd ed) g) bz1))
+                  (list "RETURN-R" (list (- ex1 g) (- cd g) capt ex1 (- (+ cd ed) g) bz1))))
+  (if (not (recess-top-p ez1 ch))
+    (setq out (append out (list (list "LID" (list ex0 cd (- ez1 g) ex1 (- (+ cd ed) g) ez1))))))
+  (append out (list (list "EXT-BACK" (list ex0 (- (+ cd ed) g) ez0 ex1 (+ cd ed) ez1)))))
+
+;;; A RETURN of a recess column: ed x (bz1 - capt).
+(defun recess-col-return (ch g ez1 ed capt)
+  (list ed (- (recess-bz1 ez1 ch g) capt)))
+
+;;; D22: a divider of a recess column, the carcass frame of
+;;; recess-col-box-places: x0 its left face, gd its board, `front` its own
+;;; setback kept at the front, its back on the EXT-BACK's face, from the
+;;; BOTTOM (z = g) to the board over the drawers (capy).
+(defun recess-col-divider (x0 gd cd g ed front capy)
+  (list x0 front g (+ x0 gd) (- (+ cd ed) g) capy))
+
+;;; D22: the board over the drawers, (bw bh b0 b1 ext) in ITS plan frame (x
+;;; from BUL's inner face, y from its front edge): bw x capd, the bump END TO
+;;; END between the band's outer faces (a fixed shelf's clr 0, D16), ed deep.
+(defun recess-col-cap-bump (cw g ex0 ex1 ed capd)
+  (list (- cw (* 2.0 g)) capd (- ex0 g) (- ex1 g) ed))
+
+(defun recess-col-cap-outline (cw g ex0 ex1 ed capd / b)
+  (setq b (recess-col-cap-bump cw g ex0 ex1 ed capd))
+  (recess-bump-outline (car b) (cadr b) (caddr b) (cadddr b) (nth 4 b)))
+
+;;; D22: the drawers' usable depth in a recess column: the carcass's plus ed
+;;; (the kit snaps it to its own ladder, wardrobe.drawers.depthSteps).
+(defun recess-col-drawer-depth (usable ed)
+  (+ usable ed))
+
+;;; D22: THE SLOTS' FILLERS, the carcass frame of recess-col-box-places:
+;;; ((name (x0 y0 z0 x1 y1 z1)) ..), two per slot on the DP's own two lines
+;;; (KIT_WARDROBE_FULL: the front one fy back from the face, fy the drawers'
+;;; setback plus the filler's offset; the back one on the BACK's inner face),
+;;; as wide as the slot, from the BOTTOM (z = g) to the board over the drawers
+;;; (capy). A slot of nothing takes none.
+(defun recess-col-fillers (cw cd g ex0 ex1 capy fy / out)
+  (setq out nil)
+  (if (> ex0 g)
+    (setq out (list (list "L1" (list g fy g ex0 (+ fy g) capy))
+                    (list "L2" (list g (- cd (* 2.0 g)) g ex0 (- cd g) capy)))))
+  (if (< ex1 (- cw g))
+    (setq out (append out (list (list "R1" (list ex1 fy g (- cw g) (+ fy g) capy))
+                                (list "R2" (list ex1 (- cd (* 2.0 g)) g (- cw g) (- cd g) capy))))))
+  out)
+
+;;; D22: where a divider stands to be ON the band's nearer edge: its left face
+;;; at ex0 (the left edge) or at ex1 - w (the right edge, w its board),
+;;; whichever is nearer to where it stands now (x); nil when the band reaches
+;;; both sides (no edge inside the carcass). The room's "Align with recess".
+(defun recess-col-divider-x (cw ex0 ex1 x w / lft rgt)
+  (setq lft (if (recess-left-p ex0) nil ex0)
+        rgt (if (recess-right-p ex1 cw) nil (- ex1 w)))
+  (cond ((and lft rgt) (if (<= (abs (- lft x)) (abs (- rgt x))) lft rgt))
+        (lft lft)
+        (rgt rgt)
+        (T nil)))
+
+;;; D23: THE HAND EDGE. A cut (x0 z0 x1 z1) of a bw x bh piece as the cutter
+;;; takes it: each of its edges that is not on the piece's own edge moved he
+;;; further into the board; in a recess column (colp) its two edges across
+;;; stay, a divider or a RETURN covers them (D22).
+(defun recess-hand-cut (cut bw bh he colp / x0 z0 x1 z1)
+  (setq x0 (car cut) z0 (cadr cut) x1 (caddr cut) z1 (cadddr cut))
+  (list (if (or colp (<= x0 0.0)) x0 (- x0 he))
+        (if (<= z0 0.0) z0 (- z0 he))
+        (if (or colp (>= x1 bw)) x1 (+ x1 he))
+        (if (>= z1 bh) z1 (+ z1 he))))
+
+;;; D25: the piece a hole at (x z) of radius r (the BACK's frame before the
+;;; cut: x from the left face, z up) falls on, and its place there:
+;;; ("BACK" x' z') or ("BACK-2" x' z') in that piece's own frame; nil where no
+;;; piece holds it whole (in the window, or past the board). `cuts` is the
+;;; pieces' cuts as the cutter takes them (recess-hand-cut), one per piece,
+;;; nil for a whole piece.
+(defun recess-piece-at (pieces cuts x z r / i hit px pz bw bh c)
+  (setq i 0 hit nil)
+  (foreach p pieces
+    (if (null hit)
+      (progn
+        (setq px (- x (car p)) pz (- z (cadr p))
+              bw (- (caddr p) (car p)) bh (- (cadddr p) (cadr p))
+              c (nth i cuts))
+        (if (and (>= (- px r) -1e-6) (<= (+ px r) (+ bw 1e-6))
+                 (>= (- pz r) -1e-6) (<= (+ pz r) (+ bh 1e-6))
+                 (or (null c)
+                     (<= (+ px r) (car c)) (>= (- px r) (caddr c))
+                     (<= (+ pz r) (cadr c)) (>= (- pz r) (cadddr c))))
+          (setq hit (list (if (= i 0) "BACK" "BACK-2") px pz)))))
+    (setq i (1+ i)))
+  hit)
+
+;;;========================================
+;;; I2. NUMBERS - THE DRAWERS IN THE RECESS (D22 to D25)
+;;;========================================
+;;;
+;;; CASE E (fixtures/golden-recess-drawers.json): KIT_WARDROBE_FULL 1000 wide
+;;; (D 568, H 2150, G 18, the doors 25) before the owner's own recess, 800
+;;; wide from carcass x 100 to 900, floor to ceiling, 150 deep, clearance 10:
+;;;   ex0 110  ex1 890  ez0 0  ez1 2150  ed 150.  ix0 128, ix1 872.
+;;;   bz0 0, bz1 2150. The project's setbacks 10 (shelves, dividers and, D24,
+;;;   the board over the drawers). Two dividers, VPART-1 at x 110 and VPART-2
+;;;   at x 872 (their outer faces on 110 and 890: the band's edges), three
+;;;   internal drawers 200 high in the column between them (744 light), the
+;;;   column's own board over them at capy 629 (18 + 3 x 200 + 2 x 3 + 5),
+;;;   capt 647, capd 540 (568 - 18 - 10).
+;;;   (recess-col-refusal 1000 2150 18 110 890 0 2150 110 872 18 629) = nil.
+;;;   THE WINDOW (recess-col-window): (110 0 890 2150), the floor and the top
+;;;   reached: TWO whole pieces (D8), BACK (0 0 110 2150) and BACK-2
+;;;   (890 0 1000 2150), 110 x 2150 each; no hand edge (D23: whole pieces).
+;;;   Until tonight: (0 0 128 2150) and (872 0 1000 2150), 128 wide.
+;;;
+;;; BOARD       UNTIL TONIGHT                   A RECESS COLUMN (D22)
+;;; VPART-1     540 x 2114, y 18..2132, the     690 x 611: (110 10 18 128 700
+;;;             carcass's depth (x 110..128)    629), through the BACK's plane
+;;;                                             to the EXT-BACK, under the board
+;;; VPART-2     the same at x 872..890          (872 10 18 890 700 629)
+;;; the board   Z2-PART 744 x 540 at y 629,     PARTITION, fixed, 964 x 690 at
+;;;  over the   the column's own (x 128..872)   y 629, BUL to BUR; plan frame
+;;;  drawers                                    (recess-col-cap-outline 1000 18
+;;;                                             110 890 150 540):
+;;;                                             (0 0) (964 0) (964 540)
+;;;                                             (872 540) (872 690) (92 690)
+;;;                                             (92 540) (0 540)
+;;;   CORNER MARKS (D18, D20): (912 540) -> (872 540) -> (872 580) and
+;;;   (92 580) -> (92 540) -> (52 540); area 0.63756 m2 (637560 mm2)
+;;;   The engine draws it in the board's OWN frame (x across from BUL's inner
+;;;   face, y from its BACK edge: y' = 690 - y, the walk reversed):
+;;;     (0 150) (92 150) (92 0) (872 0) (872 150) (964 150) (964 690) (0 690)
+;;;     marks (52 150) -> (92 150) -> (92 110), (872 110) -> (872 150) -> (912 150)
+;;; BOTTOM      its bump 110..854 (plan)        its bump 92..872 (plan,
+;;;                                             recess-col-bottom-outline):
+;;;                                             (0 0) (964 0) (964 550)
+;;;                                             (872 550) (872 700) (92 700)
+;;;                                             (92 550) (0 550)
+;;;   CORNER MARKS: (912 550) -> (872 550) -> (872 590) and
+;;;   (92 590) -> (92 550) -> (52 550); area 0.6472 m2 (647200 mm2)
+;;; TOP         its bump 110..854               unchanged (the RETURNs beside it)
+;;; TOP/BOTTOM  back runs 0..110 and 854..964   back runs 0..92 and 872..964
+;;;  back       (one socket each, 55 and 909)   (92 each, under 96: none, D7)
+;;; BACK        (0 0 128 2150)                  (0 0 110 2150): the side row
+;;;                                             x 9 into BUL as the parent's;
+;;;                                             the top and the bottom rows on
+;;;                                             the run 18..110 (92, two at the
+;;;                                             quarters): x 41 87, z 2141 and 9
+;;; BACK-2      (872 0 1000 2150)               (890 0 1000 2150): the side row
+;;;                                             x 101 into BUR; the rows x 23 69
+;;; RETURN-L    132 x 2150, y 568..700 from     150 x 1503: (110 550 647 128
+;;;             the floor                       700 2150), on the board over
+;;;                                             the drawers, through the BACK's
+;;;                                             plane (recess-col-box-places)
+;;; RETURN-R    132 x 2150 at x 872..890        (872 550 647 890 700 2150)
+;;; EXT-BACK    780 x 2150, unchanged, its rows recess-ext-back-screws
+;;; FILLERS     none                            (recess-col-fillers 1000 568 18
+;;;                                             110 890 629 90), fy = 50 + 40:
+;;;                                             L1 (18 90 18 110 108 629)
+;;;                                             L2 (18 532 18 110 550 629)
+;;;                                             R1 (890 90 18 982 108 629)
+;;;                                             R2 (890 532 18 982 550 629)
+;;;                                             92 x 611 each
+;;; DRAWERS     440 deep (usable 455)           590 (recess-col-drawer-depth
+;;;                                             455 150 = 605: the ladder's 590)
+;;;   IN A PROJECT the room hands ed = the recess's depth less the wall gap
+;;;   (150 - 10 = 140) and a wardrobe added in the room is 558 deep: the usable
+;;;   445 plus 140 is 585, the ladder's 540 (440 before). The ladder is the
+;;;   owner's (a runner every 50, the box 10 less, 20 behind it).
+;;;   The runner rows on the dividers are the engine's (T32), each from the
+;;;   divider's OWN front edge: the left face drilled as BUL, the right face
+;;;   turned over as BUR (KIT_VANITY.lsp D11's law, the chat fix of 28.10).
+;;;   A divider beside drawers stands at the face in a project (the column
+;;;   guard): flush, it is 568 + 150 - 18 = 700 deep, not 690.
+;;; ALIGN WITH RECESS (recess-col-divider-x 1000 110 890 x 18): a divider at
+;;;   x 100 goes to 110, one at 880 to 872 (the nearer edge each).
+;;; THE BACK'S HOLES (D25): the board over the drawers' three at z 638:
+;;;   x 68 on BACK (x 68), x 500 in the window (none), x 932 on BACK-2 (x 42).
+;;;   Until tonight Z2-PART's three, x 178 500 822, all three in the window.
+;;;
+;;; CASE E2 (no golden): CASE E with the band to ez1 1200: bz1 1182. The BACK
+;;; is ONE piece (0 0 1000 2150) with the BITE (110 0 890 1182), CUT
+;;; (recess-hand-cut (110 0 890 1182) 1000 2150 1 T) = (110 0 890 1183): the
+;;; U, its top edge 1 more (D23), its sides on the dividers and the RETURNs
+;;; (no edge there, D22):
+;;;            (0 0) (110 0) (110 1183) (890 1183) (890 0) (1000 0)
+;;;            (1000 2150) (0 2150)
+;;;   CORNER MARKS: (110 1143) -> (110 1183) -> (150 1183) and
+;;;                 (850 1183) -> (890 1183) -> (890 1143)
+;;;   the bottom row x 41 87 and 913 959 (z 9); the top row the parent's,
+;;;   x 68 500 932 (z 2141): the TOP is not reached.
+;;;   RETURN-L (110 550 647 128 700 1182), 150 x 535; RETURN-R at 872..890;
+;;;   the LID (110 568 1182 890 700 1200), 780 x 132; the TOP the parent's.
+;;;
+;;; CASE E3, THE OWNER'S U (D23, no golden): the same wardrobe and band to
+;;; 1200, NO dividers: the window (128 0 872 1182) is a BITE, cut
+;;; (127 0 873 1183): 746 x 1183 as the cutter takes it, 744 x 1182 once the
+;;; hand edge is on:
+;;;            (0 0) (127 0) (127 1183) (873 1183) (873 0) (1000 0)
+;;;            (1000 2150) (0 2150)
+;;; A CORNER (D23, KIT_BUD_FULL, the band 310..600 from the floor to 590):
+;;; the window (328 0 600 572) at the BACK's bottom-right, cut (327 0 600 573):
+;;;            (0 0) (327 0) (327 573) (600 573) (600 770) (0 770)

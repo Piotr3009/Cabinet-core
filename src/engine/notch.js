@@ -78,6 +78,9 @@ export function notchProfile(profile = {}) {
     // 18.10.2026 (KIT_NOTCH.lsp D22): what the CUT EDGE window opens with, ed and eh.
     'notch.edgeDefaults.depth': num(profile.notch?.edgeDefaults?.depthMm, 20),
     'notch.edgeDefaults.height': num(profile.notch?.edgeDefaults?.heightMm, 120),
+    // 28.10.2026 (KIT_RECESS.lsp D23): the edge put on by hand round a cut
+    // inside the BACK; the owner: *"musimy pomniejszyc o 1 mm plecy ... w podkowie U"*.
+    'recess.handEdge': num(profile.recess?.handEdgeMm, 1),
   };
 }
 

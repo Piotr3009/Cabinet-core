@@ -101,7 +101,11 @@ test('F5 · KIT_NOTCH.lsp carries D22, its section H2, its NUMBERS block I3 and 
     assert.ok(lisp.includes(`(defun ${routine}`), `the LISP defines ${routine}`);
   }
   assert.match(lisp, /\("notch\.edgeDefaults\.depth"\s+\. 20\.0\)/);
-  assert.match(lisp, /\("notch\.edgeDefaults\.height"\s+\. 120\.0\)\)\)/);
+  // CHAT FIX 28.10.2026 AMENDED: the table no longer ENDS on this row; one row follows it, the recess's hand edge
+  // (KIT_RECESS.lsp D23, held by test/chatfix-2810-recess-drawers.test.js). The owner, 28.10.2026: *"w tym miejscu
+  // musimy pomniejszyc o 1 mm plecy"*. D22's two rows stand as they stood.
+  assert.match(lisp, /\("notch\.edgeDefaults\.height"\s+\. 120\.0\)\s+;;/);
+  assert.match(lisp, /\("recess\.handEdge"\s+\. 1\.0\)\)\)/);
   assert.doesNotMatch(lisp, /[^\x00-\x7f]/, 'the LISP stays ASCII');
   assert.doesNotMatch(lisp, /[\u2013\u2014]/);
   // The licence in the F's fragment quotes the owner, word for word as CLAUDE.md writes him.

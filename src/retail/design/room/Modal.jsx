@@ -128,8 +128,11 @@ export default function Modal({
   // dialog in the app opens beside the piece it is about, which is the rule
   // the owner marked "na zawsze".
   fullscreen = false,
-  // Project setup is a workspace: 90% of the viewport width and 85% of its
-  // height, with a fixed header/footer and independently scrolling content.
+  // Project setup is a workspace: 90% of the viewport width and, since the
+  // chat fix of 28.10.2026 (the owner: "modal zrob troche wyzszy zeby nie
+  // trzeba bylo scrollowac, mam na mysli stage 2"), the viewport's height
+  // less a 24 px frame (it was 85%), with a fixed header/footer and
+  // independently scrolling content.
   // Opt-in only; all existing object-side dialogs retain their geometry.
   workspace = false,
 }) {
@@ -403,7 +406,7 @@ export default function Modal({
           top: at?.top ?? 0,
           ...(workspace ? {
             width: screen.width < 760 ? 'calc(100vw - 16px)' : '90vw',
-            height: screen.width < 760 ? 'calc(100dvh - 16px)' : '85dvh',
+            height: screen.width < 760 ? 'calc(100dvh - 16px)' : 'calc(100dvh - 24px)',
             maxWidth: 'calc(100vw - 16px)', maxHeight: 'calc(100dvh - 16px)',
           } : {}),
           // A docked window is sized by the SCREEN, not by what is in it.

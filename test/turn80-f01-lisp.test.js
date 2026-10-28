@@ -64,8 +64,19 @@ const LATER_KITS = ['KIT_HAWA.lsp', 'KIT_VANITY.lsp', 'KIT_MIRROR.lsp'];
 // CHAT FIX 26.10.2026: KIT_MIRROR.lsp AMENDED on the owner's order, D5a and the constant mirrorMinDoor (held by
 // test/chatfix-2610-mirror-door-widths.test.js and test/turn83-f01-mirror-lisp.test.js). The owner, 26.10.2026, 09:02:
 // *"jesli uzytkownik zmienil to ten numer juz sie nie moze zmieniac, wtedy zmieniamy tylko te ktore nie byly ruszane"*.
-const AMENDED_LATER = ['M\treference/lisp/KIT_VANITY.lsp', 'M\treference/lisp/KIT_MIRROR.lsp'];
-const lispFingerprint = () => sha256(readdirSync(`${ROOT}reference/lisp`).filter((n) => n !== KIT && !LATER_KITS.includes(n)).sort()
+// CHAT FIX 28.10.2026 AMENDED: the first two kits of T80's base AMENDED since, on the owner's order: KIT_RECESS.lsp (D22
+// to D25, its section I) and KIT_NOTCH.lsp (one row of its table, recess.handEdge), licensed by
+// scripts/t78-classify.d/f47-owner-2810-recess.mjs LISP and held by test/chatfix-2810-recess-drawers.test.js. The owner,
+// 28.10.2026: *"co ja potrzebuje to ustawic szuflady tylko w tej wnece"*, *"szuflady tez prosze"*. From tonight they
+// stand outside T80's fingerprint, as the later kits do, and the rest of the folder is fingerprinted once more: T80's
+// base (f5d8aab) less those two, hashed the same way out of `git show f5d8aab:`, gives this very number, so every other
+// file is still T80's base byte for byte. The first pin stays written above: the base's whole folder.
+const AMENDED_KITS = ['KIT_RECESS.lsp', 'KIT_NOTCH.lsp'];
+const LISP_BASE_FINGERPRINT_LESS_AMENDED = '5c9787b4bb00b516ccc2c6bcfe298f9ed1edda8b80e4ec5447c37237d0b67a4d';
+const AMENDED_LATER = ['M\treference/lisp/KIT_VANITY.lsp', 'M\treference/lisp/KIT_MIRROR.lsp',
+  ...AMENDED_KITS.map((k) => `M\treference/lisp/${k}`)];
+const lispFingerprint = () => sha256(readdirSync(`${ROOT}reference/lisp`)
+  .filter((n) => n !== KIT && !LATER_KITS.includes(n) && !AMENDED_KITS.includes(n)).sort()
   .map((n) => `${n} ${sha256(readFileSync(`${ROOT}reference/lisp/${n}`))}`).join('\n'));
 /** The turn's base, where git can answer (origin/main, else main), or null. */
 function baseCommit() {
@@ -89,7 +100,7 @@ test('F1 · KIT_INFRAME.lsp: the Skylon header, ASCII, no dash, a NEW file and t
   assert.ok(/^[\x00-\x7F]*$/.test(TEXT), 'ASCII (AutoCAD\'s loader)');
   assert.doesNotMatch(TEXT, /[\u2013\u2014]/, 'no em or en dash');
   // Against the turn's base (main of 21.10.2026, the owner's "80"): the folder gained this file and nothing else moved.
-  assert.equal(lispFingerprint(), LISP_BASE_FINGERPRINT, 'every other file of reference/lisp is the base\'s, byte for byte, and none was added');
+  assert.equal(lispFingerprint(), LISP_BASE_FINGERPRINT_LESS_AMENDED, 'every other file of reference/lisp is the base\'s, byte for byte, and none was added');
   // ...and git agrees, where git can answer (a one-commit checkout has no base: the fingerprint is the proof there).
   const base = baseCommit();
   if (base) {

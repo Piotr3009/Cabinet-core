@@ -434,6 +434,9 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f45-t84-f08.mjs',
   // Chat fix 28.10.2026: the fifteen tests the setup workspace of 26.10 left red
   'scripts/t78-classify.d/f46-owner-2810.mjs',
+  // Chat fix 28.10.2026 (the evening): the drawers in the recess (KIT_RECESS.lsp D22 to D25)
+  'test/chatfix-2810-recess-drawers.test.js',
+  'scripts/t78-classify.d/f47-owner-2810-recess.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

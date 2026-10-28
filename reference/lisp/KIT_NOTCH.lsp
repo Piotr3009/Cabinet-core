@@ -642,7 +642,8 @@
     ("notch.minInterior"            . 100.0)    ;; 15.10.2026: the owner's "nie mniej niz 100 mm w srodku szafki": what a notch must leave of the interior, across and in depth
     ("cnc.cornerMarkLeg"            . 40.0)   ;; 17.10.2026 (D9): the owner's "okolo 40 mm w kazda strone": each leg of the CORNER_4MM mark at a re-entrant corner (profile.cnc.cornerMark.legMm)
     ("notch.edgeDefaults.depth"     . 20.0)     ;; 18.10.2026 (D22): what the CUT EDGE window opens with, ed (a skirting board; T79 proposed, owner to confirm)
-    ("notch.edgeDefaults.height"    . 120.0)))  ;; 18.10.2026 (D22): ... and eh (profile.notch.edgeDefaults)
+    ("notch.edgeDefaults.height"    . 120.0)    ;; 18.10.2026 (D22): ... and eh (profile.notch.edgeDefaults)
+    ("recess.handEdge"              . 1.0)))    ;; 28.10.2026 (KIT_RECESS.lsp D23): the owner's "musimy pomniejszyc o 1 mm plecy ... w podkowie U": the edge put on by hand round a cut inside the BACK (profile.recess.handEdgeMm)
 
 (defun notch-p (key / hit)
   (setq hit (assoc key (notch-profile)))

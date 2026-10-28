@@ -20,6 +20,9 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { PROJECT_TYPES, getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
+// CHAT FIX 28.10.2026, the owner: "media wall, utility, other i hallway zostaw ale zablokuj i
+// napisz coming soon". The four stay on the grid, locked, until their turns.
+const SOON_TYPES = ['media_wall', 'utility', 'hallway', 'other'];
 import { migrateDesign, projectHeights } from '../engine/design.js';
 import { wizardStartBlockers } from '../engine/projectSettings.js';
 import { DEFAULT_SCOPE } from '../lib/wizardSteps.js';
@@ -297,9 +300,9 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart, 
               <section className="cc-setup-project-details">
                 <div className="cc-setup-field-grid">
                   {[
-                    ['number', 'Project number', ''], ['name', 'Project name (optional)', 'Hampstead kitchen'], ['client', 'Client (optional)', ''],
-                  ].map(([key, label, placeholder]) => <label key={key} className="block">
-                    <span className="cc-label">{label}</span><input className="cc-input" data-project-field={key}
+                    ['number', 'Project number', '', true], ['name', 'Project name (optional)', 'Hampstead kitchen', false], ['client', 'Client (optional)', '', false],
+                  ].map(([key, label, placeholder, required]) => <label key={key} className={required ? 'block cc-setup-required' : 'block'} data-required={required ? '1' : undefined}>
+                    <span className="cc-label">{label}{required && <em className="cc-setup-required-mark" title="Required">*</em>}</span><input className="cc-input" data-project-field={key} required={required || undefined} aria-required={required || undefined}
                       value={info[key]} placeholder={placeholder} onChange={(e) => { setInfo({ ...info, [key]: e.target.value }); markDirty('project'); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') commitProject(); }} />
                   </label>)}
@@ -307,13 +310,21 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart, 
                 <button type="button" className="cc-btn" disabled title="Import will be available when Joinery Core is connected">Import from Joinery Core <span className="cc-tag">soon</span></button>
               </section>
               <section><h2>What are you making?</h2><p className="cc-setup-help">The type sets the starting dimensions and where the furniture library opens. You can adjust every dimension later.</p>
-                <div className="cc-setup-project-grid">{PROJECT_TYPES.map((type) => <button key={type.id} type="button"
-                  className="cc-setup-type-card" data-project-type={type.id} aria-pressed={typeId === type.id}
-                  onClick={() => { setTypeId(type.id); markDirty('project'); }} title={type.hint}>
-                  <ProjectTypeArt type={type.id} /><strong>{type.label}</strong><span>{type.hint}</span>
-                </button>)}</div>
+                <div className="cc-setup-project-grid">{PROJECT_TYPES.map((type) => {
+                  const soon = SOON_TYPES.includes(type.id);
+                  return <button key={type.id} type="button"
+                    className={soon ? 'cc-setup-type-card cc-setup-type-soon' : 'cc-setup-type-card'} data-project-type={type.id} data-project-type-soon={soon ? '1' : undefined}
+                    aria-pressed={typeId === type.id} disabled={soon} aria-disabled={soon || undefined}
+                    onClick={() => { if (soon) return; setTypeId(type.id); markDirty('project'); }} title={soon ? `${type.label}: coming soon` : type.hint}>
+                    <ProjectTypeArt type={type.id} /><strong>{type.label}{soon && <span className="cc-tag cc-setup-soon-tag">Coming soon</span>}</strong><span>{type.hint}</span>
+                  </button>;
+                })}</div>
               </section>
-              <section><h2>How much space are you setting up?</h2>
+            </div>}
+            {/* CHAT FIX 28.10.2026, the owner: "settings up space powinno byc w 2 nie w jedynce, czyli wybor
+                jedna sciana / 2 sciany powinny byc w 2 na samej gorze": the scope cards open section 2. */}
+            {step === 'space' && <div className="cc-setup-space-head">
+              <section className="cc-setup-scope-section"><h2>How much space are you setting up?</h2>
                 <div className="cc-setup-scope-grid">{[
                   ['wall', 'One wall', 'Set the elevation, dimensions, openings and wall features.'],
                   ['room', 'Whole room', 'Set the plan, working walls, ceiling height and openings.'],
@@ -321,8 +332,13 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart, 
                   data-scope-card={id} data-scope-first={index === 0 ? '1' : undefined} aria-pressed={id === 'wall' ? scope === 'wall' : scope !== 'wall'}
                   onClick={() => {
                     const nextScope = id === 'wall' ? 'wall' : scope === 'wall' ? 'room' : scope;
-                    if (scope !== nextScope) { setScope(nextScope); markDirty('space'); }
-                    markDirty('project');
+                    if (scope !== nextScope) {
+                      setScope(nextScope); markDirty('space');
+                      // CHAT FIX 28.10.2026: the choice lives in section 2 now, so it
+                      // steers the editor under it at once and the project's own record.
+                      setSpaceEditor(null);
+                      if (created) useProjectStore.getState().setDesign({ scope: nextScope });
+                    }
                   }}>
                   <ScopeArt scope={id} /><span><strong>{label}</strong><small>{hint}</small></span>
                 </button>)}</div>

@@ -19,6 +19,15 @@
 // code BEFORE this change (18.10.2026, the same store-built wardrobes) and are
 // held literally: every drawer board, runner hole and partition screw is byte
 // for byte what it was.
+//
+// AMENDED 28.10.2026 (chat fix, KIT_RECESS.lsp D24), the owner: *"wszystkie
+// polki teraz sa 10 mm, to polke nad szufladami tez zrob 10 mm jak reszta"*:
+// the board over a drawer stack stands back 10 too (`capSetbackMm` 20 -> 10;
+// D-G-20 -> D-G-10 below). And the same evening, *"zeby zamontowac
+// szuflady"*: a divider's runner row is measured from ITS OWN front edge, its
+// left face drilled as BUL, its right face turned over as BUR (T82 F9's law);
+// until then it read `partitionDepth - v` and stood mirrored front to back
+// (VPART-1 408 376 152 below, the runner's own holes 112 144 368).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -59,7 +68,7 @@ function wardrobe1200() {
 test('F13 · the profile carries the three numbers; the LISP\'s 20 stays for a bare call', () => {
   assert.equal(P.carcass.shelfSetbackMm, 10, '*"z 20 na 10 mm"*');
   assert.equal(P.carcass.dividerSetbackMm, 10, '*"tylko półki i dividery"*');
-  assert.equal(P.wardrobe.drawers.capSetbackMm, 20, '*"szuflady zostaw nie ruszaj"*');
+  assert.equal(P.wardrobe.drawers.capSetbackMm, 10, '28.10.2026: *"polke nad szufladami tez zrob 10 mm jak reszta"* (20 until then)');
   assert.equal(P.carcass.shelfDepthClearance, 20, 'the LISP\'s own shelf clearance, for a bare kit call');
   assert.equal('interiorSetback' in P.carcass, false, 'one number per family: the old interiorSetback is gone');
 });
@@ -69,12 +78,12 @@ test('F13 · paramsForEngine injects the project setbacks from the profile', () 
   const p = paramsForEngine(unitOf(id));
   assert.equal(p.shelf_front_mm, 10);
   assert.equal(p.interior_setback_mm, 10);
-  assert.equal(p.drawer_cap_setback_mm, 20);
+  assert.equal(p.drawer_cap_setback_mm, 10, '28.10.2026 (D24): the drawer cap 10 like the rest');
 });
 
 // ─── a store-built wardrobe ──────────────────────────────────────────────────
 
-test('F13 · a store-built wardrobe: shelves D-G-10, the drawer cap D-G-20, runner holes as on 18.10', () => {
+test('F13 · a store-built wardrobe: shelves D-G-10, the drawer cap D-G-10 (28.10), runner holes as on 18.10', () => {
   const id = wardrobe1200();
   store().addShelves(id, 2);
   store().addDrawers(id, 3, 'internal');
@@ -89,9 +98,10 @@ test('F13 · a store-built wardrobe: shelves D-G-10, the drawer cap D-G-20, runn
     assert.equal(s.meta.front_mm, 10);
   }
   const cap = r.panels.find((p) => p.id === 'PARTITION');
-  assert.equal(cap.h, D - G - 20, 'the drawer cap is untouched: D-G-20');
-  assert.equal(cap.box.d, 520);
-  assert.equal(cap.meta.front_mm, 20);
+  // 28.10.2026 (D24): D-G-10, like every shelf (D-G-20, 520 deep, until then).
+  assert.equal(cap.h, D - G - 10, 'the drawer cap: D-G-10');
+  assert.equal(cap.box.d, 530);
+  assert.equal(cap.meta.front_mm, 10);
   // The 18.10 numbers, read off the code before T79 F13.
   assert.deepEqual(holes(r, 'runner'), [
     ['BUL', 112, 56], ['BUL', 144, 56], ['BUL', 368, 56], ['BUL', 112, 259], ['BUL', 144, 259], ['BUL', 368, 259],
@@ -120,7 +130,7 @@ test('F13 · a store-built divider stands 10 back, and the column guard says 10'
   assert.match(guard.message, /stands 10 mm back/);
 });
 
-test('F13 · column drawers beside a divider at the face: Z1-PART D-G-20 and the VPART holes as on 18.10', () => {
+test('F13 · column drawers beside a divider at the face: Z1-PART D-G-10 and the VPART holes on its own front (28.10)', () => {
   const id = wardrobe1200();
   store().addShelves(id, 2);
   store().addPartition(id);
@@ -132,16 +142,20 @@ test('F13 · column drawers beside a divider at the face: Z1-PART D-G-20 and the
   const D = unitOf(id).params.depth;
   assert.equal(r.panels.find((p) => p.id === 'VPART-1').box.d, D - G, 'pulled to the face, full depth');
   const zcap = r.panels.find((p) => p.id === 'Z1-PART');
-  assert.equal(zcap.box.d, D - G - 20, 'the column cap is untouched: D-G-20');
-  assert.equal(zcap.meta.front_mm, 20);
+  // 28.10.2026 (D24): D-G-10 (D-G-20 until then).
+  assert.equal(zcap.box.d, D - G - 10, 'the column cap: D-G-10');
+  assert.equal(zcap.meta.front_mm, 10);
+  // 28.10.2026: VPART-1 is the column's RIGHT wall, its LEFT face drilled as BUL from its own front edge: the runner's
+  // own 37, 69, 293 behind the box setback 75 (408 376 152 until then, the row mirrored about the cap's middle).
   assert.deepEqual(holes(r, 'runner').filter(([panel]) => panel === 'VPART-1'), [
-    ['VPART-1', 408, 38], ['VPART-1', 376, 38], ['VPART-1', 152, 38],
-    ['VPART-1', 408, 241], ['VPART-1', 376, 241], ['VPART-1', 152, 241],
-    ['VPART-1', 408, 444], ['VPART-1', 376, 444], ['VPART-1', 152, 444],
+    ['VPART-1', 112, 38], ['VPART-1', 144, 38], ['VPART-1', 368, 38],
+    ['VPART-1', 112, 241], ['VPART-1', 144, 241], ['VPART-1', 368, 241],
+    ['VPART-1', 112, 444], ['VPART-1', 144, 444], ['VPART-1', 368, 444],
   ]);
+  // The cap's three through the divider follow its depth, 530 (50 260 470 on 520 until 28.10).
   assert.deepEqual(holes(r, 'partition_screw'), [
     ['BUL', 50, 638], ['BUL', 270, 638], ['BUL', 490, 638],
-    ['VPART-1', 50, 620], ['VPART-1', 260, 620], ['VPART-1', 470, 620],
+    ['VPART-1', 50, 620], ['VPART-1', 265, 620], ['VPART-1', 480, 620],
     ['BACK', 68, 638], ['BACK', 304.5, 638], ['BACK', 541, 638],
   ]);
 });
@@ -153,7 +167,8 @@ test('F13 · the unit\'s own partition_front_mm still moves the drawer cap (the 
   store().setPartitionFront(id, 0);
   assert.equal(resultOf(id).panels.find((p) => p.id === 'PARTITION').h, D - G);
   store().setPartitionFront(id, null);
-  assert.equal(resultOf(id).panels.find((p) => p.id === 'PARTITION').h, D - G - 20);
+  // 28.10.2026 (D24): back to the project's 10 (20 until then).
+  assert.equal(resultOf(id).panels.find((p) => p.id === 'PARTITION').h, D - G - 10);
 });
 
 test('F13 · a unit that says its own interior_setback_mm moves its dividers AND its drawer cap, as before T79', () => {

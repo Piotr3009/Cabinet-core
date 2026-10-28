@@ -52,10 +52,15 @@ test('F1 · KIT_HAWA.lsp: the Skylon header, ASCII, no dash, and a NEW file besi
   assert.match(TEXT, /^;;; Command: HAWA_FULL$/m);
   assert.match(TEXT, /^;;; Requires: SKYLON_COMMON\.lsp loaded first/m);
   // Against the turn's base, where git can answer: the folder gains files and no existing one moves.
+  // CHAT FIX 28.10.2026 AMENDED: two kits of the base AMENDED since, on the owner's order, and held by their own test
+  // (test/chatfix-2810-recess-drawers.test.js; licensed by scripts/t78-classify.d/f47-owner-2810-recess.mjs LISP):
+  // KIT_RECESS.lsp (D22 to D25) and KIT_NOTCH.lsp (its table's row recess.handEdge). The owner, 28.10.2026:
+  // *"szuflady tez prosze"*. test/turn80-f01-lisp.test.js names the same two.
+  const AMENDED = ['M\treference/lisp/KIT_NOTCH.lsp', 'M\treference/lisp/KIT_RECESS.lsp'];
   const base = spawnSync('git', ['merge-base', 'HEAD', 'd0f84ebe'], { cwd: ROOT, encoding: 'utf8' });
   if (base.status === 0 && base.stdout.trim()) {
     const rows = spawnSync('git', ['diff', '--name-status', base.stdout.trim(), '--', 'reference/lisp'], { cwd: ROOT, encoding: 'utf8' })
-      .stdout.split('\n').filter(Boolean);
+      .stdout.split('\n').filter(Boolean).filter((row) => !AMENDED.includes(row));
     for (const row of rows) assert.match(row, /^A\treference\/lisp\/KIT_[A-Z_]+\.lsp$/, `only new kits, no existing one moved: ${row}`);
   }
 });

@@ -163,7 +163,10 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // tylu na rurki"*), appended at the end. Rule 15 is still the fifteenth.
   // AMENDED BY T82 F15 (25.10.2026): #46 the reeds (*"daj wariant b czyli na styk narazie"*),
   // appended at the end. Rule 15 is still the fifteenth. Forty-five.
-  assert.equal(CHECKS.length, 45);
+  // AMENDED BY THE CHAT FIX OF 28.10.2026 (KIT_RECESS.lsp D22): #49 the drawers in front of a
+  // recess that keep the carcass's depth (*"ustawic szuflady tylko w tej wnece"*), appended at
+  // the end. Rule 15 is still the fifteenth. Forty-six.
+  assert.equal(CHECKS.length, 46);
   assert.equal(CHECKS[14].n, 15);
 });
 

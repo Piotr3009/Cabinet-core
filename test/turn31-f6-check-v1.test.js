@@ -148,8 +148,12 @@ test('the rules, each with the owner’s colour', () => {
   // the in-frame row holds; the night's brief gives it #46), the owner: *"daj wariant
   // b czyli na styk narazie"*, *"do tego daj ustawienie srednicy walkow tez"*.
   // Thirty-eight became forty-five (#37, #38, #39, #45, #46, #47, #48).
-  assert.equal(CHECKS.length, 45);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48]);
+  // AMENDED BY THE CHAT FIX OF 28.10.2026 (KIT_RECESS.lsp D22): #49 the drawers in front of a
+  // recess that keep the carcass's depth, yellow, the next free number, the owner: *"co ja
+  // potrzebuje to ustawic szuflady tylko w tej wnece i odsunac diverted po lewej i po prawej
+  // rowno z wneka, zeby zamontowac szuflady"*. Forty-five became forty-six.
+  assert.equal(CHECKS.length, 46);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -213,6 +217,8 @@ test('the rules, each with the owner’s colour', () => {
     48: 'yellow',
     // T82 F12 · the vanity's service void: a note, never a fault.
     45: 'note',
+    // Chat fix 28.10.2026 · drawers before a recess that keep the carcass's depth: said, a person decides.
+    49: 'yellow',
     // T82 F15 · the reeds: the leaf is cut, a person decides.
     46: 'yellow',
   });

@@ -24,6 +24,8 @@ import {
   hangerDropMm, isLegacyRail, railChosenAlone, LEGACY_RAIL_NOTE, RAIL_ALONE_NOTE,
 } from '../../../engine/railAssembly.js';
 import { chainFromX, xFromChain } from '../../../engine/partitionPositions.js';
+// Chat fix 28.10.2026 (KIT_RECESS.lsp D22): the divider's nearer recess edge.
+import { recessColDividerX } from '../../../engine/extension.js';
 // Turn 24 (CLAUDE.md F3.3): which carcass board a partition is cut from.
 import { CARCASS_SLOTS, partitionSlot, slotById } from '../../../engine/thickness.js';
 import NumberField from '../room/NumberField.jsx';
@@ -436,20 +438,44 @@ export default function ElementProperties({
           .map((pp) => ({ x: pp.box.x, w: pp.box.w }));
         const mine = panel?.box?.x ?? item?.x_mm ?? G;
         const first = siblings.every((o) => o.x + o.w > mine);
+        // ─── CHAT FIX 28.10.2026 · ALIGN WITH RECESS (KIT_RECESS.lsp D22) ────
+        // The owner: *"odsunac diverted po lewej i po prawej rowno z wneka,
+        // zeby zamontowac szuflady"*. The recess band the room hands this
+        // cabinet (`derived.extension`, never a refused one): the divider goes
+        // to its nearer edge (recessColDividerX), where a column of drawers
+        // between two such dividers goes into the recess. Shown only while the
+        // divider does not stand on that edge.
+        const band = unitResult(unit.id)?.derived?.extension || null;
+        const alignX = band && !band.refused && item?.id
+          ? recessColDividerX(Number(unit.params.width) || 0, band.x0, band.x1, mine, panel?.box?.w ?? G)
+          : null;
         return (
-          <Field key={key} label={first ? 'From the left' : 'From the last'}>
-            <NumberField
-              className="pbi-re-input pbi-re-right"
-              data-partition-chain={item?.id || '1'}
-              value={chainFromX({ x: mine, boardT: G, others: siblings })}
-              title={first
-                ? "From the INSIDE face of the left side panel to this partition's near face"
-                : "From the previous partition's face to this one's near face — the clear bay between them"}
-              onCommit={(v) => setPartitionX(
-                unit.id, item.id, xFromChain({ value: v, x: mine, boardT: G, others: siblings }),
-              )}
-            />
-          </Field>
+          <div key={key}>
+            <Field label={first ? 'From the left' : 'From the last'}>
+              <NumberField
+                className="pbi-re-input pbi-re-right"
+                data-partition-chain={item?.id || '1'}
+                value={chainFromX({ x: mine, boardT: G, others: siblings })}
+                title={first
+                  ? "From the INSIDE face of the left side panel to this partition's near face"
+                  : "From the previous partition's face to this one's near face — the clear bay between them"}
+                onCommit={(v) => setPartitionX(
+                  unit.id, item.id, xFromChain({ value: v, x: mine, boardT: G, others: siblings }),
+                )}
+              />
+            </Field>
+            {alignX != null && Math.abs(alignX - mine) > 0.25 ? (
+              <button
+                type="button"
+                className="pbi-re-btn pbi-re-mt1 pbi-re-wfull pbi-re-t11"
+                data-partition-align-recess={item.id}
+                title="Stand this divider on the recess's nearer edge: between two dividers on its edges the drawers go into the recess"
+                onClick={() => setPartitionX(unit.id, item.id, alignX)}
+              >
+                Align with recess
+              </button>
+            ) : null}
+          </div>
         );
       }
       // ─── TURN 24 (CLAUDE.md F3.3): THE PARTITION'S OWN SLOT ───────────────

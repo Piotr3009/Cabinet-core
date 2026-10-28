@@ -605,9 +605,12 @@ test('F8 · on a notched carcass the extension\'s FLOOR and LID are EXT-FLOOR an
     assert.equal(new Set(ids).size, ids.length, 'every id once');
   }
   // The BACK with a window and the notch's corner: the window a pocket, the corner on the outline.
+  // AMENDED 28.10.2026 (KIT_RECESS.lsp D23), the owner: *"w zwiazku ze to jest w ksztalcie U to ja nie moge puscic tego
+  // na edge bander ... musimy pomniejszyc o 1 mm plecy"*: the window is cut 1 bigger on its four edges, the hand edge
+  // brings it back (118 418 382 582 until that evening); the notch's corner is the notch's and does not move.
   const bk = panelOf(mid, 'BACK');
   assert.deepEqual(bk.cnc.notch, { fc: 'x0y0', nw: 200, nh: 300 });
-  assert.deepEqual(bk.cnc.pockets.filter((k) => k.layer === X.RECESS_WINDOW_LAYER).map((k) => [k.x1, k.y1, k.x2, k.y2]), [[118, 418, 382, 582]]);
+  assert.deepEqual(bk.cnc.pockets.filter((k) => k.layer === X.RECESS_WINDOW_LAYER).map((k) => [k.x1, k.y1, k.x2, k.y2]), [[117, 417, 383, 583]]);
   // Its left rows keep off the notch's box: from its top (300) up, never into the RETURN.
   assert.deepEqual(bk.cnc.holes.filter((h) => h.kind === 'screw' && h.x === 9).map((h) => h.y), [350, 535, 720]);
   // The extension alone without the notch keeps its LID and FLOOR names.

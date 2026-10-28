@@ -366,6 +366,15 @@ export const CHECKS = Object.freeze([
   // CLAUDE.md T83 F8's sentence: *"the bowl enters RAIL-TOP by N mm: move the
   // basin forward or take a shallower bowl"*.
   { n: 48, level: 'yellow', label: 'Basins that do not fit the vanity\'s top, or whose bowl enters a board' },
+  // ─── CHAT FIX 28.10.2026 · THE DRAWERS IN THE RECESS (KIT_RECESS.lsp D22) ──
+  // The owner: *"co ja potrzebuje to ustawic szuflady tylko w tej wnece i
+  // odsunac diverted po lewej i po prawej rowno z wneka, zeby zamontowac
+  // szuflady"*. A column of drawers the recess band reaches goes INTO the
+  // recess only between two dividers standing on its edges; any other keeps
+  // the carcass's depth, and this row says why in the engine's own words
+  // (`RECESS_DRAWERS_SHALLOW`). The next free number. YELLOW: nothing is
+  // refused, the drawers are cut as they are; a person decides.
+  { n: 49, level: 'yellow', label: 'Drawers in front of a recess keep the carcass\'s depth' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -765,8 +774,18 @@ export function runChecks({
         VANITY_BOWL: 48,
         // T82 F15 · #46: the reeds' two notes, yellow as #32 is.
         FRONT_DECORATION_REED_SKIN: 46, FRONT_DECORATION_REED_REMAINDER: 46,
+        // Chat fix 28.10.2026 · #49: drawers before a recess that keep the carcass's depth (KIT_RECESS.lsp D22).
+        RECESS_DRAWERS_SHALLOW: 49,
       }[wn.code];
       if (!n) continue;
+      if (n === 49) {
+        out.push(finding(49, 'yellow', at(null, {
+          message: `${unitNum}: ${wn.message}`,
+          subject: { unitId, editor: 'cabinet' },
+          ...(wn.zone == null ? {} : { zone: wn.zone }),
+        })));
+        continue;
+      }
       if (n === 37 || n === 38 || n === 47) {
         // The sentence carries its own number (`#37 HAWA door out of range:
         // ...`); the row names it once.

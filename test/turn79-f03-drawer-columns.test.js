@@ -332,7 +332,7 @@ test('a full-width shelf under the one board is raised onto it: material never e
     'a full-width shelf under the one board is named');
 });
 
-test('export with readiness: the board and the divider go to the machine; the gate names its one fault in words', () => {
+test('export with readiness: the board and the divider go to the machine; the divider\'s two faces drill as BUL and BUR, and the gate holds nothing', () => {
   const id = freshWardrobe(1200);
   S().addDrawers(id, 3, 'internal', 200, null, null, { columns: 2 });
   const r = S().unitResult(id);
@@ -343,20 +343,32 @@ test('export with readiness: the board and the divider go to the machine; the ga
   assert.ok(!files.some((f) => /Z[12]-PART/.test(f.panelId)), 'no per-column board is exported');
   const ready = exportReadiness(r.panels, r.drills);
   assert.ok(ready.lines.every((l) => l.state === 'cut'), 'every part is a cut line');
-  // FOUND BY THIS TEST, NOT CUT TONIGHT (T32 F4's runner drilling, untouched:
-  // "Column rails unchanged"): the two columns drill their runner rows into
-  // the divider at the same points from its two faces, and the drill guard,
-  // which knows no face, names each hole drilled twice. The gate SPEAKS: the
-  // divider is held out by name, never sent silently. The one board over the
-  // columns ADDS no fault: the three confirmats each Z<k>-PART drove into the
-  // divider at one point (drilled twice before T79) are gone with the boards.
+  // FOUND BY THIS TEST (T79 F3): the two columns drilled their runner rows
+  // into the divider at the same points of its one program, and the drill
+  // guard named each hole drilled twice; the gate held the divider out by
+  // name. The one board over the columns ADDS no fault: the three confirmats
+  // each Z<k>-PART drove into the divider at one point (drilled twice before
+  // T79) are gone with the boards.
+  // CHAT FIX 28.10.2026 AMENDED: the cause, found the same evening by the
+  // owner's recess drawers (*"odsunac diverted po lewej i po prawej rowno z
+  // wneka, zeby zamontowac szuflady"*): both faces' rows were drawn at
+  // `partitionDepth - (px + setback)`, a v from the BACK applied to a v from
+  // the FRONT, mirrored front to back about the board's middle. Now T82 F9's
+  // law (KIT_VANITY.lsp D11, the vanity's divider): the LEFT face, column 1's
+  // right wall, is drilled as BUL is; the RIGHT face, column 2's left wall, is
+  // the same part turned over and drilled as BUR is. The two rows are no
+  // longer one point of the program and the divider goes to the machine.
+  const RN = P.wardrobe.runners;
+  const rowsOf = (panel, foot) => r.drills.filter((d) => d.panel === panel && d.layer === RN.layer)
+    .map((d) => `${d.x} ${d.y - foot}`).sort();
+  const dv = byId(r, 'VPART-1');
+  assert.equal(dv.box.z + dv.box.d, byId(r, 'BUL').box.z + byId(r, 'BUL').box.d, 'the divider\'s front is the sides\' front');
+  assert.deepEqual(rowsOf('VPART-1', 0), [...rowsOf('BUL', G), ...rowsOf('BUR', G)].sort(),
+    'its two faces carry BUL\'s rows and BUR\'s, each measured from its own foot');
+  assert.equal(rowsOf('VPART-1', 0).length, 2 * 3 * RN.holeXPattern.length, 'three drawers a column, one row a face');
   const gate = exportGate([{ result: r }], { profile: P });
-  assert.deepEqual(gate.held.map((h) => [h.panelId, h.codes]), [['VPART-1', ['duplicate-drill']]]);
-  assert.match(gate.message, /VPART-1/, 'the sentence names the board');
-  const twice = gate.findings.filter((f) => f.code === 'duplicate-drill');
-  assert.equal(twice.length, 3 * P.wardrobe.runners.holeXPattern.length, 'three drawers, each runner row once per face');
-  assert.ok(twice.every((f) => f.panel === 'VPART-1' && f.layer === P.wardrobe.runners.layer), 'the runner rows only');
-  assert.equal(gate.findings.length, twice.length, 'and nothing else on the unit');
+  assert.deepEqual(gate.held, [], 'nothing is held out');
+  assert.deepEqual(gate.findings, [], 'and nothing is found on the unit');
 });
 
 // ─── THE UI: the question, asked like the bays ─────────────────────────────

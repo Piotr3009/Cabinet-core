@@ -74,8 +74,12 @@ const SRC = join(ROOT, 'src');
  */
 const EXEMPT = {
   'src/components/SetupArt.jsx': 'Setup UI 26.10.2026 F1: approved illustrated furniture and setup tools. *"te grafiki zrob troche lkepsze"*; *"zakoduj mi prosze te zmiany"*.',
-  'src/components/Modal.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*.',
-  'src/components/NewProjectFlow.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*.',
+  'src/components/Modal.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' +
+    'Chat fix 28.10.2026: the workspace window taller. *"modal zrob troche wyzszy zeby nie trzeba bylo scrollowac, mam na mysli stage 2"*; *"koduj tutaj"*.',
+  'src/components/setup-workspace.css': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*. ' +
+    'Chat fix 28.10.2026: type tiles 25 percent smaller, the required field in gold, four types locked coming soon, the scope choice at the top of section 2. *"kafelki za duze, przynajmniej 25 procent mniejsze"*; *"koduj tutaj"*.',
+  'src/components/NewProjectFlow.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' +
+    'Chat fix 28.10.2026: smaller type tiles, the required field in gold, four types locked coming soon, the scope choice at the top of section 2. *"kafelki za duze, przynajmniej 25 procent mniejsze"*; *"pola ktore musza byc wypelnione powinny sie odznaczac innym kolorem"*; *"media wall utility other i hallway zostaw ale zablokuj i napisz coming soon"*; *"settings up space powinno byc w 2 nie w jedynce"*; *"koduj tutaj"*.',
   'src/components/WizardSummary.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*.',
   'src/components/CncTree.jsx':
     'T75 F22 · after an export the CNC view says how many parts the machine does not finish (the export\'s readiness banner), one line beside the gate\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."*'
@@ -228,7 +232,8 @@ const EXEMPT = {
     + ' T79 F12 · Center between beside Center all, the same width: one click arms the shared uiStore\'s two-pick mode, the panel says which pick is next, Escape cancels. *"naciskasz wycentruj pomiędzy, wybierasz dolny i górny element i wtedy wszystkie półki pomiędzy tymi elementami się centrują."*'
     + ' T79 F13 . SET BACK\'s standard chip is the project\'s setback, carcass.shelfSetbackMm for a shelf and carcass.dividerSetbackMm for a divider (10), no longer the LISP\'s 20; Flush and the field unchanged. *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*'
     + ' T79 F16 · the shelf\'s Type field gains a `Restore sleeve rows` button (data-restore-sleeve-rows), shown only when the shelf carries `sleeves_dropped`, calling the store\'s `restoreSleeveRows`. *"przycisk Restore sleeve rows"*, accepted by the owner 14:55: *"ok daj"*'
-    + ' T82 F18 · the free panel\'s Thickness field gains the ladder 18, 22, 25, 30, 36 (profile.freePanel.thicknessLadder, PROPOSED) beside the free number, each chip through updateUnitParams({ board_t }); the number stays the typed road. *"nie moge wizualnie zwiekszyc tez grubosci tego panela"*',
+    + ' T82 F18 · the free panel\'s Thickness field gains the ladder 18, 22, 25, 30, 36 (profile.freePanel.thicknessLadder, PROPOSED) beside the free number, each chip through updateUnitParams({ board_t }); the number stays the typed road. *"nie moge wizualnie zwiekszyc tez grubosci tego panela"*'
+    + ' Chat fix 28.10.2026 (KIT_RECESS.lsp D22) · the divider\'s position gains `Align with recess` (data-partition-align-recess) under its field, shown only while the cabinet has a recess band and the divider does not stand on its nearer edge (recessColDividerX), through the same setPartitionX. *"odsunac diverted po lewej i po prawej rowno z wneka, zeby zamontowac szuflady"*; *"dokladnie, mozesz zakodowac prosze"*, *"szuflady tez prosze"*.',
   // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
   // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
   // client cannot reach. Three of his fourteen points are answered in PRO's own
@@ -493,7 +498,7 @@ const FROZEN = {
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F16 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F18 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/ElementProperties.jsx': '9229e3044f0cdfaada3589d808e17f2af7a2042a3f1ae3b279ece76ccfadce74',
+  'src/components/ElementProperties.jsx': 'b5e0c8abd34437e6a4fccfb043f76c904a696a902d8a25286eb790f1e08f340c',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',
@@ -514,10 +519,12 @@ const FROZEN = {
   // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/Messages.jsx': '0d2c65d4b1027e8ef07d7f0b6c7e1dd51c1e63744dbf1177c306e848ed42cab9',
   'src/components/MockModeBadge.jsx': '081294a78610a7fd3baef730ca7a318d8d193e40ef66c5d278e45f9672c82826',
-  'src/components/Modal.jsx': '1fe9eb73cd46a0e4560254da7cc3ed11458611fe0461717ae41c88df999d1ecc',
+  'src/components/Modal.jsx': '0dc9c18a8196212304bf6606ec17146bdc5c9c831a5db2765ee41e857ce8775d',
   // T84 F4 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/MultiUnitPanel.jsx': 'df959555b30515a6990093f9a97dcdb5729b0af53959916945edcea7369a7162',
-  'src/components/NewProjectFlow.jsx': '8e8932c45eab1700afa29dee96d449ff82a3f3c114f12215cce112288c3e9ffb',
+  'src/components/NewProjectFlow.jsx': '46e8c9a41479f73b23e3ba914f51e4ee82beadce8f01df42b815bf19cbe2785b',
+  // Chat fix 28.10.2026: the setup workspace's stylesheet, licensed with the owner's words in EXEMPT.
+  'src/components/setup-workspace.css': 'e0c92676f1491a10cabec65f27c72e0411b6eaa09bdedeeea7e2cd7e4a6a4f78',
   'src/components/NumberField.jsx': 'ae2f9b89ea20a8da26fdf77db1cdb00cb487a2e5110128263f4c33f32eb5c176',
   'src/components/PartDetailModal.jsx': 'aaa5a376c870dd56a1d80ab4373bd4cc035a1d78570f943b0a3a4b32ffeb1eff',
   // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -763,6 +770,8 @@ test('F1 · the frozen surface — nothing was ADDED to it either', () => {
     ...(existsSync(join(SRC, 'components/studio'))
       ? readdirSync(join(SRC, 'components/studio')).filter((n) => n.endsWith('.css')).map((n) => `src/components/studio/${n}`)
       : []),
+    // Chat fix 28.10.2026 · the setup workspace's stylesheet, PRO's surface like the Studio's.
+    'src/components/setup-workspace.css',
   ].filter((p) => existsSync(join(ROOT, p))).sort();
   // A new component is not a byte moved, but it is PRO changing, and the
   // manifest alone would never see it.
@@ -889,6 +898,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // T84 F7 · the rail's menus, Escape and the parity gate: licensed in EXEMPT above with the owner's words (CLAUDE.md T84 FROZEN 4).
     'src/components/studio/RailMenus.jsx',
     'src/components/studio/lib/studioEscape.js',
+    // Chat fix 28.10.2026 · the setup workspace's stylesheet (the owner: "kafelki za duze", "koduj tutaj").
+    'src/components/setup-workspace.css',
 ].sort(), 'the exemption list is not the approved UI and CLAUDE.md paths');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);

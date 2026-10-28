@@ -75,9 +75,13 @@ import {
 import { insetCupFromEdge, insetHingeSpec, insetPlateSetback } from './hingeLadder.js';
 // T80 F3 · and RECESS_WINDOW_LAYER: the in-frame frame's openings go on the
 // layer the back's window uses (T25 F1.2's cut-out).
+// Chat fix 28.10.2026 (KIT_RECESS.lsp D22, D25): the recess column's law
+// (extensionOf to recessColFillers) and the BACK's holes on its pieces
+// (recessPieceAt).
 import {
   extensionCarcass, extensionDrills, extensionSummary, extensionVerdict, withExtensionRefusal,
   endPanelsFollowSides, RECESS_WINDOW_LAYER,
+  extensionOf, recessColRefusal, recessColDrawerDepth, recessColFillers, recessPieceAt,
 } from './extension.js';
 import { applySiteTrim } from './siteTrim.js';
 // T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
@@ -5434,11 +5438,85 @@ export function computeCabinet(params, profileOverride) {
   // lone column keeps its own `Z<k>-PART`; so does a column topped by a shoe
   // drawer (nothing over it, T70 F1), and a cabinet that also carries a
   // full-width or an overlay stack keeps the per-column law it had.
-  const columnCap = columnDrawerSets.length > 1 && columnDrawerSets.length === bays.length
-    && !hasDrawers && !overlay
-    && columnDrawerSets.every((set) => !shoeCapsTheStack((set.variants || []).map((v) => ({ variant: v }))))
-    ? { y: Math.max(...columnDrawerSets.map((set) => set.partY)) }
-    : null;
+  //
+  // ─── CHAT FIX 28.10.2026 · THE DRAWERS IN THE RECESS (KIT_RECESS.lsp D22) ──
+  // The owner: *"szafa ma 1000 mm a wneka 800, to po prawej i po lewej szafa
+  // jest o 100 mm plytka a reszta gleboka, i co ja potrzebuje to ustawic
+  // szuflady tylko w tej wnece i odsunac diverted po lewej i po prawej rowno z
+  // wneka, zeby zamontowac szuflady"*; the mockups: *"dokladnie tak"*,
+  // *"dokladnie o to mi chodzi"*; *"dokladnie, mozesz zakodowac prosze"*,
+  // *"szuflady tez prosze"*. A column of drawers between two dividers standing
+  // on the band's edges (recessColRefusal) goes INTO the recess: its drawers
+  // take the usable depth plus ed (recessColDrawerDepth, on the ladder), the
+  // board over them is this ONE board from BUL to BUR with both dividers
+  // stopping under it (*"pamietaj zeby diverted byl tylko do wysokosci polki
+  // nad szufladami"*), and the extension grows the dividers to the EXT-BACK
+  // and the board's bump end to end (engine/extension.js, PHASE A). What the
+  // LISP leaves to the engine is asked here: the two dividers are the unit's
+  // only ones, the column its only stack, the stack carries a board, nothing
+  // is notched. A column of drawers the band reaches that is not one keeps
+  // the carcass's depth and the Check says why (#49, RECESS_DRAWERS_SHALLOW).
+  // No extension or no column: nothing here runs, every golden as it was.
+  const recessColumn = (() => {
+    const ext = extensionOf(params);
+    if (!ext || !columnDrawerSets.length) return null;
+    const inBand = columnDrawerSets.filter((set) => set.bay.from < ext.x1 - 1e-6 && set.bay.to > ext.x0 + 1e-6);
+    if (!inBand.length) return null;
+    const set = inBand[0];
+    const slotOf = (item) => thicknessOf(partitionSlot(item), cfg.thicknesses);
+    const xOf = (item) => Math.min(Math.max(Number(item.x_mm), G), W - 2 * G);
+    const refuse = (message) => ({ refused: message, zone: set.zone });
+    if (columnDrawerSets.length > 1 || hasDrawers || overlay) {
+      return refuse('RECESS DRAWERS: the drawers go into the recess only as the one column of drawers between two '
+        + 'dividers on its edges; this cabinet carries another stack, so they keep the carcass\'s depth.');
+    }
+    if (params?.notch || params?.edgeNotch) {
+      return refuse('RECESS DRAWERS: a cut corner or a cut edge stands on this cabinet; the drawers keep the carcass\'s depth.');
+    }
+    if (shoeCapsTheStack((set.variants || []).map((v) => ({ variant: v })))) {
+      return refuse('RECESS DRAWERS: the column\'s top drawer is the shoe drawer, so no board stands over it for the '
+        + 'recess to close on; the drawers keep the carcass\'s depth.');
+    }
+    const walls = verticalItems.length === 2 && set.zone === 1 && bays.length === 3;
+    const [li, ri] = verticalItems;
+    const said = walls
+      ? recessColRefusal(W, H, G, ext.x0, ext.x1, ext.z0, ext.z1, xOf(li), xOf(ri), slotOf(ri), set.partY, notchProfile(P))
+      : 'RECESS DRAWERS: the dividers do not stand on the recess\'s edges; the drawers keep the carcass\'s depth.';
+    if (said) return refuse(said);
+    return {
+      zone: set.zone,
+      ex0: ext.x0,
+      ex1: ext.x1,
+      ed: ext.d,
+      capy: set.partY,
+      dividers: ['VPART-1', 'VPART-2'],
+      cap: 'PARTITION',
+    };
+  })();
+  if (recessColumn?.refused) {
+    warnings.push({
+      code: 'RECESS_DRAWERS_SHALLOW',
+      zone: recessColumn.zone,
+      message: /dividers do not stand/.test(recessColumn.refused)
+        ? `${recessColumn.refused} Stand one on each edge: Align with recess, in the divider's window.`
+        : recessColumn.refused,
+    });
+  }
+  const recessCol = recessColumn && !recessColumn.refused ? recessColumn : null;
+  if (recessCol) {
+    const set = columnDrawerSets[0];
+    const usable = D - G - DR.setback - frontT - DR.depthAllowance;
+    const dl = snapDrawerDepth(recessColDrawerDepth(usable, recessCol.ed), DR.depthSteps);
+    if (dl != null) set.dl = dl;
+    set.recess = true;
+  }
+  const columnCap = recessCol
+    ? { y: recessCol.capy, recess: true }
+    : (columnDrawerSets.length > 1 && columnDrawerSets.length === bays.length
+      && !hasDrawers && !overlay
+      && columnDrawerSets.every((set) => !shoeCapsTheStack((set.variants || []).map((v) => ({ variant: v }))))
+      ? { y: Math.max(...columnDrawerSets.map((set) => set.partY)) }
+      : null);
 
   // ─── The VERTICAL partition (turn 11, CLAUDE.md F3.4) ─────────────────────
   //
@@ -6069,6 +6147,30 @@ export function computeCabinet(params, profileOverride) {
             },
             cnc: rectGeometry(DP.fillerWidth, colDpH),
             meta: { side, zone: set.zone },
+          }));
+        }
+      }
+      // ─── CHAT FIX 28.10.2026 · THE SLOTS BESIDE A RECESS COLUMN ──────────
+      // KIT_RECESS.lsp D22, the owner: *"nie zapomnij zablokowac to jak w
+      // przypadku 30 mm, ale teraz bedzie varius w zaleznosci od wneki i
+      // diverted"*. The slot between each carcass side and its divider is
+      // closed on the DP's own two lines (the front filler the drawers' setback
+      // plus its offset back from the face, the back one on the BACK), as wide
+      // as the slot, from the BOTTOM to the board over the drawers
+      // (recessColFillers). The drawers stand the slot clear of the hinges,
+      // so no DP stands in this column (dpL and dpR are a carcass side's).
+      if (set.recess && recessCol) {
+        const fillers = recessColFillers(W, D, G, recessCol.ex0, recessCol.ex1, set.partY,
+          DR.setback + DP.fillerFrontOffset);
+        for (const [name, [x0, y0, z0, x1, y1, z1]] of Object.entries(fillers)) {
+          const fw = x1 - x0;
+          const fh = z1 - z0;
+          panels.push(panel({
+            id: `Z${set.zone + 1}-FILLER-${name}`, part: 'FILLER', role: 'side', w: fw, h: fh, thickness: G,
+            edgeCode: codes.none, edgeLen: 0,
+            box: { x: x0, y: z0, z: D - y1, w: fw, h: fh, d: y1 - y0 },
+            cnc: rectGeometry(fw, fh),
+            meta: { side: name.slice(0, 1), zone: set.zone, slot: true, recessColumn: set.zone },
           }));
         }
       }
@@ -9479,9 +9581,11 @@ export function computeCabinet(params, profileOverride) {
   // corner likwiduje nam wcięcie do recess?"*): a notched carcass whose notch
   // stands apart from the band on the BACK (the verdict above refused every
   // other) is cut by the notch first and by the extension on what it left.
+  // Chat fix 28.10.2026 (KIT_RECESS.lsp D22): a recess column grows its dividers,
+  // the board over its drawers, the BOTTOM and the RETURNs its own way.
   const extensionCut = params?.extension
     ? extensionCarcass({
-      params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel, notchCut,
+      params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel, notchCut, column: recessCol,
     })
     : null;
   // T79 F9 · the END panel follows its side (KIT_NOTCH.lsp D23, KIT_RECESS.lsp
@@ -9528,6 +9632,23 @@ export function computeCabinet(params, profileOverride) {
     d,
     ...(Number(depth) > 0 ? { depth: roundTo(depth, 4) } : {}),
   });
+  // ─── CHAT FIX 28.10.2026 · THE BACK'S HOLES FOLLOW ITS PIECES ──────────────
+  // KIT_RECESS.lsp D25. A hole this pass puts into the BACK at a CARCASS point
+  // is drilled into the piece of a recess-cut BACK it falls on, in that piece's
+  // own frame (BACK, BACK-2), and into none where the window took the board
+  // away (recessPieceAt). The probe of 28.10: a stack's board drilled x 932 on
+  // a BACK 118 wide and x 500 in the window. With no recess cut (every golden)
+  // the call is exactly the one each site made before tonight: `panelId` and
+  // the offset it subtracted.
+  const backHole = (kind, layer, x, y, d, panelId = 'BACK', ox = 0, oy = 0) => {
+    const bk = extensionCut?.back || null;
+    if (!bk) {
+      addDrill(panelId, kind, layer, x - ox, y - oy, d);
+      return;
+    }
+    const at = recessPieceAt(bk.pieces, bk.cuts, x - bk.ox, y - bk.oy, d / 2);
+    if (at) addDrill(at.id, kind, layer, at.x, at.z, d);
+  };
 
   // ─── Turn 13 (CLAUDE.md F8): a MARK is neither a hole nor a pocket ───
   //
@@ -10003,7 +10124,7 @@ export function computeCabinet(params, profileOverride) {
     if (back) {
       const spec = partitionBackSpec(P);
       for (const x of partitionBackScrewRun({ from: runFrom, to: runTo, profile: P })) {
-        addDrill('BACK', 'shelf_back_screw', spec.layer, x, jointY, spec.diameter);
+        backHole('shelf_back_screw', spec.layer, x, jointY, spec.diameter);
       }
     }
   }
@@ -10189,7 +10310,7 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
-      addDrill('BACK', 'partition_screw', pz.layers.screw, x, centreY, DP.screwDiameter);
+      backHole('partition_screw', pz.layers.screw, x, centreY, DP.screwDiameter);
     }
   };
   if (hasDrawers) {
@@ -10222,14 +10343,14 @@ export function computeCabinet(params, profileOverride) {
     if (dpLeft) {
       addDrill('BUL', 'dp_screw', pz.layers.screw, DP.screwDepth, G + pz.screwFromEnd, DP.screwDiameter);
       addDrill('BUL', 'dp_screw', pz.layers.screw, DP.screwDepth, partitionY - pz.screwFromEnd, DP.screwDiameter);
-      addDrill('BACK', 'dp_screw', pz.layers.screw, G + DP.inset + G / 2, G + pz.screwFromEnd, DP.screwDiameter);
-      addDrill('BACK', 'dp_screw', pz.layers.screw, G + DP.inset + G / 2, partitionY - pz.screwFromEnd, DP.screwDiameter);
+      backHole('dp_screw', pz.layers.screw, G + DP.inset + G / 2, G + pz.screwFromEnd, DP.screwDiameter);
+      backHole('dp_screw', pz.layers.screw, G + DP.inset + G / 2, partitionY - pz.screwFromEnd, DP.screwDiameter);
     }
     if (dpRight) {
       addDrill('BUR', 'dp_screw', pz.layers.screw, sideW - DP.screwDepth, G + pz.screwFromEnd, DP.screwDiameter);
       addDrill('BUR', 'dp_screw', pz.layers.screw, sideW - DP.screwDepth, partitionY - pz.screwFromEnd, DP.screwDiameter);
-      addDrill('BACK', 'dp_screw', pz.layers.screw, W - G - DP.inset - G / 2, G + pz.screwFromEnd, DP.screwDiameter);
-      addDrill('BACK', 'dp_screw', pz.layers.screw, W - G - DP.inset - G / 2, partitionY - pz.screwFromEnd, DP.screwDiameter);
+      backHole('dp_screw', pz.layers.screw, W - G - DP.inset - G / 2, G + pz.screwFromEnd, DP.screwDiameter);
+      backHole('dp_screw', pz.layers.screw, W - G - DP.inset - G / 2, partitionY - pz.screwFromEnd, DP.screwDiameter);
     }
   }
 
@@ -10259,10 +10380,25 @@ export function computeCabinet(params, profileOverride) {
             const x = bound === 'BUR' ? sideW - px - colBoxSetback : px + colBoxSetback;
             addDrill(bound, 'runner', RN.layer, x, G + rel, RN.holeDiameter);
           } else {
-            // The VPART's own frame, exactly as the bay-door hinges use it:
-            // x along the DEPTH as `depth − v` (v measured from the front),
-            // y the height above the partition's own bottom.
-            addDrill(bound, 'runner', RN.layer, partitionDepth - (px + colBoxSetback), rel, RN.holeDiameter);
+            // CHAT FIX 28.10.2026 · THE DIVIDER'S RUNNER ROW, ON ITS OWN FRONT.
+            // The VPART's frame (engine/joinery.js panelPlacement) runs x from
+            // its FRONT edge, y up from its own bottom. Until tonight this read
+            // `partitionDepth − (px + colBoxSetback)`, the hinge rule's
+            // conversion of a v measured from the BACK applied to a v measured
+            // from the FRONT: every divider's runner row stood mirrored front
+            // to back about the drawer cap's middle (the probe of 28.10: BUL
+            // at carcass z 456 424 200, its divider at 396 172 140, the box at
+            // 53 .. 493). The owner's ask the same evening: *"zeby zamontowac
+            // szuflady"*. Now T82 F9's law (the vanity's divider, KIT_VANITY.lsp
+            // D11): the divider's LEFT face, the machined one, is the column's
+            // RIGHT wall and is drilled as BUL is, x = v from its own front
+            // edge; its RIGHT face, the column's LEFT wall, is the same part
+            // turned over and is drilled as BUR is, x = depth − v. Measured from
+            // the divider's own front, a setback or a recess column's growth
+            // (KIT_RECESS.lsp D22) moves nothing.
+            const vp = panels.find((x) => x.id === bound);
+            const v = px + colBoxSetback - (D - (vp.box.z + vp.box.d));
+            addDrill(bound, 'runner', RN.layer, bound === set.bounds.left ? vp.box.d - v : v, rel, RN.holeDiameter);
           }
         }
       }
@@ -10279,7 +10415,7 @@ export function computeCabinet(params, profileOverride) {
     }
     if (columnCap) continue;
     for (const x of [set.bay.from + pz.screwFromEnd, set.bay.centre, set.bay.to - pz.screwFromEnd]) {
-      addDrill('BACK', 'partition_screw', pz.layers.screw, x, colPartCentre, DP.screwDiameter);
+      backHole('partition_screw', pz.layers.screw, x, colPartCentre, DP.screwDiameter);
     }
   }
   if (columnCap) stackCapScrews(columnCap.y + G / 2);
@@ -10514,10 +10650,10 @@ export function computeCabinet(params, profileOverride) {
       // that has one today, so this subtracts zero — but a back that is inset
       // (the sink kit's is) would otherwise take its holes in the wrong place,
       // and a coordinate that happens to be right is not a coordinate that is.
-      addDrill(
-        backPanel.id, 'partition_back_screw', spec.layer,
-        x - backPanel.box.x, y - backPanel.box.y, spec.diameter,
-      );
+      // Chat fix 28.10.2026 (KIT_RECESS.lsp D25): on a recess-cut BACK, onto
+      // the piece the hole falls on, none in the window (a recess column's
+      // divider passes through the BACK's plane: no BACK behind it).
+      backHole('partition_back_screw', spec.layer, x, y, spec.diameter, backPanel.id, backPanel.box.x, backPanel.box.y);
     }
   }
 

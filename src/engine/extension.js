@@ -247,7 +247,16 @@ export function recessSideJoints(cd, ch, g, ez0, ez1, ed, K) {
 
 /** recess-back-pieces: the rectangles [x0, z0, x1, z1] the window leaves, one or two. */
 export function recessBackPieces(cw, ch, g, ex0, ex1, ez0, ez1) {
-  const [wx0, wz0, wx1, wz1] = recessWindow(cw, ch, g, ex0, ex1, ez0, ez1);
+  return recessWindowPieces(cw, ch, recessWindow(cw, ch, g, ex0, ex1, ez0, ez1));
+}
+
+/**
+ * recess-window-pieces: the same law for ANY window [wx0, wz0, wx1, wz1]: the
+ * band's own (recessWindow) or, 28.10.2026 (KIT_RECESS.lsp D22), a recess
+ * column's (recessColWindow).
+ */
+export function recessWindowPieces(cw, ch, window) {
+  const [wx0, wz0, wx1, wz1] = window;
   const L = wx0 <= 0;
   const R = wx1 >= cw;
   const F = wz0 <= 0;
@@ -378,10 +387,13 @@ export function recessBackJoints(piece, window, cw, ch, g, ex0, ex1, ez0, ez1, t
   if (x1 >= cw) {
     for (const z of recessSideRow(bh, z0, RIGHT, nb, window, Boolean(nb) && nb[2] >= cw, recessRightP(ex1, cw), sfe)) scr.push([bw - S, z]);
   }
+  // 28.10.2026 (KIT_RECESS.lsp D22): a grown board's run ends at the WINDOW's
+  // edge, ix0 and ix1 for the band's own window (so nothing else moves), ex0
+  // and ex1 for a recess column's; ix0 and ix1 stay bound for the record.
   const runs = (grown) => (grown
     ? [
-      ...(recessLeftP(ex0) ? [] : [[g, ix0]]),
-      ...(recessRightP(ex1, cw) ? [] : [[ix1, cw - g]]),
+      ...(recessLeftP(ex0) ? [] : [[g, wx0]]),
+      ...(recessRightP(ex1, cw) ? [] : [[wx1, cw - g]]),
     ]
     : [[g, cw - g]]);
   if (z1 >= ch) {
@@ -405,7 +417,7 @@ export function recessBackJoints(piece, window, cw, ch, g, ex0, ex1, ez0, ez1, t
   // drugich ktore sa we wnetrzu recess"*. The second back, the EXT-BACK,
   // keeps its rows (recessExtBackScrews). The window and the band's interior
   // stay bound for the record of what the rows were measured from.
-  void wx0; void wz0; void wx1; void wz1; void bz0; void bz1;
+  void wz0; void wz1; void bz0; void bz1; void ix0; void ix1;
   return { LEFT, RIGHT, TOP, BOTTOM, SCREWS: scr };
 }
 
@@ -796,6 +808,200 @@ export function recessBoxName(name, notched) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// I. THE DRAWERS IN THE RECESS (KIT_RECESS.lsp D22, D23, D25; 28.10.2026)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner, 28.10.2026: *"szafa ma 1000 mm a wneka 800, to po prawej i po
+// lewej szafa jest o 100 mm plytka a reszta gleboka, i co ja potrzebuje to
+// ustawic szuflady tylko w tej wnece i odsunac diverted po lewej i po prawej
+// rowno z wneka, zeby zamontowac szuflady"*; the mockups: *"dokladnie tak"*,
+// *"dokladnie o to mi chodzi"*; *"dokladnie, mozesz zakodowac prosze"*,
+// *"szuflady tez prosze"*. The LISP's section I, routine for routine: a
+// column of drawers between two dividers standing on the band's edges goes
+// INTO the recess (D22), a cut inside the BACK is cut one hand edge bigger
+// (D23), and the BACK's holes follow its pieces (D25). `dl` and `dr` are the
+// column's two dividers' LEFT faces, `gd` their board, `capy` the underside
+// of the board over the drawers, `capt` its top, `capd` its depth.
+
+/**
+ * recess-col-refusal (D22): is this column of drawers a RECESS COLUMN? null, or
+ * the sentence. A divider stands ON an edge within half a millimetre (the
+ * editor's own step, profile.editor.mmStep 0.5: a face typed or snapped there).
+ */
+export function recessColRefusal(cw, ch, g, ex0, ex1, ez0, ez1, dl, dr, gd, capy, K) {
+  const minI = notchP(K, 'notch.minInterior');
+  if (recessLeftP(ex0) || recessRightP(ex1, cw)) {
+    return 'RECESS DRAWERS: the recess reaches a side of the carcass; the drawers keep the carcass\'s depth.';
+  }
+  if (!recessFloorP(ez0)) {
+    return 'RECESS DRAWERS: the recess does not start on the floor; the drawers keep the carcass\'s depth.';
+  }
+  if (Math.abs(dl - ex0) > 0.5 || Math.abs(dr + gd - ex1) > 0.5) {
+    return 'RECESS DRAWERS: the dividers do not stand on the recess\'s edges; the drawers keep the carcass\'s depth.';
+  }
+  if (recessBz1(ez1, ch, g) - (capy + g) < minI) {
+    return 'RECESS DRAWERS: the recess ends too close over the board over the drawers; the drawers keep the carcass\'s depth.';
+  }
+  return null;
+}
+
+/** recess-col-window (D22): the band's OUTER faces across, bz0 .. bz1 up. */
+export function recessColWindow(cw, ch, g, ex0, ex1, ez0, ez1) {
+  void cw;
+  return [ex0, recessBz0(ez0, g), ex1, recessBz1(ez1, ch, g)];
+}
+
+/** recess-col-back-pieces: the pieces that window leaves. */
+export function recessColBackPieces(cw, ch, g, ex0, ex1, ez0, ez1) {
+  return recessWindowPieces(cw, ch, recessColWindow(cw, ch, g, ex0, ex1, ez0, ez1));
+}
+
+/** recess-col-plan-bump (D22): the BOTTOM's bump between the band's OUTER faces, its plan frame. */
+export function recessColPlanBump(cw, cd, g, ex0, ex1, ed) {
+  return [cw - 2 * g, cd - g, ex0 - g, ex1 - g, ed];
+}
+
+export function recessColBottomOutline(cw, cd, g, ex0, ex1, ed) {
+  return recessBumpOutline(...recessColPlanBump(cw, cd, g, ex0, ex1, ed));
+}
+
+/**
+ * recess-col-top-joints (D22): the TOP's and the BOTTOM's joints in a recess
+ * column. No side grows (the long edges the parent's); the back edge's runs
+ * are what the BACK's pieces leave, 0 .. ex0 - g and ex1 - g .. tw, each
+ * re-planned on its own (D7: none under the D6 minimum).
+ */
+export function recessColTopJoints(cw, cd, g, ex0, ex1, K) {
+  const e = notchP(K, 'puzzle.tabCentresFromEnd');
+  const below = notchP(K, 'puzzle.singleSocketBelow');
+  const inset = notchJointInset(cd, e, notchP(K, 'puzzle.singleJointMaxDepth'));
+  const minEdge = notchMinJointEdge(notchP(K, 'puzzle.dogboneHalfHeight'), g);
+  const sideW = cd - g;
+  const tw = cw - 2 * g;
+  return {
+    LEFT: notchReplanSockets(sideW, inset, below),
+    RIGHT: notchReplanSockets(sideW, inset, below),
+    BACK: [
+      ...recessRunSockets(ex0 - g, 0, e, below, minEdge),
+      ...recessRunSockets(tw - (ex1 - g), ex1 - g, e, below, minEdge),
+    ],
+  };
+}
+
+/**
+ * recess-col-box-places (D22): the carcass frame of recess-box-places. The
+ * RETURNs on the board over the drawers (capt) up to bz1, ed deep, their front
+ * ends on the BACK's inner face (through its plane); the LID and the EXT-BACK
+ * as ever; no FLOOR (the band starts on the floor).
+ */
+export function recessColBoxPlaces(cw, cd, ch, g, ex0, ex1, ez0, ez1, ed, capt) {
+  const bz1 = recessBz1(ez1, ch, g);
+  const out = {
+    'RETURN-L': [ex0, cd - g, capt, ex0 + g, cd + ed - g, bz1],
+    'RETURN-R': [ex1 - g, cd - g, capt, ex1, cd + ed - g, bz1],
+  };
+  if (!recessTopP(ez1, ch)) out.LID = [ex0, cd, ez1 - g, ex1, cd + ed - g, ez1];
+  out['EXT-BACK'] = [ex0, cd + ed - g, ez0, ex1, cd + ed, ez1];
+  void cw;
+  return out;
+}
+
+/** recess-col-return: ed x (bz1 - capt). */
+export function recessColReturn(ch, g, ez1, ed, capt) {
+  return [ed, recessBz1(ez1, ch, g) - capt];
+}
+
+/** recess-col-divider (D22): [x0, y0, z0, x1, y1, z1], its setback kept at the front, its back on the EXT-BACK. */
+export function recessColDivider(x0, gd, cd, g, ed, front, capy) {
+  return [x0, front, g, x0 + gd, cd + ed - g, capy];
+}
+
+/** recess-col-cap-bump (D22): the board over the drawers' bump, END TO END between the band's outer faces (clr 0). */
+export function recessColCapBump(cw, g, ex0, ex1, ed, capd) {
+  return [cw - 2 * g, capd, ex0 - g, ex1 - g, ed];
+}
+
+export function recessColCapOutline(cw, g, ex0, ex1, ed, capd) {
+  return recessBumpOutline(...recessColCapBump(cw, g, ex0, ex1, ed, capd));
+}
+
+/** recess-col-drawer-depth (D22): the usable depth plus ed (the kit snaps it to its ladder). */
+export function recessColDrawerDepth(usable, ed) {
+  return usable + ed;
+}
+
+/**
+ * recess-col-fillers (D22): { L1, L2, R1, R2 } boxes [x0, y0, z0, x1, y1, z1]
+ * (the carcass frame of recess-box-places), two per slot on the DP's own two
+ * lines: the front one fy from the face (the drawers' setback plus the
+ * filler's offset), the back one on the BACK's inner face; as wide as the
+ * slot, from the BOTTOM to the board over the drawers. A slot of nothing
+ * takes none.
+ */
+export function recessColFillers(cw, cd, g, ex0, ex1, capy, fy) {
+  const out = {};
+  if (ex0 > g) {
+    out.L1 = [g, fy, g, ex0, fy + g, capy];
+    out.L2 = [g, cd - 2 * g, g, ex0, cd - g, capy];
+  }
+  if (ex1 < cw - g) {
+    out.R1 = [ex1, fy, g, cw - g, fy + g, capy];
+    out.R2 = [ex1, cd - 2 * g, g, cw - g, cd - g, capy];
+  }
+  return out;
+}
+
+/**
+ * recess-col-divider-x (D22): where a divider stands to be ON the band's nearer
+ * edge, its left face at ex0 or at ex1 - w (w its board), whichever is nearer
+ * to where it stands (x); null when the band reaches both sides. The room's
+ * "Align with recess" (ElementProperties, the divider's position).
+ */
+export function recessColDividerX(cw, ex0, ex1, x, w) {
+  const lft = recessLeftP(ex0) ? null : ex0;
+  const rgt = recessRightP(ex1, cw) ? null : ex1 - w;
+  if (lft != null && rgt != null) return Math.abs(lft - x) <= Math.abs(rgt - x) ? lft : rgt;
+  return lft ?? rgt ?? null;
+}
+
+/**
+ * recess-hand-cut (D23): the cut [x0, z0, x1, z1] of a bw x bh piece as the
+ * cutter takes it: each edge not on the piece's own edge moved `he` further
+ * into the board; in a recess column (`colp`) the two edges across stay (a
+ * divider or a RETURN covers them, D22).
+ */
+export function recessHandCut(cut, bw, bh, he, colp) {
+  const [x0, z0, x1, z1] = cut;
+  return [
+    colp || x0 <= 0 ? x0 : x0 - he,
+    z0 <= 0 ? z0 : z0 - he,
+    colp || x1 >= bw ? x1 : x1 + he,
+    z1 >= bh ? z1 : z1 + he,
+  ];
+}
+
+/**
+ * recess-piece-at (D25): the piece a hole at (x, z), radius r, in the BACK's
+ * frame before the cut falls on: { id: 'BACK' | 'BACK-2', x, z } in that
+ * piece's own frame, or null where no piece holds it whole (the window, past
+ * the board). `cuts`: each piece's cut as the cutter takes it, or null.
+ */
+export function recessPieceAt(pieces, cuts, x, z, r) {
+  for (let i = 0; i < pieces.length; i += 1) {
+    const p = pieces[i];
+    const px = x - p[0];
+    const pz = z - p[1];
+    const bw = p[2] - p[0];
+    const bh = p[3] - p[1];
+    const c = cuts?.[i] || null;
+    const onBoard = px - r >= -EPS && px + r <= bw + EPS && pz - r >= -EPS && pz + r <= bh + EPS;
+    const offCut = !c || px + r <= c[0] || px - r >= c[2] || pz + r <= c[1] || pz - r >= c[3];
+    if (onBoard && offCut) return { id: i === 0 ? 'BACK' : 'BACK-2', x: px, z: pz };
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Z. THE ENGINE CUTS WHAT THE ROUTINES DESCRIBE
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -989,16 +1195,22 @@ function withoutCornerMarks(marks, pz) {
  * line below is what it was.
  */
 export function extensionCarcass({
-  params, profile, panels, W, H, D, G, jointInset, codes, makePanel, notchCut = null,
+  params, profile, panels, W, H, D, G, jointInset, codes, makePanel, notchCut = null, column = null,
 }) {
   const ext = extensionOf(params);
   if (!ext) return null;
   const nc = notchCut || null;
+  // 28.10.2026 (KIT_RECESS.lsp D22): a RECESS COLUMN, planned by engine/cabinet.js
+  // (recessColumnPlan): its two dividers on the band's edges, the board over its
+  // drawers. Never on a notched carcass (the plan says so in words first).
+  const col = column && !nc ? column : null;
   const pz = profile.puzzle;
   const K = notchProfile(profile);
   // 17.10.2026 (D18): the cutter radius no longer sets out a dog bone here; the
   // re-entrant corners get the CORNER_4MM mark, `leg` long each way.
   const leg = notchP(K, 'cnc.cornerMarkLeg');
+  // 28.10.2026 (D23): the edge put on by hand round a cut inside the BACK.
+  const he = Number(notchP(K, 'recess.handEdge')) || 0;
   const { x0: ex0, x1: ex1, z0: ez0, z1: ez1, d: ed } = ext;
   const sideW = D - G;
   const tw = W - 2 * G;
@@ -1010,7 +1222,8 @@ export function extensionCarcass({
   const bz1 = recessBz1(ez1, H, G);
   const ix0 = recessIx0(ex0, G);
   const ix1 = recessIx1(ex1, G);
-  const window = recessWindow(W, H, G, ex0, ex1, ez0, ez1);
+  // D22: a recess column's window runs between the band's OUTER faces.
+  const window = col ? recessColWindow(W, H, G, ex0, ex1, ez0, ez1) : recessWindow(W, H, G, ex0, ex1, ez0, ez1);
   const cut = {
     ext, ex0, ex1, ez0, ez1, ed, left, right, floor, top, bz0, bz1, ix0, ix1, window,
     W, H, D, G, sideW,
@@ -1018,6 +1231,12 @@ export function extensionCarcass({
     boards: [],
     reorigin: {},
     pieces: 0,
+    // D25: the BACK's pieces and their cuts in the BACK's own frame, for the
+    // holes the drilling pass puts into the BACK (null: no BACK was cut).
+    back: null,
+    column: col ? {
+      zone: col.zone, dividers: [...col.dividers], cap: col.cap, capY: col.capy,
+    } : null,
   };
   const byId = (id) => panels.find((p) => p.id === id);
   const stamp = (p, extra) => {
@@ -1104,9 +1323,15 @@ export function extensionCarcass({
   // T79 F8 (D13): a board the notch cut too (`nc.regions` names it) takes the
   // bump less the notch's corner, and its joints run by run.
   const planBoth = (id) => Boolean(nc && nc.regions?.[id]);
-  const topJoints = (id) => (planBoth(id)
-    ? recessNotchedTopJoints(W, D, G, ex0, ex1, ed, nc.nw, nc.nd, nc.corner, K)
-    : recessTopJoints(W, D, G, ex0, ex1, ed, K));
+  // 28.10.2026 (D22): in a recess column the back edges' runs are what the
+  // BACK's pieces leave (ex0, ex1), and the BOTTOM's bump runs between the
+  // band's outer faces (the dividers stand on it); the TOP's bump is the band's.
+  const topJoints = (id) => {
+    if (col) return recessColTopJoints(W, D, G, ex0, ex1, K);
+    return planBoth(id)
+      ? recessNotchedTopJoints(W, D, G, ex0, ex1, ed, nc.nw, nc.nd, nc.corner, K)
+      : recessTopJoints(W, D, G, ex0, ex1, ed, K);
+  };
   if (top || floor) {
     const drawnW = sideW + ed;
     // 17.10.2026 (D18): the CORNER_4MM marks on the drawn nominal outline, no
@@ -1114,9 +1339,10 @@ export function extensionCarcass({
     for (const id of [...(top ? ['TOP'] : []), ...(floor ? ['BOTTOM'] : [])]) {
       const p = byId(id);
       if (!p || p.part !== id) continue;
-      const plan = planBoth(id)
-        ? recessNotchedTopOutline(W, D, G, ex0, ex1, ed, nc.nw, nc.nd, nc.corner)
-        : recessTopOutline(W, D, G, ex0, ex1, ed);
+      let plan;
+      if (col && id === 'BOTTOM') plan = recessColBottomOutline(W, D, G, ex0, ex1, ed);
+      else if (planBoth(id)) plan = recessNotchedTopOutline(W, D, G, ex0, ex1, ed, nc.nw, nc.nd, nc.corner);
+      else plan = recessTopOutline(W, D, G, ex0, ex1, ed);
       const drawn = notchRot90Pts(plan, drawnW);
       const tj = topJoints(id);
       const runs = [
@@ -1153,7 +1379,11 @@ export function extensionCarcass({
     // piece that holds it, and a BOXED one keeps the rows off its box.
     const backFp = nc && nc.back ? recessNotchFootprint(W, H, nc.nw, nc.nh, nc.corner) : null;
     const nb = backFp && nc.boxed ? backFp : null;
-    const pieces = recessNotchedBackPieces(W, H, G, ex0, ex1, ez0, ez1, backFp);
+    // D22: a recess column's pieces are its window's (the band's outer faces).
+    const pieces = col
+      ? recessColBackPieces(W, H, G, ex0, ex1, ez0, ez1)
+      : recessNotchedBackPieces(W, H, G, ex0, ex1, ez0, ez1, backFp);
+    cut.back = { pieces: [], cuts: [], ox: bk.box?.x || 0, oy: bk.box?.y || 0 };
     // A side that grows carries its tabs on its straight runs; the other keeps the parent's
     // (T79 F8: the notch's, on the side the notch cut).
     const parentTabs = notchReplanTabs(H, notchP(K, 'puzzle.tabCentresFromEnd'), notchP(K, 'puzzle.singleTabAtOrBelow'), notchP(K, 'puzzle.middleTabBelow'));
@@ -1185,9 +1415,18 @@ export function extensionCarcass({
       const bh = pz1 - pz0;
       const pc = recessBackCut(piece, window);
       const kind = pc ? recessCutKind(pc, bw, bh) : null;
+      // 28.10.2026 (KIT_RECESS.lsp D23): the cut as the cutter takes it, `he`
+      // more of the board on each of its own edges, the edge put on by hand
+      // brings it back to the nominal line. The owner: *"w zwiazku ze to jest
+      // w ksztalcie U to ja nie moge puscic tego na edge bander ... musimy
+      // pomniejszyc o 1 mm plecy"*. A recess column's edges across stay (a
+      // divider or a RETURN covers them, D22); a whole piece takes none.
+      const hc = pc && he > 0 ? recessHandCut(pc, bw, bh, he, Boolean(col)) : pc;
+      cut.back.pieces.push([...piece]);
+      cut.back.cuts.push(hc ? hc.map((v) => roundTo(v, 4)) : null);
       // T79 F8: a part-height notch's corner on the piece that holds it.
       const ncn = recessNotchedBackCorner(piece, backFp);
-      const outline = recessNotchedBackOutline(piece, pc, ncn);
+      const outline = recessNotchedBackOutline(piece, hc, ncn);
       const bj = recessBackJoints(piece, window, W, H, G, ex0, ex1, ez0, ez1, topTabs, botTabs, sideTabs('BUL', left), sideTabs('BUR', right), K, nb);
       const sockets = socketPanelGeometry({
         w: bw, h: bh, G, puzzle: pz,
@@ -1212,7 +1451,8 @@ export function extensionCarcass({
           // VCarve reads for which side the material is on). Until tonight it
           // ran anticlockwise, the outline's way, and the export gate's Check
           // #9 said so in red on every recess with a window.
-          ...(kind === 'window' ? [{ layer: RECESS_WINDOW_LAYER, x1: roundTo(pc[0], 4), y1: roundTo(pc[1], 4), x2: roundTo(pc[2], 4), y2: roundTo(pc[3], 4), depth: G, cutout: true }] : []),
+          // 28.10.2026 (D23): the window as the cutter takes it (`hc`).
+          ...(kind === 'window' ? [{ layer: RECESS_WINDOW_LAYER, x1: roundTo(hc[0], 4), y1: roundTo(hc[1], 4), x2: roundTo(hc[2], 4), y2: roundTo(hc[3], 4), depth: G, cutout: true }] : []),
         ],
         // 17.10.2026 (D18): a bite's two corners and a corner cut's one get the
         // mark, not the bone; a window is a pocket with round corners (D9).
@@ -1223,17 +1463,17 @@ export function extensionCarcass({
           : sockets.holes,
         marks: [...(nc ? withoutCornerMarks(parentCnc?.marks, pz) : (parentCnc?.marks || [])), ...cornerMarkRecords(outline, leg, pz)],
         notch: chainCorners(
-          kind === 'corner' ? notchCornerOfOutline(recessBackOutline(piece, pc), bw, bh) : null,
+          kind === 'corner' ? notchCornerOfOutline(recessBackOutline(piece, hc), bw, bh) : null,
           ncn ? { fc: ncn[0], nw: roundTo(ncn[1], 4), nh: roundTo(ncn[2], 4) } : null,
         ),
-        ...(kind === 'bite' ? { bite: { x0: roundTo(pc[0], 4), y0: roundTo(pc[1], 4), x1: roundTo(pc[2], 4), y1: roundTo(pc[3], 4) } } : {}),
+        ...(kind === 'bite' ? { bite: { x0: roundTo(hc[0], 4), y0: roundTo(hc[1], 4), x1: roundTo(hc[2], 4), y1: roundTo(hc[3], 4) } } : {}),
       };
       if (kind !== 'bite') delete cnc.bite;
       // T79 F8: the notch's region on this piece, in the piece's frame (the
       // BACK's own stood in carcass x), for its drop law in PHASE B.
       if (notchRegion) nc.regions[i === 0 ? 'BACK' : 'BACK-2'] = { ...notchRegion, ox: roundTo(-px0, 4), oy: roundTo(-pz0, 4) };
       const box = { ...parentBox, x: roundTo(parentBox.x + px0, 4), y: roundTo(parentBox.y + pz0, 4), w: roundTo(bw, 4), h: roundTo(bh, 4) };
-      const area = polygonArea(outline) / 1e6 - (kind === 'window' ? (pc[2] - pc[0]) * (pc[3] - pc[1]) / 1e6 : 0);
+      const area = polygonArea(outline) / 1e6 - (kind === 'window' ? (hc[2] - hc[0]) * (hc[3] - hc[1]) / 1e6 : 0);
       if (i === 0) {
         bk.cnc = cnc;
         bk.w = roundTo(bw, 4);
@@ -1261,7 +1501,12 @@ export function extensionCarcass({
   }
 
   // ── THE ADDED BOARDS: RETURN-L, RETURN-R, FLOOR, LID, EXT-BACK ──
-  const places = recessBoxPlaces(W, D, H, G, ex0, ex1, ez0, ez1, ed);
+  // 28.10.2026 (D22): in a recess column the RETURNs stand on the board over
+  // the drawers, ed deep, through the BACK's plane.
+  const capt = col ? col.capy + G : null;
+  const places = col
+    ? recessColBoxPlaces(W, D, H, G, ex0, ex1, ez0, ez1, ed, capt)
+    : recessBoxPlaces(W, D, H, G, ex0, ex1, ez0, ez1, ed);
   const boxOf = ([x0, y0, z0, x1, y1, z1]) => ({
     x: roundTo(x0, 4), y: roundTo(z0, 4), z: roundTo(D - y1, 4),
     w: roundTo(x1 - x0, 4), h: roundTo(z1 - z0, 4), d: roundTo(y1 - y0, 4),
@@ -1293,7 +1538,7 @@ export function extensionCarcass({
     panels.push(p);
     cut.boards.push(id);
   };
-  const ret = recessReturn(H, G, ez0, ez1, ed);
+  const ret = col ? recessColReturn(H, G, ez1, ed, capt) : recessReturn(H, G, ez0, ez1, ed);
   const retScrews = recessReturnScrews(H, G, ez0, ez1, ed, K);
   if (places['RETURN-L']) board('RETURN-L', 'RECESS-RETURN', ret[0], ret[1], places['RETURN-L'], retScrews);
   if (places['RETURN-R']) board('RETURN-R', 'RECESS-RETURN', ret[0], ret[1], places['RETURN-R'], retScrews);
@@ -1305,6 +1550,58 @@ export function extensionCarcass({
   if (places.LID) board(recessBoxName('LID', Boolean(nc)), 'RECESS-LID', lid[0], lid[1], places.LID, lidScrews);
   const eb = recessExtBack(ex0, ex1, ez0, ez1);
   board('EXT-BACK', 'RECESS-BACK', eb[0], eb[1], places['EXT-BACK'], recessExtBackScrews(W, H, G, ex0, ex1, ez0, ez1, K), true);
+
+  // ── THE RECESS COLUMN (D22): ITS DIVIDERS AND THE BOARD OVER ITS DRAWERS ──
+  // The owner: *"odsunac diverted po lewej i po prawej rowno z wneka, zeby
+  // zamontowac szuflady"*; *"pamietaj zeby diverted byl tylko do wysokosci
+  // polki nad szufladami"*; *"polka nad szufladami powinna byc wycieta jak inne
+  // polki az do tylu, w L shape lub z cornerami"*. The dividers already stop
+  // under the board (engine/cabinet.js, the columns' one board); here each
+  // grows back by ed to the EXT-BACK, a plain rectangle in its own frame (x
+  // from its FRONT edge, engine/joinery.js), and the board takes its bump end
+  // to end between the band's outer faces, cut as a fixed shelf in the band is.
+  if (col) {
+    for (const id of col.dividers) {
+      const vp = byId(id);
+      if (!vp || vp.part !== 'VPART' || !vp.box) continue;
+      const front = D - (vp.box.z + vp.box.d);
+      const place = recessColDivider(vp.box.x, vp.box.w, D, G, ed, front, vp.box.y + vp.box.h);
+      const grownBox = boxOf(place);
+      // Its height stays the column's (the BOTTOM to the board over the drawers).
+      vp.box = { ...vp.box, z: grownBox.z, d: grownBox.d };
+      vp.h = roundTo(grownBox.d, 4);
+      vp.area_m2 = (vp.w * vp.h) / 1e6;
+      // Only the outline moves: x runs from the FRONT edge, so whatever the
+      // board already carries stays where it is.
+      vp.cnc = { ...vp.cnc, outline: rectGeometry(grownBox.d, vp.w).outline, drawn_w: roundTo(grownBox.d, 4), drawn_h: roundTo(vp.w, 4) };
+      vp.meta = { ...(vp.meta || {}), recessColumn: col.zone };
+      cut.grown.push(id);
+      stamp(vp, { cut: 'divider', run: roundTo(grownBox.d, 4) });
+    }
+    const cap = byId(col.cap);
+    if (cap && cap.part === 'PARTITION' && cap.box) {
+      const capd = cap.box.d;
+      const plan = recessColCapOutline(W, G, ex0, ex1, ed, capd);
+      cap.box = { ...cap.box, z: roundTo(cap.box.z - ed, 4), d: roundTo(capd + ed, 4) };
+      // The board's own CNC frame IS its box plan (engine/joinery.js: x across
+      // from BUL's inner face, y from its BACK edge), walked anticlockwise.
+      const boxPlan = planToBox(plan, cap.box);
+      const drawn = [...boxPlan].reverse();
+      cap.cnc = {
+        ...cap.cnc,
+        drawn_w: roundTo(tw, 4),
+        drawn_h: roundTo(capd + ed, 4),
+        outline: drawn,
+        marks: [...(cap.cnc?.marks || []), ...cornerMarkRecords(drawn, leg, pz)],
+        notch: null,
+      };
+      cap.h = roundTo(capd + ed, 4);
+      cap.area_m2 = polygonArea(plan) / 1e6;
+      cap.meta = { ...(cap.meta || {}), planOutline: boxPlan, recessColumn: col.zone };
+      cut.grown.push(cap.id);
+      stamp(cap, { cut: 'cap', outline: r4pts(plan) });
+    }
+  }
 
   // ── SHELVES IN THE BAND (D10) ──
   // 17.10.2026 (D16): the FIXED shelf grows like any other (the owner: *"nie
@@ -1408,6 +1705,8 @@ export function extensionSummary(cut) {
     pieces: cut.pieces,
     for: cut.ext.for,
     ...(cut.ext.ends ? { ends: [...cut.ext.ends] } : {}),
+    // 28.10.2026 (D22): the recess column, when there is one.
+    ...(cut.column ? { column: { ...cut.column, dividers: [...cut.column.dividers] } } : {}),
   };
 }
 

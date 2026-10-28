@@ -567,6 +567,20 @@ export const DEFAULT_CABINET_PROFILE = {
     minInteriorMm: 100,
   },
 
+  // ─── CHAT FIX 28.10.2026 · THE RECESS (reference/lisp/KIT_RECESS.lsp D23) ──
+  //
+  // The owner: *"plecy, jak mamy wyciecie na recess w plecach, mowie tylko do
+  // srodka, to tam robimy edging; w zwiazku ze to jest w ksztalcie U to ja nie
+  // moge puscic tego na edge bander, wiec nie zrobie scribe na edging, wiec w
+  // tym miejscu musimy pomniejszyc o 1 mm plecy, ale tylko w podkowie U"*. The
+  // edge put on BY HAND round a cut inside the BACK (the U, the window, the L):
+  // the CNC takes this much more of the board on each of the cut's own edges.
+  // The extension reads it through the notch's table (notchProfile,
+  // 'recess.handEdge'), as KIT_RECESS.lsp reads KIT_NOTCH's notch-profile.
+  recess: {
+    handEdgeMm: 1,
+  },
+
   // ─── T75 F23 · THE JOINT SYSTEM (reference/lisp/SKYLON_JOINTS_DOWEL.lsp) ──
   //
   // The owner, 9.10.2026: *"lisp najpierw."*  `system` is the ONE CUT LAW for
@@ -1460,10 +1474,14 @@ export const DEFAULT_CABINET_PROFILE = {
       // usable depth = depth − G − setback − frontThickness − depthAllowance
       depthAllowance: 20,
       partitionClearance: 5,   // partition sits 5 mm above the top drawer front
-      // T79 F13 · the board that caps a drawer stack stands back the old 20 in
-      // a project, and the runner drilling read off it with it: *"szuflady
-      // zostaw nie ruszaj"* (paramsForEngine: `drawer_cap_setback_mm`).
-      capSetbackMm: 20,
+      // T79 F13 · the board that caps a drawer stack stood back the old 20 in
+      // a project (*"szuflady zostaw nie ruszaj"*, paramsForEngine:
+      // `drawer_cap_setback_mm`). CHAT FIX 28.10.2026 (KIT_RECESS.lsp D24),
+      // the owner: *"wszystkie polki teraz sa 10 mm, to polke nad szufladami
+      // tez zrob 10 mm jak reszta"*: 10, every stack's board, in a recess or
+      // not. The runner holes no longer read it: a divider's are measured
+      // from its own front edge (engine/cabinet.js, the same evening).
+      capSetbackMm: 10,
       zoneHeadroom: 200,       // drawer zone must leave this much above it
     },
 
@@ -6396,6 +6414,11 @@ export function migrateCabinetProfile(profile) {
         // with T25's six short nominals cannot keep cutting a 380 box for a
         // 350 runner.
         depthSteps: D.wardrobe.drawers.depthSteps,
+        // CHAT FIX 28.10.2026 (KIT_RECESS.lsp D24): the board over the drawers
+        // stands back 10 like every shelf (*"polke nad szufladami tez zrob 10
+        // mm jak reszta"*), rebuilt from code the same way: a profile saved
+        // before tonight carries the old 20, and no screen edits this number.
+        capSetbackMm: D.wardrobe.drawers.capSetbackMm,
       },
       drawerPanel: { ...D.wardrobe.drawerPanel, ...profile.wardrobe?.drawerPanel },
       runners: { ...D.wardrobe.runners, ...profile.wardrobe?.runners },

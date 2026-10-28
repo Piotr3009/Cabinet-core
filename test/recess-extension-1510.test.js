@@ -389,14 +389,19 @@ test('CASE B through computeCabinet: the window is a through pocket on RECESS_WI
   assert.deepEqual(r.derived.extension.grown, ['BACK', 'SHELF-1']);
   const back = panelOf(r, 'BACK');
   // 19.10.2026 (D9 amended): a cut-out, traced clockwise in the DXF (cutout true).
-  assert.deepEqual(back.cnc.pockets.filter((k) => k.layer === RECESS_WINDOW_LAYER), [{ layer: 'RECESS_WINDOW', x1: 128, y1: 228, x2: 472, y2: 572, depth: 18, cutout: true }]);
+  // AMENDED 28.10.2026 (KIT_RECESS.lsp D23, the hand edge), the owner: *"w zwiazku ze to jest w ksztalcie U to ja nie
+  // moge puscic tego na edge bander, wiec nie zrobie scribe na edging, wiec w tym miejscu musimy pomniejszyc o 1 mm
+  // plecy"*: the window is CUT 1 bigger on each of its four edges (x 128..472, z 228..572 until that evening), the
+  // edge put on by hand brings it back to 344 x 344.
+  assert.deepEqual(back.cnc.pockets.filter((k) => k.layer === RECESS_WINDOW_LAYER), [{ layer: 'RECESS_WINDOW', x1: 127, y1: 227, x2: 473, y2: 573, depth: 18, cutout: true }]);
   assert.equal(back.cnc.outline.length, 4);
   // REWRITTEN 19.10.2026 (chat fix, D17 as on 17.10): the twelve round the
   // window are gone again; the parent's fourteen stay; the EXT-BACK keeps its twelve.
   assert.equal(drillsOf(r, 'BACK', 'screw').length, 14, 'the parent\'s fourteen, nothing round the window');
   assert.equal(drillsOf(r, 'EXT-BACK', 'screw').length, 12, 'the EXT-BACK, a back, drilled round the band');
   for (const id of ['RETURN-L', 'RETURN-R', 'FLOOR', 'LID']) assert.deepEqual(drillsOf(r, id), [], `${id}: "tylko na plecach"`);
-  assert.equal(r.csvLines.find((l) => l.startsWith('01,BACK')), '01,BACK,600,770,,0,0.344', 'the window comes off the area');
+  // 28.10.2026 (D23): 346 x 346 comes off the area as the cutter takes it (0.344 until that evening).
+  assert.equal(r.csvLines.find((l) => l.startsWith('01,BACK')), '01,BACK,600,770,,0,0.342', 'the window comes off the area');
   assert.deepEqual(r.csvLines.slice(7), ['01,RETURN-L,132,344,,0,0.045', '01,RETURN-R,132,344,,0,0.045', '01,FLOOR,380,132,,0,0.050', '01,LID,380,132,,0,0.050', '01,EXT-BACK,380,380,,0,0.144']);
   const shelf = panelOf(r, 'SHELF-1');
   assert.deepEqual(shelf.cnc.outline, [[520, 0], [520, 110], [670, 110], [670, 450], [520, 450], [520, 560], [0, 560], [0, 0]]);
@@ -415,16 +420,20 @@ test('CASE B through computeCabinet: the window is a through pocket on RECESS_WI
 });
 
 test('the other shapes through computeCabinet: a corner, a bite, two pieces, the 3-D records', () => {
+  // AMENDED 28.10.2026 (KIT_RECESS.lsp D23), the owner: *"to tam robimy edging; w zwiazku ze to jest w ksztalcie U to
+  // ja nie moge puscic tego na edge bander ... musimy pomniejszyc o 1 mm plecy"*: a cut INSIDE the BACK (the corner,
+  // the bite, the window) is cut 1 bigger on each of its own edges, the hand edge brings it back (272 x 482, the bite
+  // 128..472 x 0..482 and 0..382 x 218..582 until that evening). A whole piece (the two below) takes none.
   const corner = computeCabinet({ ...BUD, extension: { x0: 310, x1: 600, z0: 0, z1: 500, d: 150 } }, P);
-  assert.deepEqual(panelOf(corner, 'BACK').cnc.notch, { fc: 'x1y0', nw: 272, nh: 482 });
+  assert.deepEqual(panelOf(corner, 'BACK').cnc.notch, { fc: 'x1y0', nw: 273, nh: 483 });
   assert.deepEqual(panelOf(corner, 'BUR').cnc.notch, { fc: 'x0y1', nw: 150, nh: 288 });
   assert.deepEqual(corner.derived.extension.boards, ['RETURN-L', 'LID', 'EXT-BACK']);
   const bite = computeCabinet({ ...BUD, extension: { x0: 110, x1: 490, z0: 0, z1: 500, d: 150 } }, P);
-  assert.deepEqual(panelOf(bite, 'BACK').cnc.bite, { x0: 128, y0: 0, x1: 472, y1: 482 });
+  assert.deepEqual(panelOf(bite, 'BACK').cnc.bite, { x0: 127, y0: 0, x1: 473, y1: 483 });
   assert.equal(panelOf(bite, 'BACK').cnc.outline.length, 8);
   const mid = computeCabinet({ ...BUD, extension: { x0: 0, x1: 400, z0: 200, z1: 600, d: 150 } }, P);
   assert.deepEqual(panelOf(mid, 'BUL').cnc.notch, { fc: 'x1y0', nw: 150, nh: 218, also: { fc: 'x1y1', nw: 150, nh: 188 } });
-  assert.deepEqual(panelOf(mid, 'BACK').cnc.bite, { x0: 0, y0: 218, x1: 382, y1: 582 });
+  assert.deepEqual(panelOf(mid, 'BACK').cnc.bite, { x0: 0, y0: 217, x1: 383, y1: 583 });
   const two = computeCabinet({ ...BUD, extension: { x0: 110, x1: 490, z0: 0, z1: 770, d: 150 } }, P);
   assert.deepEqual(two.panels.filter((p) => p.part === 'BACK').map((p) => [p.id, p.w, p.h, p.box.x]), [['BACK', 128, 770, 0], ['BACK-2', 128, 770, 472]]);
   assert.equal(two.derived.extension.pieces, 2);

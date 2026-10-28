@@ -40,6 +40,8 @@ import FrontGapWarnings from '../components/FrontGapWarnings.jsx';
 import InframeWarnings from '../components/InframeWarnings.jsx';
 // T84 F2 (CLAUDE.md PART A): the Studio face, PRO's face, around the same editor.
 import StudioShell from '../components/studio/StudioShell.jsx';
+// T84 F4 (CLAUDE.md PART B): the inspector, the card or the RightPanel embedded.
+import InspectorHost from '../components/studio/InspectorHost.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 // T54-F6: the dimensions' sleep clock — a lib module so fake timers can test it.
 import { createDimensionSleep, dimensionsIdleMs } from '../lib/dimensionSleep.js';
@@ -633,6 +635,8 @@ export default function ConfiguratorPage({ studio = false } = {}) {
   // shell's slots, filled F by F; the legacy frame takes none of them.
   const Frame = studio ? StudioShell : LegacyFrame;
   const studioSlots = studio ? {
+    // T84 F4 · the inspector column: the quick card, or the RightPanel embedded.
+    inspector: <InspectorHost />,
   } : {};
   return (
     <Frame {...studioSlots} topBar={(
@@ -690,7 +694,7 @@ export default function ConfiguratorPage({ studio = false } = {}) {
         </Messages>
 
         <LibraryPanel />
-        {rightPanelOpen && !bomOpen && <RightPanel />}
+        {!studio && rightPanelOpen && !bomOpen && <RightPanel />}
         {bomOpen && <BomPanel onExportCsv={onExportCsv} onExportPdf={onExportPdf} onExportBom={onExportBom} />}
         {/* Turn 31 (CLAUDE.md F6): the Check panel — a LIST of findings, not toasts. */}
         {checkOpen && <CheckPanel />}

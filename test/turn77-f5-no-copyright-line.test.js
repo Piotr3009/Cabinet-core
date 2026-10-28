@@ -404,6 +404,10 @@ export const NEW_FILES = [
   'src/components/studio/cards/CardRow.jsx',
   'test/turn84-f03-cards.test.js',
   'scripts/t78-classify.d/f45-t84-f03.mjs',
+  // T84 F4 (27.10.2026): the inspector host
+  'src/components/studio/InspectorHost.jsx',
+  'test/turn84-f04-inspector.test.js',
+  'scripts/t78-classify.d/f45-t84-f04.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

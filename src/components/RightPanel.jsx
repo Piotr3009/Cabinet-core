@@ -43,6 +43,18 @@ import UnitWarnings from './UnitWarnings.jsx';
 import ShelfHingeClash from './ShelfHingeClash.jsx';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 
+// T84 F4 (CLAUDE.md T84 PART B; verify/t84/p1-host.md C): WHERE THE PANEL STANDS.
+// 'overlay' is the panel as it has always stood, laid over the canvas's right
+// edge at 310 px: the default, so every mount that passes nothing is the
+// panel of before, byte for byte. 'embedded' fills the column a host gives it
+// (components/studio/InspectorHost.jsx): no position offsets, no width and no
+// z layer, so it is no stacking context and no containing block for the
+// windows drawn inside it. Both literal, so Tailwind's scanner sees them.
+const PANEL_ASIDE = {
+  overlay: `absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`,
+  embedded: 'relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col',
+};
+
 // Right parameter panel. Carcass parameters, the interior contents of the
 // selected section, and doors as the LAST step — after which the panel closes
 // itself (SPEC 4.10).
@@ -52,7 +64,13 @@ import { LAYER_CLASS } from '../lib/modalLayer.js';
 // drawer stack has one height field unless you untick "Equal heights", a new
 // item is placed where it cannot collide, and adding internal drawers swings the
 // doors open so you can see what you just asked for.
-export default function RightPanel() {
+export default function RightPanel({ layout = 'overlay', headerActions = null } = {}) {
+  // T84 F4 · the host's two props, honoured by every branch below: where the
+  // aside stands, and what the host adds INSIDE the one header (one panel, one
+  // header: CLAUDE.md T84 LAWS 2).
+  const embedded = layout === 'embedded';
+  const asideClass = embedded ? PANEL_ASIDE.embedded : PANEL_ASIDE.overlay;
+  const asideLayout = embedded ? 'embedded' : 'overlay';
   const closeRightPanel = useUiStore((s) => s.closeRightPanel);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const openModal = useUiStore((s) => s.openModal);
@@ -254,8 +272,8 @@ export default function RightPanel() {
   // it means the thing you had open becomes the tool for what you are now doing.
   if (viewMode === 'cnc') {
     return (
-      <aside className={`absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
-        <PanelHeader title="CNC sheet" onClose={closeRightPanel} />
+      <aside className={asideClass} data-panel-layout={asideLayout}>
+        <PanelHeader title="CNC sheet" onClose={closeRightPanel} actions={headerActions} layout={layout} />
         <div className="flex-1 overflow-y-auto">
           <CncTree />
         </div>
@@ -265,8 +283,8 @@ export default function RightPanel() {
 
   if (!unit) {
     return (
-      <aside className={`absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
-        <PanelHeader title="Parameters" onClose={closeRightPanel} />
+      <aside className={asideClass} data-panel-layout={asideLayout}>
+        <PanelHeader title="Parameters" onClose={closeRightPanel} actions={headerActions} layout={layout} />
         <p className="p-3 text-sm text-ink-400">Select a unit in the canvas, or open Library in the menu.</p>
       </aside>
     );
@@ -278,12 +296,12 @@ export default function RightPanel() {
   // half its rows hidden — every field below is about one carcass's own
   // geometry, and a "mixed" state for each of them would be forty branches.
   if (selectedUnitIds.length > 1) {
-    return <MultiUnitPanel ids={selectedUnitIds} onClose={closeRightPanel} />;
+    return <MultiUnitPanel ids={selectedUnitIds} onClose={closeRightPanel} layout={layout} headerActions={headerActions} />;
   }
 
   return (
-    <aside className={`absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
-      <PanelHeader title={type.label} onClose={closeRightPanel}>
+    <aside className={asideClass} data-panel-layout={asideLayout}>
+      <PanelHeader title={type.label} onClose={closeRightPanel} actions={headerActions} layout={layout}>
         {/* Turn 16 (CLAUDE.md F6): the name is the owner's, edited where it is
             shown. It was `${type.label} · 01` printed into the header.
             Turn 17 (F6.2): …and the owner could not find it. It was a bare
@@ -299,7 +317,11 @@ export default function RightPanel() {
             First, above the carcass, because when it is there it is what the
             joiner is looking at. It disappears the moment nothing is selected
             inside the unit, so the panel is not permanently a row longer. */}
-        {element && (
+        {/* T84 F4 · embedded in the Studio inspector, the piece is edited in
+            its own window only: the designer's "Suppress only the duplicate
+            inline ElementSection in the Studio inspector; the existing part
+            editor remains independent" (verify/t84/p1-host.md G). */}
+        {element && !embedded && (
           <ElementSection unit={unit} element={element} onClose={clearElement} />
         )}
 
@@ -1777,12 +1799,16 @@ export default function RightPanel() {
           </button>
         </div>
       </div>
+      {/* T84 F4 · embedded, these three are the host's: InspectorHost mounts
+          each ONCE whatever it shows (the quick card, several cabinets, CNC,
+          nothing), so a click on a mirror cabinet's back still opens its
+          window, and one copy of each stands in either face. */}
       {/* T75 F7 · the CUT CORNER window, opened at the click on a lit corner. */}
-      <NotchModal />
+      {!embedded && <NotchModal />}
       {/* T79 F5 · the CUT EDGE window, opened at the click on a lit edge. */}
-      <EdgeNotchModal />
+      {!embedded && <EdgeNotchModal />}
       {/* T83 F3 · MIRROR ON THE BACK?, opened at the click on a mirror cabinet's back. */}
-      <MirrorBackModal />
+      {!embedded && <MirrorBackModal />}
     </aside>
   );
 }
@@ -2090,12 +2116,24 @@ function PocketDoorToggle({ unit }) {
   );
 }
 
-function PanelHeader({ title, onClose, children = null }) {
+// T84 F4 · `actions` is what a host adds to this header (the Studio
+// inspector's Pin and Back to quick settings), INSIDE it and before the x: one
+// panel, one header. Embedded, the TITLE gives way: it truncates, its full
+// label in its title, while the name field and the actions keep their width,
+// so the name field never runs over the actions (verify/t84/p1-host.md E).
+// The overlay header is the header of before, element for element.
+function PanelHeader({
+  title, onClose, children = null, actions = null, layout = 'overlay',
+}) {
+  const embedded = layout === 'embedded';
   return (
     <div className="flex items-center gap-2 px-3 py-2 border-b border-shell-600">
-      <span className="text-xs uppercase tracking-wide text-ink-200 shrink-0">{title}</span>
-      {children}
+      {embedded
+        ? <span className="text-xs uppercase tracking-wide text-ink-200 min-w-0 truncate" title={title}>{title}</span>
+        : <span className="text-xs uppercase tracking-wide text-ink-200 shrink-0">{title}</span>}
+      {embedded && children ? <span className="flex items-center shrink-0">{children}</span> : children}
       <span className="flex-1" />
+      {actions}
       <button type="button" className="cc-btn-ghost" onClick={onClose} title="Close panel">×</button>
     </div>
   );
@@ -2486,7 +2524,7 @@ function JointsRow({
 /** "full" for 0, the number otherwise (T79 F4: a negative one, from the top, included). */
 function notchHeightText(h) { return Number(h) ? String(Math.round(Number(h))) : 'full'; }
 
-function NotchModal() {
+export function NotchModal() {
   const modal = useUiStore((s) => s.modal);
   const args = useUiStore((s) => s.modalArgs);
   if (modal !== 'notch' || !args?.unitId || !args?.corner) return null;
@@ -2578,7 +2616,7 @@ const EDGE_NOTCH_CHOICES = [
   { id: 'BF', title: 'bottom-front: a plinth return' },
 ];
 
-function EdgeNotchModal() {
+export function EdgeNotchModal() {
   const modal = useUiStore((s) => s.modal);
   const args = useUiStore((s) => s.modalArgs);
   if (modal !== 'edge-notch' || !args?.unitId || !args?.edge) return null;
@@ -2674,7 +2712,7 @@ function EdgeNotchWindow({ args }) {
 // click opens (3d/mirrorCabinetRoom.js askMirrorBack), beside the click: the
 // question, No and Yes (the answer the cabinet has lit), each through the
 // store's ONE action (`setMirrorBack`), a refusal said here in its words.
-function MirrorBackModal() {
+export function MirrorBackModal() {
   const modal = useUiStore((s) => s.modal);
   const args = useUiStore((s) => s.modalArgs);
   if (modal !== 'mirror-back' || !args?.unitId) return null;

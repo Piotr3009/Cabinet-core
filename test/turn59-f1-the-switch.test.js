@@ -158,7 +158,8 @@ const EXEMPT = {
     + ' T82 F13, after the review: the End panels row asks unitEndPanelDrop (the kit as computeCabinet cuts it), so a floating vanity\'s end panel, cut to end with the hung carcass, reads "ends with the cabinet", never "to floor". *"plinth do zmiany wysokosc, propozycja floating lub on the floor"* (25.10.2026); Turn 13: a label that disagrees with the piece is worse than no label.'
     + ' T83 F3 · the MIRROR ON THE BACK window (MirrorBackModal, mounted beside the CUT EDGE window): the question "Mirror on the back?", No and Yes through the store\'s setMirrorBack, a refusal said in its words, opened at the click on a mirror cabinet\'s back (3d/mirrorCabinetRoom.js askMirrorBack). *"czasami jak ktos chce to bedzie mial na plecach tez, klikasz na plecy i wyskakuje ci opcja chcesz lustro na plecach?"*'
     + ' T83 F5 · the MIRROR CABINET section for the mirror cabinet only: Bays 1 / 2 / 3; Door widths, one field a bay, the sum with the stiles checked against the carcass and refused in the kit\'s words (a refused width stays in its field until the next one makes the sum; Kit\'s widths hands the doors back); Stiles LED / Timber / None and their width; Panels L / R / Top / Bottom on or off and Panel thickness; Mirror doors, Mirror back, LED under, LED inside, Bottom box on or off; Glass shelves per bay; Recess mm. Every answer goes through the store\'s one action setMirrorCabinet, and the figures are read off the engine\'s derived.mirror; the panel types no number. No retail copy. *"daj wszystkie mozliwosci z panelami, z ledami, bez, szerokosc ustawianych drzwiczek etc"*'
-    + ' CHAT FIX 26.10.2026 (KIT_MIRROR.lsp D5a) · the Door widths of the MIRROR CABINET section: one door typed is one answer (the store\'s door_width), held at its number and marked with a lock; the doors not typed give way so the sum always makes the carcass, and nothing typed is refused but a width that alone leaves the other doors less than profile.mirror.minDoorMm; the lock clicked lets the door give way again (door_free); Kit\'s widths forgets every hold; no width waits refused in its field any more. *"jesli uzytkownik zmienil to ten numer juz sie nie moze zmieniac, wtedy zmieniamy tylko te ktore nie byly ruszane"*, *"program odmawia ostatniej liczby bez sensu, musi zostawic"*',
+    + ' CHAT FIX 26.10.2026 (KIT_MIRROR.lsp D5a) · the Door widths of the MIRROR CABINET section: one door typed is one answer (the store\'s door_width), held at its number and marked with a lock; the doors not typed give way so the sum always makes the carcass, and nothing typed is refused but a width that alone leaves the other doors less than profile.mirror.minDoorMm; the lock clicked lets the door give way again (door_free); Kit\'s widths forgets every hold; no width waits refused in its field any more. *"jesli uzytkownik zmienil to ten numer juz sie nie moze zmieniac, wtedy zmieniamy tylko te ktore nie byly ruszane"*, *"program odmawia ostatniej liczby bez sensu, musi zostawic"*'
+    + ' T84 F4 · the host adaptation (verify/t84/p1-host.md C): layout="embedded" fills the inspector column instead of laying the panel over the canvas (no absolute right-0, no width, no z layer), headerActions (Pin, Back to quick settings) stand INSIDE the existing header before the x on every branch (CNC sheet, nothing selected, several cabinets, one cabinet), the title gives way in the embedded header, the duplicate inline ElementSection is suppressed in the embedded layout only, and the cut-corner, cut-edge and mirror-back windows are exported so the host mounts each once while the panel is embedded; overlay, the panel is what it was, and every row, section and the x stay. *"ok jak juz bedziesz wiedzial dokladnie to tabela porownaj ze mamy wszystko nic nie zgubilismy, teraz daj do tury"* (the owner, 27.10.2026, 22:11 to 22:25); *"Suppress only the duplicate inline ElementSection in the Studio inspector; the existing part editor remains independent"* (the designer, CLAUDE.md T84 PART P (c))',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -282,7 +283,8 @@ const EXEMPT = {
     + ' T80 F10 · the in-frame checks #40 to #44 stand in the left column beside the front-gap rows (components/InframeWarnings.jsx, the same findings the Check panel reads, the same fly-to). *"Each in the left messages and in the Check panel."* (CLAUDE.md T80 F10); the owner: *"3 mm zawsze."* (21.10.2026, 22:03)'
     + ' T82 F12, after the review · the page\'s export preflight counts what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)'
     + ' T82 F20, after the review · File > Save as marks the job saved only when the copy was stored; a refused write leaves the job as it was, unsaved, and says so. *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
-    + ' T84 F2 · under the Studio face (the flag App.jsx hands it) the page renders StudioShell round the EXISTING scene, the top bar the same TopBar with variant="studio" and the same handlers, the Changes bar on the status bar (the shell provides ChangesBarRehomed; the page\'s Messages is left as it was); the legacy face is what it was. *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)',
+    + ' T84 F2 · under the Studio face (the flag App.jsx hands it) the page renders StudioShell round the EXISTING scene, the top bar the same TopBar with variant="studio" and the same handlers, the Changes bar on the status bar (the shell provides ChangesBarRehomed; the page\'s Messages is left as it was); the legacy face is what it was. *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)'
+    + ' T84 F4 · under the Studio face the right panel is not laid over the scene: it stands in the inspector column (InspectorHost), and the BOM no longer replaces it. *"ok jak juz bedziesz wiedzial dokladnie to tabela porownaj ze mamy wszystko nic nie zgubilismy, teraz daj do tury"* (the owner, 27.10.2026, 22:11 to 22:25)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -389,6 +391,10 @@ const EXEMPT = {
     'T84 F3 · NEW, pure: the quick cards as data, the capability table read at run time from engine/types.js, takesPlinth and liftTakesKit, each row naming the store action it writes through; never typed. *"Hide inapplicable rows; never invent a capability to fill the card"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27)',
   'src/components/studio/cards/CardRow.jsx':
     'T84 F3 · NEW, one row of a quick card (cards/CardRow.jsx): the row is data from lib/studioCards.js, drawn here (a field, chips, a select, or a summary that opens the full panel at its section), every press handed to the card\'s own call of the store\'s action by its own name; nothing here decides what a cabinet can do. *"Hide inapplicable rows; never invent a capability to fill the card"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27)',
+  'src/components/MultiUnitPanel.jsx':
+    'T84 F4 · the same two host props as RightPanel, passed through by it: layout="embedded" (the aside fills the inspector column; both class strings literal) and headerActions after the "N cabinets" title, before its x; overlay, the panel is what it was, and every control stays. *"Pin keeps inspector open and FOLLOWING SELECTION; it never locks unit ID"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27); *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)',
+  'src/components/studio/InspectorHost.jsx':
+    'T84 F4 · NEW, the inspector column: the quick card, the full RightPanel embedded with Pin and Back to quick settings inside its own header, or nothing; Pin follows the selection, and a pending edit is committed to its own cabinet before the selection moves. *"Pin keeps inspector open and FOLLOWING SELECTION; it never locks unit ID"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27); *"ok jak juz bedziesz wiedzial dokladnie to tabela porownaj ze mamy wszystko nic nie zgubilismy, teraz daj do tury"* (the owner, 27.10.2026, 22:11 to 22:25)',
 };
 
 /**
@@ -479,7 +485,8 @@ const FROZEN = {
   'src/components/Messages.jsx': '0d2c65d4b1027e8ef07d7f0b6c7e1dd51c1e63744dbf1177c306e848ed42cab9',
   'src/components/MockModeBadge.jsx': '081294a78610a7fd3baef730ca7a318d8d193e40ef66c5d278e45f9672c82826',
   'src/components/Modal.jsx': '1fe9eb73cd46a0e4560254da7cc3ed11458611fe0461717ae41c88df999d1ecc',
-  'src/components/MultiUnitPanel.jsx': 'ad7d770b51042f0c2e8d9633df4067c5a7d8d4af6e358fad2e90cf62e631531c',
+  // T84 F4 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/MultiUnitPanel.jsx': 'df959555b30515a6990093f9a97dcdb5729b0af53959916945edcea7369a7162',
   'src/components/NewProjectFlow.jsx': '8e8932c45eab1700afa29dee96d449ff82a3f3c114f12215cce112288c3e9ffb',
   'src/components/NumberField.jsx': 'ae2f9b89ea20a8da26fdf77db1cdb00cb487a2e5110128263f4c33f32eb5c176',
   'src/components/PartDetailModal.jsx': 'aaa5a376c870dd56a1d80ab4373bd4cc035a1d78570f943b0a3a4b32ffeb1eff',
@@ -502,7 +509,8 @@ const FROZEN = {
   // T83 F3 re-frozen at the new hash; EXEMPT above carries the reason.
   // T83 F5 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 26.10.2026 re-frozen at the new hash (the mirror cabinet's door widths held and balanced); EXEMPT above carries the owner's words.
-  'src/components/RightPanel.jsx': '73b0099a027c20d1cd766cda1621302ff01fa456d1a78c9873a37f1ed4f3f71b',
+  // T84 F4 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/RightPanel.jsx': '20eade6fbe93ddd473efbe6227776d26723a60c389fed8abce1a31eb06d76b5f',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
   'src/components/RoomModal.jsx': 'cc9a92536ce6fa813da4d6523c4a41bb38375f066f92e6be4e118d662aab3598',
@@ -545,7 +553,8 @@ const FROZEN = {
   // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': 'b392bfa927cab5020748e3ee55a7d6ef2e13b4a99af1db7785d4120487a41fe0',
+  // T84 F4 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': '976024065e7ca58033ca90622bf873271d437ea25f91c28598bf89aa1319e547',
   // T84 F1 · NEW PRO files (the skin), frozen at their first hash; EXEMPT above carries the reason.
   'src/components/studio/studio.css': '806a346e8d9891bb1433b60d0e1e8b8fe80d981d6ca328327d0e90711524fc08',
   'src/components/studio/StudioIcons.jsx': 'f111e18a07699a683d7f33e4ade38d1ef354838de9bb4e9acebf4d969abf99a6',
@@ -560,6 +569,8 @@ const FROZEN = {
   'src/components/studio/QuickSelectionCard.jsx': '0c7118bd4dddeec80cc7f99bbae70c0a34c23151f846b0651c21debd2678a441',
   'src/components/studio/lib/studioCards.js': 'a82035e89469de0d410326d021cd8b2f354f6b57df77db855d2f2a49b454c062',
   'src/components/studio/cards/CardRow.jsx': 'e2d1a1ea847cf8b5d0b35312f5b2cb495e9325e2fecd854dd73e5b8e3168ba43',
+  // T84 F4 · NEW PRO files (the inspector host), frozen at their first hash; EXEMPT above carries the reason.
+  'src/components/studio/InspectorHost.jsx': 'ed8643ff466d4b578912fab46bcea7cc40f474ad6d328b88d7f79019e2fdf768',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -682,7 +693,7 @@ const show = (abs) => relative(ROOT, abs);
 
 // ─── 1. THE PRO FROZEN-FILES ASSERTION ─────────────────────────────────────
 
-test('F1: the frozen surface, 81 files of PRO, byte for byte (approved setup illustrations and the Studio included)', () => {
+test('F1: the frozen surface, 82 files of PRO, byte for byte (approved setup illustrations and the Studio included)', () => {
   const moved = [];
   for (const [rel, want] of Object.entries(FROZEN)) {
     const path = join(ROOT, rel);
@@ -813,6 +824,9 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/studio/QuickSelectionCard.jsx',
     'src/components/studio/lib/studioCards.js',
     'src/components/studio/cards/CardRow.jsx',
+    // T84 F4 · the inspector host: licensed in EXEMPT above with the owner's words (CLAUDE.md T84 FROZEN 4).
+    'src/components/MultiUnitPanel.jsx',
+    'src/components/studio/InspectorHost.jsx',
 ].sort(), 'the exemption list is not the approved UI and CLAUDE.md paths');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
@@ -833,7 +847,7 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // A tarball or a clone with no such ref. The manifest above already
     // answered; this assertion has nothing to add and says so out loud
     // rather than passing in silence.
-    assert.ok(Object.keys(FROZEN).length === 81, 'no base ref: the manifest is the whole proof here');
+    assert.ok(Object.keys(FROZEN).length === 82, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

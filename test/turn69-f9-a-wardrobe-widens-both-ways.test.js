@@ -209,6 +209,10 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
     // job marked unsaved, *"musze miec dzisiaj profesjonalne rysunki dla klientow"*), argued in the manifest, frozen. Not
     // widening files.
     'DesignSettingsModal', 'StartScreen',
+    // AMENDED BY T84 F4 (27.10.2026): `MultiUnitPanel` (the inspector host's two props, layout and headerActions; the
+    // designer, adopted by the owner: *"Pin keeps inspector open and FOLLOWING SELECTION; it never locks unit ID"*),
+    // argued in the manifest, re-frozen. Not a widening file.
+    'MultiUnitPanel',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');
@@ -217,7 +221,8 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
     // AMENDED BY T79 F12: T79 licenses CabinetEditorModal (Center between's pick).
     // AMENDED BY T80 F10: T80 licenses InframeWarnings (the in-frame checks in the left column).
     // AMENDED BY T82 F6: T82 licenses CanvasToolbar (Open all takes the HAWA door).
-    assert.ok(['67', '69', '71', '72', '74', '75', '78', '79', '80', '82'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
+    // AMENDED BY T84 F4: T84 licenses MultiUnitPanel (the inspector host's two props, layout and headerActions).
+    assert.ok(['67', '69', '71', '72', '74', '75', '78', '79', '80', '82', '84'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
   }
   assert.ok(!exempt.some(([n, t]) => /UnitSize/.test(n) && t === '69'), 'F9 bought no exemption');
   // AMENDED BY T75 F9: RoomModal's licence is renewed tonight (ADD ISLAND), so

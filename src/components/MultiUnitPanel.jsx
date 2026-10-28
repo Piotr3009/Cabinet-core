@@ -30,7 +30,15 @@ import { LAYER_CLASS } from '../lib/modalLayer.js';
 // the single-unit action run once per cabinet inside one batch: each clamp
 // still belongs to its own carcass, and the lot is one Ctrl+Z (F5.4).
 
-export default function MultiUnitPanel({ ids, onClose }) {
+export default function MultiUnitPanel({
+  ids, onClose, layout = 'overlay', headerActions = null,
+}) {
+  // T84 F4 (verify/t84/p1-host.md C) · RightPanel passes its own two props
+  // through: 'overlay' (the default) is this aside as it has always stood over
+  // the canvas, 'embedded' fills the Studio inspector's column (no position
+  // offsets, no width, no z layer); the host's actions stand in this header,
+  // before the x.
+  const embedded = layout === 'embedded';
   const units = useProjectStore((s) => s.units);
   const updateUnitParamsBulk = useProjectStore((s) => s.updateUnitParamsBulk);
   const setUnitInsetsBulk = useProjectStore((s) => s.setUnitInsetsBulk);
@@ -129,11 +137,17 @@ export default function MultiUnitPanel({ ids, onClose }) {
   };
 
   return (
-    <aside className={`absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
+    <aside
+      className={embedded
+        ? 'relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col'
+        : `absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}
+      data-panel-layout={embedded ? 'embedded' : 'overlay'}
+    >
       <div className="flex items-center px-3 py-2 border-b border-shell-600">
         <h2 className="text-sm text-ink-50 flex-1" data-multi-count={selected.length}>
           {selected.length} cabinets
         </h2>
+        {headerActions}
         <button type="button" className="cc-btn-ghost" title="Close" onClick={onClose}>×</button>
       </div>
 

@@ -45,9 +45,18 @@ const TONE = {
 
 export default function CheckPanel() {
   const setCheckOpen = useUiStore((s) => s.setCheckOpen);
+  // ─── T84 F5 (CLAUDE.md T84 PART C): THE COUNTERS OPEN IT AT ONE LEVEL ─────
+  // *"`1 red · 3 yellow` in their colours; click opens Check filtered to that
+  // level (a `checkFilter` in uiStore, 'all' | 'red' | 'yellow'; the Check
+  // panel reads it and shows "Show all")."*  'all', which the legacy face never
+  // changes, is this panel exactly as it was.
+  const checkFilter = useUiStore((s) => s.checkFilter);
+  const setCheckFilter = useUiStore((s) => s.setCheckFilter);
 
   const findings = useCheckFindings();
   const summary = checkSummary(findings);
+  const level = checkFilter === 'red' || checkFilter === 'yellow' ? checkFilter : null;
+  const listed = level ? findings.filter((f) => f.level === level) : findings;
 
   /**
    * ─── TURN 40 (CLAUDE.md F4c): AND IT TAKES YOU THERE ─────────────────────
@@ -79,8 +88,27 @@ export default function CheckPanel() {
           Eleven rules, nothing to fix. The job is ready to cut.
         </p>
       ) : (
+        <>
+        {level && (
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 border-b border-shell-600 text-[11px] text-ink-200"
+            data-check-filter={level}
+          >
+            <span>{level === 'red' ? 'Red' : 'Yellow'} only · {listed.length} of {findings.length}</span>
+            <span className="flex-1" />
+            <button
+              type="button"
+              className="cc-btn px-2 text-[11px]"
+              data-check-show-all="1"
+              title="Every finding again"
+              onClick={() => setCheckFilter('all')}
+            >
+              Show all
+            </button>
+          </div>
+        )}
         <ul className="flex-1 overflow-y-auto cc-scroll p-2 space-y-1.5">
-          {findings.map((f, i) => (
+          {listed.map((f, i) => (
             <li
               // eslint-disable-next-line react/no-array-index-key
               key={`${f.check}-${f.unitId}-${f.panelId}-${i}`}
@@ -132,6 +160,7 @@ export default function CheckPanel() {
             </li>
           ))}
         </ul>
+        </>
       )}
 
       <p className="px-3 py-2 border-t border-shell-600 text-[11px] text-ink-400">

@@ -42,6 +42,11 @@ import InframeWarnings from '../components/InframeWarnings.jsx';
 import StudioShell from '../components/studio/StudioShell.jsx';
 // T84 F4 (CLAUDE.md PART B): the inspector, the card or the RightPanel embedded.
 import InspectorHost from '../components/studio/InspectorHost.jsx';
+// T84 F5 (CLAUDE.md PART C): the errors you can see.
+import { setUnitAdornment } from '../3d/UnitView.jsx';
+import IssueStrip, { IssueCounters } from '../components/studio/IssueStrip.jsx';
+import RefusedField from '../components/studio/RefusedField.jsx';
+import UnitIssueMarker from '../components/studio/UnitIssueMarker.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 // T54-F6: the dimensions' sleep clock — a lib module so fake timers can test it.
 import { createDimensionSleep, dimensionsIdleMs } from '../lib/dimensionSleep.js';
@@ -345,6 +350,15 @@ export default function ConfiguratorPage({ studio = false } = {}) {
     };
   }, [showDimensionsNow, viewMode, profile]);
 
+  // ─── T84 F5 (CLAUDE.md PART C): THE MARKER BESIDE THE UNIT NUMBER ─────────
+  // The one slot of 3d/UnitView.jsx, filled while the Studio face is mounted;
+  // nothing in 3d/ imports a PRO file, and the legacy face fills nothing.
+  useEffect(() => {
+    if (!studio) return undefined;
+    setUnitAdornment(UnitIssueMarker);
+    return () => setUnitAdornment(null);
+  }, [studio]);
+
   // The 3D canvas hands us a capture function for the PDF export.
   const captureRef = useRef(null);
   const onCaptureReady = useCallback((fn) => { captureRef.current = fn; }, []);
@@ -636,7 +650,11 @@ export default function ConfiguratorPage({ studio = false } = {}) {
   const Frame = studio ? StudioShell : LegacyFrame;
   const studioSlots = studio ? {
     // T84 F4 · the inspector column: the quick card, or the RightPanel embedded.
-    inspector: <InspectorHost />,
+    // T84 F5 · the strip over the card and the panel, the refused field in the card (handed as an
+    // object key: a bare `Field=` attribute reads, to test/imports.test.js, as retail's own Field).
+    inspector: <InspectorHost renderStrip={(unitId) => <IssueStrip unitId={unitId} />} {...{ Field: RefusedField }} />,
+    // T84 F5 · the counters on the status bar.
+    statusExtras: <IssueCounters />,
   } : {};
   return (
     <Frame {...studioSlots} topBar={(

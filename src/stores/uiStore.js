@@ -196,6 +196,8 @@ function readSnapshot(s) {
 // from every mode, hidden included. It answers a MODE and nothing else: there
 // is no unit id in it to freeze. The legacy face never reads it.
 const INSPECTOR_MODES = Object.freeze(['quick', 'full', 'none']);
+/** T84 F5 · what the Check may be filtered to. */
+const CHECK_FILTERS = Object.freeze(['all', 'red', 'yellow']);
 export function inspectorAfterSelect({ inspector = 'quick', inspectorPinned = false } = {}, changed = true) {
   const mode = INSPECTOR_MODES.includes(inspector) ? inspector : 'quick';
   if (!changed || inspectorPinned) return mode;
@@ -311,8 +313,25 @@ export const useUiStore = create((set, get) => ({
   // demand. Opening one closes the other; two 380 px panels over a 3D view is
   // a 3D view nobody can see.
   checkOpen: false,
-  setCheckOpen: (v) => set(v ? { checkOpen: true, bomOpen: false } : { checkOpen: false }),
-  toggleCheck: () => set((s) => (s.checkOpen ? { checkOpen: false } : { checkOpen: true, bomOpen: false })),
+  setCheckOpen: (v) => set(v ? { checkOpen: true, bomOpen: false } : { checkOpen: false, checkFilter: 'all' }),
+  toggleCheck: () => set((s) => (s.checkOpen ? { checkOpen: false, checkFilter: 'all' } : { checkOpen: true, bomOpen: false })),
+  // ─── T84 F5 (CLAUDE.md PART C): THE COUNTERS OPEN THE CHECK FILTERED ─────
+  // *"1 red · 3 yellow in their colours; click opens Check filtered to that
+  // level (a checkFilter in uiStore, 'all' | 'red' | 'yellow'; the Check panel
+  // reads it and shows "Show all")."*  Closing the panel puts it back to all.
+  checkFilter: 'all',
+  setCheckFilter: (level) => set({ checkFilter: CHECK_FILTERS.includes(level) ? level : 'all' }),
+  openCheckFiltered: (level) => set({
+    checkOpen: true, bomOpen: false, checkFilter: CHECK_FILTERS.includes(level) ? level : 'all',
+  }),
+  // ─── T84 F5 (CLAUDE.md PART C): SHOW FRAMES THE UNIT ─────────────────────
+  // The issue strip's Show asks; the camera bar's Frame selection (F6)
+  // answers it and clears it. A request, never a camera move made here.
+  frameRequest: null,                // { unitIds: string[], at: number } | null
+  requestFrame: (unitIds) => set({
+    frameRequest: { unitIds: (Array.isArray(unitIds) ? unitIds : [unitIds]).filter(Boolean), at: Date.now() },
+  }),
+  clearFrameRequest: () => set({ frameRequest: null }),
 
   // ─── What is on the CNC sheet (turn 11, CLAUDE.md F8.1) ───
   //

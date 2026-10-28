@@ -408,6 +408,13 @@ export const NEW_FILES = [
   'src/components/studio/InspectorHost.jsx',
   'test/turn84-f04-inspector.test.js',
   'scripts/t78-classify.d/f45-t84-f04.mjs',
+  // T84 F5 (27.10.2026): the errors you can see
+  'src/components/studio/UnitIssueMarker.jsx',
+  'src/components/studio/IssueStrip.jsx',
+  'src/components/studio/RefusedField.jsx',
+  'src/components/studio/lib/studioIssues.js',
+  'test/turn84-f05-issues.test.js',
+  'scripts/t78-classify.d/f45-t84-f05.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

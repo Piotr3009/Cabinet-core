@@ -284,7 +284,8 @@ const EXEMPT = {
     + ' T82 F12, after the review · the page\'s export preflight counts what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)'
     + ' T82 F20, after the review · File > Save as marks the job saved only when the copy was stored; a refused write leaves the job as it was, unsaved, and says so. *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
     + ' T84 F2 · under the Studio face (the flag App.jsx hands it) the page renders StudioShell round the EXISTING scene, the top bar the same TopBar with variant="studio" and the same handlers, the Changes bar on the status bar (the shell provides ChangesBarRehomed; the page\'s Messages is left as it was); the legacy face is what it was. *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)'
-    + ' T84 F4 · under the Studio face the right panel is not laid over the scene: it stands in the inspector column (InspectorHost), and the BOM no longer replaces it. *"ok jak juz bedziesz wiedzial dokladnie to tabela porownaj ze mamy wszystko nic nie zgubilismy, teraz daj do tury"* (the owner, 27.10.2026, 22:11 to 22:25)',
+    + ' T84 F4 · under the Studio face the right panel is not laid over the scene: it stands in the inspector column (InspectorHost), and the BOM no longer replaces it. *"ok jak juz bedziesz wiedzial dokladnie to tabela porownaj ze mamy wszystko nic nie zgubilismy, teraz daj do tury"* (the owner, 27.10.2026, 22:11 to 22:25)'
+    + ' T84 F5 · the status bar\'s issue counters, the strip and the refused field handed to the shell, and the unit issue marker registered in the scene\'s one adornment slot while the Studio face is mounted. *"napewno naprzyklad wszystkie bledy zolte i czerwone sa totalnie niewidoczne, mala czcionka etc"* (the owner, 27.10.2026, 16:27)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -356,7 +357,8 @@ const EXEMPT = {
     + ' T82 F12, after the review · the Check button\'s count is what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)',
   // T82 F12: the Check panel draws the note level (TONE.note), the service void behind a vanity.
   'src/components/CheckPanel.jsx':
-    'T82 F12 · the Check\'s note level drawn grey (TONE.note): #45, the service void behind a vanity, is a note, never a fault. *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"*',
+    'T82 F12 · the Check\'s note level drawn grey (TONE.note): #45, the service void behind a vanity, is a note, never a fault. *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"*'
+    + ' T84 F5 · the list reads the uiStore\'s checkFilter: \'red\' or \'yellow\' (a status bar counter\'s click) lists that level only, under a line that says so with Show all; \'all\', which the legacy face never changes, is the panel as it was; the findings and their words are the engine\'s. *"napewno naprzyklad wszystkie bledy zolte i czerwone sa totalnie niewidoczne, mala czcionka etc"* (the owner, 27.10.2026, 16:27)',
   // T82 F20, after the review: a refused save leaves the job marked unsaved (persistProject answers stored).
   'src/components/DesignSettingsModal.jsx':
     'T82 F20, after the review · Update and save marks the job saved only when the save was stored; a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
@@ -395,6 +397,14 @@ const EXEMPT = {
     'T84 F4 · the same two host props as RightPanel, passed through by it: layout="embedded" (the aside fills the inspector column; both class strings literal) and headerActions after the "N cabinets" title, before its x; overlay, the panel is what it was, and every control stays. *"Pin keeps inspector open and FOLLOWING SELECTION; it never locks unit ID"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27); *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)',
   'src/components/studio/InspectorHost.jsx':
     'T84 F4 · NEW, the inspector column: the quick card, the full RightPanel embedded with Pin and Back to quick settings inside its own header, or nothing; Pin follows the selection, and a pending edit is committed to its own cabinet before the selection moves. *"Pin keeps inspector open and FOLLOWING SELECTION; it never locks unit ID"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27); *"ok jak juz bedziesz wiedzial dokladnie to tabela porownaj ze mamy wszystko nic nie zgubilismy, teraz daj do tury"* (the owner, 27.10.2026, 22:11 to 22:25)',
+  'src/components/studio/UnitIssueMarker.jsx':
+    'T84 F5 · NEW, the marker beside the unit number in the scene: a red or yellow triangle with the count; a click selects the unit and opens its card. *"napewno naprzyklad wszystkie bledy zolte i czerwone sa totalnie niewidoczne, mala czcionka etc"* (the owner, 27.10.2026, 16:27)',
+  'src/components/studio/IssueStrip.jsx':
+    'T84 F5 · NEW, the strip in the card and over the full panel (the finding\'s own words, its level\'s colour, Show) and the counters on the status bar. *"napewno naprzyklad wszystkie bledy zolte i czerwone sa totalnie niewidoczne, mala czcionka etc"* (the owner, 27.10.2026, 16:27)',
+  'src/components/studio/RefusedField.jsx':
+    'T84 F5 · NEW, a wrapper round NumberField (not edited): a refused value turns the field red with the engine\'s exact sentence under it, stays unapplied and out of the history, and Escape restores the applied one. *"chcialbym jako uzytkownik widziec jakie beda zmiany"* (the owner, 27.10.2026, 16:27)',
+  'src/components/studio/lib/studioIssues.js':
+    'T84 F5 · NEW, pure: the Check\'s findings grouped by unit and level through the engine\'s findingsToAct, notes left out. *"napewno naprzyklad wszystkie bledy zolte i czerwone sa totalnie niewidoczne, mala czcionka etc"* (the owner, 27.10.2026, 16:27)',
 };
 
 /**
@@ -432,7 +442,8 @@ const FROZEN = {
   // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/CanvasToolbar.jsx': '4348532ae83ff7f113980edacae7fe37afe497ab48c15d8d7e00226084e0f6f0',
   // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/CheckPanel.jsx': '8f1dfc8c0670aebddd6d23ea11465168cc7d61ca95a6c5b9e173ec9992c8f168',
+  // T84 F5 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/CheckPanel.jsx': '32ddb573d3c24cd6131983a1a19233f6b6d3a1f141bd38fb23890fa904be4144',
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
   // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
   // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -554,7 +565,8 @@ const FROZEN = {
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F4 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '976024065e7ca58033ca90622bf873271d437ea25f91c28598bf89aa1319e547',
+  // T84 F5 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': 'fb01ac2341efdc9461ed59a2c81bfc01914bc8815ce67a024186d7e5b8848f4a',
   // T84 F1 · NEW PRO files (the skin), frozen at their first hash; EXEMPT above carries the reason.
   'src/components/studio/studio.css': '806a346e8d9891bb1433b60d0e1e8b8fe80d981d6ca328327d0e90711524fc08',
   'src/components/studio/StudioIcons.jsx': 'f111e18a07699a683d7f33e4ade38d1ef354838de9bb4e9acebf4d969abf99a6',
@@ -571,6 +583,11 @@ const FROZEN = {
   'src/components/studio/cards/CardRow.jsx': 'e2d1a1ea847cf8b5d0b35312f5b2cb495e9325e2fecd854dd73e5b8e3168ba43',
   // T84 F4 · NEW PRO files (the inspector host), frozen at their first hash; EXEMPT above carries the reason.
   'src/components/studio/InspectorHost.jsx': 'ed8643ff466d4b578912fab46bcea7cc40f474ad6d328b88d7f79019e2fdf768',
+  // T84 F5 · NEW PRO files (the errors you can see), frozen at their first hash; EXEMPT above carries the reason.
+  'src/components/studio/UnitIssueMarker.jsx': 'eb91529d263865a1cdcbc5e11ba5e00fcc73f7c66b50bf11e7f9d0736863330b',
+  'src/components/studio/IssueStrip.jsx': '26c45686459a4aad218cfd904ef243175b716f0a90f2a5e7788fc4d11e7ccb3c',
+  'src/components/studio/RefusedField.jsx': '4aaa4a6943be572eb5312ab5110335156cd2b8abd9910234312d98a10dcaee1f',
+  'src/components/studio/lib/studioIssues.js': '668a4896507524cfcd4f344f922d5ba63eab1092bd2d39d40a140e5445951cfe',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -693,7 +710,7 @@ const show = (abs) => relative(ROOT, abs);
 
 // ─── 1. THE PRO FROZEN-FILES ASSERTION ─────────────────────────────────────
 
-test('F1: the frozen surface, 82 files of PRO, byte for byte (approved setup illustrations and the Studio included)', () => {
+test('F1: the frozen surface, 86 files of PRO, byte for byte (approved setup illustrations and the Studio included)', () => {
   const moved = [];
   for (const [rel, want] of Object.entries(FROZEN)) {
     const path = join(ROOT, rel);
@@ -827,6 +844,11 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // T84 F4 · the inspector host: licensed in EXEMPT above with the owner's words (CLAUDE.md T84 FROZEN 4).
     'src/components/MultiUnitPanel.jsx',
     'src/components/studio/InspectorHost.jsx',
+    // T84 F5 · the errors you can see: licensed in EXEMPT above with the owner's words (CLAUDE.md T84 FROZEN 4).
+    'src/components/studio/UnitIssueMarker.jsx',
+    'src/components/studio/IssueStrip.jsx',
+    'src/components/studio/RefusedField.jsx',
+    'src/components/studio/lib/studioIssues.js',
 ].sort(), 'the exemption list is not the approved UI and CLAUDE.md paths');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
@@ -847,7 +869,7 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // A tarball or a clone with no such ref. The manifest above already
     // answered; this assertion has nothing to add and says so out loud
     // rather than passing in silence.
-    assert.ok(Object.keys(FROZEN).length === 82, 'no base ref: the manifest is the whole proof here');
+    assert.ok(Object.keys(FROZEN).length === 86, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

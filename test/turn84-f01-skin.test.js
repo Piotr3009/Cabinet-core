@@ -429,7 +429,9 @@ test('F1 . the legacy menu bar, whole, in one line at 13 px; and the legacy hook
   assert.match(messages, /data-message-history-list className="cc-panel /);
   assert.match(messages, /data-messages="left"/);
   // The embedded RightPanel and its windows are .cc-panel surfaces (verify/t84/p1-host.md C).
-  assert.match(read('src/components/RightPanel.jsx'), /<aside className=\{`[^`]*cc-panel/);
+  // T84 F4 moved the aside's class into PANEL_ASIDE (overlay and embedded, both literal): each is a cc-panel.
+  assert.match(read('src/components/RightPanel.jsx'), /const PANEL_ASIDE = \{\s*overlay: `[^`]*cc-panel[^`]*`,\s*embedded: '[^']*cc-panel[^']*',/);
+  assert.match(read('src/components/RightPanel.jsx'), /<aside className=\{asideClass\} data-panel-layout=\{asideLayout\}>/);
   assert.match(read('src/components/Modal.jsx'), /className=\{`fixed cc-panel pointer-events-auto/);
 });
 

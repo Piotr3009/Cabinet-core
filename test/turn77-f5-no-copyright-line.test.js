@@ -415,6 +415,13 @@ export const NEW_FILES = [
   'src/components/studio/lib/studioIssues.js',
   'test/turn84-f05-issues.test.js',
   'scripts/t78-classify.d/f45-t84-f05.mjs',
+  // T84 F6 (27.10.2026): the scene's edge
+  'src/components/studio/SceneToggles.jsx',
+  'src/components/studio/SceneViewMenu.jsx',
+  'src/components/studio/CameraBar.jsx',
+  'src/components/studio/lib/cameraPresets.js',
+  'test/turn84-f06-scene.test.js',
+  'scripts/t78-classify.d/f45-t84-f06.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

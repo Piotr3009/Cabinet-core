@@ -564,6 +564,13 @@
   bottom: calc(18px + var(--studio-button) + 12px + theme('spacing.2'));
 }
 
+/* T84 F6 · the room's island chips (3d/Scene.jsx, bottom centre, frozen) stand on the same line
+   as the camera bar; while the bar stands at the foot they rise just above it, by the same
+   measure as the messages column, so no chip covers A to D or Frame selection. */
+.studio-pro .studio-scene:has(.studio-scene-links) [data-island-chips="1"] {
+  bottom: calc(18px + var(--studio-button) + 12px + theme('spacing.2'));
+}
+
 
 /* 8. THE INSPECTOR: the quick card (344, 316 narrow) or the embedded RightPanel (400, 360
    narrow); the width is the column's, --studio-inspector. */

@@ -47,6 +47,10 @@ import { setUnitAdornment } from '../3d/UnitView.jsx';
 import IssueStrip, { IssueCounters } from '../components/studio/IssueStrip.jsx';
 import RefusedField from '../components/studio/RefusedField.jsx';
 import UnitIssueMarker from '../components/studio/UnitIssueMarker.jsx';
+// T84 F6 (CLAUDE.md PART D): the scene's edge.
+import SceneToggles from '../components/studio/SceneToggles.jsx';
+import SceneViewMenu from '../components/studio/SceneViewMenu.jsx';
+import CameraBar from '../components/studio/CameraBar.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 // T54-F6: the dimensions' sleep clock — a lib module so fake timers can test it.
 import { createDimensionSleep, dimensionsIdleMs } from '../lib/dimensionSleep.js';
@@ -655,6 +659,14 @@ export default function ConfiguratorPage({ studio = false } = {}) {
     inspector: <InspectorHost renderStrip={(unitId) => <IssueStrip unitId={unitId} />} {...{ Field: RefusedField }} />,
     // T84 F5 · the counters on the status bar.
     statusExtras: <IssueCounters />,
+    // T84 F6 · the four toggles, View, and the camera bar with Drawings... (the PREVIEW).
+    sceneEdge: (
+      <>
+        <SceneToggles />
+        <SceneViewMenu />
+        <CameraBar onDrawings={(e) => openModal('drawing', { kind: 'walls', anchor: anchorOfEvent(e) })} />
+      </>
+    ),
   } : {};
   return (
     <Frame {...studioSlots} topBar={(
@@ -678,7 +690,7 @@ export default function ConfiguratorPage({ studio = false } = {}) {
           <Scene onCaptureReady={onCaptureReady} onRenderReady={onRenderReady} />
         </div>
         {viewMode === 'cnc' && <CncView />}
-        <CanvasToolbar />
+        {!studio && <CanvasToolbar />}
 
         {/* ─── An empty room asks ONE question (turn 11, CLAUDE.md F4.2) ───
             A line of grey text at the bottom of the canvas saying "open Library

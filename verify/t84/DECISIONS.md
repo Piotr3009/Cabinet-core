@@ -60,3 +60,17 @@ decision is also in the PR body under DECISIONS TAKEN.
     code (one line, that test only; the walker and the module graph still read code files). The owner's setup CSS of
     26.10 (`setup-workspace.css`) is not drawn into the manifest: it is his, edited by him on main (27.10), and
     FROZEN 5 keeps it untouched by this turn, not frozen against him.
+11. **CNC brings a hidden inspector back.** On main `setViewMode('cnc')` sets `rightPanelOpen: true`: the CNC
+    panel (its tree and its two downloads) shows the moment CNC is chosen. Under Studio the same road brings the
+    inspector back from 'none' (to 'full' when pinned, else 'quick'), so no CNC control waits behind the
+    breadcrumb's button; the pin is never touched (CLAUDE.md LAW 1, ZERO KASOWANIA: *"Studio adds a second road to a
+    function; it never closes the first"*; S3's note, INT's line in `uiStore.js`).
+12. **The slices' own decisions stand in their reports.** Each agent wrote what it decided, why and from which words
+    in `verify/t84/agents/<slice>.md` under DECISIONS TAKEN (D1 the skin, S1 the shell, S2 the cards, S3 the host,
+    S4 the errors, S5 the scene's edge, S6 the rail's menus and Escape, S7 the licences). The PR body carries them
+    one line each. The ones that change what the owner sees: the top bar's narrow values at every width (D1: no
+    media query can read the profile); the strip reads `#<check> · <message>` (S4: CLAUDE.md's "#48 · the bowl
+    enters a board" is Check #48); the status bar's words are Stage-1's ("Shared selection", "No selection", S1);
+    Back to quick settings is the word "Quick" in the panel's header (S3); the free panel's thickness ladder and tilt
+    chips stay in its part window (S2, the 136 px value column); Add's popup lists the four library categories with
+    the legacy Library menu's own hints (S6).

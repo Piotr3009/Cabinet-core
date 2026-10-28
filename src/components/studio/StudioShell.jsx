@@ -115,8 +115,11 @@ export default function StudioShell({
             popupLayer={popupLayer}
           />
           <div ref={sceneRef} data-studio="scene" className="studio-scene relative overflow-hidden min-w-0 min-h-0">
-            {children}
+            {/* T84 F6 · the edge first, where the canvas toolbar stands on the
+                legacy face: the scene's panels (the Check, the BOM, the
+                Library), drawn after it at the same layer, stand over it. */}
             {sceneEdge}
+            {children}
           </div>
           {inspector}
         </div>

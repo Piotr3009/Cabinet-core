@@ -352,8 +352,10 @@ test('F2 · StudioShell takes slots and imports nothing from a later F', () => {
   const cols = ['<StudioRail', 'data-studio="scene"', '{inspector}'].map((x) => SHELL.indexOf(x));
   assert.ok(cols.every((v, i) => v > 0 && (i === 0 || v > cols[i - 1])), `rail | scene | inspector: ${cols}`);
   assert.match(SHELL, /renderMenu=\{renderRailMenu\}/);
-  assert.match(SHELL, /<div ref=\{sceneRef\} data-studio="scene" className="studio-scene relative overflow-hidden[^"]*">\s*\{children\}\s*\{sceneEdge\}\s*<\/div>/,
-    'the existing scene layer, then the scene edge, in a relative slot');
+  // T84 F6 (INT, S5's finding): the edge first, where the canvas toolbar stands on the legacy face, so the scene's
+  // panels (the Check, the BOM, the Library), drawn after it at the same layer, stand over it.
+  assert.match(SHELL, /<div ref=\{sceneRef\} data-studio="scene" className="studio-scene relative overflow-hidden[^"]*">\s*(?:\{\/\*[\s\S]*?\*\/\}\s*)?\{sceneEdge\}\s*\{children\}\s*<\/div>/,
+    'the scene edge, then the existing scene layer whose panels stand over it, in a relative slot');
 });
 
 test('F2 · the shell\'s lengths are the profile\'s, through studioSkin; the inspector column is 0 when absent or hidden', () => {

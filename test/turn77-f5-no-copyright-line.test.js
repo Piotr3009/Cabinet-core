@@ -390,6 +390,14 @@ export const NEW_FILES = [
   'src/components/studio/lib/studioSkin.js',
   'test/turn84-f01-skin.test.js',
   'scripts/t78-classify.d/f45-t84-f01.mjs',
+  // T84 F2 (27.10.2026): the shell
+  'src/components/studio/StudioShell.jsx',
+  'src/components/studio/StudioRail.jsx',
+  'src/components/studio/SelectionBreadcrumb.jsx',
+  'src/components/studio/StatusBar.jsx',
+  'src/components/studio/lib/studioFace.js',
+  'test/turn84-f02-shell.test.js',
+  'scripts/t78-classify.d/f45-t84-f02.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

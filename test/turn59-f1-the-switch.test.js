@@ -89,7 +89,8 @@ const EXEMPT = {
     'T75 F20 · the Library menu\'s Sets row says what is on the shelf instead of "0 types". *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."*'
     + ' T78 F21 · the Output menu\'s Spraying placeholder becomes a live entry (onOpenSpraying): one page on the Production Core pattern, the spray schedule by colour, the cards and the paint order. *"cale sprayowanie jako osobne menu Cabinet Core."*'
     + ' Chat fix 17.10.2026 \u00b7 Output > Part labels (PDF): the sticker sheets (onExportLabels). *"naklejki 44 na A4 bo takie mam, kolorami ... napis co to, i strzalka co oklejamy ... ok koduj"*'
-    + ' T82 F20, after the review · File > Save marks the job saved only when the save was stored (persistProject answers stored); a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
+    + ' T82 F20, after the review · File > Save marks the job saved only when the save was stored (persistProject answers stored); a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
+    + ' T84 F2 · variant="studio" for the Studio\'s top bar: each header control written once and drawn by either layout (the same handler, guard and state); the Studio layout is the wordmark with the PRO label, the project name, the same menus array through the same MenuBar with orderMenus whole (every leaf, run, disabled and checked of the census), then Undo and Redo (the history store\'s, the toolbar\'s guards), Save, Brightness, Account and the gold button, Export renamed BOM with the same call setBomOpen(!bomOpen); its MockModeBadge stands on the status bar; the legacy layout is what it was. *"tak"* (the owner, 27.10.2026, 16:27, to the header\'s Export renamed BOM); *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
   // ─── ADDED 15.10.2026 (the evening) · THE RECESS SEEN FROM THE FRONT ──────
   // The owner: *"na setup room jak widze sciane od frontu nie top tylko front
   // to nie widze kresek, gdzie jest komin i gdzie wneka"* and *"reces pionowy
@@ -280,7 +281,8 @@ const EXEMPT = {
     + ' T79 F18 · onExportLabels takes { sheet } from the two Output entries (21 per sheet, Avery L7160; 44 per sheet) and hands that preset of profile.labels.sheets to exportLabelsPdf; the default stays L7160. *"przełącznik 21/44 naklejek w oknie eksportu"* (the handover), the owner 14:55: *"ok daj"*'
     + ' T80 F10 · the in-frame checks #40 to #44 stand in the left column beside the front-gap rows (components/InframeWarnings.jsx, the same findings the Check panel reads, the same fly-to). *"Each in the left messages and in the Check panel."* (CLAUDE.md T80 F10); the owner: *"3 mm zawsze."* (21.10.2026, 22:03)'
     + ' T82 F12, after the review · the page\'s export preflight counts what asks something of a person (engine/checks.js findingsToAct): a note (#45, the vanity\'s service void) is never "to look at". *"nastepnie to bedzie miejsce z tylu na rurki minimum potrzebujemy okolo 80 mm do 100 mm"* (25.10.2026, 12:57)'
-    + ' T82 F20, after the review · File > Save as marks the job saved only when the copy was stored; a refused write leaves the job as it was, unsaved, and says so. *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
+    + ' T82 F20, after the review · File > Save as marks the job saved only when the copy was stored; a refused write leaves the job as it was, unsaved, and says so. *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
+    + ' T84 F2 · under the Studio face (the flag App.jsx hands it) the page renders StudioShell round the EXISTING scene, the top bar the same TopBar with variant="studio" and the same handlers, the Changes bar on the status bar (the shell provides ChangesBarRehomed; the page\'s Messages is left as it was); the legacy face is what it was. *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -335,7 +337,8 @@ const EXEMPT = {
   'src/components/Messages.jsx':
     'T79 F1 . all three levels stand in ONE bottom-left column (the centre and the bottom-centre blocks deleted), the newest nearest the Changes bar under them; the bar opens the list of the last profile.ui.messages.historyMax messages (newest first, HH:MM, the level\'s dot, the text, Clear), collapsed by default, Escape collapses it, never saved; a folded yellow or grey says its count once (its text), a red beside it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej, niech one tam znikają, można na dole po lewej zrobić jakby listę rozwijaną i tam historia zmian; powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
     + ' CHAT FIX 19.10.2026 (re-frozen): the grey card is translucent (bg-shell-800/70); the timing is the store\'s and engine/messages.js hideMs (every level leaves on its clock: 4 s, reds 8 s; the Changes row stays). *"ma sie chowac po kilku sekundach i byc przezroczysty"*; asked "wszystkie chowaja sie po 4 s, czerwone po 8 s, historia zostaje, tlo przezroczyste 70 procent?": *"tak pls"*.'
-    + ' CHAT FIX 19.10.2026, the afternoon (re-frozen again): the open Changes list closes itself after engine/messages.js historyOpenMs (profile.ui.messages.historyOpenMs, 10 s, PROPOSED); the bar and the rows stay. *"changes chat can we keep close, nawet jesli uzytkownik otworzy czy mozemy za jakis czas zamknac? bo za bardzo przeszkadza"*.',
+    + ' CHAT FIX 19.10.2026, the afternoon (re-frozen again): the open Changes list closes itself after engine/messages.js historyOpenMs (profile.ui.messages.historyOpenMs, 10 s, PROPOSED); the bar and the rows stay. *"changes chat can we keep close, nawet jesli uzytkownik otworzy czy mozemy za jakis czas zamknac? bo za bardzo przeszkadza"*.'
+    + ' T84 F2 · the Changes bar re-homed: HistoryBar is exported so the Studio status bar draws the same component (the same list, the same Escape, the same clocks), and the column leaves its own out when told so (history={false}, or the ChangesBarRehomed context the Studio shell provides); the legacy face passes and provides nothing and is what it was. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)',
   // CLAUDE.md T79 F12: the shelf menu's Center between stands in this window
   // too, so a click in its own canvas must be able to be the pick.
   'src/components/CabinetEditorModal.jsx':
@@ -368,6 +371,18 @@ const EXEMPT = {
     'T84 F1 · NEW, the Stage-1 SVG symbols as one hidden sprite, and the Icon that uses it. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)',
   'src/components/studio/lib/studioSkin.js':
     'T84 F1 · NEW, pure: studioWidths and studioCssVars, the numbers of profile.ui.studio as the shell\'s widths and CSS variables, typed nowhere else. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)',
+  'src/App.jsx':
+    'T84 F2 · the face: the factory entry with profile.ui.studio.enabled hands ConfiguratorPage studio={isStudioFace(audience, profile)}; the retail entry never mounts the Studio, and no button switches it. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER); *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)',
+  'src/components/studio/StudioShell.jsx':
+    'T84 F2 · NEW, the Studio grid of Stage-1 (top bar, context strip, rail, scene, inspector, status bar) round the EXISTING canvas and its overlays; every later part comes in through a slot. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER); *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)',
+  'src/components/studio/StudioRail.jsx':
+    'T84 F2 · NEW, the rail: Select, Add (the existing Library), Room, Materials, Check with its badge; Design and CNC at its foot, the toolbar\'s own calls and guards. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
+  'src/components/studio/SelectionBreadcrumb.jsx':
+    'T84 F2 · NEW, the context strip: the room, the wall or island, the unit number, the selection in words, and the button that shows the inspector again. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)',
+  'src/components/studio/StatusBar.jsx':
+    'T84 F2 · NEW, the status bar: the selection in words, the MockModeBadge, the dirty marker, the Changes bar (the same component, re-homed) and the viewport size. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)',
+  'src/components/studio/lib/studioFace.js':
+    'T84 F2 · NEW, pure: isStudioFace(audience, profile), the factory entry with profile.ui.studio.enabled; no switch in the UI. *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)',
 };
 
 /**
@@ -385,7 +400,8 @@ const FROZEN = {
   // T82 F15 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/FrontDecorationControls.jsx': 'b32660180217d45760e074f4fcd8932f90b9a57f11cb02121c59670225de2546',
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
-  'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
+  // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/App.jsx': '4f188eb03dff2bd07b62d99e47fd44935fb274e888a95c1ac2cf17beae07c43b',
   // T78 F11 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F2, F3 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F11 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -453,7 +469,8 @@ const FROZEN = {
   'src/components/MenuBar.jsx': '8259c2d7b81f5f176c8c20d6faf98d6c2943667e2dd6354154a85748da1c4581',
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 re-frozen at the new hash, twice (the morning, the afternoon); EXEMPT above carries the reasons.
-  'src/components/Messages.jsx': '319794dc58eec269c60e180e3565b463a7f9668de1af04156d549596a58476c0',
+  // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/Messages.jsx': '0d2c65d4b1027e8ef07d7f0b6c7e1dd51c1e63744dbf1177c306e848ed42cab9',
   'src/components/MockModeBadge.jsx': '081294a78610a7fd3baef730ca7a318d8d193e40ef66c5d278e45f9672c82826',
   'src/components/Modal.jsx': '1fe9eb73cd46a0e4560254da7cc3ed11458611fe0461717ae41c88df999d1ecc',
   'src/components/MultiUnitPanel.jsx': 'ad7d770b51042f0c2e8d9633df4067c5a7d8d4af6e358fad2e90cf62e631531c',
@@ -498,7 +515,8 @@ const FROZEN = {
   'src/components/StartScreen.jsx': '366ca71d36eabc33926c1d092770cf06925b19102e660d4e40763cf17ce52a41',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/TopBar.jsx': 'c79b1e79ad886daed19c4d93a2860afe6624e708df0ed7c1fb28de1dc0c28ec2',
+  // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/TopBar.jsx': '78bd9bf40db70b172464e10a1b3ec09ad85ddbe843463479ca9e763b538d4531',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
   // T78 F5 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/UnitSizeModal.jsx': 'e8b94789f07fffaeb5b66a2a8fd160c28d9d4f4b0ed56383ecc18532f7b06c1f',
@@ -520,11 +538,18 @@ const FROZEN = {
   // T79 F18 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '37b7fc67836d2deef861251637ef5cdd377f265e0b0d40e495533c122ec5c021',
+  // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': 'b392bfa927cab5020748e3ee55a7d6ef2e13b4a99af1db7785d4120487a41fe0',
   // T84 F1 · NEW PRO files (the skin), frozen at their first hash; EXEMPT above carries the reason.
   'src/components/studio/studio.css': '806a346e8d9891bb1433b60d0e1e8b8fe80d981d6ca328327d0e90711524fc08',
   'src/components/studio/StudioIcons.jsx': 'f111e18a07699a683d7f33e4ade38d1ef354838de9bb4e9acebf4d969abf99a6',
   'src/components/studio/lib/studioSkin.js': 'ac7255afe613b68528cd3b0bee9db7794f77f0921829f8bf887c83c6133cc37d',
+  // T84 F2 · NEW PRO files (the shell), frozen at their first hash; EXEMPT above carries the reason.
+  'src/components/studio/StudioShell.jsx': 'ddc87acdd868a5dc2d8b7b3ae17e8a2c0570f56376a6b5a76d009ff247502782',
+  'src/components/studio/StudioRail.jsx': '09a32f77522d130b3d76e3ff8a4a3a17688ba98c434733313fa2ae435854e7ff',
+  'src/components/studio/SelectionBreadcrumb.jsx': '29dfd5f6748b83a8d6b8ac36c778e40c2d6971b7290cf8ff3a8c9c92a86e7dc0',
+  'src/components/studio/StatusBar.jsx': '7c6651108bbeab5b7263eee8732fe73c461bdf859bbc626ccfab377182dd1106',
+  'src/components/studio/lib/studioFace.js': '550ae67a86068132c172498c49715dba928da790ca7846b799e15d642d647a6a',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -647,7 +672,7 @@ const show = (abs) => relative(ROOT, abs);
 
 // ─── 1. THE PRO FROZEN-FILES ASSERTION ─────────────────────────────────────
 
-test('F1: the frozen surface, 73 files of PRO, byte for byte (approved setup illustrations and the Studio included)', () => {
+test('F1: the frozen surface, 78 files of PRO, byte for byte (approved setup illustrations and the Studio included)', () => {
   const moved = [];
   for (const [rel, want] of Object.entries(FROZEN)) {
     const path = join(ROOT, rel);
@@ -767,6 +792,13 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/studio/studio.css',
     'src/components/studio/StudioIcons.jsx',
     'src/components/studio/lib/studioSkin.js',
+    // T84 F2 · the shell: licensed in EXEMPT above with the owner's words (CLAUDE.md T84 FROZEN 4).
+    'src/App.jsx',
+    'src/components/studio/StudioShell.jsx',
+    'src/components/studio/StudioRail.jsx',
+    'src/components/studio/SelectionBreadcrumb.jsx',
+    'src/components/studio/StatusBar.jsx',
+    'src/components/studio/lib/studioFace.js',
 ].sort(), 'the exemption list is not the approved UI and CLAUDE.md paths');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
@@ -787,7 +819,7 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // A tarball or a clone with no such ref. The manifest above already
     // answered; this assertion has nothing to add and says so out loud
     // rather than passing in silence.
-    assert.ok(Object.keys(FROZEN).length === 73, 'no base ref: the manifest is the whole proof here');
+    assert.ok(Object.keys(FROZEN).length === 78, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

@@ -38,6 +38,8 @@ import CanvasToolbar from '../components/CanvasToolbar.jsx';
 import FrontGapWarnings from '../components/FrontGapWarnings.jsx';
 // T80 F10 · Checks #40 to #44 in the left column, beside the front-gap rows.
 import InframeWarnings from '../components/InframeWarnings.jsx';
+// T84 F2 (CLAUDE.md PART A): the Studio face, PRO's face, around the same editor.
+import StudioShell from '../components/studio/StudioShell.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 // T54-F6: the dimensions' sleep clock — a lib module so fake timers can test it.
 import { createDimensionSleep, dimensionsIdleMs } from '../lib/dimensionSleep.js';
@@ -146,9 +148,27 @@ function FirstUnitPlus() {
   );
 }
 
+// ─── T84 F2 (CLAUDE.md PART A): ONE EDITOR, TWO FRAMES ──────────────────────
+//
+// The legacy frame is today's two divs, byte for byte in the DOM; the Studio
+// frame is StudioShell, which takes the same top bar and the same scene layer
+// in its slots. Nothing inside the scene layer knows which frame holds it.
+function LegacyFrame({ topBar, children }) {
+  return (
+    <div className="h-full flex flex-col bg-shell-900">
+      {topBar}
+      {children}
+    </div>
+  );
+}
+function SceneSlot({ studio, children }) {
+  if (studio) return children;
+  return <div className="flex-1 relative overflow-hidden">{children}</div>;
+}
+
 // Frozen layout (SPEC section 7):
 // topbar / floating Library / white 3D canvas / closable right parameter panel.
-export default function ConfiguratorPage() {
+export default function ConfiguratorPage({ studio = false } = {}) {
   const rightPanelOpen = useUiStore((s) => s.rightPanelOpen);
   const bomOpen = useUiStore((s) => s.bomOpen);
   const checkOpen = useUiStore((s) => s.checkOpen);
@@ -609,9 +629,15 @@ export default function ConfiguratorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project, units, markSaved]);
 
+  // T84 F2 · the frame of the face App.jsx chose (isStudioFace): the Studio
+  // shell's slots, filled F by F; the legacy frame takes none of them.
+  const Frame = studio ? StudioShell : LegacyFrame;
+  const studioSlots = studio ? {
+  } : {};
   return (
-    <div className="h-full flex flex-col bg-shell-900">
+    <Frame {...studioSlots} topBar={(
       <TopBar
+        variant={studio ? 'studio' : undefined}
         onExportCsv={onExportCsv}
         onExportPdf={onExportPdf}
         onExportLabels={onExportLabels}
@@ -620,7 +646,8 @@ export default function ConfiguratorPage() {
         onDrawing={onDrawing}
         onAuth={(e) => openModal('auth', { anchor: anchorOfEvent(e) })}
       />
-      <div className="flex-1 relative overflow-hidden">
+    )}>
+      <SceneSlot studio={studio}>
         {/* The 3D scene stays MOUNTED behind the CNC view: it owns the WebGL
             context the PDF export captures, and re-initialising it on every
             toggle would both lose that and cost a visible stall. CncView is
@@ -750,7 +777,7 @@ export default function ConfiguratorPage() {
             to appear over whatever window the recompute happened in. */}
         <HandEditsModal />
         <ContextMenu />
-      </div>
-    </div>
+      </SceneSlot>
+    </Frame>
   );
 }

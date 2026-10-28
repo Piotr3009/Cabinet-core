@@ -51,6 +51,9 @@ import UnitIssueMarker from '../components/studio/UnitIssueMarker.jsx';
 import SceneToggles from '../components/studio/SceneToggles.jsx';
 import SceneViewMenu from '../components/studio/SceneViewMenu.jsx';
 import CameraBar from '../components/studio/CameraBar.jsx';
+// T84 F7 (CLAUDE.md PART E): the rail's menus and the one Escape owner.
+import RailMenu from '../components/studio/RailMenus.jsx';
+import { installStudioEscape } from '../components/studio/lib/studioEscape.js';
 import { useUiStore } from '../stores/uiStore.js';
 // T54-F6: the dimensions' sleep clock — a lib module so fake timers can test it.
 import { createDimensionSleep, dimensionsIdleMs } from '../lib/dimensionSleep.js';
@@ -248,6 +251,10 @@ export default function ConfiguratorPage({ studio = false } = {}) {
       }
 
       if (e.key === 'Escape') {
+        // T84 F7 (CLAUDE.md PART E): under the Studio face the shell's one
+        // Escape owner takes the key (installStudioEscape below), so a press
+        // that closed a menu or a window never also clears the selection.
+        if (studio) return;
         if (selectedElement) clearElement();
         else if (selectedUnitId) clearSelection();
         return;
@@ -325,7 +332,7 @@ export default function ConfiguratorPage({ studio = false } = {}) {
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedElement, selectedUnitId, clearElement, clearSelection,
     units, unitResult, removeItem, removeUnit, removeFront, deleteSelectedElement,
-    notify, undo, redo]);
+    notify, undo, redo, studio]);
 
   // ─── TURN 54 (CLAUDE.md F6): DIMENSIONS GO TO SLEEP AFTER 30 SECONDS ─────
   //
@@ -353,6 +360,13 @@ export default function ConfiguratorPage({ studio = false } = {}) {
       sleep.cancel();
     };
   }, [showDimensionsNow, viewMode, profile]);
+
+  // ─── T84 F7 (CLAUDE.md PART E): ONE ESCAPE OWNER FOR THE SHELL ────────────
+  // A window CAPTURE listener that decides from the state at the press
+  // (verify/t84/p1-escape.md E): a field, a popup or a window owns its own
+  // press; then a scene operation, the part, the cabinet; one key event, one
+  // action; never unpin.
+  useEffect(() => (studio ? installStudioEscape({ getUi: useUiStore.getState }) : undefined), [studio]);
 
   // ─── T84 F5 (CLAUDE.md PART C): THE MARKER BESIDE THE UNIT NUMBER ─────────
   // The one slot of 3d/UnitView.jsx, filled while the Studio face is mounted;
@@ -667,6 +681,8 @@ export default function ConfiguratorPage({ studio = false } = {}) {
         <CameraBar onDrawings={(e) => openModal('drawing', { kind: 'walls', anchor: anchorOfEvent(e) })} />
       </>
     ),
+    // T84 F7 · Add and Materials open their popups beside the rail.
+    renderRailMenu: (kind, { anchor, onClose }) => <RailMenu kind={kind} anchor={anchor} onClose={onClose} />,
   } : {};
   return (
     <Frame {...studioSlots} topBar={(

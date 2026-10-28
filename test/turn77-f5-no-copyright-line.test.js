@@ -422,6 +422,12 @@ export const NEW_FILES = [
   'src/components/studio/lib/cameraPresets.js',
   'test/turn84-f06-scene.test.js',
   'scripts/t78-classify.d/f45-t84-f06.mjs',
+  // T84 F7 (27.10.2026): the rail's menus, Escape and the parity gate
+  'src/components/studio/RailMenus.jsx',
+  'src/components/studio/lib/studioEscape.js',
+  'test/turn84-f07-parity.test.js',
+  'test/turn84-f07-escape.test.js',
+  'scripts/t78-classify.d/f45-t84-f07.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

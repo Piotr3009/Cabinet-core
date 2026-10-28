@@ -63,14 +63,29 @@
 // NOT one of the panel's own: it is counted apart as `hostControls` (zero on
 // main).
 //
+// THE STUDIO HOMES (T84 F7, S6). Under `--studio` the canvas toolbar is not
+// drawn (F6) and the header's controls are re-homed (F2), so the live toolbar
+// and header are counted AT THEIR STUDIO HOMES, each found by its hook
+// (verify/t84/agents/CONTRACT.md section 6) and reported with its home: Undo,
+// Redo and BOM on the top bar; Show dimensions, Front dimensions, Props and
+// Measure among the scene toggles when the profile's list names them, else in
+// View (opened by a real click, its rows counted); Outlines, X-ray, Hide fronts
+// and Open all / Close all among the toggles; Check on the rail; 3D and CNC at
+// the rail's foot; and, of the header, the wordmark, the project name, Save,
+// Bright, Account and BOM (Export renamed, the same call) on the top bar, the
+// MockModeBadge on the status bar. A toggle the profile has taken off the edge
+// and View does not hold is looked for in the top menu's drawn leaves (its
+// legacy road). `--legacy` and `main` count as before.
+//
 // THE COMPARISON. When verify/t84/census-main.json exists and this run writes
 // anywhere else, every row is compared with it and printed: a PANEL row (the
 // thirteen totals, their sections and the sum) must be EQUAL (CLAUDE.md F7:
 // "both must equal `census-main.json`"); every other count must be the SAME
 // OR LARGER (THE CENSUS: "a smaller one is RED"); the context file's sha256
 // must be equal (FROZEN 6). In `--studio` the live toolbar and header rows are
-// printed and not gated: the toolbar is not rendered under Studio and the top
-// bar is re-homed by F2 (CLAUDE.md F2, F6); their homes are F7's parity table.
+// the counts AT THEIR STUDIO HOMES (above), gated like every other count, and a
+// control main had that is at no home is RED by name (`homesMissing`); F7's
+// parity test holds the same homes in the source.
 // Beside the counts, the items themselves: a menu path, a toolbar or header
 // handler, a context id, a modal kind or a library type that main had and this
 // run has not is RED by name, and so is a leaf whose call moved (LAWS 1: "by
@@ -311,6 +326,29 @@ function stripComments(text) {
   }
   return out;
 }
+/**
+ * The text with every comment blanked to spaces (its newlines kept), the same
+ * length, so a position found in it is the same position in the text. Every
+ * search for CODE (`return (`, `function X(`, `menus = [`, a `<button`) runs
+ * in it, so a comment that names code (T84 F2's TopBar: "each is a function
+ * with its own `return (`") is never read as code. (T84 F7, S6.)
+ */
+function blankComments(text) {
+  const blank = (s) => s.replace(/[^\n]/g, ' ');
+  let out = '';
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    const n = text[i + 1];
+    if (c === '/' && n === '/') { const e = text.indexOf('\n', i); const end = e < 0 ? text.length : e; out += blank(text.slice(i, end)); i = end; continue; }
+    if (c === '/' && n === '*') { const e = text.indexOf('*/', i + 2); const end = e < 0 ? text.length : e + 2; out += blank(text.slice(i, end)); i = end; continue; }
+    if (c === '\'' || c === '"') { const e = skipQuoted(text, i); out += text.slice(i, e); i = e; continue; }
+    if (c === '`') { const e = skipTemplate(text, i); out += text.slice(i, e); i = e; continue; }
+    out += c;
+    i += 1;
+  }
+  return out;
+}
 /** `key: value` of an object literal's top level (shorthand `key` gives key: key). */
 function propsOf(objectText) {
   const inner = objectText.trim().replace(/^\{/, '').replace(/\}$/, '');
@@ -375,7 +413,7 @@ function jsxTag(text, at) {
 const squash = (s) => String(s).replace(/\s+/g, ' ').trim();
 /** [start, end] of the body of `function <name>(...) {...}` in `text`, or the whole text. */
 function functionBody(text, name) {
-  const m = new RegExp(`function\\s+${name}\\s*\\(`).exec(text);
+  const m = new RegExp(`function\\s+${name}\\s*\\(`).exec(blankComments(text));
   if (!m) return [0, text.length];
   const paren = text.indexOf('(', m.index);
   const brace = text.indexOf('{', closeOf(text, paren));
@@ -384,10 +422,12 @@ function functionBody(text, name) {
 /** Every `<tag` of `names` in text[from, to), JSX comments skipped, with its attributes. */
 function jsxTagsIn(text, from, to, names) {
   const out = [];
+  const plain = blankComments(text);
   const re = new RegExp(`<(${names.join('|')})\\b`, 'g');
   re.lastIndex = from;
   let m;
   while ((m = re.exec(text)) && m.index < to) {
+    if (plain[m.index] !== '<') { re.lastIndex = m.index + 1; continue; }
     const before = text.lastIndexOf('{/*', m.index);
     if (before >= 0 && text.indexOf('*/}', before) > m.index) { re.lastIndex = text.indexOf('*/}', before) + 3; continue; }
     const tag = jsxTag(text, m.index);
@@ -499,7 +539,7 @@ function paramsOf(fn) {
 /** What ConfiguratorPage hands TopBar, prop by prop. */
 function pageBindings() {
   const text = src('src/pages/ConfiguratorPage.jsx');
-  const at = text.indexOf('<TopBar');
+  const at = blankComments(text).indexOf('<TopBar');
   if (at < 0) return {};
   const { attrs } = jsxTag(text, at);
   const out = {};
@@ -518,7 +558,7 @@ async function staticTopMenu() {
   for (const c of candidates) {
     if (!existsSync(join(REPO, c))) continue;
     const t = src(c);
-    const k = t.search(/\bmenus\s*=\s*\[/);
+    const k = blankComments(t).search(/\bmenus\s*=\s*\[/);
     if (k >= 0) { file = c; text = t; at = t.indexOf('[', k); break; }
   }
   if (!file) return { file: null, error: `no \`menus = [\` in ${candidates.join(' or ')}`, menus: [], leaves: [], total: 0 };
@@ -709,8 +749,9 @@ function staticHeader() {
   const [from, to] = functionBody(text, 'TopBar');
   const tags = [];
   const returns = [];
-  for (let r = text.indexOf('return (', from); r >= 0 && r < to; r = text.indexOf('return (', r + 8)) {
-    const open = text.indexOf('(', r);
+  const plain = blankComments(text);
+  for (let r = plain.indexOf('return (', from); r >= 0 && r < to; r = plain.indexOf('return (', r + 8)) {
+    const open = plain.indexOf('(', r);
     const close = closeOf(text, open);
     returns.push(lineOf(text, r));
     for (const t of jsxTagsIn(text, open, close, ['button', 'input', 'MockModeBadge', 'MenuBar'])) {
@@ -910,6 +951,39 @@ function staticPanelSources() {
   };
 }
 
+// === THE STUDIO HOMES (T84 F7, S6): WHERE EACH CONTROL LIVES UNDER STUDIO ====
+// The census's own names (TOOLBAR_NAMES, staticHeader), each with its Studio
+// home and the hook it carries there (verify/t84/agents/CONTRACT.md section 6;
+// test/turn84-f07-parity.test.js holds the same homes in the source). `toggle`
+// is the scene toggle's hook when the profile's list puts it on the edge,
+// `view` its row in View (`data-item`), `menu` its legacy road in the top
+// menu's drawn leaves, looked for last.
+const STUDIO_TOOLBAR_HOMES = [
+  ['Undo', 'top bar', { hook: 'topbar-undo' }],
+  ['Redo', 'top bar', { hook: 'topbar-redo' }],
+  ['Show dimensions', 'View', { toggle: 'toggle-dimensions', view: 'dimensions', menu: 'View > Dimensions' }],
+  ['Front dimensions', 'View', { toggle: 'toggle-front-dimensions', view: 'frontDimensions', menu: 'View > Show front dimensions' }],
+  ['Outlines', 'scene toggles', { toggle: 'toggle-outlines', menu: 'View > Outlines' }],
+  ['X-ray', 'scene toggles', { toggle: 'toggle-xray', menu: 'View > X-ray' }],
+  ['Props', 'View', { toggle: 'toggle-props', view: 'props' }],
+  ['Hide fronts', 'scene toggles', { toggle: 'toggle-hide-fronts', menu: 'View > Hide fronts' }],
+  ['Measure', 'View', { toggle: 'toggle-measure', view: 'measure' }],
+  ['Open all / Close all', 'scene toggles', { toggle: 'toggle-open-all' }],
+  ['BOM', 'top bar', { hook: 'topbar-bom' }],
+  ['Check . N', 'rail', { hook: 'rail-check' }],
+  ['3D', 'rail foot', { hook: 'rail-design' }],
+  ['CNC', 'rail foot', { hook: 'rail-cnc' }],
+];
+const STUDIO_HEADER_HOMES = [
+  ['CABINET CORE', 'top bar', '[data-studio="topbar"] .studio-wordmark'],
+  ['project name (rename)', 'top bar', '[data-studio="topbar"] .studio-project-name'],
+  ['Save', 'top bar', '[data-studio="topbar-save"]'],
+  ['MOCK DATA MODE', 'status bar', null],
+  ['Bright', 'top bar', '[data-studio="topbar-brightness"]'],
+  ['Account', 'top bar', '[data-studio="topbar-account"]'],
+  ['Export (= BOM)', 'top bar', '[data-studio="topbar-bom"]'],
+];
+
 // === THE LIVE HALF ==========================================================
 async function liveHalf() {
   if (!process.env.CHROME_PATH) {
@@ -1027,18 +1101,76 @@ async function liveHalf() {
     };
 
     // --- (live 2) THE HEADER and (live 3) THE TOOLBAR, as drawn ---
-    live.header = await page.ask(`(() => { const nav = document.querySelector('${NAV}'); const h = nav && nav.closest('header');
-      const badges = [...document.querySelectorAll('span')].filter((s) => /^mock data mode$/i.test((s.textContent || '').trim()) && s.offsetParent !== null)
-        .map((s) => { const home = s.closest('header, footer, aside, [data-studio-status], [data-studio-shell]'); return home ? (home.tagName.toLowerCase() + (home.getAttribute('data-studio-status') != null ? '[data-studio-status]' : '')) : 'other'; });
-      if (!h) return { found: false, badges };
-      const ctrls = [...h.querySelectorAll('button, input, select, textarea')].filter((e) => !nav.contains(e) && e.offsetParent !== null)
-        .map((e) => ({ tag: e.tagName.toLowerCase(), type: e.getAttribute('type') || null, text: (e.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 40), title: (e.getAttribute('title') || '').slice(0, 80) }));
-      const badge = [...h.querySelectorAll('span')].some((s) => /^mock data mode$/i.test((s.textContent || '').trim()));
-      return { found: true, controls: ctrls, badgeInHeader: badge, badges, count: ctrls.length + (badge ? 1 : 0) }; })()`);
-    live.toolbar = await page.ask(`(() => { const u = [...document.querySelectorAll('[data-undo="1"]')].find((b) => b.parentElement && b.parentElement.querySelector('[data-open-all-doors="1"]'));
-      const bar = u && u.parentElement; if (!bar) return { found: false, count: 0, controls: [] };
-      const controls = [...bar.querySelectorAll('button')].map((b) => ({ text: (b.textContent || '').replace(/\\s+/g, ' ').trim(), title: (b.getAttribute('title') || '').slice(0, 80), disabled: b.disabled, pressed: b.getAttribute('aria-pressed') }));
-      return { found: true, count: controls.length, controls }; })()`);
+    // Under --studio, at their Studio homes (THE STUDIO HOMES, above); else as
+    // they are drawn today.
+    if (MODE === 'studio') {
+      const VIEW_POPUP = '[data-studio="popup"][data-kind="view"]';
+      const VIEW_ROWS = `${VIEW_POPUP} [data-studio="popup-item"]`;
+      const describe = (selector) => page.ask(`(() => { const e = document.querySelector(${j(selector)}); if (!e || !e.getClientRects().length) return null;
+        return { text: (e.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 40), title: (e.getAttribute('title') || '').slice(0, 80), disabled: Boolean(e.disabled), pressed: e.getAttribute('aria-pressed') }; })()`);
+      // View, opened by a real click and read; then shut again by the same button.
+      let viewRows = [];
+      const viewAt = await centre('document.querySelector(\'[data-studio="view-menu"]\')');
+      if (viewAt) {
+        await clickAt(viewAt);
+        viewRows = await page.ask(`[...document.querySelectorAll(${j(VIEW_ROWS)})].map((e) => ({ item: e.getAttribute('data-item'), text: (e.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 60), title: (e.getAttribute('title') || '').slice(0, 80), disabled: Boolean(e.disabled), pressed: e.getAttribute('aria-checked') }))`);
+        if (await page.ask(`Boolean(document.querySelector(${j(VIEW_POPUP)}))`)) await clickAt(viewAt);
+        if (await page.ask(`Boolean(document.querySelector(${j(VIEW_POPUP)}))`)) await page.pressKey('Escape');
+      }
+      const drawnPaths = new Set(live.topMenu.menus.flatMap((m) => m.leaves.map((l) => l.path)));
+      const toolbar = [];
+      for (const [name, home, where] of STUDIO_TOOLBAR_HOMES) {
+        let found = null;
+        let at = home;
+        let selector = null;
+        if (where.hook) { selector = `[data-studio="${where.hook}"]`; found = await describe(selector); }
+        if (!found && where.toggle) {
+          selector = `[data-studio="${where.toggle}"]`;
+          found = await describe(selector);
+          if (found) at = 'scene toggles';
+        }
+        if (!found && where.view) {
+          const row = viewRows.find((r) => r.item === where.view);
+          if (row) { found = row; at = 'View'; selector = `${VIEW_ROWS}[data-item="${where.view}"]`; }
+        }
+        if (!found && where.menu && drawnPaths.has(where.menu)) { found = { text: where.menu }; at = 'top menu'; selector = where.menu; }
+        toolbar.push({
+          name, home: at, selector, found: Boolean(found), ...(found || {}),
+        });
+      }
+      const header = [];
+      for (const [name, home, selector] of STUDIO_HEADER_HOMES) {
+        const found = selector
+          ? await describe(selector)
+          : await page.ask(`(() => { const b = [...document.querySelectorAll('[data-studio="statusbar"] span')].find((s) => /^mock data mode$/i.test((s.textContent || '').trim()) && s.getClientRects().length);
+            return b ? { text: b.textContent.trim(), title: (b.getAttribute('title') || '').slice(0, 80) } : null; })()`);
+        header.push({
+          name, home, selector: selector || '[data-studio="statusbar"] MockModeBadge', found: Boolean(found), ...(found || {}),
+        });
+      }
+      const badges = await page.ask(`[...document.querySelectorAll('span')].filter((s) => /^mock data mode$/i.test((s.textContent || '').trim()) && s.getClientRects().length)
+        .map((s) => { const home = s.closest('header, footer, aside, [data-studio-status], [data-studio-shell]'); return home ? (home.tagName.toLowerCase() + (home.getAttribute('data-studio-status') != null ? '[data-studio-status]' : '')) : 'other'; })`);
+      live.toolbar = {
+        found: true, atStudioHomes: true, count: toolbar.filter((c) => c.found).length, controls: toolbar, viewRows: viewRows.length, viewItems: viewRows.map((r) => r.item),
+      };
+      live.header = {
+        found: true, atStudioHomes: true, count: header.filter((c) => c.found).length, controls: header, badges, badgeInHeader: false,
+      };
+      for (const c of [...toolbar, ...header]) say(`  ${c.found ? 'home ' : 'NONE '} ${c.name.padEnd(24)} ${c.home.padEnd(14)} ${c.selector || ''}`);
+    } else {
+      live.header = await page.ask(`(() => { const nav = document.querySelector('${NAV}'); const h = nav && nav.closest('header');
+        const badges = [...document.querySelectorAll('span')].filter((s) => /^mock data mode$/i.test((s.textContent || '').trim()) && s.offsetParent !== null)
+          .map((s) => { const home = s.closest('header, footer, aside, [data-studio-status], [data-studio-shell]'); return home ? (home.tagName.toLowerCase() + (home.getAttribute('data-studio-status') != null ? '[data-studio-status]' : '')) : 'other'; });
+        if (!h) return { found: false, badges };
+        const ctrls = [...h.querySelectorAll('button, input, select, textarea')].filter((e) => !nav.contains(e) && e.offsetParent !== null)
+          .map((e) => ({ tag: e.tagName.toLowerCase(), type: e.getAttribute('type') || null, text: (e.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 40), title: (e.getAttribute('title') || '').slice(0, 80) }));
+        const badge = [...h.querySelectorAll('span')].some((s) => /^mock data mode$/i.test((s.textContent || '').trim()));
+        return { found: true, controls: ctrls, badgeInHeader: badge, badges, count: ctrls.length + (badge ? 1 : 0) }; })()`);
+      live.toolbar = await page.ask(`(() => { const u = [...document.querySelectorAll('[data-undo="1"]')].find((b) => b.parentElement && b.parentElement.querySelector('[data-open-all-doors="1"]'));
+        const bar = u && u.parentElement; if (!bar) return { found: false, count: 0, controls: [] };
+        const controls = [...bar.querySelectorAll('button')].map((b) => ({ text: (b.textContent || '').replace(/\\s+/g, ' ').trim(), title: (b.getAttribute('title') || '').slice(0, 80), disabled: b.disabled, pressed: b.getAttribute('aria-pressed') }));
+        return { found: true, count: controls.length, controls }; })()`);
+    }
 
     // --- (live 4) THE THIRTEEN PANELS ---
     const panelCount = (id) => page.ask(`(() => {
@@ -1166,9 +1298,13 @@ function rowsOf(c) {
       add('live.topMenu.leaves', l.topMenu.total, 'atLeast');
       for (const [m, n] of Object.entries(l.topMenu.perMenu || {})) add(`live.topMenu.${m}`, n, 'atLeast');
     }
+    // T84 F7 (S6): under --studio counted at their Studio homes, and gated as
+    // every other count; a --studio file written before the homes were counted
+    // is printed only, as it was.
     const studio = c.mode === 'studio';
-    if (l.toolbar) add('live.toolbar.controls', l.toolbar.count, studio ? 'info' : 'atLeast');
-    if (l.header) add('live.header.controls', l.header.count == null ? 0 : l.header.count, studio ? 'info' : 'atLeast');
+    const homes = (x) => Boolean(x && x.atStudioHomes);
+    if (l.toolbar) add('live.toolbar.controls', l.toolbar.count, studio && !homes(l.toolbar) ? 'info' : 'atLeast');
+    if (l.header) add('live.header.controls', l.header.count == null ? 0 : l.header.count, studio && !homes(l.header) ? 'info' : 'atLeast');
     for (const [type, p] of Object.entries(l.panels || {})) {
       add(`live.panel.${type}`, Number.isFinite(p.visible) ? p.visible : -1, 'exact');
       for (const sec of p.sections || []) add(`live.panel.${type}.${sec.title}`, sec.controls, 'exact');
@@ -1230,6 +1366,14 @@ function identityRows(now, was) {
   if (now.live && now.live.topMenu && was.live && was.live.topMenu) {
     const drawn = new Set(now.live.topMenu.menus.flatMap((m) => m.leaves.map((l) => l.path)));
     add('live.topMenu.pathsMissing', was.live.topMenu.menus.flatMap((m) => m.leaves.map((l) => l.path)).filter((p) => !drawn.has(p)));
+  }
+  // T84 F7 (S6): under --studio every toolbar and header control of main has a
+  // Studio home; one that has none is RED by name.
+  for (const part of ['toolbar', 'header']) {
+    const x = now.live && now.live[part];
+    if (now.mode === 'studio' && x && x.atStudioHomes) {
+      add(`live.${part}.homesMissing`, (x.controls || []).filter((c) => !c.found).map((c) => `${c.name}: not at its home (${c.home}, ${c.selector || 'no hook'})`));
+    }
   }
   if (S.toolbar && W.toolbar) {
     const here = new Set((S.toolbar.controls || []).map((c) => c.handler));
@@ -1317,7 +1461,7 @@ say(`static: top menu ${census.static.topMenu.total} (${Object.entries(census.st
 if (!STATIC_ONLY) {
   census.live = await liveHalf();
   census.ownerProbe2223 = againstOwnerFile(census.live);
-  say(`live: top menu ${census.live.topMenu.total} drawn, toolbar ${census.live.toolbar.count}, header ${census.live.header.count ?? 'n/a'}, panels ${census.live.panelTotal}`);
+  say(`live: top menu ${census.live.topMenu.total} drawn, toolbar ${census.live.toolbar.count}, header ${census.live.header.count ?? 'n/a'}${census.live.toolbar.atStudioHomes ? ' (at their Studio homes)' : ''}, panels ${census.live.panelTotal}`);
   if (census.ownerProbe2223) say(`owner's probe of 22:23 (${census.ownerProbe2223.file}): ${census.ownerProbe2223.reproduced ? 'REPRODUCED line for line' : 'DIFFERS'}`);
 }
 census.against2223 = against2223(census);

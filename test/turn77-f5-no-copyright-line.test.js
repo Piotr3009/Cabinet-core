@@ -384,6 +384,12 @@ export const NEW_FILES = [
   'test/chatfix-2610-mirror-door-widths.test.js',
   // T84 P1 (27.10.2026): the census of main, the parity gate's numbers (PART P)
   'scripts/t84-census.mjs',
+  // T84 F1 (27.10.2026): the skin
+  'src/components/studio/studio.css',
+  'src/components/studio/StudioIcons.jsx',
+  'src/components/studio/lib/studioSkin.js',
+  'test/turn84-f01-skin.test.js',
+  'scripts/t78-classify.d/f45-t84-f01.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -66,7 +66,7 @@ studio: {
                fullPx: 400, fullNarrowPx: 360, fullNarrowBelowPx: 1500 },
   minScreen: { widthPx: 1280, heightPx: 800 },
   sceneToggles: ['xray', 'hideFronts', 'outlines', 'openAll'],
-  doorWindow: 'beside',              // 'beside' | 'dock-left'
+  doorWindow: 'dock-left',           // DECISIONS 9: 'beside' SKIPPED (DoorModal.jsx is a retail copy)
   issues: { warn: '#d9a441', danger: '#c9524b', textPx: 13 },
   marker: { sizePx: 16 },
   frameMargin: 0.1,

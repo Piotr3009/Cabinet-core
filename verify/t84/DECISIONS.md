@@ -42,3 +42,21 @@ decision is also in the PR body under DECISIONS TAKEN.
    *"The part windows in the Studio skin"*, *"Groups, tabs or search in the full panel"*; LAW 2: no row restyled
    into something else). The legacy menu bar's buttons are compacted in the Studio scope so all eight menus fit at
    1280 px.
+9. **The door window keeps T37's conduct tonight; 'beside' is SKIPPED WHOLE.** CLAUDE.md LAWS 4 makes the door
+   window's conduct the profile's ('beside', PROPOSED, or 'dock-left'), and the conduct lives in
+   `src/components/DoorModal.jsx` (`dock`, `sticky`, `escapeCloses`, lines 158 to 177). That file is a RETAIL COPY:
+   `scripts/t63-copies.mjs` T63_COPIES names it (`src/retail/design/detail/DoorModal.jsx`, "F3 · every piece's
+   window"), so an edit of it leaves the copy stale and `scripts/t78-copy.mjs --check` NOT CLEAN, and re-making the
+   copy edits `src/retail/**`: both forbidden by FROZEN 4 (*"The retail copies ... are NOT edited:
+   scripts/t78-copy.mjs --check stays CLEAN"*; CLAUDE.md's own list of the copied PRO files omits DoorModal, the
+   machine's manifest does not). So the window stays docked left, sticky, Escape-proof, following the clicked leaf,
+   in both faces; `profile.ui.studio.doorWindow` reads 'dock-left' (what the app does) with the reason beside it, and
+   the Studio's Escape owner treats the door window as not closable, as today. Under Studio the docked window stands
+   over the rail while it is open (it is 340 px from the screen's left edge); the rail is back the moment it closes.
+   Named in the PR under SKIPPED AND WHY.
+10. **The Studio's stylesheet is frozen like its components.** `src/components/studio/studio.css` is PRO's surface
+    as much as the JSX it skins, so it is hashed in the freeze manifest and licensed in EXEMPT like every new studio
+    file; the freeze test's 'nothing was ADDED' listing names the `.css` files of `src/components/studio/` beside the
+    code (one line, that test only; the walker and the module graph still read code files). The owner's setup CSS of
+    26.10 (`setup-workspace.css`) is not drawn into the manifest: it is his, edited by him on main (27.10), and
+    FROZEN 5 keeps it untouched by this turn, not frozen against him.

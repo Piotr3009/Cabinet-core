@@ -358,6 +358,16 @@ const EXEMPT = {
   // T82 F20, after the review: the start screen reads whether the shelf took the brand-new job.
   'src/components/StartScreen.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' +
     'T82 F20, after the review · Start designing reads whether the shelf took the brand-new job; when the browser refused it the job opens marked unsaved (markUnsaved) and the start screen says the save\'s own red sentence (notOnShelf). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
+  // ADDED BY TURN 84 (27.10.2026) · STUDIO, PRO'S FACE. CLAUDE.md T84 FROZEN 4: *"every PRO file edited is licensed in
+  // EXEMPT with the owner's words from this file and re-frozen in the same commit."* Every NEW file under
+  // src/components/studio/ stands here too, each with its own reason: the git assertion below excludes EXEMPT paths
+  // and nothing else, and the manifest freezes each at its first hash. No engine file is among them (FROZEN 1).
+  'src/components/studio/studio.css':
+    'T84 F1 · NEW, the Studio skin: the designer\'s Stage-1 classes (studio-*) scoped under .studio-pro, the 13 / 30 / 32 / 4 scale and the bars read as CSS variables the shell sets from profile.ui.studio, the colours Tailwind\'s theme; cc-btn, cc-input, cc-label and cc-frame keep their meaning. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)',
+  'src/components/studio/StudioIcons.jsx':
+    'T84 F1 · NEW, the Stage-1 SVG symbols as one hidden sprite, and the Icon that uses it. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)',
+  'src/components/studio/lib/studioSkin.js':
+    'T84 F1 · NEW, pure: studioWidths and studioCssVars, the numbers of profile.ui.studio as the shell\'s widths and CSS variables, typed nowhere else. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)',
 };
 
 /**
@@ -511,6 +521,10 @@ const FROZEN = {
   // T82 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/pages/ConfiguratorPage.jsx': '37b7fc67836d2deef861251637ef5cdd377f265e0b0d40e495533c122ec5c021',
+  // T84 F1 · NEW PRO files (the skin), frozen at their first hash; EXEMPT above carries the reason.
+  'src/components/studio/studio.css': '806a346e8d9891bb1433b60d0e1e8b8fe80d981d6ca328327d0e90711524fc08',
+  'src/components/studio/StudioIcons.jsx': 'f111e18a07699a683d7f33e4ade38d1ef354838de9bb4e9acebf4d969abf99a6',
+  'src/components/studio/lib/studioSkin.js': 'ac7255afe613b68528cd3b0bee9db7794f77f0921829f8bf887c83c6133cc37d',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -633,7 +647,7 @@ const show = (abs) => relative(ROOT, abs);
 
 // ─── 1. THE PRO FROZEN-FILES ASSERTION ─────────────────────────────────────
 
-test('F1: the frozen surface, 70 files of PRO, byte for byte (approved setup illustrations included)', () => {
+test('F1: the frozen surface, 73 files of PRO, byte for byte (approved setup illustrations and the Studio included)', () => {
   const moved = [];
   for (const [rel, want] of Object.entries(FROZEN)) {
     const path = join(ROOT, rel);
@@ -649,6 +663,11 @@ test('F1 · the frozen surface — nothing was ADDED to it either', () => {
     'index.html', 'src/App.jsx', 'src/main.jsx',
     ...filesUnder(join(SRC, 'components')).map(show),
     ...filesUnder(join(SRC, 'pages')).map(show),
+    // T84 F1 · the Studio's stylesheet is PRO's surface like the components it skins: listed here beside them and
+    // hashed in FROZEN (verify/t84/DECISIONS.md); the walker and the module graph still read code files only.
+    ...(existsSync(join(SRC, 'components/studio'))
+      ? readdirSync(join(SRC, 'components/studio')).filter((n) => n.endsWith('.css')).map((n) => `src/components/studio/${n}`)
+      : []),
   ].filter((p) => existsSync(join(ROOT, p))).sort();
   // A new component is not a byte moved, but it is PRO changing, and the
   // manifest alone would never see it.
@@ -744,6 +763,10 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/WatchLayoutModal.jsx',
     'src/components/WizardSettings.jsx',
     'src/pages/ConfiguratorPage.jsx',
+    // T84 F1 · the skin: licensed in EXEMPT above with the owner's words (CLAUDE.md T84 FROZEN 4).
+    'src/components/studio/studio.css',
+    'src/components/studio/StudioIcons.jsx',
+    'src/components/studio/lib/studioSkin.js',
 ].sort(), 'the exemption list is not the approved UI and CLAUDE.md paths');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
@@ -764,7 +787,7 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // A tarball or a clone with no such ref. The manifest above already
     // answered; this assertion has nothing to add and says so out loud
     // rather than passing in silence.
-    assert.ok(Object.keys(FROZEN).length === 70, 'no base ref: the manifest is the whole proof here');
+    assert.ok(Object.keys(FROZEN).length === 73, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

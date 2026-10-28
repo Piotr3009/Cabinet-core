@@ -4,6 +4,8 @@ import {
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
+// T84 F2 (CLAUDE.md PART A): Undo and Redo on the Studio top bar, the history store's own.
+import { useHistoryStore } from '../stores/historyStore.js';
 import MockModeBadge from './MockModeBadge.jsx';
 // Turn 44 (CLAUDE.md iron rule 5): which head is reading — factory or retail.
 import MenuBar from './MenuBar.jsx';
@@ -15,6 +17,8 @@ import { buildDatabaseMenu, orderMenus } from '../lib/topMenu.js';
 import { persistProject } from '../lib/persist.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
+// T84 F2: the Studio's icons (StudioShell mounts their sprite once).
+import { Icon } from './studio/StudioIcons.jsx';
 
 // Frozen layout, SPEC section 7: logo in gold, project name, gold Export button.
 // Turn 4 (BACKLOG #8) puts the classic menu bar in between: File · View ·
@@ -31,7 +35,10 @@ import { LAYER_CLASS } from '../lib/modalLayer.js';
 // workshop meets them: show the client, draw it, cut it.
 export default function TopBar({
   onExportCsv, onExportPdf, onExportDxfZip, onExportLabels, onRender, onDrawing, onAuth,
+  // T84 F2 (CLAUDE.md PART A): 'studio' when StudioShell holds the bar; absent, the bar of today.
+  variant = null,
 }) {
+  const studio = variant === 'studio';
   const name = useProjectStore((s) => s.project.name);
   const project = useProjectStore((s) => s.project);
   const units = useProjectStore((s) => s.units);
@@ -341,46 +348,75 @@ export default function TopBar({
     }),
   ];
 
-  return (
-    <header className={`h-12 shrink-0 bg-shell-900 border-b border-shell-600 flex items-center px-4 gap-3 ${LAYER_CLASS.chrome}`}>
+  // ─── T84 F2 (CLAUDE.md PART A): ONE SET OF CONTROLS, TWO LAYOUTS ───────────
+  //
+  // The Studio top bar (`variant="studio"`, held by StudioShell) RE-HOMES this
+  // header's controls; it never copies them. Each control both layouts draw is
+  // written ONCE below and drawn by whichever layout is mounted, so the two
+  // faces share its handler, its guard and its state (CLAUDE.md T84 LAW 1, ZERO
+  // KASOWANIA). Each is a small function that returns its control in a return
+  // statement of its own, because the census reads the header's controls out
+  // of every return of this component (scripts/t84-census.mjs, rule 4). The
+  // legacy layout draws them where it always did. The Studio layout adds three
+  // things of its own: the PRO label, Undo and Redo (`StudioHistory`, at the
+  // end of this file) and the word BOM on the gold button (the owner, 16:27:
+  // *"tak"*, renamed, the same call). Its MockModeBadge stands on the Studio
+  // status bar instead (components/studio/StatusBar.jsx), and its look is the
+  // skin's (components/studio/studio.css, the `studio-*` classes).
+  const drawWordmark = () => {
+    return (
       <button
         type="button"
-        className="font-semibold tracking-[0.18em] text-gold text-sm select-none hover:text-gold-hover transition-colors"
+        className={studio
+          ? 'studio-wordmark'
+          : 'font-semibold tracking-[0.18em] text-gold text-sm select-none hover:text-gold-hover transition-colors'}
         title="Back to the start screen"
         onClick={leaveProject}
       >
+        {studio && <Icon name="cube" />}
         CABINET CORE
       </button>
-
-      <div className="h-5 w-px bg-shell-600" />
-
-      {/* The ORDER is data (lib/topMenu.js), so the owner changing his mind
-          about where Settings sits is one line there. */}
+    );
+  };
+  const drawMenuBar = () => {
+    return (
       <MenuBar menus={orderMenus(menus)} />
-
-      <div className="h-5 w-px bg-shell-600" />
-
-      {editing ? (
+    );
+  };
+  // On the Studio bar the name is the part that gives way (the skin narrows it
+  // so the eight menus fit at 1280); the edit ends on Enter, Escape and blur
+  // as ever.
+  const drawProjectName = () => {
+    return (
+      editing ? (
         <input
           autoFocus
-          className="cc-input max-w-[220px]"
+          className={studio ? 'cc-input studio-project-name' : 'cc-input max-w-[220px]'}
           value={name}
           onChange={(e) => setProjectName(e.target.value)}
           onBlur={() => setEditing(false)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') setEditing(false); }}
         />
       ) : (
-        <button type="button" className="text-sm text-ink-100 hover:text-gold transition-colors truncate max-w-[220px]" onClick={() => setEditing(true)} title="Rename project">
+        <button
+          type="button"
+          className={studio
+            ? 'studio-project-name'
+            : 'text-sm text-ink-100 hover:text-gold transition-colors truncate max-w-[220px]'}
+          onClick={() => setEditing(true)}
+          title="Rename project"
+        >
           {name}
           {dirty && <span className="ml-2 text-ink-400 text-xs">•</span>}
         </button>
-      )}
-
-      {/* The SAVE control (turn 20, CLAUDE.md F12.2). It has lived in File ▸
-          Save since turn 4, where a joiner cannot see what it did; this is the
-          same call with a face on it, beside the dirty dot that asks for it. */}
+      )
+    );
+  };
+  const drawSave = () => {
+    return (
       <button
         type="button"
+        data-studio={studio ? 'topbar-save' : undefined}
         data-save-control="1"
         data-save-state={saveState}
         disabled={saveState === 'saving'}
@@ -388,8 +424,98 @@ export default function TopBar({
         className={`cc-btn transition-colors ${saveState === 'saved' ? 'border-emerald-500 text-emerald-400' : ''}`}
         onClick={save}
       >
+        {studio && <Icon name="save" />}
         {saveState === 'saved' ? '✓ Saved' : (saveState === 'saving' ? 'Saving…' : 'Save')}
       </button>
+    );
+  };
+  // The Studio layout keeps the word for a screen reader and gives its width
+  // to the menus (the label's `title` still says what the slider does).
+  const drawBrightness = () => {
+    return (
+      <label
+        className="flex items-center gap-2 select-none"
+        data-studio={studio ? 'topbar-brightness' : undefined}
+        data-brightness-control="1"
+        title="Scales every light in the room together. The balance between them does not move."
+      >
+        <span className={studio ? 'sr-only' : 'cc-label mb-0'}>Bright</span>
+        <input
+          type="range"
+          className="w-24 accent-gold"
+          min={profile.appearance.studio.brightness.min}
+          max={profile.appearance.studio.brightness.max}
+          step={profile.appearance.studio.brightness.step}
+          value={brightness}
+          disabled={viewMode !== '3d'}
+          data-brightness-value={brightness}
+          onChange={(e) => setBrightness(Number(e.target.value))}
+        />
+        <span className="text-[11px] text-ink-400 tabular-nums w-9 text-right">
+          {`${Math.round(brightness * 100)} %`}
+        </span>
+      </label>
+    );
+  };
+  const drawAccount = () => {
+    return (
+      <button type="button" className="cc-btn" data-studio={studio ? 'topbar-account' : undefined} onClick={onAuth}>Account</button>
+    );
+  };
+  const drawBom = () => {
+    return (
+      <button type="button" className="cc-btn-gold" data-studio={studio ? 'topbar-bom' : undefined} onClick={() => setBomOpen(!bomOpen)}>
+        {studio ? 'BOM' : 'Export'}
+      </button>
+    );
+  };
+
+  // ─── T84 F2 · THE STUDIO TOP BAR ─────────────────────────────────────────
+  // Stage-1's order (verify/t84/astra/, CLAUDE.md T84 F2): the wordmark and the
+  // PRO label, the project name, the legacy menus WHOLE (the same `menus`, the
+  // same MenuBar: every leaf, `run`, `disabled` and `checked` of THE CENSUS),
+  // then Undo and Redo, Save, Brightness, Account and BOM. Its height is the
+  // profile's, through the shell's `--studio-top`.
+  if (studio) {
+    return (
+      <header
+        data-studio="topbar"
+        className={`studio-topbar studio-skin flex items-center min-w-0 ${LAYER_CLASS.chrome}`}
+        style={{ height: 'var(--studio-top)' }}
+      >
+        {drawWordmark()}
+        <span className="studio-pro-label shrink-0">PRO</span>
+        <span className="h-5 w-px bg-shell-600 shrink-0" aria-hidden />
+        {drawProjectName()}
+        <div className="studio-legacy-menu min-w-0">{drawMenuBar()}</div>
+        <span className="flex-1" />
+        <StudioHistory />
+        {drawSave()}
+        {drawBrightness()}
+        {drawAccount()}
+        {drawBom()}
+      </header>
+    );
+  }
+
+  return (
+    <header className={`h-12 shrink-0 bg-shell-900 border-b border-shell-600 flex items-center px-4 gap-3 ${LAYER_CLASS.chrome}`}>
+      {drawWordmark()}
+
+      <div className="h-5 w-px bg-shell-600" />
+
+      {/* The ORDER is data (lib/topMenu.js), so the owner changing his mind
+          about where Settings sits is one line there. */}
+      {drawMenuBar()}
+
+      <div className="h-5 w-px bg-shell-600" />
+
+      {drawProjectName()}
+
+      {/* The SAVE control (turn 20, CLAUDE.md F12.2). It has lived in File ▸
+          Save since turn 4, where a joiner cannot see what it did; this is the
+          same call with a face on it, beside the dirty dot that asks for it. */}
+      {drawSave()}
 
       <MockModeBadge />
 
@@ -415,30 +541,51 @@ export default function TopBar({
           reaches for while he is looking at the picture, and a control you
           have to open a menu to reach is a control you use once. Nothing else
           about the lighting changes. */}
-      <label
-        className="flex items-center gap-2 select-none"
-        data-brightness-control="1"
-        title="Scales every light in the room together. The balance between them does not move."
-      >
-        <span className="cc-label mb-0">Bright</span>
-        <input
-          type="range"
-          className="w-24 accent-gold"
-          min={profile.appearance.studio.brightness.min}
-          max={profile.appearance.studio.brightness.max}
-          step={profile.appearance.studio.brightness.step}
-          value={brightness}
-          disabled={viewMode !== '3d'}
-          data-brightness-value={brightness}
-          onChange={(e) => setBrightness(Number(e.target.value))}
-        />
-        <span className="text-[11px] text-ink-400 tabular-nums w-9 text-right">
-          {`${Math.round(brightness * 100)} %`}
-        </span>
-      </label>
+      {drawBrightness()}
 
-      <button type="button" className="cc-btn" onClick={onAuth}>Account</button>
-      <button type="button" className="cc-btn-gold" onClick={() => setBomOpen(!bomOpen)}>Export</button>
+      {drawAccount()}
+      {drawBom()}
     </header>
+  );
+}
+
+// ─── T84 F2 (CLAUDE.md PART A): UNDO AND REDO ON THE STUDIO TOP BAR ─────────
+//
+// *"then Undo and Redo (useHistoryStore, the same depth guards as the
+// toolbar's)"*: the canvas toolbar's two buttons (CanvasToolbar.jsx), re-homed
+// with the same store, the same lengths read as lengths (that file says why),
+// the same guards and the same titles, a colon where the toolbar's Undo title
+// carries a dash (nothing this turn writes carries one). A component of its
+// own, so the legacy bar subscribes to nothing new.
+function StudioHistory() {
+  const undoDepth = useHistoryStore((s) => s.past.length);
+  const redoDepth = useHistoryStore((s) => s.future.length);
+  const undo = useHistoryStore((s) => s.undo);
+  const redo = useHistoryStore((s) => s.redo);
+  return (
+    <>
+      <button
+        type="button"
+        data-studio="topbar-undo"
+        disabled={undoDepth === 0}
+        className="cc-btn-ghost studio-icon-btn shrink-0"
+        aria-label="Undo"
+        title={undoDepth ? `Undo (Ctrl+Z): ${undoDepth} step${undoDepth === 1 ? '' : 's'} back` : 'Nothing to undo'}
+        onClick={() => undo()}
+      >
+        <Icon name="undo" />
+      </button>
+      <button
+        type="button"
+        data-studio="topbar-redo"
+        disabled={redoDepth === 0}
+        className="cc-btn-ghost studio-icon-btn shrink-0"
+        aria-label="Redo"
+        title={redoDepth ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
+        onClick={() => redo()}
+      >
+        <Icon name="redo" />
+      </button>
+    </>
   );
 }

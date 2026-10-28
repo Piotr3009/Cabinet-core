@@ -5924,6 +5924,66 @@ export const DEFAULT_CABINET_PROFILE = {
     // existing Hide-dimensions toggle through the store's own action and
     // never turns dimensions ON.
     dimensionsIdleMs: 30000,
+
+    // ─── T84 (CLAUDE.md THE NUMBERS): STUDIO, PRO'S FACE ──────────────────
+    //
+    // The owner, 27.10.2026, 16:27: *"nie, juz jest przy wyborze"*. PRO is
+    // chosen at the start and Studio is PRO's face, so there is no switch in
+    // the UI: `enabled` is here for the walk and the tests to run both faces
+    // and for the owner to turn the face back by the profile, never by a
+    // button. Every number below is read by the Studio's components
+    // (src/components/studio/) and typed nowhere else. A PROPOSED number is
+    // the designer's (verify/t84/astra/, adopted by the owner at 16:27) or the
+    // turn's best reading, used as written until the owner confirms or
+    // changes it after the merge. computeCabinet reads none of it.
+    studio: {
+      // CONFIRMED: the owner, 16:27.
+      enabled: true,
+      // CONFIRMED: the owner, 27.10 (the setup CSS): text, field, button, radius.
+      scale: {
+        textPx: 13, fieldPx: 30, buttonPx: 32, radiusPx: 4,
+      },
+      // PROPOSED, the designer's Stage-1: the top bar, the context strip, the status bar.
+      bars: { topPx: 48, contextPx: 34, statusPx: 30 },
+      // PROPOSED, Stage-1 and her 1280 note: 112 wide with labels at 1440 and up, 56 icons below.
+      rail: { widePx: 112, narrowPx: 56, labelsFromPx: 1440 },
+      // PROPOSED, the designer: the quick card 344 (316 below 1440), the full
+      // panel 400 (360 below 1500), measured on the live RightPanel without
+      // overflow (verify/t84/p1-host.md D: all thirteen default units).
+      inspector: {
+        quickPx: 344,
+        quickNarrowPx: 316,
+        quickNarrowBelowPx: 1440,
+        fullPx: 400,
+        fullNarrowPx: 360,
+        fullNarrowBelowPx: 1500,
+      },
+      // PROPOSED, the designer: the smallest screen laid out for, no horizontal panel scroll.
+      minScreen: { widthPx: 1280, heightPx: 800 },
+      // PROPOSED, the designer, 17:01: the four switches at the scene's top
+      // edge, by their ids in components/studio/SceneToggles.jsx; the owner may
+      // swap one here.
+      sceneToggles: ['xray', 'hideFronts', 'outlines', 'openAll'],
+      // The door window's conduct: 'dock-left' is T37's (sticky, the leaf it
+      // follows, Escape off), and it is what the app does tonight. 'beside' is
+      // the designer's recommendation (PROPOSED in CLAUDE.md THE NUMBERS) and
+      // is NOT wired: it lives in components/DoorModal.jsx, a retail copy
+      // (scripts/t63-copies.mjs T63_COPIES, src/retail/design/detail/
+      // DoorModal.jsx), and an edit of it turns `scripts/t78-copy.mjs --check`
+      // NOT CLEAN (CLAUDE.md T84 FROZEN 4). It waits for a turn that licenses
+      // the copy (verify/t84/DECISIONS.md 9).
+      doorWindow: 'dock-left',
+      // PROPOSED, the designer's palette: the issue grounds, dark text on them.
+      issues: { warn: '#d9a441', danger: '#c9524b', textPx: 13 },
+      // PROPOSED, this turn: the triangle beside the unit number.
+      marker: { sizePx: 16 },
+      // PROPOSED, this turn: Frame selection fits the boxes with this margin (10 %).
+      frameMargin: 0.1,
+      // PROPOSED, the designer: the Library opens this far off the Add button, clamped to the screen.
+      libraryGapPx: 8,
+      // CLAUDE.md T84 F3: a quick card is six rows at most.
+      cardRowsMax: 6,
+    },
   },
 
   // ─── Editor defaults ───
@@ -6917,6 +6977,12 @@ export function migrateCabinetProfile(profile) {
       // existed comes back with the owner's 400 and 620 rather than with two
       // undefineds that would offer the bar over every gap in the app.
       shareOut: { ...D.ui.shareOut, ...profile.ui?.shareOut },
+      // T84 (CLAUDE.md THE NUMBERS) · THE CODE WINS for the Studio's numbers,
+      // by the TURN 40 `plateBiteMm` law: nothing in Settings edits them and
+      // `cc.profile.v1` is written whole on every `setProfile`, so a saved
+      // `ui.studio` can only be a stale copy of this file's, and the owner
+      // changing a number here must reach every browser.
+      studio: D.ui.studio,
     },
     // T75 F7 · the notch's defaults, key by key.
     notch: {

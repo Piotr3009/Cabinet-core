@@ -1,0 +1,1159 @@
+/*
+ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
+ *
+ * This file is proprietary and confidential. Unauthorised copying,
+ * modification, distribution or use of this file, in whole or in part,
+ * by any means including automated tools and AI systems, is strictly
+ * prohibited without prior written permission from Skylon Development Ltd.
+ */
+/* T84 F1, THE SKIN (CLAUDE.md T84 PART A, F1): Studio, PRO's face.
+
+   The reference is the designer's Stage-1 (verify/t84/astra/Cabinet-Core-PRO-Studio-Stage-1.html,
+   adopted by the owner at 16:27): every class of the contract's vocabulary
+   (verify/t84/agents/CONTRACT.md, 3) is her un-prefixed class with `studio-` in front, styled as
+   she styles it. Where this file differs from her, the comment beside the rule says why.
+
+   THREE SOURCES OF A NUMBER, AND ONLY THREE:
+   1. A number of THE NUMBERS (profile.ui.studio) is never typed here. StudioShell sets
+      --studio-text, --studio-field, --studio-button, --studio-radius, --studio-top,
+      --studio-context, --studio-status, --studio-rail, --studio-inspector, --studio-warn,
+      --studio-danger, --studio-issue-text, --studio-marker and --studio-library-gap on the
+      `.studio-pro` root from lib/studioSkin.js `studioCssVars`, and this file reads them. Her
+      12 and 11 px texts are the base text less 1 and 2 px, her 16 px title the base and 3 px,
+      so the type keeps its steps if the owner moves the base.
+   2. A colour is Tailwind's theme (tailwind.config.js, already her hexes), read with theme();
+      a finding's ground is the profile's (--studio-warn, --studio-danger). No hex here.
+   3. Every other length is her own px. Where her px happens to equal one of THE NUMBERS but
+      means something else (a padding of 8, an icon of 16, a thumb of 48), it is the house's
+      Tailwind spacing step, theme('spacing.N'), or the relation it stands for (an icon is half
+      a button), so a profile number is never typed twice, even by coincidence.
+
+   SCOPE. Every rule is under `.studio-pro`, so the legacy face (profile.ui.studio.enabled false)
+   and the retail entry never see one. The house classes (cc-btn, cc-btn-gold, cc-btn-ghost,
+   cc-input, cc-label, cc-frame) keep their meaning and take the Studio's scale only inside a
+   `.studio-skin` surface, and never inside a `.cc-panel`: every legacy panel, window and menu in
+   the app wears that class (the embedded RightPanel and MultiUnitPanel, the part windows, the
+   Library, the BOM, the Check, the menu bar's dropdowns, the Changes list), so a legacy surface
+   keeps its own style wherever it stands (DECISIONS 8; LAW 2, no row restyled).
+
+   NO Z-INDEX HERE. The app's one z-order is lib/modalLayer.js LAYER_CLASS, written in the JSX:
+   the top bar keeps `LAYER_CLASS.chrome` as TopBar's header has it today, a Studio popup takes
+   `LAYER_CLASS.menu`. Nothing here makes a stacking context or a containing block for a fixed
+   window on the inspector column or its ancestors (no z-index, transform, filter, contain), so
+   the cut-corner, cut-edge and mirror-back windows the embedded RightPanel mounts still stand
+   at the modal layer (verify/t84/p1-host.md B 13). */
+
+
+/* 1. THE ROOT AND THE GRID: top bar, context strip, workspace, status bar (Stage-1). The root's
+   height is its parent's (the page fills #root); her 100dvh is the same on this page. */
+
+.studio-pro {
+  display: grid;
+  grid-template-rows: var(--studio-top) var(--studio-context) minmax(0, 1fr) var(--studio-status);
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: theme('colors.shell.900');
+}
+
+.studio-pro > .studio-topbar { grid-row: 1; }
+.studio-pro > .studio-context { grid-row: 2; }
+.studio-pro > .studio-workspace { grid-row: 3; }
+.studio-pro > .studio-statusbar { grid-row: 4; }
+
+/* rail | scene | inspector; the inspector column is 0 when it is hidden (--studio-inspector). */
+.studio-pro .studio-workspace {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--studio-rail) minmax(0, 1fr) var(--studio-inspector);
+  grid-template-rows: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.studio-pro .studio-workspace > .studio-rail { grid-column: 1; grid-row: 1; }
+.studio-pro .studio-workspace > .studio-scene { grid-column: 2; grid-row: 1; }
+.studio-pro .studio-workspace > .studio-inspector { grid-column: 3; grid-row: 1; }
+
+.studio-pro[data-inspector="none"] .studio-inspector { display: none; }
+
+/* A Studio element given the `hidden` attribute stays hidden whatever its display (hers). */
+.studio-pro [class*="studio-"][hidden] { display: none !important; }
+
+
+/* 2. THE SKIN'S TEXT AND THE HOUSE CLASSES AT THE STUDIO'S SCALE (13 / 30 / 32 / 4) */
+
+.studio-pro .studio-skin {
+  font-size: var(--studio-text);
+  line-height: 1.4;
+  color: theme('colors.ink.50');
+}
+
+/* A legacy surface nested in a Studio one (the embedded RightPanel in the inspector's column, a
+   dropdown of the menu bar, the Changes list) inherits what it inherits today, the page's base,
+   not the skin's 13 px: the body's size, the line of `html`, the body's ink. At no specificity,
+   so every class on the surface itself still wins. */
+:where(.studio-pro .studio-skin .cc-panel) {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: theme('colors.ink.50');
+}
+
+.studio-pro .studio-skin :where(h1, h2, h3):where(:not(.cc-panel *)) { margin: 0; font-weight: 600; }
+.studio-pro .studio-skin :where(h1):where(:not(.cc-panel *)) { font-size: calc(var(--studio-text) + 3px); }
+.studio-pro .studio-skin :where(h2):where(:not(.cc-panel *)) { font-size: calc(var(--studio-text) + 1px); }
+.studio-pro .studio-skin :where(h3):where(:not(.cc-panel *)) { font-size: var(--studio-text); }
+
+/* Buttons: 32 high, 4 round, 13 px. Their colours, borders, hovers and side padding stay the
+   house's (index.css), or the component's own utility (a chip's `px-2`): the scale moves, the
+   meaning does not. Only the padding above and below goes, the height being the scale's. */
+.studio-pro .studio-skin :where(.cc-btn, .cc-btn-gold, .cc-btn-ghost):where(:not(.cc-panel *)) {
+  height: var(--studio-button);
+  min-height: var(--studio-button);
+  padding-top: 0;
+  padding-bottom: 0;
+  border-radius: var(--studio-radius);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: var(--studio-text);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+/* Her ghost carries a transparent hairline, so a pressed one can light its border without the
+   button moving; the house's has no disabled look, hers is the one taken. */
+.studio-pro .studio-skin :where(.cc-btn-ghost):where(:not(.cc-panel *)) {
+  border: 1px solid transparent;
+}
+
+.studio-pro .studio-skin :where(.cc-btn-ghost):where(:not(.cc-panel *)):disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+/* Her gold button is 600; the house's `.cc-btn-gold` is `font-medium` (500, index.css). Inside
+   the skin, hers (verify/t84/f01-skin.md D9). */
+.studio-pro .studio-skin :where(.cc-btn-gold):where(:not(.cc-panel *)) {
+  font-weight: 600;
+}
+
+/* Her buttons stand 10 px off their words on either side; the house's 12 (cc-btn, cc-btn-gold)
+   and 8 (cc-btn-ghost). Where her Stage-1 draws a button, the top bar and the scene's edge, the
+   skin takes her 10, except a button that names its own padding with a `px-` utility, an icon
+   button (its padding is 0) and a button inside a popup (her menu rows are 9 off their words)
+   (verify/t84/f01-skin.md D8). */
+.studio-pro :is(.studio-topbar, .studio-scene-tools, .studio-scene-links) :where(.cc-btn, .cc-btn-gold, .cc-btn-ghost):where(:not(.studio-icon-btn, [class*="px-"], .cc-panel *, .studio-popup *)) {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* Fields: 30 high, 4 round, 13 px (a textarea keeps its own height). */
+.studio-pro .studio-skin :where(.cc-input):where(:not(textarea, .cc-panel *)) {
+  height: var(--studio-field);
+  min-height: var(--studio-field);
+  padding: 0 theme('spacing.2');
+  border-radius: var(--studio-radius);
+  font-size: var(--studio-text);
+}
+
+/* The label as she sets it in the card: 12 px, ink-100, in its own case. Its margin stays the
+   house's (4 px, and `mb-0` where a row asks for none). */
+.studio-pro .studio-skin :where(.cc-label):where(:not(.cc-panel *)) {
+  font-size: calc(var(--studio-text) - 1px);
+  color: theme('colors.ink.100');
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.studio-pro .studio-skin :where(.cc-frame):where(:not(.cc-panel *)) {
+  border-radius: var(--studio-radius);
+}
+
+/* Every Studio control carries data-studio (CONTRACT 6); the keyboard sees where it is (hers). */
+.studio-pro [data-studio]:focus-visible {
+  outline: 2px solid theme('colors.gold.hover');
+  outline-offset: 2px;
+}
+
+
+/* 3. THE ICONS (StudioIcons.jsx draws the stroke; the size is here) */
+
+.studio-pro .studio-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  width: calc(var(--studio-button) / 2);
+  height: calc(var(--studio-button) / 2);
+  vertical-align: middle;
+}
+
+/* A square button that holds one icon (her `.icon-btn`). */
+.studio-pro .studio-icon-btn {
+  width: var(--studio-button);
+  min-width: var(--studio-button);
+  padding: 0;
+  justify-content: center;
+}
+
+/* The host's Pin inside RightPanel's existing header (the aside is a .cc-panel, so the button keeps
+   the header's own scale): lit when it is on (her `.pin-button`). */
+.studio-pro [data-studio="pin"][aria-pressed="true"] {
+  color: theme('colors.gold.hover');
+  border-color: theme('colors.gold.DEFAULT');
+}
+
+
+/* 4. THE TOP BAR. Her narrow-screen values (her media query at 1500) are taken at every width:
+   the Studio's top bar holds more than hers (Redo, Brightness, Account, BOM), and at 1280 it
+   needs them. */
+
+.studio-pro .studio-topbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 10px;
+  border-bottom: 1px solid theme('colors.shell.600');
+  background: theme('colors.shell.900');
+  white-space: nowrap;
+}
+
+.studio-pro .studio-wordmark {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 9px;
+  letter-spacing: 1.5px;
+  font-size: calc(var(--studio-text) - 1px);
+  white-space: nowrap;
+  color: theme('colors.ink.100');
+}
+
+/* The wordmark is a button in the app (back to the start screen). */
+.studio-pro button.studio-wordmark {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.studio-pro button.studio-wordmark:hover { color: theme('colors.ink.50'); }
+
+.studio-pro .studio-wordmark .studio-icon {
+  width: 23px;
+  height: 23px;
+  color: theme('colors.gold.DEFAULT');
+}
+
+.studio-pro .studio-pro-label {
+  padding-left: 9px;
+  border-left: 1px solid theme('colors.shell.600');
+  font-size: calc(var(--studio-text) - 2px);
+  letter-spacing: .5px;
+  color: theme('colors.gold.DEFAULT');
+}
+
+/* Her PRO stands inside her wordmark, 9 px off the words (her wordmark's gap); ours stands in the
+   bar at the bar's gap (7): the 2 px more. TopBar's separator after it is the legacy header's
+   `h-5 w-px` span, 20 high and no margin; her rule is 18 high with 3 px either side at 1500 and
+   below, the values this bar keeps at every width (verify/t84/f01-skin.md D4). */
+.studio-pro .studio-topbar > .studio-pro-label { margin-left: 2px; }
+
+.studio-pro .studio-topbar > .studio-pro-label + span[aria-hidden] {
+  height: 18px;
+  margin: 0 3px;
+}
+
+/* The only part of the top bar that gives way when the screen is narrow: the name truncates. */
+.studio-pro .studio-project-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 180px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.studio-pro button.studio-project-name {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.studio-pro button.studio-project-name:hover { color: theme('colors.gold.hover'); }
+
+.studio-pro .studio-project-name small {
+  display: block;
+  font-size: calc(var(--studio-text) - 2px);
+  color: theme('colors.ink.200');
+}
+
+/* The legacy MenuBar, mounted whole (ZERO KASOWANIA): its own buttons, compacted to 13 px with
+   her narrow padding, so the eight menus stand in one line at 1280 with nothing hidden. The
+   dropdowns, their items and their guards are MenuBar's, untouched. */
+.studio-pro .studio-legacy-menu {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.studio-pro .studio-legacy-menu nav[aria-label="Main menu"] {
+  flex-wrap: nowrap;
+  gap: 1px;
+}
+
+.studio-pro .studio-legacy-menu nav[aria-label="Main menu"] > div > button {
+  display: inline-flex;
+  align-items: center;
+  height: var(--studio-button);
+  padding: 0 6px;
+  border-radius: var(--studio-radius);
+  font-size: var(--studio-text);
+  white-space: nowrap;
+}
+
+
+/* 5. THE CONTEXT STRIP: the breadcrumb, the selection in words, the button that brings the
+   inspector back. It starts where the scene starts. */
+
+.studio-pro .studio-context {
+  display: flex;
+  align-items: center;
+  gap: theme('spacing.2');
+  min-width: 0;
+  padding: 0 14px 0 calc(var(--studio-rail) + theme('spacing.4'));
+  border-bottom: 1px solid theme('colors.shell.600');
+  background: theme('colors.shell.800');
+  color: theme('colors.ink.200');
+}
+
+.studio-pro .studio-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.studio-pro .studio-breadcrumb .studio-icon {
+  width: 12px;
+  height: 12px;
+  color: theme('colors.ink.400');
+}
+
+.studio-pro .studio-breadcrumb strong {
+  font-weight: 500;
+  color: theme('colors.ink.50');
+}
+
+.studio-pro .studio-selection-scope {
+  padding-left: 10px;
+  border-left: 1px solid theme('colors.shell.600');
+  font-size: calc(var(--studio-text) - 1px);
+  white-space: nowrap;
+}
+
+/* Her show-inspector button is 28 high inside the 34 strip: the strip less 6. */
+.studio-pro .studio-context .studio-icon-btn {
+  width: calc(var(--studio-context) - 6px);
+  min-width: calc(var(--studio-context) - 6px);
+  height: calc(var(--studio-context) - 6px);
+  min-height: calc(var(--studio-context) - 6px);
+}
+
+
+/* 6. THE RAIL: Select, Add, Room, Materials, Check; Design and CNC at its foot. 112 with labels,
+   56 with icons only below the profile's width (StudioRail adds `is-narrow`). */
+
+.studio-pro .studio-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px theme('spacing.2');
+  border-right: 1px solid theme('colors.shell.600');
+  background: theme('colors.shell.800');
+}
+
+/* Every rail button holds its own badge, whatever its class. */
+.studio-pro .studio-rail button { position: relative; }
+
+.studio-pro .studio-rail .cc-btn-ghost {
+  justify-content: flex-start;
+  padding: 0 theme('spacing.2');
+  color: theme('colors.ink.100');
+}
+
+.studio-pro .studio-rail .cc-btn-ghost[aria-pressed="true"],
+.studio-pro .studio-rail .cc-btn-ghost[aria-expanded="true"] {
+  border-color: theme('colors.gold.DEFAULT / 65%');
+  background: theme('colors.shell.700');
+  color: theme('colors.gold.hover');
+}
+
+/* Never clipped (hers is not), whatever utility asks it to truncate: "Materials" is 56 px of
+   Inter at 13 px and runs 2 px into the button's own padding at 112, whole. */
+.studio-pro .studio-rail-text {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.studio-pro .studio-rail-separator {
+  flex-shrink: 0;
+  height: 1px;
+  margin: 9px theme('spacing.1');
+  background: theme('colors.shell.600');
+}
+
+.studio-pro .studio-rail-bottom {
+  display: grid;
+  gap: theme('spacing.2');
+  margin-top: auto;
+}
+
+.studio-pro .studio-rail-caption {
+  padding: 0 theme('spacing.2');
+  font-size: calc(var(--studio-text) - 2px);
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: theme('colors.ink.400');
+}
+
+/* Check's count of what asks something of a person (findingsToAct): a finding's ground, dark
+   text at the issue size, red when a red one is in it. It stands at the button's right end,
+   level with it and a little into the rail's own padding, so it never takes the word's room:
+   "Check" stays whole at 112, a count of 100 included. */
+.studio-pro .studio-rail-badge {
+  position: absolute;
+  top: calc((var(--studio-button) - 20px) / 2);
+  right: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--studio-warn);
+  color: theme('colors.black');
+  font-size: var(--studio-issue-text);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.studio-pro .studio-rail-badge.is-red { background: var(--studio-danger); }
+.studio-pro .studio-rail-badge:empty { display: none; }
+
+/* Icons only (her small-screen rail): the words leave the eye, not the button's name. */
+.studio-pro .studio-rail.is-narrow .cc-btn-ghost {
+  justify-content: center;
+  padding: 0;
+}
+
+.studio-pro .studio-rail.is-narrow :is(.studio-rail-text, .studio-rail-caption) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Icons only: the count sits on the button's top right corner, over the icon's. */
+.studio-pro .studio-rail.is-narrow .studio-rail-badge {
+  top: -3px;
+  right: -3px;
+}
+
+
+/* 7. THE SCENE: the slot that receives the EXISTING canvas and its overlays, and the Studio's
+   three things at its edge (View at the top right, the four toggles at the top, the camera bar
+   at the foot). No background: the canvas paints its own. */
+
+.studio-pro .studio-scene {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.studio-pro .studio-scene-tools {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  display: flex;
+  gap: 5px;
+}
+
+.studio-pro .studio-scene-tools .cc-btn {
+  background: theme('colors.shell.800');
+  color: theme('colors.ink.100');
+}
+
+/* The four toggles, centred on the top edge (her bar style, the one her camera bar wears). Centred
+   by its margins, not a transform, so nothing in it becomes a containing block. */
+.studio-pro .studio-scene-toggles {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+  width: max-content;
+  max-width: calc(100% - 28px);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid theme('colors.shell.600');
+  border-radius: var(--studio-radius);
+  background: theme('colors.shell.800');
+  box-shadow: 0 theme('spacing.1') 12px theme('colors.black / 13%');
+  white-space: nowrap;
+}
+
+.studio-pro .studio-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: var(--studio-button);
+  min-height: var(--studio-button);
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--studio-radius);
+  background: transparent;
+  color: theme('colors.ink.100');
+  font-size: var(--studio-text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.studio-pro .studio-toggle:hover:not(:disabled) {
+  background: theme('colors.shell.700');
+  color: theme('colors.ink.50');
+}
+
+/* Pressed reads as her pressed rail button: the gold hairline and the gold word. */
+.studio-pro .studio-toggle[aria-pressed="true"] {
+  border-color: theme('colors.gold.DEFAULT / 65%');
+  background: theme('colors.shell.700');
+  color: theme('colors.gold.hover');
+}
+
+.studio-pro .studio-toggle:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+/* The camera bar at the scene's foot (her `.scene-links`); the pressed one is her `.active-view`. */
+.studio-pro .studio-scene-links {
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  width: max-content;
+  max-width: calc(100% - 28px);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid theme('colors.shell.600');
+  border-radius: var(--studio-radius);
+  background: theme('colors.shell.800');
+  box-shadow: 0 theme('spacing.1') 12px theme('colors.black / 13%');
+  white-space: nowrap;
+}
+
+.studio-pro .studio-scene-links [aria-pressed="true"] {
+  border-color: theme('colors.gold.DEFAULT');
+  color: theme('colors.gold.hover');
+}
+
+/* While the camera bar stands at the foot, the bottom-left column (messages, the front-gap and
+   in-frame rows; T79 F1) stands just above it, still bottom left, so no row covers a camera
+   button: the bar's 18 px off the foot, its 12 px of padding and border round one button, and
+   8 more. */
+.studio-pro .studio-scene:has(.studio-scene-links) [data-messages="left"] {
+  bottom: calc(18px + var(--studio-button) + 12px + theme('spacing.2'));
+}
+
+/* T84 F6 · the room's island chips (3d/Scene.jsx, bottom centre, frozen) stand on the same line
+   as the camera bar; while the bar stands at the foot they rise just above it, by the same
+   measure as the messages column, so no chip covers A to D or Frame selection. */
+.studio-pro .studio-scene:has(.studio-scene-links) [data-island-chips="1"] {
+  bottom: calc(18px + var(--studio-button) + 12px + theme('spacing.2'));
+}
+
+
+/* 8. THE INSPECTOR: the quick card (344, 316 narrow) or the embedded RightPanel (400, 360
+   narrow); the width is the column's, --studio-inspector. */
+
+.studio-pro .studio-inspector {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-left: 1px solid theme('colors.shell.600');
+  background: theme('colors.shell.800');
+}
+
+/* The quick card (CONTRACT 6, `data-studio="card"`) is her inspector's own column: its head, its
+   body that scrolls, its foot held down. */
+.studio-pro .studio-inspector [data-studio="card"] {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.studio-pro .studio-inspector-head {
+  padding: theme('spacing.4') 14px 12px;
+  border-bottom: 1px solid theme('colors.shell.600');
+}
+
+.studio-pro .studio-object-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* The type's name: her 16 px title, whichever heading carries it. */
+.studio-pro .studio-object-title :is(h1, h2, h3) {
+  margin: 0;
+  font-size: calc(var(--studio-text) + 3px);
+  font-weight: 600;
+}
+
+.studio-pro .studio-object-id {
+  margin-bottom: 3px;
+  font-size: calc(var(--studio-text) - 2px);
+  letter-spacing: .7px;
+  color: theme('colors.gold.hover');
+}
+
+.studio-pro .studio-object-thumb {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: theme('spacing.12');
+  height: theme('spacing.12');
+  border: 1px solid theme('colors.shell.600');
+  border-radius: var(--studio-radius);
+  background: theme('colors.shell.700');
+  color: theme('colors.gold.DEFAULT');
+}
+
+.studio-pro .studio-object-thumb .studio-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.studio-pro .studio-scope-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 11px;
+  font-size: calc(var(--studio-text) - 1px);
+  color: theme('colors.ink.200');
+}
+
+.studio-pro .studio-scope-pill {
+  padding: 2px 7px;
+  border: 1px solid theme('colors.shell.600');
+  border-radius: var(--studio-radius);
+  color: theme('colors.ink.100');
+}
+
+.studio-pro .studio-inspector-body {
+  min-height: 0;
+  padding: 12px 14px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.studio-pro .studio-card-section-title {
+  margin-bottom: 10px;
+  font-size: calc(var(--studio-text) - 2px);
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: theme('colors.gold.hover');
+}
+
+/* One row of the card: the label, then the value at least 136 wide (hers). */
+.studio-pro .studio-field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(136px, 1.1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 42px;
+}
+
+.studio-pro .studio-field-row .cc-label { margin: 0; }
+
+.studio-pro .studio-value-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.studio-pro .studio-value-wrap :is(input, .cc-input) {
+  padding-right: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The unit inside the field, on the field's own line (a reason under it does not move it). */
+.studio-pro .studio-unit {
+  position: absolute;
+  top: 0;
+  right: 9px;
+  display: flex;
+  align-items: center;
+  height: var(--studio-field);
+  font-size: calc(var(--studio-text) - 1px);
+  color: theme('colors.ink.200');
+  pointer-events: none;
+}
+
+/* A summary that leads to its section ("2 doors, L / R" and the arrow): a field's height. */
+.studio-pro .studio-value-action {
+  justify-content: space-between;
+  max-width: 100%;
+  height: var(--studio-field);
+  min-height: var(--studio-field);
+  padding: 0 theme('spacing.2');
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.studio-pro .studio-value-action > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studio-pro .studio-value-action:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.studio-pro .studio-readonly-value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  min-height: var(--studio-field);
+  font-size: calc(var(--studio-text) - 1px);
+  color: theme('colors.ink.200');
+}
+
+.studio-pro .studio-inheritance {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: theme('spacing.2') 0 0;
+  font-size: calc(var(--studio-text) - 1px);
+  color: theme('colors.ink.200');
+}
+
+.studio-pro .studio-inheritance .studio-icon {
+  width: var(--studio-text);
+  height: var(--studio-text);
+}
+
+.studio-pro .studio-inline-note {
+  margin-top: 10px;
+  font-size: calc(var(--studio-text) - 1px);
+  line-height: 1.5;
+  color: theme('colors.ink.200');
+}
+
+.studio-pro .studio-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: theme('spacing.2');
+  margin-top: theme('spacing.4');
+}
+
+.studio-pro .studio-card-actions :is(.cc-btn, .cc-btn-gold) { width: 100%; }
+
+.studio-pro .studio-inspector-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding: 12px 14px;
+  border-top: 1px solid theme('colors.shell.600');
+  font-size: calc(var(--studio-text) - 1px);
+  color: theme('colors.ink.200');
+}
+
+.studio-pro .studio-full-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px;
+  border-bottom: 1px solid theme('colors.shell.600');
+}
+
+.studio-pro .studio-full-head :is(h1, h2, h3) { flex: 1; }
+
+.studio-pro .studio-empty-state {
+  padding: 24px theme('spacing.4');
+  color: theme('colors.ink.200');
+}
+
+.studio-pro .studio-empty-state :is(h1, h2, h3) {
+  margin-bottom: theme('spacing.2');
+  color: theme('colors.ink.50');
+}
+
+
+/* 9. THE POPUPS (the rail's Materials, the View menu). Fixed: the opener hands a DOMRect, which is
+   the window's own coordinates (hers is absolute in a page that never scrolls, the same thing).
+   Its layer is LAYER_CLASS.menu, in the JSX. */
+
+.studio-pro .studio-popup {
+  position: fixed;
+  width: 292px;
+  max-width: calc(100vw - theme('spacing.4'));
+  max-height: calc(100dvh - 120px);
+  overflow: auto;
+  border: 1px solid theme('colors.shell.600');
+  border-radius: var(--studio-radius);
+  background: theme('colors.shell.800');
+  box-shadow: 0 12px 36px theme('colors.black / 40%');
+  color: theme('colors.ink.50');
+}
+
+.studio-pro .studio-popup-head {
+  display: flex;
+  align-items: center;
+  gap: theme('spacing.2');
+  padding: 10px 12px;
+  border-bottom: 1px solid theme('colors.shell.600');
+}
+
+.studio-pro .studio-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--studio-button);
+  padding: 6px 9px;
+  border: 0;
+  border-radius: var(--studio-radius);
+  background: transparent;
+  color: theme('colors.ink.100');
+  font-size: var(--studio-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.studio-pro .studio-menu-item:hover:not(:disabled) { background: theme('colors.shell.700'); }
+
+/* A menu entry that is ON reads as the menu bar's checked entry reads: in gold. */
+.studio-pro .studio-menu-item:is([aria-pressed="true"], [aria-checked="true"]) { color: theme('colors.gold.hover'); }
+
+.studio-pro .studio-menu-item:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.studio-pro .studio-popup input[type="range"] {
+  width: 100%;
+  accent-color: theme('colors.gold.DEFAULT');
+}
+
+.studio-pro .studio-library-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px;
+  border: 0;
+  border-bottom: 1px solid theme('colors.shell.600');
+  background: transparent;
+  color: theme('colors.ink.100');
+  font-size: var(--studio-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.studio-pro .studio-library-item:hover { background: theme('colors.shell.700'); }
+
+.studio-pro .studio-library-item .studio-icon {
+  width: 27px;
+  height: 27px;
+  color: theme('colors.gold.DEFAULT');
+}
+
+.studio-pro .studio-library-item small {
+  display: block;
+  margin-top: 2px;
+  font-size: calc(var(--studio-text) - 2px);
+  color: theme('colors.ink.200');
+}
+
+
+/* 10. THE ERRORS YOU CAN SEE (CLAUDE.md F5). The owner: *"wszystkie bledy zolte i czerwone sa
+   totalnie niewidoczne, mala czcionka"*. A finding is 13 px (--studio-issue-text), dark text on
+   its level's ground (--studio-warn, --studio-danger) in all three places: the strip, the
+   counters, the marker; the refused field is red with the reason under it. Where her Stage-1
+   draws the strip as a faint gold line in 12 px, F5 and her own 17:01 answer win. The dark is
+   Tailwind's black: on the danger ground it reads 4.8 : 1 (the shell's 900 would read 4.0, under
+   the 4.5 a 13 px text asks). */
+
+.studio-pro .studio-issue-strip {
+  display: flex;
+  align-items: center;
+  gap: theme('spacing.2');
+  padding: 7px 10px;
+  border-radius: var(--studio-radius);
+  background: var(--studio-warn);
+  color: theme('colors.black');
+  font-size: var(--studio-issue-text);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.studio-pro .studio-issue-strip.is-yellow { background: var(--studio-warn); }
+.studio-pro .studio-issue-strip.is-red { background: var(--studio-danger); }
+
+/* The words take the room; the icon and Show keep theirs. */
+.studio-pro .studio-issue-strip > :not(button, .studio-icon) {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Show, dark on the ground like the words (a light ghost button would vanish on yellow). */
+.studio-pro .studio-issue-strip :is(button, .cc-btn, .cc-btn-ghost) {
+  flex-shrink: 0;
+  height: auto;
+  min-height: 0;
+  padding: 3px 9px;
+  border: 1px solid theme('colors.black / 55%');
+  border-radius: var(--studio-radius);
+  background: transparent;
+  color: theme('colors.black');
+  font-size: var(--studio-issue-text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.studio-pro .studio-issue-strip :is(button, .cc-btn, .cc-btn-ghost):hover { background: theme('colors.black / 12%'); }
+
+/* On a yellow or a red ground a gold ring would not show: the keyboard's ring is dark there. */
+.studio-pro .studio-issue-strip :is(button, [data-studio]):focus-visible { outline-color: theme('colors.black'); }
+
+/* Several stack, a little apart; in the card they stand clear of the note above (hers, 14). */
+.studio-pro .studio-inspector-body .studio-issue-strip { margin-top: 14px; }
+.studio-pro .studio-issue-strip + .studio-issue-strip { margin-top: 6px; }
+.studio-pro .studio-inspector-body .studio-issue-strip + .studio-issue-strip { margin-top: 6px; }
+
+/* Over the full panel's rows (in the column, not in a card's body): edge to edge, square, a
+   hairline apart. */
+.studio-pro .studio-inspector .studio-issue-strip:not(.studio-inspector-body *) { border-radius: 0; }
+.studio-pro .studio-inspector .studio-issue-strip:not(.studio-inspector-body *) + .studio-issue-strip { margin-top: 1px; }
+
+/* The status bar's counters, "1 red", "3 yellow": a pill a little shorter than the bar. */
+.studio-pro .studio-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: calc(var(--studio-status) - theme('spacing.2'));
+  padding: 0 theme('spacing.2');
+  border: 0;
+  border-radius: var(--studio-radius);
+  background: var(--studio-warn);
+  color: theme('colors.black');
+  font-size: var(--studio-issue-text);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.studio-pro .studio-counter.is-yellow { background: var(--studio-warn); }
+.studio-pro .studio-counter.is-red { background: var(--studio-danger); }
+.studio-pro .studio-counter:hover { box-shadow: inset 0 0 0 1px theme('colors.black / 45%'); }
+
+/* The marker beside the unit number in the scene: the triangle (the sprite's `warning`) at the
+   profile's marker size and the count, dark on the level's ground. */
+.studio-pro .studio-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px 2px 3px;
+  border: 0;
+  border-radius: var(--studio-radius);
+  background: var(--studio-warn);
+  color: theme('colors.black');
+  font-size: var(--studio-issue-text);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px theme('colors.black / 35%');
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.studio-pro .studio-marker.is-yellow { background: var(--studio-warn); }
+.studio-pro .studio-marker.is-red { background: var(--studio-danger); }
+
+.studio-pro .studio-marker .studio-icon {
+  width: var(--studio-marker);
+  height: var(--studio-marker);
+}
+
+/* The refused field: red, its typed value kept, the engine's own sentence under it. In a card row
+   the wrapper lends its children to the row's grid, so the sentence takes the row's whole width
+   under the label and the field instead of a 136 px column. */
+.studio-pro .studio-refused {
+  position: relative;
+  min-width: 0;
+}
+
+.studio-pro .studio-field-row > .studio-refused { display: contents; }
+
+.studio-pro .studio-refused[data-refused="1"] :is(input, .cc-input) {
+  border-color: var(--studio-danger);
+  box-shadow: inset 0 0 0 1px var(--studio-danger);
+  background: color-mix(in srgb, var(--studio-danger) 16%, theme('colors.shell.900'));
+}
+
+.studio-pro .studio-refused-reason {
+  margin: 6px 0 0;
+  padding: 6px 9px;
+  border-radius: var(--studio-radius);
+  background: var(--studio-danger);
+  color: theme('colors.black');
+  font-size: var(--studio-issue-text);
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.studio-pro .studio-field-row > .studio-refused > .studio-refused-reason {
+  grid-column: 1 / -1;
+  margin: 0 0 6px;
+}
+
+/* The card holds the refused field inside the value's cell (studio-value-wrap): there the row is
+   the sentence's measure, read as a container, and the sentence reaches back under the label. A
+   row holds no window, so being a container costs nothing (the column above it is not one). */
+.studio-pro .studio-field-row { container-type: inline-size; }
+
+.studio-pro .studio-value-wrap .studio-refused-reason {
+  width: 100cqw;
+  margin-left: calc(100% - 100cqw);
+}
+
+/* A row grown by the sentence keeps its label level with its field, above the sentence, instead
+   of centred in the taller row (where the sentence would stand over it). */
+.studio-pro .studio-field-row:has(.studio-refused-reason) { align-items: start; }
+
+.studio-pro .studio-field-row:has(.studio-refused-reason) > .cc-label {
+  display: flex;
+  align-items: center;
+  min-height: var(--studio-field);
+}
+
+
+/* 11. THE STATUS BAR: the selection in words, the badge, the dirty mark, Changes, the counters,
+   the viewport. */
+
+.studio-pro .studio-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 0 14px;
+  border-top: 1px solid theme('colors.shell.600');
+  background: theme('colors.shell.900');
+  font-size: calc(var(--studio-text) - 1px);
+  color: theme('colors.ink.200');
+  white-space: nowrap;
+}
+
+/* Her quieter status-bar buttons (26 high, 11 px); never a finding's counter, which stays 13 px. */
+.studio-pro .studio-statusbar :where(.cc-btn-ghost:not(.studio-counter)) {
+  height: 26px;
+  min-height: 26px;
+  font-size: calc(var(--studio-text) - 2px);
+}
+
+
+/* 12. THE FLOATING WINDOW AND THE TOAST (CLAUDE.md F1 names them in the skin). No component wears
+   them tonight: the part windows keep their own windows and styles (DECISIONS 8; NOT THIS TURN,
+   "The part windows in the Studio skin"), and a notice stays the app's message column. Styled
+   here, as hers, so the next stage starts from the same skin. */
+
+.studio-pro .studio-floating-window {
+  position: fixed;
+  width: 290px;
+  max-width: calc(100vw - 20px);
+  border: 1px solid theme('colors.gold.dark');
+  border-radius: var(--studio-radius);
+  background: theme('colors.shell.800');
+  box-shadow: 0 10px 28px theme('colors.black / 33%');
+}
+
+.studio-pro .studio-window-head {
+  display: flex;
+  align-items: center;
+  gap: theme('spacing.2');
+  height: 38px;
+  padding: 0 theme('spacing.2') 0 11px;
+  border-bottom: 1px solid theme('colors.shell.600');
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+}
+
+.studio-pro .studio-window-head strong {
+  flex: 1;
+  font-size: var(--studio-text);
+  font-weight: 500;
+}
+
+.studio-pro .studio-window-body { padding: 11px; }
+
+.studio-pro .studio-window-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 11px 11px;
+}
+
+.studio-pro .studio-toast {
+  position: absolute;
+  bottom: 75px;
+  left: calc(var(--studio-rail) + theme('spacing.4'));
+  max-width: min(440px, calc(100% - var(--studio-rail) - var(--studio-inspector) - theme('spacing.8')));
+  padding: 10px 12px;
+  border: 1px solid theme('colors.shell.600');
+  border-left: 2px solid theme('colors.gold.DEFAULT');
+  border-radius: var(--studio-radius);
+  background: theme('colors.shell.800');
+  color: theme('colors.ink.100');
+  font-size: calc(var(--studio-text) - 1px);
+  box-shadow: 0 5px 15px theme('colors.black / 20%');
+}

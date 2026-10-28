@@ -382,6 +382,56 @@ export const NEW_FILES = [
   'scripts/t83-walk.mjs',
   // Chat fix 26.10.2026: the typed door width of the mirror cabinet stays, the untouched doors give way (KIT_MIRROR.lsp D5a)
   'test/chatfix-2610-mirror-door-widths.test.js',
+  // T84 P1 (27.10.2026): the census of main, the parity gate's numbers (PART P)
+  'scripts/t84-census.mjs',
+  // T84 F1 (27.10.2026): the skin
+  'src/components/studio/studio.css',
+  'src/components/studio/StudioIcons.jsx',
+  'src/components/studio/lib/studioSkin.js',
+  'test/turn84-f01-skin.test.js',
+  'scripts/t78-classify.d/f45-t84-f01.mjs',
+  // T84 F2 (27.10.2026): the shell
+  'src/components/studio/StudioShell.jsx',
+  'src/components/studio/StudioRail.jsx',
+  'src/components/studio/SelectionBreadcrumb.jsx',
+  'src/components/studio/StatusBar.jsx',
+  'src/components/studio/lib/studioFace.js',
+  'test/turn84-f02-shell.test.js',
+  'scripts/t78-classify.d/f45-t84-f02.mjs',
+  // T84 F3 (27.10.2026): the quick cards
+  'src/components/studio/QuickSelectionCard.jsx',
+  'src/components/studio/lib/studioCards.js',
+  'src/components/studio/cards/CardRow.jsx',
+  'test/turn84-f03-cards.test.js',
+  'scripts/t78-classify.d/f45-t84-f03.mjs',
+  // T84 F4 (27.10.2026): the inspector host
+  'src/components/studio/InspectorHost.jsx',
+  'test/turn84-f04-inspector.test.js',
+  'scripts/t78-classify.d/f45-t84-f04.mjs',
+  // T84 F5 (27.10.2026): the errors you can see
+  'src/components/studio/UnitIssueMarker.jsx',
+  'src/components/studio/IssueStrip.jsx',
+  'src/components/studio/RefusedField.jsx',
+  'src/components/studio/lib/studioIssues.js',
+  'test/turn84-f05-issues.test.js',
+  'scripts/t78-classify.d/f45-t84-f05.mjs',
+  // T84 F6 (27.10.2026): the scene's edge
+  'src/components/studio/SceneToggles.jsx',
+  'src/components/studio/SceneViewMenu.jsx',
+  'src/components/studio/CameraBar.jsx',
+  'src/components/studio/lib/cameraPresets.js',
+  'test/turn84-f06-scene.test.js',
+  'scripts/t78-classify.d/f45-t84-f06.mjs',
+  // T84 F7 (27.10.2026): the rail's menus, Escape and the parity gate
+  'src/components/studio/RailMenus.jsx',
+  'src/components/studio/lib/studioEscape.js',
+  'test/turn84-f07-parity.test.js',
+  'test/turn84-f07-escape.test.js',
+  'scripts/t78-classify.d/f45-t84-f07.mjs',
+  // T84 F8 (27.10.2026): the walk
+  'scripts/t84-walk.mjs',
+  'scripts/t84-skin-frames.mjs',
+  'scripts/t78-classify.d/f45-t84-f08.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -1,0 +1,5507 @@
+{
+  "what": "T84 P1 (a), THE CENSUS (CLAUDE.md T84 PART P); scripts/t84-census.mjs",
+  "mode": "studio",
+  "partial": false,
+  "staticOnly": false,
+  "commit": "e6301f1c7e4a13dccb482832a523737aa6c34915",
+  "commitShort": "e6301f1",
+  "branch": "claude/t84-studio-stage1",
+  "takenAt": "2026-10-28T01:24:56.808Z",
+  "node": "v22.22.0",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "types": [
+    "BUD",
+    "BUDR",
+    "WUD",
+    "WARDROBE",
+    "VANITY2",
+    "MIRROR_CABINET",
+    "CORNER_L_BASE",
+    "HAWA_POCKET",
+    "BLIND_BASE",
+    "PANTRY",
+    "BUD_INT",
+    "WUD_HOOD",
+    "FREE_PANEL"
+  ],
+  "static": {
+    "topMenu": {
+      "file": "src/components/TopBar.jsx",
+      "line": 135,
+      "builders": [
+        "src/lib/topMenu.js buildDatabaseMenu",
+        "src/lib/outputMenu.js buildOutputMenu"
+      ],
+      "order": [
+        "File",
+        "View",
+        "Library",
+        "Settings",
+        "Database",
+        "Spraying",
+        "Lighting",
+        "Output"
+      ],
+      "menuOrder": [
+        "File",
+        "View",
+        "Library",
+        "Settings",
+        "Database",
+        "Spraying",
+        "Lighting",
+        "Output"
+      ],
+      "pageBindings": {
+        "variant": "studio ? 'studio' : undefined",
+        "onExportCsv": "onExportCsv",
+        "onExportPdf": "onExportPdf",
+        "onExportLabels": "onExportLabels",
+        "onExportDxfZip": "onExportDxfZip",
+        "onRender": "openModal('render')",
+        "onDrawing": "onDrawing",
+        "onAuth": "openModal('auth')"
+      },
+      "perMenu": {
+        "File": 5,
+        "View": 13,
+        "Library": 4,
+        "Settings": 5,
+        "Database": 5,
+        "Spraying": 1,
+        "Lighting": 1,
+        "Output": 14
+      },
+      "total": 48,
+      "leaves": [
+        {
+          "menu": "File",
+          "path": "File > New project\u2026",
+          "label": "New project\u2026",
+          "kind": "item",
+          "handler": "leaveProject",
+          "call": "leaveProject",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "File",
+          "path": "File > Open\u2026",
+          "label": "Open\u2026",
+          "kind": "item",
+          "handler": "leaveProject",
+          "call": "leaveProject",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "File",
+          "path": "File > Save",
+          "label": "Save",
+          "kind": "item",
+          "handler": "save",
+          "call": "save",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "File",
+          "path": "File > Save as\u2026",
+          "label": "Save as\u2026",
+          "kind": "item",
+          "handler": "openModal('save-as')",
+          "call": "openModal('save-as')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "File",
+          "path": "File > Close project",
+          "label": "Close project",
+          "kind": "item",
+          "handler": "leaveProject",
+          "call": "leaveProject",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "View",
+          "path": "View > Outlines",
+          "label": "Outlines",
+          "kind": "item",
+          "handler": "toggleOutlines",
+          "call": "toggleOutlines",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "contourView",
+          "checkedWhen": "showOutlines || contourView",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "View",
+          "path": "View > Dimensions",
+          "label": "Dimensions",
+          "kind": "item",
+          "handler": "toggleDimensions",
+          "call": "toggleDimensions",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "viewMode !== '3d' || contourView",
+          "checkedWhen": "showDimensions",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "View",
+          "path": "View > Show front dimensions",
+          "label": "Show front dimensions",
+          "kind": "item",
+          "handler": "toggleFrontDimensions",
+          "call": "toggleFrontDimensions",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "viewMode !== '3d' || contourView",
+          "checkedWhen": "showFrontDimensions",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "View",
+          "path": "View > Dimension colour > Navy",
+          "label": "Navy",
+          "kind": "item",
+          "handler": "setDimensionColour(key)",
+          "call": "setDimensionColour('navy')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": "dimensionColour === key",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx",
+          "parent": "Dimension colour",
+          "parentDisabledWhen": "viewMode !== '3d' || contourView"
+        },
+        {
+          "menu": "View",
+          "path": "View > Dimension colour > Red",
+          "label": "Red",
+          "kind": "item",
+          "handler": "setDimensionColour(key)",
+          "call": "setDimensionColour('red')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": "dimensionColour === key",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx",
+          "parent": "Dimension colour",
+          "parentDisabledWhen": "viewMode !== '3d' || contourView"
+        },
+        {
+          "menu": "View",
+          "path": "View > 3D",
+          "label": "3D",
+          "kind": "item",
+          "handler": "setViewMode('3d')",
+          "call": "setViewMode('3d')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": "viewMode === '3d'",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "View",
+          "path": "View > CNC sheet",
+          "label": "CNC sheet",
+          "kind": "item",
+          "handler": "setViewMode('cnc')",
+          "call": "setViewMode('cnc')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": "viewMode === 'cnc'",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "View",
+          "path": "View > Brightness",
+          "label": "Brightness",
+          "kind": "slider",
+          "handler": "setBrightness",
+          "call": "setBrightness",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "viewMode !== '3d'",
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "View",
+          "path": "View > Realistic lighting",
+          "label": "Realistic lighting",
+          "kind": "item",
+          "handler": "toggleRealisticLighting",
+          "call": "toggleRealisticLighting",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "viewMode !== '3d'",
+          "checkedWhen": "realisticLighting",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "View",
+          "path": "View > Turn on the light",
+          "label": "Turn on the light",
+          "kind": "item",
+          "handler": "setLighting({ on: !lightOn })",
+          "call": "setLighting({ on: true })",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "viewMode !== '3d'",
+          "checkedWhen": "lightOn",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "View",
+          "path": "View > X-ray",
+          "label": "X-ray",
+          "kind": "item",
+          "handler": "toggleXray",
+          "call": "toggleXray",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "viewMode !== '3d' || contourView",
+          "checkedWhen": "xray",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "View",
+          "path": "View > Hide fronts",
+          "label": "Hide fronts",
+          "kind": "item",
+          "handler": "toggleHideFronts",
+          "call": "toggleHideFronts",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "viewMode !== '3d'",
+          "checkedWhen": "hideFronts",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "View",
+          "path": "View > Contour view",
+          "label": "Contour view",
+          "kind": "item",
+          "handler": "toggleContourView",
+          "call": "toggleContourView",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "viewMode !== '3d'",
+          "checkedWhen": "contourView",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "Library",
+          "path": "Library > Kitchen",
+          "label": "Kitchen",
+          "kind": "item",
+          "handler": "setLibraryCategory(c.id)",
+          "call": "setLibraryCategory('kitchen')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "c.soon",
+          "checkedWhen": null,
+          "soonWhen": "c.soon",
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "Library",
+          "path": "Library > Wardrobes",
+          "label": "Wardrobes",
+          "kind": "item",
+          "handler": "setLibraryCategory(c.id)",
+          "call": "setLibraryCategory('wardrobe')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "c.soon",
+          "checkedWhen": null,
+          "soonWhen": "c.soon",
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "Library",
+          "path": "Library > Saved sets",
+          "label": "Saved sets",
+          "kind": "item",
+          "handler": "setLibraryCategory(c.id)",
+          "call": "setLibraryCategory('sets')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "c.soon",
+          "checkedWhen": null,
+          "soonWhen": "c.soon",
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "Library",
+          "path": "Library > Sets",
+          "label": "Sets",
+          "kind": "item",
+          "handler": "setLibraryCategory(c.id)",
+          "call": "setLibraryCategory('media')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "c.soon",
+          "checkedWhen": null,
+          "soonWhen": "c.soon",
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "Settings",
+          "path": "Settings > Settings\u2026",
+          "label": "Settings\u2026",
+          "kind": "item",
+          "handler": "openModal('design')",
+          "call": "openModal('design')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "Settings",
+          "path": "Settings > Room setup\u2026",
+          "label": "Room setup\u2026",
+          "kind": "item",
+          "handler": "openModal('room')",
+          "call": "openModal('room')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "Settings",
+          "path": "Settings > Snap > 0.5 mm",
+          "label": "0.5 mm",
+          "kind": "item",
+          "handler": "setSnapStep(step)",
+          "call": "setSnapStep(0.5)",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": "snapStep === step",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx",
+          "parent": "Snap",
+          "parentDisabledWhen": null
+        },
+        {
+          "menu": "Settings",
+          "path": "Settings > Snap > 1 mm",
+          "label": "1 mm",
+          "kind": "item",
+          "handler": "setSnapStep(step)",
+          "call": "setSnapStep(1)",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": "snapStep === step",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx",
+          "parent": "Snap",
+          "parentDisabledWhen": null
+        },
+        {
+          "menu": "Settings",
+          "path": "Settings > Snap > 32 mm system",
+          "label": "32 mm system",
+          "kind": "item",
+          "handler": "setSnapStep(step)",
+          "call": "setSnapStep(32)",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": "snapStep === step",
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx",
+          "parent": "Snap",
+          "parentDisabledWhen": null
+        },
+        {
+          "menu": "Database",
+          "path": "Database > Materials\u2026",
+          "label": "Materials\u2026",
+          "kind": "item",
+          "handler": "onMaterials",
+          "call": "onMaterials",
+          "bound": "openModal('warehouse')",
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "!onMaterials",
+          "checkedWhen": null,
+          "soonWhen": "!onMaterials",
+          "from": "src/lib/topMenu.js"
+        },
+        {
+          "menu": "Database",
+          "path": "Database > Assign materials\u2026",
+          "label": "Assign materials\u2026",
+          "kind": "item",
+          "handler": "onAssignMaterials",
+          "call": "onAssignMaterials",
+          "bound": "openModal('assign-materials')",
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "!onAssignMaterials",
+          "checkedWhen": null,
+          "soonWhen": "!onAssignMaterials",
+          "from": "src/lib/topMenu.js"
+        },
+        {
+          "menu": "Database",
+          "path": "Database > Company defaults\u2026",
+          "label": "Company defaults\u2026",
+          "kind": "item",
+          "handler": "onCompanyDefaults",
+          "call": "onCompanyDefaults",
+          "bound": "openModal('company-defaults')",
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "!onCompanyDefaults",
+          "checkedWhen": null,
+          "soonWhen": "!onCompanyDefaults",
+          "from": "src/lib/topMenu.js"
+        },
+        {
+          "menu": "Database",
+          "path": "Database > Clients\u2026",
+          "label": "Clients\u2026",
+          "kind": "item",
+          "handler": "onClients",
+          "call": "onClients",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": false,
+          "soon": true,
+          "disabledWhen": "!onClients",
+          "checkedWhen": null,
+          "soonWhen": "!onClients",
+          "from": "src/lib/topMenu.js"
+        },
+        {
+          "menu": "Database",
+          "path": "Database > Projects\u2026",
+          "label": "Projects\u2026",
+          "kind": "item",
+          "handler": "onProjects",
+          "call": "onProjects",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": false,
+          "soon": true,
+          "disabledWhen": "!onProjects",
+          "checkedWhen": null,
+          "soonWhen": "!onProjects",
+          "from": "src/lib/topMenu.js"
+        },
+        {
+          "menu": "Spraying",
+          "path": "Spraying",
+          "label": "Spraying",
+          "kind": "button",
+          "handler": "openModal('spraying')",
+          "call": "openModal('spraying')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "Lighting",
+          "path": "Lighting",
+          "label": "Lighting",
+          "kind": "button",
+          "handler": "openModal('lighting')",
+          "call": "openModal('lighting')",
+          "bound": null,
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/components/TopBar.jsx"
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Render\u2026",
+          "label": "Render\u2026",
+          "kind": "item",
+          "handler": "onRender",
+          "call": "onRender",
+          "bound": "onRender",
+          "page": "openModal('render')",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/lib/outputMenu.js"
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Drawings > Preview\u2026",
+          "label": "Preview\u2026",
+          "kind": "item",
+          "handler": "onDrawing(d.id)",
+          "call": "onDrawing('preview')",
+          "bound": "onDrawing('preview')",
+          "page": "onDrawing",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "Boolean(d.soon)",
+          "checkedWhen": null,
+          "soonWhen": "d.soon || undefined",
+          "from": "src/lib/outputMenu.js",
+          "parent": "Drawings",
+          "parentDisabledWhen": null
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Drawings > Unit card (PDF)",
+          "label": "Unit card (PDF)",
+          "kind": "item",
+          "handler": "onDrawing(d.id)",
+          "call": "onDrawing('unit-card')",
+          "bound": "onDrawing('unit-card')",
+          "page": "onDrawing",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "Boolean(d.soon)",
+          "checkedWhen": null,
+          "soonWhen": "d.soon || undefined",
+          "from": "src/lib/outputMenu.js",
+          "parent": "Drawings",
+          "parentDisabledWhen": null
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Drawings > Unit card (SVG)",
+          "label": "Unit card (SVG)",
+          "kind": "item",
+          "handler": "onDrawing(d.id)",
+          "call": "onDrawing('unit-card-svg')",
+          "bound": "onDrawing('unit-card-svg')",
+          "page": "onDrawing",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "Boolean(d.soon)",
+          "checkedWhen": null,
+          "soonWhen": "d.soon || undefined",
+          "from": "src/lib/outputMenu.js",
+          "parent": "Drawings",
+          "parentDisabledWhen": null
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Drawings > All units (PDF)",
+          "label": "All units (PDF)",
+          "kind": "item",
+          "handler": "onDrawing(d.id)",
+          "call": "onDrawing('booklet')",
+          "bound": "onDrawing('booklet')",
+          "page": "onDrawing",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "Boolean(d.soon)",
+          "checkedWhen": null,
+          "soonWhen": "d.soon || undefined",
+          "from": "src/lib/outputMenu.js",
+          "parent": "Drawings",
+          "parentDisabledWhen": null
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Drawings > Drawing set (PDF)",
+          "label": "Drawing set (PDF)",
+          "kind": "item",
+          "handler": "onDrawing(d.id)",
+          "call": "onDrawing('walls')",
+          "bound": "onDrawing('walls')",
+          "page": "onDrawing",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "Boolean(d.soon)",
+          "checkedWhen": null,
+          "soonWhen": "d.soon || undefined",
+          "from": "src/lib/outputMenu.js",
+          "parent": "Drawings",
+          "parentDisabledWhen": null
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Drawings > Drawing set (DXF)",
+          "label": "Drawing set (DXF)",
+          "kind": "item",
+          "handler": "onDrawing(d.id)",
+          "call": "onDrawing('walls-dxf')",
+          "bound": "onDrawing('walls-dxf')",
+          "page": "onDrawing",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": "Boolean(d.soon)",
+          "checkedWhen": null,
+          "soonWhen": "d.soon || undefined",
+          "from": "src/lib/outputMenu.js",
+          "parent": "Drawings",
+          "parentDisabledWhen": null
+        },
+        {
+          "menu": "Output",
+          "path": "Output > CNC / DXF",
+          "label": "CNC / DXF",
+          "kind": "item",
+          "handler": "onExportDxf",
+          "call": "onExportDxf",
+          "bound": "onExportDxfZip",
+          "page": "onExportDxfZip",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/lib/outputMenu.js"
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Cutting list CSV",
+          "label": "Cutting list CSV",
+          "kind": "item",
+          "handler": "onExportCsv",
+          "call": "onExportCsv",
+          "bound": "onExportCsv",
+          "page": "onExportCsv",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/lib/outputMenu.js"
+        },
+        {
+          "menu": "Output",
+          "path": "Output > BOM PDF",
+          "label": "BOM PDF",
+          "kind": "item",
+          "handler": "onExportPdf",
+          "call": "onExportPdf",
+          "bound": "onExportPdf",
+          "page": "onExportPdf",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/lib/outputMenu.js"
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Part labels \u00b7 21 per sheet (Avery L7160)",
+          "label": "Part labels \u00b7 21 per sheet (Avery L7160)",
+          "kind": "item",
+          "handler": "onExportLabels({ sheet: 'L7160' })",
+          "call": "onExportLabels({ sheet: 'L7160' })",
+          "bound": "onExportLabels({ sheet: 'L7160' })",
+          "page": "onExportLabels",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/lib/outputMenu.js"
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Part labels \u00b7 44 per sheet",
+          "label": "Part labels \u00b7 44 per sheet",
+          "kind": "item",
+          "handler": "onExportLabels({ sheet: 'generic44' })",
+          "call": "onExportLabels({ sheet: 'generic44' })",
+          "bound": "onExportLabels({ sheet: 'generic44' })",
+          "page": "onExportLabels",
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/lib/outputMenu.js"
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Bill of materials\u2026",
+          "label": "Bill of materials\u2026",
+          "kind": "item",
+          "handler": "onOpenBom",
+          "call": "onOpenBom",
+          "bound": "setBomOpen(true)",
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/lib/outputMenu.js"
+        },
+        {
+          "menu": "Output",
+          "path": "Output > Spraying\u2026",
+          "label": "Spraying\u2026",
+          "kind": "item",
+          "handler": "onOpenSpraying",
+          "call": "onOpenSpraying",
+          "bound": "openModal('spraying')",
+          "page": null,
+          "enabledAtCensusState": true,
+          "soon": false,
+          "disabledWhen": null,
+          "checkedWhen": null,
+          "soonWhen": null,
+          "from": "src/lib/outputMenu.js"
+        }
+      ]
+    },
+    "toolbar": {
+      "file": "src/components/CanvasToolbar.jsx",
+      "component": "CanvasToolbar",
+      "count": 14,
+      "controls": [
+        {
+          "line": 115,
+          "disabled": "undoDepth === 0",
+          "pressed": null,
+          "data": [
+            "data-undo"
+          ],
+          "handler": "undo",
+          "name": "Undo",
+          "text": "\u21b6",
+          "alternatives": null
+        },
+        {
+          "line": 126,
+          "disabled": "redoDepth === 0",
+          "pressed": null,
+          "data": [
+            "data-redo"
+          ],
+          "handler": "redo",
+          "name": "Redo",
+          "text": "\u21b7",
+          "alternatives": null
+        },
+        {
+          "line": 140,
+          "disabled": "viewMode !== '3d'",
+          "pressed": "showDimensions",
+          "data": [],
+          "handler": "toggleDimensions",
+          "name": "Show dimensions",
+          "text": null,
+          "alternatives": [
+            "Hide dimensions",
+            "Show dimensions"
+          ]
+        },
+        {
+          "line": 162,
+          "disabled": "viewMode !== '3d'",
+          "pressed": "showFrontDimensions",
+          "data": [
+            "data-front-dimensions-toggle"
+          ],
+          "handler": "toggleFrontDimensions",
+          "name": "Front dimensions",
+          "text": null,
+          "alternatives": [
+            "Hide front dimensions",
+            "Front dimensions"
+          ]
+        },
+        {
+          "line": 184,
+          "disabled": "viewMode !== '3d' || contourView",
+          "pressed": "showOutlines || contourView",
+          "data": [],
+          "handler": "toggleOutlines",
+          "name": "Outlines",
+          "text": "Outlines",
+          "alternatives": null
+        },
+        {
+          "line": 204,
+          "disabled": "viewMode !== '3d' || contourView",
+          "pressed": "xray",
+          "data": [],
+          "handler": "toggleXray",
+          "name": "X-ray",
+          "text": "X-ray",
+          "alternatives": null
+        },
+        {
+          "line": 231,
+          "disabled": "viewMode !== '3d' || contourView || !propsReady",
+          "pressed": "props && propsReady",
+          "data": [
+            "data-props-toggle",
+            "data-props-state"
+          ],
+          "handler": "toggleProps",
+          "name": "Props",
+          "text": "Props",
+          "alternatives": null
+        },
+        {
+          "line": 256,
+          "disabled": "viewMode !== '3d'",
+          "pressed": "hideFronts",
+          "data": [
+            "data-hide-fronts"
+          ],
+          "handler": "toggleHideFronts",
+          "name": "Hide fronts",
+          "text": "Hide fronts",
+          "alternatives": null
+        },
+        {
+          "line": 278,
+          "disabled": "viewMode !== '3d'",
+          "pressed": "rulerOn",
+          "data": [
+            "data-ruler"
+          ],
+          "handler": "toggleRuler",
+          "name": "Measure",
+          "text": "Measure",
+          "alternatives": null
+        },
+        {
+          "line": 302,
+          "disabled": "viewMode !== '3d' || !doorEntries.length",
+          "pressed": "everyDoorOpen",
+          "data": [
+            "data-open-all-doors"
+          ],
+          "handler": "toggleAllFronts(doorEntries)",
+          "name": "Open all / Close all",
+          "text": null,
+          "alternatives": [
+            "Close all",
+            "Open all"
+          ]
+        },
+        {
+          "line": 321,
+          "disabled": null,
+          "pressed": "bomOpen",
+          "data": [],
+          "handler": "setBomOpen(!bomOpen)",
+          "name": "BOM",
+          "text": "BOM",
+          "alternatives": null
+        },
+        {
+          "line": 338,
+          "disabled": null,
+          "pressed": "checkOpen",
+          "data": [
+            "data-check-button"
+          ],
+          "handler": "toggleCheck",
+          "name": "Check . N",
+          "text": "Check",
+          "alternatives": null
+        },
+        {
+          "line": 356,
+          "disabled": null,
+          "pressed": "viewMode === '3d'",
+          "data": [],
+          "handler": "setViewMode('3d')",
+          "name": "3D",
+          "text": "3D",
+          "alternatives": null,
+          "mappedFrom": "[['3d', '3D'], ['cnc', 'CNC']]"
+        },
+        {
+          "line": 356,
+          "disabled": null,
+          "pressed": "viewMode === 'cnc'",
+          "data": [],
+          "handler": "setViewMode('cnc')",
+          "name": "CNC",
+          "text": "CNC",
+          "alternatives": null,
+          "mappedFrom": "[['3d', '3D'], ['cnc', 'CNC']]"
+        }
+      ]
+    },
+    "header": {
+      "file": "src/components/TopBar.jsx",
+      "component": "TopBar",
+      "returnsAtLines": [
+        367,
+        382,
+        390,
+        416,
+        435,
+        461,
+        466,
+        480,
+        501
+      ],
+      "count": 7,
+      "controls": [
+        {
+          "tag": "button",
+          "type": "button",
+          "line": 368,
+          "handler": "leaveProject",
+          "text": "CABINET CORE",
+          "name": "CABINET CORE",
+          "disabled": null,
+          "alsoAtLines": []
+        },
+        {
+          "tag": "button",
+          "type": "button",
+          "line": 401,
+          "handler": "setEditing(true)",
+          "text": null,
+          "name": "project name (rename)",
+          "edit": {
+            "line": 392,
+            "onChange": "setProjectName(e.target.value)",
+            "onKeyDown": "(e) => { if (e.key === 'Enter' || e.key === 'Escape') setEditing(false); }",
+            "onBlur": "() => setEditing(false)"
+          },
+          "disabled": null,
+          "alsoAtLines": []
+        },
+        {
+          "tag": "button",
+          "type": "button",
+          "line": 417,
+          "handler": "save",
+          "text": null,
+          "name": "Save",
+          "disabled": "saveState === 'saving'",
+          "alsoAtLines": []
+        },
+        {
+          "tag": "input",
+          "type": "range",
+          "line": 443,
+          "handler": "setBrightness(Number(e.target.value))",
+          "text": null,
+          "name": "Bright",
+          "disabled": "viewMode !== '3d'",
+          "alsoAtLines": []
+        },
+        {
+          "tag": "button",
+          "type": "button",
+          "line": 462,
+          "handler": "onAuth",
+          "text": "Account",
+          "name": "Account",
+          "disabled": null,
+          "alsoAtLines": []
+        },
+        {
+          "tag": "button",
+          "type": "button",
+          "line": 467,
+          "handler": "setBomOpen(!bomOpen)",
+          "text": null,
+          "name": "Export (= BOM)",
+          "disabled": null,
+          "alsoAtLines": []
+        },
+        {
+          "name": "MOCK DATA MODE",
+          "tag": "MockModeBadge",
+          "line": 520,
+          "handler": null,
+          "display": "components/MockModeBadge.jsx, shown when isMockMode",
+          "alsoAtLines": []
+        }
+      ],
+      "pageBindings": {
+        "variant": "studio ? 'studio' : undefined",
+        "onExportCsv": "onExportCsv",
+        "onExportPdf": "onExportPdf",
+        "onExportLabels": "onExportLabels",
+        "onExportDxfZip": "onExportDxfZip",
+        "onRender": "openModal('render')",
+        "onDrawing": "onDrawing",
+        "onAuth": "openModal('auth')"
+      }
+    },
+    "context": {
+      "file": "src/lib/contextActions.js",
+      "sha256": "0f3056749f43f33a652129aa3ece6d022f4e2ea342b039c19893daf155bb1fab",
+      "pushSites": 20,
+      "ids": [
+        {
+          "id": "edit-cabinet",
+          "label": "Edit cabinet\u2026",
+          "group": "edit",
+          "offeredOnTypes": 45,
+          "when": "45 of 46 types"
+        },
+        {
+          "id": "rename",
+          "label": "Rename \u201c01\u201d\u2026",
+          "group": "edit",
+          "offeredOnTypes": 46,
+          "when": "every type"
+        },
+        {
+          "id": "end-panel-L",
+          "label": "End panel \u2014 left",
+          "group": "end-panels",
+          "offeredOnTypes": 45,
+          "when": "45 of 46 types"
+        },
+        {
+          "id": "end-panel-R",
+          "label": "End panel \u2014 right",
+          "group": "end-panels",
+          "offeredOnTypes": 45,
+          "when": "45 of 46 types"
+        },
+        {
+          "id": "end-panel-B",
+          "label": "End panel \u2014 both sides",
+          "group": "end-panels",
+          "offeredOnTypes": 45,
+          "when": "45 of 46 types"
+        },
+        {
+          "id": "top-infill",
+          "label": "Top infill",
+          "group": "run-pieces",
+          "offeredOnTypes": 17,
+          "when": "17 of 46 types"
+        },
+        {
+          "id": "cornice-0",
+          "label": "Top cornice: none",
+          "group": "run-pieces",
+          "offeredOnTypes": 18,
+          "when": "18 of 46 types"
+        },
+        {
+          "id": "cornice-70",
+          "label": "Top cornice 70 mm",
+          "group": "run-pieces",
+          "offeredOnTypes": 18,
+          "when": "18 of 46 types"
+        },
+        {
+          "id": "cornice-100",
+          "label": "Top cornice 100 mm",
+          "group": "run-pieces",
+          "offeredOnTypes": 18,
+          "when": "18 of 46 types"
+        },
+        {
+          "id": "side-infill",
+          "label": "Scribe fillers at the wall",
+          "group": "rest",
+          "offeredOnTypes": 45,
+          "when": "45 of 46 types"
+        },
+        {
+          "id": "pin-infill-L",
+          "label": "Pin infill left",
+          "group": "rest",
+          "offeredOnTypes": 45,
+          "when": "45 of 46 types"
+        },
+        {
+          "id": "pin-infill-R",
+          "label": "Pin infill right",
+          "group": "rest",
+          "offeredOnTypes": 45,
+          "when": "45 of 46 types"
+        },
+        {
+          "id": "plinth",
+          "label": "Plinth",
+          "group": "run-pieces",
+          "offeredOnTypes": 33,
+          "when": "33 of 46 types"
+        },
+        {
+          "id": "drawer-fronts",
+          "label": "Drawer fronts",
+          "group": "rest",
+          "offeredOnTypes": 18,
+          "when": "18 of 46 types"
+        },
+        {
+          "id": "unit-colour",
+          "label": "Colour\u2026",
+          "group": "rest",
+          "offeredOnTypes": 46,
+          "when": "every type"
+        },
+        {
+          "id": "save-template",
+          "label": "Save as template",
+          "group": "rest",
+          "offeredOnTypes": 46,
+          "when": "every type"
+        },
+        {
+          "id": "center-shelves",
+          "label": "Center shelves",
+          "group": "rest",
+          "offeredOnTypes": 19,
+          "when": "19 of 46 types"
+        },
+        {
+          "id": "rotate-90",
+          "label": "Rotate 90\u00b0",
+          "group": "rest",
+          "offeredOnTypes": 45,
+          "when": "45 of 46 types"
+        },
+        {
+          "id": "back-to-wall",
+          "label": "Back to wall",
+          "group": "rest",
+          "offeredOnTypes": 45,
+          "when": "45 of 46 types"
+        },
+        {
+          "id": "side-to-wall",
+          "label": "Side to wall",
+          "group": "rest",
+          "offeredOnTypes": 45,
+          "when": "45 of 46 types"
+        },
+        {
+          "id": "delete",
+          "label": "Delete",
+          "group": "rest",
+          "offeredOnTypes": 46,
+          "when": "every type"
+        },
+        {
+          "id": "edit-drawer",
+          "label": "Edit drawer 1\u2026",
+          "group": "edit",
+          "offeredOnTypes": 45,
+          "when": "a drawer under the pointer"
+        },
+        {
+          "id": "close-fronts",
+          "label": "Close all fronts",
+          "group": "rest",
+          "offeredOnTypes": 45,
+          "when": "a front under the pointer"
+        },
+        {
+          "id": "bottom-mask",
+          "label": "Bottom masking panel",
+          "group": "run-pieces",
+          "offeredOnTypes": 11,
+          "when": "11 of 46 types"
+        },
+        {
+          "id": "upstand",
+          "label": "Upstand",
+          "group": "run-pieces",
+          "offeredOnTypes": 25,
+          "when": "25 of 46 types"
+        }
+      ],
+      "idCount": 25,
+      "censusRows": [
+        {
+          "name": "Edit cabinet...",
+          "ids": [
+            "edit-cabinet"
+          ],
+          "present": true
+        },
+        {
+          "name": "Edit drawer...",
+          "ids": [
+            "edit-drawer"
+          ],
+          "present": true
+        },
+        {
+          "name": "Rename",
+          "ids": [
+            "rename"
+          ],
+          "present": true
+        },
+        {
+          "name": "End panel L",
+          "ids": [
+            "end-panel-L"
+          ],
+          "present": true
+        },
+        {
+          "name": "End panel R",
+          "ids": [
+            "end-panel-R"
+          ],
+          "present": true
+        },
+        {
+          "name": "Top infill",
+          "ids": [
+            "top-infill"
+          ],
+          "present": true
+        },
+        {
+          "name": "Top cornice (the height ladder)",
+          "ids": [
+            "cornice-0",
+            "cornice-70",
+            "cornice-100"
+          ],
+          "present": true
+        },
+        {
+          "name": "Side infill",
+          "ids": [
+            "side-infill"
+          ],
+          "present": true
+        },
+        {
+          "name": "Pin infill L",
+          "ids": [
+            "pin-infill-L"
+          ],
+          "present": true
+        },
+        {
+          "name": "Pin infill R",
+          "ids": [
+            "pin-infill-R"
+          ],
+          "present": true
+        },
+        {
+          "name": "Bottom mask",
+          "ids": [
+            "bottom-mask"
+          ],
+          "present": true
+        },
+        {
+          "name": "Plinth",
+          "ids": [
+            "plinth"
+          ],
+          "present": true
+        },
+        {
+          "name": "Upstand",
+          "ids": [
+            "upstand"
+          ],
+          "present": true
+        },
+        {
+          "name": "Drawer fronts",
+          "ids": [
+            "drawer-fronts"
+          ],
+          "present": true
+        },
+        {
+          "name": "Unit colour",
+          "ids": [
+            "unit-colour"
+          ],
+          "present": true
+        },
+        {
+          "name": "Save as template",
+          "ids": [
+            "save-template"
+          ],
+          "present": true
+        },
+        {
+          "name": "Center shelves",
+          "ids": [
+            "center-shelves"
+          ],
+          "present": true
+        },
+        {
+          "name": "Rotate 90 deg",
+          "ids": [
+            "rotate-90"
+          ],
+          "present": true
+        },
+        {
+          "name": "Back to wall",
+          "ids": [
+            "back-to-wall"
+          ],
+          "present": true
+        },
+        {
+          "name": "Side to wall",
+          "ids": [
+            "side-to-wall"
+          ],
+          "present": true
+        },
+        {
+          "name": "Close all fronts",
+          "ids": [
+            "close-fronts"
+          ],
+          "present": true
+        },
+        {
+          "name": "Delete",
+          "ids": [
+            "delete"
+          ],
+          "present": true
+        }
+      ],
+      "rowsPresent": 22,
+      "notNamedByCensus": [
+        "end-panel-B"
+      ],
+      "component": {
+        "file": "src/components/ContextMenu.jsx",
+        "sha256": "9ecd6083c1808257a9c4f53ec9ff654304cfae671c1b923e9910ab5a55ca524c"
+      }
+    },
+    "modalKinds": {
+      "rule": "a distinct literal in openModal('x' or pushModal('x' anywhere in src",
+      "count": 26,
+      "proOnly": 26,
+      "kinds": [
+        {
+          "kind": "add-items",
+          "openedAt": [
+            "src/3d/Scene.jsx:1548 openModal",
+            "src/3d/Scene.jsx:2272 openModal",
+            "src/3d/Scene.jsx:2277 openModal",
+            "src/retail/design/Stage.jsx:39 openModal"
+          ],
+          "pro": 3,
+          "retail": 1
+        },
+        {
+          "kind": "assign-materials",
+          "openedAt": [
+            "src/components/BomPanel.jsx:291 openModal",
+            "src/components/TopBar.jsx:311 openModal",
+            "src/components/studio/RailMenus.jsx:205 openModal"
+          ],
+          "pro": 3,
+          "retail": 0
+        },
+        {
+          "kind": "auth",
+          "openedAt": [
+            "src/pages/ConfiguratorPage.jsx:697 openModal"
+          ],
+          "pro": 1,
+          "retail": 0
+        },
+        {
+          "kind": "cabinet",
+          "openedAt": [
+            "src/3d/Scene.jsx:2191 openModal",
+            "src/components/ContextMenu.jsx:148 openModal",
+            "src/components/ContextMenu.jsx:150 openModal",
+            "src/components/studio/QuickSelectionCard.jsx:16 openModal",
+            "src/components/studio/QuickSelectionCard.jsx:180 openModal",
+            "src/retail/design/detail/ContextEdits.jsx:148 openModal",
+            "src/retail/design/detail/ContextEdits.jsx:150 openModal"
+          ],
+          "pro": 5,
+          "retail": 2
+        },
+        {
+          "kind": "company-defaults",
+          "openedAt": [
+            "src/components/TopBar.jsx:309 openModal"
+          ],
+          "pro": 1,
+          "retail": 0
+        },
+        {
+          "kind": "design",
+          "openedAt": [
+            "src/components/TopBar.jsx:278 openModal",
+            "src/components/UnitFinishModal.jsx:120 openModal",
+            "src/components/studio/RailMenus.jsx:198 openModal",
+            "src/retail/design/material/MaterialsModal.jsx:10 openModal",
+            "src/retail/design/material/UnitFinishModal.jsx:120 openModal"
+          ],
+          "pro": 3,
+          "retail": 2
+        },
+        {
+          "kind": "draw-room",
+          "openedAt": [
+            "src/components/RoomModal.jsx:739 openModal",
+            "src/retail/design/Editors.jsx:92 openModal",
+            "src/retail/design/room/RoomModal.jsx:739 openModal"
+          ],
+          "pro": 1,
+          "retail": 2
+        },
+        {
+          "kind": "drawing",
+          "openedAt": [
+            "src/components/studio/CameraBar.jsx:13 openModal",
+            "src/pages/ConfiguratorPage.jsx:557 openModal",
+            "src/pages/ConfiguratorPage.jsx:681 openModal"
+          ],
+          "pro": 3,
+          "retail": 0
+        },
+        {
+          "kind": "edge-notch",
+          "openedAt": [
+            "src/3d/notchPick.js:58 openModal"
+          ],
+          "pro": 1,
+          "retail": 0
+        },
+        {
+          "kind": "element",
+          "openedAt": [
+            "src/3d/Scene.jsx:2172 openModal",
+            "src/3d/Scene.jsx:2246 openModal",
+            "src/components/AddItems.jsx:167 openModal",
+            "src/components/DoorModal.jsx:138 openModal",
+            "src/components/DoorModal.jsx:216 openModal",
+            "src/components/DoorModal.jsx:332 openModal",
+            "src/retail/design/Detail.jsx:110 openModal",
+            "src/retail/design/Detail.jsx:137 openModal",
+            "src/retail/design/Editors.jsx:38 openModal",
+            "src/retail/design/detail/AddItems.jsx:167 openModal",
+            "src/retail/design/detail/DoorModal.jsx:138 openModal",
+            "src/retail/design/detail/DoorModal.jsx:216 openModal",
+            "src/retail/design/detail/DoorModal.jsx:332 openModal"
+          ],
+          "pro": 6,
+          "retail": 7
+        },
+        {
+          "kind": "front-gap",
+          "openedAt": [
+            "src/components/FrontGapWarnings.jsx:91 openModal",
+            "src/retail/design/detail/FrontGapWarnings.jsx:91 openModal"
+          ],
+          "pro": 1,
+          "retail": 1
+        },
+        {
+          "kind": "jpull-run",
+          "openedAt": [
+            "src/3d/Scene.jsx:2221 openModal",
+            "src/retail/design/Editors.jsx:39 openModal"
+          ],
+          "pro": 1,
+          "retail": 1
+        },
+        {
+          "kind": "lighting",
+          "openedAt": [
+            "src/components/TopBar.jsx:331 openModal",
+            "src/retail/design/viewTools.js:157 openModal"
+          ],
+          "pro": 1,
+          "retail": 1
+        },
+        {
+          "kind": "mirror-back",
+          "openedAt": [
+            "src/3d/mirrorCabinetRoom.js:46 openModal",
+            "src/3d/mirrorCabinetRoom.js:314 openModal"
+          ],
+          "pro": 2,
+          "retail": 0
+        },
+        {
+          "kind": "notch",
+          "openedAt": [
+            "src/3d/notchPick.js:24 openModal"
+          ],
+          "pro": 1,
+          "retail": 0
+        },
+        {
+          "kind": "part-detail",
+          "openedAt": [
+            "src/3d/Scene.jsx:2074 openModal",
+            "src/components/CabinetEditorModal.jsx:427 pushModal",
+            "src/lib/editorStack.js:9 openModal"
+          ],
+          "pro": 3,
+          "retail": 0
+        },
+        {
+          "kind": "rail",
+          "openedAt": [
+            "src/3d/Scene.jsx:2180 openModal"
+          ],
+          "pro": 1,
+          "retail": 0
+        },
+        {
+          "kind": "render",
+          "openedAt": [
+            "src/pages/ConfiguratorPage.jsx:695 openModal"
+          ],
+          "pro": 1,
+          "retail": 0
+        },
+        {
+          "kind": "room",
+          "openedAt": [
+            "src/components/DesignSettingsModal.jsx:155 openModal",
+            "src/components/TopBar.jsx:279 openModal",
+            "src/components/studio/StudioRail.jsx:20 openModal",
+            "src/components/studio/StudioRail.jsx:158 openModal"
+          ],
+          "pro": 4,
+          "retail": 0
+        },
+        {
+          "kind": "save-as",
+          "openedAt": [
+            "src/components/TopBar.jsx:143 openModal"
+          ],
+          "pro": 1,
+          "retail": 0
+        },
+        {
+          "kind": "save-template",
+          "openedAt": [
+            "src/components/ContextMenu.jsx:146 openModal",
+            "src/retail/design/detail/ContextEdits.jsx:146 openModal"
+          ],
+          "pro": 1,
+          "retail": 1
+        },
+        {
+          "kind": "spraying",
+          "openedAt": [
+            "src/components/TopBar.jsx:322 openModal",
+            "src/components/TopBar.jsx:345 openModal"
+          ],
+          "pro": 2,
+          "retail": 0
+        },
+        {
+          "kind": "unit-finish",
+          "openedAt": [
+            "src/components/ContextMenu.jsx:173 openModal",
+            "src/components/MultiUnitPanel.jsx:436 openModal",
+            "src/components/RightPanel.jsx:517 openModal",
+            "src/components/studio/RailMenus.jsx:191 openModal",
+            "src/retail/design/detail/ContextEdits.jsx:173 openModal"
+          ],
+          "pro": 4,
+          "retail": 1
+        },
+        {
+          "kind": "unit-size",
+          "openedAt": [
+            "src/3d/Scene.jsx:2264 openModal",
+            "src/retail/design/Editors.jsx:40 openModal"
+          ],
+          "pro": 1,
+          "retail": 1
+        },
+        {
+          "kind": "warehouse",
+          "openedAt": [
+            "src/components/TopBar.jsx:307 openModal",
+            "src/components/studio/RailMenus.jsx:212 openModal"
+          ],
+          "pro": 2,
+          "retail": 0
+        },
+        {
+          "kind": "watch-layout",
+          "openedAt": [
+            "src/3d/Scene.jsx:2203 openModal",
+            "src/components/AddItems.jsx:499 openModal",
+            "src/retail/design/detail/AddItems.jsx:499 openModal"
+          ],
+          "pro": 2,
+          "retail": 1
+        }
+      ]
+    },
+    "library": {
+      "file": "src/engine/types.js UNIT_CATEGORIES; src/engine/library.js; src/engine/sets.js",
+      "categories": [
+        {
+          "id": "kitchen",
+          "label": "Kitchen",
+          "count": 36,
+          "types": [
+            "BUD",
+            "BUDR2",
+            "BUDR",
+            "BUDR4",
+            "BUDR2_HOB",
+            "BUDR_HOB",
+            "BUD_INT",
+            "SINK",
+            "CORNER_L_BASE",
+            "BLIND_BASE",
+            "DW_PANEL",
+            "OVEN_BASE",
+            "BIN",
+            "WINE",
+            "TWIN",
+            "LOW_CABINET",
+            "BUDTALL",
+            "HAWA_POCKET",
+            "FRIDGE",
+            "CARGO",
+            "PANTRY",
+            "APPLIANCE_TALL",
+            "APPLIANCE_TALL2",
+            "FRIDGE_US",
+            "WUD",
+            "WUD_GLASS",
+            "WUD_HOOD",
+            "WUD_HOOD_CANOPY",
+            "WUD_HOOD_SHORT",
+            "BLIND_WALL",
+            "CORNER_L_WALL",
+            "VANITY2",
+            "VANITY3",
+            "VANITY4",
+            "MIRROR_CABINET",
+            "FREE_PANEL"
+          ],
+          "saved": false,
+          "sets": false,
+          "soon": false
+        },
+        {
+          "id": "wardrobe",
+          "label": "Wardrobes",
+          "count": 15,
+          "types": [
+            "WARDROBE",
+            "WARDROBE_TOP",
+            "WARDROBE_WALL",
+            "BLIND_WARDROBE",
+            "CORNER_L_WARDROBE",
+            "WARDROBE_CHEST2",
+            "WARDROBE_CHEST3",
+            "WARDROBE_CHEST4",
+            "WARDROBE_DESK",
+            "WARDROBE_LOW",
+            "HAWA_POCKET",
+            "VANITY2",
+            "VANITY3",
+            "VANITY4",
+            "MIRROR_CABINET"
+          ],
+          "saved": false,
+          "sets": false,
+          "soon": false
+        },
+        {
+          "id": "sets",
+          "label": "Saved sets",
+          "count": 0,
+          "types": [],
+          "saved": true,
+          "sets": false,
+          "soon": false
+        },
+        {
+          "id": "media",
+          "label": "Sets",
+          "count": 0,
+          "types": [],
+          "saved": false,
+          "sets": true,
+          "soon": false
+        }
+      ],
+      "typeSlots": 51,
+      "distinctTypes": 46,
+      "unitTypes": 46,
+      "inMoreThanOneCategory": [
+        "HAWA_POCKET",
+        "VANITY2",
+        "VANITY3",
+        "VANITY4",
+        "MIRROR_CABINET"
+      ],
+      "registryLeaves": {
+        "kitchen": [
+          {
+            "id": "door-base",
+            "kind": "type",
+            "typeId": "BUD",
+            "label": "Standard",
+            "variant": null
+          },
+          {
+            "id": "drawer-1",
+            "kind": "type",
+            "typeId": null,
+            "label": null,
+            "variant": "x1"
+          },
+          {
+            "id": "drawer-2",
+            "kind": "type",
+            "typeId": "BUDR2",
+            "label": null,
+            "variant": "x2"
+          },
+          {
+            "id": "drawer-3",
+            "kind": "type",
+            "typeId": "BUDR",
+            "label": null,
+            "variant": "x3"
+          },
+          {
+            "id": "drawer-4",
+            "kind": "type",
+            "typeId": "BUDR4",
+            "label": null,
+            "variant": "x4"
+          },
+          {
+            "id": "hob-drawer-2",
+            "kind": "type",
+            "typeId": "BUDR2_HOB",
+            "label": "2\u00d7",
+            "variant": null
+          },
+          {
+            "id": "hob-drawer-3",
+            "kind": "type",
+            "typeId": "BUDR_HOB",
+            "label": "3\u00d7",
+            "variant": null
+          },
+          {
+            "id": "drawers-behind-doors",
+            "kind": "type",
+            "typeId": "BUD_INT",
+            "label": "Drawers behind doors",
+            "variant": null
+          },
+          {
+            "id": "sink",
+            "kind": "type",
+            "typeId": "SINK",
+            "label": "Sink",
+            "variant": null
+          },
+          {
+            "id": "corner-l",
+            "kind": "type",
+            "typeId": "CORNER_L_BASE",
+            "label": "Corner L",
+            "variant": null
+          },
+          {
+            "id": "blind-corner",
+            "kind": "type",
+            "typeId": "BLIND_BASE",
+            "label": "Blind corner",
+            "variant": null
+          },
+          {
+            "id": "dishwasher",
+            "kind": "type",
+            "typeId": "DW_PANEL",
+            "label": "D/W panel",
+            "variant": null
+          },
+          {
+            "id": "oven-base",
+            "kind": "type",
+            "typeId": "OVEN_BASE",
+            "label": "Oven",
+            "variant": null
+          },
+          {
+            "id": "bin-storage",
+            "kind": "type",
+            "typeId": "BIN",
+            "label": "Bin storage",
+            "variant": null
+          },
+          {
+            "id": "wine-rack",
+            "kind": "type",
+            "typeId": "WINE",
+            "label": "Wine rack",
+            "variant": null
+          },
+          {
+            "id": "small-fridge",
+            "kind": "type",
+            "typeId": "DW_PANEL",
+            "label": "Small fridge",
+            "variant": null
+          },
+          {
+            "id": "twin-space",
+            "kind": "soon",
+            "typeId": null,
+            "label": "Twin space",
+            "variant": null
+          },
+          {
+            "id": "twin-cupboard",
+            "kind": "type",
+            "typeId": "TWIN",
+            "label": "Twin cupboard",
+            "variant": null
+          },
+          {
+            "id": "low",
+            "kind": "type",
+            "typeId": "LOW_CABINET",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "tall",
+            "kind": "type",
+            "typeId": "BUDTALL",
+            "label": "Standard",
+            "variant": null
+          },
+          {
+            "id": "hawa-pocket",
+            "kind": "type",
+            "typeId": "HAWA_POCKET",
+            "label": "HAWA pocket (Concepta III)",
+            "variant": null
+          },
+          {
+            "id": "fridge",
+            "kind": "type",
+            "typeId": "FRIDGE",
+            "label": "Fridge housing",
+            "variant": null
+          },
+          {
+            "id": "cargo-300",
+            "kind": "type",
+            "typeId": "CARGO",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "basket-tall",
+            "kind": "soon",
+            "typeId": null,
+            "label": "Basket tall",
+            "variant": null
+          },
+          {
+            "id": "pantry",
+            "kind": "type",
+            "typeId": "PANTRY",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "pantry-worktop",
+            "kind": "soon",
+            "typeId": null,
+            "label": "Pantry on worktop",
+            "variant": null
+          },
+          {
+            "id": "space-tower",
+            "kind": "soon",
+            "typeId": null,
+            "label": "Space tower",
+            "variant": null
+          },
+          {
+            "id": "oven-tall",
+            "kind": "soon",
+            "typeId": null,
+            "label": "Oven tall",
+            "variant": null
+          },
+          {
+            "id": "oven-microwave",
+            "kind": "soon",
+            "typeId": null,
+            "label": "Oven + microwave",
+            "variant": null
+          },
+          {
+            "id": "fridge-freezer",
+            "kind": "type",
+            "typeId": "APPLIANCE_TALL",
+            "label": "Fridge freezer",
+            "variant": null
+          },
+          {
+            "id": "washer-dryer",
+            "kind": "type",
+            "typeId": "APPLIANCE_TALL2",
+            "label": "Washer + dryer",
+            "variant": null
+          },
+          {
+            "id": "american-fridge",
+            "kind": "type",
+            "typeId": "FRIDGE_US",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "wall",
+            "kind": "type",
+            "typeId": "WUD",
+            "label": "Standard",
+            "variant": null
+          },
+          {
+            "id": "glass-unit",
+            "kind": "type",
+            "typeId": "WUD_GLASS",
+            "label": "Glass unit",
+            "variant": null
+          },
+          {
+            "id": "hood-unit",
+            "kind": "type",
+            "typeId": "WUD_HOOD",
+            "label": "Hood unit",
+            "variant": null
+          },
+          {
+            "id": "hood-canopy",
+            "kind": "type",
+            "typeId": "WUD_HOOD_CANOPY",
+            "label": "Hood canopy",
+            "variant": null
+          },
+          {
+            "id": "hood-unit-short",
+            "kind": "type",
+            "typeId": "WUD_HOOD_SHORT",
+            "label": "Hood unit, short",
+            "variant": null
+          },
+          {
+            "id": "blind-corner-wall",
+            "kind": "type",
+            "typeId": "BLIND_WALL",
+            "label": "Blind corner wall",
+            "variant": null
+          },
+          {
+            "id": "corner-l-wall",
+            "kind": "type",
+            "typeId": "CORNER_L_WALL",
+            "label": "Corner L wall",
+            "variant": null
+          },
+          {
+            "id": "vanity-2",
+            "kind": "type",
+            "typeId": "VANITY2",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "vanity-3",
+            "kind": "type",
+            "typeId": "VANITY3",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "vanity-4",
+            "kind": "type",
+            "typeId": "VANITY4",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "mirror-cabinet",
+            "kind": "type",
+            "typeId": "MIRROR_CABINET",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "free-standing-panels",
+            "kind": "type",
+            "typeId": "FREE_PANEL",
+            "label": "Free-standing panel",
+            "variant": null
+          },
+          {
+            "id": "cornice-pelmet",
+            "kind": "action",
+            "typeId": null,
+            "label": "Pelmet",
+            "variant": null
+          }
+        ],
+        "wardrobe": [
+          {
+            "id": "WARDROBE",
+            "kind": "type",
+            "typeId": "WARDROBE",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "WARDROBE_TOP",
+            "kind": "type",
+            "typeId": "WARDROBE_TOP",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "WARDROBE_WALL",
+            "kind": "type",
+            "typeId": "WARDROBE_WALL",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "BLIND_WARDROBE",
+            "kind": "type",
+            "typeId": "BLIND_WARDROBE",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "CORNER_L_WARDROBE",
+            "kind": "type",
+            "typeId": "CORNER_L_WARDROBE",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "chest-2",
+            "kind": "type",
+            "typeId": "WARDROBE_CHEST2",
+            "label": null,
+            "variant": "x2"
+          },
+          {
+            "id": "chest-3",
+            "kind": "type",
+            "typeId": "WARDROBE_CHEST3",
+            "label": null,
+            "variant": "x3"
+          },
+          {
+            "id": "chest-4",
+            "kind": "type",
+            "typeId": "WARDROBE_CHEST4",
+            "label": null,
+            "variant": "x4"
+          },
+          {
+            "id": "WARDROBE_DESK",
+            "kind": "type",
+            "typeId": "WARDROBE_DESK",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "WARDROBE_LOW",
+            "kind": "type",
+            "typeId": "WARDROBE_LOW",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "HAWA_POCKET",
+            "kind": "type",
+            "typeId": "HAWA_POCKET",
+            "label": "HAWA pocket (Concepta III)",
+            "variant": null
+          },
+          {
+            "id": "vanity-2",
+            "kind": "type",
+            "typeId": "VANITY2",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "vanity-3",
+            "kind": "type",
+            "typeId": "VANITY3",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "vanity-4",
+            "kind": "type",
+            "typeId": "VANITY4",
+            "label": null,
+            "variant": null
+          },
+          {
+            "id": "mirror-cabinet",
+            "kind": "type",
+            "typeId": "MIRROR_CABINET",
+            "label": null,
+            "variant": null
+          }
+        ]
+      },
+      "registryLeafCount": {
+        "kitchen": 45,
+        "wardrobe": 15
+      },
+      "shippedSets": [
+        {
+          "id": "set-media-wall",
+          "name": "Media wall"
+        },
+        {
+          "id": "set-sideboard",
+          "name": "Sideboard"
+        },
+        {
+          "id": "set-vanity",
+          "name": "Vanity"
+        },
+        {
+          "id": "set-utility",
+          "name": "Utility"
+        },
+        {
+          "id": "set-hallway",
+          "name": "Hallway"
+        }
+      ]
+    },
+    "panelSources": {
+      "rule": "raw occurrences of <NumberField|<select|<button|<input|<textarea followed by a word boundary, comments included",
+      "files": {
+        "RightPanel.jsx": {
+          "file": "src/components/RightPanel.jsx",
+          "NumberField": 21,
+          "select": 15,
+          "button": 66,
+          "input": 6,
+          "textarea": 0,
+          "total": 108,
+          "code": {
+            "NumberField": 21,
+            "select": 15,
+            "button": 66,
+            "input": 6,
+            "textarea": 0,
+            "total": 108
+          },
+          "linesWithATagInAComment": []
+        },
+        "ElementProperties.jsx": {
+          "file": "src/components/ElementProperties.jsx",
+          "NumberField": 20,
+          "select": 7,
+          "button": 21,
+          "input": 1,
+          "textarea": 0,
+          "total": 49,
+          "code": {
+            "NumberField": 20,
+            "select": 5,
+            "button": 21,
+            "input": 1,
+            "textarea": 0,
+            "total": 47
+          },
+          "linesWithATagInAComment": [
+            345,
+            771
+          ]
+        },
+        "MultiUnitPanel.jsx": {
+          "file": "src/components/MultiUnitPanel.jsx",
+          "NumberField": 3,
+          "select": 1,
+          "button": 11,
+          "input": 1,
+          "textarea": 0,
+          "total": 16,
+          "code": {
+            "NumberField": 3,
+            "select": 1,
+            "button": 11,
+            "input": 1,
+            "textarea": 0,
+            "total": 16
+          },
+          "linesWithATagInAComment": []
+        }
+      },
+      "total": 173,
+      "codeTotal": 171
+    }
+  },
+  "live": {
+    "url": "http://127.0.0.1:4191/",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "flagSet": {
+      "enabled": true,
+      "scale": {
+        "textPx": 13,
+        "fieldPx": 30,
+        "buttonPx": 32,
+        "radiusPx": 4
+      },
+      "bars": {
+        "topPx": 48,
+        "contextPx": 34,
+        "statusPx": 30
+      },
+      "rail": {
+        "widePx": 112,
+        "narrowPx": 56,
+        "labelsFromPx": 1440
+      },
+      "inspector": {
+        "quickPx": 344,
+        "quickNarrowPx": 316,
+        "quickNarrowBelowPx": 1440,
+        "fullPx": 400,
+        "fullNarrowPx": 360,
+        "fullNarrowBelowPx": 1500
+      },
+      "minScreen": {
+        "widthPx": 1280,
+        "heightPx": 800
+      },
+      "sceneToggles": [
+        "xray",
+        "hideFronts",
+        "outlines",
+        "openAll"
+      ],
+      "doorWindow": "dock-left",
+      "issues": {
+        "warn": "#d9a441",
+        "danger": "#c9524b",
+        "textPx": 13
+      },
+      "marker": {
+        "sizePx": 16
+      },
+      "frameMargin": 0.1,
+      "libraryGapPx": 8,
+      "cardRowsMax": 6
+    },
+    "buildStamp": "#1134 \u00b7 2026-10-28 01:14 UTC \u00b7 07ac04c6",
+    "appEntry": "factory",
+    "studioFlag": {
+      "enabled": true,
+      "scale": {
+        "textPx": 13,
+        "fieldPx": 30,
+        "buttonPx": 32,
+        "radiusPx": 4
+      },
+      "bars": {
+        "topPx": 48,
+        "contextPx": 34,
+        "statusPx": 30
+      },
+      "rail": {
+        "widePx": 112,
+        "narrowPx": 56,
+        "labelsFromPx": 1440
+      },
+      "inspector": {
+        "quickPx": 344,
+        "quickNarrowPx": 316,
+        "quickNarrowBelowPx": 1440,
+        "fullPx": 400,
+        "fullNarrowPx": 360,
+        "fullNarrowBelowPx": 1500
+      },
+      "minScreen": {
+        "widthPx": 1280,
+        "heightPx": 800
+      },
+      "sceneToggles": [
+        "xray",
+        "hideFronts",
+        "outlines",
+        "openAll"
+      ],
+      "doorWindow": "dock-left",
+      "issues": {
+        "warn": "#d9a441",
+        "danger": "#c9524b",
+        "textPx": 13
+      },
+      "marker": {
+        "sizePx": 16
+      },
+      "frameMargin": 0.1,
+      "libraryGapPx": 8,
+      "cardRowsMax": 6
+    },
+    "topMenu": {
+      "order": [
+        "File",
+        "View",
+        "Library",
+        "Settings",
+        "Database",
+        "Spraying",
+        "Lighting",
+        "Output"
+      ],
+      "perMenu": {
+        "File": 5,
+        "View": 13,
+        "Library": 4,
+        "Settings": 5,
+        "Database": 5,
+        "Spraying": 1,
+        "Lighting": 1,
+        "Output": 14
+      },
+      "total": 48,
+      "menus": [
+        {
+          "label": "File",
+          "kind": "dropdown",
+          "leaves": [
+            {
+              "path": "File > New project\u2026",
+              "label": "New project\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "File > Open\u2026",
+              "label": "Open\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "File > Save",
+              "label": "Save",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "File > Save as\u2026",
+              "label": "Save as\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "File > Close project",
+              "label": "Close project",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            }
+          ]
+        },
+        {
+          "label": "View",
+          "kind": "dropdown",
+          "leaves": [
+            {
+              "path": "View > Outlines",
+              "label": "Outlines",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "View > Dimensions",
+              "label": "Dimensions",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "View > Show front dimensions",
+              "label": "Show front dimensions",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "View > Dimension colour > Navy",
+              "label": "Navy",
+              "slider": false,
+              "disabled": false,
+              "soon": false,
+              "parent": "Dimension colour"
+            },
+            {
+              "path": "View > Dimension colour > Red",
+              "label": "Red",
+              "slider": false,
+              "disabled": false,
+              "soon": false,
+              "parent": "Dimension colour"
+            },
+            {
+              "path": "View > 3D",
+              "label": "3D",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "View > CNC sheet",
+              "label": "CNC sheet",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "View > Brightness",
+              "label": "Brightness",
+              "slider": true,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "View > Realistic lighting",
+              "label": "Realistic lighting",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "View > Turn on the light",
+              "label": "Turn on the light",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "View > X-ray",
+              "label": "X-ray",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "View > Hide fronts",
+              "label": "Hide fronts",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "View > Contour view",
+              "label": "Contour view",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            }
+          ]
+        },
+        {
+          "label": "Library",
+          "kind": "dropdown",
+          "leaves": [
+            {
+              "path": "Library > Kitchen",
+              "label": "Kitchen",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Library > Wardrobes",
+              "label": "Wardrobes",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Library > Saved sets",
+              "label": "Saved sets",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Library > Sets",
+              "label": "Sets",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            }
+          ]
+        },
+        {
+          "label": "Settings",
+          "kind": "dropdown",
+          "leaves": [
+            {
+              "path": "Settings > Settings\u2026",
+              "label": "Settings\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Settings > Room setup\u2026",
+              "label": "Room setup\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Settings > Snap > 0.5 mm",
+              "label": "0.5 mm",
+              "slider": false,
+              "disabled": false,
+              "soon": false,
+              "parent": "Snap"
+            },
+            {
+              "path": "Settings > Snap > 1 mm",
+              "label": "1 mm",
+              "slider": false,
+              "disabled": false,
+              "soon": false,
+              "parent": "Snap"
+            },
+            {
+              "path": "Settings > Snap > 32 mm system",
+              "label": "32 mm system",
+              "slider": false,
+              "disabled": false,
+              "soon": false,
+              "parent": "Snap"
+            }
+          ]
+        },
+        {
+          "label": "Database",
+          "kind": "dropdown",
+          "leaves": [
+            {
+              "path": "Database > Materials\u2026",
+              "label": "Materials\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Database > Assign materials\u2026",
+              "label": "Assign materials\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Database > Company defaults\u2026",
+              "label": "Company defaults\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Database > Clients\u2026",
+              "label": "Clients\u2026",
+              "slider": false,
+              "disabled": true,
+              "soon": true
+            },
+            {
+              "path": "Database > Projects\u2026",
+              "label": "Projects\u2026",
+              "slider": false,
+              "disabled": true,
+              "soon": true
+            }
+          ]
+        },
+        {
+          "label": "Spraying",
+          "kind": "button",
+          "opens": "spraying",
+          "leaves": [
+            {
+              "path": "Spraying",
+              "label": "Spraying",
+              "opens": "spraying"
+            }
+          ]
+        },
+        {
+          "label": "Lighting",
+          "kind": "button",
+          "opens": "lighting",
+          "leaves": [
+            {
+              "path": "Lighting",
+              "label": "Lighting",
+              "opens": "lighting"
+            }
+          ]
+        },
+        {
+          "label": "Output",
+          "kind": "dropdown",
+          "leaves": [
+            {
+              "path": "Output > Render\u2026",
+              "label": "Render\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Output > Drawings > Preview\u2026",
+              "label": "Preview\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false,
+              "parent": "Drawings"
+            },
+            {
+              "path": "Output > Drawings > Unit card (PDF)",
+              "label": "Unit card (PDF)",
+              "slider": false,
+              "disabled": false,
+              "soon": false,
+              "parent": "Drawings"
+            },
+            {
+              "path": "Output > Drawings > Unit card (SVG)",
+              "label": "Unit card (SVG)",
+              "slider": false,
+              "disabled": false,
+              "soon": false,
+              "parent": "Drawings"
+            },
+            {
+              "path": "Output > Drawings > All units (PDF)",
+              "label": "All units (PDF)",
+              "slider": false,
+              "disabled": false,
+              "soon": false,
+              "parent": "Drawings"
+            },
+            {
+              "path": "Output > Drawings > Drawing set (PDF)",
+              "label": "Drawing set (PDF)",
+              "slider": false,
+              "disabled": false,
+              "soon": false,
+              "parent": "Drawings"
+            },
+            {
+              "path": "Output > Drawings > Drawing set (DXF)",
+              "label": "Drawing set (DXF)",
+              "slider": false,
+              "disabled": false,
+              "soon": false,
+              "parent": "Drawings"
+            },
+            {
+              "path": "Output > CNC / DXF",
+              "label": "CNC / DXF",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Output > Cutting list CSV",
+              "label": "Cutting list CSV",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Output > BOM PDF",
+              "label": "BOM PDF",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Output > Part labels \u00b7 21 per sheet (Avery L7160)",
+              "label": "Part labels \u00b7 21 per sheet (Avery L7160)",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Output > Part labels \u00b7 44 per sheet",
+              "label": "Part labels \u00b7 44 per sheet",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Output > Bill of materials\u2026",
+              "label": "Bill of materials\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            },
+            {
+              "path": "Output > Spraying\u2026",
+              "label": "Spraying\u2026",
+              "slider": false,
+              "disabled": false,
+              "soon": false
+            }
+          ]
+        }
+      ]
+    },
+    "toolbar": {
+      "found": true,
+      "atStudioHomes": true,
+      "count": 14,
+      "controls": [
+        {
+          "name": "Undo",
+          "home": "top bar",
+          "selector": "[data-studio=\"topbar-undo\"]",
+          "found": true,
+          "text": "",
+          "title": "Undo (Ctrl+Z): 1 step back",
+          "disabled": false,
+          "pressed": null
+        },
+        {
+          "name": "Redo",
+          "home": "top bar",
+          "selector": "[data-studio=\"topbar-redo\"]",
+          "found": true,
+          "text": "",
+          "title": "Nothing to redo",
+          "disabled": true,
+          "pressed": null
+        },
+        {
+          "name": "Show dimensions",
+          "home": "View",
+          "selector": "[data-studio=\"popup\"][data-kind=\"view\"] [data-studio=\"popup-item\"][data-item=\"dimensions\"]",
+          "found": true,
+          "item": "dimensions",
+          "text": "Dimensions",
+          "title": "Show dimensions and distance arrows",
+          "disabled": false,
+          "pressed": "false"
+        },
+        {
+          "name": "Front dimensions",
+          "home": "View",
+          "selector": "[data-studio=\"popup\"][data-kind=\"view\"] [data-studio=\"popup-item\"][data-item=\"frontDimensions\"]",
+          "found": true,
+          "item": "frontDimensions",
+          "text": "Front dimensions",
+          "title": "Show front dimensions: sizes, gaps and the merged run figure",
+          "disabled": false,
+          "pressed": "false"
+        },
+        {
+          "name": "Outlines",
+          "home": "scene toggles",
+          "selector": "[data-studio=\"toggle-outlines\"]",
+          "found": true,
+          "text": "Outlines",
+          "title": "Hide the outlines",
+          "disabled": false,
+          "pressed": "true"
+        },
+        {
+          "name": "X-ray",
+          "home": "scene toggles",
+          "selector": "[data-studio=\"toggle-xray\"]",
+          "found": true,
+          "text": "X-ray",
+          "title": "See through the carcasses: hinges, runners and legs where they are fitted",
+          "disabled": false,
+          "pressed": "false"
+        },
+        {
+          "name": "Props",
+          "home": "View",
+          "selector": "[data-studio=\"popup\"][data-kind=\"view\"] [data-studio=\"popup-item\"][data-item=\"props\"]",
+          "found": true,
+          "item": "props",
+          "text": "Props",
+          "title": "The props pack is not reachable \u2014 HTTP 404",
+          "disabled": true,
+          "pressed": "false"
+        },
+        {
+          "name": "Hide fronts",
+          "home": "scene toggles",
+          "selector": "[data-studio=\"toggle-hide-fronts\"]",
+          "found": true,
+          "text": "Hide fronts",
+          "title": "Take the doors and drawer fronts off the picture: a way of LOOKING, not an edit",
+          "disabled": false,
+          "pressed": "false"
+        },
+        {
+          "name": "Measure",
+          "home": "View",
+          "selector": "[data-studio=\"popup\"][data-kind=\"view\"] [data-studio=\"popup-item\"][data-item=\"measure\"]",
+          "found": true,
+          "item": "measure",
+          "text": "Measure",
+          "title": "Measure between two points on the drawing",
+          "disabled": false,
+          "pressed": "false"
+        },
+        {
+          "name": "Open all / Close all",
+          "home": "scene toggles",
+          "selector": "[data-studio=\"toggle-open-all\"]",
+          "found": true,
+          "text": "Open all",
+          "title": "Swing every door in the project open: nothing about the project changes",
+          "disabled": true,
+          "pressed": "false"
+        },
+        {
+          "name": "BOM",
+          "home": "top bar",
+          "selector": "[data-studio=\"topbar-bom\"]",
+          "found": true,
+          "text": "BOM",
+          "title": "",
+          "disabled": false,
+          "pressed": null
+        },
+        {
+          "name": "Check . N",
+          "home": "rail",
+          "selector": "[data-studio=\"rail-check\"]",
+          "found": true,
+          "text": "Check",
+          "title": "Eleven pre-production rules over the whole job",
+          "disabled": false,
+          "pressed": "false"
+        },
+        {
+          "name": "3D",
+          "home": "rail foot",
+          "selector": "[data-studio=\"rail-design\"]",
+          "found": true,
+          "text": "Design",
+          "title": "Design",
+          "disabled": false,
+          "pressed": "true"
+        },
+        {
+          "name": "CNC",
+          "home": "rail foot",
+          "selector": "[data-studio=\"rail-cnc\"]",
+          "found": true,
+          "text": "CNC",
+          "title": "CNC",
+          "disabled": false,
+          "pressed": "false"
+        }
+      ],
+      "viewRows": 9,
+      "viewItems": [
+        "dimensions",
+        "frontDimensions",
+        "dimensionColour",
+        "props",
+        "measure",
+        "contourView",
+        "brightness",
+        "realisticLighting",
+        "light"
+      ]
+    },
+    "header": {
+      "found": true,
+      "atStudioHomes": true,
+      "count": 7,
+      "controls": [
+        {
+          "name": "CABINET CORE",
+          "home": "top bar",
+          "selector": "[data-studio=\"topbar\"] .studio-wordmark",
+          "found": true,
+          "text": "CABINET CORE",
+          "title": "Back to the start screen",
+          "disabled": false,
+          "pressed": null
+        },
+        {
+          "name": "project name (rename)",
+          "home": "top bar",
+          "selector": "[data-studio=\"topbar\"] .studio-project-name",
+          "found": true,
+          "text": "T84 census",
+          "title": "Rename project",
+          "disabled": false,
+          "pressed": null
+        },
+        {
+          "name": "Save",
+          "home": "top bar",
+          "selector": "[data-studio=\"topbar-save\"]",
+          "found": true,
+          "text": "Save",
+          "title": "Up to date",
+          "disabled": false,
+          "pressed": null
+        },
+        {
+          "name": "MOCK DATA MODE",
+          "home": "status bar",
+          "selector": "[data-studio=\"statusbar\"] MockModeBadge",
+          "found": true,
+          "text": "Mock data mode",
+          "title": "No VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY \u2014 projects stay in this browser."
+        },
+        {
+          "name": "Bright",
+          "home": "top bar",
+          "selector": "[data-studio=\"topbar-brightness\"]",
+          "found": true,
+          "text": "Bright50 %",
+          "title": "Scales every light in the room together. The balance between them does not move.",
+          "disabled": false,
+          "pressed": null
+        },
+        {
+          "name": "Account",
+          "home": "top bar",
+          "selector": "[data-studio=\"topbar-account\"]",
+          "found": true,
+          "text": "Account",
+          "title": "",
+          "disabled": false,
+          "pressed": null
+        },
+        {
+          "name": "Export (= BOM)",
+          "home": "top bar",
+          "selector": "[data-studio=\"topbar-bom\"]",
+          "found": true,
+          "text": "BOM",
+          "title": "",
+          "disabled": false,
+          "pressed": null
+        }
+      ],
+      "badges": [
+        "footer[data-studio-status]"
+      ],
+      "badgeInHeader": false
+    },
+    "panels": {
+      "BUD": {
+        "unitId": "u_2qtedwu",
+        "num": "01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 53,
+        "tags": {
+          "input:text": 6,
+          "button": 40,
+          "select": 6,
+          "input:checkbox": 1
+        },
+        "labels": 11,
+        "labelTags": 3,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 18,
+            "nested": false
+          },
+          {
+            "title": "Add items",
+            "open": "1",
+            "controls": 17,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 12,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 2,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 11,
+            "ctrls": 55
+          }
+        ],
+        "width": 359,
+        "line": "BUD              sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2"
+      },
+      "BUDR": {
+        "unitId": "u_6uur0ej",
+        "num": "DR01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 39,
+        "tags": {
+          "input:text": 9,
+          "button": 20,
+          "select": 6,
+          "input:checkbox": 4
+        },
+        "labels": 11,
+        "labelTags": 6,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 16,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 7,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 12,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 11,
+            "ctrls": 41
+          }
+        ],
+        "width": 359,
+        "line": "BUDR             sel=true visible=39 {\"input:text\":9,\"button\":20,\"select\":6,\"input:checkbox\":4} labels=11 sections=Carcass:1:16|Section 1:1:7|Construction:1:12|Doors:1:1"
+      },
+      "WUD": {
+        "unitId": "u_p7nb7cv",
+        "num": "WU01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 58,
+        "tags": {
+          "input:text": 7,
+          "button": 44,
+          "select": 6,
+          "input:checkbox": 1
+        },
+        "labels": 12,
+        "labelTags": 3,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 19,
+            "nested": false
+          },
+          {
+            "title": "Add items",
+            "open": "1",
+            "controls": 17,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 16,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 2,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 12,
+            "ctrls": 60
+          }
+        ],
+        "width": 359,
+        "line": "WUD              sel=true visible=58 {\"input:text\":7,\"button\":44,\"select\":6,\"input:checkbox\":1} labels=12 sections=Carcass:1:19|Add items:1:17|Section 1:1:1|Construction:1:16|Doors:1:2"
+      },
+      "WARDROBE": {
+        "unitId": "u_cfje4v5",
+        "num": "W01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 53,
+        "tags": {
+          "input:text": 6,
+          "button": 40,
+          "select": 6,
+          "input:checkbox": 1
+        },
+        "labels": 11,
+        "labelTags": 3,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 18,
+            "nested": false
+          },
+          {
+            "title": "Add items",
+            "open": "1",
+            "controls": 13,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 16,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 2,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 11,
+            "ctrls": 55
+          }
+        ],
+        "width": 359,
+        "line": "WARDROBE         sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:13|Section 1:1:1|Construction:1:16|Doors:1:2"
+      },
+      "VANITY2": {
+        "unitId": "u_u6jpvku",
+        "num": "VU01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 50,
+        "tags": {
+          "input:text": 9,
+          "button": 32,
+          "select": 6,
+          "input:checkbox": 3
+        },
+        "labels": 11,
+        "labelTags": 5,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 15,
+            "nested": false
+          },
+          {
+            "title": "Vanity",
+            "open": "1",
+            "controls": 9,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 8,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 14,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 11,
+            "ctrls": 52
+          }
+        ],
+        "width": 359,
+        "line": "VANITY2          sel=true visible=50 {\"input:text\":9,\"button\":32,\"select\":6,\"input:checkbox\":3} labels=11 sections=Carcass:1:15|Vanity:1:9|Section 1:1:8|Construction:1:14|Doors:1:1"
+      },
+      "MIRROR_CABINET": {
+        "unitId": "u_6qn1rvt",
+        "num": "MC01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 62,
+        "tags": {
+          "input:text": 14,
+          "button": 41,
+          "select": 6,
+          "input:checkbox": 1
+        },
+        "labels": 13,
+        "labelTags": 3,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 16,
+            "nested": false
+          },
+          {
+            "title": "Mirror cabinet",
+            "open": "1",
+            "controls": 29,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 12,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 13,
+            "ctrls": 64
+          }
+        ],
+        "width": 359,
+        "line": "MIRROR_CABINET   sel=true visible=62 {\"input:text\":14,\"button\":41,\"select\":6,\"input:checkbox\":1} labels=13 sections=Carcass:1:16|Mirror cabinet:1:29|Section 1:1:1|Construction:1:12|Doors:1:1"
+      },
+      "CORNER_L_BASE": {
+        "unitId": "u_vqg9bp0",
+        "num": "CL01",
+        "position": {
+          "wall": 0,
+          "x": 10
+        },
+        "sel": true,
+        "visible": 52,
+        "tags": {
+          "input:text": 6,
+          "button": 39,
+          "select": 6,
+          "input:checkbox": 1
+        },
+        "labels": 11,
+        "labelTags": 3,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 16,
+            "nested": false
+          },
+          {
+            "title": "Add items",
+            "open": "1",
+            "controls": 17,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 13,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 2,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 11,
+            "ctrls": 54
+          }
+        ],
+        "width": 359,
+        "line": "CORNER_L_BASE    sel=true visible=52 {\"input:text\":6,\"button\":39,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:16|Add items:1:17|Section 1:1:1|Construction:1:13|Doors:1:2"
+      },
+      "HAWA_POCKET": {
+        "unitId": "u_kxlw6wi",
+        "num": "HP01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 45,
+        "tags": {
+          "input:text": 6,
+          "button": 32,
+          "select": 6,
+          "input:checkbox": 1
+        },
+        "labels": 12,
+        "labelTags": 3,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Pocket door",
+            "open": null,
+            "controls": 9,
+            "nested": false
+          },
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 16,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 15,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 12,
+            "ctrls": 47
+          }
+        ],
+        "width": 359,
+        "line": "HAWA_POCKET      sel=true visible=45 {\"input:text\":6,\"button\":32,\"select\":6,\"input:checkbox\":1} labels=12 sections=Pocket door:null:9|Carcass:1:16|Section 1:1:1|Construction:1:15|Doors:1:1"
+      },
+      "BLIND_BASE": {
+        "unitId": "u_en7h5qg",
+        "num": "BB01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 53,
+        "tags": {
+          "input:text": 6,
+          "button": 40,
+          "select": 6,
+          "input:checkbox": 1
+        },
+        "labels": 11,
+        "labelTags": 3,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 18,
+            "nested": false
+          },
+          {
+            "title": "Add items",
+            "open": "1",
+            "controls": 17,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 12,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 2,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 11,
+            "ctrls": 55
+          }
+        ],
+        "width": 359,
+        "line": "BLIND_BASE       sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2"
+      },
+      "PANTRY": {
+        "unitId": "u_69jlpgo",
+        "num": "PY01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 57,
+        "tags": {
+          "input:text": 6,
+          "button": 44,
+          "select": 6,
+          "input:checkbox": 1
+        },
+        "labels": 11,
+        "labelTags": 3,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 18,
+            "nested": false
+          },
+          {
+            "title": "Add items",
+            "open": "1",
+            "controls": 17,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 16,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 2,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 11,
+            "ctrls": 59
+          }
+        ],
+        "width": 359,
+        "line": "PANTRY           sel=true visible=57 {\"input:text\":6,\"button\":44,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:16|Doors:1:2"
+      },
+      "BUD_INT": {
+        "unitId": "u_005rbt0",
+        "num": "BI01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 53,
+        "tags": {
+          "input:text": 6,
+          "button": 40,
+          "select": 6,
+          "input:checkbox": 1
+        },
+        "labels": 11,
+        "labelTags": 3,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 18,
+            "nested": false
+          },
+          {
+            "title": "Add items",
+            "open": "1",
+            "controls": 17,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 12,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 2,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 11,
+            "ctrls": 55
+          }
+        ],
+        "width": 359,
+        "line": "BUD_INT          sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2"
+      },
+      "WUD_HOOD": {
+        "unitId": "u_y7e4f61",
+        "num": "HD01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 39,
+        "tags": {
+          "input:text": 7,
+          "button": 25,
+          "select": 6,
+          "input:checkbox": 1
+        },
+        "labels": 12,
+        "labelTags": 3,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 17,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 16,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 2,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 12,
+            "ctrls": 41
+          }
+        ],
+        "width": 359,
+        "line": "WUD_HOOD         sel=true visible=39 {\"input:text\":7,\"button\":25,\"select\":6,\"input:checkbox\":1} labels=12 sections=Carcass:1:17|Section 1:1:1|Construction:1:16|Doors:1:2"
+      },
+      "FREE_PANEL": {
+        "unitId": "u_k1ctscq",
+        "num": "FP01",
+        "position": {
+          "wall": 0,
+          "x": 1200
+        },
+        "sel": true,
+        "visible": 35,
+        "tags": {
+          "input:text": 8,
+          "button": 19,
+          "select": 7,
+          "input:checkbox": 1
+        },
+        "labels": 14,
+        "labelTags": 3,
+        "hostControls": 2,
+        "sections": [
+          {
+            "title": "Attach",
+            "open": null,
+            "controls": 2,
+            "nested": false
+          },
+          {
+            "title": "Carcass",
+            "open": "1",
+            "controls": 16,
+            "nested": false
+          },
+          {
+            "title": "Section 1",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          },
+          {
+            "title": "Construction",
+            "open": "1",
+            "controls": 12,
+            "nested": false
+          },
+          {
+            "title": "Doors",
+            "open": "1",
+            "controls": 1,
+            "nested": false
+          }
+        ],
+        "outside": [
+          {
+            "tag": "input",
+            "text": "",
+            "title": "What this cabinet is called. It prints on the canvas, the CN",
+            "name": "name"
+          },
+          {
+            "tag": "button",
+            "text": "\u00d7",
+            "title": "Close panel",
+            "name": null
+          },
+          {
+            "tag": "button",
+            "text": "Delete unit",
+            "title": "",
+            "name": null
+          }
+        ],
+        "asideClass": "relative h-full w-full min-w-0 cc-panel rounded-none border-0 flex flex-col",
+        "asides": [
+          {
+            "cls": "relative h-full w-full min-w-0 cc-panel rounded-none border-",
+            "labels": 14,
+            "ctrls": 37
+          }
+        ],
+        "width": 359,
+        "line": "FREE_PANEL       sel=true visible=35 {\"input:text\":8,\"button\":19,\"select\":7,\"input:checkbox\":1} labels=14 sections=Attach:null:2|Carcass:1:16|Section 1:1:1|Construction:1:12|Doors:1:1"
+      }
+    },
+    "panelTotal": 649,
+    "errors": []
+  },
+  "ownerProbe2223": {
+    "file": "verify/t84/census-main-panels.txt",
+    "rows": [
+      {
+        "type": "BUD",
+        "owner": "BUD              sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2",
+        "now": "BUD              sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2",
+        "same": true
+      },
+      {
+        "type": "BUDR",
+        "owner": "BUDR             sel=true visible=39 {\"input:text\":9,\"button\":20,\"select\":6,\"input:checkbox\":4} labels=11 sections=Carcass:1:16|Section 1:1:7|Construction:1:12|Doors:1:1",
+        "now": "BUDR             sel=true visible=39 {\"input:text\":9,\"button\":20,\"select\":6,\"input:checkbox\":4} labels=11 sections=Carcass:1:16|Section 1:1:7|Construction:1:12|Doors:1:1",
+        "same": true
+      },
+      {
+        "type": "WUD",
+        "owner": "WUD              sel=true visible=58 {\"input:text\":7,\"button\":44,\"select\":6,\"input:checkbox\":1} labels=12 sections=Carcass:1:19|Add items:1:17|Section 1:1:1|Construction:1:16|Doors:1:2",
+        "now": "WUD              sel=true visible=58 {\"input:text\":7,\"button\":44,\"select\":6,\"input:checkbox\":1} labels=12 sections=Carcass:1:19|Add items:1:17|Section 1:1:1|Construction:1:16|Doors:1:2",
+        "same": true
+      },
+      {
+        "type": "WARDROBE",
+        "owner": "WARDROBE         sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:13|Section 1:1:1|Construction:1:16|Doors:1:2",
+        "now": "WARDROBE         sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:13|Section 1:1:1|Construction:1:16|Doors:1:2",
+        "same": true
+      },
+      {
+        "type": "VANITY2",
+        "owner": "VANITY2          sel=true visible=50 {\"input:text\":9,\"button\":32,\"select\":6,\"input:checkbox\":3} labels=11 sections=Carcass:1:15|Vanity:1:9|Section 1:1:8|Construction:1:14|Doors:1:1",
+        "now": "VANITY2          sel=true visible=50 {\"input:text\":9,\"button\":32,\"select\":6,\"input:checkbox\":3} labels=11 sections=Carcass:1:15|Vanity:1:9|Section 1:1:8|Construction:1:14|Doors:1:1",
+        "same": true
+      },
+      {
+        "type": "MIRROR_CABINET",
+        "owner": "MIRROR_CABINET   sel=true visible=62 {\"input:text\":14,\"button\":41,\"select\":6,\"input:checkbox\":1} labels=13 sections=Carcass:1:16|Mirror cabinet:1:29|Section 1:1:1|Construction:1:12|Doors:1:1",
+        "now": "MIRROR_CABINET   sel=true visible=62 {\"input:text\":14,\"button\":41,\"select\":6,\"input:checkbox\":1} labels=13 sections=Carcass:1:16|Mirror cabinet:1:29|Section 1:1:1|Construction:1:12|Doors:1:1",
+        "same": true
+      },
+      {
+        "type": "CORNER_L_BASE",
+        "owner": "CORNER_L_BASE    sel=true visible=52 {\"input:text\":6,\"button\":39,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:16|Add items:1:17|Section 1:1:1|Construction:1:13|Doors:1:2",
+        "now": "CORNER_L_BASE    sel=true visible=52 {\"input:text\":6,\"button\":39,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:16|Add items:1:17|Section 1:1:1|Construction:1:13|Doors:1:2",
+        "same": true
+      },
+      {
+        "type": "HAWA_POCKET",
+        "owner": "HAWA_POCKET      sel=true visible=45 {\"input:text\":6,\"button\":32,\"select\":6,\"input:checkbox\":1} labels=12 sections=Pocket door:null:9|Carcass:1:16|Section 1:1:1|Construction:1:15|Doors:1:1",
+        "now": "HAWA_POCKET      sel=true visible=45 {\"input:text\":6,\"button\":32,\"select\":6,\"input:checkbox\":1} labels=12 sections=Pocket door:null:9|Carcass:1:16|Section 1:1:1|Construction:1:15|Doors:1:1",
+        "same": true
+      },
+      {
+        "type": "BLIND_BASE",
+        "owner": "BLIND_BASE       sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2",
+        "now": "BLIND_BASE       sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2",
+        "same": true
+      },
+      {
+        "type": "PANTRY",
+        "owner": "PANTRY           sel=true visible=57 {\"input:text\":6,\"button\":44,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:16|Doors:1:2",
+        "now": "PANTRY           sel=true visible=57 {\"input:text\":6,\"button\":44,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:16|Doors:1:2",
+        "same": true
+      },
+      {
+        "type": "BUD_INT",
+        "owner": "BUD_INT          sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2",
+        "now": "BUD_INT          sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2",
+        "same": true
+      },
+      {
+        "type": "WUD_HOOD",
+        "owner": "WUD_HOOD         sel=true visible=39 {\"input:text\":7,\"button\":25,\"select\":6,\"input:checkbox\":1} labels=12 sections=Carcass:1:17|Section 1:1:1|Construction:1:16|Doors:1:2",
+        "now": "WUD_HOOD         sel=true visible=39 {\"input:text\":7,\"button\":25,\"select\":6,\"input:checkbox\":1} labels=12 sections=Carcass:1:17|Section 1:1:1|Construction:1:16|Doors:1:2",
+        "same": true
+      },
+      {
+        "type": "FREE_PANEL",
+        "owner": "FREE_PANEL       sel=true visible=35 {\"input:text\":8,\"button\":19,\"select\":7,\"input:checkbox\":1} labels=14 sections=Attach:null:2|Carcass:1:16|Section 1:1:1|Construction:1:12|Doors:1:1",
+        "now": "FREE_PANEL       sel=true visible=35 {\"input:text\":8,\"button\":19,\"select\":7,\"input:checkbox\":1} labels=14 sections=Attach:null:2|Carcass:1:16|Section 1:1:1|Construction:1:12|Doors:1:1",
+        "same": true
+      }
+    ],
+    "reproduced": true,
+    "asides": {
+      "owner": "asides: [{\"cls\":\"absolute right-0 top-0 bottom-0 w-[310px] cc-panel rounded-n\",\"labels\":11,\"ctrls\":53}]",
+      "now": "asides: [{\"cls\":\"relative h-full w-full min-w-0 cc-panel rounded-none border-\",\"labels\":11,\"ctrls\":55}]",
+      "same": false
+    }
+  },
+  "against2223": [
+    {
+      "row": "top menu leaves (static)",
+      "claude": 48,
+      "now": 48,
+      "equal": true
+    },
+    {
+      "row": "  File",
+      "claude": 5,
+      "now": 5,
+      "equal": true
+    },
+    {
+      "row": "  View",
+      "claude": 13,
+      "now": 13,
+      "equal": true
+    },
+    {
+      "row": "  Library",
+      "claude": 4,
+      "now": 4,
+      "equal": true
+    },
+    {
+      "row": "  Settings",
+      "claude": 5,
+      "now": 5,
+      "equal": true
+    },
+    {
+      "row": "  Database",
+      "claude": 5,
+      "now": 5,
+      "equal": true
+    },
+    {
+      "row": "  Spraying",
+      "claude": 1,
+      "now": 1,
+      "equal": true
+    },
+    {
+      "row": "  Lighting",
+      "claude": 1,
+      "now": 1,
+      "equal": true
+    },
+    {
+      "row": "  Output",
+      "claude": 14,
+      "now": 14,
+      "equal": true
+    },
+    {
+      "row": "top menu leaves (drawn)",
+      "claude": 48,
+      "now": 48,
+      "equal": true
+    },
+    {
+      "row": "scene toolbar (source)",
+      "claude": 14,
+      "now": 14,
+      "equal": true
+    },
+    {
+      "row": "scene toolbar (drawn)",
+      "claude": 14,
+      "now": 14,
+      "equal": true
+    },
+    {
+      "row": "header (source)",
+      "claude": 7,
+      "now": 7,
+      "equal": true
+    },
+    {
+      "row": "header (drawn)",
+      "claude": 7,
+      "now": 7,
+      "equal": true
+    },
+    {
+      "row": "right-click rows",
+      "claude": 22,
+      "now": 22,
+      "equal": true
+    },
+    {
+      "row": "library Kitchen",
+      "claude": 36,
+      "now": 36,
+      "equal": true
+    },
+    {
+      "row": "library Wardrobes",
+      "claude": 15,
+      "now": 15,
+      "equal": true
+    },
+    {
+      "row": "library types (slots)",
+      "claude": 51,
+      "now": 51,
+      "equal": true
+    },
+    {
+      "row": "modal kinds",
+      "claude": 26,
+      "now": 26,
+      "equal": true
+    },
+    {
+      "row": "panel source tags RightPanel.jsx",
+      "claude": 108,
+      "now": 108,
+      "equal": true
+    },
+    {
+      "row": "panel source tags ElementProperties.jsx",
+      "claude": 49,
+      "now": 49,
+      "equal": true
+    },
+    {
+      "row": "panel source tags MultiUnitPanel.jsx",
+      "claude": 16,
+      "now": 16,
+      "equal": true
+    },
+    {
+      "row": "panel source tags total",
+      "claude": 173,
+      "now": 173,
+      "equal": true
+    },
+    {
+      "row": "panel BUD",
+      "claude": 53,
+      "now": 53,
+      "equal": true
+    },
+    {
+      "row": "panel BUDR",
+      "claude": 39,
+      "now": 39,
+      "equal": true
+    },
+    {
+      "row": "panel WUD",
+      "claude": 58,
+      "now": 58,
+      "equal": true
+    },
+    {
+      "row": "panel WARDROBE",
+      "claude": 53,
+      "now": 53,
+      "equal": true
+    },
+    {
+      "row": "panel VANITY2",
+      "claude": 50,
+      "now": 50,
+      "equal": true
+    },
+    {
+      "row": "panel MIRROR_CABINET",
+      "claude": 62,
+      "now": 62,
+      "equal": true
+    },
+    {
+      "row": "panel CORNER_L_BASE",
+      "claude": 52,
+      "now": 52,
+      "equal": true
+    },
+    {
+      "row": "panel HAWA_POCKET",
+      "claude": 45,
+      "now": 45,
+      "equal": true
+    },
+    {
+      "row": "panel BLIND_BASE",
+      "claude": 53,
+      "now": 53,
+      "equal": true
+    },
+    {
+      "row": "panel PANTRY",
+      "claude": 57,
+      "now": 57,
+      "equal": true
+    },
+    {
+      "row": "panel BUD_INT",
+      "claude": 53,
+      "now": 53,
+      "equal": true
+    },
+    {
+      "row": "panel WUD_HOOD",
+      "claude": 39,
+      "now": 39,
+      "equal": true
+    },
+    {
+      "row": "panel FREE_PANEL",
+      "claude": 35,
+      "now": 35,
+      "equal": true
+    },
+    {
+      "row": "panel total",
+      "claude": 649,
+      "now": 649,
+      "equal": true
+    }
+  ],
+  "tookSeconds": 104,
+  "comparison": {
+    "against": "verify/t84/census-main.json",
+    "againstCommit": "9f5020fbedd3c337c76d573ef4237595f584dbd9",
+    "rows": [
+      {
+        "key": "static.topMenu.leaves",
+        "value": 48,
+        "gate": "atLeast",
+        "was": 48,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.topMenu.File",
+        "value": 5,
+        "gate": "atLeast",
+        "was": 5,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.topMenu.View",
+        "value": 13,
+        "gate": "atLeast",
+        "was": 13,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.topMenu.Library",
+        "value": 4,
+        "gate": "atLeast",
+        "was": 4,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.topMenu.Settings",
+        "value": 5,
+        "gate": "atLeast",
+        "was": 5,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.topMenu.Database",
+        "value": 5,
+        "gate": "atLeast",
+        "was": 5,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.topMenu.Spraying",
+        "value": 1,
+        "gate": "atLeast",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.topMenu.Lighting",
+        "value": 1,
+        "gate": "atLeast",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.topMenu.Output",
+        "value": 14,
+        "gate": "atLeast",
+        "was": 14,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.toolbar.controls",
+        "value": 14,
+        "gate": "atLeast",
+        "was": 14,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.header.controls",
+        "value": 7,
+        "gate": "atLeast",
+        "was": 7,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.context.censusRows",
+        "value": 22,
+        "gate": "atLeast",
+        "was": 22,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.context.ids",
+        "value": 25,
+        "gate": "atLeast",
+        "was": 25,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.context.sha256",
+        "value": "0f3056749f43f33a652129aa3ece6d022f4e2ea342b039c19893daf155bb1fab",
+        "gate": "hash",
+        "was": "0f3056749f43f33a652129aa3ece6d022f4e2ea342b039c19893daf155bb1fab",
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.contextMenu.sha256",
+        "value": "9ecd6083c1808257a9c4f53ec9ff654304cfae671c1b923e9910ab5a55ca524c",
+        "gate": "hash",
+        "was": "9ecd6083c1808257a9c4f53ec9ff654304cfae671c1b923e9910ab5a55ca524c",
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.modalKinds",
+        "value": 26,
+        "gate": "atLeast",
+        "was": 26,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.library.kitchen",
+        "value": 36,
+        "gate": "atLeast",
+        "was": 36,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.library.wardrobe",
+        "value": 15,
+        "gate": "atLeast",
+        "was": 15,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.library.sets",
+        "value": 0,
+        "gate": "atLeast",
+        "was": 0,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.library.media",
+        "value": 0,
+        "gate": "atLeast",
+        "was": 0,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.library.typeSlots",
+        "value": 51,
+        "gate": "atLeast",
+        "was": 51,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.library.distinctTypes",
+        "value": 46,
+        "gate": "atLeast",
+        "was": 46,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.library.registryLeaves",
+        "value": 60,
+        "gate": "atLeast",
+        "was": 60,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.library.shippedSets",
+        "value": 5,
+        "gate": "atLeast",
+        "was": 5,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.panelSources.RightPanel.jsx",
+        "value": 108,
+        "gate": "atLeast",
+        "was": 108,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.panelSources.ElementProperties.jsx",
+        "value": 49,
+        "gate": "atLeast",
+        "was": 49,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.panelSources.MultiUnitPanel.jsx",
+        "value": 16,
+        "gate": "atLeast",
+        "was": 16,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.panelSources.total",
+        "value": 173,
+        "gate": "atLeast",
+        "was": 173,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.topMenu.leaves",
+        "value": 48,
+        "gate": "atLeast",
+        "was": 48,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.topMenu.File",
+        "value": 5,
+        "gate": "atLeast",
+        "was": 5,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.topMenu.View",
+        "value": 13,
+        "gate": "atLeast",
+        "was": 13,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.topMenu.Library",
+        "value": 4,
+        "gate": "atLeast",
+        "was": 4,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.topMenu.Settings",
+        "value": 5,
+        "gate": "atLeast",
+        "was": 5,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.topMenu.Database",
+        "value": 5,
+        "gate": "atLeast",
+        "was": 5,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.topMenu.Spraying",
+        "value": 1,
+        "gate": "atLeast",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.topMenu.Lighting",
+        "value": 1,
+        "gate": "atLeast",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.topMenu.Output",
+        "value": 14,
+        "gate": "atLeast",
+        "was": 14,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.toolbar.controls",
+        "value": 14,
+        "gate": "atLeast",
+        "was": 14,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.header.controls",
+        "value": 7,
+        "gate": "atLeast",
+        "was": 7,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD",
+        "value": 53,
+        "gate": "exact",
+        "was": 53,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD.Carcass",
+        "value": 18,
+        "gate": "exact",
+        "was": 18,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD.Add items",
+        "value": 17,
+        "gate": "exact",
+        "was": 17,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD.Section 1",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD.Construction",
+        "value": 12,
+        "gate": "exact",
+        "was": 12,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD.Doors",
+        "value": 2,
+        "gate": "exact",
+        "was": 2,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.BUDR",
+        "value": 39,
+        "gate": "exact",
+        "was": 39,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUDR.Carcass",
+        "value": 16,
+        "gate": "exact",
+        "was": 16,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUDR.Section 1",
+        "value": 7,
+        "gate": "exact",
+        "was": 7,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUDR.Construction",
+        "value": 12,
+        "gate": "exact",
+        "was": 12,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUDR.Doors",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUDR.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.WUD",
+        "value": 58,
+        "gate": "exact",
+        "was": 58,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WUD.Carcass",
+        "value": 19,
+        "gate": "exact",
+        "was": 19,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WUD.Add items",
+        "value": 17,
+        "gate": "exact",
+        "was": 17,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WUD.Section 1",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WUD.Construction",
+        "value": 16,
+        "gate": "exact",
+        "was": 16,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WUD.Doors",
+        "value": 2,
+        "gate": "exact",
+        "was": 2,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WUD.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.WARDROBE",
+        "value": 53,
+        "gate": "exact",
+        "was": 53,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WARDROBE.Carcass",
+        "value": 18,
+        "gate": "exact",
+        "was": 18,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WARDROBE.Add items",
+        "value": 13,
+        "gate": "exact",
+        "was": 13,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WARDROBE.Section 1",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WARDROBE.Construction",
+        "value": 16,
+        "gate": "exact",
+        "was": 16,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WARDROBE.Doors",
+        "value": 2,
+        "gate": "exact",
+        "was": 2,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WARDROBE.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.VANITY2",
+        "value": 50,
+        "gate": "exact",
+        "was": 50,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.VANITY2.Carcass",
+        "value": 15,
+        "gate": "exact",
+        "was": 15,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.VANITY2.Vanity",
+        "value": 9,
+        "gate": "exact",
+        "was": 9,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.VANITY2.Section 1",
+        "value": 8,
+        "gate": "exact",
+        "was": 8,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.VANITY2.Construction",
+        "value": 14,
+        "gate": "exact",
+        "was": 14,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.VANITY2.Doors",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.VANITY2.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.MIRROR_CABINET",
+        "value": 62,
+        "gate": "exact",
+        "was": 62,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.MIRROR_CABINET.Carcass",
+        "value": 16,
+        "gate": "exact",
+        "was": 16,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.MIRROR_CABINET.Mirror cabinet",
+        "value": 29,
+        "gate": "exact",
+        "was": 29,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.MIRROR_CABINET.Section 1",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.MIRROR_CABINET.Construction",
+        "value": 12,
+        "gate": "exact",
+        "was": 12,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.MIRROR_CABINET.Doors",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.MIRROR_CABINET.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.CORNER_L_BASE",
+        "value": 52,
+        "gate": "exact",
+        "was": 52,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.CORNER_L_BASE.Carcass",
+        "value": 16,
+        "gate": "exact",
+        "was": 16,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.CORNER_L_BASE.Add items",
+        "value": 17,
+        "gate": "exact",
+        "was": 17,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.CORNER_L_BASE.Section 1",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.CORNER_L_BASE.Construction",
+        "value": 13,
+        "gate": "exact",
+        "was": 13,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.CORNER_L_BASE.Doors",
+        "value": 2,
+        "gate": "exact",
+        "was": 2,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.CORNER_L_BASE.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.HAWA_POCKET",
+        "value": 45,
+        "gate": "exact",
+        "was": 45,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.HAWA_POCKET.Pocket door",
+        "value": 9,
+        "gate": "exact",
+        "was": 9,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.HAWA_POCKET.Carcass",
+        "value": 16,
+        "gate": "exact",
+        "was": 16,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.HAWA_POCKET.Section 1",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.HAWA_POCKET.Construction",
+        "value": 15,
+        "gate": "exact",
+        "was": 15,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.HAWA_POCKET.Doors",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.HAWA_POCKET.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.BLIND_BASE",
+        "value": 53,
+        "gate": "exact",
+        "was": 53,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BLIND_BASE.Carcass",
+        "value": 18,
+        "gate": "exact",
+        "was": 18,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BLIND_BASE.Add items",
+        "value": 17,
+        "gate": "exact",
+        "was": 17,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BLIND_BASE.Section 1",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BLIND_BASE.Construction",
+        "value": 12,
+        "gate": "exact",
+        "was": 12,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BLIND_BASE.Doors",
+        "value": 2,
+        "gate": "exact",
+        "was": 2,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BLIND_BASE.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.PANTRY",
+        "value": 57,
+        "gate": "exact",
+        "was": 57,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.PANTRY.Carcass",
+        "value": 18,
+        "gate": "exact",
+        "was": 18,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.PANTRY.Add items",
+        "value": 17,
+        "gate": "exact",
+        "was": 17,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.PANTRY.Section 1",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.PANTRY.Construction",
+        "value": 16,
+        "gate": "exact",
+        "was": 16,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.PANTRY.Doors",
+        "value": 2,
+        "gate": "exact",
+        "was": 2,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.PANTRY.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.BUD_INT",
+        "value": 53,
+        "gate": "exact",
+        "was": 53,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD_INT.Carcass",
+        "value": 18,
+        "gate": "exact",
+        "was": 18,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD_INT.Add items",
+        "value": 17,
+        "gate": "exact",
+        "was": 17,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD_INT.Section 1",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD_INT.Construction",
+        "value": 12,
+        "gate": "exact",
+        "was": 12,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD_INT.Doors",
+        "value": 2,
+        "gate": "exact",
+        "was": 2,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.BUD_INT.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.WUD_HOOD",
+        "value": 39,
+        "gate": "exact",
+        "was": 39,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WUD_HOOD.Carcass",
+        "value": 17,
+        "gate": "exact",
+        "was": 17,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WUD_HOOD.Section 1",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WUD_HOOD.Construction",
+        "value": 16,
+        "gate": "exact",
+        "was": 16,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WUD_HOOD.Doors",
+        "value": 2,
+        "gate": "exact",
+        "was": 2,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.WUD_HOOD.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.FREE_PANEL",
+        "value": 35,
+        "gate": "exact",
+        "was": 35,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.FREE_PANEL.Attach",
+        "value": 2,
+        "gate": "exact",
+        "was": 2,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.FREE_PANEL.Carcass",
+        "value": 16,
+        "gate": "exact",
+        "was": 16,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.FREE_PANEL.Section 1",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.FREE_PANEL.Construction",
+        "value": 12,
+        "gate": "exact",
+        "was": 12,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.FREE_PANEL.Doors",
+        "value": 1,
+        "gate": "exact",
+        "was": 1,
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.panel.FREE_PANEL.hostControls",
+        "value": 2,
+        "gate": "info",
+        "was": 0,
+        "status": "MOVED (not gated)"
+      },
+      {
+        "key": "live.panel.total",
+        "value": 649,
+        "gate": "exact",
+        "was": 649,
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.topMenu.pathsMissing",
+        "value": 0,
+        "was": 0,
+        "gate": "zero",
+        "detail": [],
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.topMenu.callsMoved",
+        "value": 0,
+        "was": 0,
+        "gate": "zero",
+        "detail": [],
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.topMenu.guardsRewritten",
+        "value": 0,
+        "was": 0,
+        "gate": "info",
+        "detail": [],
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.topMenu.pathsMissing",
+        "value": 0,
+        "was": 0,
+        "gate": "zero",
+        "detail": [],
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.toolbar.homesMissing",
+        "value": 0,
+        "was": 0,
+        "gate": "zero",
+        "detail": [],
+        "status": "EQUAL"
+      },
+      {
+        "key": "live.header.homesMissing",
+        "value": 0,
+        "was": 0,
+        "gate": "zero",
+        "detail": [],
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.toolbar.handlersMissing",
+        "value": 0,
+        "was": 0,
+        "gate": "zero",
+        "detail": [],
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.header.handlersMissing",
+        "value": 0,
+        "was": 0,
+        "gate": "zero",
+        "detail": [],
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.context.idsMissing",
+        "value": 0,
+        "was": 0,
+        "gate": "zero",
+        "detail": [],
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.modalKinds.missing",
+        "value": 0,
+        "was": 0,
+        "gate": "zero",
+        "detail": [],
+        "status": "EQUAL"
+      },
+      {
+        "key": "static.library.typesMissing",
+        "value": 0,
+        "was": 0,
+        "gate": "zero",
+        "detail": [],
+        "status": "EQUAL"
+      }
+    ]
+  }
+}

@@ -186,6 +186,44 @@ function readSnapshot(s) {
   }
 }
 
+// ─── T84 F3, F4 (CLAUDE.md PART B): THE STUDIO'S INSPECTOR ─────────────────
+//
+// Where the Studio's inspector stands when the selection moves. CLAUDE.md T84
+// F4 adopts the designer's law: *"Pin keeps inspector open and FOLLOWING
+// SELECTION; it never locks unit ID"*. Pinned, the inspector stays where it is
+// (the full panel, following whatever is selected now); unpinned, a new
+// cabinet (or none) brings the quick card back, as her Stage-1 prototype does
+// from every mode, hidden included. It answers a MODE and nothing else: there
+// is no unit id in it to freeze. The legacy face never reads it.
+const INSPECTOR_MODES = Object.freeze(['quick', 'full', 'none']);
+/** T84 F5 · what the Check may be filtered to. */
+const CHECK_FILTERS = Object.freeze(['all', 'red', 'yellow']);
+export function inspectorAfterSelect({ inspector = 'quick', inspectorPinned = false } = {}, changed = true) {
+  const mode = INSPECTOR_MODES.includes(inspector) ? inspector : 'quick';
+  if (!changed || inspectorPinned) return mode;
+  return 'quick';
+}
+
+// ─── T84 F4 (CLAUDE.md PART B): THE EDIT IS COMMITTED TO ITS OWN CABINET ────
+//
+// *"Before the selection changes, a pending valid edit is committed to its
+// ORIGINAL unit id; an invalid one blocks the switch with its refusal visible;
+// Escape cancels it."*  The Studio's inspector registers ONE guard while it is
+// mounted (components/studio/InspectorHost.jsx); the three selection actions
+// ask it before they write, and a guard that answers `{ ok: false }` leaves the
+// selection exactly where it was. No guard (the legacy face, a test, the
+// retail mount) is a yes, so nothing outside the Studio changes.
+function selectionMayMove(state) {
+  const guard = state?.selectionGuard;
+  if (typeof guard !== 'function') return true;
+  try {
+    const answer = guard();
+    return !answer || answer.ok !== false;
+  } catch {
+    return true;
+  }
+}
+
 export const useUiStore = create((set, get) => ({
   // Which screen the app is on (turn 4, BACKLOG #7). The canvas is reached
   // THROUGH a project — start screen first, always.
@@ -231,9 +269,39 @@ export const useUiStore = create((set, get) => ({
 
   // Right parameter panel — closes itself once doors are added (SPEC 4.10)
   rightPanelOpen: true,
-  openRightPanel: () => set({ rightPanelOpen: true }),
-  closeRightPanel: () => set({ rightPanelOpen: false }),
+  // ─── T84 F4 (verify/t84/p1-host.md F): THE PANEL'S OWN ROADS REACH STUDIO ─
+  // Every legacy road that opens the panel to show a row in it (the
+  // right-click Rename and its section openers, the inner +, the quick card's
+  // Doors / Drawers / Bays rows) brings the Studio inspector to the full
+  // panel; the panel's own x hides it, and the breadcrumb's button brings it
+  // back. The legacy face never reads `inspector`.
+  openRightPanel: () => set({ rightPanelOpen: true, inspector: 'full' }),
+  closeRightPanel: () => set({ rightPanelOpen: false, inspector: 'none' }),
   toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
+
+  // ─── T84 F3 (CLAUDE.md PART B): THE STUDIO'S INSPECTOR ───────────────────
+  // 'quick' the card, 'full' the RightPanel embedded, 'none' hidden (the
+  // breadcrumb's button brings it back). Pinned, the full panel stays and
+  // follows the selection (`inspectorAfterSelect` above). Read by the Studio
+  // face only; the legacy face never looks at it.
+  inspector: 'quick',
+  inspectorPinned: false,
+  setInspector: (mode) => set({ inspector: INSPECTOR_MODES.includes(mode) ? mode : 'quick' }),
+  /** "Back to quick settings": the card, unpinned (the designer's prototype). */
+  showQuickSettings: () => set({ inspector: 'quick', inspectorPinned: false }),
+  /** "Full settings": the RightPanel, embedded. */
+  showFullSettings: () => set({ inspector: 'full' }),
+  hideInspector: () => set({ inspector: 'none' }),
+  /** The breadcrumb's button: back from hidden, to the full panel when pinned. */
+  showInspector: () => set((s) => (s.inspector === 'none'
+    ? { inspector: s.inspectorPinned ? 'full' : 'quick' }
+    : {})),
+  /** Pin: the full panel stays open and FOLLOWS the selection; it stores no unit id. */
+  toggleInspectorPin: () => set((s) => ({ inspectorPinned: !s.inspectorPinned, inspector: 'full' })),
+  // T84 F4 · the commit-before-switch guard (`selectionMayMove` above).
+  selectionGuard: null,
+  setSelectionGuard: (fn) => set({ selectionGuard: typeof fn === 'function' ? fn : null }),
+  clearSelectionGuard: (fn) => set((s) => (!fn || s.selectionGuard === fn ? { selectionGuard: null } : {})),
 
   // BOM panel — computed live, shown on demand (SPEC 4.11)
   bomOpen: false,
@@ -245,8 +313,25 @@ export const useUiStore = create((set, get) => ({
   // demand. Opening one closes the other; two 380 px panels over a 3D view is
   // a 3D view nobody can see.
   checkOpen: false,
-  setCheckOpen: (v) => set(v ? { checkOpen: true, bomOpen: false } : { checkOpen: false }),
-  toggleCheck: () => set((s) => (s.checkOpen ? { checkOpen: false } : { checkOpen: true, bomOpen: false })),
+  setCheckOpen: (v) => set(v ? { checkOpen: true, bomOpen: false } : { checkOpen: false, checkFilter: 'all' }),
+  toggleCheck: () => set((s) => (s.checkOpen ? { checkOpen: false, checkFilter: 'all' } : { checkOpen: true, bomOpen: false })),
+  // ─── T84 F5 (CLAUDE.md PART C): THE COUNTERS OPEN THE CHECK FILTERED ─────
+  // *"1 red · 3 yellow in their colours; click opens Check filtered to that
+  // level (a checkFilter in uiStore, 'all' | 'red' | 'yellow'; the Check panel
+  // reads it and shows "Show all")."*  Closing the panel puts it back to all.
+  checkFilter: 'all',
+  setCheckFilter: (level) => set({ checkFilter: CHECK_FILTERS.includes(level) ? level : 'all' }),
+  openCheckFiltered: (level) => set({
+    checkOpen: true, bomOpen: false, checkFilter: CHECK_FILTERS.includes(level) ? level : 'all',
+  }),
+  // ─── T84 F5 (CLAUDE.md PART C): SHOW FRAMES THE UNIT ─────────────────────
+  // The issue strip's Show asks; the camera bar's Frame selection (F6)
+  // answers it and clears it. A request, never a camera move made here.
+  frameRequest: null,                // { unitIds: string[], at: number } | null
+  requestFrame: (unitIds) => set({
+    frameRequest: { unitIds: (Array.isArray(unitIds) ? unitIds : [unitIds]).filter(Boolean), at: Date.now() },
+  }),
+  clearFrameRequest: () => set({ frameRequest: null }),
 
   // ─── What is on the CNC sheet (turn 11, CLAUDE.md F8.1) ───
   //
@@ -361,7 +446,12 @@ export const useUiStore = create((set, get) => ({
   // through picking a cabinet has not stopped being halfway through it.
   viewMode: '3d',                    // '3d' | 'cnc'
   setViewMode: (mode) => set((s) => (mode === 'cnc'
-    ? { viewMode: 'cnc', rightPanelOpen: true, bomOpen: false }
+    ? {
+      viewMode: 'cnc', rightPanelOpen: true, bomOpen: false,
+      // T84 F4 · main opens the panel for CNC (its tree and its two downloads);
+      // the Studio's inspector comes back from hidden the same way, never pinned.
+      ...(s.inspector === 'none' ? { inspector: s.inspectorPinned ? 'full' : 'quick' } : {}),
+    }
     : { viewMode: '3d', rightPanelOpen: s.rightPanelOpen })),
 
   // Dimensions on the 3D canvas: each unit's own W/H/D captions AND the
@@ -755,9 +845,16 @@ export const useUiStore = create((set, get) => ({
    * @param {object} opts  { additive } — Ctrl (or ⌘) held, F5.1
    */
   selectUnit: (id, { additive = false } = {}) => {
-    const next = applySelection(get().selectedUnitIds, id, additive);
+    const now = get();
+    const next = applySelection(now.selectedUnitIds, id, additive);
     const primary = primaryOf(next);
+    // T84 F4 · a typed edit is committed to its own cabinet first, or the
+    // selection stays where it is (`selectionMayMove`); the Studio inspector
+    // follows by its rule (`inspectorAfterSelect`).
+    const moved = primary !== now.selectedUnitId;
+    if (moved && !selectionMayMove(now)) return false;
     return set({
+      ...(moved ? { inspector: inspectorAfterSelect(now, true) } : {}),
       selectedUnitIds: next,
       selectedUnitId: primary,
       selectedSection: primary ? 0 : null,
@@ -775,14 +872,21 @@ export const useUiStore = create((set, get) => ({
       ...(primary === get().selectedUnitId ? {} : { selectedElement: null, selectedElements: [], centreBetween: null }),
     });
   },
-  clearSelection: () => set({
-    selectedUnitId: null,
-    selectedUnitIds: [],
-    selectedSection: null,
-    selectedElement: null,
-    selectedElements: [],
-    centreBetween: null,
-  }),
+  clearSelection: () => {
+    // T84 F4 · the same guard and the same rule as selectUnit.
+    const now = get();
+    const moved = now.selectedUnitId != null;
+    if (moved && !selectionMayMove(now)) return false;
+    return set({
+      ...(moved ? { inspector: inspectorAfterSelect(now, true) } : {}),
+      selectedUnitId: null,
+      selectedUnitIds: [],
+      selectedSection: null,
+      selectedElement: null,
+      selectedElements: [],
+      centreBetween: null,
+    });
+  },
 
   // ─── One ELEMENT inside a unit (turn 9, CLAUDE.md F4.1) ───
   // Until now the smallest thing that could be selected was a whole cabinet, so
@@ -830,7 +934,11 @@ export const useUiStore = create((set, get) => ({
    * @param {object} opts  { additive }: Ctrl (or ⌘) held, F2; { pick }: a
    *   Center between pick, said only by the 3D press on a board (T79 F12)
    */
-  selectElement: (unitId, elementRef, { additive = false, pick = false } = {}) => set((s) => {
+  // T84 F4 · a piece of ANOTHER cabinet moves the selection to its parent:
+  // the guard first, as selectUnit asks it (`selectionMayMove`), and the
+  // Studio inspector follows by its rule.
+  selectElement: (unitId, elementRef, { additive = false, pick = false } = {}) => ((unitId !== get().selectedUnitId
+    && !selectionMayMove(get())) ? false : set((s) => {
     // ─── T79 (CLAUDE.md F12): WHILE CENTER BETWEEN IS ARMED, A CLICK IS A PICK
     // On the cabinet that armed it: the lower first, then the upper, and the
     // selection stays on the shelf whose menu armed it. Only the press on a
@@ -876,8 +984,9 @@ export const useUiStore = create((set, get) => ({
       selectedElements: next,
       selectedElement: primary,
       centreBetween: null,
+      ...(unitId !== s.selectedUnitId ? { inspector: inspectorAfterSelect(s, true) } : {}),
     };
-  }),
+  })),
   clearElement: () => set({ selectedElement: null, selectedElements: [], centreBetween: null }),
 
   // ─── T79 (CLAUDE.md F12): CENTER BETWEEN, TWO PICKS IN ORDER ─────────────

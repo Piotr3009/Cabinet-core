@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 import { historyOpenMs, historyTime, messagesAt } from '../engine/messages.js';
@@ -116,12 +116,24 @@ function Line({ msg, onDismiss }) {
   );
 }
 
+// ─── T84 F2 (CLAUDE.md PART A): THE CHANGES BAR, RE-HOMED ──────────────────
+//
+// *"the Changes drawer (today's bottom-left `Changes · N` control, the same
+// component, re-homed)"*: under the Studio face the bar stands on the status
+// bar (components/studio/StatusBar.jsx draws THIS HistoryBar, exported for
+// it), so the column below stops drawing its own. Two ways to say so, and
+// either is enough: the Studio shell provides `ChangesBarRehomed` (true) to
+// everything inside it, and a caller may pass `history={false}`. The legacy
+// face provides nothing and passes nothing: the column draws the bar exactly
+// as before, and so does the start screen's own column (App.jsx).
+export const ChangesBarRehomed = createContext(false);
+
 // ─── T79 F1 · THE CHANGES BAR ───────────────────────────────────────────────
 //
 // One line at the very bottom-left, `Changes · 12`, and a click opens the list
 // above it: newest first, the time, the level's dot, the text, and Clear.
 // Collapsed by default, Escape collapses it, nothing of it is saved.
-function HistoryBar() {
+export function HistoryBar() {
   const history = useUiStore((s) => s.history);
   const open = useUiStore((s) => s.historyOpen);
   const toggleHistory = useUiStore((s) => s.toggleHistory);
@@ -198,7 +210,10 @@ function HistoryBar() {
   );
 }
 
-export default function Messages({ children = null }) {
+export default function Messages({ children = null, history = true }) {
+  // T84 F2 · the Changes bar is drawn here unless it stands on the Studio
+  // status bar (`ChangesBarRehomed` above).
+  const rehomed = useContext(ChangesBarRehomed);
   const messages = useUiStore((s) => s.messages);
   const dismissMessage = useUiStore((s) => s.dismissMessage);
   const dismissOnClickAway = useUiStore((s) => s.dismissOnClickAway);
@@ -239,7 +254,7 @@ export default function Messages({ children = null }) {
           {left.map((m) => <Line key={m.id} msg={m} onDismiss={dismissMessage} />)}
         </div>
       )}
-      <HistoryBar />
+      {history && !rehomed && <HistoryBar />}
     </div>
   );
 }

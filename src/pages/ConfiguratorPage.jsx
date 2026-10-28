@@ -38,6 +38,22 @@ import CanvasToolbar from '../components/CanvasToolbar.jsx';
 import FrontGapWarnings from '../components/FrontGapWarnings.jsx';
 // T80 F10 · Checks #40 to #44 in the left column, beside the front-gap rows.
 import InframeWarnings from '../components/InframeWarnings.jsx';
+// T84 F2 (CLAUDE.md PART A): the Studio face, PRO's face, around the same editor.
+import StudioShell from '../components/studio/StudioShell.jsx';
+// T84 F4 (CLAUDE.md PART B): the inspector, the card or the RightPanel embedded.
+import InspectorHost from '../components/studio/InspectorHost.jsx';
+// T84 F5 (CLAUDE.md PART C): the errors you can see.
+import { setUnitAdornment } from '../3d/UnitView.jsx';
+import IssueStrip, { IssueCounters } from '../components/studio/IssueStrip.jsx';
+import RefusedField from '../components/studio/RefusedField.jsx';
+import UnitIssueMarker from '../components/studio/UnitIssueMarker.jsx';
+// T84 F6 (CLAUDE.md PART D): the scene's edge.
+import SceneToggles from '../components/studio/SceneToggles.jsx';
+import SceneViewMenu from '../components/studio/SceneViewMenu.jsx';
+import CameraBar from '../components/studio/CameraBar.jsx';
+// T84 F7 (CLAUDE.md PART E): the rail's menus and the one Escape owner.
+import RailMenu from '../components/studio/RailMenus.jsx';
+import { installStudioEscape } from '../components/studio/lib/studioEscape.js';
 import { useUiStore } from '../stores/uiStore.js';
 // T54-F6: the dimensions' sleep clock — a lib module so fake timers can test it.
 import { createDimensionSleep, dimensionsIdleMs } from '../lib/dimensionSleep.js';
@@ -146,9 +162,27 @@ function FirstUnitPlus() {
   );
 }
 
+// ─── T84 F2 (CLAUDE.md PART A): ONE EDITOR, TWO FRAMES ──────────────────────
+//
+// The legacy frame is today's two divs, byte for byte in the DOM; the Studio
+// frame is StudioShell, which takes the same top bar and the same scene layer
+// in its slots. Nothing inside the scene layer knows which frame holds it.
+function LegacyFrame({ topBar, children }) {
+  return (
+    <div className="h-full flex flex-col bg-shell-900">
+      {topBar}
+      {children}
+    </div>
+  );
+}
+function SceneSlot({ studio, children }) {
+  if (studio) return children;
+  return <div className="flex-1 relative overflow-hidden">{children}</div>;
+}
+
 // Frozen layout (SPEC section 7):
 // topbar / floating Library / white 3D canvas / closable right parameter panel.
-export default function ConfiguratorPage() {
+export default function ConfiguratorPage({ studio = false } = {}) {
   const rightPanelOpen = useUiStore((s) => s.rightPanelOpen);
   const bomOpen = useUiStore((s) => s.bomOpen);
   const checkOpen = useUiStore((s) => s.checkOpen);
@@ -217,6 +251,10 @@ export default function ConfiguratorPage() {
       }
 
       if (e.key === 'Escape') {
+        // T84 F7 (CLAUDE.md PART E): under the Studio face the shell's one
+        // Escape owner takes the key (installStudioEscape below), so a press
+        // that closed a menu or a window never also clears the selection.
+        if (studio) return;
         if (selectedElement) clearElement();
         else if (selectedUnitId) clearSelection();
         return;
@@ -294,7 +332,7 @@ export default function ConfiguratorPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedElement, selectedUnitId, clearElement, clearSelection,
     units, unitResult, removeItem, removeUnit, removeFront, deleteSelectedElement,
-    notify, undo, redo]);
+    notify, undo, redo, studio]);
 
   // ─── TURN 54 (CLAUDE.md F6): DIMENSIONS GO TO SLEEP AFTER 30 SECONDS ─────
   //
@@ -322,6 +360,22 @@ export default function ConfiguratorPage() {
       sleep.cancel();
     };
   }, [showDimensionsNow, viewMode, profile]);
+
+  // ─── T84 F7 (CLAUDE.md PART E): ONE ESCAPE OWNER FOR THE SHELL ────────────
+  // A window CAPTURE listener that decides from the state at the press
+  // (verify/t84/p1-escape.md E): a field, a popup or a window owns its own
+  // press; then a scene operation, the part, the cabinet; one key event, one
+  // action; never unpin.
+  useEffect(() => (studio ? installStudioEscape({ getUi: useUiStore.getState }) : undefined), [studio]);
+
+  // ─── T84 F5 (CLAUDE.md PART C): THE MARKER BESIDE THE UNIT NUMBER ─────────
+  // The one slot of 3d/UnitView.jsx, filled while the Studio face is mounted;
+  // nothing in 3d/ imports a PRO file, and the legacy face fills nothing.
+  useEffect(() => {
+    if (!studio) return undefined;
+    setUnitAdornment(UnitIssueMarker);
+    return () => setUnitAdornment(null);
+  }, [studio]);
 
   // The 3D canvas hands us a capture function for the PDF export.
   const captureRef = useRef(null);
@@ -609,9 +663,31 @@ export default function ConfiguratorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project, units, markSaved]);
 
+  // T84 F2 · the frame of the face App.jsx chose (isStudioFace): the Studio
+  // shell's slots, filled F by F; the legacy frame takes none of them.
+  const Frame = studio ? StudioShell : LegacyFrame;
+  const studioSlots = studio ? {
+    // T84 F4 · the inspector column: the quick card, or the RightPanel embedded.
+    // T84 F5 · the strip over the card and the panel, the refused field in the card (handed as an
+    // object key: a bare `Field=` attribute reads, to test/imports.test.js, as retail's own Field).
+    inspector: <InspectorHost renderStrip={(unitId) => <IssueStrip unitId={unitId} />} {...{ Field: RefusedField }} />,
+    // T84 F5 · the counters on the status bar.
+    statusExtras: <IssueCounters />,
+    // T84 F6 · the four toggles, View, and the camera bar with Drawings... (the PREVIEW).
+    sceneEdge: (
+      <>
+        <SceneToggles />
+        <SceneViewMenu />
+        <CameraBar onDrawings={(e) => openModal('drawing', { kind: 'walls', anchor: anchorOfEvent(e) })} />
+      </>
+    ),
+    // T84 F7 · Add and Materials open their popups beside the rail.
+    renderRailMenu: (kind, { anchor, onClose }) => <RailMenu kind={kind} anchor={anchor} onClose={onClose} />,
+  } : {};
   return (
-    <div className="h-full flex flex-col bg-shell-900">
+    <Frame {...studioSlots} topBar={(
       <TopBar
+        variant={studio ? 'studio' : undefined}
         onExportCsv={onExportCsv}
         onExportPdf={onExportPdf}
         onExportLabels={onExportLabels}
@@ -620,7 +696,8 @@ export default function ConfiguratorPage() {
         onDrawing={onDrawing}
         onAuth={(e) => openModal('auth', { anchor: anchorOfEvent(e) })}
       />
-      <div className="flex-1 relative overflow-hidden">
+    )}>
+      <SceneSlot studio={studio}>
         {/* The 3D scene stays MOUNTED behind the CNC view: it owns the WebGL
             context the PDF export captures, and re-initialising it on every
             toggle would both lose that and cost a visible stall. CncView is
@@ -629,7 +706,7 @@ export default function ConfiguratorPage() {
           <Scene onCaptureReady={onCaptureReady} onRenderReady={onRenderReady} />
         </div>
         {viewMode === 'cnc' && <CncView />}
-        <CanvasToolbar />
+        {!studio && <CanvasToolbar />}
 
         {/* ─── An empty room asks ONE question (turn 11, CLAUDE.md F4.2) ───
             A line of grey text at the bottom of the canvas saying "open Library
@@ -663,7 +740,7 @@ export default function ConfiguratorPage() {
         </Messages>
 
         <LibraryPanel />
-        {rightPanelOpen && !bomOpen && <RightPanel />}
+        {!studio && rightPanelOpen && !bomOpen && <RightPanel />}
         {bomOpen && <BomPanel onExportCsv={onExportCsv} onExportPdf={onExportPdf} onExportBom={onExportBom} />}
         {/* Turn 31 (CLAUDE.md F6): the Check panel — a LIST of findings, not toasts. */}
         {checkOpen && <CheckPanel />}
@@ -750,7 +827,7 @@ export default function ConfiguratorPage() {
             to appear over whatever window the recompute happened in. */}
         <HandEditsModal />
         <ContextMenu />
-      </div>
-    </div>
+      </SceneSlot>
+    </Frame>
   );
 }

@@ -19,6 +19,31 @@ import { findingsToAct } from '../engine/checks.js';
 // and the 3D | CNC toggle. The top bar keeps what acts on the PROJECT: its
 // name, the account, the export.
 
+// ─── T84 F6 (CLAUDE.md T84 PART D): THE DOORS, ONE LIST FOR TWO ROADS ───────
+// The owner, 27.10.2026, 22:19: *"funkcje w menu musza sie zachowac
+// wszystkie"*. Under the Studio face this bar is not rendered and its Open all
+// / Close all stands at the scene's top edge (components/studio/
+// SceneToggles.jsx). Both buttons read the doors, and whether every one of
+// them is open, from this one hook, so they cannot disagree about what "all"
+// is. The code is the bar's own, moved here unchanged: Turn 25's door list
+// (CLAUDE.md F15), Turn 27's every front (F2.1), T82 F6's pocket door.
+export function useDoorEntries() {
+  const units = useProjectStore((s) => s.units);
+  const unitResult = useProjectStore((s) => s.unitResult);
+  const openFronts = useUiStore((s) => s.openFronts);
+  const doorEntries = useMemo(() => units.map((u) => ({
+    unitId: u.id,
+    panelIds: (unitResult(u.id)?.panels || [])
+      // T82 F6 · the HAWA pocket door opens with every door (*"the same in the viewer's Open all"*).
+      .filter((p) => p.part === 'FRONT' || p.part === 'POCKET-DOOR')
+      .map((p) => p.id),
+  })).filter((e) => e.panelIds.length), [units, unitResult]);
+  const everyDoorOpen = doorEntries.length > 0 && doorEntries.every(
+    (e) => e.panelIds.every((id) => (openFronts[e.unitId]?.[id] ?? 0) > 0.5),
+  );
+  return { doorEntries, everyDoorOpen };
+}
+
 export default function CanvasToolbar() {
   const viewMode = useUiStore((s) => s.viewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
@@ -58,9 +83,7 @@ export default function CanvasToolbar() {
   // `openFronts` is subscribed to so the label flips the moment the last door
   // swings, and the entries are memoised on the units so a drag does not
   // rebuild them per frame.
-  const units = useProjectStore((s) => s.units);
-  const unitResult = useProjectStore((s) => s.unitResult);
-  const openFronts = useUiStore((s) => s.openFronts);
+  // T84 F6: gathered by `useDoorEntries` above, the list the Studio's Open all shares.
   const toggleAllFronts = useUiStore((s) => s.toggleAllFronts);
   // ─── Turn 31 (CLAUDE.md F6): the Check's own count, on its button ─────────
   // Recomputed when the job changes, not per frame: this walks every cabinet
@@ -75,16 +98,7 @@ export default function CanvasToolbar() {
   // opens differently was the one front the button did not touch. That is the
   // `dwPanel` habit in a component: a D/W front is a FRONT, it has a gesture
   // (it drops, turn 26's F5.2), and "Open all" means all.
-  const doorEntries = useMemo(() => units.map((u) => ({
-    unitId: u.id,
-    panelIds: (unitResult(u.id)?.panels || [])
-      // T82 F6 · the HAWA pocket door opens with every door (*"the same in the viewer's Open all"*).
-      .filter((p) => p.part === 'FRONT' || p.part === 'POCKET-DOOR')
-      .map((p) => p.id),
-  })).filter((e) => e.panelIds.length), [units, unitResult]);
-  const everyDoorOpen = doorEntries.length > 0 && doorEntries.every(
-    (e) => e.panelIds.every((id) => (openFronts[e.unitId]?.[id] ?? 0) > 0.5),
-  );
+  const { doorEntries, everyDoorOpen } = useDoorEntries();
 
   // ─── Undo / redo (turn 12, CLAUDE.md F9) ───
   // Read as LENGTHS rather than through the store's own `canUndo()`, because a

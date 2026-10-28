@@ -1,5 +1,5 @@
 import {
-  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
+  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore,
 } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -1682,6 +1682,33 @@ function WatchShelfGlass({ pane, shelf, xray = false }) {
   );
 }
 
+// ─── T84 F5 (CLAUDE.md T84 PART C): ONE SLOT BESIDE THE NAME CHIP ──────────
+//
+// CLAUDE.md T84 FROZEN 3: *"The room (`3d/*`): ONE mount point for the unit
+// issue marker (S4's component, applied by INT)"*. The slot holds ONE
+// component or nothing; every unit draws it at its name chip's own anchor,
+// whether or not the labels are shown. Nothing in 3d/ knows what fills it:
+// the PRO page registers the Studio's issue marker while the Studio face is
+// mounted (pages/ConfiguratorPage.jsx); the legacy face and the retail room
+// never register anything, so for them this slot draws nothing at all.
+let unitAdornment = null;
+const adornmentListeners = new Set();
+
+/** Fill the slot (a component taking `{ unit, position }`), or empty it with null. */
+export function setUnitAdornment(Component) {
+  const next = Component || null;
+  if (next === unitAdornment) return;
+  unitAdornment = next;
+  for (const fn of adornmentListeners) fn();
+}
+
+function subscribeAdornment(fn) {
+  adornmentListeners.add(fn);
+  return () => { adornmentListeners.delete(fn); };
+}
+
+const adornmentNow = () => unitAdornment;
+
 export default function UnitView({
   unit, result, wall, walls = null, roomCentre, selected, snapStep, onSelect, onMove, onMoveToWall,
   onMoveShelf, onShelfDragState,
@@ -1772,6 +1799,8 @@ export default function UnitView({
   const litInserts = (result?.assemblies?.watchInserts || []).length;
   useEffect(() => { if (litInserts > 0) ensureLtc(); }, [litInserts]);
   const { camera, gl } = useThree();
+  // T84 F5 · the one slot beside the name chip (`setUnitAdornment` above).
+  const Adornment = useSyncExternalStore(subscribeAdornment, adornmentNow, adornmentNow);
   const drag = useRef(null);
   // ─── TURN 47 (CLAUDE.md F6): THE GHOST LINE ───────────────────────────────
   //
@@ -4222,6 +4251,12 @@ export default function UnitView({
           />
         </group>
       )}
+
+      {/* ─── T84 F5 (CLAUDE.md T84 PART C): THE ONE SLOT, AT THE CHIP'S ANCHOR ─
+          CLAUDE.md T84 FROZEN 3: *"ONE mount point for the unit issue marker"*.
+          The name chip's own position, outside the labels' gate: the marker
+          stands beside the unit number with the dimensions on or off. */}
+      {Adornment && <Adornment unit={unit} position={[mm(W / 2), mm(H) + 0.1, mm(D / 2)]} />}
 
       {/* ─── Every number this cabinet has (turn 8, CLAUDE.md F7) ───
           The right-click toggle. It is per UNIT and not global for the reason

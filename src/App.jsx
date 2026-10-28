@@ -13,6 +13,9 @@ import { loadHardwareCatalogues } from './lib/hardwareCatalogue.js';
 import { refreshHardwareCatalogues } from './lib/hardwareHealth.js';
 import { loadHardwareRegister } from './lib/hardwareRegister.js';
 import { useSettingsSetsStore } from './stores/settingsSetsStore.js';
+// T84 F2 (CLAUDE.md PART A): which face the workshop's entry wears.
+import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
+import { isStudioFace } from './components/studio/lib/studioFace.js';
 
 // ─── THE KNOWLEDGE FILES (turn 19, CLAUDE.md F0.3) ──────────────────────────
 //
@@ -110,6 +113,13 @@ export default function App() {
   // this file: there is one app, one tree and one filter, and the head only
   // decides which of that tree's rows are drawn.
   const audience = useUiStore((s) => s.audience);
+  // ─── T84 F2 (CLAUDE.md PART A): STUDIO IS PRO'S FACE ────────────────────
+  // The owner, 27.10.2026, 16:27: *"nie, juz jest przy wyborze"*: PRO is
+  // chosen at the start, Studio is its face, and there is no switch in the
+  // UI. The factory entry with `profile.ui.studio.enabled` renders the editor
+  // inside StudioShell; the retail entry never mounts it.
+  const studioProfile = useCabinetProfileStore((s) => s.profile);
+  const studio = isStudioFace(audience, studioProfile);
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.documentElement.setAttribute('data-app-entry', audience);
@@ -147,7 +157,7 @@ export default function App() {
   }
   return (
     <>
-      <ConfiguratorPage />
+      <ConfiguratorPage studio={studio} />
       {buildBadge}
     </>
   );

@@ -1,0 +1,15 @@
+--- test/turn84-f06-scene.test.js	2026-10-28 01:12:29.693108385 +0000
++++ /tmp/claude-0/t84/work/F1/turn84-f06-scene.test.js	2026-10-28 02:26:41.875165518 +0000
+@@ -379,7 +379,11 @@
+   assert.doesNotMatch(live, /openModal\(|onDrawing\(|export(Wall|Drawing|Booklet)/, 'the bar exports nothing and opens nothing of its own');
+   // The places are the pure module's, on the handle 3d/viewHandle.js registers.
+   assert.match(BAR, /from '\.\/lib\/cameraPresets\.js';/);
+-  assert.match(BAR, /import \{ furnitureBounds \} from '\.\.\/\.\.\/3d\/renderCapture\.js';/, 'the furniture\'s own bounds, the box the render fits');
++  // The units' own bounds, their hardware counted by its instances (the T84 walk, F8: with the render's
++  // furnitureBounds, which leaves the hardware out, a base unit's feet fell past the frame's edge).
++  assert.match(BAR, /function unitBounds\(view, roots\)/, 'the units\' own bounds');
++  assert.match(BAR, /object\.isInstancedMesh[\s\S]*?object\.computeBoundingBox\(\)/, 'an instanced piece of hardware by its instances\' box');
++  assert.doesNotMatch(code(BAR), /furnitureBounds\(/, 'not the render\'s box, which leaves the hardware out');
+   assert.match(BAR, /placeCamera\(view, viewPlacement\(id, room, \{/);
+   assert.match(BAR, /const margin = Number\(profile\?\.ui\?\.studio\?\.frameMargin\) \|\| 0;/, 'the margin is the profile\'s');
+   assert.match(BAR, /frameUnits\(anySelected \? selectedUnitIds : null, margin\)/, 'the selection, or every unit when none is');

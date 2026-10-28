@@ -15,6 +15,10 @@ import { migrateDesign } from '../engine/design.js';
 import { buildOutputMenu } from '../lib/outputMenu.js';
 import { buildDatabaseMenu, orderMenus } from '../lib/topMenu.js';
 import { persistProject } from '../lib/persist.js';
+// Chat fix 28.10.2026: the job as a file (Save to file, Open from file).
+import { pickProjectFile } from '../lib/projectFile.js';
+import { openProjectFromFile, saveProjectToFile } from '../lib/projectFileRoad.js';
+import { askProjectFile } from './ProjectFileModal.jsx';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 // T84 F2: the Studio's icons (StudioShell mounts their sprite once).
@@ -132,15 +136,39 @@ export default function TopBar({
     timer.current = setTimeout(() => setSaveState('rest'), confirmMs);
   };
 
+  // ─── CHAT FIX 28.10.2026 · THE JOB AS A FILE (lib/projectFileRoad.js) ─────
+  // The owner: *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*;
+  // *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"*.
+  // Save to file downloads the job on the screen; Open from file picks a
+  // .ccproject file, asks its questions in its own window
+  // (components/ProjectFileModal.jsx) and, before the job on the screen is
+  // replaced, speaks about unsaved work exactly as File > Open does
+  // (warnIfUnsaved, the same red sentence; it never bars the door).
+  const saveToFile = () => { saveProjectToFile(); };
+  const openFromFile = async (anchor) => {
+    const picked = await pickProjectFile();
+    await openProjectFromFile({
+      picked,
+      anchor,
+      ask: askProjectFile,
+      beforeOpen: () => {
+        const now = useProjectStore.getState();
+        warnIfUnsaved({ dirty: now.dirty, units: now.units });
+      },
+    });
+  };
+
   const menus = [
     {
       label: 'File',
       items: [
         { label: 'New project…', hint: 'Name it and set the room on the start screen', run: leaveProject },
         { label: 'Open…', hint: 'Recent projects and everything saved', run: leaveProject },
+        { label: 'Open from file…', hint: 'A .ccproject file, saved on this computer or another', run: (e) => openFromFile(anchorOfEvent(e)) },
         { divider: true },
         { label: 'Save', hint: dirty ? 'Unsaved changes' : 'Up to date', run: save },
         { label: 'Save as…', run: (e) => openModal('save-as', { anchor: anchorOfEvent(e) }) },
+        { label: 'Save to file…', hint: 'The whole job in one file, to open on another computer', run: saveToFile },
         { divider: true },
         { label: 'Close project', run: leaveProject },
       ],

@@ -94,6 +94,8 @@ import { migrateWallElement, oneSlopePerSide, wallElements } from '../lib/wallEl
 // engine ever sees it (KIT_RECESS.lsp D3, D4).
 import { recessBand } from '../lib/wallElements.js';
 import { recessRefusal, recessEndReachP } from '../engine/extension.js';
+// Chat fix 28.10.2026, the owner's walk (KIT_RECESS.lsp D26): "Align with recess" stands the pair.
+import { recessColDividerX, recessColPairX } from '../engine/extension.js';
 // ─── TURN 46 (CLAUDE.md, "The slope, in numbers"): ONE ceilingAt ────────────
 // The store is where a cabinet meets a room, so it is where the ceiling line
 // becomes a number the engine and the clamp can use. Both come out of the same
@@ -1030,6 +1032,44 @@ function wholeRecessOf(unit, state = useProjectStore.getState(), profile = getCa
     return x0 >= Number(e.x_mm) - 1e-6 && x1 <= Number(e.x_mm) + Number(e.width) + 1e-6
       && base >= b - 1e-6 && top <= t + 1e-6;
   }) || null;
+}
+
+/**
+ * CHAT FIX 28.10.2026 (KIT_RECESS.lsp D26) · what "Align with recess" does to
+ * this unit's dividers, pressed on `itemId`, read off the computed result's
+ * band (`derived.extension`): `moves` [{ id, x }] (TWO dividers: both, the
+ * left one on ex0 and the right one on ex1 - w, recessColPairX; else the
+ * pressed one on its nearer edge, recessColDividerX), `pair`, and `done` when
+ * every move's divider already stands there at the face (setback 0). Null
+ * when there is no band or no edge. Pure: the button's visibility and the
+ * action read this one answer.
+ */
+export function recessAlignPlan(unit, result, itemId, profile = getCabinetProfile()) {
+  const band = result?.derived?.extension || null;
+  if (!unit || !band) return null;
+  const G = Number(unit.params?.board_t ?? profile.board.thickness);
+  const W = Number(unit.params?.width) || 0;
+  const panels = result?.panels || [];
+  const parts = (unit.params?.sections?.[0]?.items || [])
+    .filter((i) => i.kind === 'partition' && Number.isFinite(Number(i.x_mm)))
+    .sort((a, b) => Number(a.x_mm) - Number(b.x_mm));
+  const wOf = (item) => Number(panels.find((p) => p.meta?.itemId === item.id)?.box?.w) || G;
+  const step = profile.editor?.mmStep || 0.5;
+  let moves = null;
+  if (parts.length === 2) {
+    const pair = recessColPairX(W, band.x0, band.x1, wOf(parts[1]));
+    if (pair) moves = [{ id: parts[0].id, x: snapTo(pair[0], step) }, { id: parts[1].id, x: snapTo(pair[1], step) }];
+  }
+  if (!moves) {
+    const self = parts.find((i) => i.id === itemId);
+    if (!self) return null;
+    const x = recessColDividerX(W, band.x0, band.x1, Number(self.x_mm), wOf(self));
+    if (x == null) return null;
+    moves = [{ id: self.id, x: snapTo(x, step) }];
+  }
+  const byId = new Map(parts.map((i) => [i.id, i]));
+  const done = moves.every((m) => Math.abs(Number(byId.get(m.id)?.x_mm) - m.x) <= 0.25 && byId.get(m.id)?.front_mm === 0);
+  return { moves, pair: moves.length === 2, done };
 }
 
 /** The extension the room asks of this unit where it stands (KIT_RECESS.lsp section 1), or null. */
@@ -9349,6 +9389,50 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return {
       x, min, max, blocked: false,
     };
+  },
+
+  /**
+   * CHAT FIX 28.10.2026, the owner's walk at home (*"problem polega na tym ze
+   * nie dzialaja te szuflady"*) · "ALIGN WITH RECESS" STANDS THE PAIR
+   * (KIT_RECESS.lsp D26). The app adds its dividers at 491 and 245.5 on a
+   * 1000 wardrobe; pressed one at a time by the nearer-edge rule both went
+   * LEFT, and the second stopped on the first's minimum gap (285.5). Now one
+   * press on either of TWO dividers writes both, in one undo step: the left
+   * one on the band's left edge, the right one on its right edge, both at the
+   * face (setback 0, the column guard's full depth). The pair keeps its order,
+   * so the two are written together and never clamped against each other's
+   * old place; a pair the editor's own bounds would refuse goes through
+   * setPartitionX one by one. One divider, or more than two: the pressed one to
+   * its nearer edge, at the face.
+   *
+   * @returns {{ok:boolean, pair?:boolean, moves?:Array, error?:string}}
+   */
+  alignDividersWithRecess: (unitId, itemId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const plan = recessAlignPlan(unit, get().unitResult(unitId), itemId);
+    if (!plan) return { ok: false, error: 'This divider has no edge of a recess to stand on.' };
+    const profile = getCabinetProfile();
+    const G = Number(unit.params.board_t ?? profile.board.thickness);
+    const W = Number(unit.params.width) || 0;
+    const gap = profile.editor.minShelfGap;
+    return runBatch(() => {
+      const [l, r] = plan.moves;
+      const together = plan.pair && l.x >= G + gap - 1e-6 && r.x <= W - 2 * G - gap + 1e-6 && r.x - l.x >= gap - 1e-6;
+      if (together) {
+        get().updateItem(unitId, l.id, { x_mm: l.x, front_mm: 0 });
+        get().updateItem(unitId, r.id, { x_mm: r.x, front_mm: 0 });
+        get().healFrontGaps();
+      } else {
+        for (const m of plan.moves) {
+          get().setPartitionX(unitId, m.id, m.x);
+          get().setElementDepth(unitId, m.id, 0);
+        }
+      }
+      const after = recessAlignPlan(get().units.find((u) => u.id === unitId), get().unitResult(unitId), itemId);
+      return after?.done
+        ? { ok: true, pair: plan.pair, moves: plan.moves }
+        : { ok: false, pair: plan.pair, moves: plan.moves, error: 'The dividers could not stand on the recess\'s edges here.' };
+    });
   },
 
   /**

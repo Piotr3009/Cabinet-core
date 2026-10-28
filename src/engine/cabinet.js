@@ -5479,9 +5479,16 @@ export function computeCabinet(params, profileOverride) {
     }
     const walls = verticalItems.length === 2 && set.zone === 1 && bays.length === 3;
     const [li, ri] = verticalItems;
+    // D26 (the owner's walk, 28.10.2026): the sentence names what is wrong, a divider too many or too few, or the
+    // drawers in a side column, so the press it points to ("Align both with recess") is never the wrong one.
+    const notWalls = verticalItems.length !== 2
+      ? `RECESS DRAWERS: the drawers go into the recess between exactly two dividers, one on each of its edges; this `
+        + `cabinet has ${verticalItems.length}, so they keep the carcass's depth.`
+      : `RECESS DRAWERS: the drawers go into the recess in the column between the two dividers (Column 2); these stand `
+        + `in Column ${set.zone + 1}, so they keep the carcass's depth.`;
     const said = walls
       ? recessColRefusal(W, H, G, ext.x0, ext.x1, ext.z0, ext.z1, xOf(li), xOf(ri), slotOf(ri), set.partY, notchProfile(P))
-      : 'RECESS DRAWERS: the dividers do not stand on the recess\'s edges; the drawers keep the carcass\'s depth.';
+      : notWalls;
     if (said) return refuse(said);
     return {
       zone: set.zone,
@@ -5498,7 +5505,8 @@ export function computeCabinet(params, profileOverride) {
       code: 'RECESS_DRAWERS_SHALLOW',
       zone: recessColumn.zone,
       message: /dividers do not stand/.test(recessColumn.refused)
-        ? `${recessColumn.refused} Stand one on each edge: Align with recess, in the divider's window.`
+        // D26 (the owner's walk, 28.10.2026): one press stands the pair; the sentence says where it is.
+        ? `${recessColumn.refused} Double-click a divider: "Align both with recess" stands the two on the recess's edges, at the face.`
         : recessColumn.refused,
     });
   }

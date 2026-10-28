@@ -965,6 +965,18 @@ export function recessColDividerX(cw, ex0, ex1, x, w) {
 }
 
 /**
+ * recess-col-pair-x (D26, the owner's walk of 28.10.2026: *"problem polega na
+ * tym ze nie dzialaja te szuflady"*): where a PAIR of dividers stands, [lx, rx]:
+ * the left one's left face on ex0, the right one's on ex1 - w (w the right
+ * one's board); null when the band reaches a side, where recessColDividerX
+ * answers each. One press of "Align with recess" stands both, at the face.
+ */
+export function recessColPairX(cw, ex0, ex1, w) {
+  if (recessLeftP(ex0) || recessRightP(ex1, cw)) return null;
+  return [ex0, ex1 - w];
+}
+
+/**
  * recess-hand-cut (D23): the cut [x0, z0, x1, z1] of a bw x bh piece as the
  * cutter takes it: each edge not on the piece's own edge moved `he` further
  * into the board; in a recess column (`colp`) the two edges across stay (a

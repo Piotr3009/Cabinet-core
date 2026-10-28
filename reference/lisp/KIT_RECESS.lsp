@@ -505,6 +505,27 @@
 ;;;     front of a band from the floor to the top drilled x 932 on a BACK 118
 ;;;     wide and x 500 in the window.
 ;;;
+;;; 28.10.2026, LATER THE SAME EVENING (the owner's walk at home: *"problem
+;;; polega na tym ze nie dzialaja te szuflady"*):
+;;;
+;;; D26 ALIGN WITH RECESS STANDS BOTH DIVIDERS. The app adds a divider centred
+;;;     in the widest bay (the first at (cw - g) / 2, the second in the half
+;;;     left of it), so on the owner's wardrobe both stood nearer the LEFT
+;;;     edge (491 is as near 110 as 872, 245.5 nearer 110) and one press of
+;;;     D22's per-divider rule took the first to 110, where the second's place
+;;;     stopped it at 285.5: neither on an edge, the drawers kept the carcass's
+;;;     depth. Now, with TWO dividers, one press on either stands BOTH: the
+;;;     left one (the smaller x) on ex0, the right one on ex1 - w
+;;;     (recess-col-pair-x), and both at the face (setback 0), the column's
+;;;     full-depth walls the drawers' runners need (the house's column guard).
+;;;     The pair keeps its order, so neither passes the other. With one
+;;;     divider, or more than two, the press stands the pressed one on its
+;;;     nearer edge (recess-col-divider-x), at the face. The engine's sentence
+;;;     (RECESS_DRAWERS_SHALLOW) says which thing is wrong, so it never points
+;;;     to the wrong press: a divider too many or too few, the drawers in a
+;;;     side column, or (recess-col-refusal) the two off the edges, the only
+;;;     case that names "Align both with recess".
+;;;
 ;;;========================================
 ;;; 4. NOT HERE
 ;;;========================================
@@ -1929,6 +1950,15 @@
         (rgt rgt)
         (T nil)))
 
+;;; D26: where a PAIR of dividers stands, (lx rx): the left one's left face on
+;;; ex0, the right one's on ex1 - w (w the right one's board); nil when the
+;;; band reaches a side (no edge inside the carcass there: the pair is not a
+;;; recess column's walls, recess-col-divider-x answers each).
+(defun recess-col-pair-x (cw ex0 ex1 w)
+  (if (or (recess-left-p ex0) (recess-right-p ex1 cw))
+    nil
+    (list ex0 (- ex1 w))))
+
 ;;; D23: THE HAND EDGE. A cut (x0 z0 x1 z1) of a bw x bh piece as the cutter
 ;;; takes it: each of its edges that is not on the piece's own edge moved he
 ;;; further into the board; in a recess column (colp) its two edges across
@@ -2044,6 +2074,10 @@
 ;;;   guard): flush, it is 568 + 150 - 18 = 700 deep, not 690.
 ;;; ALIGN WITH RECESS (recess-col-divider-x 1000 110 890 x 18): a divider at
 ;;;   x 100 goes to 110, one at 880 to 872 (the nearer edge each).
+;;;   THE PAIR (D26, recess-col-pair-x 1000 110 890 18) = (110 872): the app's
+;;;   two dividers at 491 and 245.5 go to 872 and 110, both at the face. By
+;;;   D22's per-divider rule alone the one at 491 went to 110 (a tie, 381
+;;;   either way) and stopped at 285.5, on the other's minimum gap.
 ;;; THE BACK'S HOLES (D25): the board over the drawers' three at z 638:
 ;;;   x 68 on BACK (x 68), x 500 in the window (none), x 932 on BACK-2 (x 42).
 ;;;   Until tonight Z2-PART's three, x 178 500 822, all three in the window.

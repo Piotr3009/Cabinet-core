@@ -24,6 +24,9 @@
 //     falls on (BACK, BACK-2), none in the window;
 //   THE DIVIDER'S RUNNER ROW (the probe of the same evening): measured from the divider's own front edge, its left face
 //     as BUL, its right face turned over as BUR (T82 F9's law); until then mirrored front to back.
+//   ALIGN BOTH WITH RECESS (D26, the owner's walk at home, 22:11: *"problem polega na tym ze nie dzialaja te szuflady"*):
+//     the app's two dividers (491, 245.5) both went LEFT by the nearer-edge rule; one press now stands the pair on the
+//     two edges, at the face (recessColPairX; the store's alignDividersWithRecess, one undo).
 // The fossil kits untouched; the six hold byte for byte; one golden re-pinned with his words, one new golden.
 
 import { computeCabinet } from '../../src/engine/cabinet.js';
@@ -38,6 +41,7 @@ const OWNER_EDGE = '*"w zwiazku ze to jest w ksztalcie U to ja nie moge puscic t
   + 'scribe na edging, wiec w tym miejscu musimy pomniejszyc o 1 mm plecy"*; *"dokladnie, mozesz zakodowac prosze"* '
   + '(28.10.2026)';
 const OWNER_CAP = '*"wszystkie polki teraz sa 10 mm, to polke nad szufladami tez zrob 10 mm jak reszta"* (28.10.2026)';
+const OWNER_WALK = '*"problem polega na tym ze nie dzialaja te szuflady"* (28.10.2026, 22:11, at home)';
 
 const ext = (p) => (p?.extension && typeof p.extension === 'object' ? p.extension : null);
 const itemsOf = (p) => [
@@ -101,7 +105,8 @@ export const LICENSED = {
       + 'recessColBottomOutline, recessColTopJoints, recessColBoxPlaces, recessColReturn, recessColDivider, '
       + 'recessColCapBump, recessColCapOutline, recessColDrawerDepth, recessColFillers), recessHandCut, recessPieceAt; '
       + 'extensionCarcass takes `column` and cuts the back\'s cut 1 bigger on its own edges, records its pieces for D25; '
-      + `extensionSummary names the column. ${OWNER_DRAWERS} ${OWNER_EDGE}`,
+      + 'extensionSummary names the column; recessColPairX (D26: the pair of dividers on the two edges, the one answer '
+      + `"Align both with recess" writes). ${OWNER_DRAWERS} ${OWNER_EDGE} ${OWNER_WALK}`,
     gates: ['recessDrawersColumn', 'recessHandEdge', 'recessBackHoles'],
   },
   'src/engine/cabinet.js': {
@@ -109,7 +114,8 @@ export const LICENSED = {
       + 'ladder plus ed, the columns\' one board over it, the dividers stopping under it; RECESS_DRAWERS_SHALLOW in words '
       + 'otherwise), the slots\' fillers (recessColFillers), `column` handed to extensionCarcass; every hole the drilling '
       + 'pass puts into the BACK through backHole (D25: exactly the old call with no recess cut); a divider\'s runner row '
-      + `from its own front edge (T82 F9's law), mirrored front to back until tonight. ${OWNER_DRAWERS}`,
+      + 'from its own front edge (T82 F9\'s law), mirrored front to back until tonight; #49\'s sentence names the press '
+      + `that stands the pair (D26). ${OWNER_DRAWERS} ${OWNER_WALK}`,
     gates: ['recessDrawersColumn', 'recessBackHoles', 'dividerRunnerRow'],
   },
   'src/engine/notch.js': {
@@ -208,7 +214,8 @@ export const LISP = {
     + 'OVER THE DRAWERS STANDS BACK 10, D25 THE BACK\'S HOLES FOLLOW ITS PIECES; section I (recess-col-refusal to '
     + 'recess-piece-at) and its NUMBERS I2 (CASE E, E2, E3, a corner); recess-window-pieces (the law of the pieces for '
     + 'any window); recess-back-joints\' runs end at the window\'s edges; CASE B\'s and F2 CASE D\'s back cut 1 bigger; '
-    + `RECESS_FULL draws the cut as the cutter takes it. ${OWNER_DRAWERS} ${OWNER_EDGE}`,
+    + 'RECESS_FULL draws the cut as the cutter takes it; D26 ALIGN WITH RECESS STANDS BOTH DIVIDERS, recess-col-pair-x '
+    + `and its NUMBERS (the app's 491 and 245.5 to 872 and 110). ${OWNER_DRAWERS} ${OWNER_EDGE} ${OWNER_WALK}`,
   'reference/lisp/KIT_NOTCH.lsp': `Owner 28.10.2026 (KIT_RECESS.lsp D23): notch-profile carries "recess.handEdge" 1.0, `
     + `the table KIT_RECESS.lsp reads. ${OWNER_EDGE}`,
 };

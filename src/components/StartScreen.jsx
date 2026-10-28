@@ -13,6 +13,10 @@ import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { getProjectType } from '../engine/projectTypes.js';
 import { migrateDesign } from '../engine/design.js';
 import { useHistoryStore } from '../stores/historyStore.js';
+// Chat fix 28.10.2026: a job saved to a file on another computer (Open from file).
+import { pickProjectFile } from '../lib/projectFile.js';
+import { openProjectFromFile } from '../lib/projectFileRoad.js';
+import { askProjectFile } from './ProjectFileModal.jsx';
 
 // ─── Start screen (BACKLOG #7; turn 7, BACKLOG #41) ───
 // The AutoCAD arrangement, because that is what Piotr opens every morning:
@@ -110,6 +114,20 @@ export default function StartScreen() {
     }
   };
 
+  // ─── CHAT FIX 28.10.2026 · OPEN FROM FILE ──────────────────────────────────
+  // The owner: *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*;
+  // *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"*.
+  // A .ccproject file (File > Save to file on any computer) goes on this
+  // computer's shelf and opens: lib/projectFileRoad.js, the one road the File
+  // menu takes too, its questions in components/ProjectFileModal.jsx.
+  const onOpenFile = async (e) => {
+    const anchor = anchorOfEvent(e);
+    const picked = await pickProjectFile();
+    await openProjectFromFile({
+      picked, anchor, storage, ask: askProjectFile,
+    });
+  };
+
   const onDelete = async (row, e) => {
     e.stopPropagation();
     if (row.source !== 'local') { notify('Only projects saved on this computer can be removed here.', 'info'); return; }
@@ -165,6 +183,15 @@ export default function StartScreen() {
               </button>
               <button type="button" className="cc-btn w-full" onClick={() => setTab('recent')}>
                 Recent{rows.recent.length ? ` (${rows.recent.length})` : ''}
+              </button>
+              <button
+                type="button"
+                className="cc-btn w-full"
+                data-open-from-file="1"
+                title="A .ccproject file: File > Save to file on this computer or another"
+                onClick={onOpenFile}
+              >
+                Open from file…
               </button>
             </section>
           </div>

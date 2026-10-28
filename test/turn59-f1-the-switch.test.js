@@ -94,7 +94,8 @@ const EXEMPT = {
     + ' T78 F21 · the Output menu\'s Spraying placeholder becomes a live entry (onOpenSpraying): one page on the Production Core pattern, the spray schedule by colour, the cards and the paint order. *"cale sprayowanie jako osobne menu Cabinet Core."*'
     + ' Chat fix 17.10.2026 \u00b7 Output > Part labels (PDF): the sticker sheets (onExportLabels). *"naklejki 44 na A4 bo takie mam, kolorami ... napis co to, i strzalka co oklejamy ... ok koduj"*'
     + ' T82 F20, after the review · File > Save marks the job saved only when the save was stored (persistProject answers stored); a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
-    + ' T84 F2 · variant="studio" for the Studio\'s top bar: each header control written once and drawn by either layout (the same handler, guard and state); the Studio layout is the wordmark with the PRO label, the project name, the same menus array through the same MenuBar with orderMenus whole (every leaf, run, disabled and checked of the census), then Undo and Redo (the history store\'s, the toolbar\'s guards), Save, Brightness, Account and the gold button, Export renamed BOM with the same call setBomOpen(!bomOpen); its MockModeBadge stands on the status bar; the legacy layout is what it was. *"tak"* (the owner, 27.10.2026, 16:27, to the header\'s Export renamed BOM); *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
+    + ' T84 F2 · variant="studio" for the Studio\'s top bar: each header control written once and drawn by either layout (the same handler, guard and state); the Studio layout is the wordmark with the PRO label, the project name, the same menus array through the same MenuBar with orderMenus whole (every leaf, run, disabled and checked of the census), then Undo and Redo (the history store\'s, the toolbar\'s guards), Save, Brightness, Account and the gold button, Export renamed BOM with the same call setBomOpen(!bomOpen); its MockModeBadge stands on the status bar; the legacy layout is what it was. *"tak"* (the owner, 27.10.2026, 16:27, to the header\'s Export renamed BOM); *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)'
+    + ' Chat fix 28.10.2026 F1 · File gains Open from file... (after Open...) and Save to file... (after Save as...): the job as one .ccproject file through lib/projectFileRoad.js, its questions in components/ProjectFileModal.jsx; before the job on the screen is replaced, the same red word about unsaved work File > Open says (warnIfUnsaved). Every other leaf, run and control as it was. *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*; *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"* (28.10.2026)',
   // ─── ADDED 15.10.2026 (the evening) · THE RECESS SEEN FROM THE FRONT ──────
   // The owner: *"na setup room jak widze sciane od frontu nie top tylko front
   // to nie widze kresek, gdzie jest komin i gdzie wneka"* and *"reces pionowy
@@ -233,7 +234,8 @@ const EXEMPT = {
     + ' T79 F13 . SET BACK\'s standard chip is the project\'s setback, carcass.shelfSetbackMm for a shelf and carcass.dividerSetbackMm for a divider (10), no longer the LISP\'s 20; Flush and the field unchanged. *"wszystkie cofnięcia zmień z 20 na 10 mm, 20 to stanowczo za dużo"*; 14:17: *"tylko półki i dividery, szuflady zostaw nie ruszaj."*'
     + ' T79 F16 · the shelf\'s Type field gains a `Restore sleeve rows` button (data-restore-sleeve-rows), shown only when the shelf carries `sleeves_dropped`, calling the store\'s `restoreSleeveRows`. *"przycisk Restore sleeve rows"*, accepted by the owner 14:55: *"ok daj"*'
     + ' T82 F18 · the free panel\'s Thickness field gains the ladder 18, 22, 25, 30, 36 (profile.freePanel.thicknessLadder, PROPOSED) beside the free number, each chip through updateUnitParams({ board_t }); the number stays the typed road. *"nie moge wizualnie zwiekszyc tez grubosci tego panela"*'
-    + ' Chat fix 28.10.2026 (KIT_RECESS.lsp D22) · the divider\'s position gains `Align with recess` (data-partition-align-recess) under its field, shown only while the cabinet has a recess band and the divider does not stand on its nearer edge (recessColDividerX), through the same setPartitionX. *"odsunac diverted po lewej i po prawej rowno z wneka, zeby zamontowac szuflady"*; *"dokladnie, mozesz zakodowac prosze"*, *"szuflady tez prosze"*.',
+    + ' Chat fix 28.10.2026 (KIT_RECESS.lsp D22) · the divider\'s position gains `Align with recess` (data-partition-align-recess) under its field, shown only while the cabinet has a recess band and the divider does not stand on its nearer edge (recessColDividerX), through the same setPartitionX. *"odsunac diverted po lewej i po prawej rowno z wneka, zeby zamontowac szuflady"*; *"dokladnie, mozesz zakodowac prosze"*, *"szuflady tez prosze"*.'
+    + ' The same evening, after the owner\'s walk at home (KIT_RECESS.lsp D26) · with TWO dividers the button reads `Align both with recess` and one press stands both on the edges, at the face, through the store\'s one action `alignDividersWithRecess` (one undo); the button reads the store\'s `recessAlignPlan` and goes once they stand there. *"problem polega na tym ze nie dzialaja te szuflady"*.',
   // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
   // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
   // client cannot reach. Three of his fourteen points are answered in PRO's own
@@ -372,7 +374,11 @@ const EXEMPT = {
     'T82 F20, after the review · Update and save marks the job saved only when the save was stored; a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
   // T82 F20, after the review: the start screen reads whether the shelf took the brand-new job.
   'src/components/StartScreen.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' +
-    'T82 F20, after the review · Start designing reads whether the shelf took the brand-new job; when the browser refused it the job opens marked unsaved (markUnsaved) and the start screen says the save\'s own red sentence (notOnShelf). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)',
+    'T82 F20, after the review · Start designing reads whether the shelf took the brand-new job; when the browser refused it the job opens marked unsaved (markUnsaved) and the start screen says the save\'s own red sentence (notOnShelf). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)' +
+    ' Chat fix 28.10.2026 F1 · the Open panel gains a third button, Open from file... (data-open-from-file): a .ccproject file goes on this computer\'s shelf and opens through lib/projectFileRoad.js, the File menu\'s own road. *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*; *"wiesz ze CC nie jest w chmurze jeszcze"* (28.10.2026)',
+  // Chat fix 28.10.2026 F1 · a NEW PRO file, frozen at its first hash: the two questions of Open from file.
+  'src/components/ProjectFileModal.jsx':
+    'Chat fix 28.10.2026 F1 · NEW, the window of Open from file\'s two questions, in the shell (name "project-file"): the job is already on this computer (Replace with the file, gold; Keep both, open as a copy; Cancel), and the file was drawn with other workshop settings (Use the file\'s settings, gold; Keep this computer\'s); drawn in a root of its own by askProjectFile, so neither the top bar nor the start screen hosts it. *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"*; *"problem polega na tym ze nie dzialaja te szuflady ani import ani export plikow"* (28.10.2026)',
   // ADDED BY TURN 84 (27.10.2026) · STUDIO, PRO'S FACE. CLAUDE.md T84 FROZEN 4: *"every PRO file edited is licensed in
   // EXEMPT with the owner's words from this file and re-frozen in the same commit."* Every NEW file under
   // src/components/studio/ stands here too, each with its own reason: the git assertion below excludes EXEMPT paths
@@ -498,7 +504,7 @@ const FROZEN = {
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F16 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F18 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/ElementProperties.jsx': 'b5e0c8abd34437e6a4fccfb043f76c904a696a902d8a25286eb790f1e08f340c',
+  'src/components/ElementProperties.jsx': '17372ffa62c00c834c574d8a30942a2bfb8ff0ec158c5a7e0c8b3232599e049f',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',
@@ -563,11 +569,15 @@ const FROZEN = {
   'src/components/SheenSlider.jsx': 'ec09e0dd7ad835672e4c024dee3013e649dcfa8ad64a2da5c120ed78d5c94bfb',
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/StartScreen.jsx': '366ca71d36eabc33926c1d092770cf06925b19102e660d4e40763cf17ce52a41',
+  // Chat fix 28.10.2026 F1 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/StartScreen.jsx': '7a5b95d523f4cb38e496210de8c9b570b848c5b11d3894bdd6726ca23b66afcd',
+  // Chat fix 28.10.2026 F1 · a NEW PRO file (the two questions of Open from file), frozen at its first hash; EXEMPT above carries the reason.
+  'src/components/ProjectFileModal.jsx': 'c47a5857e6b3b2ec73dc31a042ef2914b2cf4afd4c910d536adbdd1cc6b70e5b',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/TopBar.jsx': '78bd9bf40db70b172464e10a1b3ec09ad85ddbe843463479ca9e763b538d4531',
+  // Chat fix 28.10.2026 F1 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/TopBar.jsx': 'a031327293e295b7be38138c877c06b7a5b451f2f6c395ffb43ca16cccf703d2',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
   // T78 F5 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/UnitSizeModal.jsx': 'e8b94789f07fffaeb5b66a2a8fd160c28d9d4f4b0ed56383ecc18532f7b06c1f',
@@ -749,7 +759,7 @@ const show = (abs) => relative(ROOT, abs);
 
 // ─── 1. THE PRO FROZEN-FILES ASSERTION ─────────────────────────────────────
 
-test('F1: the frozen surface, 92 files of PRO, byte for byte (approved setup illustrations and the Studio included)', () => {
+test('F1: the frozen surface, 93 files of PRO, byte for byte (approved setup illustrations, the Studio and the project file window included)', () => {
   const moved = [];
   for (const [rel, want] of Object.entries(FROZEN)) {
     const path = join(ROOT, rel);
@@ -900,10 +910,17 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/studio/lib/studioEscape.js',
     // Chat fix 28.10.2026 · the setup workspace's stylesheet (the owner: "kafelki za duze", "koduj tutaj").
     'src/components/setup-workspace.css',
+    // Chat fix 28.10.2026 F1 · the job as a file: the window of Open from file's two questions, a NEW PRO file
+    // (the owner: "zrobisz mi pozniej cos co zadziala, czyli export i import projektow").
+    'src/components/ProjectFileModal.jsx',
 ].sort(), 'the exemption list is not the approved UI and CLAUDE.md paths');
+  // AMENDED BY THE CHAT FIX OF 28.10.2026 (the job as a file): a NEW PRO file born of a chat fix has no turn to
+  // name, so its reason names the fix by its date and its feature, `Chat fix 28.10.2026 F1`, the way the approved
+  // setup names `Setup UI 26.10.2026 F1`; the owner's own words beside it are asked exactly as before. The owner:
+  // *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"* (28.10.2026).
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
-    assert.match(why, /\b(?:(?:T\d{2}|DECOR) F\d|Setup UI 26\.10\.2026 F1)/, `${rel} does not say which turn and feature licensed it`);
+    assert.match(why, /\b(?:(?:T\d{2}|DECOR) F\d|Setup UI 26\.10\.2026 F1|Chat fix \d{2}\.\d{2}\.\d{4} F\d)/, `${rel} does not say which turn and feature licensed it`);
     assert.match(why, /\*"/, `${rel} does not carry the owner's own words`);
     const got = createHash('sha256').update(readFileSync(join(ROOT, rel))).digest('hex');
     assert.equal(got, FROZEN[rel], `${rel}'s new hash is not the one written down`);
@@ -920,7 +937,8 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // A tarball or a clone with no such ref. The manifest above already
     // answered; this assertion has nothing to add and says so out loud
     // rather than passing in silence.
-    assert.ok(Object.keys(FROZEN).length === 92, 'no base ref: the manifest is the whole proof here');
+    // AMENDED BY THE CHAT FIX OF 28.10.2026: 93, components/ProjectFileModal.jsx frozen at its first hash.
+    assert.ok(Object.keys(FROZEN).length === 93, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

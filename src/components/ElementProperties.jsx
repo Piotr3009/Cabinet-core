@@ -24,8 +24,8 @@ import {
   hangerDropMm, isLegacyRail, railChosenAlone, LEGACY_RAIL_NOTE, RAIL_ALONE_NOTE,
 } from '../engine/railAssembly.js';
 import { chainFromX, xFromChain } from '../engine/partitionPositions.js';
-// Chat fix 28.10.2026 (KIT_RECESS.lsp D22): the divider's nearer recess edge.
-import { recessColDividerX } from '../engine/extension.js';
+// Chat fix 28.10.2026 (KIT_RECESS.lsp D22, D26): where "Align with recess" stands the dividers.
+import { recessAlignPlan } from '../stores/projectStore.js';
 // Turn 24 (CLAUDE.md F3.3): which carcass board a partition is cut from.
 import { CARCASS_SLOTS, partitionSlot, slotById } from '../engine/thickness.js';
 import NumberField from './NumberField.jsx';
@@ -83,6 +83,7 @@ export default function ElementProperties({
   }, [centreBetween, cancelCentreBetween]);
   const setRailHeight = useProjectStore((s) => s.setRailHeight);
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
+  const alignDividersWithRecess = useProjectStore((s) => s.alignDividersWithRecess);
   // Turn 24 (CLAUDE.md F3.3): which carcass board this partition is cut from.
   const setPartitionSlot = useProjectStore((s) => s.setPartitionSlot);
   // Turn 30 (CLAUDE.md F3): which face of this divider the machine bores.
@@ -438,17 +439,15 @@ export default function ElementProperties({
           .map((pp) => ({ x: pp.box.x, w: pp.box.w }));
         const mine = panel?.box?.x ?? item?.x_mm ?? G;
         const first = siblings.every((o) => o.x + o.w > mine);
-        // ─── CHAT FIX 28.10.2026 · ALIGN WITH RECESS (KIT_RECESS.lsp D22) ────
+        // ─── CHAT FIX 28.10.2026 · ALIGN WITH RECESS (KIT_RECESS.lsp D22, D26) ──
         // The owner: *"odsunac diverted po lewej i po prawej rowno z wneka,
-        // zeby zamontowac szuflady"*. The recess band the room hands this
-        // cabinet (`derived.extension`, never a refused one): the divider goes
-        // to its nearer edge (recessColDividerX), where a column of drawers
-        // between two such dividers goes into the recess. Shown only while the
-        // divider does not stand on that edge.
-        const band = unitResult(unit.id)?.derived?.extension || null;
-        const alignX = band && !band.refused && item?.id
-          ? recessColDividerX(Number(unit.params.width) || 0, band.x0, band.x1, mine, panel?.box?.w ?? G)
-          : null;
+        // zeby zamontowac szuflady"*; at home, the same evening: *"problem
+        // polega na tym ze nie dzialaja te szuflady"*. The recess band the
+        // room hands this cabinet (`derived.extension`): with TWO dividers
+        // one press stands BOTH on its edges, at the face (D26); else the
+        // pressed one on its nearer edge. One answer, recessAlignPlan, for
+        // the button and the action; shown until the dividers stand there.
+        const alignPlan = item?.id ? recessAlignPlan(unit, unitResult(unit.id), item.id, profile) : null;
         return (
           <div key={key}>
             <Field label={first ? 'From the left' : 'From the last'}>
@@ -464,15 +463,24 @@ export default function ElementProperties({
                 )}
               />
             </Field>
-            {alignX != null && Math.abs(alignX - mine) > 0.25 ? (
+            {alignPlan && !alignPlan.done ? (
               <button
                 type="button"
                 className="cc-btn mt-1 w-full text-[11px]"
                 data-partition-align-recess={item.id}
-                title="Stand this divider on the recess's nearer edge: between two dividers on its edges the drawers go into the recess"
-                onClick={() => setPartitionX(unit.id, item.id, alignX)}
+                title={alignPlan.pair
+                  ? "Both dividers to the recess's edges, at the face: between them the drawers go into the recess"
+                  : "This divider to the recess's nearer edge, at the face"}
+                onClick={() => {
+                  const res = alignDividersWithRecess(unit.id, item.id);
+                  if (res?.ok && res.pair) {
+                    notify('Both dividers stand on the recess\'s edges, at the face. Add the drawers in the column between them.', 'ok');
+                  } else if (!res?.ok) {
+                    notify(res?.error || 'The divider could not stand on the recess\'s edge.', 'warn');
+                  }
+                }}
               >
-                Align with recess
+                {alignPlan.pair ? 'Align both with recess' : 'Align with recess'}
               </button>
             ) : null}
           </div>

@@ -232,8 +232,15 @@ test('F2 · the array the two layouts draw is the census\'s 48 leaves, menu for 
       .reduce((n, it) => n + (Array.isArray(it.items) && it.items.length ? leaves(it) : 1), 0);
   };
   const perMenu = Object.fromEntries(ordered.map((m) => [m.label, leaves(m)]));
-  assert.deepEqual(perMenu, CENSUS.static.topMenu.perMenu, 'every menu keeps its leaves');
-  assert.equal(Object.values(perMenu).reduce((a, b) => a + b, 0), CENSUS.static.topMenu.total);
+  // AMENDED BY THE CHAT FIX OF 28.10.2026 (the job as a file): File gains two leaves, Open from file... after
+  // Open... and Save to file... after Save as... (test/chatfix-2810-project-file.test.js holds them). Every leaf of
+  // the census stays, by label and by handler (test/turn84-f07-parity.test.js); the census itself, 48, is not
+  // re-pinned, and every other menu keeps its count exactly. The owner: *"zrobisz mi pozniej cos co zadziala, czyli
+  // export i import projektow"*; of the census: *"funkcje w menu musza sie zachowac wszystkie"*.
+  const ADDED = { File: 2 };
+  const expected = Object.fromEntries(Object.entries(CENSUS.static.topMenu.perMenu).map(([k, n]) => [k, n + (ADDED[k] || 0)]));
+  assert.deepEqual(perMenu, expected, 'every menu keeps its leaves');
+  assert.equal(Object.values(perMenu).reduce((a, b) => a + b, 0), CENSUS.static.topMenu.total + 2);
   assert.equal(CENSUS.static.topMenu.total, 48);
 });
 

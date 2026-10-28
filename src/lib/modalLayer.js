@@ -212,6 +212,13 @@ export const MODAL_KINDS = Object.freeze({
   // (Modal.jsx: `!anchor || workspace`), so it is a PROJECT window: no anchor
   // is asked of it. The label is the window's own title (T67 F9's rule).
   'island-plan': { about: 'project', label: 'Plan island' },
+  // CHAT FIX 28.10.2026 · a job opened from a .ccproject file asks its two
+  // questions (it is already on this computer; it was drawn with other
+  // workshop settings) in a window of its own (components/ProjectFileModal.jsx).
+  // It is about the whole JOB, so it is a project window, beside the menu entry
+  // or the start screen's button that picked the file. The owner: *"zrobisz mi
+  // pozniej cos co zadziala, czyli export i import projektow"*.
+  'project-file': { about: 'project', label: 'Open from file' },
 });
 
 /** Every modal name the app knows, as a list. */

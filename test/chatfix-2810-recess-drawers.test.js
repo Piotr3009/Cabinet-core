@@ -40,7 +40,10 @@ import { panelPlacement } from '../src/engine/joinery.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engine/profile.js';
 import { rectCorners } from '../src/engine/room.js';
-import { useProjectStore, paramsForEngine } from '../src/stores/projectStore.js';
+import { useProjectStore, paramsForEngine, recessAlignPlan } from '../src/stores/projectStore.js';
+import {
+  flushHistory, unwatchProjectHistory, useHistoryStore, watchProjectHistory,
+} from '../src/stores/historyStore.js';
 import { goldenOf } from '../scripts/t75-golden.mjs';
 import { dump } from '../scripts/t64-classify.mjs';
 import {
@@ -51,6 +54,9 @@ const ROOT = new URL('../', import.meta.url).pathname;
 const read = (rel) => readFileSync(`${ROOT}${rel}`, 'utf8');
 const K = notchProfile(P);
 const S = () => useProjectStore.getState();
+// D26 asks for one undo per press: the history watches the store as the app's does.
+test.before(() => watchProjectHistory());
+test.after(() => unwatchProjectHistory());
 
 /** The LISP's own balance: parens outside strings and comments. */
 function parenScan(text) {
@@ -311,7 +317,7 @@ test('#49 · the dividers off the edges, the band off the floor, another stack, 
   const off = computeCabinet(caseE({ xs: [100, 880] }), P);
   const said = off.warnings.find((w) => w.code === 'RECESS_DRAWERS_SHALLOW');
   assert.equal(said.message, 'RECESS DRAWERS: the dividers do not stand on the recess\'s edges; the drawers keep the carcass\'s '
-    + 'depth. Stand one on each edge: Align with recess, in the divider\'s window.');
+    + 'depth. Double-click a divider: "Align both with recess" stands the two on the recess\'s edges, at the face.');
   assert.equal(said.zone, 1);
   assert.equal(panelOf(off, 'Z2D1-SL').w, 440);
   assert.ok(panelOf(off, 'Z2-PART'), 'the column keeps its own board');
@@ -324,6 +330,15 @@ test('#49 · the dividers off the edges, the band off the floor, another stack, 
   assert.match(stack.warnings.find((w) => w.code === 'RECESS_DRAWERS_SHALLOW').message, /carries another stack/);
   const shoe = computeCabinet(caseE({ drawers: [drawer(0), drawer(1, { variant: 'shoe' })] }), P);
   assert.match(shoe.warnings.find((w) => w.code === 'RECESS_DRAWERS_SHALLOW').message, /top drawer is the shoe drawer/);
+  // D26: a third divider, or the drawers in a side column, are named as such; only the pair off its edges points to the press.
+  const three = computeCabinet({ ...caseE(), items: [...caseE().items, { id: 'p3', kind: 'partition', x_mm: 491 }] }, P);
+  assert.match(three.warnings.find((w) => w.code === 'RECESS_DRAWERS_SHALLOW').message,
+    /between exactly two dividers, one on each of its edges; this cabinet has 3, so they keep the carcass's depth\.$/);
+  const side = computeCabinet({ ...caseE({ xs: [300, 700] }), items: [...caseE({ xs: [300, 700] }).items.filter((i) => i.kind === 'partition'),
+    drawer(0, { zone: 0 }), drawer(1, { zone: 0 })] }, P);
+  assert.equal(side.warnings.find((w) => w.code === 'RECESS_DRAWERS_SHALLOW').message,
+    'RECESS DRAWERS: the drawers go into the recess in the column between the two dividers (Column 2); these stand in Column 1, '
+    + 'so they keep the carcass\'s depth.');
   // No extension, no zoned drawer: nothing to say.
   assert.deepEqual(computeCabinet({ ...caseE(), extension: null }, P).warnings.filter((w) => w.code === 'RECESS_DRAWERS_SHALLOW'), []);
   assert.deepEqual(computeCabinet({ ...caseE(), items: caseE().items.slice(0, 2) }, P).warnings, []);
@@ -411,13 +426,11 @@ test('the store · Align with recess puts each divider on its edge; the drawers 
   const rows = S().runChecks().filter((f) => f.check === 49);
   assert.equal(rows.length, 1);
   assert.equal(rows[0].level, 'yellow');
-  assert.match(rows[0].message, /Align with recess/);
-  // The button's own arithmetic, then the store's one writer.
-  for (const p of partsOf(id)) {
-    const vp = S().unitResult(id).panels.find((x) => x.meta?.itemId === p.id);
-    const to = X.recessColDividerX(1000, band.x0, band.x1, vp.box.x, vp.box.w);
-    S().setPartitionX(id, p.id, to);
-  }
+  assert.match(rows[0].message, /"Align both with recess"/);
+  // The button's one action (D26): both dividers, one press.
+  const res = S().alignDividersWithRecess(id, partsOf(id)[1].id);
+  assert.equal(res.ok, true, res.error);
+  assert.equal(res.pair, true);
   assert.deepEqual(partsOf(id).map((p) => p.x_mm), [110, 872]);
   const after = S().unitResult(id);
   assert.deepEqual(after.warnings.filter((w) => w.code === 'RECESS_DRAWERS_SHALLOW'), []);
@@ -433,13 +446,91 @@ test('the store · Align with recess puts each divider on its edge; the drawers 
   assert.ok(after.derived.extension.column);
 });
 
-test('the window · Align with recess, in PRO and in its retail copy, through setPartitionX', () => {
+// ─── D26: the owner's walk at home (*"problem polega na tym ze nie dzialaja te szuflady"*) ─────────────
+
+test('D26 · the app\'s own two dividers (491, 245.5): one press stands both on the edges, at the face, in one undo; then the drawers go into the recess', () => {
+  const id = wardrobeBeforeRecess();
+  // "Add a vertical partition", twice, as the panel does it: centred in the widest bay.
+  S().addPartition(id);
+  S().addPartition(id);
+  assert.deepEqual(partsOf(id).map((p) => p.x_mm), [491, 245.5], 'the app\'s own places');
+  // What failed for him: D22's per-divider rule took the one at 491 LEFT (381 either way, a tie) and the
+  // other's minimum gap stopped it at 285.5.
+  assert.equal(X.recessColDividerX(1000, 110, 890, 491, 18), 110);
+  assert.equal(X.recessColDividerX(1000, 110, 890, 245.5, 18), 110);
+  const [mid, left] = partsOf(id);
+  const plan = recessAlignPlan(unitOf(id), S().unitResult(id), mid.id);
+  assert.deepEqual(plan, { moves: [{ id: left.id, x: 110 }, { id: mid.id, x: 872 }], pair: true, done: false });
+  flushHistory();
+  const before = JSON.parse(JSON.stringify(S().units));
+  const depth = useHistoryStore.getState().past.length;
+  const res = S().alignDividersWithRecess(id, mid.id);
+  flushHistory();
+  assert.deepEqual(res, { ok: true, pair: true, moves: plan.moves });
+  assert.deepEqual(partsOf(id).map((p) => [p.x_mm, p.front_mm]), [[872, 0], [110, 0]], 'both on the edges, both at the face');
+  assert.equal(useHistoryStore.getState().past.length, depth + 1, 'one press, one undo');
+  assert.equal(recessAlignPlan(unitOf(id), S().unitResult(id), mid.id).done, true, 'the button goes once they stand there');
+  // One Ctrl+Z puts both back where the app put them; Ctrl+Y stands them again.
+  assert.ok(useHistoryStore.getState().undo());
+  assert.deepEqual(JSON.parse(JSON.stringify(S().units)), before, 'one undo, both dividers');
+  assert.ok(useHistoryStore.getState().redo());
+  assert.deepEqual(partsOf(id).map((p) => [p.x_mm, p.front_mm]), [[872, 0], [110, 0]]);
+  // The drawers in the column between them (Column 2): into the recess, nothing to say.
+  assert.equal(S().addDrawers(id, 3, 'internal', 200, 1).ok, true);
+  const r = S().unitResult(id);
+  assert.deepEqual(r.warnings.filter((w) => w.code === 'RECESS_DRAWERS_SHALLOW'), []);
+  assert.deepEqual(r.derived.extension.column, { zone: 1, dividers: ['VPART-1', 'VPART-2'], cap: 'PARTITION', capY: 629 });
+  assert.equal(r.panels.find((p) => p.id === 'Z2D1-SL').w, 540);
+  assert.equal(r.panels.find((p) => p.id === 'VPART-1').box.d, 680);
+  assert.deepEqual([r.panels.find((p) => p.id === 'PARTITION').w, r.panels.find((p) => p.id === 'PARTITION').h], [964, 670]);
+});
+
+test('D26 · the drawers first, then the press: the guard asks for the face, the press gives it; one divider goes to its nearer edge', () => {
+  const id = wardrobeBeforeRecess();
+  S().addPartition(id);
+  S().addPartition(id);
+  // The project's dividers stand 10 back: the column guard refuses drawers beside them, in words.
+  const refused = S().addDrawers(id, 3, 'internal', 200, 1);
+  assert.equal(refused.ok, false);
+  const res = S().alignDividersWithRecess(id, partsOf(id)[1].id);
+  assert.equal(res.ok, true);
+  assert.equal(S().addDrawers(id, 3, 'internal', 200, 1).ok, true, 'at the face, the column takes them');
+  assert.deepEqual(S().unitResult(id).warnings.filter((w) => w.code === 'RECESS_DRAWERS_SHALLOW'), []);
+  // One divider: the pressed one to its nearer edge, at the face.
+  const one = wardrobeBeforeRecess();
+  S().addPartition(one, 700);
+  const solo = partsOf(one)[0];
+  assert.deepEqual(recessAlignPlan(unitOf(one), S().unitResult(one), solo.id).moves, [{ id: solo.id, x: 872 }]);
+  assert.equal(S().alignDividersWithRecess(one, solo.id).ok, true);
+  assert.deepEqual(partsOf(one).map((p) => [p.x_mm, p.front_mm]), [[872, 0]]);
+  // No recess: no plan, no button.
+  S().newProject();
+  const plain = S().addUnit('WARDROBE', { wall: 0, x: 200 });
+  S().addPartition(plain.id);
+  assert.equal(recessAlignPlan(unitOf(plain.id), S().unitResult(plain.id), partsOf(plain.id)[0].id), null);
+  assert.equal(S().alignDividersWithRecess(plain.id, partsOf(plain.id)[0].id).ok, false);
+});
+
+test('D26 · recess-col-pair-x: the pair on the two edges; none when the band reaches a side', () => {
+  assert.deepEqual(X.recessColPairX(1000, 110, 890, 18), [110, 872]);
+  assert.deepEqual(X.recessColPairX(1000, 110, 890, 25), [110, 865], 'the right one\'s own board');
+  assert.equal(X.recessColPairX(1000, 0, 890, 18), null);
+  assert.equal(X.recessColPairX(1000, 110, 1000, 18), null);
+  const text = read('reference/lisp/KIT_RECESS.lsp');
+  assert.match(text, /;;; D26 ALIGN WITH RECESS STANDS BOTH DIVIDERS\./);
+  assert.match(text, /\(defun recess-col-pair-x \(cw ex0 ex1 w\)/);
+  assert.match(text, /problem\s*\n?;*\s*polega na tym ze nie dzialaja te szuflady/);
+  assert.match(text, /THE PAIR \(D26, recess-col-pair-x 1000 110 890 18\) = \(110 872\)/);
+});
+
+test('the window · Align with recess, in PRO and in its retail copy, through the store\'s one action', () => {
   for (const file of ['src/components/ElementProperties.jsx', 'src/retail/design/detail/ElementProperties.jsx']) {
     const src = read(file);
-    assert.match(src, /import \{ recessColDividerX \} from '(\.\.\/)+engine\/extension\.js';/);
+    assert.match(src, /import \{ recessAlignPlan \} from '(\.\.\/)+stores\/projectStore\.js';/);
     assert.match(src, /data-partition-align-recess=\{item\.id\}/);
-    assert.match(src, /onClick=\{\(\) => setPartitionX\(unit\.id, item\.id, alignX\)\}/);
-    assert.match(src, />\s*Align with recess\s*</);
+    assert.match(src, /const res = alignDividersWithRecess\(unit\.id, item\.id\);/);
+    assert.match(src, /\{alignPlan\.pair \? 'Align both with recess' : 'Align with recess'\}/);
+    assert.match(src, /\{alignPlan && !alignPlan\.done \? \(/);
   }
 });
 

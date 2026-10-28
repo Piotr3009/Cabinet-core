@@ -136,6 +136,22 @@
   cursor: default;
 }
 
+/* Her gold button is 600; the house's `.cc-btn-gold` is `font-medium` (500, index.css). Inside
+   the skin, hers (verify/t84/f01-skin.md D9). */
+.studio-pro .studio-skin :where(.cc-btn-gold):where(:not(.cc-panel *)) {
+  font-weight: 600;
+}
+
+/* Her buttons stand 10 px off their words on either side; the house's 12 (cc-btn, cc-btn-gold)
+   and 8 (cc-btn-ghost). Where her Stage-1 draws a button, the top bar and the scene's edge, the
+   skin takes her 10, except a button that names its own padding with a `px-` utility, an icon
+   button (its padding is 0) and a button inside a popup (her menu rows are 9 off their words)
+   (verify/t84/f01-skin.md D8). */
+.studio-pro :is(.studio-topbar, .studio-scene-tools, .studio-scene-links) :where(.cc-btn, .cc-btn-gold, .cc-btn-ghost):where(:not(.studio-icon-btn, [class*="px-"], .cc-panel *, .studio-popup *)) {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
 /* Fields: 30 high, 4 round, 13 px (a textarea keeps its own height). */
 .studio-pro .studio-skin :where(.cc-input):where(:not(textarea, .cc-panel *)) {
   height: var(--studio-field);
@@ -238,6 +254,17 @@
   font-size: calc(var(--studio-text) - 2px);
   letter-spacing: .5px;
   color: theme('colors.gold.DEFAULT');
+}
+
+/* Her PRO stands inside her wordmark, 9 px off the words (her wordmark's gap); ours stands in the
+   bar at the bar's gap (7): the 2 px more. TopBar's separator after it is the legacy header's
+   `h-5 w-px` span, 20 high and no margin; her rule is 18 high with 3 px either side at 1500 and
+   below, the values this bar keeps at every width (verify/t84/f01-skin.md D4). */
+.studio-pro .studio-topbar > .studio-pro-label { margin-left: 2px; }
+
+.studio-pro .studio-topbar > .studio-pro-label + span[aria-hidden] {
+  height: 18px;
+  margin: 0 3px;
 }
 
 /* The only part of the top bar that gives way when the screen is narrow: the name truncates. */

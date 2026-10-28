@@ -1,0 +1,72 @@
+--- src/components/studio/CameraBar.jsx	2026-10-28 00:15:57.891821145 +0000
++++ /tmp/claude-0/t84/work/F1/CameraBar.jsx	2026-10-28 02:26:22.423893826 +0000
+@@ -18,9 +18,8 @@
+ // Every place is computed in lib/cameraPresets.js (plain numbers, the room's
+ // own walls and runs) and PARKED on the live camera and orbit target that
+ // 3d/viewHandle.js registers as `window.__cc.views.room`: one step, no flight,
+-// nothing in src/3d edited or imported but the furniture's own bounds
+-// (3d/renderCapture.js furnitureBounds: meshes only, the tool's helpers left
+-// out, the box the key light and the render already fit).
++// nothing in src/3d edited or imported (the units' bounds are this file's own
++// unitBounds: their meshes and their hardware, the tool's helpers left out).
+ //
+ // Frame selection fits the selected cabinets (every cabinet when none is) with
+ // profile.ui.studio.frameMargin, keeping the direction the camera looks from
+@@ -40,13 +39,47 @@
+ import { useCabinetProfileStore } from '../../stores/cabinetProfileStore.js';
+ import { realWalls } from '../../engine/room.js';
+ import { LAYER_CLASS } from '../../lib/modalLayer.js';
+-import { furnitureBounds } from '../../3d/renderCapture.js';
+ import { Icon } from './StudioIcons.jsx';
+ import {
+   WALL_VIEWS, fitBoxes, lensOf, placeCamera, roomView, unitRoots, viewDirection, viewPlacement,
+ } from './lib/cameraPresets.js';
+ 
+ /**
++ * The units' box as the eye sees it: every mesh of the unit, its hardware too
++ * (the legs and the knobs a cabinet stands on and opens by: 3d/Hardware.jsx
++ * draws them as instanced meshes marked ccNoBounds, which a render's
++ * furnitureBounds leaves out because an instanced mesh's own geometry box is
++ * one template at its origin, not where its instances stand). Here an
++ * instanced mesh is counted by its instances' box (three's
++ * InstancedMesh.computeBoundingBox), a tool's subtree (ccHelper) not at all.
++ * The T84 walk (F8) measured the need: with the hardware left out a base
++ * unit's feet fell past the frame's edge (ndc 1.037 at 1280 and 1440).
++ */
++function unitBounds(view, roots) {
++  const { Box3 } = view.three;
++  const box = new Box3();
++  const one = new Box3();
++  const walk = (object) => {
++    if (!object || object.userData?.ccHelper) return;
++    if (object.isInstancedMesh) {
++      if (object.count > 0) {
++        object.computeBoundingBox();
++        box.union(one.copy(object.boundingBox).applyMatrix4(object.matrixWorld));
++      }
++    } else if (object.isMesh && object.geometry) {
++      if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
++      box.union(one.copy(object.geometry.boundingBox).applyMatrix4(object.matrixWorld));
++    }
++    for (const child of object.children) walk(child);
++  };
++  for (const root of roots) {
++    root.updateWorldMatrix(true, true);
++    walk(root);
++  }
++  return box.isEmpty() ? null : { min: box.min.toArray(), max: box.max.toArray() };
++}
++
++/**
+  * Fit these units (every unit when `ids` is null) in the live room view,
+  * keeping the direction it looks from. True when the camera moved.
+  */
+@@ -54,7 +87,7 @@
+   const view = roomView();
+   if (!view?.scene) return false;
+   const roots = unitRoots(view.scene, ids);
+-  const box = roots.length ? furnitureBounds(roots) : null;
++  const box = roots.length ? unitBounds(view, roots) : null;
+   if (!box) return false;
+   return placeCamera(view, fitBoxes([box], { ...lensOf(view), margin, direction: viewDirection(view) }));
+ }

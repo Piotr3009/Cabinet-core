@@ -3,10 +3,10 @@
   "mode": "legacy",
   "partial": false,
   "staticOnly": false,
-  "commit": "07ac04c6a79e09019e3e88618db0b72b81ccbc8c",
-  "commitShort": "07ac04c",
+  "commit": "e6301f1c7e4a13dccb482832a523737aa6c34915",
+  "commitShort": "e6301f1",
   "branch": "claude/t84-studio-stage1",
-  "takenAt": "2026-10-28T01:16:40.498Z",
+  "takenAt": "2026-10-28T01:26:41.401Z",
   "node": "v22.22.0",
   "viewport": {
     "width": 1440,
@@ -3043,7 +3043,7 @@
     },
     "panels": {
       "BUD": {
-        "unitId": "u_nu4sz0k",
+        "unitId": "u_47h9e9j",
         "num": "01",
         "position": {
           "wall": 0,
@@ -3124,7 +3124,7 @@
         "line": "BUD              sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2"
       },
       "BUDR": {
-        "unitId": "u_fznbfpu",
+        "unitId": "u_8v7etqu",
         "num": "DR01",
         "position": {
           "wall": 0,
@@ -3199,7 +3199,7 @@
         "line": "BUDR             sel=true visible=39 {\"input:text\":9,\"button\":20,\"select\":6,\"input:checkbox\":4} labels=11 sections=Carcass:1:16|Section 1:1:7|Construction:1:12|Doors:1:1"
       },
       "WUD": {
-        "unitId": "u_vbrerc4",
+        "unitId": "u_nefytq6",
         "num": "WU01",
         "position": {
           "wall": 0,
@@ -3280,7 +3280,7 @@
         "line": "WUD              sel=true visible=58 {\"input:text\":7,\"button\":44,\"select\":6,\"input:checkbox\":1} labels=12 sections=Carcass:1:19|Add items:1:17|Section 1:1:1|Construction:1:16|Doors:1:2"
       },
       "WARDROBE": {
-        "unitId": "u_iwyj0ta",
+        "unitId": "u_hjipjmg",
         "num": "W01",
         "position": {
           "wall": 0,
@@ -3361,7 +3361,7 @@
         "line": "WARDROBE         sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:13|Section 1:1:1|Construction:1:16|Doors:1:2"
       },
       "VANITY2": {
-        "unitId": "u_p7fdubr",
+        "unitId": "u_fxr7jh6",
         "num": "VU01",
         "position": {
           "wall": 0,
@@ -3442,7 +3442,7 @@
         "line": "VANITY2          sel=true visible=50 {\"input:text\":9,\"button\":32,\"select\":6,\"input:checkbox\":3} labels=11 sections=Carcass:1:15|Vanity:1:9|Section 1:1:8|Construction:1:14|Doors:1:1"
       },
       "MIRROR_CABINET": {
-        "unitId": "u_2hc4tr8",
+        "unitId": "u_bx9w4jq",
         "num": "MC01",
         "position": {
           "wall": 0,
@@ -3523,7 +3523,7 @@
         "line": "MIRROR_CABINET   sel=true visible=62 {\"input:text\":14,\"button\":41,\"select\":6,\"input:checkbox\":1} labels=13 sections=Carcass:1:16|Mirror cabinet:1:29|Section 1:1:1|Construction:1:12|Doors:1:1"
       },
       "CORNER_L_BASE": {
-        "unitId": "u_979597h",
+        "unitId": "u_593ucej",
         "num": "CL01",
         "position": {
           "wall": 0,
@@ -3604,7 +3604,7 @@
         "line": "CORNER_L_BASE    sel=true visible=52 {\"input:text\":6,\"button\":39,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:16|Add items:1:17|Section 1:1:1|Construction:1:13|Doors:1:2"
       },
       "HAWA_POCKET": {
-        "unitId": "u_w563q5s",
+        "unitId": "u_jbyn1en",
         "num": "HP01",
         "position": {
           "wall": 0,
@@ -3685,7 +3685,7 @@
         "line": "HAWA_POCKET      sel=true visible=45 {\"input:text\":6,\"button\":32,\"select\":6,\"input:checkbox\":1} labels=12 sections=Pocket door:null:9|Carcass:1:16|Section 1:1:1|Construction:1:15|Doors:1:1"
       },
       "BLIND_BASE": {
-        "unitId": "u_a7oni36",
+        "unitId": "u_g67nb7s",
         "num": "BB01",
         "position": {
           "wall": 0,
@@ -3766,7 +3766,7 @@
         "line": "BLIND_BASE       sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2"
       },
       "PANTRY": {
-        "unitId": "u_v1q0pow",
+        "unitId": "u_0p25e7b",
         "num": "PY01",
         "position": {
           "wall": 0,
@@ -3847,7 +3847,7 @@
         "line": "PANTRY           sel=true visible=57 {\"input:text\":6,\"button\":44,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:16|Doors:1:2"
       },
       "BUD_INT": {
-        "unitId": "u_7izxtf5",
+        "unitId": "u_3vcra2s",
         "num": "BI01",
         "position": {
           "wall": 0,
@@ -3928,7 +3928,7 @@
         "line": "BUD_INT          sel=true visible=53 {\"input:text\":6,\"button\":40,\"select\":6,\"input:checkbox\":1} labels=11 sections=Carcass:1:18|Add items:1:17|Section 1:1:1|Construction:1:12|Doors:1:2"
       },
       "WUD_HOOD": {
-        "unitId": "u_cmq49c0",
+        "unitId": "u_5zftbwc",
         "num": "HD01",
         "position": {
           "wall": 0,
@@ -4003,7 +4003,7 @@
         "line": "WUD_HOOD         sel=true visible=39 {\"input:text\":7,\"button\":25,\"select\":6,\"input:checkbox\":1} labels=12 sections=Carcass:1:17|Section 1:1:1|Construction:1:16|Doors:1:2"
       },
       "FREE_PANEL": {
-        "unitId": "u_1qlljqs",
+        "unitId": "u_i7myh4x",
         "num": "FP01",
         "position": {
           "wall": 0,
@@ -4400,7 +4400,7 @@
       "equal": true
     }
   ],
-  "tookSeconds": 76,
+  "tookSeconds": 101,
   "comparison": {
     "against": "verify/t84/census-main.json",
     "againstCommit": "9f5020fbedd3c337c76d573ef4237595f584dbd9",

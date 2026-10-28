@@ -74,3 +74,18 @@ decision is also in the PR body under DECISIONS TAKEN.
     Back to quick settings is the word "Quick" in the panel's header (S3); the free panel's thickness ladder and tilt
     chips stay in its part window (S2, the 136 px value column); Add's popup lists the four library categories with
     the legacy Library menu's own hints (S6).
+13. **The skin's last px land at F8.** D1's frames of F1 (wave 2, `verify/t84/f01-skin.md`) measured the Studio
+    against the designer's Stage-1 at 1280, 1440 and 1920: 45 checks pass, every box equal or its difference named,
+    none unexplained. Three of the named differences were the skin's own and D1 proposed their fix (D4: PRO 2 px off
+    the words, the rule 18 high; D8: her 10 px side padding on the top bar's and the scene edge's house buttons; D9:
+    the gold button at her weight 600); measured on D1's own build, the Studio's tests green. INT applied it at F8,
+    with studio.css re-frozen and its F8 reason in EXEMPT (CLAUDE.md F1: *"compared with the HTML at the three
+    sizes; the report names every deviation in px"*). The walk ran on F7's build, before those few px.
+14. **Frame selection keeps the render's box tonight; the walk's fix waits for the owner.** The walk measured that
+    Frame selection fits `3d/renderCapture.js` `furnitureBounds`, the box the key light and the render already fit,
+    which leaves the hardware out: a base unit's feet fall just past the frame (ndc 1.037 at all three sizes) and the
+    camera bar covers the scene's lowest 62 px. Its patch (`verify/t84/proposals/F1-CameraBar.jsx.diff`, with the f06
+    test's line) counts the instanced hardware in a second, local bounds function. Not applied: a second road to "the
+    furniture's box" beside the render's is against the law the turn keeps (*"one law one path"*), and the render's
+    own box is in `3d/`, which this turn may not edit (FROZEN 3). The owner chooses: the local box, or the render's
+    box widened in a later turn. Named in the PR.

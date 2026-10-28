@@ -428,6 +428,10 @@ export const NEW_FILES = [
   'test/turn84-f07-parity.test.js',
   'test/turn84-f07-escape.test.js',
   'scripts/t78-classify.d/f45-t84-f07.mjs',
+  // T84 F8 (27.10.2026): the walk
+  'scripts/t84-walk.mjs',
+  'scripts/t84-skin-frames.mjs',
+  'scripts/t78-classify.d/f45-t84-f08.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

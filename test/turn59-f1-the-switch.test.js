@@ -374,7 +374,8 @@ const EXEMPT = {
   // and nothing else, and the manifest freezes each at its first hash. No engine file is among them (FROZEN 1).
   'src/components/studio/studio.css':
     'T84 F1 · NEW, the Studio skin: the designer\'s Stage-1 classes (studio-*) scoped under .studio-pro, the 13 / 30 / 32 / 4 scale and the bars read as CSS variables the shell sets from profile.ui.studio, the colours Tailwind\'s theme; cc-btn, cc-input, cc-label and cc-frame keep their meaning. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)'
-    + ' T84 F6 · the room\'s island chips (3d/Scene.jsx, frozen) rise above the camera bar while the bar stands at the scene\'s foot, by the measure the messages column already takes, so no chip covers A to D or Frame selection. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)',
+    + ' T84 F6 · the room\'s island chips (3d/Scene.jsx, frozen) rise above the camera bar while the bar stands at the scene\'s foot, by the measure the messages column already takes, so no chip covers A to D or Frame selection. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
+    + ' T84 F8 · the skin to the designer\'s Stage-1 where the frames of F1 measured a few px apart (verify/t84/f01-skin.md D4, D8, D9): PRO 2 px further off the words and its rule 18 high with 3 px either side, the gold button at her weight 600, her 10 px side padding on the top bar\'s and the scene edge\'s house buttons that name none of their own; no number of THE NUMBERS moves. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)',
   'src/components/studio/StudioIcons.jsx':
     'T84 F1 · NEW, the Stage-1 SVG symbols as one hidden sprite, and the Icon that uses it. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)',
   'src/components/studio/lib/studioSkin.js':
@@ -589,7 +590,8 @@ const FROZEN = {
   'src/pages/ConfiguratorPage.jsx': '7749357748b53ba6688228dba2e108891681adca0090e53688f8ec21f8df5e52',
   // T84 F1 · NEW PRO files (the skin), frozen at their first hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/studio/studio.css': '1a86ee9218c20d5c95ba37ec50a8d446a555a849de9d6de8e422db3abe0540c8',
+  // T84 F8 re-frozen at the new hash; EXEMPT above carries the reason.
+  'src/components/studio/studio.css': '1e711fe58447126f24303e87d331feca1709e7c0bcf4702edbf9da16c7bf436d',
   'src/components/studio/StudioIcons.jsx': 'f111e18a07699a683d7f33e4ade38d1ef354838de9bb4e9acebf4d969abf99a6',
   'src/components/studio/lib/studioSkin.js': 'ac7255afe613b68528cd3b0bee9db7794f77f0921829f8bf887c83c6133cc37d',
   // T84 F2 · NEW PRO files (the shell), frozen at their first hash; EXEMPT above carries the reason.

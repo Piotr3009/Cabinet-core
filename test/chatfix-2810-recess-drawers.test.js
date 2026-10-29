@@ -565,27 +565,32 @@ test('D27 · not taken by the recess: dropped as before, both whys said; a full-
   assert.equal(off.derived.extension.column, undefined);
   // A full-width stack: dropped, and the sentence says where drawers do fit.
   const full = computeCabinet({ ...caseF(), items: [{ id: 'f1', kind: 'drawer', index: 0, mount: 'internal' }] }, P);
-  assert.equal(full.warnings.find((w) => w.code === 'DRAWERS_TOO_SHALLOW').message,
-    'Cabinet too shallow for drawers (usable 187 mm < 240 mm) — drawers dropped. In the recess they fit (440 mm): two '
-    + 'dividers on its edges (double-click one: "Align both with recess"), then the drawers in the column between them.');
+  // D28 AMENDED: the app puts drawers asked for here into the recess itself, so a stack left on the whole width
+  // (the carcass made shallower after) is told to go again; the store reads `inRecess`, never the words.
+  const said = full.warnings.find((w) => w.code === 'DRAWERS_TOO_SHALLOW');
+  assert.equal(said.message,
+    'Cabinet too shallow for drawers (usable 187 mm < 240 mm) — drawers dropped. In the recess they fit (440 mm): remove '
+    + 'these (Section 1) and add the drawers again; they go into the recess, between two dividers on its edges.');
+  assert.equal(said.inRecess, 440);
   // No recess: the old sentence, word for word.
   const bare = computeCabinet({ ...caseF(), extension: null, items: [{ id: 'f1', kind: 'drawer', index: 0, mount: 'internal' }] }, P);
   assert.equal(bare.warnings.find((w) => w.code === 'DRAWERS_TOO_SHALLOW').message,
     'Cabinet too shallow for drawers (usable 187 mm < 240 mm) — drawers dropped.');
 });
 
-test('D27 · the store, as the owner built it: 1200 x 300 before a recess 300 deep, two dividers, one press, three drawers in Column 2', () => {
+function shallowBeforeRecess(depth = 300) {
   S().newProject();
   S().setRoom({ corners: rectCorners(4000, 3000), height: 2500 });
   S().addWallSlope({ kind: 'recess', wall: 0, x_mm: 1000, width: 800, depth: 300 });
   const a = S().addUnit('WARDROBE', { wall: 0, x: 200 });
-  S().updateUnitParams(a.id, { width: 1200, depth: 300 });
+  S().updateUnitParams(a.id, { width: 1200, depth });
   S().moveUnit(a.id, 800, 1);
-  // What he pressed first: drawers on the whole width. Refused at the door, in the engine's sentence, nothing left behind.
-  const full = S().addDrawers(a.id, 3, 'internal', 200);
-  assert.equal(full.ok, false);
-  assert.match(full.error, /^Cabinet too shallow for drawers \(usable 187 mm < 240 mm\) — drawers dropped\. In the recess they fit \(440 mm\)/);
-  assert.deepEqual(unitOf(a.id).params.sections[0].items.filter((i) => i.kind === 'drawer'), []);
+  return a.id;
+}
+
+test('D27 · the store, as the owner built it: 1200 x 300 before a recess 300 deep, two dividers, one press, three drawers in Column 2', () => {
+  const id = shallowBeforeRecess();
+  const a = { id };
   S().addPartition(a.id);
   S().addPartition(a.id);
   assert.equal(S().alignDividersWithRecess(a.id, partsOf(a.id)[0].id).ok, true);
@@ -596,6 +601,82 @@ test('D27 · the store, as the owner built it: 1200 x 300 before a recess 300 de
   assert.deepEqual(S().runChecks().filter((f) => f.check === 49), []);
   // What the Section's row reads for them: the column and the box side (never "dropped").
   assert.deepEqual(r.assemblies.columnDrawers.map((c) => [c.zone, c.count]), [[1, 3]]);
+});
+
+// ─── D28: 29.10.2026, 00:18, *"nadal nie rysuje we wnece nic, nie dodaje tych bocznych paneli, nie wiem co sie dzieje"* ──
+
+test('D28 · what he pressed: three drawers on the 300 deep wardrobe go into the recess in ONE step, one undo', () => {
+  const text = read('reference/lisp/KIT_RECESS.lsp');
+  assert.match(text, /;;; D28 ONE PRESS PUTS THE DRAWERS IN THE RECESS\./);
+  assert.match(text, /nadal nie rysuje we\s*\n?;*\s*wnece nic, nie dodaje tych bocznych paneli, nie wiem co sie dzieje/);
+  const id = shallowBeforeRecess();
+  flushHistory();
+  const before = JSON.parse(JSON.stringify(S().units));
+  const depth = useHistoryStore.getState().past.length;
+  const res = S().addDrawers(id, 3, 'internal', 200);
+  flushHistory();
+  assert.equal(res.ok, true, res.error);
+  assert.equal(res.recess, true);
+  assert.equal(res.notice, '3 drawers in the recess, 440 mm deep: two dividers stand on its edges at the face, the drawers in '
+    + 'the column between them (Column 2), one fixed shelf over them.');
+  assert.deepEqual(partsOf(id).map((p) => [p.x_mm, p.front_mm]), [[210, 0], [972, 0]], 'the two dividers, born on the edges');
+  assert.deepEqual(unitOf(id).params.sections[0].items.filter((i) => i.kind === 'drawer').map((i) => i.zone), [1, 1, 1]);
+  const r = S().unitResult(id);
+  assert.deepEqual(r.derived.extension.column, { zone: 1, dividers: ['VPART-1', 'VPART-2'], cap: 'PARTITION', capY: 629 });
+  assert.deepEqual(r.warnings.filter((w) => /DRAWERS/.test(w.code)), []);
+  assert.equal(r.panels.find((p) => p.id === 'Z2D1-SL').w, 440);
+  assert.equal(useHistoryStore.getState().past.length, depth + 1, 'one press, one undo');
+  assert.ok(useHistoryStore.getState().undo());
+  assert.deepEqual(JSON.parse(JSON.stringify(S().units)), before, 'one Ctrl+Z, the cabinet as it was');
+});
+
+test('D28 · two dividers anywhere: stood on the edges, the drawers between; one divider: said in words, nothing changed', () => {
+  const two = shallowBeforeRecess();
+  S().addPartition(two);
+  S().addPartition(two);
+  assert.deepEqual(partsOf(two).map((p) => p.x_mm), [591, 295.5]);
+  assert.equal(S().addDrawers(two, 3, 'internal', 200).ok, true);
+  assert.deepEqual(partsOf(two).map((p) => [p.x_mm, p.front_mm]), [[972, 0], [210, 0]]);
+  assert.ok(S().unitResult(two).derived.extension.column);
+  const one = shallowBeforeRecess();
+  S().addPartition(one, 500);
+  const items = JSON.parse(JSON.stringify(unitOf(one).params.sections[0].items));
+  const res = S().addDrawers(one, 3, 'internal', 200);
+  assert.equal(res.ok, false);
+  assert.equal(res.error, 'Cabinet too shallow for drawers (usable 187 mm < 240 mm) — drawers dropped. The drawers go into '
+    + 'the recess between two dividers on its edges; this cabinet has 1. Leave it with none or with two, and add the drawers again.');
+  assert.deepEqual(unitOf(one).params.sections[0].items, items, 'nothing half built');
+});
+
+test('D28 · COLUMNS RECESS on a carcass deep enough for its own drawers (the owner\'s 558): asked, the recess; 1, the whole width as ever', () => {
+  const deep = wardrobeBeforeRecess();
+  const res = S().addDrawers(deep, 3, 'internal', 200, null, null, { columns: 'recess' });
+  assert.equal(res.ok, true, res.error);
+  assert.equal(res.recess, true);
+  assert.deepEqual(partsOf(deep).map((p) => [p.x_mm, p.front_mm]), [[110, 0], [872, 0]]);
+  assert.equal(S().unitResult(deep).panels.find((p) => p.id === 'Z2D1-SL').w, 540);
+  const whole = wardrobeBeforeRecess();
+  const plain = S().addDrawers(whole, 3, 'internal', 200);
+  assert.equal(plain.ok, true);
+  assert.equal(plain.recess, undefined, 'a carcass that holds them keeps the whole-width stack it was asked for');
+  assert.deepEqual(partsOf(whole), []);
+  // No recess: COLUMNS RECESS says so in words.
+  S().newProject();
+  const bare = S().addUnit('WARDROBE', { wall: 0, x: 200 });
+  assert.deepEqual(S().addDrawers(bare.id, 3, 'internal', 200, null, null, { columns: 'recess' }),
+    { ok: false, error: 'This cabinet stands before no recess its drawers can go into.' });
+});
+
+test('D28 · the panel: Recess beside 1 and 2, its hint, the store\'s notice; in PRO and in its retail copy', () => {
+  for (const file of ['src/components/AddItems.jsx', 'src/retail/design/detail/AddItems.jsx']) {
+    const src = read(file);
+    assert.match(src, /import \{ recessColPairX \} from '(\.\.\/)+engine\/extension\.js';/, file);
+    assert.match(src, /const offerRecess = Boolean\(recessBand\)/, file);
+    assert.match(src, /data-drawer-columns="recess"/, file);
+    assert.match(src, /onClick=\{\(\) => setDrawerColumns\('recess'\)\}/, file);
+    assert.match(src, /Recess: two dividers on the recess&apos;s edges, the drawers between them, as deep as the recess\./, file);
+    assert.match(src, /if \(res\?\.recess\) \{\n\s+notify\(res\.notice, 'ok'\);/, file);
+  }
 });
 
 test('D27 · the Section\'s row: a column\'s stack says its column and depth; a dropped full-width stack has its Remove', () => {

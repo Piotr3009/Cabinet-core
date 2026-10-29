@@ -2761,13 +2761,17 @@ export function computeCabinet(params, profileOverride) {
       // CHAT FIX 28.10.2026, 23:26 (KIT_RECESS.lsp D27): before a recess deep enough, the sentence says where they fit.
       const ext = extensionOf(params);
       const inRecess = ext ? snapDrawerDepth(recessColDrawerDepth(szufMaxDl, ext.d), DR.depthSteps) : null;
+      // D28 (29.10.2026, 00:18: *"nadal nie rysuje we wnece nic"*): the app itself puts drawers asked for here into
+      // the recess, so the sentence of a stack left on the whole width says to add them again; `inRecess` is the
+      // number the store reads, never the words.
       warnings.push({
         code: 'DRAWERS_TOO_SHALLOW',
         message: `Cabinet too shallow for drawers (usable ${roundTo(szufMaxDl, 1)} mm < ${DR.depthSteps[0]} mm) — drawers dropped.`
           + (inRecess != null
-            ? ` In the recess they fit (${inRecess} mm): two dividers on its edges (double-click one: "Align both with`
-              + ' recess"), then the drawers in the column between them.'
+            ? ` In the recess they fit (${inRecess} mm): remove these (Section 1) and add the drawers again; they go into`
+              + ' the recess, between two dividers on its edges.'
             : ''),
+        ...(inRecess != null ? { inRecess } : {}),
       });
       hasDrawers = false;
     }

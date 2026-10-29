@@ -544,6 +544,23 @@
 ;;;     refuses to ADD such a stack, in that sentence, so no dropped drawer
 ;;;     stays behind where nobody can see or click it.
 ;;;
+;;; 29.10.2026, 00:18 (the owner, on that sentence: *"nadal nie rysuje we
+;;; wnece nic, nie dodaje tych bocznych paneli, nie wiem co sie dzieje"*):
+;;;
+;;; D28 ONE PRESS PUTS THE DRAWERS IN THE RECESS. A sentence that tells the
+;;;     joiner to build the recess column himself is a refusal, not an
+;;;     answer. So the app builds it: drawers asked for on the whole width of
+;;;     a carcass too shallow for them, before a band that takes them (D27),
+;;;     go INTO THE RECESS in one step (one undo): the two dividers stand on
+;;;     the band's edges at the face (recess-col-pair-x; added when the cabinet
+;;;     has none, stood there when it has two) and the drawers go in the
+;;;     column between them, and the app says so in words. A cabinet with one
+;;;     divider or more than two is not guessed at: the sentence says so. And
+;;;     on ANY cabinet before such a band, the drawers' Columns question
+;;;     offers a third answer beside 1 and 2, RECESS, the same one step, so a
+;;;     carcass deep enough for drawers of its own (the owner's 558) takes
+;;;     its drawers into the recess when he asks for it.
+;;;
 ;;;========================================
 ;;; 4. NOT HERE
 ;;;========================================

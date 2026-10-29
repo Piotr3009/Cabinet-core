@@ -29,6 +29,9 @@
 //     two edges, at the face (recessColPairX; the store's alignDividersWithRecess, one undo).
 //   THE SHALLOW CARCASS (D27, 23:26: *"nie da sie tego zrobic why ?"*, 1200 x 2150 x 300): a column too shallow in the
 //     carcass but not with the recess is held until the recess column is asked (440 in CASE F), dropped only then.
+//   ONE PRESS (D28, 00:18: *"nadal nie rysuje we wnece nic, nie dodaje tych bocznych paneli"*): drawers asked for on
+//     the whole width of such a carcass go into the recess in one step (the store builds the two dividers and the
+//     column), and the Columns question offers RECESS on any cabinet before a band.
 // The fossil kits untouched; the six hold byte for byte; one golden re-pinned with his words, one new golden.
 
 import { computeCabinet } from '../../src/engine/cabinet.js';
@@ -45,6 +48,7 @@ const OWNER_EDGE = '*"w zwiazku ze to jest w ksztalcie U to ja nie moge puscic t
 const OWNER_CAP = '*"wszystkie polki teraz sa 10 mm, to polke nad szufladami tez zrob 10 mm jak reszta"* (28.10.2026)';
 const OWNER_WALK = '*"problem polega na tym ze nie dzialaja te szuflady"* (28.10.2026, 22:11, at home)';
 const OWNER_300 = '*"nie da sie tego zrobic why ?"* (28.10.2026, 23:26, a wardrobe 1200 x 2150 x 300 before a recess)';
+const OWNER_ONE = '*"nadal nie rysuje we wnece nic, nie dodaje tych bocznych paneli, nie wiem co sie dzieje"* (29.10.2026, 00:18)';
 
 const ext = (p) => (p?.extension && typeof p.extension === 'object' ? p.extension : null);
 const itemsOf = (p) => [
@@ -120,7 +124,8 @@ export const LICENSED = {
       + 'from its own front edge (T82 F9\'s law), mirrored front to back until tonight; #49\'s sentence names the press '
       + 'that stands the pair (D26); a column too shallow in the carcass but not with the recess is held until the '
       + 'recess column is asked and dropped only then (D27), and a full-width stack dropped before a recess says where '
-      + `drawers fit. ${OWNER_DRAWERS} ${OWNER_WALK} ${OWNER_300}`,
+      + 'drawers fit, with the number the store reads (`inRecess`, D28: the app then puts them there in one step). '
+      + `${OWNER_DRAWERS} ${OWNER_WALK} ${OWNER_300} ${OWNER_ONE}`,
     gates: ['recessDrawersColumn', 'recessBackHoles', 'dividerRunnerRow'],
   },
   'src/engine/notch.js': {
@@ -221,7 +226,8 @@ export const LISP = {
     + 'any window); recess-back-joints\' runs end at the window\'s edges; CASE B\'s and F2 CASE D\'s back cut 1 bigger; '
     + 'RECESS_FULL draws the cut as the cutter takes it; D26 ALIGN WITH RECESS STANDS BOTH DIVIDERS, recess-col-pair-x '
     + 'and its NUMBERS (the app\'s 491 and 245.5 to 872 and 110); D27 A CARCASS TOO SHALLOW FOR DRAWERS TAKES THEM IN '
-    + `THE RECESS and CASE F, the owner's 300. ${OWNER_DRAWERS} ${OWNER_EDGE} ${OWNER_WALK} ${OWNER_300}`,
+    + 'THE RECESS and CASE F, the owner\'s 300; D28 ONE PRESS PUTS THE DRAWERS IN THE RECESS. '
+    + `${OWNER_DRAWERS} ${OWNER_EDGE} ${OWNER_WALK} ${OWNER_300} ${OWNER_ONE}`,
   'reference/lisp/KIT_NOTCH.lsp': `Owner 28.10.2026 (KIT_RECESS.lsp D23): notch-profile carries "recess.handEdge" 1.0, `
     + `the table KIT_RECESS.lsp reads. ${OWNER_EDGE}`,
 };

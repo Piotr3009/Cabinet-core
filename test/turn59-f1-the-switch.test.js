@@ -319,7 +319,8 @@ const EXEMPT = {
     + ' T79 F2 . the shelves\' WHICH SIDE gains a third button, Above divider, shown only while the divider ends under a FIX shelf below the top; hovering lights the full-width opening over it and Add centres full-width shelves there; an opening that goes away while picked asks for a bay again, never a mute Add. *"jak dodamy fix półkę i divider pod spodem to nie mam możliwości dodania całkowitej półki powyżej bo kod dzieli mi całą szafę na bay 1 i 2, a nie mam czegoś takiego że jest bay nie dzielony powyżej."* Mockup approved 14:45: *"1 - tak."*'
     + ' T79 F3 · the internal drawers block asks COLUMNS 1 or 2 beside the count while the unit is undivided; 2 adds one divider mid-width, a stack in each column and one fixed shelf over both in one undo; a divided unit keeps "Which column". *"jak ustawiamy sobie teraz 3 szuflady internal to niech pyta czy chcesz 1 czy 2 kolumny, coś jak baye."*; mockup approved: *"2 - tak."*'
     + ' T79 F11 . the With a shelf / Rail alone toggle, its state and the assembly hint are deleted (kasacja); Add hanger rail adds the rod alone and says the drag proposes its place under a shelf. *"zlikwiduj propozycję install rail with or without shelf, bez sensu, usuń to; przy przesuwaniu zaproponuj 50 mm poniżej półki."*'
-    + ' CHAT FIX 19.10.2026 (re-frozen): Add hanger rail asks the store why not (a third rod, or no room under the first) and says it in words; a second rod in the same bay is born 950 under the first as a proposal (KIT_HANGER_TWO.lsp). *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze, i proponuj (jak polki) 950 jedne od drugiego"*; *"tak ale tylko jako propozycja"*.',
+    + ' CHAT FIX 19.10.2026 (re-frozen): Add hanger rail asks the store why not (a third rod, or no room under the first) and says it in words; a second rod in the same bay is born 950 under the first as a proposal (KIT_HANGER_TWO.lsp). *"nie ma mozliwosci dodania drugiego ponizej, dodaj to prosze, i proponuj (jak polki) 950 jedne od drugiego"*; *"tak ale tylko jako propozycja"*.'
+    + ' CHAT FIX 29.10.2026, 00:18 (KIT_RECESS.lsp D28) · before a recess with two edges inside the cabinet, the internal drawers\' COLUMNS row gains a third answer, Recess (data-drawer-columns="recess"), with its hint (data-drawer-recess-hint): the two dividers on the recess\'s edges and the drawers between them, as deep as the recess, in one step through the store\'s addRecessDrawers; the drawers that went into the recess say so in the store\'s own notice. *"nadal nie rysuje we wnece nic, nie dodaje tych bocznych paneli, nie wiem co sie dzieje"* (the owner, 29.10.2026).',
 
   // ─── RENEWED BY TURN 72 · THE SAME FILE, A THIRD LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission, so tonight's
@@ -458,7 +459,7 @@ const FROZEN = {
   // T79 F2, F3 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F11 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/AddItems.jsx': '49184c38bab4b6e75920c86c18b48edf09c8bea816ec9acbdfe0e43a2d6acf44',
+  'src/components/AddItems.jsx': '2c1c206173c3ae7260f056b5945b17453a7fffdca8df253cd47db5d7d9303a87',
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/AssignMaterialsModal.jsx': '1f9d71d9af9b57ba7e8f77b38c99fda7368a657a3289b69be87ac166337cc82e',

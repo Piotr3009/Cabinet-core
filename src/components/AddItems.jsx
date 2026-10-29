@@ -8,6 +8,8 @@ import { getUnitType } from '../engine/types.js';
 import { hangerOf } from '../engine/items.js';
 import { formatMm } from '../engine/format.js';
 import { watchDrawerFixedHeight } from '../engine/watchDrawer.js';
+// Chat fix 29.10.2026 (KIT_RECESS.lsp D28): COLUMNS RECESS is offered where the recess has two edges inside the cabinet.
+import { recessColPairX } from '../engine/extension.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 
 // ─── "What goes inside" (turn 4, BACKLOG #10; turn 12, CLAUDE.md F5.1) ──────
@@ -144,6 +146,15 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // mockup, 14:45: *"2 - tak."* Asked only while the unit is undivided and can
   // take a divider; once divided, "Which column" is the question, as before.
   const askColumns = zones.length <= 1 && type.supports.partition && type.drawerStyle === 'wardrobe';
+  // ─── CHAT FIX 29.10.2026, 00:18 · COLUMNS RECESS (KIT_RECESS.lsp D28) ──────
+  // The owner: *"nadal nie rysuje we wnece nic, nie dodaje tych bocznych
+  // paneli, nie wiem co sie dzieje"*. Before a recess with two edges inside
+  // the cabinet, the Columns question has a third answer: the two dividers on
+  // the recess's edges and the drawers between them, as deep as the recess,
+  // in one step (the store's addRecessDrawers).
+  const recessBand = askColumns ? unitResult(unit.id)?.derived?.extension || null : null;
+  const offerRecess = Boolean(recessBand)
+    && recessColPairX(Number(unit.params.width) || 0, recessBand.x0, recessBand.x1, Number(unit.params.board_t) || 18) != null;
 
   const onAddDrawers = (count, height) => {
     const before = items.filter((i) => i.kind === 'drawer').length;
@@ -177,8 +188,11 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     // Honest about what the number means: drawers that were already there KEEP
     // the height they were given, so this cannot claim the whole stack is now
     // `height` mm.
-    // T79 F3 · two columns say what came with them.
-    if (columns === 2) {
+    // D28 · drawers that went into the recess (asked, or because the carcass alone is too shallow) say so.
+    if (res?.recess) {
+      notify(res.notice, 'ok');
+    } else if (columns === 2) {
+      // T79 F3 · two columns say what came with them.
       notify(`${count} × ${height} mm drawer${count === 1 ? '' : 's'} in each of 2 columns: a divider mid-width `
         + 'and one fixed shelf over both.', 'ok');
     } else notify(before
@@ -573,6 +587,18 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                               {n}
                             </button>
                           ))}
+                          {offerRecess && (
+                            <button
+                              type="button"
+                              data-drawer-columns="recess"
+                              aria-pressed={drawerColumns === 'recess'}
+                              className={`cc-btn px-2 ${drawerColumns === 'recess' ? 'border-gold text-gold' : ''}`}
+                              title="The drawers in the recess: two dividers on its edges, the drawers between them, as deep as the recess"
+                              onClick={() => setDrawerColumns('recess')}
+                            >
+                              Recess
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
@@ -588,6 +614,11 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                   {askColumns && (
                     <p data-drawer-columns-hint className={`text-[11px] ${drawerColumns === 2 ? 'text-gold' : 'text-ink-400'}`}>
                       2 columns: a divider mid-width, a stack in each column, one fixed shelf over both.
+                    </p>
+                  )}
+                  {offerRecess && (
+                    <p data-drawer-recess-hint className={`text-[11px] ${drawerColumns === 'recess' ? 'text-gold' : 'text-ink-400'}`}>
+                      Recess: two dividers on the recess&apos;s edges, the drawers between them, as deep as the recess.
                     </p>
                   )}
                   {/* ─── TURN 32 (CLAUDE.md F4): OVERLAY OR INTERNAL ───

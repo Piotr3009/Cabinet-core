@@ -8282,6 +8282,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // both with one FIX board. The divider stands at full depth (the runners'
     // wall, T32 F4's recessed-partition law) and is an ordinary partition
     // afterwards. A full-width stack already there is the stack this replaces.
+    // CHAT FIX 29.10.2026, 00:18 (KIT_RECESS.lsp D28): COLUMNS RECESS, the third answer, is one step of its own.
+    if (count > 0 && columns === 'recess') return get().addRecessDrawers(unitId, count, mount, heightMm, variant);
     if (count > 0 && Math.trunc(Number(columns)) === 2) {
       const unit = get().units.find((u) => u.id === unitId);
       if (!unit) return { ok: false, error: 'The drawers were not added.' };
@@ -8344,6 +8346,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         };
         const said = (computeCabinet(paramsForEngine(probe, get().project.design), getCabinetProfile()).warnings || [])
           .find((w) => w.code === 'DRAWERS_TOO_SHALLOW' && !/^Column /.test(String(w.message)));
+        // D28 (29.10.2026, 00:18: *"nadal nie rysuje we wnece nic, nie dodaje tych bocznych paneli"*): where the
+        // recess takes them (the engine's own `inRecess`), the drawers go there in one step instead of a sentence.
+        if (said && said.inRecess != null) {
+          const res = get().addRecessDrawers(unitId, count, mount, fallback, variant);
+          if (res.ok) return res;
+          return { ok: false, error: `${said.message.replace(/ In the recess they fit[\s\S]*$/, '')} ${res.error}` };
+        }
         if (said) return { ok: false, error: said.message };
       }
     }
@@ -9460,6 +9469,80 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       return after?.done
         ? { ok: true, pair: plan.pair, moves: plan.moves }
         : { ok: false, pair: plan.pair, moves: plan.moves, error: 'The dividers could not stand on the recess\'s edges here.' };
+    });
+  },
+
+  /**
+   * CHAT FIX 29.10.2026, 00:18 · ONE PRESS PUTS THE DRAWERS IN THE RECESS
+   * (KIT_RECESS.lsp D28). The owner, on the sentence that told him to build
+   * the recess column himself: *"nadal nie rysuje we wnece nic, nie dodaje
+   * tych bocznych paneli, nie wiem co sie dzieje"*. ONE step, one undo: the
+   * whole-width stack (if any) goes, the two dividers stand on the band's
+   * edges at the face (added when the cabinet has none, stood there when it
+   * has two: alignDividersWithRecess), and the drawers go in the column
+   * between them (zone 1). Asked by the Columns question's RECESS and by
+   * addDrawers itself where a carcass too shallow for drawers stands before
+   * a band that takes them (D27's `inRecess`). Nothing is left half built: a
+   * step refused, or an engine that does not make the recess column of it,
+   * puts the cabinet back and says why in words.
+   *
+   * @returns {{ok:boolean, error:string|null, recess?:boolean, notice?:string}}
+   */
+  addRecessDrawers: (unitId, count, mount = 'internal', heightMm, variant = null) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !(count > 0)) return { ok: false, error: 'The drawers were not added.' };
+    const band = get().unitResult(unitId)?.derived?.extension || null;
+    if (!band) return { ok: false, error: 'This cabinet stands before no recess its drawers can go into.' };
+    const G = Number(unit.params.board_t ?? getCabinetProfile().board.thickness);
+    const W = Number(unit.params.width) || 0;
+    const pair = recessColPairX(W, band.x0, band.x1, G);
+    if (!pair) {
+      return {
+        ok: false,
+        error: 'The recess reaches a side of this cabinet: there is no edge for a divider on that side, so the drawers '
+          + 'cannot go into the recess here.',
+      };
+    }
+    const parts = (unit.params.sections?.[0]?.items || [])
+      .filter((i) => i.kind === 'partition' && Number.isFinite(Number(i.x_mm)))
+      .sort((a, b) => Number(a.x_mm) - Number(b.x_mm));
+    if (parts.length !== 0 && parts.length !== 2) {
+      return {
+        ok: false,
+        error: `The drawers go into the recess between two dividers on its edges; this cabinet has ${parts.length}. `
+          + 'Leave it with none or with two, and add the drawers again.',
+      };
+    }
+    const before = get().units;
+    const back = (error) => { set({ units: before }); return { ok: false, error }; };
+    return runBatch(() => {
+      // The recess column is the cabinet's one stack (D22): a whole-width stack does not stay beside it.
+      get().addDrawers(unitId, 0, mount, heightMm, null);
+      if (parts.length === 0) {
+        for (const x of pair) {
+          const id = get().addPartition(unitId, x);
+          if (!id) return back('No room for the dividers on the recess\'s edges in this cabinet.');
+          get().updateItem(unitId, id, { front_mm: 0 });
+        }
+      } else {
+        const aligned = get().alignDividersWithRecess(unitId, parts[0].id);
+        if (!aligned.ok) return back(aligned.error);
+      }
+      const added = get().addDrawers(unitId, count, mount, heightMm, 1, variant);
+      if (!added.ok) return back(added.error);
+      const r = get().unitResult(unitId);
+      if (!r?.derived?.extension?.column) {
+        const why = (r?.warnings || []).find((w) => w.code === 'RECESS_DRAWERS_SHALLOW');
+        return back(why ? why.message : 'The drawers could not go into the recess here.');
+      }
+      const deep = r.panels.find((p) => p.id === 'Z2D1-SL')?.w;
+      return {
+        ok: true,
+        error: null,
+        recess: true,
+        notice: `${count} drawer${count === 1 ? '' : 's'} in the recess${deep ? `, ${deep} mm deep` : ''}: two dividers `
+          + 'stand on its edges at the face, the drawers in the column between them (Column 2), one fixed shelf over them.',
+      };
     });
   },
 

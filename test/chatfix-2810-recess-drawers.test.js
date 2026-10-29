@@ -523,6 +523,100 @@ test('D26 · recess-col-pair-x: the pair on the two edges; none when the band re
   assert.match(text, /THE PAIR \(D26, recess-col-pair-x 1000 110 890 18\) = \(110 872\)/);
 });
 
+// ─── D27: the owner at 23:26, a wardrobe 1200 x 2150 x 300 before a recess: *"nie da sie tego zrobic why ?"* ─────
+
+const caseF = ({ xs = [210, 972], drawers = [drawer(0), drawer(1), drawer(2)], d = 290 } = {}) => ({
+  ...defaultParamsFor('WARDROBE', P),
+  unit_num: '01',
+  width: 1200,
+  depth: 300,
+  ...PROJECT,
+  extension: { x0: 210, x1: 990, z0: 0, z1: 2150, d },
+  items: [{ id: 'p1', kind: 'partition', x_mm: xs[0], front_mm: 0 }, { id: 'p2', kind: 'partition', x_mm: xs[1], front_mm: 0 },
+    ...drawers],
+});
+
+test('D27 · CASE F: 300 deep, the carcass alone takes no drawer; the recess column takes them at 440', () => {
+  const text = read('reference/lisp/KIT_RECESS.lsp');
+  assert.match(text, /;;; D27 A CARCASS TOO SHALLOW FOR DRAWERS TAKES THEM IN THE RECESS\./);
+  assert.match(text, /nie da sie tego zrobic why \?/);
+  assert.match(text, /;;; CASE F, THE OWNER'S 300 \(D27, no golden\)/);
+  assert.equal(X.recessColDrawerDepth(187, 290), 477);
+  const r = computeCabinet(caseF(), P);
+  assert.deepEqual(r.warnings.filter((w) => /DRAWERS/.test(w.code)), [], 'nothing dropped, nothing to say');
+  assert.deepEqual(r.derived.extension.column, { zone: 1, dividers: ['VPART-1', 'VPART-2'], cap: 'PARTITION', capY: 629 });
+  assert.equal(panelOf(r, 'Z2D1-SL').w, 440, '187 + 290 = 477: the ladder\'s 440');
+  assert.deepEqual([panelOf(r, 'VPART-1').w, panelOf(r, 'VPART-1').h], [611, 572], '300 + 290 - 18');
+  assert.deepEqual([panelOf(r, 'PARTITION').w, panelOf(r, 'PARTITION').h], [1164, 562]);
+  assert.deepEqual(r.panels.filter((p) => p.part === 'FILLER').map((p) => [p.w, p.h]), [[192, 611], [192, 611], [192, 611], [192, 611]]);
+  assert.deepEqual([panelOf(r, 'BACK').w, panelOf(r, 'BACK-2').w], [210, 210]);
+  // A recess 150 deep (ed 140): 187 + 140 = 327, the ladder's 310.
+  assert.equal(panelOf(computeCabinet(caseF({ d: 140 }), P), 'Z2D1-SL').w, 310);
+});
+
+test('D27 · not taken by the recess: dropped as before, both whys said; a full-width stack says where they fit', () => {
+  // The dividers off the edges: #49's sentence (with the press) and the old drop, no box cut.
+  const off = computeCabinet(caseF({ xs: [295.5, 591] }), P);
+  const codes = off.warnings.map((w) => w.code);
+  assert.ok(codes.includes('RECESS_DRAWERS_SHALLOW'));
+  assert.equal(off.warnings.find((w) => w.code === 'DRAWERS_TOO_SHALLOW').message,
+    'Column 2: cabinet too shallow for drawers (usable 187 mm < 240 mm) — the column\'s drawers were dropped.');
+  assert.equal(off.panels.filter((p) => p.role === 'drawer_box').length, 0);
+  assert.equal(off.derived.extension.column, undefined);
+  // A full-width stack: dropped, and the sentence says where drawers do fit.
+  const full = computeCabinet({ ...caseF(), items: [{ id: 'f1', kind: 'drawer', index: 0, mount: 'internal' }] }, P);
+  assert.equal(full.warnings.find((w) => w.code === 'DRAWERS_TOO_SHALLOW').message,
+    'Cabinet too shallow for drawers (usable 187 mm < 240 mm) — drawers dropped. In the recess they fit (440 mm): two '
+    + 'dividers on its edges (double-click one: "Align both with recess"), then the drawers in the column between them.');
+  // No recess: the old sentence, word for word.
+  const bare = computeCabinet({ ...caseF(), extension: null, items: [{ id: 'f1', kind: 'drawer', index: 0, mount: 'internal' }] }, P);
+  assert.equal(bare.warnings.find((w) => w.code === 'DRAWERS_TOO_SHALLOW').message,
+    'Cabinet too shallow for drawers (usable 187 mm < 240 mm) — drawers dropped.');
+});
+
+test('D27 · the store, as the owner built it: 1200 x 300 before a recess 300 deep, two dividers, one press, three drawers in Column 2', () => {
+  S().newProject();
+  S().setRoom({ corners: rectCorners(4000, 3000), height: 2500 });
+  S().addWallSlope({ kind: 'recess', wall: 0, x_mm: 1000, width: 800, depth: 300 });
+  const a = S().addUnit('WARDROBE', { wall: 0, x: 200 });
+  S().updateUnitParams(a.id, { width: 1200, depth: 300 });
+  S().moveUnit(a.id, 800, 1);
+  // What he pressed first: drawers on the whole width. Refused at the door, in the engine's sentence, nothing left behind.
+  const full = S().addDrawers(a.id, 3, 'internal', 200);
+  assert.equal(full.ok, false);
+  assert.match(full.error, /^Cabinet too shallow for drawers \(usable 187 mm < 240 mm\) — drawers dropped\. In the recess they fit \(440 mm\)/);
+  assert.deepEqual(unitOf(a.id).params.sections[0].items.filter((i) => i.kind === 'drawer'), []);
+  S().addPartition(a.id);
+  S().addPartition(a.id);
+  assert.equal(S().alignDividersWithRecess(a.id, partsOf(a.id)[0].id).ok, true);
+  assert.equal(S().addDrawers(a.id, 3, 'internal', 200, 1).ok, true);
+  const r = S().unitResult(a.id);
+  assert.deepEqual(r.warnings.filter((w) => /DRAWERS/.test(w.code)), []);
+  assert.equal(r.panels.find((p) => p.id === 'Z2D1-SL').w, 440);
+  assert.deepEqual(S().runChecks().filter((f) => f.check === 49), []);
+  // What the Section's row reads for them: the column and the box side (never "dropped").
+  assert.deepEqual(r.assemblies.columnDrawers.map((c) => [c.zone, c.count]), [[1, 3]]);
+});
+
+test('D27 · the Section\'s row: a column\'s stack says its column and depth; a dropped full-width stack has its Remove', () => {
+  const src = read('src/components/RightPanel.jsx');
+  assert.match(src, /const columnStackWords = \(result\?\.assemblies\?\.columnDrawers \|\| \[\]\)\.map\(\(c\) => \{/);
+  assert.match(src, /return `Column \$\{c\.zone \+ 1\}\$\{side \? ` · \$\{formatMm\(side\.w\)\} deep` : ''\}`;/);
+  assert.match(src, /: \(columnStackWords\.length \? columnStackWords\.join\(', '\) : 'dropped'\)\)\}/);
+  assert.match(src, /data-remove-dropped-drawers="1"/);
+  assert.match(src, /onClick=\{\(\) => addDrawers\(unit\.id, 0, 'internal', null, null\)\}/);
+  // A stack dropped AFTER it was added (the carcass made shallower): the button's action takes it away.
+  S().newProject();
+  const a = S().addUnit('WARDROBE', { wall: 0, x: 200 });
+  assert.equal(S().addDrawers(a.id, 2, 'internal', 200).ok, true);
+  S().updateUnitParams(a.id, { depth: 300 });
+  assert.ok(!S().unitResult(a.id).derived.szufDl, 'dropped by the engine');
+  assert.ok(S().unitResult(a.id).warnings.some((w) => w.code === 'DRAWERS_TOO_SHALLOW'));
+  assert.equal(unitOf(a.id).params.sections[0].items.filter((i) => i.kind === 'drawer').length, 2, 'still in the items');
+  assert.equal(S().addDrawers(a.id, 0, 'internal', null, null).ok, true);
+  assert.deepEqual(unitOf(a.id).params.sections[0].items.filter((i) => i.kind === 'drawer'), []);
+});
+
 test('the window · Align with recess, in PRO and in its retail copy, through the store\'s one action', () => {
   for (const file of ['src/components/ElementProperties.jsx', 'src/retail/design/detail/ElementProperties.jsx']) {
     const src = read(file);

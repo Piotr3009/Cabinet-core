@@ -8319,6 +8319,34 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const fallback = Number(heightMm) > 0
       ? Number(heightMm)
       : getCabinetProfile().wardrobe.drawers.frontHeight;
+    // ─── CHAT FIX 28.10.2026, 23:26 · A STACK THE CARCASS CANNOT HOLD (KIT_RECESS.lsp D27) ─────────────────────
+    // The owner, on a wardrobe 1200 x 2150 x 300 before a recess: *"nie da sie tego zrobic why ?"*. A full-width
+    // stack the carcass is too shallow for was ADDED and then dropped by the engine, leaving drawers nobody can see
+    // or click; it is refused at the door now, in the engine's own sentence (before a recess deep enough it says
+    // where drawers do fit). Asked of the engine itself, on the unit with this stack in place of its full-width one.
+    // A column's stack is never refused here: the recess may yet take it (D27).
+    if (count > 0 && wantZone == null) {
+      const unit = get().units.find((u) => u.id === unitId);
+      if (unit) {
+        const section = unit.params.sections?.[0] || { width_mm: unit.params.width, items: [] };
+        const probe = {
+          ...unit,
+          params: {
+            ...unit.params,
+            sections: [{
+              ...section,
+              items: [
+                ...(section.items || []).filter((i) => !(i.kind === 'drawer' && (i.zone == null || !Number.isFinite(Number(i.zone))))),
+                { id: 'drawer_probe', kind: 'drawer', index: 1, mount, height_mm: fallback },
+              ],
+            }],
+          },
+        };
+        const said = (computeCabinet(paramsForEngine(probe, get().project.design), getCabinetProfile()).warnings || [])
+          .find((w) => w.code === 'DRAWERS_TOO_SHALLOW' && !/^Column /.test(String(w.message)));
+        if (said) return { ok: false, error: said.message };
+      }
+    }
     set((s) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;

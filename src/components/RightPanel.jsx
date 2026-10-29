@@ -112,6 +112,8 @@ export default function RightPanel({ layout = 'overlay', headerActions = null } 
   const setDrawersEqual = useProjectStore((s) => s.setDrawersEqual);
   const setAllDrawerHeights = useProjectStore((s) => s.setAllDrawerHeights);
   const setDrawerEqualHeights = useProjectStore((s) => s.setDrawerEqualHeights);
+  // Chat fix 28.10.2026, 23:26 (KIT_RECESS.lsp D27): a dropped full-width stack can be removed from its row.
+  const addDrawers = useProjectStore((s) => s.addDrawers);
   const redistributeShelves = useProjectStore((s) => s.redistributeShelves);
   const centrePartitions = useProjectStore((s) => s.centrePartitions);
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
@@ -188,6 +190,20 @@ export default function RightPanel({ layout = 'overlay', headerActions = null } 
   // kit's and are shown, not typed.
   const lStack = Boolean(type?.corner) && drawers.length > 0;
   const lRowOf = (num) => (result?.derived?.corner_l?.drawer_rows || []).find((r) => r.row === num) || null;
+  // ─── CHAT FIX 28.10.2026, 23:26 (KIT_RECESS.lsp D27) · WHAT EACH STACK IS ──
+  // The owner's three drawers in his recess read "3 × drawer · dropped": the
+  // row asked only the full-width zone (szufDl), empty under column stacks.
+  // A column's stack says its column and depth; a full-width stack the
+  // carcass cannot hold says so beside the one button that removes it (it
+  // has no board to click: *"nie da sie tego zrobic why ?"*).
+  const columnStackWords = (result?.assemblies?.columnDrawers || []).map((c) => {
+    const side = (result?.panels || []).find((p) => p.id === `Z${c.zone + 1}D1-SL`);
+    return `Column ${c.zone + 1}${side ? ` · ${formatMm(side.w)} deep` : ''}`;
+  });
+  const fullWidthDrawers = drawers
+    .filter(({ item }) => item.zone == null || !Number.isFinite(Number(item.zone))).length;
+  const droppedFullWidth = !lStack && !ratioDrawers && type?.drawerStyle === 'wardrobe' && !result?.derived?.szufDl
+    ? fullWidthDrawers : 0;
   // Has anybody set one by hand? Then there is a stack to hand back to the kit.
   const ownDrawerHeights = Array.isArray(unit?.params.drawer_heights)
     && unit.params.drawer_heights.length > 0;
@@ -947,9 +963,27 @@ export default function RightPanel({ layout = 'overlay', headerActions = null } 
                   {/* eslint-disable-next-line no-nested-ternary */}
                   {lStack
                     ? `SPACE CORNER · two boxes a row · NL ${formatMm(lRowOf(1)?.travel_mm || 0)} mm`
-                    : (result.derived.szufDl ? `${result.derived.szufSzer} × ${result.derived.szufDl} mm` : 'dropped')}
+                    : (result.derived.szufDl
+                      ? `${result.derived.szufSzer} × ${result.derived.szufDl} mm`
+                      : (columnStackWords.length ? columnStackWords.join(', ') : 'dropped'))}
                 </span>
               </div>
+              {droppedFullWidth > 0 && (
+                <div className="cc-row" data-dropped-drawers={droppedFullWidth}>
+                  <span className="text-[12px] text-status-warn">
+                    {`${droppedFullWidth} across the whole width: too shallow, not cut`}
+                  </span>
+                  <button
+                    type="button"
+                    className="cc-btn px-2 text-[11px]"
+                    data-remove-dropped-drawers="1"
+                    title="These drawers do not fit this carcass and are not cut. Remove them; in front of a recess the drawers go in the column between two dividers."
+                    onClick={() => addDrawers(unit.id, 0, 'internal', null, null)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
 
               {/* ─── T82 F9 / F14 · COLUMNS 1 / 2 ─────────────────────────────
                   On a kit whose type takes drawer columns (the vanity, the

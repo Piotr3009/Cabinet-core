@@ -526,6 +526,24 @@
 ;;;     side column, or (recess-col-refusal) the two off the edges, the only
 ;;;     case that names "Align both with recess".
 ;;;
+;;; 28.10.2026, 23:26 (the owner, a wardrobe 1200 x 2150 x 300 before a
+;;; recess: *"nie da sie tego zrobic why ?"*):
+;;;
+;;; D27 A CARCASS TOO SHALLOW FOR DRAWERS TAKES THEM IN THE RECESS. The kit
+;;;     drops a stack whose usable depth is under the shortest runner (300
+;;;     deep: 187 < 240), and it dropped the recess column's too, BEFORE the
+;;;     recess column was asked: the depth the recess gives was never read.
+;;;     Now a column of drawers the band reaches, too shallow in the carcass
+;;;     but not with the recess (recess-col-drawer-depth on the ladder), is
+;;;     HELD until the recess column is asked: taken, its drawers are D22's
+;;;     (usable + ed, on the ladder); not taken, it is dropped as before and
+;;;     the Check says both whys (#49's sentence and the drop). A full-width
+;;;     stack in such a carcass is dropped as before, and its sentence says
+;;;     where drawers do fit: in the recess, between two dividers on its
+;;;     edges ("Align both with recess"), in the column between them. The app
+;;;     refuses to ADD such a stack, in that sentence, so no dropped drawer
+;;;     stays behind where nobody can see or click it.
+;;;
 ;;;========================================
 ;;; 4. NOT HERE
 ;;;========================================
@@ -2081,6 +2099,19 @@
 ;;; THE BACK'S HOLES (D25): the board over the drawers' three at z 638:
 ;;;   x 68 on BACK (x 68), x 500 in the window (none), x 932 on BACK-2 (x 42).
 ;;;   Until tonight Z2-PART's three, x 178 500 822, all three in the window.
+;;;
+;;; CASE F, THE OWNER'S 300 (D27, no golden): the app's wardrobe 1200 x 2150
+;;; x 300 (front 25) before a recess 800 wide and 300 deep standing from
+;;; carcass x 200 to 1000, floor to ceiling: the band 210..990, ed 290 (the
+;;; wall gap off the recess's depth). Usable 187, under the shortest runner
+;;; (240): the carcass alone takes no drawer, and a full-width stack is
+;;; dropped with the sentence that says where they fit (440). Between two
+;;; dividers stood by "Align both with recess" (210 and 972):
+;;;   (recess-col-drawer-depth 187 290) = 477: the ladder's 440;
+;;;   the dividers 611 x 572 (300 + 290 - 18), the board over the drawers
+;;;   1164 x 562 (572 less its 10), four fillers 192 x 611, BACK and BACK-2
+;;;   210 wide, the RETURNs 290 x 1503. With a recess 150 deep (ed 140):
+;;;   187 + 140 = 327, the ladder's 310, the dividers 422 deep.
 ;;;
 ;;; CASE E2 (no golden): CASE E with the band to ez1 1200: bz1 1182. The BACK
 ;;; is ONE piece (0 0 1000 2150) with the BITE (110 0 890 1182), CUT

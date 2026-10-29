@@ -140,7 +140,11 @@ test('F4 · the duplicate inline ElementSection is suppressed in the embedded la
 
 test('F4 · the host adaptation adds no control to the panel sources (the census\' 173 control tags, rule 7)', () => {
   const tags = (text) => (text.match(/<(?:NumberField|select|button|input|textarea)\b/g) || []).length;
-  assert.equal(tags(panel()), 108, 'RightPanel.jsx');
+  // CHAT FIX 28.10.2026, 23:26 AMENDED (KIT_RECESS.lsp D27): ONE control, not the host's, added to the Section's
+  // drawer row: Remove (data-remove-dropped-drawers) beside a full-width stack the carcass cannot hold, the only way
+  // to take away drawers that are not cut and have no board to click. The owner, on a wardrobe 1200 x 2150 x 300
+  // before a recess: *"nie da sie tego zrobic why ?"*. The host adaptation still adds none: 108 + 1.
+  assert.equal(tags(panel()), 109, 'RightPanel.jsx');
   assert.equal(tags(multi()), 16, 'MultiUnitPanel.jsx');
 });
 

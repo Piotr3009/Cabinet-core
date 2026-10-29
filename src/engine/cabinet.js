@@ -2758,7 +2758,17 @@ export function computeCabinet(params, profileOverride) {
     szufMaxDl = D - G - DR.setback - frontT - DR.depthAllowance;
     szufDl = snapDrawerDepth(szufMaxDl, DR.depthSteps);
     if (szufDl == null) {
-      warnings.push({ code: 'DRAWERS_TOO_SHALLOW', message: `Cabinet too shallow for drawers (usable ${roundTo(szufMaxDl, 1)} mm < ${DR.depthSteps[0]} mm) — drawers dropped.` });
+      // CHAT FIX 28.10.2026, 23:26 (KIT_RECESS.lsp D27): before a recess deep enough, the sentence says where they fit.
+      const ext = extensionOf(params);
+      const inRecess = ext ? snapDrawerDepth(recessColDrawerDepth(szufMaxDl, ext.d), DR.depthSteps) : null;
+      warnings.push({
+        code: 'DRAWERS_TOO_SHALLOW',
+        message: `Cabinet too shallow for drawers (usable ${roundTo(szufMaxDl, 1)} mm < ${DR.depthSteps[0]} mm) — drawers dropped.`
+          + (inRecess != null
+            ? ` In the recess they fit (${inRecess} mm): two dividers on its edges (double-click one: "Align both with`
+              + ' recess"), then the drawers in the column between them.'
+            : ''),
+      });
       hasDrawers = false;
     }
   }
@@ -5337,7 +5347,15 @@ export function computeCabinet(params, profileOverride) {
       if (!bay || !list.length) continue;
       const colMaxDl = D - G - DR.setback - frontT - DR.depthAllowance;
       const colDl = snapDrawerDepth(colMaxDl, DR.depthSteps);
-      if (colDl == null) {
+      // CHAT FIX 28.10.2026, 23:26 (KIT_RECESS.lsp D27; the owner on a 300 deep wardrobe before a recess: *"nie da
+      // sie tego zrobic why ?"*): a column the band reaches, too shallow in the carcass but not with the recess, is
+      // HELD until the recess column is asked below (`shallow`), never dropped before the recess's depth is read.
+      const heldForRecess = colDl == null && (() => {
+        const ext = extensionOf(params);
+        if (!ext || !(bay.from < ext.x1 - 1e-6 && bay.to > ext.x0 + 1e-6)) return false;
+        return snapDrawerDepth(recessColDrawerDepth(colMaxDl, ext.d), DR.depthSteps) != null;
+      })();
+      if (colDl == null && !heldForRecess) {
         warnings.push({
           code: 'DRAWERS_TOO_SHALLOW',
           message: `Column ${k + 1}: cabinet too shallow for drawers (usable ${roundTo(colMaxDl, 1)} mm < ${DR.depthSteps[0]} mm) — the column's drawers were dropped.`,
@@ -5422,6 +5440,8 @@ export function computeCabinet(params, profileOverride) {
         boxFrontLen: colBoxFrontLen,
         bottomW: colBoxFrontLen + DR.bottomOversize,
         partY,
+        // D27: held for the recess (the carcass alone is too shallow): its usable depth, for the drop's words.
+        ...(heldForRecess ? { shallow: colMaxDl } : {}),
       });
     }
   }
@@ -5517,6 +5537,18 @@ export function computeCabinet(params, profileOverride) {
     const dl = snapDrawerDepth(recessColDrawerDepth(usable, recessCol.ed), DR.depthSteps);
     if (dl != null) set.dl = dl;
     set.recess = true;
+  }
+  // D27 · a column held for the recess that the recess did not take is dropped now, in the old words: the Check
+  // has said why the recess did not take it (#49), and this says that the carcass alone cannot carry it.
+  for (let i = columnDrawerSets.length - 1; i >= 0; i -= 1) {
+    const set = columnDrawerSets[i];
+    if (set.shallow == null || set.recess) continue;
+    warnings.push({
+      code: 'DRAWERS_TOO_SHALLOW',
+      message: `Column ${set.zone + 1}: cabinet too shallow for drawers (usable ${roundTo(set.shallow, 1)} mm < `
+        + `${DR.depthSteps[0]} mm) — the column's drawers were dropped.`,
+    });
+    columnDrawerSets.splice(i, 1);
   }
   const columnCap = recessCol
     ? { y: recessCol.capy, recess: true }

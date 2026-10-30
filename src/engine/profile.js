@@ -579,6 +579,13 @@ export const DEFAULT_CABINET_PROFILE = {
   // 'recess.handEdge'), as KIT_RECESS.lsp reads KIT_NOTCH's notch-profile.
   recess: {
     handEdgeMm: 1,
+    // 30.10.2026 (reference/lisp/KIT_RECESS.lsp D29, CLAUDE.md T85): the
+    // smallest slot beside a carcass side in a recess column. An edge of the
+    // band nearer its side than this takes no divider: the RETURN stands there
+    // as the column's wall. The owner, 20:45: *"2 - nie, tutaj musi byc
+    // minimum 30 mm"*. Read through the notch's table (notchProfile,
+    // 'recess.minColumnSide'), as the hand edge is.
+    minColumnSideMm: 30,
   },
 
   // ─── T75 F23 · THE JOINT SYSTEM (reference/lisp/SKYLON_JOINTS_DOWEL.lsp) ──

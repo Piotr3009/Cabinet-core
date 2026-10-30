@@ -448,6 +448,9 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f49-owner-3010-ladder.mjs',
   // Chat fix 30.10.2026 (the evening): the findings quiet and folded at the inspector's foot
   'test/chatfix-3010-quiet-issues.test.js',
+  // T85 F1 (30.10.2026): KIT_RECESS.lsp D29 to D31, the recess column follows the recess (L1)
+  'test/turn85-f01-lisp.test.js',
+  'scripts/t78-classify.d/f50-t85-f01.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

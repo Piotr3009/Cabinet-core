@@ -1185,6 +1185,7 @@
 ;;; corner marks on them (*"dlaczego polka fix ma minimalne zalamanie? ma
 ;;; kat i nawet dodales corner layer?"*). With clr 0 its bump runs end to
 ;;; end: a plain deeper board, no corner, no mark.
+;;; T86B F3 (30.10.2026): above a recess column's cap the parent `shelf` runs side to side (no divider stands there).
 (defun recess-shelf-bump (cw cd g ex0 ex1 ed shelf clr / bw b0 b1)
   (setq bw (- (caddr shelf) (car shelf))
         b0 (- (+ (recess-ix0 ex0 g) clr) (car shelf))

@@ -468,6 +468,8 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f51-t86b-f01.mjs',
   'test/turn86b-f02-column-section.test.js',
   'scripts/t78-classify.d/f51-t86b-f02.mjs',
+  'test/turn86b-f03-shelf-over-column.test.js',
+  'scripts/t78-classify.d/f51-t86b-f03.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

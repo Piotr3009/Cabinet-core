@@ -5841,6 +5841,56 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── T86B F3 · A SHELF SPANS BETWEEN ITS WALLS AT ITS OWN HEIGHT ──────────
+  // CLAUDE.md T86B law 3; the owner, 30.10.2026, 23:02: *"zrob jak rekomendujesz"*. A shelf item in a zone is cut to
+  // its BAY, and a bay's walls are the dividers either side of it. Above a recess column's cap there are no dividers
+  // (T85 D29: they stop under the board over the drawers), and above the ONE board over every column neither (T79
+  // F3), so a shelf added there in the column was cut the column's width while its pins went into the sides (the
+  // drilling has always asked `shelfBearers` for the walls AT the shelf's height). One law, the drilling's: the walls
+  // a zoned shelf is measured between are the nearest boards that reach its height, the carcass sides when no divider
+  // does, a divider of the joiner's own when one does. The shelf's cut (the LISP's shelf routine) is unchanged: its
+  // clearance, its depth, its frame. A shelf whose bay walls reach it (every shelf in every cabinet before tonight
+  // but the ones above a cap) meets this pass and leaves it byte for byte.
+  {
+    const walls = bearingWalls(panels);
+    for (let pi = 0; pi < panels.length; pi += 1) {
+      const sh = panels[pi];
+      if (sh.part !== 'SHELF' || sh.meta?.splitDivider || sh.meta?.zone == null || !sh.box) continue;
+      const bay = bays[sh.meta.zone];
+      if (!bay) continue;
+      const at = shelfBearers({ walls, run: { from: bay.from, to: bay.to }, level: sh.box.y });
+      const from = at.left ? at.left.face : G;
+      const to = at.right ? at.right.face : W - G;
+      if (Math.abs(from - bay.from) < 1e-6 && Math.abs(to - bay.to) < 1e-6) continue;
+      const fixed = sh.meta?.locked === true;
+      const w = fixed ? to - from : to - from - C.shelfWidthClearance;
+      const x = fixed ? from : from + C.shelfWidthClearance / 2;
+      // A slope over the wider span: the shelf keeps its bay rather than pierce it (T46 F5's FULL SPAN).
+      if (cut && sh.box.y + (Number(sh.thickness) || G) > shelfCeilingOver(x, x + w) + 1e-6) continue;
+      const rebuilt = panel({
+        id: sh.id, part: sh.part, role: sh.role, w, h: sh.h, thickness: sh.thickness,
+        edgeCode: sh.edging?.code, edgeLen: metres(w),
+        box: { ...sh.box, x, w },
+        cnc: { ...sh.cnc, drawn_h: w, ...rectGeometry(sh.h, w) },
+        meta: { ...sh.meta, run: { from: x, to: x + w } },
+      });
+      panels[pi] = { ...sh, ...rebuilt };
+      // The shoe shelf's stop rail is cut with its board.
+      const rail = panels.findIndex((q) => q.part === 'SHOE-RAIL' && q.meta?.index === sh.meta.index);
+      if (rail >= 0) {
+        const r = panels[rail];
+        panels[rail] = {
+          ...r,
+          ...panel({
+            id: r.id, part: r.part, role: r.role, w, h: r.h, thickness: r.thickness,
+            edgeCode: r.edging?.code, edgeLen: metres(w), box: { ...r.box, x, w },
+            cnc: rectGeometry(w, r.h), meta: r.meta,
+          }),
+        };
+      }
+    }
+  }
+
   // ─── THE RAIL PARTITIONER — DELETED, TURN 42 (CLAUDE.md F1) ──────────────
   // A `RAIL-PART` panel stood here whenever `railPartY != null`, which was
   // every rail that was not a T37 assembly — including every rod the ADD ITEMS

@@ -2056,7 +2056,9 @@ export default function Scene({
           // built in the store, so the canvas only has to say what happened.
           onSelect={(opts) => selectUnit(unit.id, opts)}
           onMove={(x, step) => {
-            if (!isFreePanel(unit.type)) { moveUnit(unit.id, x, step); return; }
+            // T85 F3 (KIT_RECESS.lsp D29): a drag step moves a recess column's dividers; a column that leaves is
+            // taken when the hand lets go (the store's gesture end), never half way through the drag.
+            if (!isFreePanel(unit.type)) { moveUnit(unit.id, x, step, { follow: 'move' }); return; }
             moveUnit(unit.id, x, step, { magnet: false });
             const caught = freePanelProposal(unit.id);
             setSnapProposal(caught ? { unitId: unit.id, ...caught } : null);
@@ -2064,7 +2066,7 @@ export default function Scene({
           onMoveEnd={isFreePanel(unit.type) ? ({ altKey, cancelled, moved }) => {
             if (moved && !altKey && !cancelled) acceptFreePanelSnap(unit.id);
             setSnapProposal(null);
-          } : null}
+          } : ({ moved }) => { if (moved) useProjectStore.getState().followRecessColumn(unit.id); }}
           snapProposal={snapProposal?.unitId === unit.id ? snapProposal : null}
           // T82 F16 · a free panel's other two axes, each through its store
           // action and the room's own clamp (`freePanelReach`).

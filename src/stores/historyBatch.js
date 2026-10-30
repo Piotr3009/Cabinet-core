@@ -53,10 +53,29 @@ export function runBatch(fn) {
 // this each drag step was its own Undo entry. 3d/frameDemand.jsx opens and
 // closes it; its end is a batch end like any other.
 let gesture = false;
+// T85 F3 (KIT_RECESS.lsp D29): what must happen when the hand lets go runs while the gesture is still open, so it
+// lands in the drag's own undo step (a recess column that left the cabinet during the drag is taken here, once).
+const ending = new Set();
 export function setGesture(on) {
   const was = gesture;
+  if (was && !on) {
+    for (const cb of [...ending]) {
+      try { cb(); } catch (err) { console.error(err); }
+    }
+  }
   gesture = Boolean(on);
   if (was && !gesture && depth === 0) for (const cb of [...listeners]) cb();
+}
+
+/** Is a pointer gesture (a held drag) open? */
+export function isGesture() {
+  return gesture;
+}
+
+/** T85 F3 · run `callback` as a gesture ends, before its undo step closes. */
+export function onGestureEnding(callback) {
+  ending.add(callback);
+  return () => ending.delete(callback);
 }
 
 /** Tell me when the outermost batch finishes. */

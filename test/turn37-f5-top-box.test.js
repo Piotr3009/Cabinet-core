@@ -166,7 +166,10 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // AMENDED BY THE CHAT FIX OF 28.10.2026 (KIT_RECESS.lsp D22): #49 the drawers in front of a
   // recess that keep the carcass's depth (*"ustawic szuflady tylko w tej wnece"*), appended at
   // the end. Rule 15 is still the fifteenth. Forty-six.
-  assert.equal(CHECKS.length, 46);
+  // AMENDED BY T85 F2 (30.10.2026, KIT_RECESS.lsp D29 b): #50 the dead pocket beside a recess
+  // column's RETURN, a note (*"2 - nie, tutaj musi byc minimum 30 mm"*), appended at the end.
+  // Rule 15 is still the fifteenth. Forty-seven.
+  assert.equal(CHECKS.length, 47);
   assert.equal(CHECKS[14].n, 15);
 });
 

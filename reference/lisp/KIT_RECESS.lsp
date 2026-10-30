@@ -7,6 +7,7 @@
 ;;; Derived from: KIT_NOTCH.lsp (its routines are CALLED, never copied) +
 ;;;               KIT_BUD_FULL.lsp + SKYLON_COMMON.lsp
 ;;; Requires: SKYLON_COMMON.lsp and KIT_NOTCH.lsp loaded first
+;;;           30.10.2026 (D30): and SKYLON_JOINTS_CABINEO.lsp (cabineo-positions)
 ;;;========================================
 ;;;
 ;;; THE OWNER, 15.10.2026, the evening:
@@ -561,6 +562,112 @@
 ;;;     carcass deep enough for drawers of its own (the owner's 558) takes
 ;;;     its drawers into the recess when he asks for it.
 ;;;
+;;; 30.10.2026, 20:17 TO 20:48 (the owner, over the plan-view mockup
+;;; verify/t85/recess-move-mockup.png; CLAUDE.md TURN 85): *"dlaczego niektore
+;;; elementy z recess nie sa machined?"* and *"jak przesuwam i mam recess lub
+;;; komin to mi sie ladnie zmienia ksztalt elementow, to dziala super, ale jak
+;;; mamy szuflady w recess to juz sie tak nie przesuwa, tylko przy przesunieciu
+;;; calej szafy szuflady znikaja a zostaja dividery ktore sie robia do samej
+;;; gory, nie powinno tak byc"*; his answers, 20:38: *"1 - cabineo, 2 - jesli
+;;; wneka wychodzi poza szafe to zostaje jeden divider ... minimum ... i tyle,
+;;; szuflady sa mniej glebokie do plytszej szafy a polka zostaje w ksztalcie
+;;; litery L, proste prawda?"*; 20:45: *"2 - nie, tutaj musi byc minimum 30
+;;; mm"*, *"3 - znikaja z szufladami, bo to sa dividery do szuflad; tylko jak
+;;; bedzie uzytkownik chcial to dolozy pozniej sam osobno dividery"*; 20:48:
+;;; *"dodaj jeszcze jedno: default zawiasy prosze zrob 90 stopni, teraz mamy
+;;; 150 to nie jest dobre, i silver prosze"*.
+;;;
+;;; D29 THE RECESS COLUMN FOLLOWS THE RECESS. The column's walls are the
+;;;     band's edges in the carcass's frame (ex0, ex1), wherever the carcass
+;;;     stands: WHERE THE DEPTH CHANGES, A WALL STANDS (a drawer box has one
+;;;     depth across its whole width). Each edge gives one wall, (kind x), x
+;;;     the wall's INNER face (the face toward the column), recess-col-walls:
+;;;     (a) BOTH EDGES INSIDE, each at least recess.minColumnSide (30, the
+;;;         owner's *"minimum 30 mm"*) from its side (the slot ex0 - g, and
+;;;         cw - g - ex1): a DIVIDER on each edge, D22 as it stands
+;;;         (recess-col-pair-x, the button of D26).
+;;;     (b) AN EDGE OUTSIDE THE CARCASS (ex0 = 0, ex1 = cw: the room's clip),
+;;;         or INSIDE BY LESS THAN 30: no divider on that edge. Outside: the
+;;;         carcass SIDE is the column's wall (x its inner face, g or cw - g);
+;;;         it grows into the band as a side the band reaches grows (section
+;;;         2, BUL or BUR deeper), the drawers' runners on it as on any side.
+;;;         Inside by less than 30: the RETURN stands at that edge and is the
+;;;         column's wall, the FULL-HEIGHT RETURN (recess-col-return-full):
+;;;         x ex0 .. ex0 + g (or ex1 - g .. ex1), on the BOTTOM's bump (the
+;;;         bump runs from the band's outer face, as under a divider) up to
+;;;         bz1, through the BACK's plane to the EXT-BACK's face, ed deep;
+;;;         NOT the column's cap-up RETURN. The board over the drawers passes
+;;;         beside it (its bump from the RETURN's inner face). The strip
+;;;         between the side and the RETURN is closed below by the L-shaped
+;;;         BOTTOM and above by the L-shaped board over the drawers: a DEAD
+;;;         POCKET, no filler in it, and the Check says so in a NOTE (never
+;;;         red). The runner on that wall is drilled into the RETURN where its
+;;;         holes fall on it (from its own front edge, as on a divider); a
+;;;         hole in front of it, over the dead pocket, is the joiner's packer
+;;;         and the NOTE says so. Proposed (one line to veto): the RETURN on
+;;;         the BOTTOM, not on the floor, so D30 can join it.
+;;;     (c) THE BAND LEAVES THE CARCASS (no part of it over the carcass), or
+;;;         the band's floor or height fail recess-col-refusal's other tests:
+;;;         there is no recess column. The drawers take the carcass's depth
+;;;         (D27): held by the ladder they stay a plain column stack between
+;;;         the two dividers, full height; not held, the APP removes the
+;;;         drawers AND the two dividers it made for them (D28's dividers,
+;;;         *"znikaja z szufladami, bo to sa dividery do szuflad"*) in the
+;;;         same step as the move, and says so. A divider the joiner stood
+;;;         himself is never moved or removed by that road.
+;;;     THE BOARD OVER THE DRAWERS and THE BOTTOM are one board each, an L
+;;;     where the band covers part of the carcass, the bump clipped to the
+;;;     carcass, max(ex0, 0) .. min(ex1, cw): its edge at a DIVIDER is the
+;;;     divider's outer face (it stands under the board and on the BOTTOM), at
+;;;     a SIDE the side's inner face (the grown side beside both), at a RETURN
+;;;     the RETURN's outer face for the BOTTOM (it stands on it) and its inner
+;;;     face for the board over the drawers (recess-col-bottom-edges,
+;;;     recess-col-cap-edges). THE BOX runs wall to wall (recess-col-box-span)
+;;;     and takes recess-col-drawer-depth where the column is in the band. A
+;;;     column with ONE divider is the unit's two bays: the SIDE or RETURN on
+;;;     the left, Column 1; on the right, Column 2. The slot beside a DIVIDER
+;;;     is closed by D22's fillers; none beside a SIDE or a RETURN
+;;;     (recess-col-wall-fillers). recess-col-refusal AMENDED (30.10.2026):
+;;;     the band reaching a side no longer refuses (this D takes it), and the
+;;;     dividers' test asks only the edges whose wall is a DIVIDER (dl or dr
+;;;     nil where it is not). The two walls' sentence of the engine (D26)
+;;;     counts the DIVIDER walls, two, one, or none.
+;;; D30 THE RETURNS ARE ON CABINEO. The owner: *"1 - cabineo"* (his question,
+;;;     *"dlaczego niektore elementy z recess nie sa machined?"*). A RETURN of
+;;;     a recess column whose END stands on the FACE of a horizontal board
+;;;     joins it as a horizontal board's end joins a side in
+;;;     SKYLON_JOINTS_CABINEO.lsp, the board whose END meets the other's face
+;;;     carrying the connector: the column's cap-up RETURN-L and RETURN-R on
+;;;     the board over the drawers, the full-height RETURN of D29 b on the
+;;;     BOTTOM. The pockets in the RETURN's end on its OUTSIDE face (the face
+;;;     toward the band's wall: RETURN-L's left, RETURN-R's right), the dia 5
+;;;     holes in the horizontal board's face on the screw axis, ax in from
+;;;     the RETURN's outside face (cabineo-axis-from-outside); the count and
+;;;     the offsets the Cabineo law's (cabineo-positions) along the RETURN's
+;;;     depth from its FRONT end (recess-return-cabineo); the size the
+;;;     unit's own when its joint system is Cabineo 8 or 12, else Cabineo 12
+;;;     as the drawer box's (D.2c). The RETURN's own frame: x along its depth
+;;;     from its FRONT end (0) to its back end (ed), y up from its bottom end,
+;;;     seen from its INSIDE face (the Cabineo law's own frame: the pockets on
+;;;     the outside face are reflected for the export, OUTSIDE FACE UP); a
+;;;     runner row on a full-height RETURN (D29 b) stands in the same frame.
+;;;     D11 is AMENDED: a RETURN so joined is a CUT part (its readiness
+;;;     cut, its fixing the Cabineo's), and Check #30 no longer counts it.
+;;;     The FLOOR and the LID stay outlines (the owner spoke of the RETURNs).
+;;;     Proposed (one line to veto): a RETURN that stands BESIDE a board's
+;;;     bump (every RETURN of a recess WITHOUT drawers: the TOP's and the
+;;;     BOTTOM's bumps run between the RETURNs, so the board's end meets the
+;;;     RETURN's face and the pocket would be the board's, on its outside
+;;;     face) stays D11's outline until the owner says which board carries
+;;;     the pocket there; its goldens stand byte for byte.
+;;; D31 THE SWING. Not a cut law; recorded here because the owner gave it in
+;;;     the same breath: *"default zawiasy prosze zrob 90 stopni, teraz mamy
+;;;     150 to nie jest dobre, i silver prosze"*. Every door opens to 90 in
+;;;     the picture (profile doors.openAngle 90, openAngleAtWall 90); the
+;;;     hinge's catalogue angle (155 / 110 / 95 by the front's thickness)
+;;;     decides what is bought and drilled, never the swing; silver is the
+;;;     nickel finish, the default wherever a default is read.
+;;;
 ;;;========================================
 ;;; 4. NOT HERE
 ;;;========================================
@@ -579,6 +686,9 @@
 ;;; same table (D18); the mark itself is the notch's routine, notch-corner-marks.
 ;;; 28.10.2026: and the hand edge round a cut inside the BACK,
 ;;; recess.handEdge (1), from the same table (D23; profile.recess.handEdgeMm).
+;;; 30.10.2026: and the smallest slot beside a side in a recess column,
+;;; recess.minColumnSide (30, the owner's *"2 - nie, tutaj musi byc minimum 30
+;;; mm"*), from the same table (D29; profile.recess.minColumnSideMm).
 
 (defun recess-p (key)
   (notch-p key))
@@ -1870,13 +1980,19 @@
 ;;; D22: is this column of drawers a RECESS COLUMN? nil, or the sentence the
 ;;; Check prints (RECESS_DRAWERS_SHALLOW). A divider stands ON an edge within
 ;;; half a millimetre (the editor's own step, 0.5: a face typed or snapped there).
+;;; AMENDED 30.10.2026 (D29 b): the band reaching a side no longer refuses (the
+;;; side is the column's wall there), and the dividers' test asks only an edge
+;;; whose wall is a DIVIDER: dl (dr) is nil where the left (right) wall is a
+;;; SIDE or a RETURN (recess-col-walls). Until that evening the first test read
+;;;   ((or (recess-left-p ex0) (recess-right-p ex1 cw)) "RECESS DRAWERS: the
+;;;    recess reaches a side of the carcass; the drawers keep the carcass's
+;;;    depth.")
+;;; and both dividers were always asked.
 (defun recess-col-refusal (cw ch g ex0 ex1 ez0 ez1 dl dr gd capy / minI)
   (setq minI (recess-p "notch.minInterior"))
-  (cond ((or (recess-left-p ex0) (recess-right-p ex1 cw))
-         "RECESS DRAWERS: the recess reaches a side of the carcass; the drawers keep the carcass's depth.")
-        ((not (recess-floor-p ez0))
+  (cond ((not (recess-floor-p ez0))
          "RECESS DRAWERS: the recess does not start on the floor; the drawers keep the carcass's depth.")
-        ((or (> (abs (- dl ex0)) 0.5) (> (abs (- (+ dr gd) ex1)) 0.5))
+        ((or (and dl (> (abs (- dl ex0)) 0.5)) (and dr (> (abs (- (+ dr gd) ex1)) 0.5)))
          "RECESS DRAWERS: the dividers do not stand on the recess's edges; the drawers keep the carcass's depth.")
         ((< (- (recess-bz1 ez1 ch g) (+ capy g)) minI)
          "RECESS DRAWERS: the recess ends too close over the board over the drawers; the drawers keep the carcass's depth.")
@@ -2029,6 +2145,169 @@
   hit)
 
 ;;;========================================
+;;; I3. THE COLUMN FOLLOWS THE RECESS (D29, D30; 30.10.2026)
+;;;========================================
+;;;
+;;; The owner: *"jak mamy szuflady w recess to juz sie tak nie przesuwa"*;
+;;; *"jesli wneka wychodzi poza szafe to zostaje jeden divider ... szuflady sa
+;;; mniej glebokie do plytszej szafy a polka zostaje w ksztalcie litery L"*;
+;;; *"2 - nie, tutaj musi byc minimum 30 mm"*; *"1 - cabineo"*. A WALL is
+;;; (kind x): kind "DIVIDER", "SIDE" or "RETURN", x its INNER face (the face
+;;; toward the column, carcass x from the left face). `minside` is
+;;; recess.minColumnSide (30), read by the caller.
+
+;;; D29: one wall of a recess column. `e` is the edge (ex0 or ex1), `lo` T for
+;;; the left edge. Outside the carcass (the room's clip, 0 or cw): the SIDE.
+;;; The slot beside the side under minside: the RETURN at the edge. Else a
+;;; DIVIDER on the edge.
+(defun recess-col-wall (cw g e lo minside)
+  (if lo
+    (cond ((recess-left-p e) (list "SIDE" g))
+          ((< (- e g) minside) (list "RETURN" (+ e g)))
+          (T (list "DIVIDER" (+ e g))))
+    (cond ((recess-right-p e cw) (list "SIDE" (- cw g)))
+          ((< (- (- cw g) e) minside) (list "RETURN" (- e g)))
+          (T (list "DIVIDER" (- e g))))))
+
+;;; D29: the column's two walls, ((kind x) (kind x)), the left one first.
+(defun recess-col-walls (cw g ex0 ex1 minside)
+  (list (recess-col-wall cw g ex0 T minside) (recess-col-wall cw g ex1 nil minside)))
+
+;;; Is this wall of this kind?
+(defun recess-col-wall-p (w kind)
+  (equal (car w) kind))
+
+;;; D29: how many of the two walls are DIVIDERs (2, 1 or 0): the number of
+;;; dividers the unit must carry for the column to be a recess column.
+(defun recess-col-divider-count (walls / n)
+  (setq n 0)
+  (foreach w walls (if (recess-col-wall-p w "DIVIDER") (setq n (1+ n))))
+  n)
+
+;;; D29: the column among the unit's bays: 1 (of 3) between two dividers; with
+;;; one, 0 (of 2) when the left wall is the SIDE or the RETURN, else 1 (of 2);
+;;; nil with none (no column: the drawers are a full-width stack).
+(defun recess-col-zone (walls / n)
+  (setq n (recess-col-divider-count walls))
+  (cond ((= n 2) 1)
+        ((= n 1) (if (recess-col-wall-p (car walls) "DIVIDER") 1 0))
+        (T nil)))
+
+;;; D29: THE BOX RUNS WALL TO WALL, (x0 x1): the two walls' inner faces.
+(defun recess-col-box-span (walls)
+  (list (cadr (car walls)) (cadr (cadr walls))))
+
+;;; D29: the BOTTOM's bump edges (b0 b1), its plan frame (x from BUL's inner
+;;; face): a DIVIDER's and a RETURN's OUTER face (each stands on the bump), a
+;;; SIDE's inner face (the grown side beside it). Two dividers: D22's ex0 - g,
+;;; ex1 - g (recess-col-plan-bump).
+(defun recess-col-bottom-edges (cw g walls / l r)
+  (setq l (car walls) r (cadr walls))
+  (list (if (recess-col-wall-p l "SIDE") 0.0 (- (cadr l) (* 2.0 g)))
+        (if (recess-col-wall-p r "SIDE") (- cw (* 2.0 g)) (cadr r))))
+
+;;; D29: the board over the drawers' bump edges: the BOTTOM's, but at a RETURN
+;;; its INNER face (the full-height RETURN passes beside the board).
+(defun recess-col-cap-edges (cw g walls / l r b)
+  (setq l (car walls) r (cadr walls) b (recess-col-bottom-edges cw g walls))
+  (list (if (recess-col-wall-p l "RETURN") (- (cadr l) g) (car b))
+        (if (recess-col-wall-p r "RETURN") (- (cadr r) g) (cadr b))))
+
+;;; D29: the two L boards, section C's outline law on those edges. Two dividers:
+;;; recess-col-bottom-outline and recess-col-cap-outline, point for point.
+(defun recess-col-bottom-outline-walls (cw cd g walls ed / b)
+  (setq b (recess-col-bottom-edges cw g walls))
+  (recess-bump-outline (- cw (* 2.0 g)) (- cd g) (car b) (cadr b) ed))
+
+(defun recess-col-cap-outline-walls (cw g walls ed capd / b)
+  (setq b (recess-col-cap-edges cw g walls))
+  (recess-bump-outline (- cw (* 2.0 g)) capd (car b) (cadr b) ed))
+
+;;; D29: the TOP's and the BOTTOM's joints with the walls. A SIDE wall's edge
+;;; is a grown side's (re-planned on cd - g + ed, recess-top-joints' law) and
+;;; has no back run (the bump reaches the side); a DIVIDER's or a RETURN's is
+;;; D22's (recess-col-top-joints).
+(defun recess-col-top-joints-walls (cw cd g ex0 ex1 ed walls / e below inset minEdge sideW tw ls rs)
+  (setq e       (recess-p "puzzle.tabCentresFromEnd")
+        below   (recess-p "puzzle.singleSocketBelow")
+        inset   (notch-joint-inset cd e (recess-p "puzzle.singleJointMaxDepth"))
+        minEdge (notch-min-joint-edge (recess-p "puzzle.dogboneHalfHeight") g)
+        sideW   (- cd g)
+        tw      (- cw (* 2.0 g))
+        ls      (recess-col-wall-p (car walls) "SIDE")
+        rs      (recess-col-wall-p (cadr walls) "SIDE"))
+  (list (list "LEFT" (notch-replan-sockets (if ls (+ sideW ed) sideW) inset below))
+        (list "RIGHT" (notch-replan-sockets (if rs (+ sideW ed) sideW) inset below))
+        (list "BACK" (append (if ls nil (recess-run-sockets (- ex0 g) 0.0 e below minEdge))
+                             (if rs nil (recess-run-sockets (- tw (- ex1 g)) (- ex1 g) e below minEdge))))))
+
+;;; D29 b: THE FULL-HEIGHT RETURN at a RETURN wall: ed x (bz1 - g), on the
+;;; BOTTOM's bump (z = g) up to bz1, through the BACK's plane (its front end on
+;;; the BACK's inner face, y = cd - g) to the EXT-BACK's face. NOT D22's cap-up
+;;; RETURN (recess-col-return).
+(defun recess-col-return-full (ch g ez1 ed)
+  (list ed (- (recess-bz1 ez1 ch g) g)))
+
+;;; ...and where it stands, carcass frame (x0 y0 z0 x1 y1 z1), x0 its left face.
+(defun recess-col-return-full-place (x0 cd ch g ez1 ed)
+  (list x0 (- cd g) g (+ x0 g) (- (+ cd ed) g) (recess-bz1 ez1 ch g)))
+
+;;; D29: where the added boards stand with the walls: at a DIVIDER wall D22's
+;;; cap-up RETURN, at a RETURN wall the full-height one, at a SIDE none; the LID
+;;; and the EXT-BACK as ever (recess-col-box-places). Two dividers: point for
+;;; point recess-col-box-places.
+(defun recess-col-box-places-walls (cw cd ch g ex0 ex1 ez0 ez1 ed capt walls / bz1 l r out)
+  (setq bz1 (recess-bz1 ez1 ch g) l (car walls) r (cadr walls) out nil)
+  (cond ((recess-col-wall-p l "DIVIDER")
+         (setq out (list (list "RETURN-L" (list ex0 (- cd g) capt (+ ex0 g) (- (+ cd ed) g) bz1)))))
+        ((recess-col-wall-p l "RETURN")
+         (setq out (list (list "RETURN-L" (recess-col-return-full-place ex0 cd ch g ez1 ed))))))
+  (cond ((recess-col-wall-p r "DIVIDER")
+         (setq out (append out (list (list "RETURN-R" (list (- ex1 g) (- cd g) capt ex1 (- (+ cd ed) g) bz1))))))
+        ((recess-col-wall-p r "RETURN")
+         (setq out (append out (list (list "RETURN-R" (recess-col-return-full-place (- ex1 g) cd ch g ez1 ed)))))))
+  (if (not (recess-top-p ez1 ch))
+    (setq out (append out (list (list "LID" (list ex0 cd (- ez1 g) ex1 (- (+ cd ed) g) ez1))))))
+  (append out (list (list "EXT-BACK" (list ex0 (- (+ cd ed) g) ez0 ex1 (+ cd ed) ez1)))))
+
+;;; D29: the slots' fillers with the walls: D22's beside a DIVIDER, none beside
+;;; a SIDE (there is no slot) or a RETURN (the dead pocket, closed above and
+;;; below by the two L boards).
+(defun recess-col-wall-fillers (cw cd g ex0 ex1 capy fy walls / out)
+  (setq out nil)
+  (if (and (recess-col-wall-p (car walls) "DIVIDER") (> ex0 g))
+    (setq out (list (list "L1" (list g fy g ex0 (+ fy g) capy))
+                    (list "L2" (list g (- cd (* 2.0 g)) g ex0 (- cd g) capy)))))
+  (if (and (recess-col-wall-p (cadr walls) "DIVIDER") (< ex1 (- cw g)))
+    (setq out (append out (list (list "R1" (list ex1 fy g (- cw g) (+ fy g) capy))
+                                (list "R2" (list ex1 (- cd (* 2.0 g)) g (- cw g) (- cd g) capy))))))
+  out)
+
+;;; D29 b: THE DEAD POCKETS, ((x0 x1) ..) across: the strip between a side's
+;;; inner face and a RETURN wall's outer face, the Check's NOTE.
+(defun recess-col-dead-pockets (cw g ex0 ex1 walls / out)
+  (setq out nil)
+  (if (recess-col-wall-p (car walls) "RETURN") (setq out (list (list g ex0))))
+  (if (recess-col-wall-p (cadr walls) "RETURN") (setq out (append out (list (list ex1 (- cw g))))))
+  out)
+
+;;; D30: THE RETURN ON CABINEO, on the board its bottom end stands on (the
+;;; board over the drawers, or the BOTTOM under a full-height RETURN):
+;;; ((off hx hy) ..), one per connector. `off` is the pocket's axis along the
+;;; RETURN's depth from its FRONT end (its own frame: x = off, at its bottom
+;;; end, on its outside face); hx hy the dia 5 hole's place in the carcass
+;;; frame, ax in from the RETURN's outside face (x0 + ax for RETURN-L, its
+;;; left; x0 + g - ax for RETURN-R, its right) and y0 + off from the front
+;;; face, y0 the RETURN's front end. len is its depth (ed); e p nMin wide the
+;;; Cabineo law's (cabineo-profile: endOffset, pitch, minPerJoint, the pocket's
+;;; width); ax cabineo-axis-from-outside.
+(defun recess-return-cabineo (x0 y0 g len lft ax e p nMin wide / hx out)
+  (setq hx (if lft (+ x0 ax) (- (+ x0 g) ax)) out nil)
+  (foreach off (cabineo-positions len e p nMin wide)
+    (setq out (append out (list (list off hx (+ y0 off))))))
+  out)
+
+;;;========================================
 ;;; I2. NUMBERS - THE DRAWERS IN THE RECESS (D22 to D25)
 ;;;========================================
 ;;;
@@ -2153,3 +2432,70 @@
 ;;; A CORNER (D23, KIT_BUD_FULL, the band 310..600 from the floor to 590):
 ;;; the window (328 0 600 572) at the BACK's bottom-right, cut (327 0 600 573):
 ;;;            (0 0) (327 0) (327 573) (600 573) (600 770) (0 770)
+;;;
+;;;========================================
+;;; I4. NUMBERS - THE COLUMN FOLLOWS THE RECESS (D29, D30; 30.10.2026)
+;;;========================================
+;;;
+;;; THE OWNER'S WARDROBE of CASE F (1200 x 2150 x 300, G 18, the doors 25,
+;;; the project's setbacks 10: usable 187) before his recess 800 wide and 300
+;;; deep (ed 290, the wall gap off it), floor to ceiling, three internal
+;;; drawers 200 (capy 629, capt 647, capd 272), dragged along its wall. The
+;;; Cabineo numbers are cabineo-profile's for Cabineo 12 (a puzzle unit):
+;;; e 50, p 250, nMin 2, the pocket 16.7 wide, ax 5.5 (flush, skim 0.5).
+;;;
+;;; CASE G (a), BOTH EDGES IN (fixtures/golden-t85-a-both-in.json): the
+;;;   recess from carcass x 200 to 1000, the band 210..990.
+;;;   (recess-col-walls 1200 18 210 990 30) = (("DIVIDER" 228) ("DIVIDER" 972))
+;;;   zone 1; (recess-col-box-span ..) = (228 972): 744 light; the drawers
+;;;   (recess-col-drawer-depth 187 290) = 477, the ladder's 440.
+;;;   The board over the drawers (recess-col-cap-outline-walls 1200 18 walls
+;;;   290 272): (0 0) (1164 0) (1164 272) (972 272) (972 562) (192 562)
+;;;   (192 272) (0 272), D22's point for point; the BOTTOM's bump 192..972.
+;;;   RETURN-L (210 282 647 228 572 2150), RETURN-R (972 282 647 990 572
+;;;   2150), 290 x 1503 each, on the board over the drawers.
+;;;   THEIR CABINEO (D30), (recess-return-cabineo 210 282 18 290 T 5.5 50 250
+;;;   2 16.7) = ((50 215.5 332) (240 215.5 522)); RETURN-R's (x0 972, nil):
+;;;   ((50 984.5 332) (240 984.5 522)). Two connectors a RETURN, four in all:
+;;;   the pockets at x 50 and 240 of each RETURN's bottom end (its own frame),
+;;;   the dia 5 holes in the board over the drawers at carcass x 215.5 and
+;;;   984.5, y 332 and 522 from the front face.
+;;;   The fillers L1 L2 R1 R2, 192 x 611 (CASE F).
+;;;
+;;; CASE G (b), THE LEFT EDGE 100 OUTSIDE (fixtures/golden-t85-b-left-out.json):
+;;;   the recess from carcass x -100 to 700, the band 0..690.
+;;;   (recess-col-walls 1200 18 0 690 30) = (("SIDE" 18) ("DIVIDER" 672))
+;;;   ONE divider, VPART-1 at x 672, its outer face on 690; zone 0 (of 2);
+;;;   the box span (18 672): 654 light, the drawers 440 on BUL and VPART-1.
+;;;   BUL grows to 572 (section 2: the band reaches it, floor to ceiling).
+;;;   The board over the drawers' edges (recess-col-cap-edges) (0 672), the
+;;;   BOTTOM's (0 672): an L each, the bump from BUL's inner face to the
+;;;   divider's outer face. No RETURN-L. RETURN-R (672 282 647 690 572 2150),
+;;;   290 x 1503; its Cabineo ((50 684.5 332) (240 684.5 522)).
+;;;   The fillers R1 R2 only, 492 x 611 (690 .. 1182); none at the SIDE.
+;;;
+;;; CASE G (c), THE LEFT EDGE 15 INSIDE (fixtures/golden-t85-c-left-15.json):
+;;;   the recess from carcass x 15 to 815, the band 25..805 (25 = 15 + 10).
+;;;   The slot beside BUL 25 - 18 = 7, under 30:
+;;;   (recess-col-walls 1200 18 25 805 30) = (("RETURN" 43) ("DIVIDER" 787))
+;;;   ONE divider, VPART-1 at x 787; zone 0 (of 2); the box span (43 787):
+;;;   744 light, the drawers 440 on RETURN-L and VPART-1.
+;;;   RETURN-L, THE FULL-HEIGHT ONE (recess-col-return-full 2150 18 2150 290)
+;;;   = (290 2132), at (25 282 18 43 572 2150): on the BOTTOM to the ceiling.
+;;;   RETURN-R the cap-up one (787 282 647 805 572 2150), 290 x 1503.
+;;;   The board over the drawers' edges (25 787) (beside RETURN-L), the
+;;;   BOTTOM's (7 787) (under it). THE DEAD POCKET (recess-col-dead-pockets)
+;;;   ((18 25)): 7 wide, the NOTE. The fillers R1 R2 only, 377 x 611.
+;;;   RETURN-L's Cabineo, on the BOTTOM: ((50 30.5 332) (240 30.5 522));
+;;;   RETURN-R's, on the board: ((50 799.5 332) (240 799.5 522)).
+;;;
+;;; CASE G (d), OUT OF THE BAND (fixtures/golden-t85-d-out.json): the recess
+;;;   wholly beside the carcass: no band, no extension. The app has removed
+;;;   the three drawers AND the two dividers it made for them (D29 c, the
+;;;   carcass's 187 under the ladder's 240): the bare wardrobe, no bays.
+;;;
+;;; CASE G (e), THE 558 OUT OF THE BAND (fixtures/golden-t85-e-558-out.json):
+;;;   a wardrobe 1200 x 2150 x 558 whose recess column (dividers 210 and 972,
+;;;   three drawers 200) left the band: usable 445, the ladder's 440 in the
+;;;   carcass alone (D27), so the column stays a plain column stack: the
+;;;   dividers full height, 540 x 2114, its own board Z2-PART 744 x 530.

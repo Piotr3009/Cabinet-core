@@ -128,13 +128,16 @@ test('F13 · the engine: the leaf carries its family and, for wide, its angle; t
   setBlumHingeFamilies(null);
 });
 
-test('F13 · the angle drives the swing: a 170 door opens past 90 in the scene; at a wall it still stops square', () => {
-  assert.equal(doorOpenAngle({ doorWidth: 500 }, P), 99 * DEG, 'the picture angle for every other door');
-  assert.equal(doorOpenAngle({ doorWidth: 500, fullDeg: 170 }, P), 170 * DEG);
-  assert.equal(doorOpenAngle({ doorWidth: 500, fullDeg: 155 }, P), 155 * DEG);
+// T85 F4 · amended: A SWING IS A PICTURE. The owner, 30.10.2026 20:48: *"default zawiasy prosze zrob 90 stopni,
+// teraz mamy 150 to nie jest dobre."*  The family's angle stays on the leaf (the BOM, Check #33); the view opens every
+// hinged leaf to the profile's 90.
+test('F13 · the family angle stays on the leaf; the swing is the profile\'s 90 (T85 F4); at a wall it still stops square', () => {
+  assert.equal(doorOpenAngle({ doorWidth: 500 }, P), 90 * DEG, 'the picture angle for every door');
+  assert.equal(doorOpenAngle({ doorWidth: 500, fullDeg: 170 }, P), 90 * DEG, 'a 170 leaf: the picture is still 90');
+  assert.equal(doorOpenAngle({ doorWidth: 500, fullDeg: 155 }, P), 90 * DEG);
   assert.equal(doorOpenAngle({ doorWidth: 500, fullDeg: 170, hingeOffset: 1.5, gapToWall: 10 }, P), 90 * DEG, 'a wall on the hinge side: square');
   const view = read('src/3d/UnitView.jsx');
-  assert.match(view, /fullDeg: Number\(panel\?\.meta\?\.openAngleDeg\) > 0 \? Number\(panel\.meta\.openAngleDeg\) : null,/);
+  assert.doesNotMatch(view, /fullDeg: Number\(panel\?\.meta\?\.openAngleDeg\)/, 'the view no longer hands the hinge angle to the swing');
 });
 
 test('F13 · the Check (#33) says a wide swing into a neighbour, in words, never clips; the panel offers the family per leaf', () => {

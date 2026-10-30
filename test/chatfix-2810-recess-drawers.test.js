@@ -136,8 +136,11 @@ test('LISP first · KIT_RECESS.lsp balances 0/0 with D22 to D25, section I and i
 test('I · recess-col-refusal: CASE E is a recess column; each other case in words', () => {
   assert.equal(X.recessColRefusal(1000, 2150, 18, 110, 890, 0, 2150, 110, 872, 18, 629, K), null);
   assert.equal(X.recessColRefusal(1000, 2150, 18, 110, 890, 0, 2150, 110.5, 871.5, 18, 629, K), null, 'within the editor\'s half millimetre');
-  assert.match(X.recessColRefusal(1000, 2150, 18, 0, 890, 0, 2150, 110, 872, 18, 629, K), /reaches a side of the carcass/);
-  assert.match(X.recessColRefusal(1000, 2150, 18, 110, 1000, 0, 2150, 110, 872, 18, 629, K), /reaches a side of the carcass/);
+  // T85 F2 AMENDED (KIT_RECESS.lsp D29 b, the owner 30.10.2026: *"jesli wneka wychodzi poza szafe to zostaje jeden
+  // divider"*): the band reaching a side no longer refuses; the side is the column's wall there and no divider is
+  // asked of that edge (null). Until that evening both lines read /reaches a side of the carcass/.
+  assert.equal(X.recessColRefusal(1000, 2150, 18, 0, 890, 0, 2150, null, 872, 18, 629, K), null);
+  assert.equal(X.recessColRefusal(1000, 2150, 18, 110, 1000, 0, 2150, 110, null, 18, 629, K), null);
   assert.match(X.recessColRefusal(1000, 2150, 18, 110, 890, 200, 2150, 110, 872, 18, 629, K), /does not start on the floor/);
   assert.match(X.recessColRefusal(1000, 2150, 18, 110, 890, 0, 2150, 100, 872, 18, 629, K), /do not stand on the recess's edges/);
   assert.match(X.recessColRefusal(1000, 2150, 18, 110, 890, 0, 2150, 110, 880, 18, 629, K), /do not stand on the recess's edges/);

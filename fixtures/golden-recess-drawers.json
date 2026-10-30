@@ -6,7 +6,8 @@
     "source": "KIT_RECESS.lsp CASE E (section I2) on KIT_WARDROBE_FULL 1000 wide: the owner's recess 800 (the band 110..890 floor to ceiling, 150 deep, clearance 10), dividers at 110 and 872, three internal drawers 200 in the column between them, the project's setbacks 10. VPART-1 and VPART-2 690 x 611 to the EXT-BACK, the board over the drawers 964 x 690 (its bump 92..872), the drawers 590, RETURN-L and RETURN-R 150 x 1503 on the board, the BOTTOM's bump 92..872, BACK and BACK-2 110 wide, four fillers 92 x 611. *\"szafa ma 1000 mm a wneka 800, to po prawej i po lewej szafa jest o 100 mm plytka a reszta gleboka, i co ja potrzebuje to ustawic szuflady tylko w tej wnece i odsunac diverted po lewej i po prawej rowno z wneka, zeby zamontowac szuflady\"*; *\"dokladnie o to mi chodzi\"*; *\"szuflady tez prosze\"* (28.10.2026)",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "30.10.2026 (T85 F2, KIT_RECESS.lsp D30, the RETURNs on Cabineo): \"1 - cabineo\" (the owner, 30.10.2026, 20:38; his question: \"dlaczego niektore elementy z recess nie sa machined?\"). RETURN-L and RETURN-R carry two Cabineo 12 each in their bottom end on the outside face (CABINEO_POCKET_15MM 6 each, pockets 0 -> 2, readiness geometry -> cut), the board over the drawers four dia 5 holes (CABINEO_HOLE_5MM|PARTITION 4), the connectors and caps 4 each; every other board, hole and row as it was."
   },
   "params": {
     "type": "WARDROBE",
@@ -724,8 +725,8 @@
         },
         "outline": 4,
         "holes": 0,
-        "pockets": 0,
-        "readiness": "geometry"
+        "pockets": 2,
+        "readiness": "cut"
       },
       {
         "id": "RETURN-R",
@@ -744,8 +745,8 @@
         },
         "outline": 4,
         "holes": 0,
-        "pockets": 0,
-        "readiness": "geometry"
+        "pockets": 2,
+        "readiness": "cut"
       },
       {
         "id": "EXT-BACK",
@@ -769,6 +770,18 @@
       }
     ],
     "drills": [
+      [
+        "CABINEO_HOLE_5MM|PARTITION",
+        4
+      ],
+      [
+        "CABINEO_POCKET_15MM|RETURN-L",
+        6
+      ],
+      [
+        "CABINEO_POCKET_15MM|RETURN-R",
+        6
+      ],
       [
         "FRONT_HINGES_35MM|01-FL",
         6
@@ -843,6 +856,16 @@
       ]
     ],
     "hardware": [
+      {
+        "role": "cabineo_connector",
+        "qty": 4,
+        "label": "Cabineo 12"
+      },
+      {
+        "role": "cabineo_cap",
+        "qty": 4,
+        "label": "Cabineo cover cap"
+      },
       {
         "role": "hinges",
         "qty": 12,

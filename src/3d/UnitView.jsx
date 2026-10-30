@@ -2498,8 +2498,9 @@ export default function UnitView({
       doorWidth: panel?.w ?? result.panels.find((p) => p.part === 'FRONT')?.w ?? W,
       hingeOffset: profile.doors.gap / 2,
       gapToWall: gap ?? null,
-      // T78 F13 · a wide-angle family's leaf opens to its family's angle.
-      fullDeg: Number(panel?.meta?.openAngleDeg) > 0 ? Number(panel.meta.openAngleDeg) : null,
+      // T85 F4 · the swing is the profile's one number (the owner, 30.10.2026:
+      // *"default zawiasy prosze zrob 90 stopni"*); the leaf's
+      // `meta.openAngleDeg` stays for the BOM and Check #8 and is not handed here.
     }, profile);
   }, [wallGaps, result.panels, W, profile]);
 

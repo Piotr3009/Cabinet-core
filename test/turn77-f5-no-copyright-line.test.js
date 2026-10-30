@@ -448,6 +448,21 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f49-owner-3010-ladder.mjs',
   // Chat fix 30.10.2026 (the evening): the findings quiet and folded at the inspector's foot
   'test/chatfix-3010-quiet-issues.test.js',
+  // T85 F1 (30.10.2026): KIT_RECESS.lsp D29 to D31, the recess column follows the recess (L1)
+  'test/turn85-f01-lisp.test.js',
+  'scripts/t78-classify.d/f50-t85-f01.mjs',
+  // T85 F2 (30.10.2026): the engine mirrors D29 and D30, the RETURNs on Cabineo (L1)
+  'test/turn85-f02-engine.test.js',
+  'scripts/t78-classify.d/f50-t85-f02.mjs',
+  // T85 F3 (30.10.2026): the recess column follows the recess
+  'src/lib/recessColumn.js',
+  'test/turn85-f03-follow.test.js',
+  'scripts/t78-classify.d/f50-t85-f03.mjs',
+  // T85 F4 (30.10.2026): the doors open to 90 in the picture, the silver finish the default
+  'test/turn85-f04-doors.test.js',
+  'scripts/t78-classify.d/f50-t85-f04.mjs',
+  // T85 F5 (30.10.2026): the walk, real mouse on the built app (W1)
+  'scripts/t85-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

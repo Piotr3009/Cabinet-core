@@ -81,6 +81,9 @@ export function notchProfile(profile = {}) {
     // 28.10.2026 (KIT_RECESS.lsp D23): the edge put on by hand round a cut
     // inside the BACK; the owner: *"musimy pomniejszyc o 1 mm plecy ... w podkowie U"*.
     'recess.handEdge': num(profile.recess?.handEdgeMm, 1),
+    // 30.10.2026 (KIT_RECESS.lsp D29): the smallest slot beside a side in a
+    // recess column; the owner: *"2 - nie, tutaj musi byc minimum 30 mm"*.
+    'recess.minColumnSide': num(profile.recess?.minColumnSideMm, 30),
   };
 }
 

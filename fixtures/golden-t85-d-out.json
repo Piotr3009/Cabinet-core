@@ -1,0 +1,246 @@
+{
+  "meta": {
+    "name": "golden-t85-d-out.json",
+    "turn": "T78",
+    "F": "T85 F2 (KIT_RECESS.lsp D29 c, as the store leaves it)",
+    "source": "KIT_RECESS.lsp I4 (D29, D30) on KIT_WARDROBE_FULL: the owner's wardrobe of CASE F (1200 x 2150 x 300, the doors 25, the project's setbacks 10) before his recess 800 x 300 (ed 290), floor to ceiling, three internal drawers 200; CASE G (d), out of the band: no extension; the store removed the three drawers and the two dividers it made for them (the carcass's 187 under the ladder's 240): the bare wardrobe. *\"jak przesuwam i mam recess lub komin to mi sie ladnie zmienia ksztalt elementow, to dziala super, ale jak mamy szuflady w recess to juz sie tak nie przesuwa, tylko przy przesunieciu calej szafy szuflady znikaja a zostaja dividery ktore sie robia do samej gory, nie powinno tak byc\"*; *\"2 - jesli wneka wychodzi poza szafe to zostaje jeden divider ... szuflady sa mniej glebokie do plytszej szafy a polka zostaje w ksztalcie litery L, proste prawda?\"*; *\"2 - nie, tutaj musi byc minimum 30 mm\"*; *\"3 - znikaja z szufladami, bo to sa dividery do szuflad\"* (30.10.2026)",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "WARDROBE",
+    "width": 1200,
+    "height": 2150,
+    "depth": 300,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": 1400,
+    "hinge": "L",
+    "doors": null,
+    "unit_num": "01",
+    "shelf_front_mm": 10,
+    "interior_setback_mm": 10,
+    "drawer_cap_setback_mm": 10,
+    "items": []
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,282,2150,<,2.15,0.606",
+      "01,BUR,282,2150,>,2.15,0.606",
+      "01,TOP,1164,282,>,1.16,0.328",
+      "01,BOTTOM,1164,282,>,1.16,0.328",
+      "01,BACK,1200,2150,,0,2.580",
+      "01,01-FL,597,2147,<>^v,5.49,1.282",
+      "01,01-FR,597,2147,<>^v,5.49,1.282"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 282,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 2150,
+          "d": 282
+        },
+        "outline": 34,
+        "holes": 10,
+        "pockets": 5,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 282,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 1182,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 2150,
+          "d": 282
+        },
+        "outline": 34,
+        "holes": 10,
+        "pockets": 5,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 1164,
+        "h": 282,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 2132,
+          "z": 18,
+          "w": 1164,
+          "h": 18,
+          "d": 282
+        },
+        "outline": 44,
+        "holes": 0,
+        "pockets": 4,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 1164,
+        "h": 282,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 1164,
+          "h": 18,
+          "d": 282
+        },
+        "outline": 44,
+        "holes": 0,
+        "pockets": 4,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 1200,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1200,
+          "h": 2150,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 34,
+        "pockets": 10,
+        "readiness": null
+      },
+      {
+        "id": "01-FL",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 2147,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 0,
+          "z": 303,
+          "w": 597,
+          "h": 2147,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "01-FR",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 2147,
+        "thickness": 25,
+        "box": {
+          "x": 601.5,
+          "y": 0,
+          "z": 303,
+          "w": 597,
+          "h": 2147,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-FL",
+        6
+      ],
+      [
+        "FRONT_HINGES_35MM|01-FR",
+        6
+      ],
+      [
+        "FRONT_HINGES_3MM|01-FL",
+        12
+      ],
+      [
+        "FRONT_HINGES_3MM|01-FR",
+        12
+      ],
+      [
+        "HINGES_5MM|BUL",
+        12
+      ],
+      [
+        "HINGES_5MM|BUR",
+        12
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        20
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        4
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        4
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        14
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 12,
+        "label": "Hinges"
+      },
+      {
+        "role": "legs",
+        "qty": 5,
+        "label": "Legs"
+      }
+    ]
+  }
+}

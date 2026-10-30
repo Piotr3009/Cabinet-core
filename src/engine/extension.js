@@ -59,6 +59,13 @@ import {
 } from './notch.js';
 // T79 F8: a grown BUR's marks move with its re-origin (extensionDrills).
 import { shiftMark } from './marks.js';
+// T85 F2 (KIT_RECESS.lsp D30, the owner: *"1 - cabineo"*): the RETURNs' joints through engine/cabineo.js, read as a
+// library (its functions unchanged; new callers only).
+import {
+  CABINEO_HOLE_KIND, HOLE_DEPTH_NOTE, OUTSIDE_FACE_LABEL, cabineoAxisFromOutside, cabineoBomLines, cabineoGet, cabineoHardwareLines,
+  cabineoHoleDepth, cabineoHoleLayer, cabineoPath, cabineoPocketGeometry, cabineoPocketWidth, cabineoPositions,
+  cabineoProfile, cabineoSheet, cabineoSkinFindings, isCabineoSystem,
+} from './cabineo.js';
 
 const EPS = 1e-6;
 
@@ -830,13 +837,16 @@ export function recessBoxName(name, notched) {
  */
 export function recessColRefusal(cw, ch, g, ex0, ex1, ez0, ez1, dl, dr, gd, capy, K) {
   const minI = notchP(K, 'notch.minInterior');
-  if (recessLeftP(ex0) || recessRightP(ex1, cw)) {
-    return 'RECESS DRAWERS: the recess reaches a side of the carcass; the drawers keep the carcass\'s depth.';
-  }
+  // AMENDED 30.10.2026 (KIT_RECESS.lsp D29 b; the owner: *"jesli wneka wychodzi poza szafe to zostaje jeden
+  // divider"*): the band reaching a side no longer refuses (the side is the column's wall there), and the dividers'
+  // test asks only an edge whose wall is a DIVIDER: `dl` (`dr`) is null where that wall is a SIDE or a RETURN
+  // (recessColWalls). Until that evening: 'RECESS DRAWERS: the recess reaches a side of the carcass; the drawers
+  // keep the carcass's depth.', and both dividers were always asked.
+  void cw;
   if (!recessFloorP(ez0)) {
     return 'RECESS DRAWERS: the recess does not start on the floor; the drawers keep the carcass\'s depth.';
   }
-  if (Math.abs(dl - ex0) > 0.5 || Math.abs(dr + gd - ex1) > 0.5) {
+  if ((dl != null && Math.abs(dl - ex0) > 0.5) || (dr != null && Math.abs(dr + gd - ex1) > 0.5)) {
     return 'RECESS DRAWERS: the dividers do not stand on the recess\'s edges; the drawers keep the carcass\'s depth.';
   }
   if (recessBz1(ez1, ch, g) - (capy + g) < minI) {
@@ -1011,6 +1021,261 @@ export function recessPieceAt(pieces, cuts, x, z, r) {
     if (onBoard && offCut) return { id: i === 0 ? 'BACK' : 'BACK-2', x: px, z: pz };
   }
   return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// I3. THE COLUMN FOLLOWS THE RECESS (KIT_RECESS.lsp D29, D30; 30.10.2026)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner, 30.10.2026: *"jak mamy szuflady w recess to juz sie tak nie
+// przesuwa"*; *"jesli wneka wychodzi poza szafe to zostaje jeden divider ...
+// szuflady sa mniej glebokie do plytszej szafy a polka zostaje w ksztalcie
+// litery L"*; *"2 - nie, tutaj musi byc minimum 30 mm"*; *"1 - cabineo"*. The
+// LISP's section I3, routine for routine. A WALL is [kind, x]: kind 'DIVIDER',
+// 'SIDE' or 'RETURN', x its INNER face (toward the column, carcass x).
+
+/** recess-col-wall (D29): one wall; `e` the edge, `lo` true for the left one, `minside` recess.minColumnSide. */
+export function recessColWall(cw, g, e, lo, minside) {
+  if (lo) {
+    if (recessLeftP(e)) return ['SIDE', g];
+    if (e - g < minside) return ['RETURN', e + g];
+    return ['DIVIDER', e + g];
+  }
+  if (recessRightP(e, cw)) return ['SIDE', cw - g];
+  if (cw - g - e < minside) return ['RETURN', e - g];
+  return ['DIVIDER', e - g];
+}
+
+/** recess-col-walls (D29): the column's two walls, [left, right]. */
+export function recessColWalls(cw, g, ex0, ex1, minside) {
+  return [recessColWall(cw, g, ex0, true, minside), recessColWall(cw, g, ex1, false, minside)];
+}
+
+/** recess-col-wall-p: is this wall of this kind? */
+export function recessColWallP(w, kind) {
+  return Boolean(w) && w[0] === kind;
+}
+
+/** recess-col-divider-count (D29): how many walls are DIVIDERs, 2, 1 or 0. */
+export function recessColDividerCount(walls) {
+  return walls.filter((w) => recessColWallP(w, 'DIVIDER')).length;
+}
+
+/** recess-col-zone (D29): 1 (of 3) between two dividers; with one, 0 (of 2) when the left wall is not one, else 1; null with none. */
+export function recessColZone(walls) {
+  const n = recessColDividerCount(walls);
+  if (n === 2) return 1;
+  if (n === 1) return recessColWallP(walls[0], 'DIVIDER') ? 1 : 0;
+  return null;
+}
+
+/** recess-col-box-span (D29): THE BOX RUNS WALL TO WALL, [x0, x1], the two inner faces. */
+export function recessColBoxSpan(walls) {
+  return [walls[0][1], walls[1][1]];
+}
+
+/** recess-col-bottom-edges (D29): the BOTTOM's bump edges [b0, b1] (plan frame): a DIVIDER's and a RETURN's outer face, a SIDE's inner face. */
+export function recessColBottomEdges(cw, g, walls) {
+  const [l, r] = walls;
+  return [recessColWallP(l, 'SIDE') ? 0 : l[1] - 2 * g, recessColWallP(r, 'SIDE') ? cw - 2 * g : r[1]];
+}
+
+/** recess-col-cap-edges (D29): the board over the drawers' bump edges: the BOTTOM's, a RETURN's inner face. */
+export function recessColCapEdges(cw, g, walls) {
+  const [l, r] = walls;
+  const b = recessColBottomEdges(cw, g, walls);
+  return [recessColWallP(l, 'RETURN') ? l[1] - g : b[0], recessColWallP(r, 'RETURN') ? r[1] - g : b[1]];
+}
+
+/** recess-col-bottom-outline-walls (D29): the L BOTTOM; two dividers: recessColBottomOutline point for point. */
+export function recessColBottomOutlineWalls(cw, cd, g, walls, ed) {
+  const [b0, b1] = recessColBottomEdges(cw, g, walls);
+  return recessBumpOutline(cw - 2 * g, cd - g, b0, b1, ed);
+}
+
+/** recess-col-cap-outline-walls (D29): the L board over the drawers; two dividers: recessColCapOutline point for point. */
+export function recessColCapOutlineWalls(cw, g, walls, ed, capd) {
+  const [b0, b1] = recessColCapEdges(cw, g, walls);
+  return recessBumpOutline(cw - 2 * g, capd, b0, b1, ed);
+}
+
+/**
+ * recess-col-top-joints-walls (D29): the TOP's and the BOTTOM's joints with
+ * the walls. A SIDE wall's edge is a grown side's (re-planned on cd - g + ed)
+ * with no back run; a DIVIDER's or a RETURN's is D22's (recessColTopJoints).
+ */
+export function recessColTopJointsWalls(cw, cd, g, ex0, ex1, ed, walls, K) {
+  const e = notchP(K, 'puzzle.tabCentresFromEnd');
+  const below = notchP(K, 'puzzle.singleSocketBelow');
+  const inset = notchJointInset(cd, e, notchP(K, 'puzzle.singleJointMaxDepth'));
+  const minEdge = notchMinJointEdge(notchP(K, 'puzzle.dogboneHalfHeight'), g);
+  const sideW = cd - g;
+  const tw = cw - 2 * g;
+  const ls = recessColWallP(walls[0], 'SIDE');
+  const rs = recessColWallP(walls[1], 'SIDE');
+  return {
+    LEFT: notchReplanSockets(ls ? sideW + ed : sideW, inset, below),
+    RIGHT: notchReplanSockets(rs ? sideW + ed : sideW, inset, below),
+    BACK: [
+      ...(ls ? [] : recessRunSockets(ex0 - g, 0, e, below, minEdge)),
+      ...(rs ? [] : recessRunSockets(tw - (ex1 - g), ex1 - g, e, below, minEdge)),
+    ],
+  };
+}
+
+/** recess-col-return-full (D29 b): the full-height RETURN, ed x (bz1 - g): on the BOTTOM to bz1, through the BACK's plane. */
+export function recessColReturnFull(ch, g, ez1, ed) {
+  return [ed, recessBz1(ez1, ch, g) - g];
+}
+
+/** recess-col-return-full-place (D29 b): where it stands, [x0, y0, z0, x1, y1, z1], x0 its left face. */
+export function recessColReturnFullPlace(x0, cd, ch, g, ez1, ed) {
+  return [x0, cd - g, g, x0 + g, cd + ed - g, recessBz1(ez1, ch, g)];
+}
+
+/**
+ * recess-col-box-places-walls (D29): at a DIVIDER wall D22's cap-up RETURN, at
+ * a RETURN wall the full-height one, at a SIDE none; the LID and the EXT-BACK
+ * as ever. Two dividers: recessColBoxPlaces point for point.
+ */
+export function recessColBoxPlacesWalls(cw, cd, ch, g, ex0, ex1, ez0, ez1, ed, capt, walls) {
+  const bz1 = recessBz1(ez1, ch, g);
+  const [l, r] = walls;
+  const out = {};
+  if (recessColWallP(l, 'DIVIDER')) out['RETURN-L'] = [ex0, cd - g, capt, ex0 + g, cd + ed - g, bz1];
+  else if (recessColWallP(l, 'RETURN')) out['RETURN-L'] = recessColReturnFullPlace(ex0, cd, ch, g, ez1, ed);
+  if (recessColWallP(r, 'DIVIDER')) out['RETURN-R'] = [ex1 - g, cd - g, capt, ex1, cd + ed - g, bz1];
+  else if (recessColWallP(r, 'RETURN')) out['RETURN-R'] = recessColReturnFullPlace(ex1 - g, cd, ch, g, ez1, ed);
+  if (!recessTopP(ez1, ch)) out.LID = [ex0, cd, ez1 - g, ex1, cd + ed - g, ez1];
+  out['EXT-BACK'] = [ex0, cd + ed - g, ez0, ex1, cd + ed, ez1];
+  void cw;
+  return out;
+}
+
+/** recess-col-wall-fillers (D29): D22's fillers beside a DIVIDER; none beside a SIDE or a RETURN (the dead pocket). */
+export function recessColWallFillers(cw, cd, g, ex0, ex1, capy, fy, walls) {
+  const out = {};
+  if (recessColWallP(walls[0], 'DIVIDER') && ex0 > g) {
+    out.L1 = [g, fy, g, ex0, fy + g, capy];
+    out.L2 = [g, cd - 2 * g, g, ex0, cd - g, capy];
+  }
+  if (recessColWallP(walls[1], 'DIVIDER') && ex1 < cw - g) {
+    out.R1 = [ex1, fy, g, cw - g, fy + g, capy];
+    out.R2 = [ex1, cd - 2 * g, g, cw - g, cd - g, capy];
+  }
+  return out;
+}
+
+/** recess-col-dead-pockets (D29 b): [[x0, x1], ..] across, between a side's inner face and a RETURN wall's outer face. */
+export function recessColDeadPockets(cw, g, ex0, ex1, walls) {
+  const out = [];
+  if (recessColWallP(walls[0], 'RETURN')) out.push([g, ex0]);
+  if (recessColWallP(walls[1], 'RETURN')) out.push([ex1, cw - g]);
+  return out;
+}
+
+/**
+ * recess-return-cabineo (D30): [[off, hx, hy], ..], one per connector: `off`
+ * the pocket's axis along the RETURN's depth from its FRONT end (its own
+ * frame, at its bottom end, on its outside face), hx hy the dia 5 hole in the
+ * carcass frame, ax in from the RETURN's outside face, y0 + off from the
+ * front face. e p nMin wide the Cabineo law's (cabineoPositions).
+ */
+export function recessReturnCabineo(x0, y0, g, len, lft, ax, e, p, nMin, wide) {
+  const hx = lft ? x0 + ax : x0 + g - ax;
+  return cabineoPositions(len, e, p, nMin, wide).map((off) => [off, hx, y0 + off]);
+}
+
+// ── D30, the engine's half: the RETURNs' joints as a Cabineo plan ──────────
+//
+// What the LISP leaves to the engine (engine/cabineo.js read, never changed):
+// the profile of the size (the unit's own Cabineo 8 or 12, else 12), the
+// pocket geometry through cabineoPocketGeometry (the drill15 lobes or the
+// cutter's outline, the cap recess), the dia 5 hole through the sheet's
+// counterpart hole, each in the board's OWN frame; the order lines through
+// cabineoBomLines and cabineoHardwareLines; the skin check through
+// cabineoSkinFindings, asked after the drilling pass (a full-height RETURN
+// carries the runner's row on its inside face).
+
+/** The joint system the RETURNs take (D30): the unit's Cabineo 8 or 12, else Cabineo 12 as the drawer box's (D.2c). */
+export function recessReturnCabineoSystem(system) {
+  return isCabineoSystem(system) ? system : 'cabineo12';
+}
+
+/**
+ * The plan of a recess column's RETURN joints: { system, variant, prof, sheet,
+ * joints: [{ name, board, onto, offs, holes: [[x, y]], geometry }], drills,
+ * pockets: { [board]: [records] }, bom, counts } or null when no RETURN stands
+ * on a board. `returns`: [{ id, place, lft, onto, toBoard }] where `toBoard`
+ * maps a carcass [x, yFront] to the horizontal board's own frame.
+ */
+export function recessReturnCabineoPlan({ returns, system, profile, G }) {
+  if (!returns?.length) return null;
+  const sys = recessReturnCabineoSystem(system);
+  const prof = cabineoProfile(profile, sys);
+  const sheet = cabineoSheet();
+  const ax = cabineoAxisFromOutside(prof, sheet);
+  const wide = cabineoPocketWidth(prof, sheet);
+  const dia = cabineoPath(sheet, ['counterpartHole', 'diaMm']);
+  const depth = cabineoHoleDepth(prof, sheet);
+  const r4 = (v) => roundTo(v, 4);
+  const joints = [];
+  const drills = [];
+  const pockets = {};
+  for (const ret of returns) {
+    const [x0, y0, , , y1] = ret.place;
+    const len = y1 - y0;
+    const name = `${ret.id}-${ret.onto}`;
+    const rows = recessReturnCabineo(x0, y0, G, len, ret.lft, ax,
+      cabineoGet(prof, 'endOffsetMm'), cabineoGet(prof, 'pitchMm'), cabineoGet(prof, 'minPerJoint'), wide);
+    const geometry = rows.map(([off]) => cabineoPocketGeometry({
+      board: ret.id, x: off, yEnd: 0, dirIn: 1, W: len, T: G, joint: name, off, face: 'outside',
+    }, prof, sheet));
+    const holes = rows.map(([, hx, hy]) => ret.toBoard(hx, hy).map(r4));
+    pockets[ret.id] = [...(pockets[ret.id] || []), ...geometry.flatMap((g) => [g.pocket, g.recess].filter(Boolean))];
+    for (const g of geometry) for (const d of g.holes) drills.push({ ...d, x: r4(d.x), y: r4(d.y) });
+    holes.forEach(([x, y], k) => drills.push({
+      panel: ret.onto, kind: CABINEO_HOLE_KIND, layer: cabineoHoleLayer(prof), x, y, d: dia,
+      ...(depth != null ? { depth: r4(depth) } : {}),
+      meta: { joint: name, offset: r4(rows[k][0]), depthNote: HOLE_DEPTH_NOTE },
+    }));
+    joints.push({ name, board: ret.id, onto: ret.onto, offs: rows.map(([off]) => r4(off)), holes, geometry });
+  }
+  const n = joints.reduce((s, j) => s + j.offs.length, 0);
+  const bom = cabineoBomLines(prof, sheet, n, 0);
+  return {
+    system: sys, variant: cabineoGet(prof, 'variant'), prof, sheet, joints, drills, pockets, bom,
+    counts: { pockets: n, holes: n },
+  };
+}
+
+/** The order lines of the RETURNs' connectors and caps (D30), cabineoHardwareLines' own shape. */
+export function recessReturnHardwareLines(plan) {
+  if (!plan) return [];
+  return cabineoHardwareLines({ prof: plan.prof, sheet: plan.sheet, bom: plan.bom, variant: plan.variant })
+    .map((l) => ({ ...l, spec: { ...l.spec, boards: plan.joints.map((j) => j.board) } }));
+}
+
+/**
+ * The skin check on each RETURN (D30): its outside-face pockets (the drill15
+ * lobes or the outline, the cap recess) against the cuts the drilling pass
+ * puts into its inside face (a full-height RETURN's runner row). Findings,
+ * cabineoSkinFindings' shape; [] when nothing meets.
+ */
+export function recessReturnSkinFindings(plan, panels, drills, profile) {
+  if (!plan) return [];
+  const out = [];
+  for (const id of [...new Set(plan.joints.map((j) => j.board))]) {
+    const p = panels.find((x) => x.id === id);
+    if (!p) continue;
+    const outside = [
+      ...(plan.pockets[id] || []),
+      ...plan.drills.filter((d) => d.panel === id && d.face === 'outside'),
+    ];
+    const inside = drills.filter((d) => d.panel === id && d.face !== 'outside');
+    out.push(...cabineoSkinFindings(p, outside, inside, profile, { boardT: p.thickness }));
+  }
+  return out;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1248,7 +1513,13 @@ export function extensionCarcass({
     back: null,
     column: col ? {
       zone: col.zone, dividers: [...col.dividers], cap: col.cap, capY: col.capy,
+      // T85 F2 (D29): the column's two walls, their kinds and inner faces, when not D22's two dividers.
+      ...(col.walls && col.walls.some((w) => w[0] !== 'DIVIDER') ? { walls: col.walls.map((w) => [...w]) } : {}),
     } : null,
+    // T85 F2 (D30): the RETURNs' Cabineo plan (recessReturnCabineoPlan), and (D29 b) the dead pockets beside a
+    // RETURN wall, [[x0, x1], ..]; null and [] on every unit with no recess column.
+    returnCabineo: null,
+    deadPockets: [],
   };
   const byId = (id) => panels.find((p) => p.id === id);
   const stamp = (p, extra) => {
@@ -1339,7 +1610,8 @@ export function extensionCarcass({
   // BACK's pieces leave (ex0, ex1), and the BOTTOM's bump runs between the
   // band's outer faces (the dividers stand on it); the TOP's bump is the band's.
   const topJoints = (id) => {
-    if (col) return recessColTopJoints(W, D, G, ex0, ex1, K);
+    // T85 F2 (D29): with the walls; two dividers answer recessColTopJoints' own runs.
+    if (col) return col.walls ? recessColTopJointsWalls(W, D, G, ex0, ex1, ed, col.walls, K) : recessColTopJoints(W, D, G, ex0, ex1, K);
     return planBoth(id)
       ? recessNotchedTopJoints(W, D, G, ex0, ex1, ed, nc.nw, nc.nd, nc.corner, K)
       : recessTopJoints(W, D, G, ex0, ex1, ed, K);
@@ -1352,7 +1624,8 @@ export function extensionCarcass({
       const p = byId(id);
       if (!p || p.part !== id) continue;
       let plan;
-      if (col && id === 'BOTTOM') plan = recessColBottomOutline(W, D, G, ex0, ex1, ed);
+      // T85 F2 (D29): the L BOTTOM on the walls' edges (two dividers: recessColBottomOutline point for point).
+      if (col && id === 'BOTTOM') plan = col.walls ? recessColBottomOutlineWalls(W, D, G, col.walls, ed) : recessColBottomOutline(W, D, G, ex0, ex1, ed);
       else if (planBoth(id)) plan = recessNotchedTopOutline(W, D, G, ex0, ex1, ed, nc.nw, nc.nd, nc.corner);
       else plan = recessTopOutline(W, D, G, ex0, ex1, ed);
       const drawn = notchRot90Pts(plan, drawnW);
@@ -1516,8 +1789,11 @@ export function extensionCarcass({
   // 28.10.2026 (D22): in a recess column the RETURNs stand on the board over
   // the drawers, ed deep, through the BACK's plane.
   const capt = col ? col.capy + G : null;
+  // T85 F2 (D29): at a DIVIDER wall D22's cap-up RETURN, at a RETURN wall the full-height one, at a SIDE none.
   const places = col
-    ? recessColBoxPlaces(W, D, H, G, ex0, ex1, ez0, ez1, ed, capt)
+    ? (col.walls
+      ? recessColBoxPlacesWalls(W, D, H, G, ex0, ex1, ez0, ez1, ed, capt, col.walls)
+      : recessColBoxPlaces(W, D, H, G, ex0, ex1, ez0, ez1, ed, capt))
     : recessBoxPlaces(W, D, H, G, ex0, ex1, ez0, ez1, ed);
   const boxOf = ([x0, y0, z0, x1, y1, z1]) => ({
     x: roundTo(x0, 4), y: roundTo(z0, 4), z: roundTo(D - y1, 4),
@@ -1552,8 +1828,10 @@ export function extensionCarcass({
   };
   const ret = col ? recessColReturn(H, G, ez1, ed, capt) : recessReturn(H, G, ez0, ez1, ed);
   const retScrews = recessReturnScrews(H, G, ez0, ez1, ed, K);
-  if (places['RETURN-L']) board('RETURN-L', 'RECESS-RETURN', ret[0], ret[1], places['RETURN-L'], retScrews);
-  if (places['RETURN-R']) board('RETURN-R', 'RECESS-RETURN', ret[0], ret[1], places['RETURN-R'], retScrews);
+  // T85 F2 (D29 b): a full-height RETURN at a RETURN wall is ed x (bz1 - g) (recessColReturnFull), its own place.
+  const retOf = (id) => (col && places[id] && places[id][2] === G ? recessColReturnFull(H, G, ez1, ed) : ret);
+  if (places['RETURN-L']) board('RETURN-L', 'RECESS-RETURN', retOf('RETURN-L')[0], retOf('RETURN-L')[1], places['RETURN-L'], retScrews);
+  if (places['RETURN-R']) board('RETURN-R', 'RECESS-RETURN', retOf('RETURN-R')[0], retOf('RETURN-R')[1], places['RETURN-R'], retScrews);
   const lid = recessLid(G, ex0, ex1, ed);
   const lidScrews = recessLidScrews(G, ex0, ex1, ed, K);
   // T79 F8 (D13): on a notched carcass EXT-FLOOR and EXT-LID (recessBoxName),
@@ -1593,7 +1871,8 @@ export function extensionCarcass({
     const cap = byId(col.cap);
     if (cap && cap.part === 'PARTITION' && cap.box) {
       const capd = cap.box.d;
-      const plan = recessColCapOutline(W, G, ex0, ex1, ed, capd);
+      // T85 F2 (D29): the L board on the walls' edges (two dividers: recessColCapOutline point for point).
+      const plan = col.walls ? recessColCapOutlineWalls(W, G, col.walls, ed, capd) : recessColCapOutline(W, G, ex0, ex1, ed, capd);
       cap.box = { ...cap.box, z: roundTo(cap.box.z - ed, 4), d: roundTo(capd + ed, 4) };
       // The board's own CNC frame IS its box plan (engine/joinery.js: x across
       // from BUL's inner face, y from its BACK edge), walked anticlockwise.
@@ -1613,6 +1892,50 @@ export function extensionCarcass({
       cut.grown.push(cap.id);
       stamp(cap, { cut: 'cap', outline: r4pts(plan) });
     }
+
+    // ── T85 F2 · THE RETURNS ARE ON CABINEO (KIT_RECESS.lsp D30) ──
+    // The owner: *"dlaczego niektore elementy z recess nie sa machined?"*; *"1 - cabineo"*. A RETURN whose bottom
+    // end stands on a board's face joins it with the connector in its own end: the cap-up RETURN on the board over
+    // the drawers, the full-height RETURN (D29 b) on the BOTTOM. The pockets on its OUTSIDE face (x from its FRONT
+    // end, y up from its bottom end), the dia 5 holes in the board's face in that board's own frame: the board over
+    // the drawers x across from BUL's inner face, y from its BACK edge (its box plan, engine/joinery.js); the BOTTOM
+    // drawn ROT90, x the depth from the bump's back edge, y across from BUL's inner face.
+    const capP = byId(col.cap);
+    const bottomP = byId('BOTTOM');
+    const toCap = (hx, hy) => {
+      const front = D - (capP.box.z + capP.box.d);
+      return [hx - G, capP.box.d - (hy - front)];
+    };
+    const toBottom = (hx, hy) => [sideW + ed - hy, hx - G];
+    const returns = [];
+    for (const [id, lft] of [['RETURN-L', true], ['RETURN-R', false]]) {
+      const place = places[id];
+      const p = byId(id);
+      if (!place || !p) continue;
+      const full = place[2] === G;
+      const onto = full ? (bottomP && floor ? 'BOTTOM' : null) : (capP && capP.part === 'PARTITION' ? capP.id : null);
+      if (!onto) continue;
+      returns.push({ id, place, lft, onto, toBoard: full ? toBottom : toCap });
+    }
+    const rc = recessReturnCabineoPlan({ returns, system: col.system || null, profile, G });
+    if (rc) {
+      for (const j of rc.joints) {
+        const p = byId(j.board);
+        p.cnc = { ...p.cnc, pockets: [...(p.cnc?.pockets || []), ...(rc.pockets[j.board] || [])] };
+        p.meta = {
+          ...(p.meta || {}),
+          // D11 AMENDED (D30): a cut part, its fixing the Cabineo's; Check #30 no longer counts it.
+          readiness: 'cut',
+          fixing: rc.system,
+          machinedFace: 'outside',
+          machinedFaceLabel: OUTSIDE_FACE_LABEL,
+          cabineo: { pockets: j.offs.length, face: 'outside', onto: j.onto, joint: j.name },
+        };
+      }
+      cut.returnCabineo = rc;
+    }
+    // D29 b: the dead pocket beside a RETURN wall, the Check's NOTE.
+    if (col.walls) cut.deadPockets = recessColDeadPockets(W, G, ex0, ex1, col.walls);
   }
 
   // ── SHELVES IN THE BAND (D10) ──
@@ -1719,6 +2042,15 @@ export function extensionSummary(cut) {
     ...(cut.ext.ends ? { ends: [...cut.ext.ends] } : {}),
     // 28.10.2026 (D22): the recess column, when there is one.
     ...(cut.column ? { column: { ...cut.column, dividers: [...cut.column.dividers] } } : {}),
+    // T85 F2 (D30): the RETURNs on Cabineo, when a recess column has them.
+    ...(cut.returnCabineo ? {
+      returnCabineo: {
+        system: cut.returnCabineo.system,
+        joints: cut.returnCabineo.joints.map((j) => ({ name: j.name, board: j.board, onto: j.onto, offs: [...j.offs], holes: j.holes.map((h) => [...h]) })),
+        connectors: cut.returnCabineo.counts.pockets,
+      },
+    } : {}),
+    ...(cut.deadPockets?.length ? { deadPockets: cut.deadPockets.map((d) => d.map((v) => roundTo(v, 4))) } : {}),
   };
 }
 

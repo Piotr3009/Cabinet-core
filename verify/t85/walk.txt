@@ -1,0 +1,110 @@
+T85 WALK: THE RECESS COLUMN FOLLOWS THE RECESS, THE RETURNS ON CABINEO, THE DOORS OPEN TO 90 (scripts/t85-walk.mjs)
+walked 2026-10-30 22:43 UTC, HEAD 8fc26901, http://127.0.0.1:4173/, legs 1,2
+Every line: PASS or FAIL (the F, the gesture, what was expected, what was read), NOTE (a reading), FRAME (the file beside this one).
+The gestures are real clicks, drags, double clicks and keys (CDP); the stages are the store's; the expected walls are the engine's (recessColWalls) at the x the drag reached.
+
+
+LEG 1 . THE OWNER'S 1200 x 2150 x 300 WARDROBE BEFORE THE 800 x 300 RECESS: DRAWERS BY RECESS, DRAGGED THROUGH A, B, C, THE 15 MM CASE, A, D; THE CNC SHEET OF A; CTRL+Z
+NOTE   [1] F5 the build under the mouse | the repo's HEAD 8fc26901; url http://127.0.0.1:4173/
+NOTE   [1] F5 THE STAGE (the store's own actions, as the earlier walks stage theirs): a 4000 x 3000 room 2500 high, the 800 x 300 recess at 1000 on wall 0, the wardrobe 1200 x 2150 x 300 at 800 (the recess 200 in from its left side) | {"id":"u_zqgs18b","recess":"recess_ypx26bd","x":800,"w":1200,"h":2150,"d":300,"num":"W01"}
+PASS   [1] F5 the cabinet selected by a real click on its carcass, Add items opened, Drawers, the Columns question with its third answer Recess (data-drawer-columns="recess"), Count 3, Bare boxes, Add | expect: selected, the answers ["1","2","recess"], Recess pressed, Add pressed | observed: {"selected":true,"addItems":true,"offered":["1","2","recess"],"count":"3","recess":true,"recessPressed":"true","bare":true,"add":true}
+PASS   [1] F5 addRecessDrawers (D28): two dividers on the recess's edges (210, 972) and three drawers in Column 2, every one marked meta.recessColumn | expect: [[210,true],[972,true]], 3 drawers zone 1 marked | observed: {"parts":[[210,true],[972,true]],"drawers":[{"id":"drawer_xthm5p5","zone":1,"marked":true},{"id":"drawer_gt0ysoh","zone":1,"marked":true},{"id":"drawer_v7nrt5i","zone":1,"marked":true}]}
+PASS   [1] F5 as born: the drawers 440 deep between the dividers (box 233..967) | expect: depth 440, box [233, 967] | observed: [{"id":"Z2D1-SL","depth":440,"x0":233,"x1":967},{"id":"Z2D2-SL","depth":440,"x0":233,"x1":967},{"id":"Z2D3-SL","depth":440,"x0":233,"x1":967}]
+FRAME  [1] f05-0-drawers-added.png
+PASS   [1] F5 CASE A (both edges in, +80): the cabinet DRAGGED along its wall by its carcass (a real press, 1 drag(s), the grab BUL) | expect: x 880 (+- 6, the hand lands on whole pixels) | observed: {"x":880,"drags":[{"grab":"BUL","from":{"x":387,"y":381,"n":575},"to":{"x":401,"y":381},"wasX":800}]}
+NOTE   [1] F5 CASE A: the history | {"undoStepsAdded":7}
+PASS   [1] F5 CASE A: the column's walls (D29), the engine's derived.extension.column (walls, or D22's pair of dividers) | expect: [["DIVIDER",148],["DIVIDER",892]] (kinds ["DIVIDER","DIVIDER"]; recessColWalls(1200, 18, 130, 910, 30)) | observed: {"dividers":["VPART-1","VPART-2"]}
+PASS   [1] F5 CASE A: the store's dividers (meta.recessColumn) on the recess's edges, at the face | expect: x [130,892], front_mm 0 | observed: [[130,0],[892,0]]
+PASS   [1] F5 CASE A: the engine's VPART dividers, one per DIVIDER wall | expect: 2 at x [130,892] | observed: [{"id":"VPART-1","x":130,"h":611},{"id":"VPART-2","x":892,"h":611}]
+PASS   [1] F5 CASE A: three drawer boxes, wall to wall (the box span less the runner's 5) and 440 deep | expect: 3 drawers, box [153,887], depth 440 | observed: {"drawers":3,"boxes":[{"id":"Z2D1-SL","depth":440,"x0":153,"x1":887},{"id":"Z2D2-SL","depth":440,"x0":153,"x1":887},{"id":"Z2D3-SL","depth":440,"x0":153,"x1":887}]}
+PASS   [1] F5 CASE A: at the mockup's own x 880, the mockup's numbers (test/turn85-f03-follow.test.js) | expect: dividers [130,892] | observed: [130,892]
+NOTE   [1] F5 CASE A: the panels present | BUL BUR TOP BOTTOM VPART-1 VPART-2 Z2D1-SL Z2-FILLER-L1 Z2-FILLER-L2 Z2-FILLER-R1 Z2-FILLER-R2 PARTITION RETURN-L RETURN-R
+NOTE   [1] F5 CASE A: the engine's warnings | none
+NOTE   [1] F5 CASE A: the notices said | none
+FRAME  [1] f05-a-both-in.png
+PASS   [1] F5 CASE A: the RETURNs on Cabineo (D30): RETURN-L and RETURN-R cut parts, readiness cut, fixing Cabineo | expect: RETURN-L, RETURN-R: readiness cut, fixing cabineo12 | observed: [{"id":"RETURN-L","w":290,"h":1503,"readiness":"cut","fixing":"cabineo12"},{"id":"RETURN-R","w":290,"h":1503,"readiness":"cut","fixing":"cabineo12"}]
+PASS   [1] F5 CASE A: no warning on the column (the dividers stand on the edges) | expect: no RECESS_* / DRAWERS_* | observed: []
+PASS   [1] F5 CASE A: the engine's RETURN-L pockets (D30): six Cabineo pocket drills at x 50 and 240 from its end (cabineoPositions(290)) | expect: RETURN-L 6 at x [50, 240], RETURN-R 6 | observed: {"L":[[50,3.6],[50,14.8],[50,26],[240,3.6],[240,14.8],[240,26]],"R":6}
+PASS   [1] F5 CASE A: the board over the drawers (PARTITION) carries the 5 mm holes: four, y 50 and 240, x on the RETURNs (the band's edges less 12.5 and 23.5, as the F2 fixture's 197.5 / 966.5 on 210 / 990) | expect: 4 holes, x [117.5,886.5], y [50, 240] | observed: [[117.5,240],[117.5,50],[886.5,240],[886.5,50]]
+NOTE   [1] F5 CASE A: the RETURN joints and the BOM's Cabineo lines | {"joints":["RETURN-L-PARTITION","RETURN-R-PARTITION"],"hardware":[["cabineo_connector",4,"Cabineo 12"],["cabineo_cap",4,"Cabineo cover cap"],["cabineo_connector",24,"Cabineo 12"]]}
+NOTE   [1] F5 the CNC sheet zoomed in by its own + (real clicks) to read the 5 mm holes | 10 clicks
+PASS   [1] F5 the CNC sheet (the rail's CNC, a real click): RETURN-L and RETURN-R ON the sheet as cut parts, every drill of RETURN-L drawn on it | expect: RETURN-L, RETURN-R on the sheet, RETURN-L 6 drills drawn | observed: {"mode":"cnc","parts":32,"hasReturnL":true,"hasReturnR":true,"hasBoard":true,"holesOnReturnL":6,"holesOnBoard":0}
+PASS   [1] F5 the CNC sheet: the board over the drawers (PARTITION) on the sheet; its four Cabineo dia 5 holes in the engine's drills, none drawn on the sheet (T78 F20: CABINEO_HOLE_5MM is never drawn there) | expect: PARTITION on the sheet, 4 Cabineo holes in the engine, 0 drawn | observed: {"onSheet":0,"engine":4,"cabineoHoles":4}
+FRAME  [1] f05-a-cnc-sheet.png
+FRAME  [1] f05-a-cnc-return-l.png (the CNC sheet's own SVG round the part RETURN-L, 1400 x 2400)
+FRAME  [1] f05-a-cnc-board.png (the CNC sheet's own SVG round the part PARTITION, 1400 x 2400)
+PASS   [1] F5 CASE B (the left edge out, the cabinet to 1400): the cabinet DRAGGED along its wall by its carcass (a real press, 1 drag(s), the grab BUL) | expect: x 1400 (+- 6, the hand lands on whole pixels) | observed: {"x":1401,"drags":[{"grab":"BUL","from":{"x":401,"y":381,"n":579},"to":{"x":492,"y":381},"wasX":880}]}
+NOTE   [1] F5 CASE B: the history | {"undoStepsAdded":2}
+PASS   [1] F5 CASE B: the column's walls (D29), the engine's derived.extension.column (walls, or D22's pair of dividers) | expect: [["SIDE",18],["DIVIDER",371]] (kinds ["SIDE","DIVIDER"]; recessColWalls(1200, 18, 0, 389, 30)) | observed: [["SIDE",18],["DIVIDER",371]]
+PASS   [1] F5 CASE B: the store's dividers (meta.recessColumn) on the recess's edges, at the face | expect: x [371], front_mm 0 | observed: [[371,0]]
+PASS   [1] F5 CASE B: the engine's VPART dividers, one per DIVIDER wall | expect: 1 at x [371] | observed: [{"id":"VPART-1","x":371,"h":611}]
+PASS   [1] F5 CASE B: three drawer boxes, wall to wall (the box span less the runner's 5) and 440 deep | expect: 3 drawers, box [23,366], depth 440 | observed: {"drawers":3,"boxes":[{"id":"Z1D1-SL","depth":440,"x0":23,"x1":366},{"id":"Z1D2-SL","depth":440,"x0":23,"x1":366},{"id":"Z1D3-SL","depth":440,"x0":23,"x1":366}]}
+NOTE   [1] F5 CASE B: the panels present | BUL BUR TOP BOTTOM VPART-1 Z1D1-SL Z1-FILLER-R1 Z1-FILLER-R2 PARTITION RETURN-R
+NOTE   [1] F5 CASE B: the engine's warnings | none
+NOTE   [1] F5 CASE B: the notices said | none
+FRAME  [1] f05-b-left-out.png
+PASS   [1] F5 CASE B: one divider left, the other gone with nothing said (D29 b, the side is the wall), the drawers in Column 1 | expect: 1 marked divider, drawers zone 0, no notice | observed: {"parts":[{"id":"partition_l7krwyz","x":371,"front":0,"marked":true}],"zones":[0,0,0],"said":[]}
+PASS   [1] F5 CASE C (the right edge out, the cabinet to 400): the cabinet DRAGGED along its wall by its carcass (a real press, 1 drag(s), the grab BUL) | expect: x 400 (+- 6, the hand lands on whole pixels) | observed: {"x":398,"drags":[{"grab":"BUL","from":{"x":494,"y":381,"n":805},"to":{"x":319,"y":381},"wasX":1401}]}
+NOTE   [1] F5 CASE C: the history | {"undoStepsAdded":1}
+PASS   [1] F5 CASE C: the column's walls (D29), the engine's derived.extension.column (walls, or D22's pair of dividers) | expect: [["DIVIDER",630],["SIDE",1182]] (kinds ["DIVIDER","SIDE"]; recessColWalls(1200, 18, 612, 1200, 30)) | observed: [["DIVIDER",630],["SIDE",1182]]
+PASS   [1] F5 CASE C: the store's dividers (meta.recessColumn) on the recess's edges, at the face | expect: x [612], front_mm 0 | observed: [[612,0]]
+PASS   [1] F5 CASE C: the engine's VPART dividers, one per DIVIDER wall | expect: 1 at x [612] | observed: [{"id":"VPART-1","x":612,"h":611}]
+PASS   [1] F5 CASE C: three drawer boxes, wall to wall (the box span less the runner's 5) and 440 deep | expect: 3 drawers, box [635,1177], depth 440 | observed: {"drawers":3,"boxes":[{"id":"Z2D1-SL","depth":440,"x0":635,"x1":1177},{"id":"Z2D2-SL","depth":440,"x0":635,"x1":1177},{"id":"Z2D3-SL","depth":440,"x0":635,"x1":1177}]}
+NOTE   [1] F5 CASE C: the panels present | BUL BUR TOP BOTTOM VPART-1 Z2D1-SL Z2-FILLER-L1 Z2-FILLER-L2 PARTITION RETURN-L
+NOTE   [1] F5 CASE C: the engine's warnings | none
+NOTE   [1] F5 CASE C: the notices said | none
+FRAME  [1] f05-c-right-out.png
+PASS   [1] F5 CASE C: back over the carcass the column is whole again on its way (a marked divider put back where its edge is), then the right one leaves: one divider, the drawers in Column 2 | expect: 1 marked divider, drawers zone 1 | observed: {"parts":[{"id":"partition_yxswu7o","x":612,"front":0,"marked":true}],"zones":[1,1,1]}
+PASS   [1] F5 CASE 15 (the left edge 15 inside, the cabinet to 985): the cabinet DRAGGED along its wall by its carcass (a real press, 1 drag(s), the grab BUL) | expect: x 985 (+- 6, the hand lands on whole pixels) | observed: {"x":988,"drags":[{"grab":"BUL","from":{"x":316,"y":381,"n":544},"to":{"x":419,"y":381},"wasX":398}]}
+NOTE   [1] F5 CASE 15: the history | {"undoStepsAdded":1}
+PASS   [1] F5 CASE 15: the column's walls (D29), the engine's derived.extension.column (walls, or D22's pair of dividers) | expect: [["RETURN",40],["DIVIDER",784]] (kinds ["RETURN","DIVIDER"]; recessColWalls(1200, 18, 22, 802, 30)) | observed: [["RETURN",40],["DIVIDER",784]]
+PASS   [1] F5 CASE 15: the store's dividers (meta.recessColumn) on the recess's edges, at the face | expect: x [784], front_mm 0 | observed: [[784,0]]
+PASS   [1] F5 CASE 15: the engine's VPART dividers, one per DIVIDER wall | expect: 1 at x [784] | observed: [{"id":"VPART-1","x":784,"h":611}]
+PASS   [1] F5 CASE 15: three drawer boxes, wall to wall (the box span less the runner's 5) and 440 deep | expect: 3 drawers, box [45,779], depth 440 | observed: {"drawers":3,"boxes":[{"id":"Z1D1-SL","depth":440,"x0":45,"x1":779},{"id":"Z1D2-SL","depth":440,"x0":45,"x1":779},{"id":"Z1D3-SL","depth":440,"x0":45,"x1":779}]}
+NOTE   [1] F5 CASE 15: the panels present | BUL BUR TOP BOTTOM VPART-1 Z1D1-SL Z1-FILLER-R1 Z1-FILLER-R2 PARTITION RETURN-L RETURN-R
+NOTE   [1] F5 CASE 15: the engine's warnings | RECESS_DEAD_POCKET: RECESS DRAWERS: the recess ends 4 mm from BUL, under the 30 mm a divider needs beside a side, so RETURN-L stands on its edge as the column's wall, from the BOTTOM to the recess's top; the strip between BUL and RETURN-L i
+NOTE   [1] F5 CASE 15: the notices said | none
+FRAME  [1] f05-r15-return.png
+PASS   [1] F5 CASE 15: the RETURN-L of D29 b full height is the column's wall (recessColReturnFull), the dead pocket a NOTE (RECESS_DEAD_POCKET, never red) | expect: RETURN-L 290 x 2132, the warning RECESS_DEAD_POCKET | observed: {"RETURN_L":{"id":"RETURN-L","w":290,"h":2132,"readiness":"cut","fixing":"cabineo12"},"warnings":["RECESS_DEAD_POCKET"]}
+PASS   [1] F5 CASE A again (both edges in again, the cabinet back to 880): the cabinet DRAGGED along its wall by its carcass (a real press, 1 drag(s), the grab BUL) | expect: x 880 (+- 6, the hand lands on whole pixels) | observed: {"x":879,"drags":[{"grab":"BUL","from":{"x":421,"y":400,"n":669},"to":{"x":402,"y":400},"wasX":988}]}
+NOTE   [1] F5 CASE A again: the history | {"undoStepsAdded":6}
+PASS   [1] F5 CASE A again: the column's walls (D29), the engine's derived.extension.column (walls, or D22's pair of dividers) | expect: [["DIVIDER",149],["DIVIDER",893]] (kinds ["DIVIDER","DIVIDER"]; recessColWalls(1200, 18, 131, 911, 30)) | observed: {"dividers":["VPART-1","VPART-2"]}
+PASS   [1] F5 CASE A again: the store's dividers (meta.recessColumn) on the recess's edges, at the face | expect: x [131,893], front_mm 0 | observed: [[131,0],[893,0]]
+PASS   [1] F5 CASE A again: the engine's VPART dividers, one per DIVIDER wall | expect: 2 at x [131,893] | observed: [{"id":"VPART-1","x":131,"h":611},{"id":"VPART-2","x":893,"h":611}]
+PASS   [1] F5 CASE A again: three drawer boxes, wall to wall (the box span less the runner's 5) and 440 deep | expect: 3 drawers, box [154,888], depth 440 | observed: {"drawers":3,"boxes":[{"id":"Z2D1-SL","depth":440,"x0":154,"x1":888},{"id":"Z2D2-SL","depth":440,"x0":154,"x1":888},{"id":"Z2D3-SL","depth":440,"x0":154,"x1":888}]}
+NOTE   [1] F5 CASE A again: the panels present | BUL BUR TOP BOTTOM VPART-1 VPART-2 Z2D1-SL Z2-FILLER-L1 Z2-FILLER-L2 Z2-FILLER-R1 Z2-FILLER-R2 PARTITION RETURN-L RETURN-R
+NOTE   [1] F5 CASE A again: the engine's warnings | none
+NOTE   [1] F5 CASE A again: the notices said | none
+FRAME  [1] f05-a2-both-in-again.png
+PASS   [1] F5 CASE D (out of the band, the cabinet to 2200): the cabinet DRAGGED along its wall by its carcass (a real press, 1 drag(s), the grab BUL) | expect: x 2200 (+- 6, the hand lands on whole pixels) | observed: {"x":2203,"drags":[{"grab":"BUL","from":{"x":401,"y":381,"n":581},"to":{"x":632,"y":381},"wasX":879}]}
+NOTE   [1] F5 CASE D: the history | {"undoStepsAdded":1}
+NOTE   [1] F5 CASE D: the panels present | BUL BUR TOP BOTTOM
+NOTE   [1] F5 CASE D: the engine's warnings | none
+NOTE   [1] F5 CASE D: the notices said | grey: W01: the recess left the cabinet; its 3 drawers and the two dividers that held them are gone. Add drawers again where the cabinet stands.
+FRAME  [1] f05-d-out.png
+PASS   [1] F5 CASE D: the band no longer over the carcass (the engine cuts no recess column) | expect: no column, no band over the carcass | observed: {"band":null,"column":null}
+PASS   [1] F5 CASE D: the drawers AND the two dividers that held them gone (D29 c, 300 deep: the carcass alone cannot hold them) | expect: drawers 0, marked dividers 0, no VPART, no drawer box | observed: {"drawers":0,"parts":[],"panels":["BUL","BUR","TOP","BOTTOM","BACK","PLINTH"]}
+PASS   [1] F5 CASE D: the notice said, once, in the owner's words (info) | expect: W01: the recess left the cabinet; its 3 drawers and the two dividers that held them are gone. Add drawers again where the cabinet stands. | observed: [{"message":"W01: the recess left the cabinet; its 3 drawers and the two dividers that held them are gone. Add drawers again where the cabinet stands.","level":"grey"}]
+NOTE   [1] F5 CASE D: the notice on the screen when read | false
+PASS   [1] F5 CASE D: the drag and the removal are ONE undo step | expect: 1 step | observed: 1
+PASS   [1] F5 Ctrl+Z after case D (a real key): the drawers and the two dividers back, the cabinet where the drag began | expect: units identical to before the drag; x 879, dividers [131,893], 3 drawers | observed: {"identical":true,"x":879,"parts":[131,893],"drawers":3}
+FRAME  [1] f05-d-undo.png
+NOTE   [1] F5 console errors on the page (leg 1) | none
+
+LEG 2 . THE 558 WARDROBE OUT OF THE BAND; A DOOR OPENED TO 90; THE HINGE SILVER
+NOTE   [2] F5 THE STAGE (the store's own actions): the same room and recess, the wardrobe 1200 x 2150 x 558 at 800 | {"id":"u_rbydbwn","recess":"recess_zct91bn","x":800,"w":1200,"h":2150,"d":558,"num":"W01"}
+PASS   [2] F5 the 558 wardrobe: drawers through the RECESS answer (real clicks), the two dividers 210 / 972, three drawers | expect: [[210,true],[972,true]], 3 drawers | observed: {"done":{"selected":true,"addItems":true,"offered":["1","2","recess"],"count":"3","recess":true,"recessPressed":"true","bare":true,"add":true},"parts":[{"id":"partition_catnyre","x":210,"front":0,"marked":true},{"id":"partition_2sifazz","x":972,"front":0,"marked":true}],"drawers":3}
+PASS   [2] F5 the 558 dragged out of the band by its carcass (a real drag) | expect: x 2200 (+- 6), no column | observed: {"x":2203,"drags":[{"grab":"BUL","from":{"x":382,"y":378,"n":696},"to":{"x":632,"y":378},"wasX":800}],"column":null}
+PASS   [2] F5 the 558 out of the band: the drawers stay (D27, the ladder holds them), at the carcass's depth 440, no notice | expect: 3 drawers, depth 440, no notice | observed: {"drawers":3,"boxes":[{"id":"Z2D1-SL","depth":440,"x0":233,"x1":967},{"id":"Z2D2-SL","depth":440,"x0":233,"x1":967},{"id":"Z2D3-SL","depth":440,"x0":233,"x1":967}],"said":[]}
+PASS   [2] F5 the 558 out of the band: the two dividers stay as the column's walls, full height (BOTTOM to TOP), as any two-divider column stack | expect: 2 dividers, each 2114 high (TOP.y - BOTTOM top) | observed: {"parts":[210,972],"vparts":[{"id":"VPART-1","x":210,"y":18,"h":2114,"w":2114,"ph":540},{"id":"VPART-2","x":972,"y":18,"h":2114,"w":2114,"ph":540}]}
+NOTE   [2] F5 the 558: the engine's warnings | none
+FRAME  [2] f05-558-out.png
+NOTE   [2] F5 the doors (a stage: setDoors count 2): the leaves and the hinge's own catalogue angle on each (meta.openAngleDeg, for the BOM and Check #8) | [{"id":"W01-FL","w":597,"h":2150,"t":25,"hinge":"L","openAngleDeg":155},{"id":"W01-FR","w":597,"h":2150,"t":25,"hinge":"R","openAngleDeg":155}]
+PASS   [2] F5 a door double-clicked open (a real double click on W01-FL pixel): the leaf turned in the view to the profile's swing, not the hinge's catalogue angle | expect: 90 (profile.doors.openAngle 90); the hinge's catalogue 155 not drawn | observed: {"at":{"x":689,"y":419,"n":1457},"swing":{"deg":90,"open":{"W01-FL":1}}}
+FRAME  [2] f05-door-open-90.png
+PASS   [2] F5 the hinge in the view silver: the default finish nickel, its plated members drawn in nickel's colour and metal (profile.hardware.hinge.cliptop) | expect: nickel #c9ccd1 metalness 0.95 roughness 0.22 | observed: {"meshes":72,"materials":[{"name":"metal_nickel_raw","colour":"#c9ccd1","metalness":0.95,"roughness":0.22},{"name":"plastic_black","colour":"#1c1c1e","metalness":0.05,"roughness":0.55}]}
+FRAME  [2] f05-hinge-silver.png
+NOTE   [2] F5 console errors on the page (leg 2) | none
+
+FRAMES (14): f05-0-drawers-added.png, f05-a-both-in.png, f05-a-cnc-sheet.png, f05-a-cnc-return-l.png, f05-a-cnc-board.png, f05-b-left-out.png, f05-c-right-out.png, f05-r15-return.png, f05-a2-both-in-again.png, f05-d-out.png, f05-d-undo.png, f05-558-out.png, f05-door-open-90.png, f05-hinge-silver.png
+T85: 50 checks, 50 pass, 0 fail

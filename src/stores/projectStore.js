@@ -96,6 +96,8 @@ import { recessBand } from '../lib/wallElements.js';
 import { recessRefusal, recessEndReachP } from '../engine/extension.js';
 // Chat fix 28.10.2026, the owner's walk (KIT_RECESS.lsp D26): "Align with recess" stands the pair.
 import { recessColDividerX, recessColPairX } from '../engine/extension.js';
+// T85 F3 (KIT_RECESS.lsp D29): the column follows the recess (its walls the engine's own recessColWalls).
+import { followPlan } from '../lib/recessColumn.js';
 // ─── TURN 46 (CLAUDE.md, "The slope, in numbers"): ONE ceilingAt ────────────
 // The store is where a cabinet meets a room, so it is where the ceiling line
 // becomes a number the engine and the clamp can use. Both come out of the same
@@ -230,7 +232,7 @@ import { endPanelHeightDefault } from '../engine/autoparts.js';
 import {
   CARCASS_SLOTS, drawerBoxGate, projectThicknesses, slotById,
 } from '../engine/thickness.js';
-import { runBatch } from './historyBatch.js';
+import { runBatch, isGesture, onGestureEnding } from './historyBatch.js';
 // ─── Turn 31 (CLAUDE.md F2): ONE dirty gate, and 77 repeats deleted.
 import { dirtyGate } from './dirtyGate.js';
 import { persistenceOn } from './persistence.js';
@@ -1889,6 +1891,14 @@ const cached = persistenceOn() && typeof localStorage !== 'undefined' ? loadCach
 // re-entrancy counter, never a fact about the project.
 let slopeDoorSweepDepth = 0;
 
+// T85 F3 (KIT_RECESS.lsp D29): the units whose recess column left the cabinet during a held drag; the column is
+// taken when the gesture ends, in the drag's own undo step.
+const deferredRecessFollow = new Set();
+// T85 F5 (the walk's finding, 30.10.2026): the column's items as the drag found them, so the hand's letting go
+// plans from where the drag STARTED to where it ENDS, never from the steps between (a drag through case B took one
+// divider on the way and left one where both belonged).
+const gestureStartItems = new Map();
+
 export const useProjectStore = create(dirtyGate((set, get) => ({
   // A cached project may predate room v2 — migrate on the way in, so an old
   // tab that reloads gets four walls instead of a crash.
@@ -2031,6 +2041,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }));
     // A lower ceiling shortens every top infill; a longer wall opens a gap.
     get().refreshAutoParts();
+    // T85 F3 (KIT_RECESS.lsp D29): a recess column follows the room it stands in (the burst is one undo).
+    get().followRecessColumns();
     return verdict;
   },
 
@@ -2257,7 +2269,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   //
   // It is the same call every other room-shaped mutator on this store already
   // makes, and it is idempotent.
-  addWallSlope: (slope) => {
+  // T85 F3 (D29): a recess edited in Room moves the recess columns of its wall in the same batch (one undo).
+  addWallSlope: (slope) => runBatch(() => {
     const next = migrateWallElement({ id: uid(slope?.kind || 'slope'), ...slope });
     if (!next) return null;
     set((s) => ({
@@ -2269,10 +2282,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       },
     }));
     get().refreshAutoParts();
+    get().followRecessColumns();
     return next.id;
-  },
+  }),
 
-  updateWallSlope: (id, patch) => {
+  updateWallSlope: (id, patch) => runBatch(() => {
     set((s) => ({
       project: {
         ...s.project,
@@ -2284,14 +2298,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       },
     }));
     get().refreshAutoParts();
-  },
+    get().followRecessColumns();
+  }),
 
-  removeWallSlope: (id) => {
+  removeWallSlope: (id) => runBatch(() => {
     set((s) => ({
       project: { ...s.project, wallSlopes: wallElements(s.project.wallSlopes).filter((v) => v.id !== id) },
     }));
     get().refreshAutoParts();
-  },
+    get().followRecessColumns();
+  }),
 
   // ─── TURN 45 (CLAUDE.md F9b/F9c): THE JOB'S LED SPEC ─────────────────────
   // A PATCH setter, like every other on this store: the tab writes one field at
@@ -7876,7 +7892,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // a batch of their own, and an unbatched action that calls both closes two at
   // depth 0 — which is two entries on the undo stack for one drag. Ctrl+Z is
   // the owner's, and it takes back what he did, not half of it.
-  moveUnit: (unitId, xRaw, snapStep, { magnet = true } = {}) => runBatch(() => {
+  moveUnit: (unitId, xRaw, snapStep, { magnet = true, follow = 'full' } = {}) => runBatch(() => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return null;
@@ -7986,6 +8002,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     });
     // Moving changes which gaps exist — and a gap is a filler.
     get().refreshAutoParts();
+    // T85 F3 (KIT_RECESS.lsp D29): the recess column follows the recess, in the move's own batch (one undo), before
+    // the layout settles (the settle stays the move's last word). A drag step (`follow: 'move'`) leaves a departing
+    // column to the drag's end (followRecessColumn's `defer`).
+    get().followRecessColumn(unitId, { defer: follow === 'move' });
     // ─── TURN 51 (CLAUDE.md F2 + F3): …AND A DRAG IS HOW HE REACHES THE GAP ─
     //
     // *"nie działa ustawianie automatyczne, nie ma zapytania, nie pokazuje się
@@ -9535,6 +9555,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         const why = (r?.warnings || []).find((w) => w.code === 'RECESS_DRAWERS_SHALLOW');
         return back(why ? why.message : 'The drawers could not go into the recess here.');
       }
+      // T85 F3 (KIT_RECESS.lsp D29): the column's two dividers and its drawers are marked as the RECESS's, so they
+      // follow it when the cabinet moves (followRecessColumn); the joiner's own pieces never carry the mark.
+      for (const i of get().units.find((u) => u.id === unitId)?.params.sections?.[0]?.items || []) {
+        if (i.kind === 'partition' || (i.kind === 'drawer' && Number(i.zone) === 1)) {
+          get().updateItem(unitId, i.id, { meta: { ...(i.meta || {}), recessColumn: true } });
+        }
+      }
       const deep = r.panels.find((p) => p.id === 'Z2D1-SL')?.w;
       return {
         ok: true,
@@ -9545,6 +9572,71 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       };
     });
   },
+
+  /**
+   * T85 F3 · THE COLUMN FOLLOWS THE RECESS (KIT_RECESS.lsp D29). The owner,
+   * 30.10.2026: *"przy przesunieciu calej szafy szuflady znikaja a zostaja
+   * dividery ktore sie robia do samej gory, nie powinno tak byc"*; *"znikaja z
+   * szufladami, bo to sa dividery do szuflad"*. After a move (or the recess
+   * edited in Room) the marked column (`meta.recessColumn`, addRecessDrawers)
+   * is stood where the recess now is: its dividers on the band's edges at the
+   * face, a divider whose edge left the carcass (or came within the owner's 30
+   * of a side) removed, one put back where an edge is a divider's again, the
+   * drawers in the bay between the walls. The band leaving the carcass: the
+   * drawers stay at the carcass's depth where the ladder holds them, else they
+   * and their dividers go and the app says so in words. All in the caller's
+   * batch (one undo). The plan is pure (lib/recessColumn.js followPlan); the
+   * joiner's own pieces (no mark) are never moved or removed here. The D26
+   * button and D28's road are untouched. `defer` (a drag in progress, moveUnit's
+   * `follow: 'move'`): the dividers and the zones follow at once, the column
+   * that LEAVES (drawers and dividers removed, the notice) waits for the end of
+   * the held gesture (historyBatch's onGestureEnding, inside the drag's undo
+   * step); the scene's onMoveEnd asks once more, a no-op when nothing waits.
+   *
+   * @returns {object|null} the plan written, or null when the unit has no marked column
+   */
+  followRecessColumn: (unitId, { defer = false } = {}) => runBatch(() => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const items = unit?.params?.sections?.[0]?.items || [];
+    if (!items.some((i) => i?.meta?.recessColumn === true)) return null;
+    const profile = getCabinetProfile();
+    const band = recessExtensionFor(unit, get(), profile);
+    // The engine's result is NOT passed: it is the result where the dividers stood BEFORE this plan, so its
+    // count-of-dividers sentence would read as a refusal of the new place. The floor test is the plan's own.
+    const plan = followPlan(unit, band, profile);
+    if (!plan) return null;
+    // The drag (`defer`, a held gesture): a column that leaves is taken only when the hand lets go (the gesture's
+    // end asks again, inside the drag's own undo step), so a cabinet dragged out and back within one drag keeps
+    // its drawers.
+    if (defer && isGesture()) {
+      if (!gestureStartItems.has(unitId)) gestureStartItems.set(unitId, items);
+      deferredRecessFollow.add(unitId);
+      if (plan.drawersRemoved) return { ...plan, deferred: true };
+    } else {
+      deferredRecessFollow.delete(unitId);
+    }
+    for (const m of plan.moves) get().updateItem(unitId, m.id, { x_mm: m.x, front_mm: 0 });
+    for (const id of plan.remove) get().removeItem(unitId, id);
+    for (const a of plan.add) {
+      const id = get().addPartition(unitId, a.x);
+      if (!id) continue;
+      const item = get().units.find((u) => u.id === unitId)?.params.sections?.[0]?.items?.find((i) => i.id === id);
+      get().updateItem(unitId, id, { x_mm: a.x, front_mm: 0, meta: { ...(item?.meta || {}), recessColumn: true } });
+    }
+    for (const z of plan.zones) get().updateItem(unitId, z.id, { zone: z.zone });
+    if (plan.moves.length || plan.add.length) get().healFrontGaps();
+    if (plan.notice) useUiStore.getState().notify(plan.notice, 'info');
+    return plan;
+  }),
+
+  /** T85 F3 · followRecessColumn for every unit with a marked column (the room's recess edits), one batch. */
+  followRecessColumns: () => runBatch(() => {
+    for (const u of get().units) {
+      if ((u.params?.sections?.[0]?.items || []).some((i) => i?.meta?.recessColumn === true)) {
+        get().followRecessColumn(u.id);
+      }
+    }
+  }),
 
   /**
    * ─── T74 F6 · THE SECOND SHOE DRAWER'S MOUNTING HEIGHT, AND ITS ONE CLAMP ──
@@ -12473,6 +12565,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return stamp;
   },
 })));
+
+// T85 F3 · the gesture's end takes the recess columns that left during the drag (the owner: *"znikaja z
+// szufladami, bo to sa dividery do szuflad"*), while the gesture is still open: one undo for the drag and them.
+onGestureEnding(() => {
+  const ids = [...deferredRecessFollow];
+  const start = new Map(gestureStartItems);
+  deferredRecessFollow.clear();
+  gestureStartItems.clear();
+  for (const id of ids) {
+    // T85 F5: the column as the drag found it, then the plan for where the hand let go (path-independent).
+    const items = start.get(id);
+    if (items) {
+      useProjectStore.setState((st) => ({
+        units: st.units.map((u) => (u.id !== id ? u : {
+          ...u,
+          params: { ...u.params, sections: [{ ...u.params.sections[0], items }] },
+        })),
+      }));
+    }
+    useProjectStore.getState().followRecessColumn(id);
+  }
+});
 
 // Cache to localStorage on every change (fallback only — the DB stays primary)
 useProjectStore.subscribe((state) => saveCache(state));

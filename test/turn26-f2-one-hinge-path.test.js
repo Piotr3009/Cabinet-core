@@ -193,7 +193,11 @@ test('F2.2 — the FOLD at 45° is each leaf’s OWN angle, on both cabinets', (
   // and that is the case this asks about. It is not a contrivance: a run's end
   // cabinet is exactly that case, and it is where the owner's bay leaves live.
   const GAP = 68;
-  const swingOf = (w) => doorOpenAngle({ doorWidth: w, hingeOffset: P.doors.gap / 2, gapToWall: GAP }, P);
+  // T85 F4 · the profile's picture angle is 90 now (the owner, 30.10.2026: *"default zawiasy prosze zrob 90
+  // stopni"*), equal to the wall's, so no width can bite there. This test is about the WIDTH law, so it asks
+  // it under the old 99 it was written against.
+  const P99 = { ...P, doors: { ...P.doors, openAngle: 99 } };
+  const swingOf = (w) => doorOpenAngle({ doorWidth: w, hingeOffset: P.doors.gap / 2, gapToWall: GAP }, P99);
 
   // The view's own expression (`3d/UnitView.jsx doorSwing`): the leaf's hand,
   // the open fraction, and the swing THAT leaf may make.

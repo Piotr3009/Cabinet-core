@@ -473,12 +473,23 @@ export const DEFAULT_CABINET_PROFILE = {
     // at 25, the 95 to 32, reference/hardware/cliptop-hinges.json) and opens
     // to it in the picture; this 99 is only the fallback with no catalogue.
     //
+    // T85 F4 · 30.10.2026 20:48, the owner: *"default zawiasy prosze zrob 90
+    // stopni, teraz mamy 150 to nie jest dobre, i silver prosze."*  This
+    // supersedes 15.10's sentence for the PICTURE only (CLAUDE.md T85 law 4, A
+    // SWING IS A PICTURE): every hinged leaf now opens in the view to THIS one
+    // number, 90 (was 99), whatever its hinge. The hinge's own angle stays on
+    // the leaf (`meta.openAngleDeg`) for what is BOUGHT (the 155 / 110 / 95 by
+    // front thickness), what is drilled, and Check #8; it no longer drives the
+    // swing (`engine/doors.js doorOpenAngle`). The named exceptions keep their
+    // own roads: the drop front's 45, a lift's travel, the bi-fold child's 60
+    // (`corner.bifold.angleDeg`), the pocket door's slide.
+    //
     // `openAngleAtWall` is the answer when there is a WALL on the hinge side.
     // Past 90° a door starts to come BACK towards that wall — its free edge
     // crosses the hinge line — so a run of cabinets in a corner would animate
     // its end door straight through the plaster. Square is where it stops.
     // Neither number reaches the cut list; a swing is a picture.
-    openAngle: 99,
+    openAngle: 90,             // T85 F4, the owner 30.10.2026 20:48 (was 99)
     openAngleAtWall: 90,
   },
 

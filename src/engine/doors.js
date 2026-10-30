@@ -41,15 +41,17 @@ const DEG = Math.PI / 180;
  * @param {object} profile
  */
 export function doorOpenAngle({
-  doorWidth, hingeOffset = 0, gapToWall = null, fullDeg = null,
+  doorWidth, hingeOffset = 0, gapToWall = null,
 }, profile) {
-  // T78 F13 · a wide-angle family's door opens to its family's angle (the
-  // leaf's `meta.openAngleDeg`, 155 or 170); since 15.10.2026 every hinged
-  // leaf carries its hinge's angle (the standard 155, the 110, the 95), so
-  // only a leaf with no catalogue behind it opens to the profile's picture
-  // angle. The wall law below is unchanged: a door with a wall on its hinge
-  // side still stops square.
-  const full = (Number(fullDeg) > 0 ? Number(fullDeg) : (profile?.doors?.openAngle ?? 99)) * DEG;
+  // T85 F4 · A SWING IS A PICTURE (CLAUDE.md T85 law 4). The owner,
+  // 30.10.2026 20:48: *"default zawiasy prosze zrob 90 stopni, teraz mamy 150
+  // to nie jest dobre."*  Every hinged leaf opens in the view to the profile's
+  // one number (`doors.openAngle`, 90). `fullDeg` (T78 F13: the leaf's hinge
+  // angle, 155 / 170 / 110 / 95) is NO LONGER read; an old caller that passes
+  // it is ignored: the hinge's angle decides what is bought and drilled and what
+  // Check #8 asks, never the swing. The wall law below is unchanged: a door
+  // with a wall on its hinge side still stops square.
+  const full = (profile?.doors?.openAngle ?? 90) * DEG;
   if (gapToWall == null) return full;
 
   const atWall = (profile?.doors?.openAngleAtWall ?? 90) * DEG;

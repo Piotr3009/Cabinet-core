@@ -132,7 +132,9 @@ test('3 · the scene\'s handle stands on the face a leaf shows the room, a leaf 
   assert.deepEqual(leaf(L({ project_handle: BAR, corner_side: 'right' }), 'B').meta.swingZ, { dir: 1 });
 });
 
-test('4 · the standard hinge is the 155 and every hinged leaf opens in the picture as far as its hinge opens', () => {
+// T85 F4 · amended: the hinge is still the 155 bought for a 24 mm front, but the PICTURE is the profile's 90
+// (the owner, 30.10.2026 20:48: *"default zawiasy prosze zrob 90 stopni, teraz mamy 150 to nie jest dobre"*).
+test('4 · the standard hinge is the 155 and every hinged leaf carries it; the picture opens to the profile\'s 90 (T85 F4)', () => {
   const bud = (over) => computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: 'B1', doors: { count: 2 }, ...over }, P);
   assert.deepEqual(bud({ front_t: 18 }).panels.filter((p) => p.part === 'FRONT').map((p) => p.meta.openAngleDeg), [155, 155]);
   assert.deepEqual(bud({ front_t: 24 }).panels.filter((p) => p.part === 'FRONT').map((p) => p.meta.openAngleDeg), [155, 155]);
@@ -141,9 +143,9 @@ test('4 · the standard hinge is the 155 and every hinged leaf opens in the pict
   // The BOM buys the same hinge the picture swings.
   assert.equal(bud({ front_t: 18 }).hardware.find((h) => h.role === 'hinges').spec.article, '45588965');
   assert.match(bud({ front_t: 18 }).hardware.find((h) => h.role === 'hinges').spec_label, /155°/);
-  // The swing: a 155 door opens to 155 in the middle of a run, and still stops square at a wall on its hinge side.
+  // The swing (T85 F4): a 155 door opens to the profile's 90 in the middle of a run, and stops square at a wall on its hinge side.
   const DEG = Math.PI / 180;
-  assert.equal(doorOpenAngle({ doorWidth: 400, fullDeg: 155 }, P), 155 * DEG);
+  assert.equal(doorOpenAngle({ doorWidth: 400, fullDeg: 155 }, P), 90 * DEG);
   assert.equal(doorOpenAngle({ doorWidth: 400, fullDeg: 155, hingeOffset: 1.5, gapToWall: 10 }, P), 90 * DEG);
   // The catalogue of record carries the rung and says why.
   const cat = JSON.parse(read('reference/hardware/cliptop-hinges.json'));

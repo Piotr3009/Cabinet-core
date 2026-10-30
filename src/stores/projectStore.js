@@ -179,7 +179,7 @@ import { runFrameParams } from '../engine/inframe.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
 import {
   runFor as shareOutRunFor, shareOutGapSpan, shareOutOffered, shareOutPlan,
-  shareOutSignature, widthFixed,
+  shareOutSignature,
 } from '../engine/shareOut.js';
 // Turn 50 (CLAUDE.md F3): nothing is built bigger than the room it stands in.
 import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
@@ -7272,7 +7272,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   shareOutView: (unitId) => shareOutSubject(get(), unitId, getCabinetProfile(), { gated: true }),
 
-  shareOutRun: (unitId, { extra = 0 } = {}) => runBatch(() => {
+  // T86B F6, law 8: one button, no extra cabinet (*"usun ta funkcje z paska"*).
+  shareOutRun: (unitId) => runBatch(() => {
     const profile = getCabinetProfile();
     const state = get();
     // The RUN, not the OFFER: the 400 mm gate decides whether the BAR appears,
@@ -7285,7 +7286,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!offer) return { ok: false, message: 'Nothing to share out on this run.', widths: [] };
     const { walls, wallMargin } = offer;
 
-    let plan = extra ? shareOutPlan(offer.run, offer.context, profile, { extra }) : offer.plan;
+    const { plan } = offer;
     if (!plan.ok) {
       return {
         ok: false,
@@ -7294,25 +7295,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           : 'This run has no room to share out.',
         widths: [],
       };
-    }
-
-    // The EXTRA cabinet, when the joiner asked for one. A copy of the run's
-    // last non-fixed cabinet, added beside it, at the plan's own width.
-    if (extra > 0) {
-      const seed = [...offer.run.units].reverse().find((u) => !widthFixed(u))
-        || offer.run.units[offer.run.units.length - 1];
-      const born = get().addUnit(seed.type, { near: seed.id, side: 'R' });
-      if (born.error || !born.id) {
-        return { ok: false, message: born.error || 'There is no room for another cabinet here.', widths: [] };
-      }
-      // The run has changed shape, so the plan is asked again OF THE RUN THAT
-      // NOW EXISTS rather than patched — one derivation, and the new cabinet is
-      // in it like any other.
-      const after = shareOutRunFor(get().units, born.id, { walls, wallMargin }, profile)
-        || shareOutRunFor(get().units, unitId, { walls, wallMargin }, profile);
-      const nextRun = after ? after.run : offer.run;
-      plan = shareOutPlan(nextRun, after ? after.context : offer.context, profile, {});
-      if (!plan.ok) return { ok: false, message: 'This run has no room to share out.', widths: [] };
     }
 
     // ─── WHERE THE RUN NOW STANDS ─────────────────────────────────────────

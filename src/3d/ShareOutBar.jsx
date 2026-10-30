@@ -21,14 +21,8 @@ import { chromeOn } from './chrome.js';
 // canvas-drawn button is a button with no focus ring, no hover state and no
 // keyboard. `AddPlus` beside it is a sprite because a plus is a glyph.
 //
-// ─── AND IT NEVER ADDS A CABINET (decision 2) ───────────────────────────────
-//
-//   *"A share-out that would make the fronts too wide OFFERS the extra cabinet
-//   rather than silently doing it … The bar then says so and offers seven, at
-//   557 mm as a second button. It never adds a cabinet on its own."*
-//
-// Two buttons, then, and only in that case. Both are one click and both are one
-// undo step; neither is a default that happens if you look away.
+// T86B F6, law 8: ONE button. The owner, 30.10.2026: *"drugi nie dziala, wiec
+// usun ta funkcje z paska"*; the extra cabinet's button and road are deleted.
 //
 // It is a TOOL: `ccHelper` on the anchor group, so nothing here can reach a
 // render or a contact shadow — the same contract `AddPlus` and the dimension
@@ -58,7 +52,7 @@ import { chromeOn } from './chrome.js';
  *   offer       uiStore.shareOutOffer — { unitId } or null
  *   view        projectStore.shareOutView(unitId) — the ONE resolution (F4):
  *               { run, plan, span, wallMargin, … }, or null when nothing stands
- *   onShare     (unitId, { extra }) — the store's `shareOutRun`
+ *   onShare     (unitId): the store's `shareOutRun`
  *   onDismiss   (signature) — the ✕ (T53 F1b); the offer is closed for THIS
  *               gap, and `settleLayout` will not raise it again while the
  *               plan's signature is unchanged.
@@ -121,29 +115,15 @@ export default function ShareOutBar({
               every cabinet here has its width imposed — nothing to share it into
             </span>
           ) : (
-            <>
-              <button
-                type="button"
-                className="cc-btn-gold px-2 py-0.5"
-                data-share-out-go="1"
-                title={`Every cabinet in this run that is not an appliance becomes ${formatMm(plan.each)} mm wide. One click, and Ctrl+Z takes it back.`}
-                onClick={() => onShare(offer.unitId, { extra: 0 })}
-              >
-                Share it out equally · {formatMm(plan.each)} mm each
-              </button>
-              {/* ─── DECISION 2: THE EXTRA CABINET IS OFFERED, NEVER TAKEN ── */}
-              {plan.tooWide && plan.alternative?.ok && (
-                <button
-                  type="button"
-                  className="cc-btn px-2 py-0.5"
-                  data-share-out-extra="1"
-                  title={`${formatMm(plan.each)} mm is a wider front than one door should be. One more cabinet brings it to ${formatMm(plan.alternative.each)} mm.`}
-                  onClick={() => onShare(offer.unitId, { extra: 1 })}
-                >
-                  …or {plan.alternative.n} cabinets at {formatMm(plan.alternative.each)} mm
-                </button>
-              )}
-            </>
+            <button
+              type="button"
+              className="cc-btn-gold px-2 py-0.5"
+              data-share-out-go="1"
+              title={`Every cabinet in this run that is not an appliance becomes ${formatMm(plan.each)} mm wide. One click, and Ctrl+Z takes it back.`}
+              onClick={() => onShare(offer.unitId)}
+            >
+              Share it out equally · {formatMm(plan.each)} mm each
+            </button>
           )}
           {/* ─── TURN 53 (CLAUDE.md F1b): THE ✕ ────────────────────────────
               *"musi też być przycisk dismiss — jak nie chcę tego robić teraz,

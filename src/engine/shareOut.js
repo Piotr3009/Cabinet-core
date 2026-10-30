@@ -169,21 +169,17 @@ function reservedAt(run, { left, right, wallWidth, wallMargin }) {
  * @param {object} run       one entry from buildWallRuns() (or buildRuns())
  * @param {object} context   { wallWidth, others } — as runEndGap takes them
  * @param {object} profile
- * @param {object} options   { extra } — share it out over ONE MORE cabinet
  * @returns {{
  *   ok: boolean, reason: string|null, gap: number, clear: number,
  *   infills: number, fixed: number, n: number, each: number, last: number,
  *   widths: Array<{id: string, from: number, to: number}>,
- *   tooWide: boolean, alternative: object|null,
  * }}
  */
 export function shareOutPlan(
   run,
   { wallWidth = 0, others = [], wallMargin = 0 } = {},
   profile,
-  { extra = 0 } = {},
 ) {
-  const spec = shareOutSpec(profile);
   const left = runEndGap(run, 'left', { wallWidth, others });
   const right = runEndGap(run, 'right', { wallWidth, others });
   // The whole stretch of wall this run may occupy: itself, plus what is free
@@ -216,7 +212,7 @@ export function shareOutPlan(
     .filter((u) => widthFixed(u))
     .reduce((sum, u) => sum + (Number(u.params?.width) || 0), 0);
 
-  const n = movable.length + Math.max(0, Math.trunc(extra));
+  const n = movable.length;
   const share = clear - infills - pads - fixed;
 
   // ─── TURN 52 (CLAUDE.md F1b): WHICH END IS THE RUN ANCHORED ON? ──────────
@@ -243,8 +239,6 @@ export function shareOutPlan(
     each: 0,
     last: 0,
     widths: [],
-    tooWide: false,
-    alternative: null,
     anchor,
     startAt: round1(left.from + reserved.left),
     endAt: round1(right.to - reserved.right),
@@ -263,27 +257,17 @@ export function shareOutPlan(
   const widths = movable.map((u, i) => ({
     id: u.id,
     from: Number(u.params?.width) || 0,
-    to: i === movable.length - 1 && !extra ? lastOne : each,
+    to: i === movable.length - 1 ? lastOne : each,
   }));
-  // With an EXTRA cabinet the odd millimetre belongs to the one being added,
-  // which does not exist yet — so it is carried on the plan and the store gives
-  // it to the new cabinet when it makes it.
-  const newWidth = extra ? lastOne : null;
 
-  const tooWide = Math.max(each, lastOne) > spec.maxWidthMm;
   return {
     ...base,
     ok: true,
     reason: null,
     each,
     last: lastOne,
-    newWidth,
     widths,
-    tooWide,
-    // Decision 2, written at the top of CLAUDE.md: a share-out that would make
-    // the fronts too wide OFFERS the extra cabinet and never adds one. So the
-    // alternative is COMPUTED — the bar can print "seven, at 557 mm" — and it
-    // is a second button, not a second behaviour.
+    // T86B F6, law 8: one share-out button; the extra cabinet's road is deleted.
     // Where the run starts once it has been laid out — the left boundary plus
     // whatever is reserved there. The store lays the cabinets out from it, so
     // the plan and the placement cannot disagree about the first millimetre.
@@ -301,9 +285,6 @@ export function shareOutPlan(
     anchor,
     gapSide: anchor === 'left' ? 'right' : 'left',
     reserved,
-    alternative: tooWide && !extra
-      ? shareOutPlan(run, { wallWidth, others, wallMargin }, profile, { extra: 1 })
-      : null,
   };
 }
 

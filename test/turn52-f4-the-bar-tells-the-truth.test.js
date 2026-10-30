@@ -133,7 +133,7 @@ test('F4 — the bar does no arithmetic of its own', () => {
   assert.ok(src.includes('const found = view && view.plan ? view : null;'),
     'it is handed the store’s own resolution');
   // The three data attributes the walk reads are unchanged.
-  for (const attr of ['data-share-out-bar=', 'data-share-out-go=', 'data-share-out-extra=', 'data-share-out-blocked=']) {
+  for (const attr of ['data-share-out-bar=', 'data-share-out-go=', 'data-share-out-blocked=']) {
     assert.ok(src.includes(attr), attr);
   }
 });
@@ -151,16 +151,14 @@ test('F4 — the store resolves it ONCE, and all three callers take that one', (
     'the bar reads it');
   assert.ok(src.includes('const offer = shareOutSubject(state, unitId, profile);'),
     'and shareOutRun applies it — ungated, because a button must never do nothing');
-  // Nothing else in the store may compute a share-out.
-  // Only the resolver, and the two branches of the EXTRA cabinet — which has to
-  // re-ask of the run that now exists, because it added one.
+  // Nothing else in the store may compute a share-out: only the resolver.
+  // T86B F6 (law 8) deleted the extra cabinet and its two re-asks.
   const plans = src.split('shareOutPlan(').length - 1;
-  assert.equal(plans, 3, 'the resolver, and the extra cabinet’s two re-asks');
+  assert.equal(plans, 1, 'the resolver alone');
   const action = src.slice(src.indexOf('  shareOutRun:'), src.indexOf('  removeUnit:'));
-  assert.ok(action.split('shareOutPlan(').length - 1 === 2,
-    'both of them are inside the extra-cabinet branch');
-  assert.ok(action.includes('let plan = extra ? shareOutPlan('),
-    '…and an ordinary share-out takes the resolver’s plan unchanged');
+  assert.equal(action.split('shareOutPlan(').length - 1, 0, 'the action asks nothing again');
+  assert.ok(action.includes('const { plan } = offer;'),
+    'it takes the resolver’s plan unchanged');
 });
 
 test('F4 — the scene hands the bar the store’s resolution and nothing else', () => {

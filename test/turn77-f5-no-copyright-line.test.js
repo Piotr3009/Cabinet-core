@@ -477,6 +477,8 @@ export const NEW_FILES = [
   'src/components/ChestIslandPopup.jsx',
   'test/turn86b-f05-chest-island-store.test.js',
   'scripts/t78-classify.d/f51-t86b-f05.mjs',
+  'test/turn86b-f06-share-out-one-button.test.js',
+  'scripts/t78-classify.d/f51-t86b-f06.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

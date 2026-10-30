@@ -10,10 +10,9 @@
 // — milimetr nie robi różnicy."*  How long it lasts: *"tylko jednorazowe, z
 // możliwością zrobienia Undo."*
 //
-// And the two decisions taken FOR him at the top of CLAUDE.md, both tested
-// here: the offer is a BAR AT THE GAP (never a centre modal), and a share-out
-// that would make the fronts too wide OFFERS the extra cabinet rather than
-// adding one.
+// And the decision taken FOR him at the top of CLAUDE.md, tested here: the
+// offer is a BAR AT THE GAP (never a centre modal). T86B F6 (law 8) deleted
+// the second button: *"drugi nie dziala, wiec usun ta funkcje z paska"*.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -150,30 +149,7 @@ test('F2 · an END PANEL is board, not cabinet — it comes out too', () => {
   assert.equal(plan.each, Math.floor((4000 - 18) / 3));
 });
 
-// ─── DECISION 2: THE EXTRA CABINET IS OFFERED, NEVER TAKEN ─────────────────
-
-test('F2 · a share-out that makes the fronts too wide OFFERS one more cabinet', () => {
-  assert.equal(shareOutSpec(P).maxWidthMm, 620, 'the line, from the profile');
-
-  // CLAUDE.md's own worked example: 3900 over six is 650 of front.
-  const r = run([600, 600, 600, 600, 600, 600]);
-  const plan = shareOutPlan(only(r), context(r, 3900), P, {});
-  assert.equal(plan.each, 650);
-  assert.equal(plan.tooWide, true, '650 is wider than one door should be');
-
-  assert.ok(plan.alternative, 'so the bar has a second button');
-  assert.equal(plan.alternative.n, 7, 'seven cabinets');
-  assert.equal(plan.alternative.each, 557, '…at 557 mm — CLAUDE.md’s own figure');
-  assert.equal(plan.alternative.tooWide, false);
-});
-
-test('F2 · an ordinary share-out does NOT offer an extra cabinet', () => {
-  const r = run([600, 600, 600, 600, 600, 600]);      // 3600 of cabinet
-  const plan = shareOutPlan(only(r), context(r, 3660), P, {});
-  assert.equal(plan.each, 610, 'the scribe shared in — a perfectly ordinary run');
-  assert.equal(plan.tooWide, false);
-  assert.equal(plan.alternative, null, 'and no second button');
-});
+// T86B F6 (law 8) deleted decision 2's extra cabinet; test/turn86b-f06-* holds the one button.
 
 // ─── WHERE THE BAR STANDS (decision 1) ─────────────────────────────────────
 
@@ -190,7 +166,7 @@ test('F2 · the bar is a BAR — not a modal, and not a canvas glyph', () => {
   const src = readFileSync(new URL('../src/3d/ShareOutBar.jsx', import.meta.url), 'utf8');
   assert.ok(src.includes('data-share-out-bar='), 'the strip');
   assert.ok(src.includes('data-share-out-go='), 'and its one button');
-  assert.ok(src.includes('data-share-out-extra='), 'and decision 2’s second one');
+  assert.ok(!src.includes('data-share-out-extra='), 'and no second one (T86B F6, law 8)');
   assert.ok(src.includes('data-share-out-blocked='), 'and the sentence for a run with nothing to widen');
   assert.ok(!/openModal\(/.test(src), 'it never opens a modal');
   assert.ok(src.includes('ccHelper'), 'and it is a TOOL — no render, no shadow');

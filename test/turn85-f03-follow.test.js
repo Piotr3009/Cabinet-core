@@ -219,6 +219,8 @@ describe('T85 F3 . the store follows', async () => {
     const res = S().addDrawers(a.id, 3, 'internal', 200, null, null, { columns: 'recess' });
     assert.equal(res.ok, true, res.error);
     flushHistory();
+    // Each case from an empty undo stack (the stack is bounded, 50: a long file must not reach the bound).
+    useHistoryStore.getState().clear();
     notices.length = 0;
     return { id: a.id, recess };
   }
@@ -296,6 +298,29 @@ describe('T85 F3 . the store follows', async () => {
     assert.deepEqual(JSON.parse(JSON.stringify(S().units)), mid, 'one Ctrl+Z, the cabinet where the drag began, its column whole');
     assert.ok(useHistoryStore.getState().undo());
     assert.deepEqual(JSON.parse(JSON.stringify(S().units)), before);
+  });
+
+  // T85 F5 (the walk's finding): a real drag passes through case B on its way out; the letting go plans from where
+  // the drag began, so the steps between never decide what stays.
+  test('a drag through case B and out of the band: 300 takes both dividers (the notice says two), 558 keeps both', () => {
+    const { id } = owner();
+    setGesture(true);
+    for (const x of [880, 1100, 1400, 1700, 2000, 2200]) S().moveUnit(id, x, 1, { follow: 'move' });
+    setGesture(false);
+    flushHistory();
+    assert.deepEqual([partsOf(id), drawersOf(id)], [[], []]);
+    assert.equal(notices.length, 1);
+    assert.match(notices[0][0], /its 3 drawers and the two dividers that held them are gone/);
+    const deep = owner(558).id;
+    setGesture(true);
+    for (const x of [880, 1100, 1400, 1700, 2000, 2200]) S().moveUnit(deep, x, 1, { follow: 'move' });
+    setGesture(false);
+    flushHistory();
+    assert.deepEqual(partsOf(deep).map((p) => p.x_mm), [210, 972], 'both dividers, where the drag found them');
+    assert.equal(drawersOf(deep).length, 3);
+    const r = S().unitResult(deep);
+    assert.equal(r.panels.find((p) => p.id === 'Z2D1-SL').w, 440);
+    assert.deepEqual(['VPART-1', 'VPART-2'].map((v) => Math.max(r.panels.find((p) => p.id === v)?.w, r.panels.find((p) => p.id === v)?.h)), [2114, 2114], 'full height');
   });
 
   test('recessAlignPlan and alignDividersWithRecess answer as before (FROZEN 5)', () => {

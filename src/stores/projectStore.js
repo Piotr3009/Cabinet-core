@@ -1894,6 +1894,10 @@ let slopeDoorSweepDepth = 0;
 // T85 F3 (KIT_RECESS.lsp D29): the units whose recess column left the cabinet during a held drag; the column is
 // taken when the gesture ends, in the drag's own undo step.
 const deferredRecessFollow = new Set();
+// T85 F5 (the walk's finding, 30.10.2026): the column's items as the drag found them, so the hand's letting go
+// plans from where the drag STARTED to where it ENDS, never from the steps between (a drag through case B took one
+// divider on the way and left one where both belonged).
+const gestureStartItems = new Map();
 
 export const useProjectStore = create(dirtyGate((set, get) => ({
   // A cached project may predate room v2 — migrate on the way in, so an old
@@ -9604,11 +9608,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // The drag (`defer`, a held gesture): a column that leaves is taken only when the hand lets go (the gesture's
     // end asks again, inside the drag's own undo step), so a cabinet dragged out and back within one drag keeps
     // its drawers.
-    if (defer && isGesture() && plan.drawersRemoved) {
+    if (defer && isGesture()) {
+      if (!gestureStartItems.has(unitId)) gestureStartItems.set(unitId, items);
       deferredRecessFollow.add(unitId);
-      return { ...plan, deferred: true };
+      if (plan.drawersRemoved) return { ...plan, deferred: true };
+    } else {
+      deferredRecessFollow.delete(unitId);
     }
-    deferredRecessFollow.delete(unitId);
     for (const m of plan.moves) get().updateItem(unitId, m.id, { x_mm: m.x, front_mm: 0 });
     for (const id of plan.remove) get().removeItem(unitId, id);
     for (const a of plan.add) {
@@ -12564,8 +12570,22 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
 // szufladami, bo to sa dividery do szuflad"*), while the gesture is still open: one undo for the drag and them.
 onGestureEnding(() => {
   const ids = [...deferredRecessFollow];
+  const start = new Map(gestureStartItems);
   deferredRecessFollow.clear();
-  for (const id of ids) useProjectStore.getState().followRecessColumn(id);
+  gestureStartItems.clear();
+  for (const id of ids) {
+    // T85 F5: the column as the drag found it, then the plan for where the hand let go (path-independent).
+    const items = start.get(id);
+    if (items) {
+      useProjectStore.setState((st) => ({
+        units: st.units.map((u) => (u.id !== id ? u : {
+          ...u,
+          params: { ...u.params, sections: [{ ...u.params.sections[0], items }] },
+        })),
+      }));
+    }
+    useProjectStore.getState().followRecessColumn(id);
+  }
 });
 
 // Cache to localStorage on every change (fallback only — the DB stays primary)

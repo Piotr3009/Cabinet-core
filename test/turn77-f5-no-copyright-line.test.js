@@ -451,6 +451,9 @@ export const NEW_FILES = [
   // T85 F1 (30.10.2026): KIT_RECESS.lsp D29 to D31, the recess column follows the recess (L1)
   'test/turn85-f01-lisp.test.js',
   'scripts/t78-classify.d/f50-t85-f01.mjs',
+  // T85 F2 (30.10.2026): the engine mirrors D29 and D30, the RETURNs on Cabineo (L1)
+  'test/turn85-f02-engine.test.js',
+  'scripts/t78-classify.d/f50-t85-f02.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

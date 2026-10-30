@@ -78,10 +78,14 @@ import { insetCupFromEdge, insetHingeSpec, insetPlateSetback } from './hingeLadd
 // Chat fix 28.10.2026 (KIT_RECESS.lsp D22, D25): the recess column's law
 // (extensionOf to recessColFillers) and the BACK's holes on its pieces
 // (recessPieceAt).
+// T85 F2 (KIT_RECESS.lsp D29, D30): recessColWalls to recessReturnSkinFindings, the column's walls follow the
+// recess and the RETURNs stand on Cabineo.
 import {
   extensionCarcass, extensionDrills, extensionSummary, extensionVerdict, withExtensionRefusal,
   endPanelsFollowSides, RECESS_WINDOW_LAYER,
   extensionOf, recessColRefusal, recessColDrawerDepth, recessColFillers, recessPieceAt,
+  recessColWalls, recessColWallP, recessColDividerCount, recessColZone, recessColBoxSpan, recessColWallFillers,
+  recessReturnHardwareLines, recessReturnSkinFindings,
 } from './extension.js';
 import { applySiteTrim } from './siteTrim.js';
 // T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
@@ -5501,27 +5505,60 @@ export function computeCabinet(params, profileOverride) {
       return refuse('RECESS DRAWERS: the column\'s top drawer is the shoe drawer, so no board stands over it for the '
         + 'recess to close on; the drawers keep the carcass\'s depth.');
     }
-    const walls = verticalItems.length === 2 && set.zone === 1 && bays.length === 3;
+    // ─── T85 F2 · THE COLUMN FOLLOWS THE RECESS (KIT_RECESS.lsp D29) ─────────
+    // The owner, 30.10.2026: *"jak mamy szuflady w recess to juz sie tak nie przesuwa"*; *"jesli wneka wychodzi poza
+    // szafe to zostaje jeden divider ... szuflady sa mniej glebokie do plytszej szafy a polka zostaje w ksztalcie
+    // litery L"*; *"2 - nie, tutaj musi byc minimum 30 mm"*. The walls are the band's edges wherever the carcass
+    // stands (recessColWalls): a DIVIDER on an edge inside by the minimum, the carcass SIDE where the edge is outside
+    // the carcass, the full-height RETURN where it is inside by less. The unit's dividers must be the DIVIDER walls
+    // (two, or one), the column the bay between the walls (recessColZone), each divider on its edge.
+    const minside = Number(notchProfile(P)['recess.minColumnSide']) || 30;
+    const cwalls = recessColWalls(W, G, ext.x0, ext.x1, minside);
+    const nDiv = recessColDividerCount(cwalls);
+    const zoneWanted = recessColZone(cwalls);
+    const walls = nDiv > 0 && verticalItems.length === nDiv && bays.length === nDiv + 1 && set.zone === zoneWanted;
     const [li, ri] = verticalItems;
     // D26 (the owner's walk, 28.10.2026): the sentence names what is wrong, a divider too many or too few, or the
     // drawers in a side column, so the press it points to ("Align both with recess") is never the wrong one.
-    const notWalls = verticalItems.length !== 2
-      ? `RECESS DRAWERS: the drawers go into the recess between exactly two dividers, one on each of its edges; this `
-        + `cabinet has ${verticalItems.length}, so they keep the carcass's depth.`
-      : `RECESS DRAWERS: the drawers go into the recess in the column between the two dividers (Column 2); these stand `
-        + `in Column ${set.zone + 1}, so they keep the carcass's depth.`;
+    // D29: with one DIVIDER wall the count is one, and the column is the bay beside the SIDE or the RETURN.
+    let notWalls;
+    if (nDiv === 2) {
+      notWalls = verticalItems.length !== 2
+        ? `RECESS DRAWERS: the drawers go into the recess between exactly two dividers, one on each of its edges; this `
+          + `cabinet has ${verticalItems.length}, so they keep the carcass's depth.`
+        : `RECESS DRAWERS: the drawers go into the recess in the column between the two dividers (Column 2); these stand `
+          + `in Column ${set.zone + 1}, so they keep the carcass's depth.`;
+    } else if (nDiv === 1) {
+      notWalls = verticalItems.length !== 1
+        ? `RECESS DRAWERS: the recess reaches past a side of the carcass, or ends within ${minside} mm of it, so the `
+          + `drawers go into it beside one divider, on its other edge; this cabinet has ${verticalItems.length}, so they `
+          + `keep the carcass's depth.`
+        : `RECESS DRAWERS: the drawers go into the recess in Column ${zoneWanted + 1}, beside the divider on its edge; `
+          + `these stand in Column ${set.zone + 1}, so they keep the carcass's depth.`;
+    } else {
+      notWalls = `RECESS DRAWERS: the recess reaches both sides of the carcass, or ends within ${minside} mm of them; no `
+        + `divider stands on its edges, so the drawers keep the carcass's depth.`;
+    }
+    // The divider on the left edge is the first, on the right edge the last (one divider: the edge its wall is on).
+    const lDiv = recessColWallP(cwalls[0], 'DIVIDER') ? li : null;
+    const rDiv = recessColWallP(cwalls[1], 'DIVIDER') ? (nDiv === 2 ? ri : li) : null;
     const said = walls
-      ? recessColRefusal(W, H, G, ext.x0, ext.x1, ext.z0, ext.z1, xOf(li), xOf(ri), slotOf(ri), set.partY, notchProfile(P))
+      ? recessColRefusal(W, H, G, ext.x0, ext.x1, ext.z0, ext.z1, lDiv ? xOf(lDiv) : null, rDiv ? xOf(rDiv) : null,
+        slotOf(rDiv || lDiv), set.partY, notchProfile(P))
       : notWalls;
-    if (said) return refuse(said);
+    if (said) return { ...refuse(said), one: nDiv === 1 };
     return {
       zone: set.zone,
       ex0: ext.x0,
       ex1: ext.x1,
       ed: ext.d,
       capy: set.partY,
-      dividers: ['VPART-1', 'VPART-2'],
+      dividers: nDiv === 2 ? ['VPART-1', 'VPART-2'] : ['VPART-1'],
       cap: 'PARTITION',
+      // T85 F2 (D29, D30): the walls, the box's span between them, and the joint system the RETURNs take.
+      walls: cwalls,
+      span: recessColBoxSpan(cwalls),
+      system: jointsAsked,
     };
   })();
   if (recessColumn?.refused) {
@@ -5530,7 +5567,10 @@ export function computeCabinet(params, profileOverride) {
       zone: recessColumn.zone,
       message: /dividers do not stand/.test(recessColumn.refused)
         // D26 (the owner's walk, 28.10.2026): one press stands the pair; the sentence says where it is.
-        ? `${recessColumn.refused} Double-click a divider: "Align both with recess" stands the two on the recess's edges, at the face.`
+        ? (recessColumn.one
+          // T85 F2 (D29 b): one divider, the press stands it on its nearer edge (D26, recessColDividerX).
+          ? `${recessColumn.refused} Double-click the divider: "Align with recess" stands it on the recess's edge, at the face.`
+          : `${recessColumn.refused} Double-click a divider: "Align both with recess" stands the two on the recess's edges, at the face.`)
         : recessColumn.refused,
     });
   }
@@ -5541,6 +5581,21 @@ export function computeCabinet(params, profileOverride) {
     const dl = snapDrawerDepth(recessColDrawerDepth(usable, recessCol.ed), DR.depthSteps);
     if (dl != null) set.dl = dl;
     set.recess = true;
+    // T85 F2 (D29): THE BOX RUNS WALL TO WALL (recessColBoxSpan). The walls are the column's own, so no DP stands
+    // in it (D22: the drawers stand the slot clear; the doors-and-dividers question is the owner's, parked 30.10);
+    // the light is the span, every number of the box the column law's own (identical where the span is the bay).
+    const [sx0, sx1] = recessCol.span;
+    const light = sx1 - sx0;
+    set.dpL = false;
+    set.dpR = false;
+    set.from = sx0;
+    set.boxW = light - DR.boxWidthClearance;
+    set.frontW = set.boxW + DR.frontOversize;
+    set.boxFrontLen = light - Math.max(0, DR.boxFrontBoards - DR.boxFrontCarcassBoards) * GB - DR.boxFrontClearance;
+    set.bottomW = set.boxFrontLen + DR.bottomOversize;
+    // A RETURN wall carries the runner where it stands (D29 b).
+    if (recessColWallP(recessCol.walls[0], 'RETURN')) set.bounds = { ...set.bounds, left: 'RETURN-L' };
+    if (recessColWallP(recessCol.walls[1], 'RETURN')) set.bounds = { ...set.bounds, right: 'RETURN-R' };
   }
   // D27 · a column held for the recess that the recess did not take is dropped now, in the old words: the Check
   // has said why the recess did not take it (#49), and this says that the carcass alone cannot carry it.
@@ -6030,7 +6085,8 @@ export function computeCabinet(params, profileOverride) {
     for (const set of columnDrawerSets) {
       // Turn 33 (F6): the box rides the DP wall where one stands — the same
       // `DP.inset + G` the full-width zone's boxLeftX has always taken.
-      const boxLeftX = set.bay.from + (set.dpL ? DP.inset + G : 0) + DR.boxWidthClearance / 2;
+      // T85 F2 (D29): a recess column's box from its own wall (`set.from`, the span), every other column's bay.
+      const boxLeftX = (set.from ?? set.bay.from) + (set.dpL ? DP.inset + G : 0) + DR.boxWidthClearance / 2;
       const colBoxSetback = DR.setback + frontT;
       const boxZFront = D - colBoxSetback;
       const common = { thickness: GB, edgeCode: codes.none, edgeLen: 0 };
@@ -6105,7 +6161,7 @@ export function computeCabinet(params, profileOverride) {
           edgeCode: codes.all, edgeLen: metres(2 * set.frontW + 2 * dfH),
           box: {
             // Turn 33 (F6): the face follows the box off the DP wall.
-            x: set.bay.from + (set.dpL ? DP.inset + G : 0)
+            x: (set.from ?? set.bay.from) + (set.dpL ? DP.inset + G : 0)
               + DR.boxWidthClearance / 2 - (DR.frontOversize / 2),
             y: dfY,
             z: D - DR.setback - frontT,
@@ -6204,8 +6260,10 @@ export function computeCabinet(params, profileOverride) {
       // (recessColFillers). The drawers stand the slot clear of the hinges,
       // so no DP stands in this column (dpL and dpR are a carcass side's).
       if (set.recess && recessCol) {
-        const fillers = recessColFillers(W, D, G, recessCol.ex0, recessCol.ex1, set.partY,
-          DR.setback + DP.fillerFrontOffset);
+        // T85 F2 (D29): beside a DIVIDER wall only (none at a SIDE, none in a RETURN's dead pocket).
+        const fillers = recessCol.walls
+          ? recessColWallFillers(W, D, G, recessCol.ex0, recessCol.ex1, set.partY, DR.setback + DP.fillerFrontOffset, recessCol.walls)
+          : recessColFillers(W, D, G, recessCol.ex0, recessCol.ex1, set.partY, DR.setback + DP.fillerFrontOffset);
         for (const [name, [x0, y0, z0, x1, y1, z1]] of Object.entries(fillers)) {
           const fw = x1 - x0;
           const fh = z1 - z0;
@@ -9727,6 +9785,9 @@ export function computeCabinet(params, profileOverride) {
   // dia 15 holes per pocket from the outside face (SKYLON_JOINTS_CABINEO.lsp
   // section D.8 and D.4).
   if (cabineoPlan) drills.push(...cabineoDrills(cabineoPlan));
+  // T85 F2 (KIT_RECESS.lsp D30, the owner: *"1 - cabineo"*): the RETURNs' dia 15 lobes from their outside face and
+  // the dia 5 holes in the board each stands on. Only a recess column's.
+  if (extensionCut?.returnCabineo) drills.push(...extensionCut.returnCabineo.drills);
   // T79 F14 · the box sides' dia 5 holes and, under drill15, the walls' dia 15.
   if (boxCabineoPlan) drills.push(...cabineoBoxDrills(boxCabineoPlan));
   // ─── T82 F5 · THE HAWA POCKET'S HOLES AND GROOVES ────────────────────────
@@ -10442,6 +10503,15 @@ export function computeCabinet(params, profileOverride) {
             // (KIT_RECESS.lsp D22) moves nothing.
             const vp = panels.find((x) => x.id === bound);
             const v = px + colBoxSetback - (D - (vp.box.z + vp.box.d));
+            // T85 F2 (KIT_RECESS.lsp D29 b): a RETURN wall stands behind the BACK's inner face only; a hole in front of
+            // it, over the dead pocket, has no board under it and is the joiner's packer (the NOTE says so).
+            // Its own frame is its INSIDE face's (D30: x from its front end, the Cabineo pockets reflected for the
+            // export), so the row is v from its front whichever side of the column it stands on.
+            if (vp.part === 'RECESS-RETURN') {
+              if (v < -1e-6 || v > vp.box.d + 1e-6) continue;
+              addDrill(bound, 'runner', RN.layer, v, rel, RN.holeDiameter);
+              continue;
+            }
             addDrill(bound, 'runner', RN.layer, bound === set.bounds.left ? vp.box.d - v : v, rel, RN.holeDiameter);
           }
         }
@@ -11534,6 +11604,10 @@ export function computeCabinet(params, profileOverride) {
     if (conn) hw('cabineo_connector', conn.label, conn.qty, conn.unit, conn.spec, conn.spec_label);
     const cap = cabHw.find((l) => l.role === 'cabineo_cap');
     if (cap) hw('cabineo_cap', cap.label, cap.qty, cap.unit, cap.spec, cap.spec_label);
+  }
+  // T85 F2 (KIT_RECESS.lsp D30): the RETURNs' connectors and caps, a line of their own (the unit's Cabineo or 12).
+  if (extensionCut?.returnCabineo) {
+    for (const l of recessReturnHardwareLines(extensionCut.returnCabineo)) hw(l.role, l.label, l.qty, l.unit, l.spec, l.spec_label);
   }
   // T79 F14 · the drawer boxes' connectors, 4 or 8 a box, a line of their own.
   if (boxCabineoPlan) {
@@ -12881,6 +12955,26 @@ export function computeCabinet(params, profileOverride) {
   // 15.10.2026 · BUR re-origined from its new back edge, the grown sides' back
   // pin column stepped back over the band (KIT_RECESS.lsp D12).
   if (extensionCut) {
+    // T85 F2 (KIT_RECESS.lsp D30): the skin check on each RETURN, its outside-face pockets against what the drilling
+    // pass put into its inside face (a full-height RETURN's runner row), cabineoVerdict's own law asked of it.
+    for (const f of recessReturnSkinFindings(extensionCut.returnCabineo, panels, drills, P)) {
+      warnings.push({ code: 'RECESS_RETURN_SKIN', panel: f.panel, message: `RECESS: ${f.message}` });
+    }
+    // T85 F2 (D29 b): THE DEAD POCKET beside a RETURN wall, the Check's NOTE (#50, never red). The owner: *"2 - nie,
+    // tutaj musi byc minimum 30 mm"*.
+    for (const [x0, x1] of extensionCut.deadPockets || []) {
+      const left = x0 <= G + 1e-6;
+      const [side, ret] = left ? ['BUL', 'RETURN-L'] : ['BUR', 'RETURN-R'];
+      warnings.push({
+        code: 'RECESS_DEAD_POCKET',
+        zone: recessCol?.zone ?? null,
+        message: `RECESS DRAWERS: the recess ends ${roundTo(x1 - x0, 1)} mm from ${side}, under the ${
+          Number(notchProfile(P)['recess.minColumnSide']) || 30} mm a divider needs beside a side, so ${ret} stands on its `
+          + `edge as the column's wall, from the BOTTOM to the recess's top; the strip between ${side} and ${ret} is a dead pocket, `
+          + 'closed by the BOTTOM and the board over the drawers. The runner on that side is drilled into the RETURN '
+          + `where it stands; its holes in front of the RETURN are packed off ${side} by hand.`,
+      });
+    }
     extensionDrills({
       cut: extensionCut, panels, drills, profile: P,
     });

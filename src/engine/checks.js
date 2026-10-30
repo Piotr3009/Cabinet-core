@@ -375,6 +375,14 @@ export const CHECKS = Object.freeze([
   // (`RECESS_DRAWERS_SHALLOW`). The next free number. YELLOW: nothing is
   // refused, the drawers are cut as they are; a person decides.
   { n: 49, level: 'yellow', label: 'Drawers in front of a recess keep the carcass\'s depth' },
+  // ─── T85 F2 · THE DEAD POCKET BESIDE A RECESS COLUMN'S RETURN ────────────
+  // KIT_RECESS.lsp D29 b. The owner, 30.10.2026: *"2 - nie, tutaj musi byc
+  // minimum 30 mm"*: an edge of the band nearer its side than 30 takes no
+  // divider; the full-height RETURN stands there as the column's wall, and
+  // the strip between the side and it is a dead pocket closed above and below
+  // by the two L boards. A NOTE (never red, never a gate): nothing is refused,
+  // a person knows. Read off the engine's own RECESS_DEAD_POCKET.
+  { n: 50, level: 'note', label: 'Dead pocket beside a recess column\'s RETURN' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -776,10 +784,20 @@ export function runChecks({
         FRONT_DECORATION_REED_SKIN: 46, FRONT_DECORATION_REED_REMAINDER: 46,
         // Chat fix 28.10.2026 · #49: drawers before a recess that keep the carcass's depth (KIT_RECESS.lsp D22).
         RECESS_DRAWERS_SHALLOW: 49,
+        // T85 F2 · #50: the dead pocket beside a RETURN wall (KIT_RECESS.lsp D29 b), a note.
+        RECESS_DEAD_POCKET: 50,
       }[wn.code];
       if (!n) continue;
       if (n === 49) {
         out.push(finding(49, 'yellow', at(null, {
+          message: `${unitNum}: ${wn.message}`,
+          subject: { unitId, editor: 'cabinet' },
+          ...(wn.zone == null ? {} : { zone: wn.zone }),
+        })));
+        continue;
+      }
+      if (n === 50) {
+        out.push(finding(50, 'note', at(null, {
           message: `${unitNum}: ${wn.message}`,
           subject: { unitId, editor: 'cabinet' },
           ...(wn.zone == null ? {} : { zone: wn.zone }),

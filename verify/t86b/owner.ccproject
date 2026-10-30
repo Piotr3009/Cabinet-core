@@ -1,0 +1,3533 @@
+{
+ "format": "cabinet-core-project",
+ "version": 1,
+ "saved_at": "2026-10-30T22:15:36.050Z",
+ "app": {
+  "name": "Cabinet Core",
+  "build": "2026-10-30 20:15 UTC · c6459cb"
+ },
+ "project": {
+  "id": "loc_cdgqsgo",
+  "name": "Test qwardrobe",
+  "number": "0002",
+  "client": "",
+  "room": {
+   "schema": 2,
+   "height": 2500,
+   "corners": [
+    {
+     "x": 0,
+     "y": 0
+    },
+    {
+     "x": 4000,
+     "y": 0
+    },
+    {
+     "x": 4000,
+     "y": 3000
+    },
+    {
+     "x": 0,
+     "y": 3000
+    }
+   ],
+   "openings": []
+  },
+  "design": {
+   "schema": 2,
+   "carcass": {
+    "types": [
+     {
+      "id": "c1",
+      "label": "Carcass 1",
+      "material_id": "mat_mfc18_oak",
+      "finish_id": "egger:H3325_28",
+      "source": "egger"
+     }
+    ]
+   },
+   "depth": null,
+   "thickness": {
+    "board": 18,
+    "custom": null,
+    "slots": {
+     "carcass1": {
+      "measured": null,
+      "confirmed": false
+     },
+     "carcass2": {
+      "measured": null,
+      "confirmed": false
+     },
+     "carcass3": {
+      "measured": null,
+      "confirmed": false
+     },
+     "front1": {
+      "measured": null,
+      "confirmed": false
+     },
+     "front2": {
+      "measured": null,
+      "confirmed": false
+     },
+     "box": {
+      "measured": null,
+      "confirmed": false
+     }
+    }
+   },
+   "hardware": {
+    "hinges": null,
+    "runners": null,
+    "shelfSleeve": "silver",
+    "handles": null
+   },
+   "hinges": {
+    "standard": null,
+    "system": null,
+    "finish": null,
+    "plate": null
+   },
+   "drawerBoxes": {
+    "mode": null
+   },
+   "lighting": {
+    "on": false,
+    "temperature": null,
+    "switch": null,
+    "items": []
+   },
+   "cncCorner": "dogbone",
+   "runners": {
+    "system": null,
+    "variant": "S"
+   },
+   "joints": {
+    "system": null
+   },
+   "shelves": {
+    "pinSetback": null
+   },
+   "hingeTwoBelow": null,
+   "worktops": [],
+   "fronts": {
+    "style": "F",
+    "handle": {
+     "type": "bar",
+     "centres": 150
+    },
+    "shakerFrame": null,
+    "handleOffsets": {
+     "tall-door": {
+      "x": -10,
+      "y": -90
+     }
+    },
+    "glassKind": null,
+    "hingeFamily": null,
+    "types": [
+     {
+      "id": "f1",
+      "label": "Front 1",
+      "source": "spray",
+      "colour": {
+       "hex": "#1d1e33",
+       "name": "5004 Black Blue",
+       "system": "RAL"
+      },
+      "material_id": "mat_mdf18",
+      "finish_id": null,
+      "style": "F"
+     }
+    ]
+   },
+   "doorStyles": [],
+   "colour": {
+    "front": {
+     "hex": "#1d1e33",
+     "name": "5004 Black Blue",
+     "system": "RAL"
+    },
+    "carcass": null
+   },
+   "infill": {
+    "sideWidth": 40
+   },
+   "finish": {
+    "carcass": null,
+    "front": null
+   },
+   "endPanel": {
+    "height": "floor",
+    "thickness": 18,
+    "applyToAll": true
+   },
+   "runMaterials": {
+    "infill": {
+     "sameAsFronts": true,
+     "material_id": null
+    },
+    "plinth": {
+     "sameAsFronts": true,
+     "material_id": null
+    },
+    "end_panel": {
+     "sameAsFronts": true,
+     "material_id": null
+    },
+    "mask": {
+     "sameAsFronts": true,
+     "material_id": null
+    }
+   },
+   "heights": {
+    "base": 770,
+    "wall": 720,
+    "tall": 2150,
+    "wallMount": 1500,
+    "toeKick": 100
+   },
+   "projectType": "wardrobe",
+   "scope": "three",
+   "ceiling": null,
+   "joinery": null,
+   "sheen": 30
+  },
+  "wallSlopes": [
+   {
+    "id": "recess_c6rx612",
+    "kind": "recess",
+    "wall": 0,
+    "x_mm": 1550,
+    "width": 900,
+    "depth": 300,
+    "bottom_mm": null,
+    "top_mm": null
+   }
+  ],
+  "ledSpec": {
+   "mode": "channel",
+   "channelWidth": 18,
+   "wattsPerMetre": 20
+  },
+  "lightRig": {
+   "preset": "showroom",
+   "lamps": {
+    "ceiling": {
+     "on": true,
+     "strength": 1
+    },
+    "leftWall": {
+     "on": false,
+     "strength": 1
+    },
+    "rightWall": {
+     "on": true,
+     "strength": 1
+    },
+    "facing": {
+     "on": true,
+     "strength": 1
+    }
+   }
+  },
+  "sceneLight": {
+   "scale": 1
+  },
+  "titleBlock": {},
+  "jc_tenant_id": null,
+  "jc_project_id": null,
+  "assignments": {
+   "schema": 2,
+   "base": {},
+   "overrides": {},
+   "customParts": [],
+   "auto": {}
+  }
+ },
+ "units": [
+  {
+   "id": "u_tv0vzil",
+   "type": "CORNER_L_WARDROBE",
+   "position": {
+    "wall": 0,
+    "x_mm": 10,
+    "rotation_deg": 0
+   },
+   "params": {
+    "type": "CORNER_L_WARDROBE",
+    "width": 1000,
+    "height": 2150,
+    "depth": 1000,
+    "board_t": 18,
+    "front_t": 18,
+    "front_type": null,
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": 1400,
+    "hinge": "L",
+    "doors": false,
+    "arm_mm": 568,
+    "corner_side": "left",
+    "corner_doors": "bifold",
+    "unit_num": "CX01",
+    "front_style_schema": 1,
+    "height_custom": false,
+    "leg_height": 100,
+    "plinth": true,
+    "sections": [
+     {
+      "width_mm": 1000,
+      "items": []
+     }
+    ],
+    "materials": {},
+    "top_infill_mm": 0,
+    "side_infill_left_mm": 0,
+    "side_infill_right_mm": 0
+   }
+  }
+ ],
+ "profile": {
+  "schema": 1,
+  "id": "skylon",
+  "label": "Skylon Joinery",
+  "board": {
+   "thickness": 18,
+   "thicknessOptions": [
+    18,
+    22
+   ],
+   "kgM2": {
+    "mfc": {
+     "18": 12,
+     "22": 14.5,
+     "25": 16.5
+    },
+    "mdf_lacquered": {
+     "18": 14,
+     "22": 17,
+     "25": 19
+    }
+   },
+   "defaultKgM2Kind": "mfc",
+   "sprayedKgM2Kind": "mdf_lacquered"
+  },
+  "front": {
+   "thickness": 25,
+   "thicknessOptions": [
+    18,
+    19,
+    25
+   ],
+   "types": {
+    "S": {
+     "label": "Shaker",
+     "frameWidth": 60,
+     "legacyFrameWidth": 70,
+     "frameMin": 10,
+     "frameMax": 200,
+     "recessDepth": 6,
+     "minPanel": 60,
+     "pocketLayer": "SHAKER_PANEL_POCKET"
+    },
+    "H": {
+     "label": "Handleless (J-groove)",
+     "grooveDepth": 30
+    },
+    "F": {
+     "label": "Flat"
+    },
+    "GL": {
+     "label": "Glass",
+     "apertureLayer": "GLASS_APERTURE"
+    }
+   },
+   "glass": {
+    "kinds": [
+     "clear",
+     "smoke",
+     "reeded"
+    ],
+    "default": "smoke",
+    "paneMm": 4,
+    "labels": {
+     "clear": "Clear",
+     "smoke": "Smoked",
+     "reeded": "Reeded"
+    }
+   },
+   "defaultType": "S",
+   "decoration": {
+    "ORNATE_A_1": {
+     "boardMm": 18,
+     "referenceWidthMm": 600,
+     "referenceHeightMm": 800,
+     "outerFrameMm": 60,
+     "innerFrameMm": 60,
+     "innerRadiusMm": 150,
+     "secondaryRadiusMm": 3,
+     "stepWidthsMm": [
+      12,
+      8,
+      6,
+      4
+     ],
+     "stepDepthsMm": [
+      3,
+      6,
+      9,
+      12
+     ],
+     "cornerDepthMm": 3,
+     "ornamentReliefMm": 2.5,
+     "ornamentScale": 1,
+     "mirror": false,
+     "variant": 1,
+     "ornament": true
+    },
+    "ORNATE_A_2": {
+     "boardMm": 18,
+     "referenceWidthMm": 600,
+     "referenceHeightMm": 800,
+     "outerFrameMm": 60,
+     "innerFrameMm": 60,
+     "innerRadiusMm": 150,
+     "secondaryRadiusMm": 3,
+     "stepWidthsMm": [
+      12,
+      8,
+      6,
+      4
+     ],
+     "stepDepthsMm": [
+      3,
+      6,
+      9,
+      12
+     ],
+     "cornerDepthMm": 3,
+     "ornamentReliefMm": 2.5,
+     "ornamentScale": 1,
+     "mirror": false,
+     "variant": 2,
+     "ornament": true
+    },
+    "ORNATE_A_3": {
+     "boardMm": 18,
+     "referenceWidthMm": 600,
+     "referenceHeightMm": 800,
+     "outerFrameMm": 60,
+     "innerFrameMm": 60,
+     "innerRadiusMm": 110,
+     "secondaryRadiusMm": 18,
+     "stepWidthsMm": [
+      12,
+      8,
+      6,
+      4
+     ],
+     "stepDepthsMm": [
+      3,
+      6,
+      9,
+      12
+     ],
+     "cornerDepthMm": 3,
+     "ornamentReliefMm": 2.5,
+     "ornamentScale": 1,
+     "mirror": false,
+     "variant": 3,
+     "ornament": true
+    },
+    "ORNATE_A_4": {
+     "boardMm": 18,
+     "referenceWidthMm": 600,
+     "referenceHeightMm": 800,
+     "outerFrameMm": 60,
+     "innerFrameMm": 60,
+     "innerRadiusMm": 150,
+     "secondaryRadiusMm": 3,
+     "stepWidthsMm": [
+      12,
+      8,
+      6,
+      4
+     ],
+     "stepDepthsMm": [
+      3,
+      6,
+      9,
+      12
+     ],
+     "cornerDepthMm": 3,
+     "ornamentReliefMm": 2.5,
+     "ornamentScale": 1,
+     "mirror": false,
+     "variant": 4,
+     "ornament": false
+    },
+    "ornateSolid": {
+     "sampleMm": 1,
+     "chordMm": 2,
+     "chordErrorMm": 0.06
+    },
+    "ornateReference": {
+     "sampleMm": 2,
+     "chordMm": 2,
+     "chordErrorMm": 0.06,
+     "fullSampleMm": 1,
+     "leafTargetBytes": 4000000,
+     "ornamentModel": null
+    },
+    "G": {
+     "grooveCutter": "v",
+     "grooveWidthMm": 4,
+     "grooveDepthMm": 3,
+     "groovePitchMm": 80,
+     "grooveInsetMm": 60,
+     "grooveDirection": "vertical"
+    },
+    "GF": {
+     "frameMm": 60,
+     "recessDepthMm": 6,
+     "grooveCutter": "v",
+     "grooveWidthMm": 4,
+     "grooveDepthMm": 3,
+     "groovePitchMm": 80,
+     "grooveInsetMm": 10,
+     "grooveDirection": "vertical"
+    },
+    "A": {
+     "boardMm": 30,
+     "frameMm": 60,
+     "recessDepthMm": 18
+    },
+    "AH": {
+     "boardMm": 30,
+     "frameMm": 60,
+     "recessDepthMm": 18
+    },
+    "FL": {
+     "grooveCutter": "ballnose",
+     "fluteDiameterMm": 12,
+     "grooveDepthMm": 3,
+     "groovePitchMm": 20,
+     "grooveInsetMm": 50,
+     "grooveDirection": "vertical"
+    },
+    "AM": {
+     "mouldingInsetMm": 60,
+     "mouldingWidthMm": 20,
+     "mouldingProjectionMm": 8,
+     "mitreDeg": 45
+    }
+   },
+   "decorationMinSkinMm": 3,
+   "flute": {
+    "profile": "reed",
+    "reedDiameterMm": 20,
+    "reedLadderMm": [
+     16,
+     20,
+     25
+    ],
+    "reedNoteUnderValleyMm": 10
+   }
+  },
+  "carcass": {
+   "sideDepthBoards": 1,
+   "topWidthBoards": 2,
+   "topDepthBoards": 1,
+   "backCoversFullFace": true,
+   "shelfWidthBoards": 2,
+   "shelfWidthClearance": 4,
+   "shelfDepthBoards": 1,
+   "shelfDepthClearance": 20,
+   "shelfSetbackMm": 10,
+   "dividerSetbackMm": 10,
+   "interiorSetback": 20
+  },
+  "handles": {
+   "inset": 50,
+   "shakerMinFrame": 30,
+   "holeDiameter": 5,
+   "layer": "HANDLES_5MM",
+   "barCentres": [
+    96,
+    128,
+    160,
+    192,
+    224
+   ],
+   "defaultCentres": 128,
+   "bar": {
+    "rodDiameter": 12,
+    "standoff": 32,
+    "postDiameter": 10,
+    "overhang": 20
+   },
+   "knob": {
+    "diameter": 30,
+    "standoff": 22,
+    "stemDiameter": 8
+   },
+   "default": {
+    "type": "knob"
+   },
+   "finish": "gold",
+   "jpull": {
+    "runMm": 500,
+    "fromBottomMm": 700,
+    "rampR": 25,
+    "lipT": 4.212,
+    "slotW": 10,
+    "slotDepth": 40,
+    "slotR": 5,
+    "rearLeg": 3.788,
+    "reliefMm": 30,
+    "layer": "JPULL_EDGE"
+   }
+  },
+  "appliances": {
+   "faceWidth": {
+    "oven": 598,
+    "dw": 594
+   },
+   "defaultInsetMm": 3
+  },
+  "checks": {
+   "tallNoFixHeightMm": 1200,
+   "openGapFromMm": 20,
+   "openGapToMm": 80,
+   "wideFrontMm": 600
+  },
+  "doors": {
+   "minNeighbourGapMm": 3,
+   "mirror": {
+    "marginPerSide": 20
+   },
+   "maxNeighbourGapMm": 6,
+   "neighbourReachMm": 200,
+   "clearance": {
+    "front": 1.5,
+    "endPanel": 3,
+    "infill": 3,
+    "appliance": 0,
+    "wall": 3,
+    "none": 1.5,
+    "corner": 3
+   },
+   "widthDeduction": 4,
+   "singleDoorMaxWidth": 700,
+   "gap": 3,
+   "doubleTotalGap": 6,
+   "minLeafWidth": 200,
+   "defaultHinge": "L",
+   "openAngle": 99,
+   "openAngleAtWall": 90
+  },
+  "corner": {
+   "postMm": 50,
+   "overlap": "adjacent",
+   "leafMinMm": 200,
+   "wallLeafMaxMm": 700,
+   "bifold": {
+    "angleDeg": 60,
+    "label": "CLIP top 60 degree bi-fold corner hinge"
+   },
+   "spaceCorner": {
+    "label": "Blum SPACE CORNER kit",
+    "rowsMin": 2,
+    "rowsMax": 4,
+    "bracketMm": 60
+   },
+   "blindPullout": {
+    "label": "Hafele blind corner pull-out",
+    "trays": 2,
+    "trayMm": 20,
+    "clearMm": 10
+   },
+   "carousel": {
+    "label": "Carousel (pots)",
+    "trays": 2,
+    "trayMm": 15,
+    "postMm": 25,
+    "clearMm": 10
+   }
+  },
+  "notch": {
+   "defaults": {
+    "widthMm": 200,
+    "depthMm": 200,
+    "heightMm": 0
+   },
+   "edgeDefaults": {
+    "edge": "BB",
+    "depthMm": 20,
+    "heightMm": 120
+   },
+   "obstacleClearanceMm": 10,
+   "minInteriorMm": 100
+  },
+  "recess": {
+   "handEdgeMm": 1
+  },
+  "joints": {
+   "system": "puzzle",
+   "dowel": {
+    "diaMm": 6,
+    "edgeDepthMm": 20,
+    "faceDepthMm": 12,
+    "pitchMm": 250,
+    "minPerJoint": 2,
+    "endOffsetMm": 50,
+    "confirmed": false,
+    "layers": {
+     "face": "DOWEL_8MM",
+     "edge": "DOWEL_EDGE_8MM"
+    }
+   },
+   "cabineo": {
+    "mounting": "flush",
+    "machining": "drill15",
+    "skimMm": 0.5,
+    "holeDepthMm": null,
+    "pitchMm": 250,
+    "endOffsetMm": 50,
+    "minPerJoint": 2,
+    "caps": "all",
+    "confirmed": true,
+    "layers": {
+     "pocket": {
+      "drill15": "CABINEO_POCKET_15MM",
+      "cutter10": "CABINEO_POCKET_10MM",
+      "cutter12": "CABINEO_POCKET_12MM"
+     },
+     "recess": "CABINEO_RECESS",
+     "hole": "CABINEO_HOLE_5MM"
+    },
+    "box": {
+     "variant": "12",
+     "onePerJointUpToMm": 100,
+     "fromEdgeMm": 25
+    }
+   }
+  },
+  "island": {
+   "defaults": {
+    "w": 1800,
+    "d": 900
+   }
+  },
+  "hinges": {
+   "standard": 3,
+   "standardOptions": [
+    2,
+    3
+   ],
+   "holeDiameter": 5,
+   "platePilotD": 5,
+   "platePilotOptions": [
+    3,
+    5
+   ],
+   "holePairOffset": 16,
+   "minSpacingMm": 60,
+   "sideAdjustMm": 1.5,
+   "spacingBlocks": true,
+   "xFromFrontEdge": 37,
+   "layer": "HINGES_5MM",
+   "endOffset": 100,
+   "slopeApexMinMm": 150,
+   "twoBelowMm": null,
+   "rules": {
+    "base": {
+     "mode": "base",
+     "secondFromTop": 300
+    },
+    "tall": {
+     "mode": "tall",
+     "sixHingeMinHeight": 1600,
+     "innerBelow": 3,
+     "innerAtOrAbove": 4
+    },
+    "low": {
+     "mode": "low",
+     "twoHingeMaxHeight": 800,
+     "threeHingeMaxHeight": 1200,
+     "innerAtOrAbove": 2
+    },
+    "sink": {
+     "mode": "sink",
+     "secondFromTop": 300,
+     "topFromTop": 150
+    }
+   },
+   "cups": {
+    "diameter": 35,
+    "xFromHingeEdge": 21.5,
+    "layer": "FRONT_HINGES_35MM",
+    "screwDiameter": 3,
+    "screwOffsetX": 9.5,
+    "screwOffsetY": 23,
+    "screwLayer": "FRONT_HINGES_3MM",
+    "baseOffsets": {
+     "bottom": 100,
+     "upperFromTop": 297,
+     "topFromTop": 97
+    },
+    "sinkOffsets": {
+     "bottom": 100,
+     "upperFromTop": 297,
+     "topFromTop": 147
+    }
+   }
+  },
+  "shelfHoles": {
+   "diameter": 7.5,
+   "clusterOffsets": [
+    -50,
+    0,
+    50
+   ],
+   "columnFromEdge": 70,
+   "ownerPinSetback": 50,
+   "pinsPerShelf": 4,
+   "layer": "SHELVES_7_5MM",
+   "spanMode": "fullHeight",
+   "followPositions": true,
+   "partitionFace": "L"
+  },
+  "puzzle": {
+   "tabCentresFromEnd": 95,
+   "tabHalfOpening": 19,
+   "tabHalfWidth": 25,
+   "shoulderDepth": 13,
+   "dogboneHalfHeight": 30,
+   "socketHalfWidth": 25.5,
+   "socketOvershoot": 6,
+   "socketHoleOffset": 24.5,
+   "socketHoleDiameter": 7.5,
+   "socketHoleInset": 1,
+   "singleSocketBelow": 264.5,
+   "singleJointMaxDepth": 300,
+   "middleTabBelow": 600,
+   "singleTabAtOrBelow": 300,
+   "screwDiameter": 3,
+   "screwFromEnd": 50,
+   "layers": {
+    "outline": "OUTLINE",
+    "socket": "PUZZLE_SOCKET",
+    "dogbone": "PUZZLE_DOG_BONES",
+    "socketHole": "PUZZLE_HOLES_7_5MM",
+    "screw": "SCREWS_3MM",
+    "cornerMark": "CORNER_4MM"
+   }
+  },
+  "hoverDimensions": {
+   "colour": "#3B82F6",
+   "strokeMm": 0.8,
+   "arrowMm": 6,
+   "arrowAngle": 20,
+   "textMm": 11,
+   "offsetMm": 14,
+   "extensionMm": 4,
+   "gapMm": 2,
+   "minSpanMm": 0.5,
+   "chainDropFraction": 0.25,
+   "label": {
+    "plate": "#1c1c1a",
+    "ink": "#e8e4dc",
+    "plateAlpha": 0.9,
+    "heightM": 0.0572,
+    "pixels": 49,
+    "weight": 300,
+    "padFraction": 0.42,
+    "trackingFraction": 0.09,
+    "bayInk": "#101010",
+    "bayHaloAlpha": 0
+   },
+   "frontLabels": {
+    "widthFromBottom": 0.25,
+    "heightOffsetMm": 75,
+    "heightOffsetMaxShare": 0.4
+   }
+  },
+  "partitionBack": {
+   "fromEnd": 50,
+   "maxPitch": 400,
+   "screwDiameter": 3,
+   "layer": "SCREWS_3MM"
+  },
+  "partitionFoot": {
+   "fromFrontEdge": 99,
+   "fromFarEnd": 50,
+   "screwDiameter": 3,
+   "layer": "SCREWS_3MM"
+  },
+  "labels": {
+   "sheet": {
+    "preset": "L7160",
+    "pageW": 210,
+    "pageH": 297,
+    "cols": 3,
+    "rows": 7,
+    "labelW": 63.5,
+    "labelH": 38.1,
+    "gapX": 2.5,
+    "gapY": 0,
+    "marginLeft": null,
+    "marginTop": null,
+    "insetMm": 2.5
+   },
+   "sheets": {
+    "L7160": {
+     "preset": "L7160",
+     "pageW": 210,
+     "pageH": 297,
+     "cols": 3,
+     "rows": 7,
+     "labelW": 63.5,
+     "labelH": 38.1,
+     "gapX": 2.5,
+     "gapY": 0,
+     "marginLeft": null,
+     "marginTop": null,
+     "insetMm": 2.5
+    },
+    "generic44": {
+     "preset": "generic44",
+     "pageW": 210,
+     "pageH": 297,
+     "cols": 4,
+     "rows": 11,
+     "labelW": 48.3,
+     "labelH": 25.4,
+     "gapX": 0,
+     "gapY": 0,
+     "marginLeft": null,
+     "marginTop": null,
+     "insetMm": 1.5
+    }
+   },
+   "unitColours": [
+    "#d7263d",
+    "#1f6feb",
+    "#e4572e",
+    "#7a3ea1",
+    "#0f9d8a",
+    "#2e8b57",
+    "#8c5e2a",
+    "#e0a100"
+   ],
+   "unitAci": [
+    1,
+    5,
+    30,
+    6,
+    4,
+    3,
+    8,
+    2
+   ],
+   "kinds": {
+    "side": {
+     "label": "SIDE",
+     "colour": "#1b5e20",
+     "order": 1
+    },
+    "topbottom": {
+     "label": "TOP / BOTTOM",
+     "colour": "#6a1b9a",
+     "order": 2
+    },
+    "shelf": {
+     "label": "SHELF",
+     "colour": "#0277bd",
+     "order": 3
+    },
+    "back": {
+     "label": "BACK",
+     "colour": "#546e7a",
+     "order": 4
+    },
+    "other": {
+     "label": "PART",
+     "colour": "#37474f",
+     "order": 5
+    },
+    "drawer": {
+     "label": "DRAWER BOX",
+     "colour": "#8c5e2a",
+     "order": 6
+    },
+    "front": {
+     "label": "FRONT",
+     "colour": "#111111",
+     "order": 7
+    }
+   },
+   "dxf": {
+    "layerPrefix": "LABEL_"
+   },
+   "numberPad": 2,
+   "edgeArrow": {
+    "insetMm": 3,
+    "headMm": 7,
+    "shaftMm": 45,
+    "minPartMm": 60,
+    "lineSpan": 0.8
+   }
+  },
+  "biscuits": {
+   "markLength": 70,
+   "markTool": 4,
+   "gap": 10,
+   "screwDiameter": 3,
+   "edgeMin": 50,
+   "wideThreshold": 700,
+   "markFromEnd": 20,
+   "layer": "BISCUIT_4MM",
+   "screwLayer": "SCREWS_3MM",
+   "concealedReceivers": [
+    "TOP",
+    "BOTTOM"
+   ]
+  },
+  "wardrobe": {
+   "legHeight": 100,
+   "legsPerUnit": 4,
+   "minHeight": 1800,
+   "plinth": {
+    "minMm": 50,
+    "maxMm": 150
+   },
+   "defaults": {
+    "width": 600,
+    "height": 2150,
+    "depth": 568,
+    "railOffset": 1400
+   },
+   "topBox": {
+    "defaults": {
+     "width": 600,
+     "height": 500,
+     "depth": 568
+    },
+    "minHeight": 200,
+    "minWidth": 200
+   },
+   "drawers": {
+    "maxCount": 6,
+    "setback": 50,
+    "frontHeight": 200,
+    "minFrontHeight": 100,
+    "maxFrontHeight": 600,
+    "frontToSideDelta": 36,
+    "shoeSideMm": 80,
+    "firstFrontAdjust": 3,
+    "frontScrewFromBottom": 96.5,
+    "firstFrontScrewFromBottom": 93.5,
+    "gap": 3,
+    "boxSideThickness": 18,
+    "boxWidthClearance": 10,
+    "frontOversize": 4,
+    "boxFrontBoards": 4,
+    "boxFrontCarcassBoards": 2,
+    "boxFrontClearance": 10,
+    "boxFrontHeightDeduction": 15,
+    "boxFrontHeightExtra": 1,
+    "bottomOversize": 13,
+    "innerFront": {
+     "overhangMm": 0,
+     "heightMm": "box side height"
+    },
+    "depthSteps": [
+     240,
+     260,
+     290,
+     310,
+     340,
+     370,
+     390,
+     440,
+     490,
+     540,
+     590,
+     640,
+     690
+    ],
+    "depthAllowance": 20,
+    "partitionClearance": 5,
+    "capSetbackMm": 10,
+    "zoneHeadroom": 200
+   },
+   "drawerPanel": {
+    "inset": 30,
+    "fillerWidth": 30,
+    "fillerFrontOffset": 40,
+    "screwDepth": 99,
+    "screwDiameter": 3
+   },
+   "runners": {
+    "firstRowFromBottom": 38,
+    "holeXPattern": [
+     37,
+     69,
+     293
+    ],
+    "holeDiameter": 3,
+    "layer": "RUNNERS_3MM"
+   },
+   "rail": {
+    "partitionAbove": 40,
+    "topClearance": 50,
+    "bracketScrewDiameter": 3
+   }
+  },
+  "wardrobeAccessories": {
+   "shoeShelf": {
+    "tiltDeg": 15,
+    "stopRail": {
+     "height": 60,
+     "thickness": 18
+    }
+   },
+   "pulldownSuggestMm": 2000,
+   "kits": {
+    "trouser": {
+     "label": "Trouser pull-out",
+     "bodyHeight": 120,
+     "posMm": 900
+    },
+    "tie_rack": {
+     "label": "Tie rack",
+     "bodyHeight": 300,
+     "posMm": 1100
+    },
+    "hooks": {
+     "label": "Hooks",
+     "bodyHeight": 80,
+     "bodyDepth": 60,
+     "posMm": 1500,
+     "count": 4
+    },
+    "valet_rod": {
+     "label": "Valet rod",
+     "bodyHeight": 40,
+     "posMm": 1700
+    },
+    "pulldown_rail": {
+     "label": "Pull-down rail",
+     "bodyHeight": 830,
+     "topDrop": 50,
+     "conero": {
+      "bucket": "hardware",
+      "path": "lifts/conero/",
+      "file": "conero-pantograf-730.glb",
+      "article": "674367/674569"
+     }
+    }
+   }
+  },
+  "baseUnit": {
+   "legHeight": 100,
+   "legsPerUnit": 4,
+   "defaults": {
+    "width": 600,
+    "height": 770,
+    "depth": 558
+   },
+   "plinth": {
+    "minMm": 80,
+    "maxMm": 150
+   }
+  },
+  "projectHeights": {
+   "base": 770,
+   "wall": 720,
+   "tall": 2150,
+   "wallMount": 1500,
+   "toeKick": 100,
+   "min": 100,
+   "max": 3000,
+   "toeKickMin": 0
+  },
+  "projectTypes": {
+   "wardrobe": {
+    "heights": {}
+   },
+   "vanity": {
+    "heights": {
+     "base": 600
+    }
+   }
+  },
+  "joinery": {
+   "types": [
+    {
+     "id": "dogbone",
+     "label": "Dog bones (Skylon puzzle)",
+     "hint": "Tabs and dog-bone relief — the joint every AutoLISP kit is cut for",
+     "geometryKey": "puzzle"
+    }
+   ],
+   "defaultType": "dogbone"
+  },
+  "projectSettings": {
+   "defaultCarcassDecorId": "H3325_28",
+   "carcassSources": [
+    {
+     "id": "egger",
+     "label": "EGGER decor",
+     "thickness": 18,
+     "kind": "decor",
+     "picker": "decor"
+    },
+    {
+     "id": "sprayed",
+     "label": "Sprayed",
+     "thickness": 18,
+     "kind": "spray",
+     "picker": "colour"
+    },
+    {
+     "id": "veneer",
+     "label": "Veneer",
+     "thickness": 19,
+     "kind": "board",
+     "picker": "veneer"
+    }
+   ],
+   "frontSources": [
+    {
+     "id": "spray",
+     "label": "Spray",
+     "thickness": 18,
+     "kind": "spray",
+     "picker": "colour"
+    },
+    {
+     "id": "veneer",
+     "label": "Veneer",
+     "thickness": 19,
+     "kind": "board",
+     "picker": "decor"
+    },
+    {
+     "id": "laminate",
+     "label": "Laminate",
+     "thickness": 18,
+     "kind": "board",
+     "picker": "decor"
+    },
+    {
+     "id": "wood",
+     "label": "Wood",
+     "thickness": 20,
+     "kind": "board",
+     "coloursSoon": true,
+     "picker": null
+    },
+    {
+     "id": "raw",
+     "label": "Raw MDF",
+     "thickness": 18,
+     "kind": "board",
+     "picker": null,
+     "unpainted": true,
+     "finish_id": "raw_mdf"
+    }
+   ],
+   "boardThicknessOptions": [
+    18,
+    22,
+    25
+   ],
+   "maxCarcassTypes": 3,
+   "maxFrontTypes": 3,
+   "ceilingQuestionMm": 40,
+   "hardware": {
+    "plinth": {
+     "label": "Plinth",
+     "fits": [
+      "legs",
+      "bases",
+      "clips"
+     ],
+     "automat": "legs"
+    },
+    "hinges": {
+     "label": "Hinges",
+     "variants": [
+      {
+       "id": "soft-close",
+       "label": "Soft-close"
+      },
+      {
+       "id": "standard",
+       "label": "Standard"
+      }
+     ],
+     "default": "soft-close",
+     "automat": "hinge"
+    },
+    "runners": {
+     "label": "Runners",
+     "variants": [
+      {
+       "id": "soft-close",
+       "label": "Soft-close"
+      },
+      {
+       "id": "push-open",
+       "label": "Push-open"
+      }
+     ],
+     "default": "soft-close",
+     "automat": "runner"
+    },
+    "handles": {
+     "label": "Handles",
+     "hint": "Wall units",
+     "variants": [
+      {
+       "id": "j-pull",
+       "label": "J-pull"
+      },
+      {
+       "id": "bar",
+       "label": "Bar"
+      },
+      {
+       "id": "none",
+       "label": "Handleless"
+      }
+     ],
+     "default": "j-pull",
+     "automat": "handle"
+    },
+    "edgeBanding": {
+     "label": "Edge banding",
+     "auto": "Matched to each material",
+     "automat": "edge"
+    }
+   }
+  },
+  "itemsByContext": {
+   "kitchen": [
+    "shelves",
+    "drawers",
+    "partition",
+    "cargo",
+    "bins"
+   ],
+   "wardrobe": [
+    "shelves",
+    "hanger",
+    "drawers",
+    "overlay_drawers",
+    "partition",
+    "pulldown",
+    "trouser",
+    "tie_rack"
+   ],
+   "default": [
+    "shelves",
+    "drawers",
+    "partition"
+   ]
+  },
+  "legs": {
+   "cornerCount": 4,
+   "extraLegOverWidth": 1000,
+   "width": 78,
+   "insetFromSide": null,
+   "insetFromFront": 50,
+   "insetFromBack": 50
+  },
+  "wallUnit": {
+   "defaults": {
+    "width": 600,
+    "height": 720,
+    "depth": 400,
+    "mountHeight": 1500
+   },
+   "doorExtend": 38,
+   "hangers": {
+    "count": 2,
+    "holeDiameter": 5,
+    "fromBackEdge": [
+     21,
+     53
+    ],
+    "fromTop": 53,
+    "layer": "HINGES_5MM",
+    "cutoutWidth": 30,
+    "cutoutHeight": 58,
+    "cutoutLayer": "HANGER_HOLE"
+   }
+  },
+  "tallUnit": {
+   "minHeight": 1100,
+   "defaults": {
+    "width": 600,
+    "height": 2100,
+    "depth": 558
+   }
+  },
+  "cargoUnit": {
+   "minHeight": 1100,
+   "defaults": {
+    "width": 300,
+    "height": 2100,
+    "depth": 558
+   }
+  },
+  "pantryUnit": {
+   "minHeight": 1100,
+   "defaults": {
+    "width": 600,
+    "height": 2100,
+    "depth": 558,
+    "drawers": 3
+   }
+  },
+  "baseInternalDrawerUnit": {
+   "defaults": {
+    "width": 600,
+    "height": 770,
+    "depth": 558,
+    "drawers": 2
+   }
+  },
+  "lowCabinet": {
+   "minHeight": 300,
+   "defaults": {
+    "width": 600,
+    "height": 600,
+    "depth": 578,
+    "railOffset": 200
+   }
+  },
+  "pelmet": {
+   "heightMm": 50,
+   "thicknessMm": null
+  },
+  "hob": {
+   "clearanceMm": 60
+  },
+  "hood": {
+   "clearance": {
+    "induction": 650,
+    "gas": 750
+   }
+  },
+  "baseDrawerUnit": {
+   "defaults": {
+    "width": 600,
+    "height": 770,
+    "depth": 558
+   },
+   "ratio": [
+    4,
+    3,
+    2
+   ],
+   "variants": [
+    {
+     "id": "x1",
+     "label": "1×",
+     "count": 1,
+     "hint": "Drawerline — one drawer over a door",
+     "ratio": null,
+     "enabled": false,
+     "soon": "No kit defines a partial-height door yet — the pattern comes first"
+    },
+    {
+     "id": "x2",
+     "label": "2×",
+     "count": 2,
+     "hint": "Two equal deep drawers",
+     "ratio": [
+      1,
+      1
+     ],
+     "exact": true,
+     "enabled": true
+    },
+    {
+     "id": "x3",
+     "label": "3×",
+     "count": 3,
+     "hint": "The workshop standard — 4:3:2",
+     "ratio": [
+      4,
+      3,
+      2
+     ],
+     "exact": false,
+     "enabled": true
+    },
+    {
+     "id": "x4",
+     "label": "4×",
+     "count": 4,
+     "hint": "Four equal drawers",
+     "ratio": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "exact": true,
+     "enabled": true
+    }
+   ],
+   "gap": 3,
+   "frontWidthDeduction": 3,
+   "sideRatio": 0.7,
+   "boxWidthClearance": 10,
+   "boxFrontBoards": 4,
+   "boxFrontCarcassBoards": 2,
+   "boxFrontClearance": 10,
+   "boxFrontHeightDeduction": 15,
+   "boxFrontHeightExtra": 1,
+   "bottomOversize": 13,
+   "depthAllowance": 20,
+   "firstRowFromBottom": 38,
+   "runnerScrewFromBase": 28,
+   "clearanceBelowRunner": 10,
+   "frontScrewFromSide": 50,
+   "frontScrewExtra": 3.5,
+   "frontScrewFromBottom": 96.5,
+   "frontScrewDiameter": 3,
+   "frontScrewLayer": "FRONT_HINGES_3MM",
+   "boxScrewFromEdge": 50,
+   "bottomScrewFromSide": 70,
+   "bottomScrewFromEnd": 9,
+   "runnerPocketWidth": 15,
+   "bottomPocketExtra": 1,
+   "pocketOvershoot": 10,
+   "boxAboveRunner": 13.5,
+   "bottomAboveRunner": 28.5,
+   "boxTopClearance": 5,
+   "minBoxInside": 40,
+   "runnerPocketDepth": 2,
+   "bottomPocketDepth": 7
+  },
+  "dwPanel": {
+   "defaults": {
+    "width": 600,
+    "height": 770,
+    "depth": 558
+   }
+  },
+  "ovenUnit": {
+   "defaults": {
+    "width": 600,
+    "height": 770,
+    "depth": 558
+   },
+   "ovenHeight": 595,
+   "shelfFromTop": 598,
+   "drawerRatio": [
+    1
+   ],
+   "topRails": {
+    "backHeight": 100,
+    "backScrewFromTop": [
+     30,
+     70
+    ],
+    "frontWidth": 100,
+    "frontScrewFromEdge": 25
+   }
+  },
+  "sinkUnit": {
+   "defaults": {
+    "width": 600,
+    "height": 770,
+    "depth": 558
+   },
+   "railHeight": 100,
+   "backSetback": 50,
+   "backHeightDeduction": 120,
+   "backWidthClearance": 4,
+   "backScrewFromBackEdge": 37,
+   "backScrewFromEnd": 100,
+   "holderScrewFromTop": [
+    30,
+    70
+   ],
+   "shelfBackColumnFromEdge": 120
+  },
+  "fridgeUnit": {
+   "minHeight": 1900,
+   "defaults": {
+    "width": 600,
+    "height": 2100,
+    "depth": 558,
+    "fridgeH": 1786
+   },
+   "railHeight": 200,
+   "spursFromFront": 100,
+   "spursWidthClearance": 8,
+   "blockSize": 25,
+   "blockScrewFromFront": 100,
+   "blockScrewOffsets": [
+    37.5,
+    87.5
+   ],
+   "blockScrewFromTop": 50,
+   "fixedScrewFromEnd": 50
+  },
+  "glassWallUnit": {
+   "defaults": {
+    "width": 600,
+    "height": 720,
+    "depth": 400,
+    "mountHeight": 1500
+   }
+  },
+  "freePanel": {
+   "defaults": {
+    "length": 800,
+    "width": 400,
+    "tilt": 0,
+    "mountHeight": 0
+   },
+   "thicknessLadder": [
+    18,
+    22,
+    25,
+    30,
+    36
+   ]
+  },
+  "wardrobeWallUnit": {
+   "defaults": {
+    "width": 600,
+    "height": 720,
+    "depth": 568,
+    "mountHeight": 1500
+   }
+  },
+  "wardrobeChest": {
+   "defaults": {
+    "width": 800,
+    "height": 647,
+    "depth": 568
+   }
+  },
+  "vanity": {
+   "serviceVoidMm": 80,
+   "railHeightMm": 100,
+   "trapWidthMm": 160,
+   "trapDepthMm": 120,
+   "trapRadiusMm": 20,
+   "trapClearMm": 60,
+   "trapGapClearMm": 20,
+   "backPieceMinMm": 30,
+   "wasteFromBackMm": 250,
+   "basin": {
+    "shape": "oval",
+    "widthMm": 520,
+    "depthMm": 400,
+    "heightMm": 150
+   },
+   "defaults": {
+    "width": 900,
+    "height": 600,
+    "depth": 500,
+    "plinth": 100,
+    "top": 20,
+    "floatHeightMm": 300
+   },
+   "hangers": {
+    "perUnit": 2,
+    "name": "Cabinet hanger 50 kg with wall plate",
+    "article": ""
+   }
+  },
+  "mirror": {
+   "defaults": {
+    "width": 1350,
+    "height": 1100,
+    "depth": 215,
+    "mountHeight": 1250,
+    "overTopMm": 400,
+    "bays": 3,
+    "doorWidths": [
+     330,
+     480,
+     330
+    ],
+    "stile": "led",
+    "stileWidthMm": 75,
+    "panels": {
+     "L": true,
+     "R": true,
+     "top": true,
+     "bottom": true
+    },
+    "panelT": 30,
+    "mirrorDoors": true,
+    "mirrorBack": false,
+    "shelvesPerBay": 5,
+    "ledUnder": true,
+    "ledInside": true,
+    "bottomBox": true,
+    "recessMm": 0
+   },
+   "doorBoardMm": 18,
+   "mirrorMm": 4,
+   "glassShelfMm": 6,
+   "bottomBoxMm": 100,
+   "minDoorMm": 100,
+   "boardKgM3": 700,
+   "mirrorKgM2": 10,
+   "ledKelvin": 4000,
+   "ledInsideSide": "L",
+   "ledDriverVolts": 24,
+   "hangers": {
+    "perUnit": 2,
+    "name": "Cabinet hanger 50 kg with wall plate",
+    "article": ""
+   },
+   "articles": {
+    "ledPanel": "",
+    "mirror": "",
+    "glassShelf": "",
+    "ledStripUnder": "",
+    "ledStripInside": "",
+    "ledDriver": "",
+    "fusedSpur": "",
+    "shelfPin": "",
+    "hanger": ""
+   }
+  },
+  "wardrobeDesk": {
+   "defaults": {
+    "width": 1000,
+    "height": 160,
+    "depth": 568,
+    "mountHeight": 720,
+    "topThickness": 25
+   },
+   "drawerRatio": [
+    1
+   ]
+  },
+  "wardrobeLow": {
+   "defaults": {
+    "width": 600,
+    "height": 500,
+    "depth": 568,
+    "railOffset": 200
+   }
+  },
+  "hoodWallUnit": {
+   "defaults": {
+    "width": 600,
+    "height": 720,
+    "depth": 400,
+    "mountHeight": 1500,
+    "aperture": 350
+   }
+  },
+  "hoodCanopy": {
+   "defaults": {
+    "width": 600,
+    "height": 500,
+    "depth": 400,
+    "mountHeight": 1720,
+    "bottomProjectionMm": 150
+   }
+  },
+  "hoodShort": {
+   "defaults": {
+    "width": 600,
+    "height": 660,
+    "depth": 400,
+    "mountHeight": 1560,
+    "aperture": 350
+   }
+  },
+  "cornerBase": {
+   "defaults": {
+    "width": 900,
+    "height": 770,
+    "depth": 900
+   }
+  },
+  "cornerWall": {
+   "defaults": {
+    "width": 600,
+    "height": 720,
+    "depth": 600,
+    "mountHeight": 1500
+   }
+  },
+  "cornerWardrobe": {
+   "defaults": {
+    "width": 1000,
+    "height": 2150,
+    "depth": 1000,
+    "railOffset": 1400
+   }
+  },
+  "blindBase": {
+   "defaults": {
+    "width": 1000,
+    "height": 770,
+    "depth": 558
+   }
+  },
+  "blindWall": {
+   "defaults": {
+    "width": 900,
+    "height": 720,
+    "depth": 400,
+    "mountHeight": 1500
+   }
+  },
+  "blindWardrobe": {
+   "defaults": {
+    "width": 1200,
+    "height": 2150,
+    "depth": 568,
+    "railOffset": 1400
+   }
+  },
+  "twinCupboard": {
+   "defaults": {
+    "width": 900,
+    "height": 770,
+    "depth": 558
+   }
+  },
+  "wineRack": {
+   "defaults": {
+    "width": 600,
+    "height": 770,
+    "depth": 558
+   },
+   "cellMm": 100
+  },
+  "binUnit": {
+   "defaults": {
+    "width": 600,
+    "height": 770,
+    "depth": 558
+   }
+  },
+  "americanFridgeUnit": {
+   "minHeight": 2000,
+   "defaults": {
+    "width": 1000,
+    "height": 2100,
+    "depth": 558,
+    "fridgeH": 1900
+   }
+  },
+  "applianceTall": {
+   "roles": {
+    "fridge": {
+     "label": "Fridge freezer",
+     "hKey": "fridgeUnit.defaults.fridgeH",
+     "face": "door"
+    },
+    "oven": {
+     "label": "Oven",
+     "hKey": "ovenUnit.ovenHeight",
+     "face": "machine"
+    },
+    "microwave": {
+     "label": "Microwave",
+     "h": 450,
+     "face": "machine"
+    },
+    "washer": {
+     "label": "Washing machine",
+     "h": 850,
+     "face": "machine"
+    },
+    "dryer": {
+     "label": "Tumble dryer",
+     "h": 850,
+     "face": "machine"
+    }
+   },
+   "fridgeFreezer": {
+    "defaults": {
+     "width": 600,
+     "height": 2150,
+     "depth": 558,
+     "apertures": [
+      {
+       "role": "fridge"
+      }
+     ]
+    }
+   },
+   "washerDryer": {
+    "defaults": {
+     "width": 600,
+     "height": 2150,
+     "depth": 558,
+     "apertures": [
+      {
+       "role": "washer"
+      },
+      {
+       "role": "dryer"
+      }
+     ]
+    }
+   }
+  },
+  "autoParts": {
+   "plinth": {
+    "enabled": true,
+    "height": null,
+    "setback": 50,
+    "thickness": null,
+    "siteTrim": 20
+   },
+   "worktop": {
+    "enabled": true,
+    "thickness": 38,
+    "frontOverhang": 20,
+    "sideOverhang": 10,
+    "minUnits": 2,
+    "joint": {
+     "kind": "butt",
+     "boltCount": 3
+    },
+    "cutout": {
+     "insetMm": 20,
+     "radiusMm": 10
+    },
+    "upstand": {
+     "heightMm": 100,
+     "thicknessMm": 20
+    },
+    "seatingMm": 300,
+    "cnc": false
+   },
+   "fillerOversize": 20,
+   "topInfill": {
+    "defaultHeight": 40,
+    "minHeight": 10,
+    "thickness": null,
+    "runGap": 1,
+    "minReturn": 60
+   },
+   "sideInfill": {
+    "defaultWidth": 40,
+    "maxWidth": 120,
+    "minWidth": 3,
+    "thickness": null,
+    "returnDepth": 60,
+    "minLWidth": 24,
+    "stopTolerance": 1
+   },
+   "endPanel": {
+    "thickness": null,
+    "autoStepMm": 300,
+    "defaultHeight": "floor",
+    "defaultHeightByMount": {
+     "wall": "carcass",
+     "floor": "floor"
+    },
+    "siteTrim": 20
+   },
+   "mask": {
+    "enabled": true,
+    "thickness": null,
+    "depthExtra": null
+   },
+   "cornice": {
+    "heights": [
+     70,
+     100
+    ],
+    "projection": {
+     "70": 48,
+     "100": 65
+    },
+    "infillHeight": 40,
+    "section": {
+     "beadHeight": 0.16,
+     "beadProjection": 0.3,
+     "landHeight": 0.14,
+     "steps": 6,
+     "byHeight": {
+      "100": {
+       "beadHeight": 0.2,
+       "beadProjection": 0.26,
+       "landHeight": 0.2
+      }
+     }
+    },
+    "retail": {
+     "autoHeight": 70,
+     "closesGapUpToMm": 100
+    },
+    "mitreAllowance": 100,
+    "minReturn": 60,
+    "cornerToleranceMm": 2,
+    "cornerMode": "step"
+   }
+  },
+  "inframe": {
+   "stile": 38,
+   "rail": 38,
+   "frameT": 25,
+   "frontT": 22,
+   "gap": 3,
+   "outside": 19,
+   "boardMax": 2800,
+   "unitTypes": [
+    "BUD",
+    "BUD_INT",
+    "BUDR",
+    "BUDR2",
+    "BUDR4",
+    "BUDTALL",
+    "SINK",
+    "WUD",
+    "WUD_GLASS",
+    "LOW_CABINET",
+    "WARDROBE",
+    "WARDROBE_LOW"
+   ]
+  },
+  "hawa": {
+   "pocketClearMm": {
+    "one": 55,
+    "two": 110
+   },
+   "panelMinMm": 19,
+   "panelThinFrontMm": 22,
+   "panelAMinMm": 18,
+   "topBottomMm": 18,
+   "bottomMinMm": 18,
+   "topMinMm": 10,
+   "connectorCapMm": 6.5,
+   "hardwareZoneMm": 17,
+   "zoneTopMm": 63,
+   "zoneBottomMm": 50,
+   "profileSymbolMm": {
+    "w": 17,
+    "d": 60
+   },
+   "gaps": {
+    "z1": 3,
+    "z2": 3,
+    "z3": 3,
+    "z5": 3,
+    "front": 3
+   },
+   "door": {
+    "sMinMm": 18,
+    "sMaxMm": 26,
+    "tbMinMm": 440,
+    "tbMaxMm": 750,
+    "roundMm": 0.5
+   },
+   "classes": {
+    "25": {
+     "thMinMm": 1200,
+     "thMaxMm": 2200,
+     "maxKg": 25,
+     "hinges": 3
+    },
+    "35": {
+     "thMinMm": 1900,
+     "thMaxMm": 2700,
+     "maxKg": 35,
+     "hinges": 4
+    }
+   },
+   "weightTables": {
+    "25": "reference/hawa/weight-25.json",
+    "35": "reference/hawa/weight-35.json"
+   },
+   "doorDensityKgPerM3": 700,
+   "depth": {
+    "t1PlusMm": 92,
+    "mPlusMm": 3,
+    "mLessMm": 320,
+    "t1MinMm": 414,
+    "trackMaxMm": 560,
+    "trackLessMm": 7,
+    "trackStartMm": 5
+   },
+   "rearAllowanceMm": 20,
+   "hinge": {
+    "cupDiaMm": 35,
+    "cupDepthMm": 13,
+    "cupFromEndMm": 200,
+    "screwDiaMm": 5,
+    "screwDepthMm": 13,
+    "screwPitchMm": 26,
+    "screwInMm": 9,
+    "sleeveDiaMm": 8,
+    "sleeveDepthMm": 13,
+    "sleeveFromEndMm": 22,
+    "ta1": {
+     "2": 29,
+     "3": 28,
+     "4": 27,
+     "5": 26
+    },
+    "ta2": {
+     "3": 29.5,
+     "4": 29,
+     "5": 28.5,
+     "6": 28
+    }
+   },
+   "steel": {
+    "topMm": 100,
+    "bottomMm": 24,
+    "firstMm": 8,
+    "pitchMm": 352,
+    "plusMm": 3,
+    "grooveWidthMm": 12,
+    "grooveDepthMm": 12
+   },
+   "holes": {
+    "pitchMm": 160,
+    "b": {
+     "topAxisMm": 22,
+     "topFirstMm": 32,
+     "bottomAxisMm": 41,
+     "bottomFirstMm": 60,
+     "bracketLessMm": 55,
+     "bracketWidthMm": 22,
+     "bracketHeightMm": 70
+    },
+    "a": {
+     "topAxisMm": 10,
+     "topFirstMm": 48,
+     "bottomAxisMm": 22,
+     "bottomFirstMm": 23,
+     "bracketPitchMm": 64,
+     "bracketGapLessMm": 80,
+     "padFromMm": 43,
+     "padTopMm": 60,
+     "padBottomMm": 38
+    },
+    "trackHoleEndMm": 5,
+    "pilotDiaMm": 3,
+    "pilotDepthMm": 10
+   },
+   "foot": {
+    "diaMm": 35,
+    "fromMm": 21
+   },
+   "layers": {
+    "pilot": "HAWA_3MM",
+    "cup": "FRONT_HINGES_35MM_D13",
+    "screw": "FRONT_HINGES_5MM_D13",
+    "sleeve": "FRONT_HINGES_8MM_D13",
+    "foot": "HAWA_FOOT_35MM",
+    "groove": "HAWA_GROOVE_12MM"
+   },
+   "defaults": {
+    "push": true
+   },
+   "articles": {
+    "setPushLeft": "408.30.711",
+    "setPushRight": "",
+    "setPullLeft": "",
+    "setPullRight": "",
+    "connector55": "",
+    "connector110": "",
+    "trackTop": "",
+    "trackBottom": "",
+    "steelProfile": "",
+    "foot": ""
+   }
+  },
+  "appearance": {
+   "lighting": {
+    "emissive": 8,
+    "emissiveBoost": 3,
+    "spotEmissiveMultiplier": 1.35,
+    "accessoryDrawerGain": 0.25,
+    "demoDimFactor": 0.15
+   },
+   "finishes": [
+    {
+     "id": "broken_white",
+     "label": "Broken white",
+     "kind": "colour",
+     "hex": "#F2F0EC"
+    },
+    {
+     "id": "light_grey",
+     "label": "Light grey",
+     "kind": "colour",
+     "hex": "#E8E8E6"
+    },
+    {
+     "id": "dark_walnut",
+     "label": "Dark walnut",
+     "kind": "decor",
+     "hex": "#6B4A32",
+     "texture": "textures/dark-walnut.png",
+     "repeatMm": 900
+    },
+    {
+     "id": "light_oak",
+     "label": "Light oak",
+     "kind": "decor",
+     "hex": "#C9A87C",
+     "texture": "textures/light-oak.png",
+     "repeatMm": 900
+    },
+    {
+     "id": "raw_mdf",
+     "label": "Raw MDF",
+     "kind": "raw",
+     "hex": "#A9926E",
+     "edgeHex": "#C6B394",
+     "roughness": 0.95,
+     "sheen": 0
+    }
+   ],
+   "defaultCarcassFinish": "broken_white",
+   "defaultFrontFinish": null,
+   "outline": {
+    "colour": "#1A1A1A",
+    "width": 1,
+    "threshold": 12,
+    "polygonOffset": {
+     "factor": 1,
+     "units": 1,
+     "outlineFactor": -1,
+     "outlineUnits": -1
+    }
+   },
+   "cutFace": "#4a4a4a",
+   "cuts": {
+    "enabled": true
+   },
+   "sheen": {
+    "roughness": 0.55,
+    "clearcoat": 0.2,
+    "clearcoatRoughness": 0.35,
+    "metalness": 0
+   },
+   "sheenScale": {
+    "min": 5,
+    "max": 100,
+    "step": 5,
+    "default": 60
+   },
+   "spray": {
+    "envMapIntensity": 0.25,
+    "normalScale": 0,
+    "metalness": 0,
+    "peelMm": 2
+   },
+   "decor": {
+    "scanHeightMm": 2800,
+    "anisotropy": 8
+   },
+   "studio": {
+    "baseGain": 0.6,
+    "ambient": 0.2,
+    "key": 1,
+    "fill": 0.55,
+    "rim": 0.3,
+    "exposure": 1,
+    "shadowPadding": 600,
+    "band": {
+     "intensity": 2.2,
+     "colour": "#ffffff",
+     "aboveMm": 700,
+     "forwardMm": 250,
+     "widthMm": 400,
+     "spillMm": 300
+    },
+    "spotsOn": true,
+    "pillars": {
+     "intensity": 11,
+     "colour": "#ffffff",
+     "widthMm": 420,
+     "forwardMm": 900,
+     "count": 1,
+     "side": "right",
+     "spread": 1.7
+    },
+    "pointsOn": false,
+    "shadowCasters": 2,
+    "keyCastsShadow": true,
+    "hemisphere": {
+     "sky": "#fdf6e8",
+     "ground": "#c8c0b0",
+     "intensity": 0.45
+    },
+    "spots": [
+     {
+      "x": 0.5,
+      "y": 0.62,
+      "z": 0.4,
+      "intensity": 38,
+      "angle": 0.62,
+      "penumbra": 0.68,
+      "colour": "#fffaf0",
+      "castShadow": false
+     },
+     {
+      "x": -0.5,
+      "y": 0.62,
+      "z": 0.4,
+      "intensity": 32,
+      "angle": 0.62,
+      "penumbra": 0.73,
+      "colour": "#fff8f2",
+      "castShadow": false
+     }
+    ],
+    "spotReach": 4,
+    "ceiling": {
+     "enabled": true,
+     "share": 0.35,
+     "angle": 1.05,
+     "penumbra": 0.9,
+     "setbackMm": 1500,
+     "fallbackCeilingMm": 2700,
+     "colour": "#fffaf0"
+    },
+    "brightness": {
+     "min": 0.5,
+     "max": 1.5,
+     "step": 0.05,
+     "default": 1
+    },
+    "points": [
+     {
+      "x": 0.35,
+      "yMm": 1650,
+      "z": 0.7,
+      "intensity": 10,
+      "colour": "#fff6ec"
+     },
+     {
+      "x": -0.35,
+      "yMm": 1650,
+      "z": 0.7,
+      "intensity": 10,
+      "colour": "#fff3e4"
+     },
+     {
+      "x": 0.35,
+      "yMm": 500,
+      "z": 0.7,
+      "intensity": 3,
+      "colour": "#fff6ec"
+     },
+     {
+      "x": -0.35,
+      "yMm": 500,
+      "z": 0.7,
+      "intensity": 3,
+      "colour": "#fff3e4"
+     }
+    ],
+    "pointReach": 4,
+    "roomBounce": 0.42
+   },
+   "editorRig": {
+    "ambient": 0.95,
+    "hemisphere": {
+     "sky": "#fff6ec",
+     "ground": "#c8c2b4",
+     "intensity": 0.85
+    },
+    "lamps": [
+     {
+      "id": "key",
+      "x": 1,
+      "y": 1.6,
+      "z": 1,
+      "intensity": 2
+     },
+     {
+      "id": "fill",
+      "x": -1,
+      "y": 0.6,
+      "z": -0.4,
+      "intensity": 0.65
+     },
+     {
+      "id": "side",
+      "x": -1.35,
+      "y": 0.25,
+      "z": 0.85,
+      "intensity": 0.9
+     },
+     {
+      "id": "under",
+      "x": 0.25,
+      "y": -1.15,
+      "z": 0.8,
+      "intensity": 0.55
+     },
+     {
+      "id": "back",
+      "x": 0.4,
+      "y": 0.85,
+      "z": -1.4,
+      "intensity": 0.7
+     }
+    ]
+   },
+   "materials": {
+    "melamine": {
+     "roughness": 0.58,
+     "clearcoat": 0,
+     "clearcoatRoughness": 0.4,
+     "metalness": 0
+    },
+    "lacquer": {
+     "roughness": 0.3,
+     "clearcoat": 0.35,
+     "clearcoatRoughness": 0.12,
+     "metalness": 0
+    }
+   },
+   "gloss": {
+    "coatMax": 1,
+    "coatRoughnessMin": 0.03,
+    "coatRoughnessMax": 0.5,
+    "envMin": 0.25,
+    "envMax": 1,
+    "probeSize": 256
+   },
+   "bevel": {
+    "mm": 0.8,
+    "strength": 1,
+    "ao": {
+     "mm": 7,
+     "strength": 0.16,
+     "render": 0.3
+    }
+   },
+   "jpull": {
+    "grooveShade": 0.5,
+    "shadowEdge": 0.22,
+    "shadowInner": 0.04,
+    "colour": null,
+    "floorShade": 0.16,
+    "rimShadow": 0.5,
+    "rimShadowMm": 18
+   },
+   "environment": {
+    "intensity": 0.5,
+    "renderIntensity": 0.5,
+    "blur": 0.05
+   },
+   "contactShadow": {
+    "opacity": 0.62,
+    "farMm": 300,
+    "blurMm": 22,
+    "texelMm": 4,
+    "maxResolution": 1024
+   },
+   "room": {
+    "wall": "#f7f5f1",
+    "floor": "#e6e0d5",
+    "background": "#fafaf8",
+    "bounce": {
+     "wall": 0.18,
+     "floor": 0.1
+    },
+    "floorOffsetMm": 0.5
+   },
+   "contour": {
+    "opacity": 0.06,
+    "hex": "#ffffff",
+    "outline": "#101010"
+   },
+   "shade": {
+    "drawer_box": 0.1,
+    "back": 0.07,
+    "plinth": 0.04,
+    "infill": 0.02,
+    "end_panel": 0.02
+   },
+   "metals": {
+    "gold": {
+     "label": "Gold",
+     "colour": "#c9a227",
+     "metalness": 0.95,
+     "roughness": 0.22
+    },
+    "silver": {
+     "label": "Silver",
+     "colour": "#c8ccd0",
+     "metalness": 0.95,
+     "roughness": 0.18
+    },
+    "chrome": {
+     "label": "Chrome",
+     "colour": "#cfd4d8",
+     "metalness": 0.95,
+     "roughness": 0.12
+    },
+    "onyx": {
+     "label": "Onyx",
+     "colour": "#2f2f33",
+     "metalness": 0.9,
+     "roughness": 0.35
+    }
+   },
+   "metalDefault": "gold",
+   "metalHingeFinish": {
+    "chrome": "nickel",
+    "silver": "nickel",
+    "onyx": "onyx",
+    "gold": null
+   },
+   "hardware": {
+    "rail": "#8d8d92",
+    "leg": "#4a4a4a",
+    "bracket": "#8d8d92",
+    "hinge": "#5b5f63",
+    "showInSolid": true
+   },
+   "dimensions": {
+    "colour": "red",
+    "alt": "navy"
+   },
+   "joinery": {
+    "solid": "#8f8a82",
+    "solidOpacity": 0.5,
+    "outline": "#2A2A2A",
+    "socket": "#B4783C",
+    "dogbone": "#8C182B",
+    "biscuit": "#E08A3C",
+    "screw": "#3D7F9C",
+    "lift": 0.4
+   },
+   "xray": {
+    "carcass": 0.2,
+    "front": 0.42
+   },
+   "selection": {
+    "colour": "#2B6CB0",
+    "width": 0.75,
+    "offset": 10,
+    "dash": 34,
+    "gap": 20
+   },
+   "frontGapWarning": {
+    "colour": "#e2483c"
+   },
+   "worktop": {
+    "colour": "#6f6f72"
+   },
+   "addPlus": {
+    "run": "#2B6CB0",
+    "inner": "#C9A227"
+   }
+  },
+  "render": {
+   "resolutions": [
+    {
+     "id": "preview",
+     "label": "1080p preview",
+     "long": 1920,
+     "hint": "Quick look, a second or two"
+    },
+    {
+     "id": "4k",
+     "label": "4K",
+     "long": 3840,
+     "hint": "3840 px on the longer side — print and proposals"
+    }
+   ],
+   "defaultResolution": "preview",
+   "shadow": {
+    "normal": {
+     "label": "Normal",
+     "mapSize": 2048,
+     "radius": 4,
+     "bias": -0.0002,
+     "normalBias": 0.02
+    },
+    "high": {
+     "label": "High",
+     "mapSize": 4096,
+     "radius": 7,
+     "bias": -0.0001,
+     "normalBias": 0.01
+    }
+   },
+   "defaultShadows": "normal",
+   "focalMm": 35,
+   "sensorHeightMm": 24,
+   "margin": 1.1,
+   "exposure": 1,
+   "lightScale": {
+    "ambient": 1,
+    "key": 1,
+    "fill": 1,
+    "rim": 1,
+    "point": 1,
+    "spot": 1
+   }
+  },
+  "hardware": {
+   "hinge": {
+    "cupDiameter": 35,
+    "cupDepth": 11,
+    "cupFloorKeepMm": 3,
+    "bossHeight": 16,
+    "armLength": 62,
+    "armWidth": 22,
+    "armThickness": 11,
+    "plateLength": 56,
+    "plateWidth": 34,
+    "plateThickness": 12,
+    "plateBiteMm": 10,
+    "cliptop": {
+     "system": "cliptop_blumotion",
+     "systemLabel": "CLIP top BLUMOTION",
+     "systems": [
+      {
+       "id": "cliptop_blumotion",
+       "label": "CLIP top BLUMOTION",
+       "hint": "Blum’s soft-close cup hinge — the angle follows the front, not a menu."
+      }
+     ],
+     "finishes": [
+      {
+       "id": "nickel",
+       "label": "Nickel",
+       "hint": "The bright plated finish — the shop’s default.",
+       "material": {
+        "colour": "#c9ccd1",
+        "metalness": 0.95,
+        "roughness": 0.22,
+        "envMapIntensity": 1.35,
+        "clearcoat": 0.25,
+        "clearcoatRoughness": 0.1
+       }
+      },
+      {
+       "id": "onyx",
+       "label": "Onyx",
+       "hint": "The dark finish. Same hinge, same drilling, black.",
+       "material": {
+        "colour": "#2a2b2e",
+        "metalness": 0.9,
+        "roughness": 0.34,
+        "envMapIntensity": 1.1,
+        "clearcoat": 0.2,
+        "clearcoatRoughness": 0.15
+       }
+      }
+     ],
+     "defaultFinish": "nickel",
+     "plasticMaterials": [
+      "plastic",
+      "pom",
+      "nylon",
+      "rubber",
+      "lever",
+      "cap"
+     ],
+     "plastic": {
+      "colour": "#1c1c1e",
+      "metalness": 0.05,
+      "roughness": 0.55
+     },
+     "plates": [
+      {
+       "id": "plate_knockin5",
+       "label": "Knock-in ⌀5",
+       "enabled": true,
+       "hint": "Two ⌀5 holes at 32 mm centres — what the kits have drilled since turn 1."
+      },
+      {
+       "id": "plate_screw3",
+       "label": "Screw-on ⌀3",
+       "enabled": false,
+       "hint": "drilling pattern pending"
+      }
+     ],
+     "defaultPlate": "plate_knockin5",
+     "bucket": "hardware",
+     "path": "hinges/blum/",
+     "cupBoreFileZ": 51.3,
+     "fileMinZ": -29.48,
+     "fileDatum": {
+      "x": -7.75,
+      "y": 0,
+      "z": 40.3
+     },
+     "modelOrigin": {
+      "x": -18.75,
+      "y": -28.5,
+      "z": -69.78
+     },
+     "plateOrigin": {
+      "x": 0,
+      "y": -26.5,
+      "z": -20.75
+     },
+     "plateSpinDeg": 180,
+     "fileHand": "R",
+     "rig": {
+      "enabled": true,
+      "hideBeyondDeg": 15,
+      "memberA": [
+       "bau0015089612",
+       "bau0015088783",
+       "bau0015088853",
+       "bau0015157579",
+       "bau0079302490",
+       "bau0079324562",
+       "bau0079298416",
+       "bau0081900639",
+       "bau0015166285",
+       "bau0015167707",
+       "bau0015167363",
+       "bau0016962400"
+      ],
+      "memberB": [
+       "bau0015088251",
+       "bau0019416036",
+       "bau0079291413",
+       "bau0079262819",
+       "bau0025540121",
+       "bau0082114196",
+       "bau0015166656",
+       "bau0019426112"
+      ],
+      "zThresholdMm": 30,
+      "axis": {
+       "x": -18.08,
+       "z": 42.86
+      },
+      "maxFoldDeg": 110,
+      "armOffset": {
+       "node": "bau0015088251",
+       "xMm": -20,
+       "zMm": -20
+      }
+     },
+     "maxModelLengthMm": 160
+    }
+   },
+   "runner": {
+    "profileHeight": 45,
+    "profileThickness": 12.5,
+    "flangeDepth": 6,
+    "movento": {
+     "system": "760H",
+     "bucket": "hardware",
+     "path": "runners/blum/movento/",
+     "manifest": "manifest.json",
+     "variants": [
+      {
+       "id": "T",
+       "label": "TIP-ON BLUMOTION",
+       "hint": "Press the front to open; BLUMOTION adds the soft close."
+      },
+      {
+       "id": "S",
+       "label": "Standard",
+       "hint": "Pull to open, with the ordinary soft close."
+      }
+     ],
+     "defaultVariant": "T",
+     "finishes": [],
+     "finish": {
+      "colour": "#b9bcc0",
+      "metalness": 0.9,
+      "roughness": 0.3,
+      "envMapIntensity": 1.2
+     },
+     "plasticMaterials": [
+      "plastic",
+      "pom",
+      "nylon",
+      "rubber",
+      "cap"
+     ],
+     "plastic": {
+      "colour": "#1c1c1e",
+      "metalness": 0.05,
+      "roughness": 0.55
+     },
+     "modelOrigin": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+     },
+     "lengthTolerance": 5,
+     "nominalLadder": [
+      250,
+      270,
+      300,
+      320,
+      350,
+      380,
+      400,
+      450,
+      500,
+      550,
+      600,
+      650,
+      700
+     ],
+     "nominalOverBoxMm": 10,
+     "rod": {
+      "unitAloneBelow": 314,
+      "narrow": [
+       281,
+       305
+      ],
+      "withAdapters": [
+       314,
+       1385
+      ],
+      "endAllowance": 16,
+      "diameter": 10
+     }
+    }
+   },
+   "leg": {
+    "plateThickness": 4,
+    "stemDiameter": 26,
+    "footDiameter": 48,
+    "footHeight": 8
+   },
+   "rail": {
+    "diameter": 30
+   },
+   "hanger": {
+    "dropMm": 40,
+    "belowShelfMm": 50,
+    "betweenRailsMm": 950
+   },
+   "shelfPin": {
+    "sleeveOuter": 11,
+    "sleeveFlange": 2,
+    "sleeveDepth": 9,
+    "pinDiameter": 5,
+    "pinLength": 9,
+    "shoulderDiameter": 8,
+    "shoulderThickness": 1.5
+   }
+  },
+  "drawings": {
+   "scales": [
+    5,
+    10,
+    20,
+    25,
+    50
+   ],
+   "margin": 8,
+   "padding": 6,
+   "unitNumberHeight": 120,
+   "textHeight": 90,
+   "dimensionOffset": 140,
+   "minTextHeight": 2.4,
+   "titleBlock": {
+    "rows": [
+     "CABINET CORE",
+     "Project",
+     "Unit",
+     "View",
+     "Scale",
+     "Date"
+    ],
+    "width": 74,
+    "rowHeight": 6.5,
+    "labelWidth": 20,
+    "labelHeight": 2.5,
+    "valueHeight": 3,
+    "titleHeight": 3.6
+   },
+   "unitCard": {
+    "viewGap": 280,
+    "textHeight": 60,
+    "unitNumberHeight": 100,
+    "viewLabelHeight": 75,
+    "viewLabelGap": 70,
+    "dimFirst": 100,
+    "dimStep": 125,
+    "titleRows": [
+     "CABINET CORE",
+     "Project",
+     "Unit",
+     "Type",
+     "Carcass",
+     "Fronts",
+     "Scale",
+     "Date"
+    ],
+    "titleWidth": 108,
+    "noteHeight": 55
+   },
+   "wallDrawing": {
+    "textHeight": 55,
+    "unitNumberHeight": 90,
+    "chainFirst": 190,
+    "chainStep": 230,
+    "fabricOverhang": 250,
+    "handleTick": 14,
+    "planNumberHeight": 90,
+    "planLabelHeight": 110,
+    "wallLabelOffset": 320,
+    "noteHeight": 55,
+    "titleRows": [
+     "CABINET CORE",
+     "Client",
+     "Address",
+     "Project",
+     "Drawing",
+     "Job No",
+     "Scale",
+     "Rev",
+     "Date"
+    ],
+    "titleWidth": 112,
+    "scaleLabel": "No Scale"
+   },
+   "set": {
+    "format": "A3",
+    "margin": 10,
+    "titleHeight": 32,
+    "columnWidth": 62,
+    "captionHeight": 18,
+    "band": 26,
+    "chainFirst": 8,
+    "chainSecond": 17,
+    "chainThird": 26,
+    "textHeight": 2.5,
+    "labelHeight": 2.2,
+    "unitNumberHeight": 3.4,
+    "minTextHeight": 2,
+    "scales": [
+     10,
+     15,
+     20,
+     25,
+     50
+    ],
+    "fillMax": 0.96,
+    "planCut": {
+     "base": 400,
+     "wall": 1700
+    },
+    "titleCells": [
+     44,
+     86,
+     78,
+     96,
+     40,
+     28,
+     28
+    ],
+    "statuses": [
+     [
+      "A",
+      "Preliminary"
+     ],
+     [
+      "B",
+      "For approval"
+     ],
+     [
+      "C",
+      "For production"
+     ]
+    ],
+    "company": {
+     "name": "CABINET CORE",
+     "tagline": "",
+     "lines": []
+    },
+    "logo": {
+     "maxPx": 400,
+     "maxKb": 256
+    },
+    "hatchPitch": 2.2,
+    "perspective": {
+     "eyeHeight": 1650,
+     "standOff": 5200,
+     "leftOffset": 2000
+    }
+   },
+   "booklet": {
+    "titleHeight": 9,
+    "headingHeight": 4.2,
+    "rowHeight": 5.4,
+    "textHeight": 3.2,
+    "rowsPerColumn": 24
+   },
+   "hingeBar": {
+    "width": 6,
+    "height": 70
+   },
+   "knobDiameter": 30,
+   "card": {
+    "runMargin": 50
+   },
+   "projector": {
+    "minEdgePaperMm": 0.25,
+    "wholeFaceHairMm": 0.05
+   },
+   "cabineo": {
+    "mounting": "flush",
+    "machining": "drill15",
+    "skimMm": 0.5,
+    "holeDepthMm": null,
+    "pitchMm": 250,
+    "endOffsetMm": 50,
+    "minPerJoint": 2,
+    "caps": "all",
+    "confirmed": true,
+    "layers": {
+     "pocket": {
+      "drill15": "CABINEO_POCKET_15MM",
+      "cutter10": "CABINEO_POCKET_10MM",
+      "cutter12": "CABINEO_POCKET_12MM"
+     },
+     "recess": "CABINEO_RECESS",
+     "hole": "CABINEO_HOLE_5MM"
+    },
+    "box": {
+     "variant": "12",
+     "onePerJointUpToMm": 100,
+     "fromEdgeMm": 25
+    }
+   }
+  },
+  "cnc": {
+   "unitNumberLayer": "UNIT_NUMBER",
+   "sheet": {
+    "width": 2790,
+    "height": 2060
+   },
+   "sheetOptions": [
+    {
+     "id": "jumbo",
+     "label": "Jumbo 2070 × 2800",
+     "width": 2070,
+     "height": 2800
+    },
+    {
+     "id": "standard",
+     "label": "Standard 1220 × 2440",
+     "width": 1220,
+     "height": 2440
+    },
+    {
+     "id": "tenfoot",
+     "label": "10 ft 1020 × 3050",
+     "width": 1020,
+     "height": 3050
+    },
+    {
+     "id": "other",
+     "label": "Other…",
+     "width": null,
+     "height": null
+    }
+   ],
+   "sheetCarcass": {
+    "width": 2070,
+    "height": 2800
+   },
+   "sheetFronts": {
+    "width": 1220,
+    "height": 2440
+   },
+   "labelHeight": 20,
+   "labelMinHeight": 6,
+   "labelFitRatio": 0.12,
+   "labelMaxLines": 3,
+   "labelLineGap": 0.25,
+   "labelFillRatio": 0.85,
+   "exportLabelScale": 0.5,
+   "layoutGap": 50,
+   "layoutRowWidth": 3600,
+   "toolDiameter": 8,
+   "cornerMark": {
+    "legMm": 40
+   },
+   "annotation": {
+    "partLabelMm": 70,
+    "blockLabelMm": 45,
+    "sectionLabelMm": 70,
+    "minLabelPx": 5,
+    "minSymbolPx": 0.75,
+    "panThresholdPx": 4,
+    "hoverGracePx": 7
+   }
+  },
+  "csv": {
+   "header": "UNIT,PANEL,SZER,WYS,EDGE,EDG_L,SQM",
+   "dimDecimals": 0,
+   "edgingDecimals": 2,
+   "areaDecimals": 3,
+   "codes": {
+    "left": "<",
+    "right": ">",
+    "topBottom": "^v",
+    "all": "<>^v",
+    "none": ""
+   }
+  },
+  "bom": {
+   "wastePct": 15,
+   "sheet": {
+    "width": 2800,
+    "height": 2070
+   }
+  },
+  "spray": {
+   "wastePct": 10,
+   "edgesInM2": true,
+   "frameMm": 100,
+   "defaults": {
+    "coats": 2,
+    "coverageM2PerL": 10,
+    "tinSizesL": [
+     1,
+     2.5,
+     5
+    ]
+   },
+   "rules": {
+    "door": {
+     "no": 1,
+     "faces": 2,
+     "edges": 4,
+     "grooves": "inside the face",
+     "code": "2S + 4E"
+    },
+    "drawer_front": {
+     "no": 2,
+     "faces": 2,
+     "edges": 4,
+     "code": "2S + 4E"
+    },
+    "false_front": {
+     "no": 3,
+     "faces": 2,
+     "edges": 4,
+     "code": "2S + 4E"
+    },
+    "blind_blank": {
+     "no": 4,
+     "faceStripMm": 100,
+     "doorSideEdge": 1,
+     "endEdgesMm": 100,
+     "code": "1S100 + 1E + 2E100"
+    },
+    "front_moulding": {
+     "no": 5,
+     "afterGluing": true,
+     "sides": 2,
+     "sideMm": 8,
+     "code": "2E8"
+    },
+    "inner_front": {
+     "no": 6,
+     "faces": 2,
+     "edges": 4,
+     "code": "2S + 4E"
+    },
+    "end_panel": {
+     "no": 7,
+     "faces": 1,
+     "edges": 4,
+     "backFrameMm": 100,
+     "code": "1S + F100 + 4E"
+    },
+    "island_end": {
+     "no": 8,
+     "as": "end_panel"
+    },
+    "back_panel": {
+     "no": 9,
+     "as": "end_panel"
+    },
+    "mask": {
+     "no": 10,
+     "underside": 1,
+     "frontEdge": 1,
+     "code": "1S + FE"
+    },
+    "corner_post": {
+     "no": 11,
+     "face": 1,
+     "longEdges": 2,
+     "topEdge": 1,
+     "code": "1S + 2E + TE"
+    },
+    "free_panel": {
+     "no": 12,
+     "faces": 2,
+     "edges": 4,
+     "code": "2S + 4E"
+    },
+    "plinth": {
+     "no": 13,
+     "face": 1,
+     "topEdge": 1,
+     "code": "1S + TE"
+    },
+    "infill": {
+     "no": 14,
+     "face": 1,
+     "unitEdge": 1,
+     "code": "1S + 1E"
+    },
+    "top_infill": {
+     "no": 15,
+     "as": "infill"
+    },
+    "cornice": {
+     "no": 16,
+     "all": true,
+     "perimeter": "height + projection, both faces",
+     "code": "ALL"
+    },
+    "pelmet": {
+     "no": 17,
+     "all": true,
+     "code": "ALL"
+    },
+    "upstand": {
+     "no": 18,
+     "none": true,
+     "code": ""
+    },
+    "carcass_set2": {
+     "no": 19,
+     "insideFaces": true,
+     "shelvesAll": true,
+     "codes": {
+      "side": "1S + FE",
+      "horizontal": "1S + FE",
+      "back": "1S",
+      "shelf": "ALL",
+      "partition": "2S + FE"
+     }
+    },
+    "open_shelf25": {
+     "no": 20,
+     "all": true,
+     "thicknessMm": 25,
+     "code": "ALL"
+    }
+   }
+  },
+  "materials": {
+   "defaults": {},
+   "legRules": [],
+   "hingeRules": [],
+   "hingePlateRules": [],
+   "runnerRules": [],
+   "ledRules": {
+    "strip": null,
+    "profile": null,
+    "driver": null,
+    "switch": null,
+    "spot": null
+   }
+  },
+  "drawerInserts": {
+   "catalogue": [
+    {
+     "id": "shoe",
+     "label": "Shoe drawer insert",
+     "widths": [
+      300,
+      350,
+      400,
+      450,
+      500,
+      550,
+      600,
+      700,
+      800,
+      900
+     ]
+    },
+    {
+     "id": "belt_tie",
+     "label": "Belt/tie divider insert",
+     "widths": [
+      300,
+      350,
+      400,
+      450,
+      500,
+      550,
+      600,
+      700,
+      800,
+      900
+     ]
+    }
+   ]
+  },
+  "watchDrawer": {
+   "dividerT": 9,
+   "frameT": 9,
+   "baseT": 9,
+   "insideDepthMm": 40,
+   "pocketTargetMm": 95,
+   "pocketRowDepthMm": 110,
+   "pocketMinMm": 60,
+   "sectionTargetMm": 220,
+   "openingOffsetMm": 50,
+   "ledOffsetMm": 15,
+   "glassT": 4,
+   "glassBearingMm": 5,
+   "slotDepthMm": 3,
+   "ledBelowGlassMm": 12,
+   "headroomMm": 2,
+   "clearanceMm": 2
+  },
+  "lighting": {
+   "temperatures": [
+    {
+     "k": 3000,
+     "label": "3000 K",
+     "hint": "Warm white",
+     "hex": "#ffa94d"
+    },
+    {
+     "k": 4000,
+     "label": "4000 K",
+     "hint": "Neutral white",
+     "hex": "#ffe9c2"
+    },
+    {
+     "k": 6000,
+     "label": "6000 K",
+     "hint": "Cool white",
+     "hex": "#a8d0ff"
+    }
+   ],
+   "defaultTemperature": 4000,
+   "strip": {
+    "width": 12,
+    "thickness": 3,
+    "sideLineWidth": 4,
+    "shelfDepthDefault": 30
+   },
+   "spot": {
+    "diameter": 55,
+    "defaultCount": 2
+   },
+   "view": {
+    "emissive": 0.85
+   },
+   "demo": {
+    "dimFactor": 0.15,
+    "emissiveBoost": 2.6
+   }
+  },
+  "room": {
+   "sideWallMm": 2000,
+   "wallBackClearance": 10
+  },
+  "ui": {
+   "addPlusMinGapMm": 100,
+   "shareOut": {
+    "gapMm": 400,
+    "maxWidthMm": 620
+   },
+   "messages": {
+    "hideMs": {
+     "grey": 4000,
+     "yellow": 4000,
+     "red": 8000
+    },
+    "maxOnScreen": 5,
+    "historyMax": 50,
+    "historyOpenMs": 10000,
+    "greyMs": 3000
+   },
+   "modal": {
+    "gapPx": 14,
+    "marginPx": 8,
+    "maximiseMarginPx": 28,
+    "anchorOffset": {
+     "x": 240,
+     "y": 0
+    }
+   },
+   "saveConfirmMs": 2000,
+   "dimensionsIdleMs": 30000,
+   "studio": {
+    "enabled": true,
+    "scale": {
+     "textPx": 13,
+     "fieldPx": 30,
+     "buttonPx": 32,
+     "radiusPx": 4
+    },
+    "bars": {
+     "topPx": 48,
+     "contextPx": 34,
+     "statusPx": 30
+    },
+    "rail": {
+     "widePx": 112,
+     "narrowPx": 56,
+     "labelsFromPx": 1440
+    },
+    "inspector": {
+     "fullPx": 400,
+     "fullNarrowPx": 360,
+     "fullNarrowBelowPx": 1500
+    },
+    "minScreen": {
+     "widthPx": 1280,
+     "heightPx": 800
+    },
+    "sceneToggles": [
+     "xray",
+     "hideFronts",
+     "outlines",
+     "openAll"
+    ],
+    "doorWindow": "dock-left",
+    "issues": {
+     "warn": "#d9a441",
+     "danger": "#c9524b",
+     "textPx": 13
+    },
+    "marker": {
+     "sizePx": 16
+    },
+    "frameMargin": 0.1,
+    "libraryGapPx": 8,
+    "cardRowsMax": 6
+   }
+  },
+  "editor": {
+   "hoverAura": {
+    "mm": 8,
+    "lingerMs": 300,
+    "colour": "#e08a2e",
+    "showBothAxes": false
+   },
+   "snapSteps": [
+    0.5,
+    1,
+    32
+   ],
+   "defaultSnap": 1,
+   "mmStep": 0.5,
+   "hingeNudgeMm": 5,
+   "minShelfGap": 40,
+   "minShelfEdgeGap": 40,
+   "hoverMagnetMm": 5,
+   "shelfMagnetMm": 10,
+   "levelOverlapMm": 0.5,
+   "unitMagnet": 40,
+   "minUnitGap": 0,
+   "maxInset": 300,
+   "itemStackPitch": 350,
+   "minElementDepth": 100,
+   "history": {
+    "depth": 50,
+    "coalesceMs": 400
+   },
+   "explode": {
+    "distanceFactor": 0.45,
+    "spreadFactor": 0.18,
+    "seconds": 0.6
+   },
+   "ruler": {
+    "snapPx": 12,
+    "contactMm": 0.5,
+    "markerPx": 11
+   },
+   "partSnap": {
+    "magnetMm": 5,
+    "markerPx": 12,
+    "alignMm": 0.5
+   },
+   "drillDefaults": {
+    "SCREWS_3MM": {
+     "d": 3,
+     "depth": 0
+    },
+    "SHELVES_7_5MM": {
+     "d": 7.5,
+     "depth": 12
+    },
+    "HINGES_5MM": {
+     "d": 5,
+     "depth": 12
+    },
+    "HINGES_3MM": {
+     "d": 3,
+     "depth": 12
+    },
+    "FRONT_HINGES_35MM": {
+     "d": 35,
+     "depth": 11
+    },
+    "FRONT_HINGES_3MM": {
+     "d": 3,
+     "depth": 11
+    },
+    "PUZZLE_HOLES_7_5MM": {
+     "d": 7.5,
+     "depth": 0
+    },
+    "RUNNERS_3MM": {
+     "d": 3,
+     "depth": 0
+    },
+    "BISCUIT_4MM": {
+     "d": 4,
+     "depth": 12
+    },
+    "fallback": {
+     "d": 5,
+     "depth": 12
+    }
+   },
+   "dowelPitchMm": 32
+  },
+  "dimensions": {
+   "minGap": 2,
+   "standoff": 90,
+   "height": 120,
+   "lineWeight": 3,
+   "extension": 110,
+   "extensionGap": 18,
+   "colours": {
+    "navy": "#1B2A4A",
+    "red": "#8C182B"
+   }
+  }
+ }
+}

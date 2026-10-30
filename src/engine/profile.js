@@ -5965,13 +5965,12 @@ export const DEFAULT_CABINET_PROFILE = {
       bars: { topPx: 48, contextPx: 34, statusPx: 30 },
       // PROPOSED, Stage-1 and her 1280 note: 112 wide with labels at 1440 and up, 56 icons below.
       rail: { widePx: 112, narrowPx: 56, labelsFromPx: 1440 },
-      // PROPOSED, the designer: the quick card 344 (316 below 1440), the full
-      // panel 400 (360 below 1500), measured on the live RightPanel without
-      // overflow (verify/t84/p1-host.md D: all thirteen default units).
+      // PROPOSED, the designer: the full panel 400 (360 below 1500), measured
+      // on the live RightPanel without overflow (verify/t84/p1-host.md D: all
+      // thirteen default units). CHAT FIX 30.10.2026: the quick card's three
+      // numbers left with the card (the owner: *"tylko ten jeden przycisk
+      // usun, Full settings"*).
       inspector: {
-        quickPx: 344,
-        quickNarrowPx: 316,
-        quickNarrowBelowPx: 1440,
         fullPx: 400,
         fullNarrowPx: 360,
         fullNarrowBelowPx: 1500,

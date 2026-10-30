@@ -13,8 +13,10 @@
 // totalnie niewidoczne, mala czcionka etc"*. Today a finding lives only in the
 // Check panel, 11 px, gold on dark. From T84 it also stands:
 //
-// THE STRIP (IssueStrip, the default export), in the quick card and over the
-// full panel's rows (InspectorHost's `renderStrip`): CLAUDE.md T84 F5,
+// THE STRIP (IssueStrip, the default export), under the full panel's rows, in
+// the column's foot beneath Open cabinet (InspectorHost's `renderStrip`; CHAT
+// FIX 30.10.2026, the owner: *"open cabinet na samym dole a pod nim wszystkie
+// bledy ktore pokazuje"*): CLAUDE.md T84 F5,
 // *"`#48 · the bowl enters a board` in the finding's own words (`message`),
 // its level colour, and Show: the camera frames the unit (the camera bar's
 // Frame selection) and, for a panel finding, selects the part (`subject`).

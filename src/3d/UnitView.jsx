@@ -2316,16 +2316,18 @@ export default function UnitView({
   //
   // An undivided cabinet resolves to ONE column whose bearers are BUL and BUR
   // and whose flank is `W` — which is what turn 8 shipped, to the millimetre.
+  // CHAT FIX 30.10.2026 · the drawer cap each column stands on is read by
+  // `shelfColumns` itself off the engine's `PARTITION` boards (a full-width
+  // stack's and a column's alike); `drawerZone.top` was that one number for the
+  // full-width stack only, so it is no longer read here.
   const shelfColumnList = useMemo(() => shelfColumns({
     panels: result.panels,
-    floor: result.assemblies.drawerZone
-      ? result.assemblies.drawerZone.top + G
-      : interiorFloor(G),
+    floor: interiorFloor(G),
     ceiling: H - G,
     width: W,
     tolerance: profile.carcass.shelfWidthClearance,
   }, profile.editor.mmStep), [
-    result.panels, result.assemblies.drawerZone, G, H, W,
+    result.panels, G, H, W,
     profile.carcass.shelfWidthClearance, profile.editor.mmStep,
   ]);
   /** The flank a piece with no column of its own falls back to: the unit's. */

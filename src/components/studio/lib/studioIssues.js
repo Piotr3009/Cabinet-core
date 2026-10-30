@@ -23,15 +23,10 @@
 // in the Check panel's summary. Nothing here re-words a finding: a strip line
 // is the Check's number and the finding's own sentence.
 //
-// And the REFUSED FIELD's law (CLAUDE.md T84 F5, THE REFUSED FIELD): what one
-// commit, one Escape or one change from outside does to a field whose setter
-// said no. RefusedField.jsx is its only writer; the law is here so a node test
-// holds it to its word.
-//
 // How the three LOOK (13 px, dark on the level's ground, the profile's
 // colours) is not here either: it is the skin's one stylesheet for the class
 // vocabulary the components carry (studio.css `.studio-marker`,
-// `.studio-issue-strip`, `.studio-counter`, `.studio-refused`, each `.is-red` /
+// `.studio-issue-strip`, `.studio-counter`, each `.is-red` /
 // `.is-yellow` where a level is shown).
 //
 // Pure: no React, no store, no DOM (verify/t84/agents/CONTRACT.md section 2).
@@ -149,78 +144,5 @@ export function issueCounters(findings) {
   return countParts({ red, yellow });
 }
 
-// ─── THE REFUSED FIELD'S LAW (CLAUDE.md T84 F5) ─────────────────────────────
-//
-// *"when the setter returns a refusal (roomFitRefusalFor's notice, the leaf
-// count's, the pocket's `said`), the field turns red with the reason under it
-// in 13 px, the typed value stays unapplied, Escape restores the last applied
-// one; a refused change never enters the history. The reason is the engine's
-// exact sentence, never a Studio paraphrase."*
-//
-// The state is null (nothing refused) or `{ typed, reason }`. The APPLIED value
-// is never in it: it is the store's, handed to the field as `value`, and
-// nothing in this law can write it.
-
-/** Two field values are one when both are empty or both are the same number. */
-function sameFieldValue(a, b) {
-  const empty = (v) => v == null || v === '';
-  if (empty(a) || empty(b)) return empty(a) && empty(b);
-  const x = Number(a);
-  const y = Number(b);
-  return Number.isFinite(x) && Number.isFinite(y) && x === y;
-}
-
-/**
- * What a setter said, read once: `{ ok: false, reason }` is a refusal, its
- * sentence kept byte for byte; anything else (`{ ok: true }`, nothing) is an
- * applied value.
- *
- * @returns {{ reason: string }|null}
- */
-export function refusalOf(answer) {
-  if (!answer || typeof answer !== 'object' || answer.ok !== false) return null;
-  return { reason: answer.reason == null ? '' : String(answer.reason) };
-}
-
-/**
- * Does this commit reach the setter at all? Not when it is the blur of an
- * Escape (the house NumberField blurs on Escape and its blur commits the typed
- * text, verify/t84/p1-escape.md C case 1: the Studio's field abandons it), and
- * not when it is the applied value again (no change: nothing to apply and
- * nothing to refuse, and the store's own setter would write nothing either).
- */
-export function shouldCommitField({ value, applied, abandoned = false } = {}) {
-  if (abandoned) return false;
-  return !sameFieldValue(value, applied);
-}
-
-/**
- * The refused field's next state.
- *
- * @param {{ typed: number, reason: string }|null} state
- * @param {{ type: 'commit', value: number, answer: any }|{ type: 'escape' }|{ type: 'outside' }} event
- *   commit   the setter's answer to `value`: refused, the typed value is held
- *            beside the applied one with the setter's own sentence; applied,
- *            nothing is held
- *   escape   the last applied value is shown again; nothing was written
- *   outside  the applied value moved from outside (an Undo, a clamp, another
- *            field): a refusal of the old one is over
- */
-export function refusedFieldAfter(state, event) {
-  switch (event?.type) {
-    case 'commit': {
-      const no = refusalOf(event.answer);
-      return no ? { typed: event.value, reason: no.reason } : null;
-    }
-    case 'escape':
-    case 'outside':
-      return null;
-    default:
-      return state ?? null;
-  }
-}
-
-/** What the field shows: the typed value while it is refused, else the applied one. */
-export function refusedFieldShows(state, applied) {
-  return state ? state.typed : applied;
-}
+// CHAT FIX 30.10.2026 · the refused field's law (refusalOf, shouldCommitField,
+// refusedFieldAfter, refusedFieldShows) left with RefusedField.jsx and the quick card (kasacja).

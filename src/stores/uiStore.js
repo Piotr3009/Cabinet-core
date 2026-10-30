@@ -192,16 +192,20 @@ function readSnapshot(s) {
 // F4 adopts the designer's law: *"Pin keeps inspector open and FOLLOWING
 // SELECTION; it never locks unit ID"*. Pinned, the inspector stays where it is
 // (the full panel, following whatever is selected now); unpinned, a new
-// cabinet (or none) brings the quick card back, as her Stage-1 prototype does
-// from every mode, hidden included. It answers a MODE and nothing else: there
-// is no unit id in it to freeze. The legacy face never reads it.
-const INSPECTOR_MODES = Object.freeze(['quick', 'full', 'none']);
+// cabinet (or none) brings the panel back from hidden. It answers a MODE and
+// nothing else: there is no unit id in it to freeze. The legacy face never
+// reads it.
+//
+// CHAT FIX 30.10.2026 · the quick card is gone (the owner: *"tylko ten jeden
+// przycisk usun, Full settings"*): the modes are 'full' and 'none'; a cabinet
+// clicked shows the full panel at once.
+const INSPECTOR_MODES = Object.freeze(['full', 'none']);
 /** T84 F5 · what the Check may be filtered to. */
 const CHECK_FILTERS = Object.freeze(['all', 'red', 'yellow']);
-export function inspectorAfterSelect({ inspector = 'quick', inspectorPinned = false } = {}, changed = true) {
-  const mode = INSPECTOR_MODES.includes(inspector) ? inspector : 'quick';
+export function inspectorAfterSelect({ inspector = 'full', inspectorPinned = false } = {}, changed = true) {
+  const mode = INSPECTOR_MODES.includes(inspector) ? inspector : 'full';
   if (!changed || inspectorPinned) return mode;
-  return 'quick';
+  return 'full';
 }
 
 // ─── T84 F4 (CLAUDE.md PART B): THE EDIT IS COMMITTED TO ITS OWN CABINET ────
@@ -280,22 +284,18 @@ export const useUiStore = create((set, get) => ({
   toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
 
   // ─── T84 F3 (CLAUDE.md PART B): THE STUDIO'S INSPECTOR ───────────────────
-  // 'quick' the card, 'full' the RightPanel embedded, 'none' hidden (the
-  // breadcrumb's button brings it back). Pinned, the full panel stays and
-  // follows the selection (`inspectorAfterSelect` above). Read by the Studio
-  // face only; the legacy face never looks at it.
-  inspector: 'quick',
+  // 'full' the RightPanel embedded, 'none' hidden (the breadcrumb's button
+  // brings it back). Pinned, the full panel stays and follows the selection
+  // (`inspectorAfterSelect` above). Read by the Studio face only; the legacy
+  // face never looks at it. CHAT FIX 30.10.2026: no 'quick' any more.
+  inspector: 'full',
   inspectorPinned: false,
-  setInspector: (mode) => set({ inspector: INSPECTOR_MODES.includes(mode) ? mode : 'quick' }),
-  /** "Back to quick settings": the card, unpinned (the designer's prototype). */
-  showQuickSettings: () => set({ inspector: 'quick', inspectorPinned: false }),
-  /** "Full settings": the RightPanel, embedded. */
+  setInspector: (mode) => set({ inspector: INSPECTOR_MODES.includes(mode) ? mode : 'full' }),
+  /** The panel's own roads (a summary row, a section opener): the RightPanel, embedded. */
   showFullSettings: () => set({ inspector: 'full' }),
   hideInspector: () => set({ inspector: 'none' }),
-  /** The breadcrumb's button: back from hidden, to the full panel when pinned. */
-  showInspector: () => set((s) => (s.inspector === 'none'
-    ? { inspector: s.inspectorPinned ? 'full' : 'quick' }
-    : {})),
+  /** The breadcrumb's button: back from hidden. */
+  showInspector: () => set((s) => (s.inspector === 'none' ? { inspector: 'full' } : {})),
   /** Pin: the full panel stays open and FOLLOWS the selection; it stores no unit id. */
   toggleInspectorPin: () => set((s) => ({ inspectorPinned: !s.inspectorPinned, inspector: 'full' })),
   // T84 F4 · the commit-before-switch guard (`selectionMayMove` above).
@@ -450,7 +450,7 @@ export const useUiStore = create((set, get) => ({
       viewMode: 'cnc', rightPanelOpen: true, bomOpen: false,
       // T84 F4 · main opens the panel for CNC (its tree and its two downloads);
       // the Studio's inspector comes back from hidden the same way, never pinned.
-      ...(s.inspector === 'none' ? { inspector: s.inspectorPinned ? 'full' : 'quick' } : {}),
+      ...(s.inspector === 'none' ? { inspector: 'full' } : {}),
     }
     : { viewMode: '3d', rightPanelOpen: s.rightPanelOpen })),
 
@@ -997,7 +997,24 @@ export const useUiStore = create((set, get) => ({
   // the moment the second lands (this store never reads that one). Escape, or
   // a click anywhere else, ends it.
   centreBetween: null,               // { unitId, lower, upper } | null
-  armCentreBetween: (unitId) => set({ centreBetween: unitId ? { unitId, lower: null, upper: null } : null }),
+  // ─── CHAT FIX 30.10.2026 · TWO PIECES ALREADY HELD ARE THE TWO PICKS ─────
+  // The owner: *"powinno sie najpierw wybrac dwie polki a pozniej nacisnac
+  // centre between i cala reszta pomiedzy tymi polkami sie centruja"*. So the
+  // button reads the selection first: exactly two pieces of THIS cabinet held
+  // (Ctrl+click, T36 F2) are the lower and the upper pick, and the act runs
+  // the moment the button is pressed (the project store's subscription, as it
+  // runs on the second pick); the store reads the two by height and refuses
+  // a piece that may not be picked in its own words. Any other selection arms
+  // the two picks as before: press, then the lower, then the upper.
+  armCentreBetween: (unitId) => set((s) => {
+    if (!unitId) return { centreBetween: null };
+    const held = (s.selectedElements || []).map(parseMember)
+      .filter((m) => m?.unitId === unitId && m.elementRef);
+    if (held.length === 2) {
+      return { centreBetween: { unitId, lower: held[0].elementRef, upper: held[1].elementRef } };
+    }
+    return { centreBetween: { unitId, lower: null, upper: null } };
+  }),
   cancelCentreBetween: () => set({ centreBetween: null }),
 
   // Shelf being dragged in 3D — drives the live dimension readout

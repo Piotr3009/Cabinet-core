@@ -58,13 +58,14 @@ const px = (n) => `${n}px`;
 
 /**
  * The widths that change with the screen (CLAUDE.md THE NUMBERS, all PROPOSED):
- * the rail 112 wide with its labels from 1440 up, 56 and icons only below; the quick card 344,
- * 316 below 1440; the full panel 400, 360 below 1500. The numbers are the profile's; "below"
- * is strict, so a screen exactly at a breakpoint takes the wide value.
+ * the rail 112 wide with its labels from 1440 up, 56 and icons only below; the full panel 400,
+ * 360 below 1500. The numbers are the profile's; "below" is strict, so a screen exactly at a
+ * breakpoint takes the wide value. CHAT FIX 30.10.2026: the quick card and its two widths are
+ * gone (the owner: *"tylko ten jeden przycisk usun, Full settings"*).
  *
  * @param {object} profile          the cabinet profile (getCabinetProfile())
  * @param {number} viewportWidth    the window's width in CSS px (window.innerWidth)
- * @returns {{ railPx: number, railLabels: boolean, quickPx: number, fullPx: number }}
+ * @returns {{ railPx: number, railLabels: boolean, fullPx: number }}
  */
 export function studioWidths(profile, viewportWidth) {
   const studio = studioBlock(profile);
@@ -75,27 +76,24 @@ export function studioWidths(profile, viewportWidth) {
   return {
     railPx: railLabels ? numberAt(studio, 'rail.widePx') : numberAt(studio, 'rail.narrowPx'),
     railLabels,
-    quickPx: viewportWidth < numberAt(studio, 'inspector.quickNarrowBelowPx')
-      ? numberAt(studio, 'inspector.quickNarrowPx')
-      : numberAt(studio, 'inspector.quickPx'),
     fullPx: viewportWidth < numberAt(studio, 'inspector.fullNarrowBelowPx')
       ? numberAt(studio, 'inspector.fullNarrowPx')
       : numberAt(studio, 'inspector.fullPx'),
   };
 }
 
-/** The inspector's three modes (uiStore `inspector`); no inspector at all is the column at 0. */
-const INSPECTOR_MODES = ['quick', 'full', 'none'];
+/** The inspector's two modes (uiStore `inspector`); no inspector at all is the column at 0. */
+const INSPECTOR_MODES = ['full', 'none'];
 
 /**
  * The CSS custom properties studio.css reads, as one object for a React `style` (or
  * `element.style.setProperty`, name by name). The shell sets them on its `.studio-pro` root.
  *
- * `inspector` is the uiStore's mode: 'quick' is the card's width, 'full' the panel's, 'none' (or
- * no inspector column at all, `undefined`) is 0. Any other word is a caller's mistake and is said.
+ * `inspector` is the uiStore's mode: 'full' is the panel's width, 'none' (or no inspector column
+ * at all, `undefined`) is 0. Any other word is a caller's mistake and is said.
  *
  * @param {object} profile
- * @param {{ viewportWidth: number, inspector?: 'quick' | 'full' | 'none' }} at
+ * @param {{ viewportWidth: number, inspector?: 'full' | 'none' }} at
  * @returns {Record<string, string>}
  */
 export function studioCssVars(profile, { viewportWidth, inspector } = {}) {
@@ -104,9 +102,7 @@ export function studioCssVars(profile, { viewportWidth, inspector } = {}) {
   if (inspector != null && !INSPECTOR_MODES.includes(inspector)) {
     throw new Error(`The Studio's inspector is ${INSPECTOR_MODES.map((m) => `'${m}'`).join(', ')}; it was given ${JSON.stringify(inspector)}.`);
   }
-  const inspectorPx = inspector === 'quick' ? widths.quickPx
-    : inspector === 'full' ? widths.fullPx
-      : 0;
+  const inspectorPx = inspector === 'full' ? widths.fullPx : 0;
   return {
     // CONFIRMED, the owner 27.10: the scale.
     '--studio-text': px(numberAt(studio, 'scale.textPx')),

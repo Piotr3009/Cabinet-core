@@ -101,9 +101,9 @@ test('F1 . the numbers the skin reads are the profile\'s, as THE NUMBERS table h
   assert.deepEqual(S.scale, { textPx: 13, fieldPx: 30, buttonPx: 32, radiusPx: 4 }, 'the scale, CONFIRMED');
   assert.deepEqual(S.bars, { topPx: 48, contextPx: 34, statusPx: 30 }, 'the bars, PROPOSED');
   assert.deepEqual(S.rail, { widePx: 112, narrowPx: 56, labelsFromPx: 1440 }, 'the rail, PROPOSED');
-  assert.deepEqual(S.inspector, {
-    quickPx: 344, quickNarrowPx: 316, quickNarrowBelowPx: 1440, fullPx: 400, fullNarrowPx: 360, fullNarrowBelowPx: 1500,
-  }, 'the quick card and the full panel, PROPOSED');
+  // CHAT FIX 30.10.2026: the quick card's three numbers left with the card (the owner: "tylko ten
+  // jeden przycisk usun, Full settings").
+  assert.deepEqual(S.inspector, { fullPx: 400, fullNarrowPx: 360, fullNarrowBelowPx: 1500 }, 'the full panel, PROPOSED');
   assert.deepEqual(S.issues, { warn: '#d9a441', danger: '#c9524b', textPx: 13 }, 'the issue colours, PROPOSED');
   assert.deepEqual(S.marker, { sizePx: 16 });
   assert.equal(S.libraryGapPx, 8);
@@ -115,24 +115,22 @@ test('F1 . the numbers the skin reads are the profile\'s, as THE NUMBERS table h
 
 // --- 2. studioWidths ------------------------------------------------------------------------------
 
-test('F1 . studioWidths at the walk\'s three sizes and at both breakpoints: rail 56 / 112 and its labels, quick 316 / 344, full 360 / 400', () => {
+test('F1 . studioWidths at the walk\'s three sizes and at both breakpoints: rail 56 / 112 and its labels, full 360 / 400', () => {
   const R = S.rail;
   const I = S.inspector;
   const W = (w) => studioWidths(P, w);
-  assert.deepEqual(W(1280), { railPx: R.narrowPx, railLabels: false, quickPx: I.quickNarrowPx, fullPx: I.fullNarrowPx });
-  assert.deepEqual(W(1440), { railPx: R.widePx, railLabels: true, quickPx: I.quickPx, fullPx: I.fullNarrowPx });
-  assert.deepEqual(W(1499), { railPx: R.widePx, railLabels: true, quickPx: I.quickPx, fullPx: I.fullNarrowPx });
-  assert.deepEqual(W(1500), { railPx: R.widePx, railLabels: true, quickPx: I.quickPx, fullPx: I.fullPx });
-  assert.deepEqual(W(1920), { railPx: R.widePx, railLabels: true, quickPx: I.quickPx, fullPx: I.fullPx });
-  // In tonight's numbers, the five widths read:
+  assert.deepEqual(W(1280), { railPx: R.narrowPx, railLabels: false, fullPx: I.fullNarrowPx });
+  assert.deepEqual(W(1440), { railPx: R.widePx, railLabels: true, fullPx: I.fullNarrowPx });
+  assert.deepEqual(W(1499), { railPx: R.widePx, railLabels: true, fullPx: I.fullNarrowPx });
+  assert.deepEqual(W(1500), { railPx: R.widePx, railLabels: true, fullPx: I.fullPx });
+  assert.deepEqual(W(1920), { railPx: R.widePx, railLabels: true, fullPx: I.fullPx });
+  // In tonight's numbers, the five widths read (CHAT FIX 30.10.2026: no quick width any more):
   assert.deepEqual([1280, 1440, 1499, 1500, 1920].map((w) => Object.values(W(w))), [
-    [56, false, 316, 360], [112, true, 344, 360], [112, true, 344, 360], [112, true, 344, 400], [112, true, 344, 400],
+    [56, false, 360], [112, true, 360], [112, true, 360], [112, true, 400], [112, true, 400],
   ]);
   // "Below" is strict, at the profile's own breakpoints (whatever the owner moves them to).
   assert.equal(W(R.labelsFromPx - 1).railLabels, false);
   assert.equal(W(R.labelsFromPx).railLabels, true);
-  assert.equal(W(I.quickNarrowBelowPx - 1).quickPx, I.quickNarrowPx);
-  assert.equal(W(I.quickNarrowBelowPx).quickPx, I.quickPx);
   assert.equal(W(I.fullNarrowBelowPx - 1).fullPx, I.fullNarrowPx);
   assert.equal(W(I.fullNarrowBelowPx).fullPx, I.fullPx);
 });
@@ -146,7 +144,7 @@ const CONTRACT_VARS = [
 ];
 
 test('F1 . studioCssVars: the contract\'s fourteen variables, each from the profile', () => {
-  const v = studioCssVars(P, { viewportWidth: 1920, inspector: 'quick' });
+  const v = studioCssVars(P, { viewportWidth: 1920, inspector: 'full' });
   assert.deepEqual(Object.keys(v).sort(), [...CONTRACT_VARS].sort());
   assert.deepEqual(v, {
     '--studio-text': `${S.scale.textPx}px`,
@@ -157,23 +155,23 @@ test('F1 . studioCssVars: the contract\'s fourteen variables, each from the prof
     '--studio-context': `${S.bars.contextPx}px`,
     '--studio-status': `${S.bars.statusPx}px`,
     '--studio-rail': `${S.rail.widePx}px`,
-    '--studio-inspector': `${S.inspector.quickPx}px`,
+    '--studio-inspector': `${S.inspector.fullPx}px`,
     '--studio-warn': S.issues.warn,
     '--studio-danger': S.issues.danger,
     '--studio-issue-text': `${S.issues.textPx}px`,
     '--studio-marker': `${S.marker.sizePx}px`,
     '--studio-library-gap': `${S.libraryGapPx}px`,
   });
-  // The inspector's column: the card, the panel, or nothing.
+  // The inspector's column: the panel, or nothing (CHAT FIX 30.10.2026: no card).
   const at = (viewportWidth, inspector) => studioCssVars(P, { viewportWidth, inspector })['--studio-inspector'];
   assert.equal(at(1920, 'full'), `${S.inspector.fullPx}px`);
-  assert.equal(at(1280, 'quick'), `${S.inspector.quickNarrowPx}px`);
   assert.equal(at(1280, 'full'), `${S.inspector.fullNarrowPx}px`);
   assert.equal(at(1440, 'full'), `${S.inspector.fullNarrowPx}px`);
   assert.equal(at(1440, 'none'), '0px');
   assert.equal(at(1440, undefined), '0px', 'no inspector column at all is a column of 0');
-  assert.equal(studioCssVars(P, { viewportWidth: 1280, inspector: 'quick' })['--studio-rail'], `${S.rail.narrowPx}px`);
-  assert.throws(() => studioCssVars(P, { viewportWidth: 1440, inspector: 'Full' }), /'quick', 'full', 'none'; it was given "Full"/);
+  assert.equal(studioCssVars(P, { viewportWidth: 1280, inspector: 'full' })['--studio-rail'], `${S.rail.narrowPx}px`);
+  assert.throws(() => studioCssVars(P, { viewportWidth: 1440, inspector: 'Full' }), /'full', 'none'; it was given "Full"/);
+  assert.throws(() => studioCssVars(P, { viewportWidth: 1440, inspector: 'quick' }), /'full', 'none'; it was given "quick"/, 'the card\'s mode is gone');
 });
 
 test('F1 . studioCssVars follows the profile it is given: change a number, the variable follows', () => {
@@ -181,12 +179,12 @@ test('F1 . studioCssVars follows the profile it is given: change a number, the v
   studio.scale = { textPx: 14, fieldPx: 31, buttonPx: 36, radiusPx: 6 };
   studio.bars = { topPx: 52, contextPx: 36, statusPx: 28 };
   studio.rail = { widePx: 120, narrowPx: 60, labelsFromPx: 1600 };
-  studio.inspector = { ...studio.inspector, quickPx: 350, fullPx: 420, fullNarrowBelowPx: 1700 };
+  studio.inspector = { ...studio.inspector, fullPx: 420, fullNarrowBelowPx: 1700 };
   studio.issues = { warn: '#123456', danger: '#654321', textPx: 15 };
   studio.marker = { sizePx: 18 };
   studio.libraryGapPx = 10;
   const fixture = { ui: { studio } };
-  const v = studioCssVars(fixture, { viewportWidth: 1650, inspector: 'quick' });
+  const v = studioCssVars(fixture, { viewportWidth: 1650, inspector: 'full' });
   assert.equal(v['--studio-text'], '14px');
   assert.equal(v['--studio-field'], '31px');
   assert.equal(v['--studio-button'], '36px');
@@ -195,27 +193,26 @@ test('F1 . studioCssVars follows the profile it is given: change a number, the v
   assert.equal(v['--studio-context'], '36px');
   assert.equal(v['--studio-status'], '28px');
   assert.equal(v['--studio-rail'], '120px', '1650 is past the fixture\'s 1600: the wide rail');
-  assert.equal(v['--studio-inspector'], '350px');
+  assert.equal(v['--studio-inspector'], `${studio.inspector.fullNarrowPx}px`, '1650 is under the fixture\'s 1700: the narrow panel');
   assert.equal(v['--studio-warn'], '#123456');
   assert.equal(v['--studio-danger'], '#654321');
   assert.equal(v['--studio-issue-text'], '15px');
   assert.equal(v['--studio-marker'], '18px');
   assert.equal(v['--studio-library-gap'], '10px');
-  assert.equal(studioCssVars(fixture, { viewportWidth: 1650, inspector: 'full' })['--studio-inspector'],
-    `${studio.inspector.fullNarrowPx}px`, '1650 is under the fixture\'s 1700: the narrow panel');
+  assert.equal(studioCssVars(fixture, { viewportWidth: 1750, inspector: 'full' })['--studio-inspector'], '420px', '1750 is past the fixture\'s 1700: the wide panel');
   assert.deepEqual(studioWidths(fixture, 1599), {
-    railPx: 60, railLabels: false, quickPx: 350, fullPx: studio.inspector.fullNarrowPx,
+    railPx: 60, railLabels: false, fullPx: studio.inspector.fullNarrowPx,
   });
 });
 
 test('F1 . a missing block, or a missing number, is said in a sentence that names it', () => {
   assert.throws(() => studioWidths({}, 1440), /profile\.ui\.studio is missing/);
   assert.throws(() => studioWidths(undefined, 1440), /profile\.ui\.studio is missing/);
-  assert.throws(() => studioCssVars({ ui: {} }, { viewportWidth: 1440, inspector: 'quick' }), /profile\.ui\.studio is missing/);
+  assert.throws(() => studioCssVars({ ui: {} }, { viewportWidth: 1440, inspector: 'full' }), /profile\.ui\.studio is missing/);
   const broken = { ui: { studio: { ...structuredClone(S), rail: { widePx: 112, narrowPx: 56 } } } };
   assert.throws(() => studioWidths(broken, 1440), /profile\.ui\.studio\.rail\.labelsFromPx is not a number/);
   const noColour = { ui: { studio: { ...structuredClone(S), issues: { textPx: 13 } } } };
-  assert.throws(() => studioCssVars(noColour, { viewportWidth: 1440, inspector: 'quick' }), /profile\.ui\.studio\.issues\.warn is not a colour/);
+  assert.throws(() => studioCssVars(noColour, { viewportWidth: 1440, inspector: 'full' }), /profile\.ui\.studio\.issues\.warn is not a colour/);
   assert.throws(() => studioWidths(P, undefined), /the window's width/);
   assert.throws(() => studioWidths(P, '1440'), /the window's width/);
 });
@@ -277,10 +274,10 @@ test('F1 . every rule is under .studio-pro; nothing here layers, transforms or c
     assert.ok(!props.includes(banned), `studio.css sets ${banned}: the one z-order is lib/modalLayer.js, and the `
       + 'inspector column must stay no stacking context nor containing block (verify/t84/p1-host.md B 13)');
   }
-  // One container, and it is a leaf: the card's row (the refused sentence's measure). A row holds
-  // no window, and no column, shell or slot above the RightPanel is ever one.
+  // No container at all (CHAT FIX 30.10.2026: the card's row, the one leaf container, left with the
+  // card): no column, shell or slot above the RightPanel is ever one.
   const containers = RULES.filter((r) => r.decls.some(([p]) => p.startsWith('container'))).flatMap((r) => r.selectors);
-  assert.deepEqual(containers, ['.studio-pro .studio-field-row']);
+  assert.deepEqual(containers, []);
 });
 
 test('F1 . the house classes keep their meaning and take the scale only in a .studio-skin surface, never in a .cc-panel', () => {
@@ -341,15 +338,13 @@ const VOCABULARY = [
   'studio-workspace', 'studio-rail', 'studio-rail-text', 'studio-rail-separator', 'studio-rail-bottom',
   'studio-rail-caption', 'studio-rail-badge', 'studio-scene', 'studio-scene-tools', 'studio-scene-toggles',
   'studio-scene-links', 'studio-inspector',
-  // Card
-  'studio-inspector-head', 'studio-object-title', 'studio-object-id', 'studio-object-thumb', 'studio-scope-row',
-  'studio-scope-pill', 'studio-inspector-body', 'studio-card-section-title', 'studio-field-row', 'studio-value-wrap',
-  'studio-unit', 'studio-value-action', 'studio-readonly-value', 'studio-inheritance', 'studio-inline-note',
-  'studio-card-actions', 'studio-inspector-bottom', 'studio-full-head', 'studio-empty-state',
+  // The inspector column (CHAT FIX 30.10.2026: the card's classes left with the card; the foot
+  // under the panel holds Open cabinet and the findings)
+  'studio-inspector-foot', 'studio-inspector-issues', 'studio-empty-state',
   // Popups
   'studio-popup', 'studio-popup-head', 'studio-menu-item', 'studio-library-item',
   // Issues
-  'studio-issue-strip', 'studio-counter', 'studio-marker', 'studio-refused', 'studio-refused-reason',
+  'studio-issue-strip', 'studio-counter', 'studio-marker',
   // Scene, icons, the surface
   'studio-toggle', 'studio-icon', 'studio-icon-btn', 'studio-skin',
   // CLAUDE.md F1 names them too: the floating window and the toast
@@ -372,7 +367,7 @@ test('F1 . every class of the contract\'s vocabulary is styled, with its modifie
 });
 
 test('F1 . a finding is 13 px, dark on its level\'s ground, in every place it stands (F5)', () => {
-  for (const cls of ['studio-issue-strip', 'studio-counter', 'studio-marker', 'studio-refused-reason', 'studio-rail-badge']) {
+  for (const cls of ['studio-issue-strip', 'studio-counter', 'studio-marker', 'studio-rail-badge']) {
     const sel = `.studio-pro .${cls}`;
     assert.equal(declOf(sel, 'font-size'), 'var(--studio-issue-text)', `${cls}: the issue size`);
     assert.equal(declOf(sel, 'color'), "theme('colors.black')", `${cls}: dark text`);
@@ -384,19 +379,16 @@ test('F1 . a finding is 13 px, dark on its level\'s ground, in every place it st
   }
   assert.equal(declOf('.studio-pro .studio-rail-badge.is-red', 'background'), 'var(--studio-danger)');
   assert.equal(declOf('.studio-pro .studio-marker .studio-icon', 'width'), 'var(--studio-marker)');
-  assert.equal(declOf('.studio-pro .studio-refused[data-refused="1"] :is(input, .cc-input)', 'border-color'), 'var(--studio-danger)');
-  // In a card row the sentence takes the row's whole width, under the label and the field: as a
-  // row of the row's grid when the refused field is the row's own child, by the row's measure (a
-  // container query) when it stands in the value's cell, as S2's card holds it.
-  assert.equal(declOf('.studio-pro .studio-field-row > .studio-refused', 'display'), 'contents');
-  assert.equal(declOf('.studio-pro .studio-field-row > .studio-refused > .studio-refused-reason', 'grid-column'), '1 / -1');
-  assert.equal(declOf('.studio-pro .studio-field-row', 'container-type'), 'inline-size');
-  assert.equal(declOf('.studio-pro .studio-value-wrap .studio-refused-reason', 'width'), '100cqw');
-  assert.equal(declOf('.studio-pro .studio-value-wrap .studio-refused-reason', 'margin-left'), 'calc(100% - 100cqw)');
-  // ...and the label stays in sight, level with its field, above the sentence (it was covered,
-  // centred in the taller row: measured on the mock at 1280, T84 D1).
-  assert.equal(declOf('.studio-pro .studio-field-row:has(.studio-refused-reason)', 'align-items'), 'start');
-  assert.equal(declOf('.studio-pro .studio-field-row:has(.studio-refused-reason) > .cc-label', 'min-height'), 'var(--studio-field)');
+  // CHAT FIX 30.10.2026: the refused field (red, the sentence under it) left with the quick card.
+  assert.doesNotMatch(CSS, /studio-refused/, 'no refused-field rule is left behind');
+  // The findings stand in the column's foot, under Open cabinet, scrolling on their own, never
+  // taller than 45 % of the column (the owner: "open cabinet na samym dole a pod nim wszystkie
+  // bledy ktore pokazuje"; the house rule: content is never covered).
+  assert.equal(declOf('.studio-pro .studio-inspector-foot', 'max-height'), '45%');
+  assert.equal(declOf('.studio-pro .studio-inspector-foot', 'min-height'), '0');
+  assert.equal(declOf('.studio-pro .studio-inspector-issues', 'overflow-y'), 'auto');
+  assert.equal(declOf('.studio-pro .studio-inspector-issues', 'min-height'), '0');
+  assert.equal(declOf('.studio-pro .studio-inspector .studio-issue-strip', 'border-radius'), '0');
 });
 
 test('F1 . the rail: its word is never clipped, and Check\'s count never takes the word\'s room', () => {

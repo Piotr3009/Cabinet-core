@@ -49,7 +49,6 @@ const CASES = [
   ['a field has the caret, over everything', {
     ui: { ...PART, contextMenu: {}, libraryCategory: 'kitchen' }, dom: { field: true, menu: true, windows: [ROOM] },
   }, 1, 'own', null],
-  ['a refused card value stands (its field cancels it)', { ui: PART, dom: { refusal: true, menu: true } }, 1, 'own', null],
   ['Center between, its piece panel open', { ui: { ...PART, centreBetween: { unitId: 'u1' } }, dom: { centreBetweenListener: true } }, 1, 'own', null],
   ['Center between, no panel left', { ui: { ...PART, centreBetween: { unitId: 'u1' } } }, 1, 'shell', 'cancelCentreBetween'],
   ['the top menu open over a cabinet (today: both go, p1-escape.md D 1)', { ui: CABINET, dom: { menu: true } }, 2, 'own', null],
@@ -98,7 +97,8 @@ test('F7 Escape order · only Escape, and an answered press is left alone', () =
 // Which level each fact belongs to (p1-escape.md E), written apart from the
 // module so the module is held to the table and not to itself.
 const LEVEL_OF = {
-  composing: 1, field: 1, refusal: 1, centreBetween: 1,
+  // CHAT FIX 30.10.2026: `refusal` (the quick card's refused value) left with the card.
+  composing: 1, field: 1, centreBetween: 1,
   ownPopup: 2, otherPopup: 2, menu: 2, contextMenu: 2, libraryFlyout: 2, materialPicker: 2, history: 2,
   window: 3, library: 3, islandPlan: 3,
   ruler: 4, notchPick: 4, edgeNotchPick: 4,
@@ -307,7 +307,6 @@ test('F7 Escape · the document reader: a fake page, every fact', () => {
     querySelector: (sel) => inner[sel] || null,
   });
   const present = {
-    '[data-studio="refused"][data-refused="1"]': el(),
     'nav[aria-label="Main menu"] [role="menu"]': el(),
     '[data-message-history-list]': el(),
   };
@@ -321,7 +320,7 @@ test('F7 Escape · the document reader: a fake page, every fact', () => {
   };
   const dom = readEscapeDom({ target: { tagName: 'BUTTON' } }, doc);
   assert.equal(dom.field, false);
-  assert.equal(dom.refusal, true);
+  assert.equal('refusal' in dom, false, 'CHAT FIX 30.10.2026: no refused card value to read');
   assert.equal(dom.menu, true);
   assert.equal(dom.historyList, true);
   assert.equal(dom.libraryFlyout, false);
@@ -338,7 +337,6 @@ test('F7 Escape · the document reader: a fake page, every fact', () => {
 
 test('F7 Escape · every hook the reader looks for is drawn by the component it names', () => {
   const HOOKS = [
-    ['src/components/studio/RefusedField.jsx', /data-studio="refused"/, /data-refused=/],
     ['src/components/ElementProperties.jsx', /data-centre-between="1"/, /aria-pressed=\{Boolean\(centreBetween\)\}/],
     ['src/components/MenuBar.jsx', /aria-label="Main menu"/, /role="menu"/],
     ['src/components/LibraryPanel.jsx', /data-library-flyout=/],

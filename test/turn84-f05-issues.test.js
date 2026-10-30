@@ -26,19 +26,16 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
+import * as ISSUES from '../src/components/studio/lib/studioIssues.js';
 import {
-  ISSUE_LEVELS, groupIssues, issueCountText, issueCounters, issueStripText,
-  markerLevel, refusalOf, refusedFieldAfter, refusedFieldShows, shouldCommitField, unitIssue,
+  ISSUE_LEVELS, groupIssues, issueCountText, issueCounters, issueStripText, markerLevel, unitIssue,
 } from '../src/components/studio/lib/studioIssues.js';
 import { CHECKS, checkSummary, findingsToAct } from '../src/engine/checks.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
 import { useUiStore } from '../src/stores/uiStore.js';
-import {
-  flushHistory, unwatchProjectHistory, useHistoryStore, watchProjectHistory,
-} from '../src/stores/historyStore.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
 
 const ROOT = new URL('../', import.meta.url).pathname;
@@ -49,13 +46,12 @@ const code = (text) => text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.
 const DASHES = new RegExp(`[${String.fromCharCode(0x2013)}${String.fromCharCode(0x2014)}]`);
 const store = () => useProjectStore.getState();
 const ui = () => useUiStore.getState();
-const history = () => useHistoryStore.getState();
 
+// CHAT FIX 30.10.2026: RefusedField.jsx left with the quick card (kasacja); the three that stand.
 const MINE = [
   'src/components/studio/lib/studioIssues.js',
   'src/components/studio/UnitIssueMarker.jsx',
   'src/components/studio/IssueStrip.jsx',
-  'src/components/studio/RefusedField.jsx',
   'test/turn84-f05-issues.test.js',
 ];
 
@@ -132,10 +128,8 @@ test('F5 · the skin draws the law for every class this slice carries: 13 px, da
     assert.match(css, new RegExp(`\\.studio-pro \\.${cls}\\.is-yellow \\{ background: var\\(--studio-warn\\); \\}`));
   }
   assert.match(rule('.studio-pro .studio-marker .studio-icon'), /width: var\(--studio-marker\);/, 'the profile\'s 16 px');
-  assert.match(rule('.studio-pro .studio-refused[data-refused="1"] :is(input, .cc-input)'), /border-color: var\(--studio-danger\);/);
-  const reason = rule('.studio-pro .studio-refused-reason');
-  assert.match(reason, /background: var\(--studio-danger\);/);
-  assert.match(reason, /font-size: var\(--studio-issue-text\);/);
+  // CHAT FIX 30.10.2026: the refused field's rules left with RefusedField.jsx.
+  assert.doesNotMatch(css, /studio-refused/);
 });
 
 test('F5 · the counters\' text: "1 red · 3 yellow"; a level with nothing is not said; nothing at all is nothing', () => {
@@ -212,94 +206,22 @@ test('F5 · on a job built through the store: the engine\'s findings, grouped as
 
 // ─── THE REFUSED FIELD (CLAUDE.md T84 F5) ───────────────────────────────────
 
-test('F5 · the refused field keeps the old value and shows the reason, in the engine\'s exact sentence', () => {
-  store().loadProject({
-    id: null, name: 't84-f5-refused', room: migrateRoom({ height: 2700, corners: rectCorners(6000, 3000) }), design: {},
-  }, []);
-  const { id } = store().addUnit('BUD', { wall: 0, x: 1200 });
-  watchProjectHistory();
-  try {
-    flushHistory();
-    const width = () => store().units.find((u) => u.id === id).params.width;
-    // The card's road for a dimension row (QuickSelectionCard's `commit`):
-    // the room's refusal first, then the setter.
-    const commit = (v) => {
-      const no = store().roomFitRefusalFor(id, { width: v });
-      if (no) return { ok: false, reason: no.message };
-      store().updateUnitParams(id, { width: v });
-      return { ok: true };
-    };
-    const applied = width();
-    const depth = history().past.length;
-    // Typed 9000 on a 6000 wall: refused, in the room's own words.
-    assert.equal(shouldCommitField({ value: 9000, applied }), true);
-    const said = store().roomFitRefusalFor(id, { width: 9000 }).message;
-    let state = refusedFieldAfter(null, { type: 'commit', value: 9000, answer: commit(9000) });
-    flushHistory();
-    assert.deepEqual(state, { typed: 9000, reason: said }, 'the reason is the engine\'s, byte for byte');
-    assert.equal(width(), applied, 'the old value stays applied');
-    assert.equal(history().past.length, depth, 'a refused change never enters the history');
-    assert.equal(refusedFieldShows(state, applied), 9000, 'the typed value stays shown, unapplied');
-    // Escape restores the last applied one, and writes nothing.
-    state = refusedFieldAfter(state, { type: 'escape' });
-    assert.equal(state, null);
-    assert.equal(refusedFieldShows(state, applied), applied);
-    assert.equal(width(), applied);
-    // A value that fits is applied, and the refusal is over.
-    state = refusedFieldAfter({ typed: 9000, reason: said }, { type: 'commit', value: 700, answer: commit(700) });
-    flushHistory();
-    assert.equal(state, null);
-    assert.equal(width(), 700);
-    assert.equal(history().past.length, depth + 1, 'an applied change is one step');
-    // The applied value moving from outside (an Undo, a clamp) ends a refusal.
-    assert.equal(refusedFieldAfter({ typed: 9000, reason: said }, { type: 'outside' }), null);
-  } finally {
-    unwatchProjectHistory();
+// ─── CHAT FIX 30.10.2026 · THE REFUSED FIELD LEFT WITH THE QUICK CARD ──────
+// The owner: *"tylko ten jeden przycisk usun, Full settings"*. The card was the
+// refused field's only home (QuickSelectionCard's dimension rows); with the
+// card deleted, RefusedField.jsx, its law in studioIssues.js and its rules in
+// studio.css are deleted too (kasacja, no gate left behind). A refused width
+// in the full panel is said as it always was there: the room's sentence in a
+// message (RightPanel.jsx roomFitRefusalFor).
+
+test('F5 · the refused field is gone whole: no component, no law, no rule, no reader of its wrapper', () => {
+  assert.ok(!existsSync(join(ROOT, 'src/components/studio/RefusedField.jsx')), 'RefusedField.jsx is deleted');
+  for (const name of ['refusalOf', 'shouldCommitField', 'refusedFieldAfter', 'refusedFieldShows']) {
+    assert.equal(typeof ISSUES[name], 'undefined', `${name} left with the field`);
   }
-});
-
-test('F5 · which commits reach the setter: not Escape\'s own blur, not the applied value again', () => {
-  assert.equal(shouldCommitField({ value: 920, applied: 600 }), true);
-  assert.equal(shouldCommitField({ value: 920, applied: 600, abandoned: true }), false,
-    'NumberField\'s Escape blurs and its blur commits the typed text (p1-escape.md C case 1): abandoned');
-  assert.equal(shouldCommitField({ value: 600, applied: 600 }), false, 'no change, nothing to apply or refuse');
-  assert.equal(shouldCommitField({ value: 600, applied: '600' }), false);
-  assert.equal(shouldCommitField({ value: 600.5, applied: 600 }), true);
-  assert.equal(shouldCommitField({ value: null, applied: null }), false);
-  assert.equal(shouldCommitField({ value: null, applied: 600 }), true);
-  // What a setter said, read once.
-  assert.deepEqual(refusalOf({ ok: false, reason: 'the sentence' }), { reason: 'the sentence' });
-  assert.deepEqual(refusalOf({ ok: false }), { reason: '' }, 'no sentence is invented');
-  assert.equal(refusalOf({ ok: true }), null);
-  assert.equal(refusalOf(undefined), null);
-  assert.equal(refusalOf({ notices: ['clamped'] }), null, 'an applied value with notices is applied');
-});
-
-test('F5 · RefusedField wraps NumberField, takes Escape first and keeps the DOM contract (source)', () => {
-  const field = read('src/components/studio/RefusedField.jsx');
-  assert.match(field, /import NumberField from '\.\.\/NumberField\.jsx';/, 'a wrapper round the house field');
-  assert.match(field, /<NumberField\n\s+\{\.\.\.rest\}\n\s+value=\{showing\}\n\s+onCommit=\{onFieldCommit\}/);
-  assert.match(field, /const showing = refusedFieldShows\(refused, value\);/);
-  // Escape before NumberField's own (which commits), and no listener under it.
-  assert.match(field, /onKeyDownCapture=\{onKeyDownCapture\}/);
-  assert.match(field, /if \(e\.key !== 'Escape' \|\| e\.nativeEvent\?\.isComposing\) return;\n\s+e\.preventDefault\(\);\n\s+e\.stopPropagation\(\);/);
-  assert.match(field, /abandon\.current = true;\n\s+if \(field && typeof field\.blur === 'function'\) field\.blur\(\);/);
-  assert.match(field, /shouldCommitField\(\{ value: v, applied: value, abandoned \}\)/);
-  // THE DOM CONTRACT, synchronously through the ref (CONTRACT.md section 4).
-  assert.match(field, /data-studio="refused"/);
-  assert.match(field, /el\.setAttribute\('data-refused', '1'\);\n\s+el\.setAttribute\('data-refusal', next\.reason\);/);
-  assert.match(field, /el\.removeAttribute\('data-refused'\);\n\s+el\.removeAttribute\('data-refusal'\);/);
-  // The reason under it in 13 px on the danger ground, as it was given.
-  assert.match(field, /<p id=\{reasonId\} role="alert" className="studio-refused-reason">\n\s+\{said\}/);
-  assert.match(field, /className="studio-refused"/);
-  assert.doesNotMatch(code(field), /style=|#[0-9a-f]{6}\b/i, 'the skin draws it; no look typed here');
-  assert.match(field, /\{said\}/);
-  // It reaches no setter of its own: the card's road is the only one.
-  assert.doesNotMatch(code(field), /stores\//, 'the field imports no store');
-  assert.doesNotMatch(code(field), /updateUnitParams|roomFitRefusalFor/, 'the field calls no setter itself');
-  // FROZEN 4: NumberField.jsx is not edited; its Escape is still the one the wrapper answers for.
-  assert.match(read('src/components/NumberField.jsx'),
-    /if \(e\.key === 'Escape'\) \{ e\.preventDefault\(\); setEditing\(false\); setText\(shown\); ref\.current\?\.blur\(\); \}/);
+  for (const rel of ['src/components/studio/InspectorHost.jsx', 'src/components/studio/lib/studioEscape.js', 'src/pages/ConfiguratorPage.jsx']) {
+    assert.doesNotMatch(code(read(rel)), /RefusedField|data-refused|data-refusal/, `${rel} still reads the refused wrapper`);
+  }
 });
 
 // ─── THE MARKER, THE STRIP, THE COUNTERS (source) ───────────────────────────
@@ -314,7 +236,7 @@ test('F5 · the marker: drei Html at the chip\'s anchor, a tool never in a rende
   assert.match(marker, /data-unit=\{unit\.id\}/);
   assert.match(marker, /<Icon name="warning" \/>\n\s+<span>\{issue\.count\}<\/span>/, 'the triangle and the count');
   assert.doesNotMatch(code(marker), /#[0-9a-f]{6}\b/i, 'no colour typed twice');
-  // Click: the unit, then its card if the inspector is hidden; a refused edit holds it.
+  // Click: the unit, then its panel if the inspector is hidden (CHAT FIX 30.10.2026: no card).
   assert.match(marker, /if \(ui\.selectUnit\(unit\.id\) === false\) return;/);
   assert.match(marker, /\.inspector === 'none'\) useUiStore\.getState\(\)\.showInspector\(\);/);
   // The room never hears the marker's press (a miss there drops the selection).
@@ -358,7 +280,7 @@ test('F5 · the strip and its Show; the counters open the Check at their level (
   assert.match(strip, /className=\{`studio-counter is-\$\{c\.level\}`\}/);
   assert.doesNotMatch(code(strip), /style=|#[0-9a-f]{6}\b/i, 'the skin draws them; no look typed here');
   // None of the three computes the checks itself: one list, one reader.
-  for (const rel of MINE.slice(0, 4)) assert.doesNotMatch(code(read(rel)), /runChecks/, `${rel} runs the checks itself`);
+  for (const rel of MINE.slice(0, 3)) assert.doesNotMatch(code(read(rel)), /runChecks/, `${rel} runs the checks itself`);
 });
 
 // ─── AFTER INT (S4's patches and the contract's uiStore names) ──────────────

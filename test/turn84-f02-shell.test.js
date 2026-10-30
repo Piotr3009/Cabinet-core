@@ -371,7 +371,7 @@ test('F2 · the shell\'s lengths are the profile\'s, through studioSkin; the ins
   assert.match(SHELL, /const column = inspector && mode !== 'none' \? mode : 'none';/);
   assert.match(SHELL, /studioCssVars\(profile, \{ viewportWidth: viewport\.width, inspector: column \}\)/);
   assert.match(SHELL, /studioWidths\(profile, viewport\.width\)/);
-  assert.match(SHELL, /data-inspector=\{mode \|\| 'quick'\}/, 'the root says the store\'s mode');
+  assert.match(SHELL, /data-inspector=\{mode \|\| 'full'\}/, 'the root says the store\'s mode (CHAT FIX 30.10.2026: full or none)');
   assert.match(SHELL, /className="studio-pro\b/);
   assert.match(SHELL, /window\.addEventListener\('resize', onResize\)/, 're-read on resize');
   assert.match(RAIL, /profile\.ui\.studio\.libraryGapPx/, 'the Library\'s gap is the profile\'s');

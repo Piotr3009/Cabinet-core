@@ -172,32 +172,43 @@ test('F4 · InspectorHost: a new file with the owner\'s header, no dash, no numb
   assert.ok(src.startsWith(`${HEADER}\n// T84 F4, THE INSPECTOR HOST (CLAUDE.md T84 PART B)\n`));
   assert.doesNotMatch(src, /[\u2013\u2014\u2018\u2019\u201c\u201d]/, 'no em or en dash, no curly quote');
   assert.match(src, /import \{ studioWidths \} from '\.\/lib\/studioSkin\.js';/);
-  assert.match(src, /const width = mode === 'full' \? widths\.fullPx : widths\.quickPx;/, 'the widths are the profile\'s, through studioSkin');
+  assert.match(src, /const width = widths\.fullPx;/, 'the width is the profile\'s, through studioSkin (CHAT FIX 30.10.2026: the panel\'s only)');
   const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   for (const n of [344, 316, 400, 360, 1440, 1500, 13, 30, 32]) {
     assert.doesNotMatch(code, new RegExp(`\\b${n}\\b`), `${n} is the profile's, never typed here`);
   }
 });
 
-test('F4 · the column: its hooks, its widths, the card in quick, the panel embedded in full, nothing in none', () => {
+test('F4 · the column: its hooks, its width, the panel embedded at once, the foot under it, nothing in none (CHAT FIX 30.10.2026)', () => {
   const src = host();
   assert.match(src, /import RightPanel, \{ EdgeNotchModal, MirrorBackModal, NotchModal \} from '\.\.\/RightPanel\.jsx';/);
-  assert.match(src, /import QuickSelectionCard from '\.\/QuickSelectionCard\.jsx';/);
+  // The owner, 30.10.2026: "tylko ten jeden przycisk usun, Full settings": no card, no card import
+  // (the head comment names the deleted files once, as the kasacja's tombstone).
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  assert.doesNotMatch(code, /QuickSelectionCard|studioCards|CardRow|RefusedField|Field=/);
   assert.match(src, /className="studio-inspector [^"]*"\n\s+data-studio="inspector"\n\s+data-mode=\{mode\}/);
   assert.doesNotMatch(src.match(/className="studio-inspector [^"]*"/)[0], /studio-skin/,
     'the embedded RightPanel is not inside a .studio-skin (verify/t84/DECISIONS.md 8)');
   assert.match(src, /const column = mode === 'none' \? null : \(/, '\'none\': no column');
-  assert.match(src, /<QuickSelectionCard\n\s+key=\{unitId\}\n\s+unitId=\{unitId\}\n\s+strip=\{renderStrip \? renderStrip\(unitId\) : null\}\n\s+Field=\{Field\}\n\s+\/>/);
-  assert.match(src, /const card = shows === 'one' && mode === 'quick';/);
-  assert.match(src, /const fullOne = shows === 'one' && mode === 'full';/);
+  assert.match(src, /const fullOne = shows === 'one';/, 'one cabinet: the full panel at once, no quick step');
   assert.match(src, /const panel = shows === 'cnc' \|\| shows === 'several' \|\| fullOne \|\| \(shows === 'nothing' && pinned\);/,
-    'CNC, several cabinets, one cabinet in full, and nothing selected while pinned: RightPanel embedded');
+    'CNC, several cabinets, one cabinet, and nothing selected while pinned: RightPanel embedded');
   assert.match(src, /if \(viewMode === 'cnc'\) shows = 'cnc';\n\s+else if \(unitType && several\) shows = 'several';\n\s+else if \(unitType\) shows = 'one';/);
-  // In full, the strip of F5, then the panel: no bar over it but the issue strip.
-  const full = src.slice(src.indexOf('{fullOne && renderStrip ?'), src.indexOf('<RightPanel\n'));
-  assert.match(full, /renderStrip\(unitId\)/);
-  assert.match(src, /<RightPanel\n\s+layout="embedded"\n\s+headerActions=\{<HostActions pinned=\{pinned\} back=\{mode !== 'quick' \|\| pinned\} \/>\}\n\s+\/>/);
+  // The panel, then the FOOT of one cabinet: Open cabinet and under it the strip of F5 (the owner:
+  // "open cabinet na samym dole a pod nim wszystkie bledy ktore pokazuje"). Nothing over the panel.
+  assert.match(src, /<RightPanel\n\s+layout="embedded"\n\s+headerActions=\{<HostActions pinned=\{pinned\} \/>\}\n\s+\/>/);
   assert.equal((src.match(/<RightPanel\b/g) || []).length, 1, 'one RightPanel, at one place in the tree');
+  const panelAt = src.indexOf('<RightPanel\n');
+  const footAt = src.indexOf('{fullOne ? <InspectorFoot unitId={unitId} unitType={unitType} renderStrip={renderStrip} /> : null}');
+  assert.ok(footAt > panelAt, 'the foot stands UNDER the panel');
+  assert.equal(src.indexOf('renderStrip(unitId)'), src.lastIndexOf('renderStrip(unitId)'), 'the strip is drawn in one place: the foot');
+  const foot = cut(src, 'InspectorFoot');
+  assert.match(foot, /data-studio="inspector-foot"/);
+  assert.match(foot, /className="cc-btn-gold"\n\s+data-studio="open-cabinet"\n\s+onClick=\{\(e\) => openModal\('cabinet', \{ unitId, anchor: anchorOfEvent\(e\) \}\)\}/,
+    'Open cabinet opens the editor window beside the press, as the right-click\'s Edit cabinet does');
+  assert.match(foot, /const board = isFreePanel\(unitType\);/, 'a free panel takes no Open cabinet (FREE_PANEL_MENU)');
+  assert.ok(foot.indexOf('data-studio="open-cabinet"') < foot.indexOf('data-studio="inspector-issues"'), 'Open cabinet first, the findings under it');
+  assert.match(foot, /<div className="studio-inspector-issues" data-studio="inspector-issues">\{renderStrip\(unitId\)\}<\/div>/);
   assert.match(src, /<h2>Select a cabinet or part<\/h2>/);
   assert.doesNotMatch(src, /<header\b|studio-full-head|<aside\b/, 'one panel, one header: the host draws no header of its own');
   for (const cls of src.match(/className=(?:"[^"]*"|\{`[^`]*`\})/g)) {
@@ -205,17 +216,14 @@ test('F4 · the column: its hooks, its widths, the card in quick, the panel embe
   }
 });
 
-test('F4 · Pin and Back to quick settings: inside RightPanel\'s header, the store\'s own actions, apart from the census', () => {
+test('F4 · Pin: inside RightPanel\'s header, the store\'s own action, apart from the census; no way back to a quick card (CHAT FIX 30.10.2026)', () => {
   const src = host();
   const actions = cut(src, 'HostActions');
   assert.match(actions, /<span className="flex items-center gap-1 shrink-0" data-studio-host="1">/);
   assert.match(actions, /data-studio="pin"\n\s+data-studio-host="1"\n\s+aria-pressed=\{pinned\}/);
   assert.match(actions, /onClick=\{\(\) => toggleInspectorPin\(\)\}/);
   assert.match(actions, /const toggleInspectorPin = useUiStore\(\(s\) => s\.toggleInspectorPin\);/);
-  assert.match(actions, /data-studio="back-to-quick"\n\s+data-studio-host="1"/);
-  assert.match(actions, /onClick=\{\(\) => showQuickSettings\(\)\}/);
-  assert.match(actions, /const showQuickSettings = useUiStore\(\(s\) => s\.showQuickSettings\);/);
-  assert.match(src, /const BACK_WORDS = 'Back to quick settings';/);
+  assert.doesNotMatch(src, /back-to-quick|showQuickSettings|BACK_WORDS|Quick settings/);
   assert.match(src, /const PIN_WORDS = 'Keep panel open and follow selection';/, 'the designer\'s own label');
 });
 
@@ -287,44 +295,26 @@ test('F4 · the open sections kept per type: filed under the old type, the new t
 
 // ─── 4. THE GUARD'S ANSWER, RUN AS WRITTEN ─────────────────────────────────
 
-test('F4 · the guard: the field with the caret blurs FIRST (it commits to its own cabinet), then a refusal holds the selection', () => {
+test('F4 · the guard: the field with the caret inside the column blurs (it commits to its own cabinet); the selection then moves (CHAT FIX 30.10.2026: no refused card value holds it)', () => {
   const guardAnswer = run(host(), 'guardAnswer');
-  const REFUSED = '[data-studio="refused"][data-refused="1"]';
-  const SENTENCE = 'WIDTH: 920 does not fit, the wall leaves 860 (an engine sentence, as given)';
   const log = [];
   const column = (inside) => ({
-    refused: null,
     contains: (el) => inside.includes(el),
-    querySelector(sel) { log.push(`query ${sel}`); return sel === REFUSED ? this.refused : null; },
+    querySelector(sel) { log.push(`query ${sel}`); return null; },
   });
-  const element = (tag, onBlur = null) => ({
+  const element = (tag) => ({
     tagName: tag,
-    blur() { log.push(`blur ${tag}`); if (onBlur) onBlur(); },
+    blur() { log.push(`blur ${tag}`); },
     focus() { log.push(`focus ${tag}`); },
   });
 
   assert.deepEqual(guardAnswer(null, null, false), { ok: true }, 'no column (none): nothing to hold');
 
-  // A valid typed width: the blur commits it, and the selection moves.
+  // A typed width: the blur commits it through the field's own closure, and the selection moves.
   let input = element('INPUT');
   let root = column([input]);
   assert.deepEqual(guardAnswer(root, input, false), { ok: true });
-  assert.deepEqual(log, ['blur INPUT', `query ${REFUSED}`]);
-
-  // An invalid one: its blur marks the wrapper refused there and then, so the answer is no, in the engine's words.
-  log.length = 0;
-  root = column([]);
-  input = element('INPUT', () => {
-    root.refused = { getAttribute: (n) => (n === 'data-refusal' ? SENTENCE : null) };
-  });
-  root.contains = (el) => el === input;
-  assert.deepEqual(guardAnswer(root, input, false), { ok: false, reason: SENTENCE });
-  assert.deepEqual(log, ['blur INPUT', `query ${REFUSED}`], 'the blur first, the refusal read after it');
-
-  // A refusal already standing holds the selection with no field focused; nothing moves the caret.
-  log.length = 0;
-  assert.deepEqual(guardAnswer(root, null, false), { ok: false, reason: SENTENCE });
-  assert.deepEqual(log, [`query ${REFUSED}`]);
+  assert.deepEqual(log, ['blur INPUT'], 'the blur, and nothing read off the document: no refused wrapper exists any more');
 
   // Only a field INSIDE the column, and only a field, is blurred.
   log.length = 0;
@@ -335,12 +325,13 @@ test('F4 · the guard: the field with the caret blurs FIRST (it commits to its o
   assert.deepEqual(guardAnswer(root, button, false), { ok: true });
   assert.ok(!log.some((l) => l.startsWith('blur')), 'a field elsewhere, or a button, is left alone');
 
-  // A cabinet deleted under its card: nothing to commit to, nothing held.
+  // A cabinet deleted under its panel: nothing to commit to, nothing held.
   log.length = 0;
   root = column([input]);
-  root.refused = { getAttribute: () => SENTENCE, querySelector: () => null };
   assert.deepEqual(guardAnswer(root, input, true), { ok: true });
   assert.deepEqual(log, []);
+  // The host reads no refused wrapper anywhere.
+  assert.doesNotMatch(host(), /data-refused|data-refusal|refused/);
 });
 
 // ─── 5. THE STORE: THE PIN'S REDUCER AND THE COMMIT BEFORE THE SWITCH ──────
@@ -354,7 +345,7 @@ const fresh = () => UI.useUiStore.setState({
   selectedElement: null,
   selectedElements: [],
   centreBetween: null,
-  inspector: 'quick',
+  inspector: 'full',
   inspectorPinned: false,
   selectionGuard: null,
 });
@@ -371,22 +362,24 @@ function holding(state, id) {
   return found.sort();
 }
 
-test('F4 · inspectorAfterSelect: pinned stays where it is, unpinned comes back to the quick card, and it answers a MODE', () => {
+test('F4 · inspectorAfterSelect: pinned stays where it is, unpinned comes back to the full panel (CHAT FIX 30.10.2026), and it answers a MODE', () => {
   const { inspectorAfterSelect } = UI;
   assert.equal(typeof inspectorAfterSelect, 'function', 'exported by src/stores/uiStore.js');
-  for (const mode of ['quick', 'full', 'none']) {
+  for (const mode of ['full', 'none']) {
     assert.equal(inspectorAfterSelect({ inspector: mode, inspectorPinned: true }, true), mode, `pinned in ${mode}`);
-    assert.equal(inspectorAfterSelect({ inspector: mode, inspectorPinned: false }, true), 'quick', `unpinned in ${mode}: the designer's prototype`);
+    assert.equal(inspectorAfterSelect({ inspector: mode, inspectorPinned: false }, true), 'full', `unpinned in ${mode}: the full panel at once`);
     assert.equal(inspectorAfterSelect({ inspector: mode, inspectorPinned: false }, false), mode, `nothing changed in ${mode}`);
   }
+  // The card's mode is no mode: it reads as the panel.
+  assert.equal(inspectorAfterSelect({ inspector: 'quick', inspectorPinned: true }, false), 'full');
   const answer = inspectorAfterSelect({ inspector: 'full', inspectorPinned: true, selectedUnitId: 'U7' }, true);
   assert.equal(answer, 'full');
-  assert.ok(['quick', 'full', 'none'].includes(answer), 'a mode, never an id');
+  assert.ok(['full', 'none'].includes(answer), 'a mode, never an id');
 });
 
 test('F4 · the pin follows the selection: another cabinet, several, none, and no store key but the selection holds an id', () => {
   fresh();
-  assert.equal(ui().inspector, 'quick');
+  assert.equal(ui().inspector, 'full');
   assert.equal(ui().inspectorPinned, false);
   ui().toggleInspectorPin();
   assert.equal(ui().inspectorPinned, true);
@@ -409,29 +402,30 @@ test('F4 · the pin follows the selection: another cabinet, several, none, and n
   assert.equal(ui().selectedUnitId, null);
   assert.equal(ui().inspector, 'full', 'pinned with nothing: the panel stays (its empty branch)');
   assert.equal(ui().inspectorPinned, true, 'nothing in the selection unpins');
-  // Unpinned, a new cabinet brings the quick card back.
+  // Unpinned, a new cabinet shows the full panel at once (CHAT FIX 30.10.2026: no quick card).
   ui().toggleInspectorPin();
   assert.equal(ui().inspectorPinned, false);
   assert.equal(ui().inspector, 'full');
+  ui().hideInspector();
   ui().selectUnit('U5');
-  assert.equal(ui().inspector, 'quick');
+  assert.equal(ui().inspector, 'full', 'back from hidden on a new cabinet');
 });
 
-test('F4 · the inspector\'s roads: Full settings, Back to quick settings, hide and show, and the panel\'s own open and x', () => {
+test('F4 · the inspector\'s roads: the panel\'s own openers, hide and show, and the panel\'s own open and x (CHAT FIX 30.10.2026: no quick settings)', () => {
   fresh();
   ui().showFullSettings();
   assert.equal(ui().inspector, 'full');
-  ui().toggleInspectorPin();
-  ui().showQuickSettings();
-  assert.deepEqual([ui().inspector, ui().inspectorPinned], ['quick', false], 'back to quick settings unpins');
+  assert.equal(typeof ui().showQuickSettings, 'undefined', 'the way back to a card is gone with the card');
   ui().hideInspector();
   assert.equal(ui().inspector, 'none');
   ui().showInspector();
-  assert.equal(ui().inspector, 'quick');
+  assert.equal(ui().inspector, 'full');
   ui().toggleInspectorPin();
   ui().hideInspector();
   ui().showInspector();
   assert.equal(ui().inspector, 'full', 'pinned: back to the full panel');
+  ui().setInspector('quick');
+  assert.equal(ui().inspector, 'full', 'the card\'s mode is no mode: it reads as the panel');
   // verify/t84/p1-host.md F: every legacy road that opens the panel shows it in Studio; its x hides it.
   ui().closeRightPanel();
   assert.deepEqual([ui().rightPanelOpen, ui().inspector], [false, 'none']);

@@ -101,7 +101,7 @@ export default function StudioShell({
         className="studio-pro h-full w-full min-w-0 min-h-0 overflow-hidden bg-shell-900"
         data-studio="shell"
         data-studio-shell=""
-        data-inspector={mode || 'quick'}
+        data-inspector={mode || 'full'}
         style={{ ...vars, ...SHELL_GRID }}
       >
         <StudioIcons />

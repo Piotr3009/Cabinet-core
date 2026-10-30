@@ -74,8 +74,7 @@ export default function UnitIssueMarker({ unit, position }) {
   const onClick = (e) => {
     e.stopPropagation();
     const ui = useUiStore.getState();
-    // A refused edit in the inspector keeps the selection where it is (F4's
-    // guard): then nothing else moves either.
+    // The inspector's guard (F4) answers before the selection moves.
     if (ui.selectUnit(unit.id) === false) return;
     if (useUiStore.getState().inspector === 'none') useUiStore.getState().showInspector();
   };
@@ -97,7 +96,7 @@ export default function UnitIssueMarker({ unit, position }) {
           data-level={issue.level}
           data-count={issue.count}
           aria-label={said}
-          title={`${said}. Select it and show its card.`}
+          title={`${said}. Select it and show its panel.`}
           onClick={onClick}
           onPointerDown={keepToItself}
           onPointerUp={keepToItself}

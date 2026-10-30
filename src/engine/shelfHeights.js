@@ -220,6 +220,25 @@ export function shelfColumns({
   const shelves = (panels || []).filter((p) => p?.box && (p.part === 'SHELF' || p.part === 'FIXED'));
   if (!shelves.length) return [];
   const walls = bearingWalls(panels);
+  // ─── CHAT FIX 30.10.2026 · THE COLUMN STANDS ON ITS OWN DRAWER CAP ────────
+  // The owner, of Center between over drawers in a recess column: *"nawet nie
+  // pokazuje wymiaru pomiedzy polka a polka szufladowa"*; *"polka nad
+  // szufladami przez program nie jest brana jako polka"*. The `floor` handed
+  // in is the full-width stack's cap (`assemblies.drawerZone`) or the carcass
+  // floor; a stack in ONE column (T79 F3's two columns, the recess column of
+  // 28.10) closes under its own `PARTITION` board and the ladder measured the
+  // lowest shelf from the bottom of the cabinet instead. So a column's floor is
+  // the top face of the highest cap board standing under its lowest shelf and
+  // across its run, when that is higher than the floor given: the full-width
+  // cap answers the same number `drawerZone` did, to the millimetre.
+  const caps = (panels || []).filter((p) => p?.box && p.part === 'PARTITION');
+  const floorOf = (ordered) => {
+    const low = ordered[0];
+    const run = low.meta?.run || { from: low.box.x, to: low.box.x + low.box.w };
+    const under = caps.filter((c) => c.box.y + c.box.h <= low.box.y + 1e-6
+      && c.box.x < run.to && c.box.x + c.box.w > run.from);
+    return under.reduce((f, c) => Math.max(f, c.box.y + c.box.h), Number(floor) || 0);
+  };
 
   const columns = new Map();
   for (const p of shelves) {
@@ -250,7 +269,7 @@ export function shelfColumns({
       lights: clearLights({
         positions: ordered.map((p) => p.box.y),
         thickness: ordered.map((p) => p.box.h),
-        floor,
+        floor: floorOf(ordered),
         ceiling,
       }, step),
     };

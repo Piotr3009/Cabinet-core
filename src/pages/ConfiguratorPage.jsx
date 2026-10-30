@@ -45,7 +45,6 @@ import InspectorHost from '../components/studio/InspectorHost.jsx';
 // T84 F5 (CLAUDE.md PART C): the errors you can see.
 import { setUnitAdornment } from '../3d/UnitView.jsx';
 import IssueStrip, { IssueCounters } from '../components/studio/IssueStrip.jsx';
-import RefusedField from '../components/studio/RefusedField.jsx';
 import UnitIssueMarker from '../components/studio/UnitIssueMarker.jsx';
 // T84 F6 (CLAUDE.md PART D): the scene's edge.
 import SceneToggles from '../components/studio/SceneToggles.jsx';
@@ -670,7 +669,7 @@ export default function ConfiguratorPage({ studio = false } = {}) {
     // T84 F4 · the inspector column: the quick card, or the RightPanel embedded.
     // T84 F5 · the strip over the card and the panel, the refused field in the card (handed as an
     // object key: a bare `Field=` attribute reads, to test/imports.test.js, as retail's own Field).
-    inspector: <InspectorHost renderStrip={(unitId) => <IssueStrip unitId={unitId} />} {...{ Field: RefusedField }} />,
+    inspector: <InspectorHost renderStrip={(unitId) => <IssueStrip unitId={unitId} />} />,
     // T84 F5 · the counters on the status bar.
     statusExtras: <IssueCounters />,
     // T84 F6 · the four toggles, View, and the camera bar with Drawings... (the PREVIEW).

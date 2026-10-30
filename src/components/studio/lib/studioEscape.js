@@ -20,8 +20,8 @@
 //
 // THE ORDER is P1's (verify/t84/p1-escape.md E): six levels, and the first one
 // that is active owns the press.
-//   1 field    a field with the caret, a refused card value still standing,
-//              Center between
+//   1 field    a field with the caret, Center between (CHAT FIX 30.10.2026:
+//              the refused card value left with the quick card)
 //   2 menu     the topmost submenu or popup: the menu bar, the right-click
 //              menu, a library flyout, the material picker, the Changes list,
 //              a Studio popup (the rail's Add and Materials, the scene's View)
@@ -51,7 +51,7 @@
 //
 // WHEN. ONE `keydown` listener on `window`, in the CAPTURE phase, installed
 // when the shell mounts: it runs before any listener that registers later (a
-// flyout, Center between, a refused field, the View popup) and before every
+// flyout, Center between, the View popup) and before every
 // bubble listener, so it reads the state as the press finds it, before any
 // owner has answered. A bubble listener would not do: zustand's `set` is
 // synchronous, so it would find a menu already shut and drop the cabinet too
@@ -141,8 +141,6 @@ export function readEscapeDom(event, doc = (typeof document === 'undefined' ? nu
   const has = (selector) => Boolean(doc.querySelector(selector));
   return {
     field: isFieldTarget(event?.target),
-    // components/studio/RefusedField.jsx: the wrapper of a refused card value.
-    refusal: has('[data-studio="refused"][data-refused="1"]'),
     // components/ElementProperties.jsx: Center between, armed, in a panel that cancels it itself.
     centreBetweenListener: has('[data-centre-between="1"][aria-pressed="true"]'),
     // components/MenuBar.jsx: a dropdown of the top menu.
@@ -184,7 +182,6 @@ export function escapeSnapshot({
     handled: Boolean(event?.defaultPrevented || event?.cancelBubble),
     composing: Boolean(event?.isComposing),
     field: Boolean(d.field),
-    refusal: Boolean(d.refusal),
     centreBetween: Boolean(u.centreBetween),
     centreBetweenListener: Boolean(d.centreBetweenListener),
     ownPopup: own > 0,
@@ -230,7 +227,6 @@ export function escapeStep(s) {
   // 1, a focused edit or a local operation
   if (s.composing) return at(1, 'own', null, 'the input method is composing: the key is its own');
   if (s.field) return at(1, 'own', null, 'a field has the caret: its own Escape ends the edit');
-  if (s.refusal) return at(1, 'own', null, 'a refused card value stands: its field cancels it on this press');
   if (s.centreBetween) {
     return s.centreBetweenListener
       ? at(1, 'own', null, 'Center between: the piece panel that armed it cancels it')

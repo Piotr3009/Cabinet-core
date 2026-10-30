@@ -398,11 +398,8 @@ export const NEW_FILES = [
   'src/components/studio/lib/studioFace.js',
   'test/turn84-f02-shell.test.js',
   'scripts/t78-classify.d/f45-t84-f02.mjs',
-  // T84 F3 (27.10.2026): the quick cards
-  'src/components/studio/QuickSelectionCard.jsx',
-  'src/components/studio/lib/studioCards.js',
-  'src/components/studio/cards/CardRow.jsx',
-  'test/turn84-f03-cards.test.js',
+  // T84 F3 (27.10.2026): the quick cards. DELETED by the chat fix of 30.10.2026 (the owner: "tylko ten jeden
+  // przycisk usun, Full settings"): QuickSelectionCard.jsx, lib/studioCards.js, cards/CardRow.jsx, their test.
   'scripts/t78-classify.d/f45-t84-f03.mjs',
   // T84 F4 (27.10.2026): the inspector host
   'src/components/studio/InspectorHost.jsx',
@@ -411,7 +408,7 @@ export const NEW_FILES = [
   // T84 F5 (27.10.2026): the errors you can see
   'src/components/studio/UnitIssueMarker.jsx',
   'src/components/studio/IssueStrip.jsx',
-  'src/components/studio/RefusedField.jsx',
+  // (RefusedField.jsx, the card's field, DELETED with the card 30.10.2026)
   'src/components/studio/lib/studioIssues.js',
   'test/turn84-f05-issues.test.js',
   'scripts/t78-classify.d/f45-t84-f05.mjs',
@@ -445,6 +442,10 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f48-owner-2810-project-file.mjs',
   // Chat fix 29.10.2026: Center all and Center between in the Section, and the piece's window lets the picks through
   'test/chatfix-2910-centre-between-section.test.js',
+  // Chat fix 30.10.2026: the shelf ladder on the column's own cap; Center between on two held pieces
+  'test/chatfix-3010-ladder-floor.test.js',
+  'test/chatfix-3010-centre-between-held.test.js',
+  'scripts/t78-classify.d/f49-owner-3010-ladder.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

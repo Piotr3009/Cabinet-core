@@ -14,17 +14,27 @@
 // (`profile.ui.studio.inspector`, read through studioSkin's `studioWidths`);
 // not one of them is typed here.
 //
-// What the column shows is read off the store at every render, never kept:
+// CHAT FIX 30.10.2026 · THE QUICK CARD IS GONE. The owner: *"nie nie nie,
+// zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne
+// menu, tylko ten jeden przycisk usun, Full settings"*; *"open cabinet na
+// samym dole a pod nim wszystkie bledy ktore pokazuje"*. A cabinet clicked
+// shows the full panel at once (its sections fold as they always did); the
+// card, its rows and its two buttons are deleted (QuickSelectionCard.jsx,
+// cards/CardRow.jsx, lib/studioCards.js, RefusedField.jsx, kasacja). What the
+// column shows is read off the store at every render, never kept:
 //   the CNC view              RightPanel embedded, its CNC branch (the tree)
 //   several cabinets          RightPanel embedded, its MultiUnitPanel branch
-//   one cabinet, 'quick'      the quick card (F3), the issue strip in it (F5)
-//   one cabinet, 'full'       the issue strip (F5), then RightPanel embedded
+//   one cabinet               RightPanel embedded, then the FOOT: Open cabinet
+//                             (the editor window, as the right-click's Edit
+//                             cabinet) and under it every finding of this
+//                             cabinet (the issue strip, F5), scrolling on its
+//                             own so the sections above are never covered
 //   nothing, unpinned         "Select a cabinet or part"
 //   nothing, pinned           RightPanel embedded, its empty branch
 //   'none'                    no column at all
-// One panel, one header (CLAUDE.md T84 LAWS 2): Pin and Back to quick settings
-// stand INSIDE RightPanel's own header (its `headerActions`), never in a bar
-// over it, and every row of the panel is the panel's own.
+// One panel, one header (CLAUDE.md T84 LAWS 2): Pin stands INSIDE RightPanel's
+// own header (its `headerActions`), never in a bar over it, and every row of
+// the panel is the panel's own.
 //
 // Pin (the designer: "Pin keeps inspector open and FOLLOWING SELECTION; it
 // never locks unit ID"): `inspectorPinned` is a yes or a no in the store, and
@@ -33,9 +43,9 @@
 // full panel, so the next cabinet of a kind comes up as the last one was left.
 //
 // Commit before switch (CLAUDE.md T84 F4): "Before the selection changes, a
-// pending valid edit is committed to its ORIGINAL unit id; an invalid one
-// blocks the switch with its refusal visible; Escape cancels it." While it is
-// mounted, the host is the store's selection guard (`setSelectionGuard`).
+// pending valid edit is committed to its ORIGINAL unit id." While it is
+// mounted, the host is the store's selection guard (`setSelectionGuard`): the
+// field with the caret is blurred, and its own blur commits.
 //
 // The three windows RightPanel's one-cabinet branch has always carried (the
 // cut corner, the cut edge, the mirror on the back: verify/t84/p1-host.md
@@ -55,14 +65,14 @@ import RightPanel, { EdgeNotchModal, MirrorBackModal, NotchModal } from '../Righ
 import { useUiStore } from '../../stores/uiStore.js';
 import { useProjectStore } from '../../stores/projectStore.js';
 import { useCabinetProfileStore } from '../../stores/cabinetProfileStore.js';
-import QuickSelectionCard from './QuickSelectionCard.jsx';
+import { anchorOfEvent } from '../../lib/modalAnchor.js';
+import { isFreePanel } from '../../engine/types.js';
 import { Icon } from './StudioIcons.jsx';
 import { studioWidths } from './lib/studioSkin.js';
 
-// The designer's label for Pin (Stage-1, her full head), and CLAUDE.md's words for the way back.
+// The designer's label for Pin (Stage-1, her full head).
 const PIN_WORDS = 'Keep panel open and follow selection';
 const PINNED_WORDS = 'Pinned: the panel stays open and follows the selection. Click to unpin.';
-const BACK_WORDS = 'Back to quick settings';
 
 // The viewport's width: the column's widths change at the profile's own breakpoints.
 const onResize = (notify) => {
@@ -106,16 +116,12 @@ function followSections(memory, state, prev, typeOf, setPanelSection) {
 }
 
 /**
- * The selection guard's answer (verify/t84/agents/CONTRACT.md 4, THE REFUSED
- * FIELD'S DOM), apart from React so its order is read and tested as written:
- * the blur FIRST (a field's blur commits through its own closure, to its own
- * cabinet, and a refusal marks its wrapper there and then), the refused
- * wrapper after. A refusal standing in the column keeps the selection where
- * it is, in red with the engine's own sentence; Escape cancels it (the
- * field's own, or RefusedField's while the caret is elsewhere). A cabinet that
- * is gone (deleted under its card) has nothing left to commit to, and holds
- * nothing back. Self-contained: test/turn84-f04-inspector.test.js runs it as
- * written.
+ * The selection guard's answer (verify/t84/agents/CONTRACT.md 4), apart from
+ * React so it is read and tested as written: the field with the caret inside
+ * the column is blurred, and a field's blur commits through its own closure,
+ * to its own cabinet. A cabinet that is gone (deleted under its panel) has
+ * nothing left to commit to. Self-contained: test/turn84-f04-inspector.test.js
+ * runs it as written.
  */
 function guardAnswer(root, active, gone) {
   if (!root || gone) return { ok: true };
@@ -123,19 +129,16 @@ function guardAnswer(root, active, gone) {
     && ['INPUT', 'SELECT', 'TEXTAREA'].includes(active.tagName)) {
     active.blur();
   }
-  const refused = root.querySelector('[data-studio="refused"][data-refused="1"]');
-  if (!refused) return { ok: true };
-  return { ok: false, reason: refused.getAttribute('data-refusal') || '' };
+  return { ok: true };
 }
 
 /**
- * Pin and Back to quick settings, handed to RightPanel as its `headerActions`
- * and drawn INSIDE its own header, before its x. `data-studio-host` keeps them
- * apart from the panel's own controls when the census counts the panel.
+ * Pin, handed to RightPanel as its `headerActions` and drawn INSIDE its own
+ * header, before its x. `data-studio-host` keeps it apart from the panel's own
+ * controls when the census counts the panel.
  */
-function HostActions({ pinned, back }) {
+function HostActions({ pinned }) {
   const toggleInspectorPin = useUiStore((s) => s.toggleInspectorPin);
-  const showQuickSettings = useUiStore((s) => s.showQuickSettings);
   return (
     <span className="flex items-center gap-1 shrink-0" data-studio-host="1">
       <button
@@ -150,29 +153,45 @@ function HostActions({ pinned, back }) {
       >
         <Icon name="pin" />
       </button>
-      {back ? (
+    </span>
+  );
+}
+
+/**
+ * The foot of one cabinet's column: Open cabinet (the editor window, beside
+ * the press, as the right-click's Edit cabinet opens it) and under it every
+ * finding of this cabinet. A free panel takes no Open cabinet
+ * (lib/contextActions.js FREE_PANEL_MENU: a board's own window opens by a
+ * double-click on the board); its findings still stand here.
+ */
+function InspectorFoot({ unitId, unitType, renderStrip }) {
+  const openModal = useUiStore((s) => s.openModal);
+  const board = isFreePanel(unitType);
+  return (
+    <div className="studio-skin studio-inspector-foot" data-studio="inspector-foot">
+      {board ? null : (
         <button
           type="button"
-          className="cc-btn-ghost"
-          data-studio="back-to-quick"
-          data-studio-host="1"
-          aria-label={BACK_WORDS}
-          title={BACK_WORDS}
-          onClick={() => showQuickSettings()}
+          className="cc-btn-gold"
+          data-studio="open-cabinet"
+          onClick={(e) => openModal('cabinet', { unitId, anchor: anchorOfEvent(e) })}
         >
-          Quick
+          <Icon name="open" />
+          Open cabinet
         </button>
+      )}
+      {renderStrip ? (
+        <div className="studio-inspector-issues" data-studio="inspector-issues">{renderStrip(unitId)}</div>
       ) : null}
-    </span>
+    </div>
   );
 }
 
 /**
  * @param {object} props
  * @param {(unitId: string) => any} [props.renderStrip]  F5: the issue strip of one cabinet
- * @param {any} [props.Field]  F5: the component a card's dimension row renders (RefusedField)
  */
-export default function InspectorHost({ renderStrip = null, Field = null }) {
+export default function InspectorHost({ renderStrip = null }) {
   const mode = useUiStore((s) => s.inspector);
   const pinned = useUiStore((s) => s.inspectorPinned);
   const viewMode = useUiStore((s) => s.viewMode);
@@ -189,10 +208,9 @@ export default function InspectorHost({ renderStrip = null, Field = null }) {
   if (viewMode === 'cnc') shows = 'cnc';
   else if (unitType && several) shows = 'several';
   else if (unitType) shows = 'one';
-  const card = shows === 'one' && mode === 'quick';
-  const fullOne = shows === 'one' && mode === 'full';
+  const fullOne = shows === 'one';
   const panel = shows === 'cnc' || shows === 'several' || fullOne || (shows === 'nothing' && pinned);
-  const width = mode === 'full' ? widths.fullPx : widths.quickPx;
+  const width = widths.fullPx;
 
   const rootRef = useRef(null);
   const memory = useRef(null);
@@ -262,28 +280,16 @@ export default function InspectorHost({ renderStrip = null, Field = null }) {
       aria-label="Selection settings"
       style={{ width }}
     >
-      {fullOne && renderStrip ? (
-        <div className="shrink-0 max-h-[40%] overflow-y-auto">{renderStrip(unitId)}</div>
-      ) : null}
-      {card ? (
-        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
-          <QuickSelectionCard
-            key={unitId}
-            unitId={unitId}
-            strip={renderStrip ? renderStrip(unitId) : null}
-            Field={Field}
-          />
-        </div>
-      ) : null}
       {panel ? (
         <div className="flex-1 min-h-0 flex flex-col">
           <RightPanel
             layout="embedded"
-            headerActions={<HostActions pinned={pinned} back={mode !== 'quick' || pinned} />}
+            headerActions={<HostActions pinned={pinned} />}
           />
         </div>
       ) : null}
-      {!card && !panel ? (
+      {fullOne ? <InspectorFoot unitId={unitId} unitType={unitType} renderStrip={renderStrip} /> : null}
+      {!panel ? (
         <div className="studio-skin studio-empty-state">
           <h2>Select a cabinet or part</h2>
           <p>The panel will show the current selection.</p>

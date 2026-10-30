@@ -161,7 +161,7 @@
   font-size: var(--studio-text);
 }
 
-/* The label as she sets it in the card: 12 px, ink-100, in its own case. Its margin stays the
+/* The label as she sets it: 12 px, ink-100, in its own case. Its margin stays the
    house's (4 px, and `mb-0` where a row asks for none). */
 .studio-pro .studio-skin :where(.cc-label):where(:not(.cc-panel *)) {
   font-size: calc(var(--studio-text) - 1px);
@@ -599,8 +599,11 @@
 }
 
 
-/* 8. THE INSPECTOR: the quick card (344, 316 narrow) or the embedded RightPanel (400, 360
-   narrow); the width is the column's, --studio-inspector. */
+/* 8. THE INSPECTOR: the embedded RightPanel (400, 360 narrow); the width is the column's,
+   --studio-inspector. CHAT FIX 30.10.2026: the quick card and its rules are gone (the owner:
+   "tylko ten jeden przycisk usun, Full settings"); the column's FOOT stands under the panel:
+   Open cabinet, then every finding of the cabinet ("open cabinet na samym dole a pod nim
+   wszystkie bledy ktore pokazuje"). */
 
 .studio-pro .studio-inspector {
   display: flex;
@@ -612,207 +615,29 @@
   background: theme('colors.shell.800');
 }
 
-/* The quick card (CONTRACT 6, `data-studio="card"`) is her inspector's own column: its head, its
-   body that scrolls, its foot held down. */
-.studio-pro .studio-inspector [data-studio="card"] {
+/* The foot: never taller than the column's lower part, so the sections above stay reachable
+   (the house rule: a panel that may outgrow the screen scrolls, and interactive content is never
+   covered); the findings scroll inside it, Open cabinet stays. */
+.studio-pro .studio-inspector-foot {
   display: flex;
   flex-direction: column;
-  flex: 1 1 0;
+  flex: 0 0 auto;
   min-height: 0;
-}
-
-.studio-pro .studio-inspector-head {
-  padding: theme('spacing.4') 14px 12px;
-  border-bottom: 1px solid theme('colors.shell.600');
-}
-
-.studio-pro .studio-object-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-/* The type's name: her 16 px title, whichever heading carries it. */
-.studio-pro .studio-object-title :is(h1, h2, h3) {
-  margin: 0;
-  font-size: calc(var(--studio-text) + 3px);
-  font-weight: 600;
-}
-
-.studio-pro .studio-object-id {
-  margin-bottom: 3px;
-  font-size: calc(var(--studio-text) - 2px);
-  letter-spacing: .7px;
-  color: theme('colors.gold.hover');
-}
-
-.studio-pro .studio-object-thumb {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: theme('spacing.12');
-  height: theme('spacing.12');
-  border: 1px solid theme('colors.shell.600');
-  border-radius: var(--studio-radius);
-  background: theme('colors.shell.700');
-  color: theme('colors.gold.DEFAULT');
-}
-
-.studio-pro .studio-object-thumb .studio-icon {
-  width: 28px;
-  height: 28px;
-}
-
-.studio-pro .studio-scope-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 11px;
-  font-size: calc(var(--studio-text) - 1px);
-  color: theme('colors.ink.200');
-}
-
-.studio-pro .studio-scope-pill {
-  padding: 2px 7px;
-  border: 1px solid theme('colors.shell.600');
-  border-radius: var(--studio-radius);
-  color: theme('colors.ink.100');
-}
-
-.studio-pro .studio-inspector-body {
-  min-height: 0;
-  padding: 12px 14px;
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-
-.studio-pro .studio-card-section-title {
-  margin-bottom: 10px;
-  font-size: calc(var(--studio-text) - 2px);
-  letter-spacing: .8px;
-  text-transform: uppercase;
-  color: theme('colors.gold.hover');
-}
-
-/* One row of the card: the label, then the value at least 136 wide (hers). */
-.studio-pro .studio-field-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(136px, 1.1fr);
-  gap: 10px;
-  align-items: center;
-  min-height: 42px;
-}
-
-.studio-pro .studio-field-row .cc-label { margin: 0; }
-
-.studio-pro .studio-value-wrap {
-  position: relative;
-  min-width: 0;
-}
-
-.studio-pro .studio-value-wrap :is(input, .cc-input) {
-  padding-right: 40px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-/* The unit inside the field, on the field's own line (a reason under it does not move it). */
-.studio-pro .studio-unit {
-  position: absolute;
-  top: 0;
-  right: 9px;
-  display: flex;
-  align-items: center;
-  height: var(--studio-field);
-  font-size: calc(var(--studio-text) - 1px);
-  color: theme('colors.ink.200');
-  pointer-events: none;
-}
-
-/* A summary that leads to its section ("2 doors, L / R" and the arrow): a field's height. */
-.studio-pro .studio-value-action {
-  justify-content: space-between;
-  max-width: 100%;
-  height: var(--studio-field);
-  min-height: var(--studio-field);
-  padding: 0 theme('spacing.2');
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.studio-pro .studio-value-action > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.studio-pro .studio-value-action:disabled {
-  opacity: .45;
-  cursor: default;
-}
-
-.studio-pro .studio-readonly-value {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 5px;
-  min-height: var(--studio-field);
-  font-size: calc(var(--studio-text) - 1px);
-  color: theme('colors.ink.200');
-}
-
-.studio-pro .studio-inheritance {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: theme('spacing.2') 0 0;
-  font-size: calc(var(--studio-text) - 1px);
-  color: theme('colors.ink.200');
-}
-
-.studio-pro .studio-inheritance .studio-icon {
-  width: var(--studio-text);
-  height: var(--studio-text);
-}
-
-.studio-pro .studio-inline-note {
-  margin-top: 10px;
-  font-size: calc(var(--studio-text) - 1px);
-  line-height: 1.5;
-  color: theme('colors.ink.200');
-}
-
-.studio-pro .studio-card-actions {
-  display: flex;
-  flex-direction: column;
-  gap: theme('spacing.2');
-  margin-top: theme('spacing.4');
-}
-
-.studio-pro .studio-card-actions :is(.cc-btn, .cc-btn-gold) { width: 100%; }
-
-.studio-pro .studio-inspector-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-  padding: 12px 14px;
+  max-height: 45%;
   border-top: 1px solid theme('colors.shell.600');
-  font-size: calc(var(--studio-text) - 1px);
-  color: theme('colors.ink.200');
 }
 
-.studio-pro .studio-full-head {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 10px 12px;
-  border-bottom: 1px solid theme('colors.shell.600');
+.studio-pro .studio-inspector-foot > .cc-btn-gold {
+  flex: 0 0 auto;
+  width: calc(100% - 24px);
+  margin: 10px 12px 6px;
 }
 
-.studio-pro .studio-full-head :is(h1, h2, h3) { flex: 1; }
+.studio-pro .studio-inspector-issues {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
 
 .studio-pro .studio-empty-state {
   padding: 24px theme('spacing.4');
@@ -916,7 +741,7 @@
 /* 10. THE ERRORS YOU CAN SEE (CLAUDE.md F5). The owner: *"wszystkie bledy zolte i czerwone sa
    totalnie niewidoczne, mala czcionka"*. A finding is 13 px (--studio-issue-text), dark text on
    its level's ground (--studio-warn, --studio-danger) in all three places: the strip, the
-   counters, the marker; the refused field is red with the reason under it. Where her Stage-1
+   counters, the marker (the refused field left with the quick card, 30.10.2026). Where her Stage-1
    draws the strip as a faint gold line in 12 px, F5 and her own 17:01 answer win. The dark is
    Tailwind's black: on the danger ground it reads 4.8 : 1 (the shell's 900 would read 4.0, under
    the 4.5 a 13 px text asks). */
@@ -964,15 +789,11 @@
 /* On a yellow or a red ground a gold ring would not show: the keyboard's ring is dark there. */
 .studio-pro .studio-issue-strip :is(button, [data-studio]):focus-visible { outline-color: theme('colors.black'); }
 
-/* Several stack, a little apart; in the card they stand clear of the note above (hers, 14). */
-.studio-pro .studio-inspector-body .studio-issue-strip { margin-top: 14px; }
+/* Several stack a hairline apart, edge to edge and square, in the column's foot under Open
+   cabinet (CHAT FIX 30.10.2026). */
 .studio-pro .studio-issue-strip + .studio-issue-strip { margin-top: 6px; }
-.studio-pro .studio-inspector-body .studio-issue-strip + .studio-issue-strip { margin-top: 6px; }
-
-/* Over the full panel's rows (in the column, not in a card's body): edge to edge, square, a
-   hairline apart. */
-.studio-pro .studio-inspector .studio-issue-strip:not(.studio-inspector-body *) { border-radius: 0; }
-.studio-pro .studio-inspector .studio-issue-strip:not(.studio-inspector-body *) + .studio-issue-strip { margin-top: 1px; }
+.studio-pro .studio-inspector .studio-issue-strip { border-radius: 0; }
+.studio-pro .studio-inspector .studio-issue-strip + .studio-issue-strip { margin-top: 1px; }
 
 /* The status bar's counters, "1 red", "3 yellow": a pill a little shorter than the bar. */
 .studio-pro .studio-counter {
@@ -1023,60 +844,6 @@
   width: var(--studio-marker);
   height: var(--studio-marker);
 }
-
-/* The refused field: red, its typed value kept, the engine's own sentence under it. In a card row
-   the wrapper lends its children to the row's grid, so the sentence takes the row's whole width
-   under the label and the field instead of a 136 px column. */
-.studio-pro .studio-refused {
-  position: relative;
-  min-width: 0;
-}
-
-.studio-pro .studio-field-row > .studio-refused { display: contents; }
-
-.studio-pro .studio-refused[data-refused="1"] :is(input, .cc-input) {
-  border-color: var(--studio-danger);
-  box-shadow: inset 0 0 0 1px var(--studio-danger);
-  background: color-mix(in srgb, var(--studio-danger) 16%, theme('colors.shell.900'));
-}
-
-.studio-pro .studio-refused-reason {
-  margin: 6px 0 0;
-  padding: 6px 9px;
-  border-radius: var(--studio-radius);
-  background: var(--studio-danger);
-  color: theme('colors.black');
-  font-size: var(--studio-issue-text);
-  font-weight: 600;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
-.studio-pro .studio-field-row > .studio-refused > .studio-refused-reason {
-  grid-column: 1 / -1;
-  margin: 0 0 6px;
-}
-
-/* The card holds the refused field inside the value's cell (studio-value-wrap): there the row is
-   the sentence's measure, read as a container, and the sentence reaches back under the label. A
-   row holds no window, so being a container costs nothing (the column above it is not one). */
-.studio-pro .studio-field-row { container-type: inline-size; }
-
-.studio-pro .studio-value-wrap .studio-refused-reason {
-  width: 100cqw;
-  margin-left: calc(100% - 100cqw);
-}
-
-/* A row grown by the sentence keeps its label level with its field, above the sentence, instead
-   of centred in the taller row (where the sentence would stand over it). */
-.studio-pro .studio-field-row:has(.studio-refused-reason) { align-items: start; }
-
-.studio-pro .studio-field-row:has(.studio-refused-reason) > .cc-label {
-  display: flex;
-  align-items: center;
-  min-height: var(--studio-field);
-}
-
 
 /* 11. THE STATUS BAR: the selection in words, the badge, the dirty mark, Changes, the counters,
    the viewport. */

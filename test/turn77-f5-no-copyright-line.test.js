@@ -446,6 +446,8 @@ export const NEW_FILES = [
   'test/chatfix-3010-ladder-floor.test.js',
   'test/chatfix-3010-centre-between-held.test.js',
   'scripts/t78-classify.d/f49-owner-3010-ladder.mjs',
+  // Chat fix 30.10.2026 (the evening): the findings quiet and folded at the inspector's foot
+  'test/chatfix-3010-quiet-issues.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

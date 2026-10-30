@@ -740,60 +740,94 @@
 
 /* 10. THE ERRORS YOU CAN SEE (CLAUDE.md F5). The owner: *"wszystkie bledy zolte i czerwone sa
    totalnie niewidoczne, mala czcionka"*. A finding is 13 px (--studio-issue-text), dark text on
-   its level's ground (--studio-warn, --studio-danger) in all three places: the strip, the
-   counters, the marker (the refused field left with the quick card, 30.10.2026). Where her Stage-1
-   draws the strip as a faint gold line in 12 px, F5 and her own 17:01 answer win. The dark is
-   Tailwind's black: on the danger ground it reads 4.8 : 1 (the shell's 900 would read 4.0, under
-   the 4.5 a 13 px text asks). */
+   its level's ground (--studio-warn, --studio-danger) in two places: the counters and the marker
+   (the refused field left with the quick card, 30.10.2026). The dark is Tailwind's black: on the
+   danger ground it reads 4.8 : 1 (the shell's 900 would read 4.0, under the 4.5 a 13 px text asks).
+
+   THE STRIP IS QUIET (CHAT FIX 30.10.2026, the evening). The owner: *"te zolte alerty moze by jakos
+   skromniej to pokazac i zwiniete ... skromnie gdzies na dole a nie ZOLTE wywalone na wierzch"*.
+   One row at the foot of the column (.studio-issues-row: the counts, a dot per level, a chevron),
+   folded by default; unfolded, the lines stand over it on the panel's own dark ground, the level a
+   3 px hairline at the left edge, the panel's small text, Show a ghost. */
+
+.studio-pro .studio-issues-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  height: var(--studio-field);
+  padding: 0 12px;
+  border: 0;
+  border-top: 1px solid theme('colors.shell.600');
+  background: transparent;
+  color: theme('colors.ink.200');
+  font-size: calc(var(--studio-text) - 1px);
+  text-align: left;
+  cursor: pointer;
+}
+
+.studio-pro .studio-issues-row:hover { background: theme('colors.shell.700'); }
+
+.studio-pro .studio-issues-row .studio-icon {
+  width: 14px;
+  height: 14px;
+  color: theme('colors.ink.400');
+}
+
+/* A dot per level, the level's colour, the only colour the row carries (a 7 px square on the
+   house radius reads as a dot, and the corner stays the profile's). */
+.studio-pro .studio-issue-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--studio-radius);
+  flex: 0 0 auto;
+}
+
+.studio-pro .studio-issue-dot.is-yellow { background: var(--studio-warn); }
+.studio-pro .studio-issue-dot.is-red { background: var(--studio-danger); }
 
 .studio-pro .studio-issue-strip {
   display: flex;
   align-items: center;
   gap: theme('spacing.2');
-  padding: 7px 10px;
-  border-radius: var(--studio-radius);
-  background: var(--studio-warn);
-  color: theme('colors.black');
-  font-size: var(--studio-issue-text);
-  font-weight: 600;
+  padding: 6px 12px 6px 9px;
+  border-left: 3px solid var(--studio-warn);
+  border-top: 1px solid theme('colors.shell.600');
+  border-radius: 0;
+  background: theme('colors.shell.700');
+  color: theme('colors.ink.100');
+  font-size: calc(var(--studio-text) - 1px);
+  font-weight: 400;
   line-height: 1.35;
 }
 
-.studio-pro .studio-issue-strip.is-yellow { background: var(--studio-warn); }
-.studio-pro .studio-issue-strip.is-red { background: var(--studio-danger); }
+.studio-pro .studio-issue-strip.is-yellow { border-left-color: var(--studio-warn); }
+.studio-pro .studio-issue-strip.is-red { border-left-color: var(--studio-danger); }
 
-/* The words take the room; the icon and Show keep theirs. */
-.studio-pro .studio-issue-strip > :not(button, .studio-icon) {
+/* The words take the room; Show keeps its own. */
+.studio-pro .studio-issue-strip > :not(button) {
   flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-/* Show, dark on the ground like the words (a light ghost button would vanish on yellow). */
+/* Show: a small ghost, the panel's own grey. */
 .studio-pro .studio-issue-strip :is(button, .cc-btn, .cc-btn-ghost) {
   flex-shrink: 0;
   height: auto;
   min-height: 0;
-  padding: 3px 9px;
-  border: 1px solid theme('colors.black / 55%');
+  padding: 2px 9px;
+  border: 1px solid theme('colors.ink.600');
   border-radius: var(--studio-radius);
   background: transparent;
-  color: theme('colors.black');
-  font-size: var(--studio-issue-text);
-  font-weight: 700;
+  color: theme('colors.ink.200');
+  font-size: calc(var(--studio-text) - 2px);
+  font-weight: 500;
   cursor: pointer;
 }
 
-.studio-pro .studio-issue-strip :is(button, .cc-btn, .cc-btn-ghost):hover { background: theme('colors.black / 12%'); }
-
-/* On a yellow or a red ground a gold ring would not show: the keyboard's ring is dark there. */
-.studio-pro .studio-issue-strip :is(button, [data-studio]):focus-visible { outline-color: theme('colors.black'); }
-
-/* Several stack a hairline apart, edge to edge and square, in the column's foot under Open
-   cabinet (CHAT FIX 30.10.2026). */
-.studio-pro .studio-issue-strip + .studio-issue-strip { margin-top: 6px; }
-.studio-pro .studio-inspector .studio-issue-strip { border-radius: 0; }
-.studio-pro .studio-inspector .studio-issue-strip + .studio-issue-strip { margin-top: 1px; }
+.studio-pro .studio-issue-strip :is(button, .cc-btn, .cc-btn-ghost):hover { background: theme('colors.shell.600'); }
 
 /* The status bar's counters, "1 red", "3 yellow": a pill a little shorter than the bar. */
 .studio-pro .studio-counter {

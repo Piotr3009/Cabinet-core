@@ -27,6 +27,18 @@
 // CONTRACT.md section 4); the camera bar (F6) answers it. It opens no window:
 // the Check panel's row still does that (lib/checkFindings.js useGoToSubject).
 //
+// CHAT FIX 30.10.2026 (the evening) · QUIET, AND FOLDED. The owner, of the
+// yellow strips: *"te zolte alerty moze by jakos skromniej to pokazac i
+// zwiniete, jak bedzie 10 to caly menu mi zabierze, ja uwazam ze powinno byc
+// skromnie gdzies na dole a nie ZOLTE wywalone na wierzch, rozprasza tylko
+// czlowieka"*. So the strip is ONE ROW at the very foot of the column (the
+// counts with a dot per level, `2 red · 1 yellow`, and a chevron), folded by
+// default; a press unfolds the list OVER the row (uiStore `issuesOpen`, one
+// yes or no for the session), a second folds it. The list's lines are the
+// panel's own dark ground with a hairline of the level's colour at their
+// left edge, the panel's small text, Show a ghost: the words and the Show
+// are what they were, only the shouting is gone. Nothing to fix: no row.
+//
 // THE COUNTERS (IssueCounters), on the status bar: *"`1 red · 3 yellow` in
 // their colours; click opens Check filtered to that level"* (`openCheckFiltered`;
 // the Check panel reads `checkFilter` and offers "Show all"). A level with
@@ -35,15 +47,19 @@
 // All three places (the marker too) read the ONE shared list
 // (lib/checkFindings.js useCheckFindings) through the engine's findingsToAct,
 // so they, the rail's Check badge and the Check panel cannot disagree. How
-// they look (13 px, dark on the level's ground) is the skin's one stylesheet
-// for the class vocabulary (studio.css `.studio-issue-strip`, `.studio-counter`,
-// `.is-red`, `.is-yellow`); this file types no colour and no size.
+// they look (the counters and the marker 13 px, dark on the level's ground;
+// the strip quiet, the level a hairline) is the skin's one stylesheet for the
+// class vocabulary (studio.css `.studio-issue-strip`, `.studio-issues-row`,
+// `.studio-counter`, `.is-red`, `.is-yellow`); this file types no colour and
+// no size.
 
 import { Fragment } from 'react';
 import { useCheckFindings } from '../../lib/checkFindings.js';
 import { useUiStore } from '../../stores/uiStore.js';
 import { Icon } from './StudioIcons.jsx';
-import { issueCounters, issueStripText, unitIssue } from './lib/studioIssues.js';
+import {
+  issueCounters, issueParts, issueStripText, unitIssue,
+} from './lib/studioIssues.js';
 
 /**
  * One cabinet's findings to act on, the red first, each in its own words.
@@ -52,6 +68,8 @@ import { issueCounters, issueStripText, unitIssue } from './lib/studioIssues.js'
  */
 export default function IssueStrip({ unitId }) {
   const findings = useCheckFindings();
+  const open = useUiStore((s) => s.issuesOpen);
+  const toggleIssues = useUiStore((s) => s.toggleIssues);
   const issue = unitIssue(findings, unitId);
   if (!issue) return null;
 
@@ -59,40 +77,71 @@ export default function IssueStrip({ unitId }) {
     const ui = useUiStore.getState();
     const subject = finding.subject || null;
     // A panel finding of THIS cabinet selects its part; any other selects the
-    // cabinet. A refused edit in the inspector holds the selection (F4).
+    // cabinet. The inspector's guard (F4) answers before the selection moves.
     const part = subject?.panelId && (subject.unitId ?? unitId) === unitId ? subject.panelId : null;
     const moved = part ? ui.selectElement(unitId, part) : ui.selectUnit(unitId);
     if (moved === false) return;
     useUiStore.getState().requestFrame([unitId]);
   };
 
-  // The strips stand side by side in a plain block, so the skin's spacing
-  // between two of them (studio.css `.studio-issue-strip + .studio-issue-strip`)
-  // is the only spacing there is.
+  // The list stands OVER the row, so an unfolding grows upward from the foot;
+  // the lines stack a hairline apart (studio.css `.studio-issue-strip +
+  // .studio-issue-strip`), and the list scrolls on its own inside the foot.
+  const parts = issueParts(issue);
   return (
-    <div data-issue-unit={unitId} data-issue-count={issue.count} data-issue-level={issue.level}>
-      {issue.findings.map((finding, i) => (
+    <>
+      {open ? (
         <div
-          // eslint-disable-next-line react/no-array-index-key
-          key={`${finding.check}-${finding.panelId ?? ''}-${i}`}
-          className={`studio-issue-strip is-${finding.level}`}
-          data-studio="issue-strip"
-          data-level={finding.level}
-          data-check={finding.check}
+          className="studio-inspector-issues"
+          data-studio="inspector-issues"
+          data-issue-unit={unitId}
+          data-issue-count={issue.count}
+          data-issue-level={issue.level}
         >
-          <Icon name="warning" />
-          <span>{issueStripText(finding)}</span>
-          <button
-            type="button"
-            data-studio="issue-show"
-            title={finding.subject?.panelId ? 'Frame the cabinet and select the part' : 'Frame the cabinet'}
-            onClick={() => show(finding)}
-          >
-            Show
-          </button>
+          {issue.findings.map((finding, i) => (
+            <div
+              // eslint-disable-next-line react/no-array-index-key
+              key={`${finding.check}-${finding.panelId ?? ''}-${i}`}
+              className={`studio-issue-strip is-${finding.level}`}
+              data-studio="issue-strip"
+              data-level={finding.level}
+              data-check={finding.check}
+            >
+              <span>{issueStripText(finding)}</span>
+              <button
+                type="button"
+                className="cc-btn-ghost"
+                data-studio="issue-show"
+                title={finding.subject?.panelId ? 'Frame the cabinet and select the part' : 'Frame the cabinet'}
+                onClick={() => show(finding)}
+              >
+                Show
+              </button>
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      ) : null}
+      <button
+        type="button"
+        className="studio-issues-row"
+        data-studio="issues-row"
+        data-issue-unit={unitId}
+        data-issue-count={issue.count}
+        data-issue-level={issue.level}
+        aria-expanded={open}
+        title={open ? 'Fold the findings' : 'Unfold the findings of this cabinet'}
+        onClick={() => toggleIssues()}
+      >
+        {parts.map((part) => (
+          <Fragment key={part.level}>
+            <span className={`studio-issue-dot is-${part.level}`} aria-hidden="true" />
+            <span>{part.label}</span>
+          </Fragment>
+        ))}
+        <span className="flex-1" />
+        <Icon name={open ? 'down' : 'up'} />
+      </button>
+    </>
   );
 }
 

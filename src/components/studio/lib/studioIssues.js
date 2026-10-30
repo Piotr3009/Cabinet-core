@@ -113,7 +113,12 @@ export function issueStripText(finding) {
 }
 
 /** Each level that has findings, red first, with its words: `1 red`, `3 yellow`. */
-function countParts({ red = 0, yellow = 0 } = {}) {
+/**
+ * The parts of a count, red first, a level with nothing in it left out:
+ * `[{ level, count, label }]`. CHAT FIX 30.10.2026: exported for the quiet
+ * row at the foot of the inspector (IssueStrip), which draws a dot per part.
+ */
+export function issueParts({ red = 0, yellow = 0 } = {}) {
   return ISSUE_LEVELS
     .map((level) => ({ level, count: Number(level === 'red' ? red : yellow) || 0 }))
     .filter((part) => part.count > 0)
@@ -129,7 +134,7 @@ function countParts({ red = 0, yellow = 0 } = {}) {
  * @param {{ red?: number, yellow?: number }} counts
  */
 export function issueCountText(counts) {
-  return countParts(counts).map((part) => part.label).join(' · ');
+  return issueParts(counts).map((part) => part.label).join(' · ');
 }
 
 /**
@@ -141,7 +146,7 @@ export function issueCountText(counts) {
  */
 export function issueCounters(findings) {
   const { red, yellow } = groupIssues(findings);
-  return countParts({ red, yellow });
+  return issueParts({ red, yellow });
 }
 
 // CHAT FIX 30.10.2026 · the refused field's law (refusalOf, shouldCommitField,

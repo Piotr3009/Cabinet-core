@@ -54,6 +54,8 @@ const PATHS = Object.freeze({
   plan: 'M3 3h18v18H3zM10 3v7H3M14 21v-7h7',
   iso: 'm12 4 8 4.5-8 4.5-8-4.5zM4 8.5v7l8 4.5 8-4.5v-7M12 13v7',
   output: 'M12 15V3M7 8l5-5 5 5M4 14v6h16v-6',
+  // CHAT FIX 30.10.2026: the folded findings row at the inspector's foot points up.
+  up: 'm6 15 6-6 6 6',
 });
 
 /**

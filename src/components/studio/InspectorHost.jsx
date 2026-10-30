@@ -26,9 +26,10 @@
 //   several cabinets          RightPanel embedded, its MultiUnitPanel branch
 //   one cabinet               RightPanel embedded, then the FOOT: Open cabinet
 //                             (the editor window, as the right-click's Edit
-//                             cabinet) and under it every finding of this
-//                             cabinet (the issue strip, F5), scrolling on its
-//                             own so the sections above are never covered
+//                             cabinet) and under it the cabinet's findings
+//                             (IssueStrip, F5): one quiet row with the counts,
+//                             the list unfolded over it on a press, scrolling
+//                             on its own so the sections above are never covered
 //   nothing, unpinned         "Select a cabinet or part"
 //   nothing, pinned           RightPanel embedded, its empty branch
 //   'none'                    no column at all
@@ -159,10 +160,11 @@ function HostActions({ pinned }) {
 
 /**
  * The foot of one cabinet's column: Open cabinet (the editor window, beside
- * the press, as the right-click's Edit cabinet opens it) and under it every
- * finding of this cabinet. A free panel takes no Open cabinet
- * (lib/contextActions.js FREE_PANEL_MENU: a board's own window opens by a
- * double-click on the board); its findings still stand here.
+ * the press, as the right-click's Edit cabinet opens it) and under it the
+ * cabinet's findings (IssueStrip: one quiet row with the counts, folded by
+ * default; a press unfolds the list over the row). A free panel takes no Open
+ * cabinet (lib/contextActions.js FREE_PANEL_MENU: a board's own window opens
+ * by a double-click on the board); its findings still stand here.
  */
 function InspectorFoot({ unitId, unitType, renderStrip }) {
   const openModal = useUiStore((s) => s.openModal);
@@ -180,9 +182,7 @@ function InspectorFoot({ unitId, unitType, renderStrip }) {
           Open cabinet
         </button>
       )}
-      {renderStrip ? (
-        <div className="studio-inspector-issues" data-studio="inspector-issues">{renderStrip(unitId)}</div>
-      ) : null}
+      {renderStrip ? renderStrip(unitId) : null}
     </div>
   );
 }

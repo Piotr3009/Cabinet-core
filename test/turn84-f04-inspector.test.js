@@ -207,8 +207,10 @@ test('F4 · the column: its hooks, its width, the panel embedded at once, the fo
   assert.match(foot, /className="cc-btn-gold"\n\s+data-studio="open-cabinet"\n\s+onClick=\{\(e\) => openModal\('cabinet', \{ unitId, anchor: anchorOfEvent\(e\) \}\)\}/,
     'Open cabinet opens the editor window beside the press, as the right-click\'s Edit cabinet does');
   assert.match(foot, /const board = isFreePanel\(unitType\);/, 'a free panel takes no Open cabinet (FREE_PANEL_MENU)');
-  assert.ok(foot.indexOf('data-studio="open-cabinet"') < foot.indexOf('data-studio="inspector-issues"'), 'Open cabinet first, the findings under it');
-  assert.match(foot, /<div className="studio-inspector-issues" data-studio="inspector-issues">\{renderStrip\(unitId\)\}<\/div>/);
+  // CHAT FIX 30.10.2026 (the evening): the strip draws its own quiet row and its folded list (IssueStrip);
+  // the foot hands it the room under Open cabinet and nothing else.
+  assert.ok(foot.indexOf('data-studio="open-cabinet"') < foot.indexOf('{renderStrip ? renderStrip(unitId) : null}'), 'Open cabinet first, the findings under it');
+  assert.doesNotMatch(foot, /inspector-issues/, 'the list is the strip\'s own, not the host\'s wrapper');
   assert.match(src, /<h2>Select a cabinet or part<\/h2>/);
   assert.doesNotMatch(src, /<header\b|studio-full-head|<aside\b/, 'one panel, one header: the host draws no header of its own');
   for (const cls of src.match(/className=(?:"[^"]*"|\{`[^`]*`\})/g)) {

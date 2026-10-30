@@ -120,13 +120,22 @@ test('F5 · the skin draws the law for every class this slice carries: 13 px, da
     assert.ok(at >= 0, `studio.css has no rule for ${selector}`);
     return css.slice(at, css.indexOf('}', at));
   };
-  for (const cls of ['studio-issue-strip', 'studio-counter', 'studio-marker']) {
+  for (const cls of ['studio-counter', 'studio-marker']) {
     const base = rule(`.studio-pro .${cls}`);
     assert.match(base, /font-size: var\(--studio-issue-text\);/, `${cls} is not 13 px (profile.ui.studio.issues.textPx)`);
     assert.match(base, /color: theme\('colors\.black'\);/, `${cls} is not dark text`);
     assert.match(css, new RegExp(`\\.studio-pro \\.${cls}\\.is-red \\{ background: var\\(--studio-danger\\); \\}`));
     assert.match(css, new RegExp(`\\.studio-pro \\.${cls}\\.is-yellow \\{ background: var\\(--studio-warn\\); \\}`));
   }
+  // CHAT FIX 30.10.2026 (the evening), the owner: "te zolte alerty moze by jakos skromniej to pokazac i
+  // zwiniete". The strip is quiet: the panel's dark ground, the level a hairline at the left edge; the
+  // folded row carries a dot per level in the level's colour.
+  const strip = rule('.studio-pro .studio-issue-strip');
+  assert.match(strip, /background: theme\('colors\.shell\.700'\);/);
+  assert.match(strip, /border-left: 3px solid var\(--studio-warn\);/);
+  assert.match(css, /\.studio-pro \.studio-issue-strip\.is-red \{ border-left-color: var\(--studio-danger\); \}/);
+  assert.match(css, /\.studio-pro \.studio-issue-dot\.is-red \{ background: var\(--studio-danger\); \}/);
+  assert.match(css, /\.studio-pro \.studio-issue-dot\.is-yellow \{ background: var\(--studio-warn\); \}/);
   assert.match(rule('.studio-pro .studio-marker .studio-icon'), /width: var\(--studio-marker\);/, 'the profile\'s 16 px');
   // CHAT FIX 30.10.2026: the refused field's rules left with RefusedField.jsx.
   assert.doesNotMatch(css, /studio-refused/);
@@ -271,6 +280,15 @@ test('F5 · the strip and its Show; the counters open the Check at their level (
   assert.match(strip, /data-studio="issue-show"/);
   assert.match(strip, /\{issueStripText\(finding\)\}/, 'the finding\'s own words');
   assert.match(strip, /className=\{`studio-issue-strip is-\$\{finding\.level\}`\}/);
+  // CHAT FIX 30.10.2026 (the evening): folded by default behind one quiet row; the list over the row.
+  assert.match(strip, /const open = useUiStore\(\(s\) => s\.issuesOpen\);/);
+  assert.match(strip, /data-studio="issues-row"/);
+  assert.match(strip, /aria-expanded=\{open\}/);
+  assert.match(strip, /onClick=\{\(\) => toggleIssues\(\)\}/);
+  assert.match(strip, /\{open \? \(\n\s+<div\n\s+className="studio-inspector-issues"\n\s+data-studio="inspector-issues"/, 'the list only while unfolded');
+  assert.ok(strip.indexOf('data-studio="inspector-issues"') < strip.indexOf('data-studio="issues-row"'), 'the list stands OVER the row');
+  assert.match(strip, /className=\{`studio-issue-dot is-\$\{part\.level\}`\}/, 'a dot per level');
+  assert.match(strip, /<Icon name=\{open \? 'down' : 'up'\} \/>/);
   // Show: the part of a panel finding, else the cabinet; then the frame request (the camera bar answers it, F6).
   assert.match(strip, /const moved = part \? ui\.selectElement\(unitId, part\) : ui\.selectUnit\(unitId\);/);
   assert.match(strip, /if \(moved === false\) return;\n\s+useUiStore\.getState\(\)\.requestFrame\(\[unitId\]\);/);

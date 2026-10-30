@@ -1173,6 +1173,34 @@ export default function RightPanel({ layout = 'overlay', headerActions = null } 
                   <span>{formatMm(result.derived.partition_bottom_y, { unit: true })}</span>
                 </div>
               )}
+              {/* T86B F2 (law 2): A STACK IN A COLUMN HAS THE SAME NUMBERS AS A
+                  STACK ACROSS. The two rows above, in the same words, per column
+                  stack, from the engine's `derived.columnStacks[zone]`; nothing
+                  drawn while the engine writes none. *"zrob jak rekomendujesz"*
+                  (the owner, 30.10.2026, 23:02). */}
+              {(result?.assemblies?.columnDrawers || []).map((c) => {
+                const stack = result?.derived?.columnStacks?.[c.zone];
+                if (!stack) return null;
+                return (
+                  <div key={`column-stack-${c.zone}`} data-column-stack={c.zone}>
+                    <div className="cc-row text-xs text-ink-400">
+                      <span>{`Column ${c.zone + 1}`}</span>
+                    </div>
+                    {stack.drawerTotalH != null && (
+                      <div className="cc-row text-xs text-ink-400" data-column-stack-height={c.zone}>
+                        <span>Stack height</span>
+                        <span>{formatMm(stack.drawerTotalH, { unit: true })}</span>
+                      </div>
+                    )}
+                    {stack.partition_bottom_y != null && (
+                      <div className="cc-row text-xs text-ink-400" data-column-stack-partition={c.zone}>
+                        <span>Partition (locked, required above the stack)</span>
+                        <span>{formatMm(stack.partition_bottom_y, { unit: true })}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 

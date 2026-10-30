@@ -466,6 +466,8 @@ export const NEW_FILES = [
   // T86B F1 to F4 (31.10.2026): PART A, the engine (E1)
   'test/turn86b-f01-l-neighbour.test.js',
   'scripts/t78-classify.d/f51-t86b-f01.mjs',
+  'test/turn86b-f02-column-section.test.js',
+  'scripts/t78-classify.d/f51-t86b-f02.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

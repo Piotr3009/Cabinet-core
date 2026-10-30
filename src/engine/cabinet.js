@@ -5448,6 +5448,8 @@ export function computeCabinet(params, profileOverride) {
         boxFrontLen: colBoxFrontLen,
         bottomW: colBoxFrontLen + DR.bottomOversize,
         partY,
+        // T86B F2 (law 2): the stack's height, the column twin of the full-width `drawerTotalH` (derived only).
+        totalH,
         // D27: held for the recess (the carcass alone is too shallow): its usable depth, for the drop's words.
         ...(heldForRecess ? { shallow: colMaxDl } : {}),
       });
@@ -12398,6 +12400,16 @@ export function computeCabinet(params, profileOverride) {
       drawer_front_x: budr.cols.map((c) => c.frontX),
       column_openings: budr.cols.map((c) => ({ from: c.opening.from, to: c.opening.to, w: c.opening.w })),
       divider_x: budr.divider.x,
+    } : {}),
+    // T86B F2 . A STACK IN A COLUMN HAS THE SAME NUMBERS AS A STACK ACROSS (CLAUDE.md T86B law 2; the owner,
+    // 30.10.2026, 23:02: *"zrob jak rekomendujesz"*): per zone, the stack's height and the underside of the board
+    // that closes it (the column's own, the ONE board over the columns, or the recess column's cap), read as the
+    // full-width `drawerTotalH` and `partition_bottom_y` are. Absent without a column stack: no golden grows a key.
+    ...(columnDrawerSets.length ? {
+      columnStacks: Object.fromEntries(columnDrawerSets.map((set) => [set.zone, {
+        drawerTotalH: set.totalH,
+        partition_bottom_y: columnCap ? columnCap.y : set.partY,
+      }])),
     } : {}),
     // T42-F1: `rail_partition_y` is deleted with the board it located.
     ...(hasRail ? { rail_y: railY, rail_support_y: railSupportY } : {}),

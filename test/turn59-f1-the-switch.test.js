@@ -977,7 +977,11 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // rather than passing in silence.
     // AMENDED BY THE CHAT FIX OF 28.10.2026: 93, components/ProjectFileModal.jsx frozen at its first hash.
     // AMENDED BY THE CHAT FIX OF 30.10.2026: 89, the quick card's four files deleted (DELETED above).
-    assert.ok(Object.keys(FROZEN).length === 89, 'no base ref: the manifest is the whole proof here');
+    // AMENDED BY T85 (30.10.2026, INT): 90. The manifest above holds 90 since that fix (94 less the four), so a
+    // checkout with no base ref (every pull request's CI: actions/checkout fetches only the merge ref) read 89 and
+    // went red on PR #87, #88 and #89 while a push to main, which has origin/main, never reached this line. The
+    // count is the manifest's own; no file was frozen or thawed by this line.
+    assert.ok(Object.keys(FROZEN).length === 90, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

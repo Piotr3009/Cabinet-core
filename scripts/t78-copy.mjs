@@ -173,6 +173,14 @@ export const T78_PRO_EDITS = [
       + 'typed road, and the engine cuts the board at it (cabinet.js `fpT`).',
     words: 'the owner, 25.10.2026 13:36: *"nie moge wizualnie zwiekszyc tez grubosci tego panela"*.',
   },
+  {
+    pro: 'src/components/DoorModal.jsx',
+    by: 'chat fix 29.10.2026 F2 (after T84)',
+    why: 'while Center between is armed on its cabinet the piece\'s window is `sticky` (T33\'s prop): the two picks '
+      + 'reach the scene and the window stays, saying which pick is next (the Studio walk: the lower pick closed the '
+      + 'window, the upper became the lower, nothing centred); the door window\'s conduct (T37) is what it was.',
+    words: 'the owner, 29.10.2026: *"droban funcje ale jej nei ma czyli center between soprawdz jeszcze raz prosze"*.',
+  },
 ];
 
 /**

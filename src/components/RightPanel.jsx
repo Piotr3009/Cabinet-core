@@ -114,7 +114,6 @@ export default function RightPanel({ layout = 'overlay', headerActions = null } 
   const setDrawerEqualHeights = useProjectStore((s) => s.setDrawerEqualHeights);
   // Chat fix 28.10.2026, 23:26 (KIT_RECESS.lsp D27): a dropped full-width stack can be removed from its row.
   const addDrawers = useProjectStore((s) => s.addDrawers);
-  const redistributeShelves = useProjectStore((s) => s.redistributeShelves);
   const centrePartitions = useProjectStore((s) => s.centrePartitions);
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
   const removeUnit = useProjectStore((s) => s.removeUnit);
@@ -1207,16 +1206,10 @@ export default function RightPanel({ layout = 'overlay', headerActions = null } 
               {/* Turn 21 (CLAUDE.md F10): the board the interior floor is one
                   of — this unit's own, not the workshop default, because a
                   cabinet cut from 22 mm has its floor 22 mm up. */}
-              <div className="cc-row">
-                <span className="text-sm text-ink-100">Shelves ({shelves.length})</span>
-                <button
-                  type="button" className="cc-btn px-2"
-                  title="Space them evenly in the free height"
-                  onClick={() => redistributeShelves(unit.id)}
-                >
-                  Even
-                </button>
-              </div>
+              {/* Chat fix 29.10.2026 F1 · Center all (this row's Even, the same
+                  call by the store's one name) and Center between, here with
+                  no shelf selected first (ShelvesHead, below). */}
+              <ShelvesHead unit={unit} count={shelves.length} />
               <ul className="space-y-1">
                 {shelves.map(({ item: sh, label }) => {
                   const boardT = Number(unit.params.board_t) || profile.board.thickness;
@@ -1844,6 +1837,78 @@ export default function RightPanel({ layout = 'overlay', headerActions = null } 
       {/* T83 F3 · MIRROR ON THE BACK?, opened at the click on a mirror cabinet's back. */}
       {!embedded && <MirrorBackModal />}
     </aside>
+  );
+}
+
+/**
+ * ─── CHAT FIX 29.10.2026 F1 · CENTER ALL AND CENTER BETWEEN IN THE SECTION ───
+ *
+ * The owner, of the Studio (T84): *"jest ta funkcja ale tylko w double click
+ * ale nie ma w carcas lub w section a powinn byc bo zaznaczyc polki i kliknac
+ * center between to za duzo i za duzo szukania"* (29.10.2026, 06:01).
+ *
+ * The Studio's inspector suppresses the inline piece panel (T84 F4), so the
+ * shelf menu's two buttons (T72 F3, T79 F12) stood only in the piece's window,
+ * reached by a double-click on a shelf. They stand on the Section's Shelves
+ * row too, with no shelf selected first:
+ *   Center all       the store's one name for the act (`centreShelves`, each
+ *                    bay on its own ladder); it was this row's Even, the same
+ *                    call by a second name (T72 F3: one act, one word);
+ *   Center between   arms the shared two-pick mode (`uiStore.centreBetween`)
+ *                    on this cabinet; the row says which pick is next, the 3-D
+ *                    takes the two picks (UnitView, T79 F12) and the project
+ *                    store centres the shelves between them or says why not.
+ *                    A second press, or Escape, cancels.
+ */
+function ShelvesHead({ unit, count }) {
+  const centreShelves = useProjectStore((s) => s.centreShelves);
+  const centreBetween = useUiStore((s) => (s.centreBetween?.unitId === unit.id ? s.centreBetween : null));
+  const armCentreBetween = useUiStore((s) => s.armCentreBetween);
+  const cancelCentreBetween = useUiStore((s) => s.cancelCentreBetween);
+  // Escape ends the mode before any window or selection hears the key, as the
+  // shelf menu's own listener does (ElementProperties, T79 F12).
+  useEffect(() => {
+    if (!centreBetween) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      cancelCentreBetween();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [centreBetween, cancelCentreBetween]);
+  return (
+    <>
+      <div className="cc-row">
+        <span className="text-sm text-ink-100">Shelves ({count})</span>
+        <span className="flex items-center gap-1">
+          <button
+            type="button" className="cc-btn px-2"
+            data-section-centre-all="1"
+            title="Space the shelves evenly in the free height, each bay on its own"
+            onClick={() => centreShelves(unit.id, null)}
+          >
+            Center all
+          </button>
+          <button
+            type="button"
+            className={`cc-btn px-2 ${centreBetween ? 'border-gold text-gold' : ''}`}
+            data-centre-between="1"
+            data-section-centre-between="1"
+            aria-pressed={Boolean(centreBetween)}
+            title="Then click the lower and the upper element in the view: the shelves between them are centred. Esc cancels."
+            onClick={() => (centreBetween ? cancelCentreBetween() : armCentreBetween(unit.id))}
+          >
+            Center between
+          </button>
+        </span>
+      </div>
+      {centreBetween ? (
+        <p className="text-[11px] text-gold" data-section-centre-between-step={centreBetween.lower ? 'upper' : 'lower'}>
+          {centreBetween.lower ? 'Pick the upper element' : 'Pick the lower element'} in the view. Esc cancels.
+        </p>
+      ) : null}
+    </>
   );
 }
 

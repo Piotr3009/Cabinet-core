@@ -376,7 +376,13 @@ test('F4c — the doors modal DOCKS hard left, and only a DOOR does', () => {
 });
 
 test('F4c — a scene click does not close it: sticky, and only for a door', () => {
-  assert.match(DOOR, /sticky=\{isDoor\}/);
+  // AMENDED BY CHAT FIX 29.10.2026 F2: a door's window is sticky as T37 made it; a PIECE's window is sticky only
+  // while Center between is armed on its cabinet (`picking`), so the two picks reach the scene instead of closing
+  // it (the Studio walk: the lower pick closed the window, the upper became the lower, nothing centred). With
+  // nothing armed a piece's window closes on a click outside it, as it always has. The owner: *"droban funcje ale
+  // jej nei ma czyli center between soprawdz jeszcze raz prosze"* (29.10.2026).
+  assert.match(DOOR, /sticky=\{isDoor \|\| picking\}/);
+  assert.match(DOOR, /const picking = useUiStore\(\(s\) => s\.centreBetween\?\.unitId != null && s\.centreBetween\.unitId === args\?\.unitId\);/);
   // T33's own prop, unchanged: the backdrop takes no pointer events and does
   // not close, so the click reaches the scene under it.
   // AMENDED BY CHAT FIX 28.10.2026 (the setup workspace of 26.10, commit 4f3e33c): Modal.jsx:377 now reads

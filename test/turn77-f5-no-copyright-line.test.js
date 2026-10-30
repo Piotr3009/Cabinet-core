@@ -443,6 +443,8 @@ export const NEW_FILES = [
   'src/components/ProjectFileModal.jsx',
   'test/chatfix-2810-project-file.test.js',
   'scripts/t78-classify.d/f48-owner-2810-project-file.mjs',
+  // Chat fix 29.10.2026: Center all and Center between in the Section, and the piece's window lets the picks through
+  'test/chatfix-2910-centre-between-section.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

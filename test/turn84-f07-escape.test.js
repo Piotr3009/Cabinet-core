@@ -144,7 +144,11 @@ test('F7 Escape · the door window keeps T37\'s conduct and its key off; the she
   assert.equal(P.ui?.studio?.doorWindow, 'dock-left', 'the profile promises a conduct the door window does not have');
   const door = read('src/components/DoorModal.jsx');
   assert.match(door, /dock=\{isDoor \? 'left' : null\}/);
-  assert.match(door, /sticky=\{isDoor\}/);
+  // CHAT FIX 29.10.2026 F2 AMENDED: the door is still sticky; a PIECE's window is sticky too while Center between is
+  // armed on its cabinet, so the two picks reach the scene (re-copied to retail by the machine, never by hand). The
+  // owner: *"droban funcje ale jej nei ma czyli center between soprawdz jeszcze raz prosze"*.
+  assert.match(door, /sticky=\{isDoor \|\| picking\}/);
+  assert.match(door, /const picking = useUiStore\(\(s\) => s\.centreBetween\?\.unitId != null && s\.centreBetween\.unitId === args\?\.unitId\);/);
   assert.match(door, /escapeCloses=\{!isDoor\}/);
   // The window answers no Escape, so the press goes to the leaf, then to the cabinet.
   assert.equal(decide({ ui: PART, dom: { windows: [DOOR] } }).step, 'part');

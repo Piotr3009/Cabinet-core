@@ -140,6 +140,17 @@ export default function DoorModal() {
     });
   }, [selected, isDoor, args, units, unitResult, openModal]);
 
+  // ─── CHAT FIX 29.10.2026 F2: CENTER BETWEEN PICKS THROUGH THIS WINDOW ──────
+  // The owner: *"droban funcje ale jej nei ma czyli center between soprawdz
+  // jeszcze raz prosze"* (29.10.2026). Armed from this window (T79 F12), the
+  // two picks are presses in the scene, and a window that eats a press and
+  // closes on it took the first pick with it, and its step line too (the
+  // Studio walk: the lower pick closed the window, the upper became the lower,
+  // nothing centred). While Center between is armed on this cabinet the window
+  // is `sticky` (T33's prop): the presses reach the scene and the window stays,
+  // saying which pick is next. The door window's conduct (T37) is unchanged.
+  const picking = useUiStore((s) => s.centreBetween?.unitId != null && s.centreBetween.unitId === args?.unitId);
+
   if (!unit || !panel) return null;
 
   const hand = panel.meta?.hinge === 'R' ? 'right' : 'left';
@@ -173,7 +184,7 @@ export default function DoorModal() {
       // which CLAUDE.md marked permanent and this turn overrides for THIS
       // modal and no other.
       dock={isDoor ? 'left' : null}
-      sticky={isDoor}
+      sticky={isDoor || picking}
       escapeCloses={!isDoor}
       width="w-[340px]"
     >

@@ -165,7 +165,13 @@ const EXEMPT = {
     + ' T83 F5 · the MIRROR CABINET section for the mirror cabinet only: Bays 1 / 2 / 3; Door widths, one field a bay, the sum with the stiles checked against the carcass and refused in the kit\'s words (a refused width stays in its field until the next one makes the sum; Kit\'s widths hands the doors back); Stiles LED / Timber / None and their width; Panels L / R / Top / Bottom on or off and Panel thickness; Mirror doors, Mirror back, LED under, LED inside, Bottom box on or off; Glass shelves per bay; Recess mm. Every answer goes through the store\'s one action setMirrorCabinet, and the figures are read off the engine\'s derived.mirror; the panel types no number. No retail copy. *"daj wszystkie mozliwosci z panelami, z ledami, bez, szerokosc ustawianych drzwiczek etc"*'
     + ' CHAT FIX 26.10.2026 (KIT_MIRROR.lsp D5a) · the Door widths of the MIRROR CABINET section: one door typed is one answer (the store\'s door_width), held at its number and marked with a lock; the doors not typed give way so the sum always makes the carcass, and nothing typed is refused but a width that alone leaves the other doors less than profile.mirror.minDoorMm; the lock clicked lets the door give way again (door_free); Kit\'s widths forgets every hold; no width waits refused in its field any more. *"jesli uzytkownik zmienil to ten numer juz sie nie moze zmieniac, wtedy zmieniamy tylko te ktore nie byly ruszane"*, *"program odmawia ostatniej liczby bez sensu, musi zostawic"*'
     + ' T84 F4 · the host adaptation (verify/t84/p1-host.md C): layout="embedded" fills the inspector column instead of laying the panel over the canvas (no absolute right-0, no width, no z layer), headerActions (Pin, Back to quick settings) stand INSIDE the existing header before the x on every branch (CNC sheet, nothing selected, several cabinets, one cabinet), the title gives way in the embedded header, the duplicate inline ElementSection is suppressed in the embedded layout only, and the cut-corner, cut-edge and mirror-back windows are exported so the host mounts each once while the panel is embedded; overlay, the panel is what it was, and every row, section and the x stay. *"ok jak juz bedziesz wiedzial dokladnie to tabela porownaj ze mamy wszystko nic nie zgubilismy, teraz daj do tury"* (the owner, 27.10.2026, 22:11 to 22:25); *"Suppress only the duplicate inline ElementSection in the Studio inspector; the existing part editor remains independent"* (the designer, CLAUDE.md T84 PART P (c))'
-    + ' CHAT FIX 28.10.2026, 23:26 (KIT_RECESS.lsp D27) · the Section\'s drawer row says what each stack is: a column\'s stack its column and depth (result.assemblies.columnDrawers, the box side Z<k>D1-SL), never "dropped" because the full-width zone is empty; a full-width stack the carcass cannot hold says so (data-dropped-drawers) beside a Remove button (data-remove-dropped-drawers) that removes it through the store\'s own addDrawers(unit, 0). *"nie da sie tego zrobic why ?"* (the owner, a wardrobe 1200 x 2150 x 300 before a recess).',
+    + ' CHAT FIX 28.10.2026, 23:26 (KIT_RECESS.lsp D27) · the Section\'s drawer row says what each stack is: a column\'s stack its column and depth (result.assemblies.columnDrawers, the box side Z<k>D1-SL), never "dropped" because the full-width zone is empty; a full-width stack the carcass cannot hold says so (data-dropped-drawers) beside a Remove button (data-remove-dropped-drawers) that removes it through the store\'s own addDrawers(unit, 0). *"nie da sie tego zrobic why ?"* (the owner, a wardrobe 1200 x 2150 x 300 before a recess).'
+    + ' Chat fix 29.10.2026 F1 · the Section\'s Shelves row (ShelvesHead) carries Center all and Center between, with no shelf selected first: Center all is the row\'s Even under the store\'s one name (centreShelves(unit, null), each bay on its own ladder, the same call); Center between (data-section-centre-between) arms the shared uiStore two-pick mode on this cabinet, the row says which pick is next (data-section-centre-between-step), a second press or Escape cancels, and the project store centres the shelves between the two picks or says why not (T79 F12). *"jest ta funkcja ale tylko w double click ale nie ma w carcas lub w section a powinn byc bo zaznaczyc polki i kliknac center between to za duzo i za duzo szukania"* (the owner, 29.10.2026, 06:01).',
+  // ─── ADDED BY THE CHAT FIX OF 29.10.2026 · CENTER BETWEEN IN THE STUDIO ────
+  // The piece's window is a retail copy's original (scripts/t63-copies.mjs), re-copied by the machine
+  // (scripts/t78-copy.mjs T78_PRO_EDITS), never by hand; the door window's conduct (T37) is untouched.
+  'src/components/DoorModal.jsx':
+    'Chat fix 29.10.2026 F2 · while Center between is armed on its cabinet (uiStore.centreBetween) the piece\'s window is sticky, T33\'s prop: the two picks reach the scene instead of closing the window, and the window stays open saying which pick is next; with nothing armed every piece\'s window is what it was, and the door window keeps T37\'s conduct (dock left, sticky, its key off). The Studio walk: the lower pick closed the window, the upper became the lower, nothing centred. *"droban funcje ale jej nei ma czyli center between soprawdz jeszcze raz prosze"* (the owner, 29.10.2026, before 06:01).',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -493,7 +499,7 @@ const FROZEN = {
   'src/components/DecorPickerModal.jsx': 'eff9e583740f2381cfa8e796339f5b664f88ddf010e427a61cd450ed2ad44411',
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/DesignSettingsModal.jsx': '7f4863ce3d4ec2bb8433a11a659377e809950fb3ab6ec956225ddc409683bc0b',
-  'src/components/DoorModal.jsx': '4e5e539c734fe6ccf32f030f5c90e3678196828aad35be244248c0992e16efe7',
+  'src/components/DoorModal.jsx': 'a6f125f427a619cd8a2aa3b7c0807dc946d0a54d468f34afe80df91e4d69b490',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawRoomModal.jsx': 'fc048e2852c52ddeb48dce71f07cc5d3db3f5de0c3e5623e7d2799d23d4b3eb9',
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -555,7 +561,7 @@ const FROZEN = {
   // T83 F5 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 26.10.2026 re-frozen at the new hash (the mirror cabinet's door widths held and balanced); EXEMPT above carries the owner's words.
   // T84 F4 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/RightPanel.jsx': 'f9eaaa48c4cdb20caae3108c7ec4a1f469d48b75dc1495fa7fe6232ee5b367f1',
+  'src/components/RightPanel.jsx': '5a7792581e6d9ade9001bc4bcf8d6da21663496af06a98ee5edeab6f570fdea2',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
   'src/components/RoomModal.jsx': 'cc9a92536ce6fa813da4d6523c4a41bb38375f066f92e6be4e118d662aab3598',
@@ -847,6 +853,9 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/ContextMenu.jsx',
     // T82 F20, after the review · *"musze miec dzisiaj profesjonalne rysunki dla klientow"*: Update and save marks the job saved only when it was stored.
     'src/components/DesignSettingsModal.jsx',
+    // Chat fix 29.10.2026 F2 · *"droban funcje ale jej nei ma czyli center between soprawdz jeszcze raz prosze"*:
+    // the piece's window lets Center between's two picks through to the scene while the mode is armed.
+    'src/components/DoorModal.jsx',
     'src/components/DrawRoomModal.jsx',
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',

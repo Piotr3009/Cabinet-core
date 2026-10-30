@@ -340,7 +340,7 @@ const VOCABULARY = [
   'studio-scene-links', 'studio-inspector',
   // The inspector column (CHAT FIX 30.10.2026: the card's classes left with the card; the foot
   // under the panel holds Open cabinet and the findings)
-  'studio-inspector-foot', 'studio-inspector-issues', 'studio-empty-state',
+  'studio-inspector-foot', 'studio-inspector-issues', 'studio-issues-row', 'studio-issue-dot', 'studio-empty-state',
   // Popups
   'studio-popup', 'studio-popup-head', 'studio-menu-item', 'studio-library-item',
   // Issues
@@ -366,17 +366,31 @@ test('F1 . every class of the contract\'s vocabulary is styled, with its modifie
   }
 });
 
-test('F1 . a finding is 13 px, dark on its level\'s ground, in every place it stands (F5)', () => {
-  for (const cls of ['studio-issue-strip', 'studio-counter', 'studio-marker', 'studio-rail-badge']) {
+test('F1 . a finding is 13 px, dark on its level\'s ground, where it stands loud (the counters, the marker, the badge); the strip is quiet (30.10.2026)', () => {
+  for (const cls of ['studio-counter', 'studio-marker', 'studio-rail-badge']) {
     const sel = `.studio-pro .${cls}`;
     assert.equal(declOf(sel, 'font-size'), 'var(--studio-issue-text)', `${cls}: the issue size`);
     assert.equal(declOf(sel, 'color'), "theme('colors.black')", `${cls}: dark text`);
     assert.match(declOf(sel, 'background'), /^var\(--studio-(?:warn|danger)\)$/, `${cls}: its level's ground`);
   }
-  for (const cls of ['studio-issue-strip', 'studio-counter', 'studio-marker']) {
+  for (const cls of ['studio-counter', 'studio-marker']) {
     assert.equal(declOf(`.studio-pro .${cls}.is-red`, 'background'), 'var(--studio-danger)');
     assert.equal(declOf(`.studio-pro .${cls}.is-yellow`, 'background'), 'var(--studio-warn)');
   }
+  // CHAT FIX 30.10.2026 (the evening), the owner: "te zolte alerty moze by jakos skromniej to pokazac i
+  // zwiniete ... skromnie gdzies na dole a nie ZOLTE wywalone na wierzch". The strip's lines: the panel's
+  // own dark ground, the level a 3 px hairline at the left edge, the panel's small text; the folded row
+  // transparent, a field high, a dot per level in the level's colour.
+  assert.equal(declOf('.studio-pro .studio-issue-strip', 'background'), "theme('colors.shell.700')");
+  assert.equal(declOf('.studio-pro .studio-issue-strip', 'font-size'), 'calc(var(--studio-text) - 1px)');
+  assert.equal(declOf('.studio-pro .studio-issue-strip', 'border-left'), '3px solid var(--studio-warn)');
+  assert.equal(declOf('.studio-pro .studio-issue-strip.is-red', 'border-left-color'), 'var(--studio-danger)');
+  assert.equal(declOf('.studio-pro .studio-issue-strip.is-yellow', 'border-left-color'), 'var(--studio-warn)');
+  assert.equal(declOf('.studio-pro .studio-issues-row', 'height'), 'var(--studio-field)');
+  assert.equal(declOf('.studio-pro .studio-issues-row', 'background'), 'transparent');
+  assert.equal(declOf('.studio-pro .studio-issues-row', 'font-size'), 'calc(var(--studio-text) - 1px)');
+  assert.equal(declOf('.studio-pro .studio-issue-dot.is-red', 'background'), 'var(--studio-danger)');
+  assert.equal(declOf('.studio-pro .studio-issue-dot.is-yellow', 'background'), 'var(--studio-warn)');
   assert.equal(declOf('.studio-pro .studio-rail-badge.is-red', 'background'), 'var(--studio-danger)');
   assert.equal(declOf('.studio-pro .studio-marker .studio-icon', 'width'), 'var(--studio-marker)');
   // CHAT FIX 30.10.2026: the refused field (red, the sentence under it) left with the quick card.
@@ -388,7 +402,7 @@ test('F1 . a finding is 13 px, dark on its level\'s ground, in every place it st
   assert.equal(declOf('.studio-pro .studio-inspector-foot', 'min-height'), '0');
   assert.equal(declOf('.studio-pro .studio-inspector-issues', 'overflow-y'), 'auto');
   assert.equal(declOf('.studio-pro .studio-inspector-issues', 'min-height'), '0');
-  assert.equal(declOf('.studio-pro .studio-inspector .studio-issue-strip', 'border-radius'), '0');
+  assert.equal(declOf('.studio-pro .studio-issue-strip', 'border-radius'), '0', 'square, edge to edge');
 });
 
 test('F1 . the rail: its word is never clipped, and Check\'s count never takes the word\'s room', () => {
@@ -465,7 +479,8 @@ test('F1 . the stylesheet is imported by a JSX module: it travels with the sprit
 
 // --- 8. the sprite --------------------------------------------------------------------------------
 
-const EXTRA = ['redo', 'camera', 'eye', 'frame', 'plan', 'iso', 'output'];
+// CHAT FIX 30.10.2026: `up`, the chevron of the folded findings row at the inspector's foot.
+const EXTRA = ['redo', 'camera', 'eye', 'frame', 'plan', 'iso', 'output', 'up'];
 
 /** Every point a path reaches, control points included (M L H V C S Q T A Z, both cases). */
 function pathPoints(d) {
@@ -494,7 +509,7 @@ function pathPoints(d) {
   return points;
 }
 
-test('F1 . the sprite: the designer\'s eighteen byte for byte, seven more in her 24-unit stroke style', () => {
+test('F1 . the sprite: the designer\'s eighteen byte for byte, eight more in her 24-unit stroke style', () => {
   const html = read(STAGE1_PATH);
   const hers = [...html.matchAll(/<symbol id="i-([a-z]+)" viewBox="0 0 24 24"><path d="([^"]+)"\/><\/symbol>/g)]
     .map(([, name, d]) => [name, d]);

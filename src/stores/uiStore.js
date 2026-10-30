@@ -324,6 +324,15 @@ export const useUiStore = create((set, get) => ({
   openCheckFiltered: (level) => set({
     checkOpen: true, bomOpen: false, checkFilter: CHECK_FILTERS.includes(level) ? level : 'all',
   }),
+  // ─── CHAT FIX 30.10.2026 · THE CABINET'S FINDINGS, FOLDED BY DEFAULT ──────
+  // The owner, of the yellow strips under the panel: *"te zolte alerty moze by
+  // jakos skromniej to pokazac i zwiniete, jak bedzie 10 to caly menu mi
+  // zabierze, ja uwazam ze powinno byc skromnie gdzies na dole a nie ZOLTE
+  // wywalone na wierzch, rozprasza tylko czlowieka"*. One quiet row at the
+  // foot of the column says the counts; a press unfolds the list over it, a
+  // second folds it. One yes or no for the session, never saved.
+  issuesOpen: false,
+  toggleIssues: () => set((s) => ({ issuesOpen: !s.issuesOpen })),
   // ─── T84 F5 (CLAUDE.md PART C): SHOW FRAMES THE UNIT ─────────────────────
   // The issue strip's Show asks; the camera bar's Frame selection (F6)
   // answers it and clears it. A request, never a camera move made here.

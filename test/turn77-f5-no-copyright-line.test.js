@@ -461,6 +461,8 @@ export const NEW_FILES = [
   // T85 F4 (30.10.2026): the doors open to 90 in the picture, the silver finish the default
   'test/turn85-f04-doors.test.js',
   'scripts/t78-classify.d/f50-t85-f04.mjs',
+  // T85 F5 (30.10.2026): the walk, real mouse on the built app (W1)
+  'scripts/t85-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

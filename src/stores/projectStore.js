@@ -163,7 +163,7 @@ import {
 // T72 F14 · `wallGapOf` — how far ONE unit stands off its wall: its own
 // `params.wall_gap`, or the project's number when nobody has said.
 import {
-  buildRuns, cornerLAdjacentSpan, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
+  buildRuns, cornerArmStandIns, cornerLAdjacentSpan, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
   runMemberIds, runPlinthParams, runUpstandParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
   verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
@@ -2963,6 +2963,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const others = s.units
         .filter((o) => o.id !== u.id && (o.position?.wall ?? 0) === (u.position?.wall ?? 0)
           && getUnitType(o.type).mount === level)
+        // T86B F1 . *"liczy infill a nie powinien"* (the owner, 30.10.2026, 22:26): an L's arm on this wall is a
+        // neighbour, the same stand-in the plus and the share-out read (runs.js cornerArmStandIns).
+        .concat(cornerArmStandIns(s.units, u.position?.wall ?? 0, level, walls, profile))
         .map(unitSpan);
       const parts = autoPartsFor({
         unit: u, wallWidth: wall?.width ?? 0, others, roomHeight, design,

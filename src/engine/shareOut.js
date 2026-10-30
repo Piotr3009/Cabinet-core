@@ -80,7 +80,9 @@
 // Pure functions — no React, no store, no three.js.
 
 import { getUnitType } from './types.js';
-import { buildWallRuns, paddedSpan, runEndGap } from './runs.js';
+import {
+  buildWallRuns, cornerArmStandIns, paddedSpan, runEndGap,
+} from './runs.js';
 
 const round1 = (v) => Math.round(v);
 
@@ -419,6 +421,8 @@ export function runFor(units, unitId, { walls = [], wallMargin = 0 } = {}, profi
   const wallWidth = walls?.[run.wall]?.width ?? 0;
   const others = units.filter((u) => (u.position?.wall ?? 0) === run.wall
     && getUnitType(u.type).mount === run.mount);
+  // T86B F1 . an L's arm on this wall is a neighbour, not the wall (runs.js cornerArmStandIns).
+  others.push(...cornerArmStandIns(units, run.wall, run.mount, walls, profile));
   return { run, wallWidth, context: { wallWidth, others, wallMargin } };
 }
 

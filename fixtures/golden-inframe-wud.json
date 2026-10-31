@@ -6,7 +6,8 @@
     "source": "T80 F11 (the golden F3 names). KIT_INFRAME.lsp (a) and (c) on a WUD 600 with one door, open at both ends, design.inframe true, fronts 22: the frame 602 x 758 (lip 1 past each open side, 19 above and below), the opening 562 x 682, the door 556 x 676. The owner, 21.10.2026: *\"raczej plyta, malo kiedy bedzie jeden ciag dluzszy jak 2800, a jak bedzie to bedziemy laczyc\"*; *\"najlepiej jakbysmy zrobili wszedzie ramke 38 mm ... 1 mm bedzie w srodku wystawac\"*; *\"ramka 25, drzwi 22 i jest idealnie, 3 mm gap pomiedzy carcasem a drzwiami\"*; *\"jak podwojne drzwi to miedzy drzwiami nie ma ramki\"*; *\"3 mm zawsze\"*; (22:14) *\"jezeli chodzi o dol to zdecydowanie wariant C\"*, *\"gora ... tak samo jak dol\"*; (22:40) *\"1 tak\"*, *\"2 na styk\"*, *\"5 tak\"*.",
     "computed_by": "scripts/t78-goldens.mjs inframeWudScene()",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "31.10.2026: the owner's chat fix \"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)\": RECESS_WINDOW (the frame's openings) moves from ACI 52 to 142 in the DXF layer table; the fingerprint of the frame's DXF moves with the one colour row, no point of the frame moves"
   },
   "params": {
     "scene": "inframeWudScene: WUD 600, one door, on wall 0",
@@ -340,7 +341,7 @@
         ],
         "dxf": {
           "name": "W01-FRAME.dxf",
-          "fingerprint": "599b9cf3"
+          "fingerprint": "da1aea71"
         }
       }
     ]

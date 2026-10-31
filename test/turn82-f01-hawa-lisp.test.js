@@ -56,7 +56,14 @@ test('F1 · KIT_HAWA.lsp: the Skylon header, ASCII, no dash, and a NEW file besi
   // (test/chatfix-2810-recess-drawers.test.js; licensed by scripts/t78-classify.d/f47-owner-2810-recess.mjs LISP):
   // KIT_RECESS.lsp (D22 to D25) and KIT_NOTCH.lsp (its table's row recess.handEdge). The owner, 28.10.2026:
   // *"szuflady tez prosze"*. test/turn80-f01-lisp.test.js names the same two.
-  const AMENDED = ['M\treference/lisp/KIT_NOTCH.lsp', 'M\treference/lisp/KIT_RECESS.lsp'];
+  // CHAT FIX 31.10.2026 AMENDED: no yellow family on any layer (the owner, 31.10.2026: *"raczej staraj sie wszedzie
+  // omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*): one `_C` colour per layer in
+  // SKYLON_COMMON, KIT_BUDR_FULL, KIT_WARDROBE_FULL, KIT_FRONT_JPULL, KIT_LED_GROOVE, KIT_CORNER_L, KIT_WATCH_DRAWER and
+  // this kit's createHawaLayers, the Cabineo drawing's cab-layer colours; licensed by
+  // scripts/t78-classify.d/f52-owner-3110-no-yellow.mjs LISP, held by test/chatfix-3110-no-yellow.test.js.
+  const AMENDED = ['M\treference/lisp/KIT_NOTCH.lsp', 'M\treference/lisp/KIT_RECESS.lsp',
+    ...['SKYLON_COMMON', 'KIT_BUDR_FULL', 'KIT_WARDROBE_FULL', 'KIT_FRONT_JPULL', 'KIT_LED_GROOVE', 'KIT_CORNER_L',
+      'KIT_WATCH_DRAWER', 'SKYLON_JOINTS_CABINEO', 'KIT_HAWA'].map((k) => `M\treference/lisp/${k}.lsp`)];
   const base = spawnSync('git', ['merge-base', 'HEAD', 'd0f84ebe'], { cwd: ROOT, encoding: 'utf8' });
   if (base.status === 0 && base.stdout.trim()) {
     const rows = spawnSync('git', ['diff', '--name-status', base.stdout.trim(), '--', 'reference/lisp'], { cwd: ROOT, encoding: 'utf8' })

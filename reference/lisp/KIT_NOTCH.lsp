@@ -2456,7 +2456,9 @@
 ;;; (engine/cnc/layers.js carries the same name, colour and kind 'mark').
 (defun notch-ensure-corner-layer ( / )
   (if (null (tblsearch "LAYER" "CORNER_4MM"))
-    (command "._LAYER" "_N" "CORNER_4MM" "_C" "53" "CORNER_4MM" "")))
+    ;; CHAT FIX 31.10.2026: CORNER_4MM was "53" (the yellow family); 14, the darkest rung of the puzzle's
+    ;; red (engine/cnc/layers.js the same 14). The comment above records the old number. the owner, 31.10.2026: "raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"; "staraj sie trzymac w exporcie do DXF i u nas te same kolory".
+    (command "._LAYER" "_N" "CORNER_4MM" "_C" "14" "CORNER_4MM" "")))
 
 ;;; The corner marks of one board, drawn: open two-point lines on CORNER_4MM,
 ;;; the owner's own 4 mm program ("wtedy ja wytne ten korner").

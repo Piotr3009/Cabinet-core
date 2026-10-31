@@ -670,7 +670,9 @@
 (defun createCNCLayers ()
   (command "._LAYER" "_N" "OUTLINE" "_C" "7" "OUTLINE" "")
   (command "._LAYER" "_N" "PUZZLE_SOCKET" "_C" "1" "PUZZLE_SOCKET" "")
-  (command "._LAYER" "_N" "PUZZLE_DOG_BONES" "_C" "2" "PUZZLE_DOG_BONES" "")
+  ;; CHAT FIX 31.10.2026: PUZZLE_DOG_BONES was "2" (yellow); 12, the socket's red one rung darker. No yellow
+  ;; family (2, 40 to 59) on any layer from this day: the owner, 31.10.2026: "raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"; "staraj sie trzymac w exporcie do DXF i u nas te same kolory".
+  (command "._LAYER" "_N" "PUZZLE_DOG_BONES" "_C" "12" "PUZZLE_DOG_BONES" "")
   (command "._LAYER" "_N" "PUZZLE_HOLES_7_5MM" "_C" "3" "PUZZLE_HOLES_7_5MM" "")
   (command "._LAYER" "_N" "SCREWS_3MM" "_C" "4" "SCREWS_3MM" "")
   (command "._LAYER" "_N" "HINGES_5MM" "_C" "5" "HINGES_5MM" "")

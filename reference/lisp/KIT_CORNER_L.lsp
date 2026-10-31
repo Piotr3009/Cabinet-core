@@ -629,7 +629,9 @@
 ;;; KIT_NOTCH.lsp and engine/cnc/layers.js name it).
 (defun CL:ensureCornerLayer ( / )
   (if (null (tblsearch "LAYER" "CORNER_4MM"))
-    (command "._LAYER" "_N" "CORNER_4MM" "_C" "53" "CORNER_4MM" "")))
+    ;; CHAT FIX 31.10.2026: CORNER_4MM was "53" (the yellow family); 14, the darkest rung of the puzzle's
+    ;; red (engine/cnc/layers.js the same 14). The comment above records the old number. the owner, 31.10.2026: "raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"; "staraj sie trzymac w exporcie do DXF i u nas te same kolory".
+    (command "._LAYER" "_N" "CORNER_4MM" "_C" "14" "CORNER_4MM" "")))
 
 ;;; An OPEN LWPOLYLINE (COMMON's makePolyline writes a closed one, 70 = 1).
 (defun CL:openPline (layer pts / entData pt)

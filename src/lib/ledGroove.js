@@ -55,9 +55,18 @@ import { isBoxTop } from '../engine/topFrame.js';
  * what `ledMakeLayers` declares; `#c8a24a` is what the sheet paints, and it is
  * the app's own LED ink — the same warm gold `components/LightingPanel.jsx`
  * draws a strip in — so one thing has one colour wherever it appears.
+ *
+ * CHAT FIX 31.10.2026: the owner, *"raczej staraj sie wszedzie omijac zolty bo
+ * on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*; *"staraj
+ * sie trzymac w exporcie do DXF i u nas te same kolory"*. ACI 44 was the yellow
+ * family: `ledMakeLayers` declares 180 now (a violet blue, KIT_LED_GROOVE.lsp
+ * amended the same day) and the sheet paints the same 180 lifted 27 % for the
+ * black sheet, the rule every row of `engine/cnc/layers.js` follows from this
+ * day. The strip's own gold stays the LightingPanel's; the GROOVE is a cut and
+ * wears the cut's colour.
  */
 export const LED_GROOVE_LAYER = Object.freeze({
-  name: 'LED_GROOVE', aci: 44, screen: '#c8a24a', label: 'LED groove', kind: 'pocket',
+  name: 'LED_GROOVE', aci: 180, screen: '#7345ff', label: 'LED groove', kind: 'pocket',
 });
 
 // ─── TURN 48 (CLAUDE.md F4): THE GROOVE OUTGROWS THE PROFILE ────────────────

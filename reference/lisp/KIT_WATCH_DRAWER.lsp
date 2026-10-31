@@ -112,13 +112,16 @@
 ;;; LED_GROOVE and is the same reason.
 
 (defun watchMakeLayers ( / )
-  (command "._LAYER" "_N" "WATCH_DIVIDER_SLOT" "_C" "41" "WATCH_DIVIDER_SLOT" "")
-  (command "._LAYER" "_N" "WATCH_GLASS_REBATE" "_C" "42" "WATCH_GLASS_REBATE" "")
+  ;; CHAT FIX 31.10.2026: the three were 41, 42 and 43 (the yellow family); the slot 34 (a brown), the
+  ;; rebate 172 and the opening 174 (two blues, the deeper the more it cuts); engine/cnc/layers.js names
+  ;; the three at the same numbers from this day. the owner, 31.10.2026: "raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"; "staraj sie trzymac w exporcie do DXF i u nas te same kolory".
+  (command "._LAYER" "_N" "WATCH_DIVIDER_SLOT" "_C" "34" "WATCH_DIVIDER_SLOT" "")
+  (command "._LAYER" "_N" "WATCH_GLASS_REBATE" "_C" "172" "WATCH_GLASS_REBATE" "")
   ;; T53 (F8b): the pane is IN THE SHELF above now, so the shelf carries a
   ;; through cut as well as the rebate round it. Two operations, two layers -
   ;; a cut-out and a rebate are different tools and a machine must not have to
   ;; guess which from a depth.
-  (command "._LAYER" "_N" "WATCH_GLASS_OPENING" "_C" "43" "WATCH_GLASS_OPENING" "")
+  (command "._LAYER" "_N" "WATCH_GLASS_OPENING" "_C" "174" "WATCH_GLASS_OPENING" "")
 )
 
 ;;;========================================

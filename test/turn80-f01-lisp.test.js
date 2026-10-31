@@ -71,9 +71,22 @@ const LATER_KITS = ['KIT_HAWA.lsp', 'KIT_VANITY.lsp', 'KIT_MIRROR.lsp'];
 // stand outside T80's fingerprint, as the later kits do, and the rest of the folder is fingerprinted once more: T80's
 // base (f5d8aab) less those two, hashed the same way out of `git show f5d8aab:`, gives this very number, so every other
 // file is still T80's base byte for byte. The first pin stays written above: the base's whole folder.
-const AMENDED_KITS = ['KIT_RECESS.lsp', 'KIT_NOTCH.lsp'];
-const LISP_BASE_FINGERPRINT_LESS_AMENDED = '5c9787b4bb00b516ccc2c6bcfe298f9ed1edda8b80e4ec5447c37237d0b67a4d';
-const AMENDED_LATER = ['M\treference/lisp/KIT_VANITY.lsp', 'M\treference/lisp/KIT_MIRROR.lsp',
+// CHAT FIX 31.10.2026 AMENDED: eight more kits of T80's base AMENDED since, on the owner's order, one `_C` colour each
+// (and the Cabineo drawing's cab-layer colours): no yellow family on any layer, SKYLON_COMMON.lsp (PUZZLE_DOG_BONES 12),
+// KIT_BUDR_FULL.lsp and KIT_WARDROBE_FULL.lsp (DRAWER_BOTTOM_POCKET 230), KIT_FRONT_JPULL.lsp (JPULL_EDGE 92),
+// KIT_LED_GROOVE.lsp (LED_GROOVE 180), KIT_CORNER_L.lsp (CORNER_4MM 14), KIT_WATCH_DRAWER.lsp (34, 172, 174),
+// SKYLON_JOINTS_CABINEO.lsp (200 / 202 / 204, 212, 150); KIT_RECESS.lsp and KIT_NOTCH.lsp, already outside, took a
+// comment and the corner mark's 14. Licensed by scripts/t78-classify.d/f52-owner-3110-no-yellow.mjs LISP and held by
+// test/chatfix-3110-no-yellow.test.js. The owner, 31.10.2026: *"raczej staraj sie wszedzie omijac zolty bo on jest mega
+// nie widoczny na bialym tle (na takim pracuje vcarve)"*. The rest of the folder is fingerprinted once more the same
+// way: T80's base (f5d8aab) less the ten gives this very number (15 files), so every other file is still T80's base
+// byte for byte. 5c9787b4 was the number less the first two.
+const AMENDED_KITS = ['KIT_RECESS.lsp', 'KIT_NOTCH.lsp', 'SKYLON_COMMON.lsp', 'KIT_BUDR_FULL.lsp', 'KIT_WARDROBE_FULL.lsp',
+  'KIT_FRONT_JPULL.lsp', 'KIT_LED_GROOVE.lsp', 'KIT_CORNER_L.lsp', 'KIT_WATCH_DRAWER.lsp', 'SKYLON_JOINTS_CABINEO.lsp'];
+const LISP_BASE_FINGERPRINT_LESS_AMENDED = 'f4994ed58e8328fe2c3efc5e7b2937bd33f0748bfc3036845c9c62c2f8d360a1';
+// CHAT FIX 31.10.2026: KIT_HAWA.lsp, a later kit, AMENDED the same night (createHawaLayers 54 to 59 become 220 194 222
+// 224 190 192), licensed by the same fragment.
+const AMENDED_LATER = ['M\treference/lisp/KIT_VANITY.lsp', 'M\treference/lisp/KIT_MIRROR.lsp', 'M\treference/lisp/KIT_HAWA.lsp',
   ...AMENDED_KITS.map((k) => `M\treference/lisp/${k}`)];
 const lispFingerprint = () => sha256(readdirSync(`${ROOT}reference/lisp`)
   .filter((n) => n !== KIT && !LATER_KITS.includes(n) && !AMENDED_KITS.includes(n)).sort()

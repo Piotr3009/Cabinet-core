@@ -72,8 +72,10 @@ test('it lands on the PANEL the line is cut into, and on the LISP\'s own layer',
   const groove = carrying[0].cnc.paths.find((x) => x.layer === 'LED_GROOVE');
   assert.equal(groove.closed, true, 'a POCKET, not a profile — the cutter stays in the board');
   assert.equal(groove.pts.length, 4);
-  assert.match(LISP, /"LED_GROOVE" "_C" "44"/);
-  assert.equal(LED_GROOVE_LAYER.aci, 44, 'the file states what the kit declares');
+  // CHAT FIX 31.10.2026: 44 was the yellow family; 180, a violet blue, in the kit
+  // and in the file alike (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*).
+  assert.match(LISP, /"LED_GROOVE" "_C" "180"/);
+  assert.equal(LED_GROOVE_LAYER.aci, 180, 'the file states what the kit declares');
 });
 
 // ══ THE RECTANGLE IS THE LISP'S OWN, +10s INCLUDED ═════════════════════════
@@ -126,9 +128,10 @@ test('the sheet can NAME and INK the layer — a preview never draws the unnamed
   assert.equal(allLayers([]).some((l) => l.name === 'LED_GROOVE'), false);
   assert.equal(resolveLayer('LED_GROOVE', []).name, 'LED_GROOVE');
   assert.equal(resolveLayer('LED_GROOVE', []).screen, '#c0c0c0', 'unknown, without the record');
-  // With the record it has an ink of its own — the app's own LED gold, so a
-  // groove on the sheet is the same colour as a strip in the lighting panel.
-  assert.equal(LED_GROOVE_LAYER.screen, '#c8a24a');
+  // With the record it has an ink of its own. Until 31.10.2026 the app's own
+  // LED gold; from that day the DXF's 180 lifted for the black sheet, the rule
+  // every CNC layer follows (31.10.2026, the owner: *"staraj sie trzymac w exporcie do DXF i u nas te same kolory"*).
+  assert.equal(LED_GROOVE_LAYER.screen, '#7345ff');
   // …and the view really does hand it in. A colour the legend cannot resolve is
   // the failure this assertion is here to catch, and it is one grep away.
   const view = readFileSync(new URL('../src/components/CncView.jsx', import.meta.url), 'utf8');
@@ -142,7 +145,7 @@ test('…and the DXF still carries it, at the ACI the kit declares', () => {
   const cut = store().unitCncResult(id);
   const panel = cut.panels.find((p) => p.id === shelf.id);
   const dxf = panelDxf(panel, cut.drills, { unitNum: '01', profile: P, userLayers: [LED_GROOVE_LAYER] });
-  assert.match(dxf.slice(0, dxf.indexOf('ENTITIES')), /LAYER\r\n2\r\nLED_GROOVE\r\n70\r\n0\r\n62\r\n44\r\n/);
+  assert.match(dxf.slice(0, dxf.indexOf('ENTITIES')), /LAYER\r\n2\r\nLED_GROOVE\r\n70\r\n0\r\n62\r\n180\r\n/);
 });
 
 // ══ CUT ONCE ═══════════════════════════════════════════════════════════════

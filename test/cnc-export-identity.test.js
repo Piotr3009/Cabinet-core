@@ -183,7 +183,14 @@ test('a per-panel DXF is byte-for-byte what it was', () => {
   // screws, and there is no partitioner. The board's own outline, its
   // hinges, its shelf pins, its runner rows and its label are untouched —
   // three holes left it and nothing else did.
-  assert.equal(fingerprint(bul.dxf), '26bec93d', 'the side panel’s DXF has changed');
+  // ─── CHAT FIX 31.10.2026: 26bec93d → 52e6a0be ─────────────────────────────
+  // NO YELLOW ON THE MACHINE FILE (the owner: *"raczej staraj sie wszedzie
+  // omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje
+  // vcarve)"*). ONE ROW of the LAYER table moves on this board: PUZZLE_DOG_BONES
+  // is declared at ACI 12 instead of 2. No entity, no coordinate, no group code
+  // of the ENTITIES section moves: the same text with 2 written back into that
+  // one row prints 26bec93d to the character (verify/chatfix-3110/identity.md).
+  assert.equal(fingerprint(bul.dxf), '52e6a0be', 'the side panel’s DXF has changed');
 });
 
 // ─── the sheet ──────────────────────────────────────────────────────────────
@@ -316,7 +323,13 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   // No entity appears or disappears, no other board's coordinate moves, and
   // the per-panel `01-BUL.dxf` above is byte-for-byte what it was. The two
   // sheets that carry no carcass (sprayed, fronts) stand still to the byte.
-  assert.equal(fingerprint(sheetOf(result, all)), '7d4073bc', 'the whole-unit sheet has changed');
+  // ─── CHAT FIX 31.10.2026: 7d4073bc → e51cb490 ─────────────────────────────
+  // NO YELLOW ON THE MACHINE FILE: three rows of the LAYER table move on this
+  // sheet (PUZZLE_DOG_BONES 2 → 12, SHAKER_PANEL_POCKET 41 → 32,
+  // DRAWER_BOTTOM_POCKET 2 → 230) and nothing in ENTITIES does: with the three
+  // old numbers written back the text prints 7d4073bc to the character. The two
+  // sheets of faces alone move for the shaker pocket's row and no other.
+  assert.equal(fingerprint(sheetOf(result, all)), 'e51cb490', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -384,11 +397,17 @@ test('…and so is each preset’s', () => {
   // ─── CHAT FIX 17.10.2026 (14:15): THE CENSUS LOGIC, THE CARCASS'S WAY ────
   // The TOP's underside frame is a carcass board's delta: the two sheets that
   // carry the carcass move, the two that are faces alone stand still.
+  // ─── CHAT FIX 31.10.2026: THE CENSUS LOGIC, THE COLOUR ROWS' WAY ────────
+  // The dog bones and the drawer groove are carcass and box layers, the shaker
+  // pocket a face's: the carcass sheet moves for two LAYER rows, the whole sheet
+  // for three, the two sheets of faces alone for the shaker pocket's one row;
+  // not an entity moves on any of the four (each old print comes back to the
+  // character with the old numbers written into those rows alone).
   const expected = {
-    all: '7d4073bc',           // was 17582204: the TOP drawn from its underside
-    'non-sprayed': '034c01aa', // was 0224886a: the same TOP, on the carcass sheet
-    sprayed: 'ceb3045b',       // UNCHANGED: no TOP among the faces
-    fronts: 'ceb3045b',        // UNCHANGED
+    all: 'e51cb490',           // was 7d4073bc: three colour rows (31.10.2026)
+    'non-sprayed': '9263c54c', // was 034c01aa: two colour rows (31.10.2026)
+    sprayed: '692e0871',       // was ceb3045b: the shaker pocket's row (31.10.2026)
+    fronts: '692e0871',        // was ceb3045b: the same one row
   };
   for (const [preset, print] of Object.entries(expected)) {
     const ids = panelIdsForPreset(exportablePanels(result.panels), preset);
@@ -710,5 +729,7 @@ test('the tree’s ticks are the export’s selection, and nothing else', () => 
   // the carcass sheet, and this file is that sheet to the byte.
   // Chat fix 17.10.2026 (14:15): was 0224886a; the TOP drawn from its
   // underside, and this file is still the "non-sprayed" sheet to the byte.
-  assert.equal(fingerprint(sheetOf(result, ids)), '034c01aa');
+  // Chat fix 31.10.2026: was 034c01aa; two LAYER rows' colours (no yellow),
+  // and this file is still the "non-sprayed" sheet to the byte.
+  assert.equal(fingerprint(sheetOf(result, ids)), '9263c54c');
 });

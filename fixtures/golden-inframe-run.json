@@ -6,7 +6,8 @@
     "source": "T80 F11 (the golden F3 names). KIT_INFRAME.lsp (a), (b), (c) on the mockup's run: END-L 18, BUD 600 (one door), BUD 800 (a pair), BUDR2 500, design.inframe true, fronts 22: the frame 1920 x 808 at (-19, -19), the openings 562 x 732, 762 x 732, 462 x 732, the doors 556 x 726 and 376.5 x 726, the drawer fronts 456 x 360 / 363, the hinge plates at 20.5, the end panel D + 25 and H + 19. The owner, 21.10.2026: *\"raczej plyta, malo kiedy bedzie jeden ciag dluzszy jak 2800, a jak bedzie to bedziemy laczyc\"*; *\"najlepiej jakbysmy zrobili wszedzie ramke 38 mm ... 1 mm bedzie w srodku wystawac\"*; *\"ramka 25, drzwi 22 i jest idealnie, 3 mm gap pomiedzy carcasem a drzwiami\"*; *\"jak podwojne drzwi to miedzy drzwiami nie ma ramki\"*; *\"3 mm zawsze\"*; (22:14) *\"jezeli chodzi o dol to zdecydowanie wariant C\"*, *\"gora ... tak samo jak dol\"*; (22:40) *\"1 tak\"*, *\"2 na styk\"*, *\"5 tak\"*.",
     "computed_by": "scripts/t78-goldens.mjs inframeRunScene()",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "31.10.2026: the owner's chat fix \"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)\": RECESS_WINDOW (the frame's openings) moves from ACI 52 to 142 in the DXF layer table; the fingerprint of the frame's DXF moves with the one colour row, no point of the frame moves"
   },
   "params": {
     "scene": "inframeRunScene: END-L 18, BUD 600, BUD 800, BUDR2 500 butted on wall 0",
@@ -1114,7 +1115,7 @@
         ],
         "dxf": {
           "name": "01-FRAME.dxf",
-          "fingerprint": "70c1bd58"
+          "fingerprint": "a7b45d3e"
         }
       }
     ]

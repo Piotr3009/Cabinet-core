@@ -133,8 +133,10 @@ test('F23 PROBE · the switch: `profile.joints` is the cut law, `profile.joinery
 test('F23 PROBE · the new layers have a policy, an ACI of their own, and the edge bore never reaches the machine', () => {
   const face = cncLayer('DOWEL_8MM');
   const edge = cncLayer('DOWEL_EDGE_8MM');
-  assert.equal(face.aci, 45);
-  assert.equal(edge.aci, 46);
+  // CHAT FIX 31.10.2026: 45 and 46 were the yellow family; 84 and 86, two rungs of one green
+  // (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*).
+  assert.equal(face.aci, 84);
+  assert.equal(edge.aci, 86);
   const acis = CNC_LAYERS.filter((l) => ['DOWEL_8MM', 'DOWEL_EDGE_8MM'].includes(l.name)).map((l) => l.aci);
   for (const a of acis) assert.equal(CNC_LAYERS.filter((l) => l.aci === a).length, 1, `ACI ${a} is shared`);
   assert.equal(machiningFor('DOWEL_8MM', P).draw, true);

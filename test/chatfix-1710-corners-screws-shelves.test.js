@@ -57,7 +57,9 @@ test('the leg is a PROFILE number (40, the owner\'s "okolo 40") and the layer is
   assert.equal(notchP(K, 'cnc.cornerMarkLeg'), 40, 'the notch table reads it, as KIT_NOTCH.lsp notch-profile does');
   const layer = cncLayer('CORNER_4MM');
   assert.equal(layer.kind, 'mark', 'a MARK, the biscuit line\'s kind: an open path, nothing removed');
-  assert.equal(layer.aci, 53, 'the next number after RECESS_WINDOW\'s 52');
+  // CHAT FIX 31.10.2026: 53 was the yellow family; 14, the puzzle's red at its darkest rung
+  // (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*).
+  assert.equal(layer.aci, 14, 'the puzzle red\'s darkest rung; 53 until 31.10.2026');
   assert.equal(machiningFor('CORNER_4MM', P).draw, false, 'the scene bores nothing for a mark');
   assert.match(read('verify/t26/sheet-vs-scene.md'), /CORNER_4MM/);
   assert.match(read('reference/lisp/KIT_NOTCH.lsp'), /\("cnc\.cornerMarkLeg"\s+\. 40\.0\)/, 'LISP first: the same number in the LISP\'s table');

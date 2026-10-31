@@ -13,13 +13,39 @@
 // HINGES_5MM and RUNNERS_3MM, which is fine in AutoCAD (you toggle layers) but
 // useless in a read-only preview where the whole point is telling them apart.
 //
+// ─── CHAT FIX 31.10.2026: NO YELLOW, AND THE SHEET WEARS THE DXF'S COLOURS ──
+// The owner, 31.10.2026: *"zmien prosze layer cabineo dziury kolor z zoltego,
+// raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na
+// bialym tle (na takim pracuje vcarve)"*; on the mapping: *"1 ok, ale staraj
+// sie trzymac w exporcie do DXF i u nas te same kolory"*; *"cyjan jest ok,
+// tylko jasny zolty jest nie widoczny"*; *"koduj"*. VCarve draws the DXF on a
+// WHITE sheet, so the yellow family of the index (2 and 40 to 59: yellow,
+// amber, the pale yellows) is gone from every layer the app or the LISP
+// declares; cyan (4) stays. The numbers were chosen for the white sheet: each
+// hue's darker rungs (the index ladder 255 / 189 / 129 per hue), one hue per
+// feature family (reds for the puzzle and the corner mark, oranges for the
+// biscuit and the shaker pocket, greens for the dowel, blues for the plate
+// pilots and the Cabineo side hole, violets for the Cabineo pockets, the
+// magentas and pinks for HAWA and the drawer groove).
+//
+// `screen` FOLLOWS `aci` from this day: the same colour the DXF states, lifted
+// toward white only as far as a 3.5 : 1 contrast on the black sheet (#131313,
+// components/CncView.jsx) needs, the house's own way for the sticker colours
+// (engine/partNumbers.js unitScreenColourOf). A bright index is painted as it
+// is; a dark rung is lifted (the percentage stands beside each row), so the
+// hue a joiner sees here is the hue he sees in VCarve. The rows this fix did
+// not touch keep their tones (the ACI 5 twins above, the rest already in the
+// family of their index).
+//
 // Pure data — no React, no store imports (engine rule).
 
 /** kind: how the layer is drawn — 'outline' | 'pocket' | 'hole' | 'mark' | 'text'. */
 export const CNC_LAYERS = [
   { name: 'OUTLINE',            aci: 7,  screen: '#f0ece4', label: 'Outline',        kind: 'outline' },
   { name: 'PUZZLE_SOCKET',      aci: 1,  screen: '#ff6b6b', label: 'Puzzle socket',  kind: 'pocket' },
-  { name: 'PUZZLE_DOG_BONES',   aci: 2,  screen: '#ffd166', label: 'Dog bones',      kind: 'pocket' },
+  // 31.10.2026: was ACI 2 (yellow); 12 is the puzzle socket's red, one rung
+  // darker. Screen: 12 lifted 19 %.
+  { name: 'PUZZLE_DOG_BONES',   aci: 12, screen: '#ca3030', label: 'Dog bones',      kind: 'pocket' },
   { name: 'PUZZLE_HOLES_7_5MM', aci: 3,  screen: '#8ce99a', label: 'Puzzle ⌀7.5',    kind: 'hole' },
   { name: 'SCREWS_3MM',         aci: 4,  screen: '#63e6e2', label: 'Screws ⌀3',      kind: 'hole' },
   // ─── Turn 13 (CLAUDE.md F8 / #59): the partition biscuit ───
@@ -31,7 +57,9 @@ export const CNC_LAYERS = [
   // ACI 40 is unused by the LISP's own table, so nothing it already draws
   // changes colour in AutoCAD; the screen tone is a warm one, distinct from the
   // cool ⌀3 screws it sits between so a set reads as three things.
-  { name: 'BISCUIT_4MM',        aci: 40, screen: '#ffb066', label: 'Biscuit 70 mm',  kind: 'mark' },
+  // 31.10.2026: was ACI 40 (amber, the yellow family); 22 is a dark orange
+  // red, warm as before. Screen: 22 lifted 7 %.
+  { name: 'BISCUIT_4MM',        aci: 22, screen: '#c23d12', label: 'Biscuit 70 mm',  kind: 'mark' },
   // ─── Turn 25 (CLAUDE.md F3.4): the shaker panel POCKET ───
   // Until this turn the front DXF was an outline and its hinge holes and
   // nothing else. A shaker's face is machined — a 6 mm recess leaving the frame
@@ -41,13 +69,19 @@ export const CNC_LAYERS = [
   //
   // ACI 41 sits beside the biscuit's 40 and is unused by the LISP's own table,
   // so nothing it already draws changes colour in AutoCAD.
-  { name: 'SHAKER_PANEL_POCKET', aci: 41, screen: '#c3a06a', label: 'Shaker panel', kind: 'pocket' },
+  // 31.10.2026: was ACI 41 (pale amber, the yellow family); 32 is a dark
+  // orange, the front pockets' colour (engine/cnc/frontOperations.js takes the
+  // same 32 for a decorated front's pockets). Screen: 32 as it is.
+  { name: 'SHAKER_PANEL_POCKET', aci: 32, screen: '#bd5e00', label: 'Shaker panel', kind: 'pocket' },
   // ─── Turn 25 (CLAUDE.md F4.2): the handle screws ───
   // ⌀5 through the front, one for a knob and two for a bar. A layer of its own
   // for the same reason the two above have one: it is a separate operation on
   // the bed, matched by name, and a handle hole mixed in with the hinge plate's
   // ⌀5 would be drilled by the plate's program on the plate's side of the door.
-  { name: 'HANDLES_5MM',        aci: 42, screen: '#ffd43b', label: 'Handles ⌀5',    kind: 'hole' },
+  // 31.10.2026: was ACI 42 (the yellow family); 170 is the pure blue of the
+  // index ladder, the plates' family at full brightness. Screen: 170 lifted
+  // 32 % (pure blue is dim on the black sheet).
+  { name: 'HANDLES_5MM',        aci: 170, screen: '#5252ff', label: 'Handles ⌀5',    kind: 'hole' },
   { name: 'HINGES_5MM',         aci: 5,  screen: '#74a9ff', label: 'Hinges ⌀5',      kind: 'hole' },
   // ─── TURN 35 (CLAUDE.md F8): THE SAME PLATE, THE OTHER PILOT ───────────
   // Owner, 16.08.2026: "nie mamy ustawienia w ogóle 5 mm czy 3 mm screws
@@ -62,7 +96,9 @@ export const CNC_LAYERS = [
   // so nothing AutoCAD already draws changes colour. The screen tone is a
   // DEEPER blue than HINGES_5MM's #74a9ff: the same feature, read at a glance
   // as the other diameter, never mistaken for it.
-  { name: 'HINGES_3MM',         aci: 43, screen: '#4c6ef5', label: 'Hinges ⌀3',      kind: 'hole' },
+  // 31.10.2026: was ACI 43 (the yellow family); 162 is a deep blue, the ⌀5
+  // plate's family one rung darker. Screen: 162 lifted 27 %.
+  { name: 'HINGES_3MM',         aci: 162, screen: '#4566cf', label: 'Hinges ⌀3',      kind: 'hole' },
   // ─── T75 F23 (SKYLON_JOINTS_DOWEL.lsp): THE DOWEL, ITS TWO HALVES ────────
   // The owner: *"lisp najpierw."*  A dowel unit's joint is a FACE hole in one
   // board and an EDGE bore in the other. The face half is a blind ⌀8 drilled
@@ -72,8 +108,11 @@ export const CNC_LAYERS = [
   // can say where it goes, and the machine file never carries it
   // (engine/cnc/dxf.js). ACI 45 and 46: beyond the LED groove's 44, unused by
   // the LISP's own table, so nothing AutoCAD already draws changes colour.
-  { name: 'DOWEL_8MM',          aci: 45, screen: '#a9e34b', label: 'Dowels ⌀8',      kind: 'hole' },
-  { name: 'DOWEL_EDGE_8MM',     aci: 46, screen: '#5c940d', label: 'Dowel edge bores ⌀8 (by hand)', kind: 'hole' },
+  // 31.10.2026: were ACI 45 and 46 (the yellow family); 84 and 86 are two
+  // rungs of one green, the face hole the brighter. Screen: 84 as it is, 86
+  // lifted 13 %.
+  { name: 'DOWEL_8MM',          aci: 84, screen: '#1f8100', label: 'Dowels ⌀8',      kind: 'hole' },
+  { name: 'DOWEL_EDGE_8MM',     aci: 86, screen: '#377c21', label: 'Dowel edge bores ⌀8 (by hand)', kind: 'hole' },
   // ─── T78 F20 (SKYLON_JOINTS_CABINEO.lsp): THE CABINEO'S FIVE ─────────────
   // The owner: *"lisp najpierw."*  A Cabineo pocket is milled into the FACE of
   // the horizontal board at its end, from the carcass's OUTSIDE face, by one
@@ -86,11 +125,17 @@ export const CNC_LAYERS = [
   // hinge plate, a tool of its own. ACI 47 to 51: beyond the dowel's 46,
   // unused by the LISP's own table, so nothing AutoCAD already draws changes
   // colour. The engine names them in engine/cabineo.js.
-  { name: 'CABINEO_POCKET_15MM', aci: 47, screen: '#f06595', label: 'Cabineo pocket (drill ⌀15)', kind: 'hole' },
-  { name: 'CABINEO_POCKET_10MM', aci: 48, screen: '#cc5de8', label: 'Cabineo pocket (cutter ⌀10)', kind: 'pocket' },
-  { name: 'CABINEO_POCKET_12MM', aci: 49, screen: '#9775fa', label: 'Cabineo pocket (cutter ⌀12)', kind: 'pocket' },
-  { name: 'CABINEO_RECESS',      aci: 50, screen: '#d0bfff', label: 'Cabineo cap recess', kind: 'pocket' },
-  { name: 'CABINEO_HOLE_5MM',    aci: 51, screen: '#3bc9db', label: 'Cabineo ⌀5 (side)', kind: 'hole' },
+  // 31.10.2026: were ACI 47 to 51 (the yellow family; the owner: *"zmien
+  // prosze layer cabineo dziury kolor z zoltego"*). The three pockets are
+  // three rungs of one violet (200, 202, 204), the cap recess the magenta 212,
+  // the side's dia 5 hole the azure 150 that SKYLON_JOINTS_CABINEO.lsp's own
+  // drawing command already gave it. Screen: 200 as it is, 202 lifted 21 %,
+  // 204 lifted 32 %, 212 lifted 3 %, 150 as it is.
+  { name: 'CABINEO_POCKET_15MM', aci: 200, screen: '#bf00ff', label: 'Cabineo pocket (drill ⌀15)', kind: 'hole' },
+  { name: 'CABINEO_POCKET_10MM', aci: 202, screen: '#a536cb', label: 'Cabineo pocket (cutter ⌀10)', kind: 'pocket' },
+  { name: 'CABINEO_POCKET_12MM', aci: 204, screen: '#9352a9', label: 'Cabineo pocket (cutter ⌀12)', kind: 'pocket' },
+  { name: 'CABINEO_RECESS',      aci: 212, screen: '#bf08bf', label: 'Cabineo cap recess', kind: 'pocket' },
+  { name: 'CABINEO_HOLE_5MM',    aci: 150, screen: '#007fff', label: 'Cabineo ⌀5 (side)', kind: 'hole' },
   // ─── 15.10.2026 (KIT_RECESS.lsp D9): THE WINDOW INTO THE RECESS ──────────
   // The owner: *"front zawsze trzyma sie linii a jak wpada do reces to wtedy
   // sie wydluza szafka."*  A cabinet partly in a recess grows an extension
@@ -98,7 +143,9 @@ export const CNC_LAYERS = [
   // (its record states the board's own depth) on a layer of its own, so the
   // cutter that clears it is matched by name as every other tool here is.
   // ACI 52: beyond the Cabineo's 51, unused by COMMON's table.
-  { name: 'RECESS_WINDOW',       aci: 52, screen: '#2bb4a0', label: 'Recess window (through)', kind: 'pocket' },
+  // 31.10.2026: was ACI 52 (the yellow family); 142 is a sea blue, apart from
+  // the cyan of the screws and the hanger cut-out. Screen: 142 as it is.
+  { name: 'RECESS_WINDOW',       aci: 142, screen: '#008dbd', label: 'Recess window (through)', kind: 'pocket' },
   // ─── CHAT FIX 17.10.2026: THE CORNER MARK ───────────────────────────────
   // The owner, on every L-shaped board: *"nie, nie dodawaj wiercenia, dodaj
   // jeden layer w samym cornerze okolo 40 mm w kazda strone na linii L shape i
@@ -109,7 +156,10 @@ export const CNC_LAYERS = [
   // fillet the 8 mm cutter leaves. The dog-bone circle that stood there until
   // this day is gone (KIT_NOTCH.lsp D9, KIT_RECESS.lsp D18, KIT_CORNER_L.lsp
   // section 4). ACI 53: the next number after RECESS_WINDOW's 52.
-  { name: 'CORNER_4MM',         aci: 53, screen: '#ff8787', label: 'Corner mark (4 mm cutter)', kind: 'mark' },
+  // 31.10.2026: was ACI 53 (the yellow family); 14 is the darkest rung of the
+  // puzzle's red (the mark stands on an outline corner, where the socket's 1
+  // and the dog bones' 12 are its neighbours). Screen: 14 lifted 32 %.
+  { name: 'CORNER_4MM',         aci: 14, screen: '#a95252', label: 'Corner mark (4 mm cutter)', kind: 'mark' },
   // ─── T82 F5 (KIT_HAWA.lsp D15): THE HAWA POCKET'S FIVE ───────────────────
   // CLAUDE.md T82 F5: *"the hole patterns of F1(d) as drill operations on the
   // pocket panels (fi 4.5 pilot PROPOSED 3 mm diameter 10 deep ...), on the
@@ -129,12 +179,18 @@ export const CNC_LAYERS = [
   // door's three take layers of their own whose NAMES carry their depth, the
   // house's grammar for a depth-bearing layer (engine/frontDecoration.js
   // `FRONT_{KIND}_D{depth}`): one layer, one depth, said in the name.
-  { name: 'HAWA_3MM',           aci: 54, screen: '#e8590c', label: 'HAWA pilots ⌀3', kind: 'hole' },
-  { name: 'FRONT_HINGES_5MM_D13', aci: 55, screen: '#20c997', label: 'Hinge screws ⌀5 x 13 (HAWA)', kind: 'hole' },
-  { name: 'FRONT_HINGES_8MM_D13', aci: 56, screen: '#0ca678', label: 'Sleeves ⌀8 x 13 (HAWA)', kind: 'hole' },
-  { name: 'HAWA_FOOT_35MM',     aci: 57, screen: '#a61e4d', label: 'HAWA foot ⌀35 (through)', kind: 'hole' },
-  { name: 'HAWA_GROOVE_12MM',   aci: 58, screen: '#845ef7', label: 'HAWA steel profile groove', kind: 'pocket' },
-  { name: 'FRONT_HINGES_35MM_D13', aci: 59, screen: '#66a80f', label: 'Hinge cups ⌀35 x 13 (HAWA)', kind: 'hole' },
+  // 31.10.2026: were ACI 54 to 59 (the pure yellows). The HAWA pilots and the
+  // door's two D13 holes are three rungs of one pink (220, 222, 224); the foot,
+  // the groove and the D13 cup three rungs of one violet (190, 192, 194), apart
+  // from the Cabineo's 200 family by a hue step. Screen: 220 as it is, 222
+  // lifted 11 %, 224 lifted 29 %, 190 lifted 16 %, 192 lifted 29 %, 194
+  // lifted 35 %.
+  { name: 'HAWA_3MM',           aci: 220, screen: '#ff00bf', label: 'HAWA pilots ⌀3', kind: 'hole' },
+  { name: 'FRONT_HINGES_5MM_D13', aci: 222, screen: '#c41c9a', label: 'Hinge screws ⌀5 x 13 (HAWA)', kind: 'hole' },
+  { name: 'FRONT_HINGES_8MM_D13', aci: 224, screen: '#a64a8e', label: 'Sleeves ⌀8 x 13 (HAWA)', kind: 'hole' },
+  { name: 'HAWA_FOOT_35MM',     aci: 190, screen: '#9329ff', label: 'HAWA foot ⌀35 (through)', kind: 'hole' },
+  { name: 'HAWA_GROOVE_12MM',   aci: 192, screen: '#8d4ad0', label: 'HAWA steel profile groove', kind: 'pocket' },
+  { name: 'FRONT_HINGES_35MM_D13', aci: 194, screen: '#8359ad', label: 'Hinge cups ⌀35 x 13 (HAWA)', kind: 'hole' },
   { name: 'SHELVES_7_5MM',      aci: 6,  screen: '#e599f7', label: 'Shelf pins ⌀7.5', kind: 'hole' },
   { name: 'RUNNERS_3MM',        aci: 5,  screen: '#ff922b', label: 'Runners ⌀3',     kind: 'hole' },
   { name: 'FRONT_HINGES_35MM',  aci: 3,  screen: '#38d9a9', label: 'Hinge cups ⌀35', kind: 'hole' },
@@ -144,7 +200,21 @@ export const CNC_LAYERS = [
   // bottom grooves in a drawer box side are real machining, so they keep the
   // names and ACI colours the kit gives them.
   { name: 'DRAWER_RUNNER_POCKET', aci: 1, screen: '#ffa8a8', label: 'Runner groove', kind: 'pocket' },
-  { name: 'DRAWER_BOTTOM_POCKET', aci: 2, screen: '#ffe066', label: 'Bottom groove', kind: 'pocket' },
+  // 31.10.2026: was ACI 2 (yellow; KIT_BUDR_FULL.lsp and KIT_WARDROBE_FULL.lsp
+  // amended the same day); 230 is a rose, apart from the runner groove's red
+  // on the same board. Screen: 230 as it is.
+  { name: 'DRAWER_BOTTOM_POCKET', aci: 230, screen: '#ff007f', label: 'Bottom groove', kind: 'pocket' },
+  // ─── CHAT FIX 31.10.2026: THE WATCH DRAWER'S THREE, NAMED HERE AT LAST ────
+  // KIT_WATCH_DRAWER.lsp's watchMakeLayers declares them (engine/watchDrawer.js
+  // WATCH_LAYERS cuts on them) and this table never did, so the DXF declared
+  // them at the fallback's 7 and the sheet painted them grey. The kit's own
+  // numbers were 41, 42 and 43 (the yellow family); from this day the slot is
+  // the brown 34 (the shaker pocket's orange, two rungs darker), the rebate the
+  // blue 172 and the opening the blue 174 (the plates' family, the deeper the
+  // more it cuts). Screen: 34 lifted 17 %, 172 lifted 37 %, 174 lifted 39 %.
+  { name: 'WATCH_DIVIDER_SLOT',  aci: 34,  screen: '#96602b', label: 'Watch divider slot', kind: 'pocket' },
+  { name: 'WATCH_GLASS_REBATE',  aci: 172, screen: '#5e5ed5', label: 'Watch glass rebate', kind: 'pocket' },
+  { name: 'WATCH_GLASS_OPENING', aci: 174, screen: '#6363b2', label: 'Watch glass opening (through)', kind: 'pocket' },
   // Wall-unit hanger cut-outs in the back panel (KIT_WUD_FULL L192).
   { name: 'HANGER_HOLE',        aci: 4,  screen: '#4dd4c8', label: 'Hanger cut-out', kind: 'pocket' },
   // T54-F7: the shoe box's two layers (SHOE_GROOVE_6MM, SHOE_RUNNER_5MM)

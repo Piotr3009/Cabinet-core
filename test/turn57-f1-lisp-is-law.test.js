@@ -146,7 +146,8 @@ test('F1 — the note is ASCII and rides the layer notes already ride', () => {
 
 test('F1 — the layer is named for the OPERATION and takes a free colour', () => {
   assert.ok(/"JPULL_EDGE"/.test(KIT));
-  assert.ok(/"_C" "45"/.test(KIT), 'ACI 45 — 40 to 44 are taken');
+  // CHAT FIX 31.10.2026: 45 was the yellow family; 92, a green (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*).
+  assert.ok(/"_C" "92"/.test(KIT), 'ACI 92; 45 until 31.10.2026');
   // The size-bearing name is argued against in the PROSE and must not appear
   // in any layer call: the code is what the machine reads.
   const code = KIT.replace(/^\s*;.*$/gm, '');

@@ -46,15 +46,18 @@ test('F11 · the two goldens are written, named in the fragment, and held byte f
   }
 });
 
-test('F11 · the run\'s golden: the frame 1920 x 808, its openings and stiles, its DXF\'s fingerprint F4 pinned (70c1bd58)', () => {
+test('F11 · the run\'s golden: the frame 1920 x 808, its openings and stiles, its DXF\'s fingerprint F4 pinned (a7b45d3e; 70c1bd58 until 31.10.2026)', () => {
   const { expected } = fixture('golden-inframe-run.json');
   assert.equal(expected.frame.length, 1);
   const [f] = expected.frame;
   assert.deepEqual([f.id, f.w, f.h, f.thickness], ['FRAME', 1920, 808, 25]);
   assert.deepEqual(f.openings.map((o) => [o.w, o.h]), [[562, 732], [762, 732], [462, 732]]);
   assert.deepEqual(f.stiles, [38, 38, 38, 20]);
-  assert.deepEqual(f.dxf, { name: '01-FRAME.dxf', fingerprint: '70c1bd58' });
-  assert.match(read('test/turn80-f04-cnc.test.js'), /'70c1bd58'/, 'the same number F4 pins');
+  // CHAT FIX 31.10.2026: the openings' layer RECESS_WINDOW moved from ACI 52 (the yellow family) to 142 in the
+  // layer table, so the file's fingerprint moved with that one colour row; not a point of the frame moved
+  // (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*). 70c1bd58 until that day.
+  assert.deepEqual(f.dxf, { name: '01-FRAME.dxf', fingerprint: 'a7b45d3e' });
+  assert.match(read('test/turn80-f04-cnc.test.js'), /'a7b45d3e'/, 'the same number F4 pins');
   const fronts = expected.units.map((u) => u.summary.panels.filter((p) => p.role === 'front').map((p) => [p.w, p.h, p.thickness]));
   assert.deepEqual(fronts, [[[556, 726, 22]], [[376.5, 726, 22], [376.5, 726, 22]], [[456, 360, 22], [456, 363, 22]]]);
 });
@@ -65,7 +68,8 @@ test('F11 · the wall unit\'s golden: the frame 602 x 758, the opening 562 x 682
   assert.deepEqual([f.id, f.w, f.h], ['FRAME', 602, 758]);
   assert.deepEqual(f.openings.map((o) => [o.w, o.h]), [[562, 682]]);
   assert.deepEqual(f.stiles, [20, 20]);
-  assert.deepEqual(f.dxf, { name: 'W01-FRAME.dxf', fingerprint: '599b9cf3' });
+  // CHAT FIX 31.10.2026: as the run's (RECESS_WINDOW 52 to 142); 599b9cf3 until that day.
+  assert.deepEqual(f.dxf, { name: 'W01-FRAME.dxf', fingerprint: 'da1aea71' });
   assert.deepEqual(expected.units[0].summary.panels.filter((p) => p.role === 'front').map((p) => [p.w, p.h]), [[556, 676]]);
 });
 

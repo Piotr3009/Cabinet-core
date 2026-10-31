@@ -218,7 +218,9 @@
 ;;;     piece is BACK-2, the same board: the parent's sockets on the edges it
 ;;;     keeps, drawBACK's rows, its own frame from its own bottom-left.
 ;;; D9  THE WINDOW is a through pocket on its own layer RECESS_WINDOW (ACI 52,
-;;;     beyond the Cabineo's 51, unused by COMMON's table): the cutter clears
+;;;     beyond the Cabineo's 51, unused by COMMON's table; 31.10.2026: 142, a sea
+;;;     blue, the 52 being the yellow family VCarve cannot show on white; the
+;;;     engine declares the colour, engine/cnc/layers.js): the cutter clears
 ;;;     it and leaves its corners round, no dog bone. A cut that reaches an
 ;;;     edge is an OUTLINE cut with a CORNER MARK at each re-entrant corner
 ;;;     (D18, 17.10.2026; a dog bone until then), as the notch's is.

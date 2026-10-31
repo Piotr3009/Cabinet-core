@@ -413,8 +413,10 @@ test('CASE B through computeCabinet: the window is a through pocket on RECESS_WI
     { layer: 'CORNER_4MM', from: [560, 450], to: [520, 490], pts: [[560, 450], [520, 450], [520, 490]] },
   ]);
   for (const id of ['BUL', 'BUR', 'TOP', 'BOTTOM']) assert.equal(panelOf(r, id).cnc.outline.length, panelOf(computeCabinet(BUD, P), id).cnc.outline.length, `${id} is the parent's`);
-  // The layer is a machine contract: ACI 52, a pocket, drawn through.
-  assert.equal(cncLayer('RECESS_WINDOW').aci, 52);
+  // The layer is a machine contract: a pocket, drawn through. ACI 52 until
+  // 31.10.2026 (the yellow family); 142, a sea blue, from that day
+  // (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*).
+  assert.equal(cncLayer('RECESS_WINDOW').aci, 142);
   assert.equal(cncLayer('RECESS_WINDOW').kind, 'pocket');
   assert.equal(machiningFor('RECESS_WINDOW', P).draw, true);
 });

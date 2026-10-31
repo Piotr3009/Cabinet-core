@@ -942,12 +942,15 @@
 ;;; The CNC layers of the pocket (D15); the house's layers come from
 ;;; SKYLON_COMMON's createCNCLayers.
 (defun createHawaLayers ()
-  (command "._LAYER" "_N" "HAWA_3MM" "_C" "54" "HAWA_3MM" "")
-  (command "._LAYER" "_N" "FRONT_HINGES_35MM_D13" "_C" "59" "FRONT_HINGES_35MM_D13" "")
-  (command "._LAYER" "_N" "FRONT_HINGES_5MM_D13" "_C" "55" "FRONT_HINGES_5MM_D13" "")
-  (command "._LAYER" "_N" "FRONT_HINGES_8MM_D13" "_C" "56" "FRONT_HINGES_8MM_D13" "")
-  (command "._LAYER" "_N" "HAWA_FOOT_35MM" "_C" "57" "HAWA_FOOT_35MM" "")
-  (command "._LAYER" "_N" "HAWA_GROOVE_12MM" "_C" "58" "HAWA_GROOVE_12MM" ""))
+  ;; CHAT FIX 31.10.2026: the six were 54 to 59 (the pure yellows). The pilots and the door's two D13 holes
+  ;; are three rungs of one pink (220, 222, 224); the foot, the groove and the D13 cup three rungs of one
+  ;; violet (190, 192, 194). the owner, 31.10.2026: "raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"; "staraj sie trzymac w exporcie do DXF i u nas te same kolory".
+  (command "._LAYER" "_N" "HAWA_3MM" "_C" "220" "HAWA_3MM" "")
+  (command "._LAYER" "_N" "FRONT_HINGES_35MM_D13" "_C" "194" "FRONT_HINGES_35MM_D13" "")
+  (command "._LAYER" "_N" "FRONT_HINGES_5MM_D13" "_C" "222" "FRONT_HINGES_5MM_D13" "")
+  (command "._LAYER" "_N" "FRONT_HINGES_8MM_D13" "_C" "224" "FRONT_HINGES_8MM_D13" "")
+  (command "._LAYER" "_N" "HAWA_FOOT_35MM" "_C" "190" "HAWA_FOOT_35MM" "")
+  (command "._LAYER" "_N" "HAWA_GROOVE_12MM" "_C" "192" "HAWA_GROOVE_12MM" ""))
 
 ;;; One hole drawn at (x0 y0) + (u v).
 (defun hawa-draw-hole (x0 y0 hole)

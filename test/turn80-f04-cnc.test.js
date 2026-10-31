@@ -65,8 +65,10 @@ test('F4 · the DXF of the run\'s frame: its fingerprint, the outline, three cut
   const r = mockupRun();
   const file = buildUnitDxfFiles(r, P).find((f) => f.panelId === 'FRAME');
   assert.equal(file.name, '01-FRAME.dxf');
-  // Pinned on 22.10.2026; F11's golden carries the same number (golden-inframe-run.json).
-  assert.equal(fingerprint(file.dxf), '70c1bd58', 'the FRAME file, byte for byte');
+  // Pinned on 22.10.2026 as 70c1bd58; F11's golden carries the same number (golden-inframe-run.json).
+  // CHAT FIX 31.10.2026: RECESS_WINDOW's colour row moved from 52 (the yellow family) to 142 and the
+  // fingerprint with it, no point of the frame (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*).
+  assert.equal(fingerprint(file.dxf), 'a7b45d3e', 'the FRAME file, byte for byte');
   const polys = file.entities.filter((e) => e.type === 'poly');
   assert.deepEqual(polys.map((e) => e.layer), ['OUTLINE', 'RECESS_WINDOW', 'RECESS_WINDOW', 'RECESS_WINDOW']);
   assert.deepEqual(polys[0].pts, [[0, 0], [1920, 0], [1920, 808], [0, 808]]);

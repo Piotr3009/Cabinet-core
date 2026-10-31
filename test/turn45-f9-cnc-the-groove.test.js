@@ -73,7 +73,8 @@ test('F9-CNC — the groove is BORN in reference/lisp/, and balances 0/0', () =>
 
 test('F9-CNC — the LISP declares the layer, the rule and the two widths', () => {
   assert.match(LISP, /\(defun ledMakeLayers/);
-  assert.match(LISP, /"LED_GROOVE" "_C" "44"/);
+  // CHAT FIX 31.10.2026: 44 was the yellow family; 180 (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*).
+  assert.match(LISP, /"LED_GROOVE" "_C" "180"/);
   // T48-F4 widened the signature: `extra`, `lo` and `hi` are its locals.
   assert.match(LISP, /\(defun drawLedGroove \(x1 y1 x2 y2 width \/ half extra lo hi\)/);
   assert.match(LISP, /\(defun ledGrooveOnPanel \(lines width \/ ln\)/);
@@ -108,14 +109,15 @@ test('T48-F4 — the LISP owns the number, and the APPLICATION reads it off disk
 
 test('F9-CNC — the APPLICATION follows it: same layer, same colour, same rule', () => {
   assert.equal(LED_GROOVE_LAYER.name, 'LED_GROOVE');
-  assert.equal(LED_GROOVE_LAYER.aci, 44);
-  // ACI 44 is unused by the engine's own table, so nothing already drawn moves.
-  assert.equal(CNC_LAYERS.some((l) => l.aci === 44), false);
+  assert.equal(LED_GROOVE_LAYER.aci, 180);
+  // ACI 180 is unused by the engine's own table, so nothing already drawn moves
+  // (44 until 31.10.2026, the yellow family).
+  assert.equal(CNC_LAYERS.some((l) => l.aci === 180), false);
   assert.equal(CNC_LAYERS.some((l) => l.name === 'LED_GROOVE'), false,
     'the engine is untouched — the groove is a USER layer (iron rule 2)');
   // …and it still declares properly in a DXF, at its own colour.
   const rows = layerTableFor(['OUTLINE', 'LED_GROOVE'], [LED_GROOVE_LAYER]);
-  assert.deepEqual(rows.find((r) => r.name === 'LED_GROOVE'), { name: 'LED_GROOVE', color: 44 });
+  assert.deepEqual(rows.find((r) => r.name === 'LED_GROOVE'), { name: 'LED_GROOVE', color: 180 });
 });
 
 // ══ the frame ══════════════════════════════════════════════════════════════
@@ -261,9 +263,9 @@ test('F9-CNC — the export takes the groove and the DXF carries it', () => {
   const panel = cut.panels.find((p) => p.id === shelf.id);
   const dxf = panelDxf(panel, cut.drills, { unitNum: '01', profile: P, userLayers: [LED_GROOVE_LAYER] });
   assert.match(dxf, /LED_GROOVE/, 'the layer is declared and used');
-  // …declared at ACI 44, which is what the LISP says.
+  // …declared at ACI 180, which is what the LISP says (44 until 31.10.2026).
   const table = dxf.slice(0, dxf.indexOf('ENTITIES'));
-  assert.match(table, /LAYER\r\n2\r\nLED_GROOVE\r\n70\r\n0\r\n62\r\n44\r\n/);
+  assert.match(table, /LAYER\r\n2\r\nLED_GROOVE\r\n70\r\n0\r\n62\r\n180\r\n/);
   // …and the very same file with the light not placed has no such layer.
   const plain = panelDxf(shelf, result.drills, { unitNum: '01', profile: P });
   assert.doesNotMatch(plain, /LED_GROOVE/);

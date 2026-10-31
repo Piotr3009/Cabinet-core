@@ -72,6 +72,9 @@ import {
 } from '../engine/room.js';
 // T75 F9 · the island: what it would stand on (Room refuses first).
 import { islandClash, newIsland } from '../engine/island.js';
+// T86B F5 (law 4) . the chest in the room: its plan (lib/chestIsland.js) and the room it stands in.
+import { chestIslandPlan, isChestIslandKit } from '../lib/chestIsland.js';
+import { realWalls as chestRoomWalls } from '../engine/room.js';
 // 14.10.2026 · the island planned from above, inserted whole (engine/islandPlan.js).
 import { islandPlanDraft, planCabinets, planCore, planCoreRefusal } from '../engine/islandPlan.js';
 import { getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
@@ -163,7 +166,7 @@ import {
 // T72 F14 · `wallGapOf` — how far ONE unit stands off its wall: its own
 // `params.wall_gap`, or the project's number when nobody has said.
 import {
-  buildRuns, cornerLAdjacentSpan, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
+  buildRuns, cornerArmStandIns, cornerLAdjacentSpan, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
   runMemberIds, runPlinthParams, runUpstandParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
   verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
@@ -176,7 +179,7 @@ import { runFrameParams } from '../engine/inframe.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
 import {
   runFor as shareOutRunFor, shareOutGapSpan, shareOutOffered, shareOutPlan,
-  shareOutSignature, widthFixed,
+  shareOutSignature,
 } from '../engine/shareOut.js';
 // Turn 50 (CLAUDE.md F3): nothing is built bigger than the room it stands in.
 import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
@@ -241,6 +244,8 @@ import {
   MIRROR_STILE_KINDS, mirrorBalanceWidths, mirrorCarcass, mirrorConstants, mirrorOwnWidths, mirrorParamsOf, mirrorStileKinds,
   mirrorStilesTotal, mirrorWidthsRefusal,
 } from '../engine/mirrorCabinet.js';
+// T86B F4 · the chest island's plinth sides (law 5).
+import { CHEST_ISLAND_BACK_FACE, chestIslandPlinthSides } from '../lib/chestIsland.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -250,6 +255,47 @@ import {
 const CACHE_KEY = 'cc.project.cache.v1';
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
+
+// T86B F5 . a chest island's footprint about its core: the core is the line the chest's back stands on, face A out to
+// -v, face B out to +v, so the footprint's centre sits at v = (depth on B - depth on A) / 2 off the core.
+function chestIslandFootprintOffset(island, units, profile) {
+  const depthOn = (face) => Math.max(0, ...units
+    .filter((u) => u.position?.island === island.id && u.position?.face === face)
+    .map((u) => wallGapOf(u, profile) + (Number(u.params?.depth) || 0)));
+  return (depthOn('B') - depthOn('A')) / 2;
+}
+function chestIslandFootprintCentre(island, units, profile) {
+  const vf = chestIslandFootprintOffset(island, units, profile);
+  const rad = ((Number(island.rotation) || 0) * Math.PI) / 180;
+  return { x: island.cx - vf * Math.sin(rad), y: island.cy + vf * Math.cos(rad) };
+}
+// The refusal of a drag, said once while the hand keeps pushing the same way.
+let chestDragSaid = { message: null, at: 0 };
+// T86B F5 . what stands on face B of a chest island: the back panel (a FREE PANEL kit, the chest's width by its
+// height, the project's board, sprayed as every free panel is, spray rule 12, flush to the chest's back: the 25.10
+// attach law at gap 0), or the second chest, a copy of the first's params, back to back; then the one slab over the
+// whole. Returns { id } or { error }.
+function chestIslandBack(get, islandId, variant, chestId, panelT) {
+  const faceB = faceIndexOf(roomWalls(get().project.room), islandId, 'B');
+  const chest = get().units.find((u) => u.id === chestId);
+  if (faceB < 0 || !chest) return { error: 'The chest island has no back face.' };
+  if (variant === 'double') {
+    const { unit_num: _num, ...params } = chest.params;
+    const r = get().addUnit(chest.type, { wall: faceB, x: 0, params: { ...params, wall_gap: 0 } });
+    if (!r?.id || r.error) return { error: r?.error || 'The second chest could not be placed back to back.' };
+    get().addWorktop([chestId, r.id]);
+    return { id: r.id };
+  }
+  const width = Number(chest.params.width) || 0;
+  const height = Number(chest.params.height) || 0;
+  const r = get().addUnit('FREE_PANEL', { wall: faceB, x: 0, params: { mount_height: 0, wall_gap: 0 } });
+  if (!r?.id || r.error) return { error: r?.error || 'The back panel could not be placed behind the chest.' };
+  get().updateUnitParams(r.id, {
+    panel_facing: 'along', panel_tilt_deg: 0, board_t: panelT, width, panel_width: height, wall_gap: 0,
+  });
+  get().addWorktop([chestId]);
+  return { id: r.id };
+}
 
 // ─── TURN 51 (CLAUDE.md F2): THE SETTLE GUARD ───────────────────────────────
 //
@@ -1193,6 +1239,33 @@ function vanityTopMmOf(unit, design) {
   return Number.isFinite(t) && t > 0 ? { vanity_top_mm: t } : {};
 }
 
+/**
+ * T86B F4 · A FREE-STANDING PLINTH IS SET BACK ALL ROUND (CLAUDE.md T86B law 5). The owner, 30.10.2026 (22:52):
+ * *"cos jak wyspa ale przez grab i move; i dodanie panela z tylu lub polaczenie szuflad z 2 stron"*. For a chest on
+ * a chest island's face (the island record's `chestIsland`), which sides of its plinth stand in the room
+ * (lib/chestIsland.js chestIslandPlinthSides): both ends, and the back behind the panel (set back behind the panel's
+ * face, its thickness the FREE PANEL's own `board_t`) unless a second chest meets it back to back. Null for every other unit,
+ * so no kitchen island and no wall run hands the engine a new key.
+ */
+function chestIslandPlinthFor(unit) {
+  const st = useProjectStore.getState();
+  const room = st?.project?.room;
+  if (!(room?.islands || []).some((i) => i?.chestIsland)) return null;
+  const walls = roomWalls(room);
+  const wall = walls[unit?.position?.wall ?? 0];
+  if (!wall?.island) return null;
+  const island = roomIslands(room).find((i) => i.id === wall.island);
+  if (!island?.chestIsland) return null;
+  const variant = island.chestIsland.variant;
+  const panel = variant === 'panel'
+    ? (st.units || []).find((u) => u.type === 'FREE_PANEL' && walls[u.position?.wall ?? 0]?.island === wall.island
+      && walls[u.position?.wall ?? 0]?.face === CHEST_ISLAND_BACK_FACE)
+    : null;
+  // The FREE PANEL's board is its own `board_t` (T82 F18), the project's carcass board where none is said.
+  const panelT = Number(panel?.params?.board_t) > 0 ? Number(panel.params.board_t) : getCabinetProfile().board.thickness;
+  return chestIslandPlinthSides({ type: unit.type, face: wall.face, variant, panelT });
+}
+
 function paramsForEngine(unit, design = null) {
   // ─── T55 ("tnij"): THE FOSSIL HAS NO ROAD ────────────────────────────────
   // run_* are destructured OUT of the saved params before anything spreads,
@@ -1216,6 +1289,8 @@ function paramsForEngine(unit, design = null) {
   // cabinet stands partly in), derived here and never stored.
   const recessExtension = recessExtensionFor(unit);
   const recessBandWhole = wholeRecessBandFor(unit);
+  // T86B F4 (law 5): a chest on a chest island's face, the sides of its plinth that are in the room.
+  const plinthFree = chestIslandPlinthFor(unit);
   const elements = useProjectStore.getState().runElements?.[unit.id] || null;
   return {
     ...p,
@@ -1224,6 +1299,7 @@ function paramsForEngine(unit, design = null) {
     ...(obstacleNotch ? { notch: obstacleNotch } : {}),
     ...(recessExtension ? { extension: recessExtension } : {}),
     ...(recessBandWhole ? { recess_band: recessBandWhole } : {}),
+    ...(plinthFree ? { plinth_free: plinthFree } : {}),
     ...(elements ? {
       run_top_infill: elements.top_infill,
       run_plinth: elements.plinth,
@@ -2099,6 +2175,144 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return get().setRoom({ islands: roomIslands(s.project.room).filter((i) => i.id !== id) });
   },
 
+  // ─── T86B F5 (law 4) . A CHEST CAN STAND IN THE ROOM ──────────────────────
+  //
+  // The owner, 30.10.2026 (22:52): *"chest powinna byc mozliwosc odsuniecia od sciany ale nie na zasadzie back move
+  // tylko powinna byc mozliwosc na srodku pokoju cos jak wyspa ale przez grab i move; i dodanie panela z tylu lub
+  // polaczenie szuflad z 2 stron; chest dodany w changing room"*; (22:56) *"1 - oba"*. An island of the chest's own
+  // footprint (lib/chestIsland.js chestIslandPlan): the chest on face A; on the face opposite (the room's face B, the
+  // spec's C) a sprayed FREE PANEL (variant 'panel') or a second chest of the first's params (variant 'double'); the
+  // core is the 0 deep line the two backs meet on; one slab over the whole. Any job: a changing room is a wardrobe
+  // job. One batch, one undo; the room refuses in words and nothing is clamped in silence.
+  chestIslandOf: (unitId) => {
+    const s = get();
+    const u = s.units.find((x) => x.id === unitId);
+    const island = u?.position?.island ? roomIslands(s.project.room).find((i) => i.id === u.position.island) : null;
+    return island?.chestIsland ? island : null;
+  },
+
+  addChestIsland: (chestIdOrType, { variant = 'panel', at = null } = {}) => runBatch(() => {
+    const s = get();
+    const profile = getCabinetProfile();
+    const v = variant === 'double' ? 'double' : 'panel';
+    const existing = s.units.find((u) => u.id === chestIdOrType) || null;
+    const type = existing ? existing.type : chestIdOrType;
+    if (!isChestIslandKit(type)) {
+      return { ok: false, id: null, message: 'Only a chest of drawers can stand in the room.' };
+    }
+    if (existing && get().chestIslandOf(existing.id)) {
+      return { ok: false, id: null, message: `${existing.params?.unit_num || 'This chest'} already stands in the room.` };
+    }
+    const before = { units: s.units, room: s.project.room, design: s.project.design };
+    const refuse = (message) => {
+      set((st) => ({ units: before.units, project: { ...st.project, room: before.room, design: before.design } }));
+      return { ok: false, id: null, message };
+    };
+    const seed = existing ? existing.params : newUnit(type, profile, s.units.length, s.project.design).params;
+    const chest = { width: Number(seed.width) || 0, depth: Number(seed.depth) || 0, height: Number(seed.height) || 0 };
+    const panelT = projectBoardThickness(migrateDesign(s.project.design), profile);
+    const plan = chestIslandPlan({ chest, variant: v, panelT, profile });
+    // The footprint stands where it was asked (the room's middle by default); the core is the line the chest's back
+    // stands on, off the footprint's centre by half the difference of the two faces' depths.
+    const corners = chestRoomWalls(s.project.room).map((w) => w.start);
+    const xs = corners.map((c) => c.x); const ys = corners.map((c) => c.y);
+    const centre = at && Number.isFinite(Number(at.x)) && Number.isFinite(Number(at.y))
+      ? { x: Number(at.x), y: Number(at.y) }
+      : { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
+    const id = uid('island');
+    const record = {
+      id, cx: centre.x, cy: centre.y + (chest.depth - (plan.island.d - chest.depth)) / 2, w: chest.width, d: 0, rotation: 0,
+      chestIsland: { variant: v }, islandOverhangMm: plan.worktop.overhang,
+    };
+    const made = get().setRoom({ islands: [...roomIslands(s.project.room), record] });
+    if (!made.ok) return refuse(`The chest cannot stand there: ${made.message}`);
+    const faceA = faceIndexOf(roomWalls(get().project.room), id, 'A');
+    let chestId = existing?.id || null;
+    if (existing) {
+      // "Stand in the room": off its wall and onto face A, its params kept; the slab it was under lets it go, and the
+      // wall run it leaves has its infills worked out again (refreshAutoParts below).
+      const design = migrateDesign(get().project.design);
+      if (design.worktops.some((w) => w.unitIds.includes(existing.id))) {
+        get().setDesign({
+          worktops: design.worktops
+            .map((w) => ({ ...w, unitIds: w.unitIds.filter((x) => x !== existing.id) }))
+            .filter((w) => w.unitIds.length || w.island),
+        });
+      }
+      set((st) => ({
+        units: st.units.map((u) => (u.id === existing.id ? {
+          ...u,
+          params: { ...u.params, wall_gap: 0 },
+          position: {
+            ...u.position, wall: faceA, x_mm: 0, rotation_deg: 0, island: id, face: 'A',
+          },
+        } : u)),
+      }));
+    } else {
+      const r = get().addUnit(type, { wall: faceA, x: 0, params: { wall_gap: 0 } });
+      if (!r?.id || r.error) return refuse(r?.error || 'The chest could not be placed in the room.');
+      chestId = r.id;
+    }
+    const back = chestIslandBack(get, id, v, chestId, panelT);
+    if (back.error) return refuse(back.error);
+    const clash = islandClash({ room: get().project.room, units: get().units, profile });
+    if (clash) return refuse(clash);
+    get().refreshAutoParts();
+    return {
+      ok: true, id, chestId, backId: back.id, message: '',
+    };
+  }),
+
+  /** The variant, changed in the island's panel: what stands on face B goes, the other comes; the chest stays put. */
+  setChestIslandVariant: (islandId, variant) => runBatch(() => {
+    const s = get();
+    const island = roomIslands(s.project.room).find((i) => i.id === islandId);
+    if (!island?.chestIsland) return { ok: false, message: 'No such chest island.' };
+    const v = variant === 'double' ? 'double' : 'panel';
+    if (island.chestIsland.variant === v) return { ok: true, message: '' };
+    const onA = s.units.find((u) => u.position?.island === islandId && u.position?.face === 'A');
+    if (!onA) return { ok: false, message: 'The chest island has no chest on face A.' };
+    const before = { units: s.units, room: s.project.room, design: s.project.design };
+    const restore = (message) => {
+      set((st) => ({ units: before.units, project: { ...st.project, room: before.room, design: before.design } }));
+      return { ok: false, message };
+    };
+    const design = migrateDesign(s.project.design);
+    get().setDesign({ worktops: design.worktops.filter((w) => w.island !== islandId) });
+    set((st) => ({ units: st.units.filter((u) => !(u.position?.island === islandId && u.position?.face === 'B')) }));
+    const made = get().updateIsland(islandId, { chestIsland: { variant: v } });
+    if (!made.ok) return restore(made.message);
+    const back = chestIslandBack(get, islandId, v, onA.id, projectBoardThickness(design, getCabinetProfile()));
+    if (back.error) return restore(back.error);
+    const clash = islandClash({ room: get().project.room, units: get().units, profile: getCabinetProfile() });
+    if (clash) return restore(clash);
+    get().refreshAutoParts();
+    return { ok: true, message: '', backId: back.id };
+  }),
+
+  /** GRAB AND MOVE: the whole chest island to a new core centre, or refused in words (nothing moves). */
+  moveChestIsland: (islandId, cx, cy) => {
+    const res = get().moveIsland(islandId, cx, cy);
+    return res.ok ? res : { ...res, message: `The chest cannot stand there: ${res.message}` };
+  },
+
+  /**
+   * ROTATE BY 90: the island turned about its footprint's centre (the button in the chest's panel, R with the chest
+   * held). Refused in words when it would not fit; nothing turns then.
+   */
+  rotateChestIsland: (islandId, by = 90) => {
+    const s = get();
+    const island = roomIslands(s.project.room).find((i) => i.id === islandId);
+    if (!island?.chestIsland) return { ok: false, message: 'No such chest island.' };
+    const profile = getCabinetProfile();
+    const f = chestIslandFootprintCentre(island, s.units, profile);
+    const vf = chestIslandFootprintOffset(island, s.units, profile);
+    const rotation = (((island.rotation + Number(by)) % 360) + 360) % 360;
+    const rad = (rotation * Math.PI) / 180;
+    const res = get().updateIsland(islandId, { rotation, cx: f.x + vf * Math.sin(rad), cy: f.y - vf * Math.cos(rad) });
+    return res.ok ? res : { ...res, message: `The chest cannot turn there: ${res.message}` };
+  },
+
   /** What a room change WOULD do, without doing it (live preview in the modal). */
   previewRoom: (patch) => {
     const s = get();
@@ -2963,6 +3177,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const others = s.units
         .filter((o) => o.id !== u.id && (o.position?.wall ?? 0) === (u.position?.wall ?? 0)
           && getUnitType(o.type).mount === level)
+        // T86B F1 . *"liczy infill a nie powinien"* (the owner, 30.10.2026, 22:26): an L's arm on this wall is a
+        // neighbour, the same stand-in the plus and the share-out read (runs.js cornerArmStandIns).
+        .concat(cornerArmStandIns(s.units, u.position?.wall ?? 0, level, walls, profile))
         .map(unitSpan);
       const parts = autoPartsFor({
         unit: u, wallWidth: wall?.width ?? 0, others, roomHeight, design,
@@ -7055,7 +7272,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   shareOutView: (unitId) => shareOutSubject(get(), unitId, getCabinetProfile(), { gated: true }),
 
-  shareOutRun: (unitId, { extra = 0 } = {}) => runBatch(() => {
+  // T86B F6, law 8: one button, no extra cabinet (*"usun ta funkcje z paska"*).
+  shareOutRun: (unitId) => runBatch(() => {
     const profile = getCabinetProfile();
     const state = get();
     // The RUN, not the OFFER: the 400 mm gate decides whether the BAR appears,
@@ -7068,7 +7286,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!offer) return { ok: false, message: 'Nothing to share out on this run.', widths: [] };
     const { walls, wallMargin } = offer;
 
-    let plan = extra ? shareOutPlan(offer.run, offer.context, profile, { extra }) : offer.plan;
+    const { plan } = offer;
     if (!plan.ok) {
       return {
         ok: false,
@@ -7077,25 +7295,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           : 'This run has no room to share out.',
         widths: [],
       };
-    }
-
-    // The EXTRA cabinet, when the joiner asked for one. A copy of the run's
-    // last non-fixed cabinet, added beside it, at the plan's own width.
-    if (extra > 0) {
-      const seed = [...offer.run.units].reverse().find((u) => !widthFixed(u))
-        || offer.run.units[offer.run.units.length - 1];
-      const born = get().addUnit(seed.type, { near: seed.id, side: 'R' });
-      if (born.error || !born.id) {
-        return { ok: false, message: born.error || 'There is no room for another cabinet here.', widths: [] };
-      }
-      // The run has changed shape, so the plan is asked again OF THE RUN THAT
-      // NOW EXISTS rather than patched — one derivation, and the new cabinet is
-      // in it like any other.
-      const after = shareOutRunFor(get().units, born.id, { walls, wallMargin }, profile)
-        || shareOutRunFor(get().units, unitId, { walls, wallMargin }, profile);
-      const nextRun = after ? after.run : offer.run;
-      plan = shareOutPlan(nextRun, after ? after.context : offer.context, profile, {});
-      if (!plan.ok) return { ok: false, message: 'This run has no room to share out.', widths: [] };
     }
 
     // ─── WHERE THE RUN NOW STANDS ─────────────────────────────────────────
@@ -7901,6 +8100,23 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const wall = walls[wallIndex] || walls[0];
     // T75 F4 · an L moves from corner to corner of its wall, never along it.
     if (isCornerLKit(unit.type)) return get().settleCornerL(unitId, wall.index, xRaw);
+    // T86B F5 (law 4) . a chest in the room is grabbed and moved: the whole island travels along the face the chest
+    // stands on, by what the hand asked (*"przez grab i move"*); the room refuses in words and nothing moves then.
+    const chestIsle = !isFreePanel(unit.type) ? get().chestIslandOf(unitId) : null;
+    if (chestIsle) {
+      const x0 = Number(unit.position.x_mm) || 0;
+      const step = Number(snapStep) > 0 ? Number(snapStep) : 0;
+      const delta = step ? Math.round((Number(xRaw) - x0) / step) * step : Number(xRaw) - x0;
+      if (!Number.isFinite(delta) || Math.abs(delta) < 1e-6) return { x: x0, blocked: false, error: null };
+      const res = get().moveChestIsland(chestIsle.id, chestIsle.cx + wall.along.x * delta, chestIsle.cy + wall.along.y * delta);
+      if (!res.ok) {
+        const now = Date.now();
+        if (chestDragSaid.message !== res.message || now - chestDragSaid.at > 2000) useUiStore.getState().notify?.(res.message, 'warn');
+        chestDragSaid = { message: res.message, at: now };
+        return { x: x0, blocked: true, error: res.message };
+      }
+      return { x: x0, blocked: false, error: null };
+    }
     // Obstacles include units on OTHER walls whose footprint reaches into this
     // one's depth band — the corner case, in both senses.
     const others = wallObstacles({
@@ -11291,6 +11507,75 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }
     get().setDesign({
       worktops: design.worktops.map((w) => (w.id === worktopId ? { ...w, thickness: t } : w)),
+    });
+    return { ok: true, error: null };
+  },
+
+  /**
+   * T86B F8 (law 7) · A WORKTOP HAS A FINISH: 'decor' (today's road) or
+   * 'spray', the house's sprayed panel, with the fronts' own `colour` and a
+   * sheen (null: the project's). *"mozliwosc dodania worktopu z naszego
+   * sprayowanego panelu nie tylko szary worktop"* (the owner, 30.10.2026,
+   * 22:52). A finish the profile does not offer, or a spray with no colour,
+   * is refused in words and nothing changes.
+   *
+   * @param {string} worktopId
+   * @param {{finish?:'decor'|'spray', colour?:object|null, sheen?:number|null}} patch
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setWorktopFinish: (worktopId, patch = {}) => {
+    const design = migrateDesign(get().project.design);
+    const record = design.worktops.find((w) => w.id === worktopId);
+    if (!record) return { ok: false, error: 'No such worktop.' };
+    const P = getCabinetProfile();
+    const offered = P?.worktop?.finishes || P?.autoParts?.worktop?.finishes || ['decor', 'spray'];
+    const finish = patch.finish ?? record.finish ?? 'decor';
+    if (!offered.includes(finish)) return { ok: false, error: `A worktop is finished in ${offered.join(' or ')}: not ${finish}.` };
+    if (finish === 'decor') {
+      get().setDesign({
+        worktops: design.worktops.map((w) => {
+          if (w.id !== worktopId) return w;
+          const { colour: _c, sheen: _s, ...rest } = w;
+          return { ...rest, finish: 'decor' };
+        }),
+      });
+      return { ok: true, error: null };
+    }
+    const colour = patch.colour !== undefined ? patch.colour : (record.colour ?? design.colour.front ?? null);
+    if (!colour?.hex) return { ok: false, error: 'A sprayed worktop needs its colour: pick one from the spray palette.' };
+    const sheen = patch.sheen !== undefined ? patch.sheen : (record.sheen ?? null);
+    get().setDesign({
+      worktops: design.worktops.map((w) => (w.id === worktopId ? { ...w, finish: 'spray', colour, sheen } : w)),
+    });
+    return { ok: true, error: null };
+  },
+
+  /**
+   * T86B F8 (law 6) · THE WORKTOP'S OVERHANG IS A NUMBER, DEFAULT NONE: one
+   * field for the slab over a chest island (the island's `islandOverhangMm`)
+   * and a desk's slab (the record's `overhangMm`). *"nie koniecznie nawis,
+   * nawis jako opcja prosze"* (the owner, 30.10.2026, 22:56). Anything else,
+   * or a number below 0, is refused in words and nothing changes.
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setWorktopOverhang: (worktopId, mm) => {
+    const s = get();
+    const design = migrateDesign(s.project.design);
+    const record = design.worktops.find((w) => w.id === worktopId);
+    if (!record) return { ok: false, error: 'No such worktop.' };
+    const v = Number(mm);
+    if (!(Number.isFinite(v) && v >= 0)) return { ok: false, error: 'An overhang is a number of millimetres, 0 or more.' };
+    if (record.island) {
+      const isle = roomIslands(s.project.room).find((i) => i.id === record.island);
+      if (!isle?.chestIsland) return { ok: false, error: 'A kitchen island keeps its own overhang: the field is for a chest island and a desk.' };
+      const verdict = get().updateIsland(record.island, { islandOverhangMm: v });
+      return { ok: verdict?.ok !== false, error: verdict?.ok === false ? (verdict.message || 'The island refused the overhang.') : null };
+    }
+    const desk = record.unitIds.length === 1 && getUnitType(s.units.find((u) => u.id === record.unitIds[0])?.type)?.desk === true;
+    if (!desk) return { ok: false, error: 'The overhang field is for a chest island and a desk: this slab keeps the automat\'s.' };
+    get().setDesign({
+      worktops: design.worktops.map((w) => (w.id === worktopId ? { ...w, overhangMm: v } : w)),
     });
     return { ok: true, error: null };
   },

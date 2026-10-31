@@ -1910,6 +1910,9 @@ export default function UnitView({
   // the exact function that was added.
   /** Distance of a world point along the wall, in mm from the wall's start. */
   const alongMm = useCallback((point) => point.clone().sub(wallStart).dot(along) / MM, [wallStart, along]);
+  // T86B F5 . the wall as it stands NOW: a chest in the room carries its face with it while the hand drags it.
+  const alongNow = useRef(alongMm);
+  alongNow.current = alongMm;
 
   /**
    * Where the pointer is standing ON THE FLOOR, in ROOM millimetres.
@@ -2054,7 +2057,7 @@ export default function UnitView({
       // presses and releases where it stands); only a drag's drop may take a
       // proposal.
       if (Math.hypot(ev.clientX - drag.current.x0, ev.clientY - drag.current.y0) >= 2) drag.current.moved = true;
-      onMove(alongMm(p) - drag.current.offset, snapStep);
+      onMove(alongNow.current(p) - drag.current.offset, snapStep);
       // T82 F16 · …and up and down, once the hand has travelled: a click
       // that presses and releases where it stands lifts nothing.
       const { grab } = drag.current;

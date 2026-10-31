@@ -773,13 +773,33 @@ const quarterTurns = (deg) => (((Math.round((Number(deg) || 0) / 90) % 4) + 4) %
 /** An island, from anything: id kept, sizes made real, rotation in quarter turns. */
 export function migrateIsland(island, i = 0) {
   if (!island || typeof island !== 'object') return null;
+  // T86B F5 (law 4) . A CHEST ISLAND: the owner, 30.10.2026 (22:52), *"cos jak wyspa ale przez grab i move"*. Its
+  // core is the line the chest's back stands on (0 deep: the panel or the second chest meets it), and it keeps its
+  // variant and its own overhang. Every other island is read exactly as before.
+  const v = island.chestIsland?.variant;
+  const chest = v === 'panel' || v === 'double' ? { variant: v } : null;
   return {
     id: String(island.id || `island_${i + 1}`),
     cx: round4(Number(island.cx) || 0),
     cy: round4(Number(island.cy) || 0),
     w: round4(Math.max(MIN_BOX_SIZE, Number(island.w) || 0)),
-    d: round4(Math.max(MIN_BOX_SIZE, Number(island.d) || 0)),
+    d: round4(Math.max(chest ? 0 : MIN_BOX_SIZE, Number(island.d) || 0)),
     rotation: quarterTurns(island.rotation),
+    // T86B F8 (laws 4, 6) · a chest island says so, and carries the slab's
+    // overhang as a number (the profile's 0 when it has none of its own).
+    // *"nie koniecznie nawis, nawis jako opcja prosze"* (the owner, 30.10.2026, 22:56).
+    ...chestIslandOf(island),
+  };
+}
+
+/** T86B F8 · a chest island's own two fields, or nothing (every other island as it was). */
+function chestIslandOf(island) {
+  const variant = island?.chestIsland?.variant;
+  if (variant !== 'panel' && variant !== 'double') return {};
+  const over = Number(island.islandOverhangMm);
+  return {
+    chestIsland: { variant },
+    ...(island.islandOverhangMm != null && Number.isFinite(over) && over >= 0 ? { islandOverhangMm: round4(over) } : {}),
   };
 }
 
@@ -825,6 +845,8 @@ export function islandFaces(island, base = 0) {
       angle: Math.atan2(-uy, ux),
       island: i.id,
       face,
+      // T86B F8 · the slab over a chest island reads its overhang off its faces.
+      ...(i.chestIsland ? { chestIsland: i.chestIsland, islandOverhangMm: i.islandOverhangMm ?? null } : {}),
     };
   });
 }

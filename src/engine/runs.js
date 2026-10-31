@@ -867,12 +867,8 @@ export function addPlusPoints(units, { walls = [] } = {}, profile) {
     // the L (the span is the same one `cornerLAdjacentSpan` gives the plus
     // and the placement; a stand-in unit of that span is what `runEndGap`
     // measures, since it reads units by `paddedSpan`).
-    for (const u of units) {
-      if ((u.position?.wall ?? 0) === run.wall || getUnitType(u.type).mount !== run.mount) continue;
-      const adj = cornerLAdjacentSpan(u, walls, profile);
-      if (!adj || adj.wall !== run.wall) continue;
-      others.push({ id: `${u.id}:arm-b`, position: { wall: run.wall, x_mm: adj.left }, params: { width: adj.right - adj.left } });
-    }
+    // T86B F1 . the stand-in is one helper now, read by the infill and the share-out as well.
+    others.push(...cornerArmStandIns(units, run.wall, run.mount, walls, profile));
     for (const side of ['left', 'right']) {
       const { gap } = runEndGap(run, side, { wallWidth, others });
       if (gap < min) continue;
@@ -981,6 +977,34 @@ export function cornerLAdjacentSpan(unit, walls = [], profile) {
     side,
     armMm: Number(unit.params?.arm_mm) > 0 ? Number(unit.params.arm_mm) : armDefault,
   };
+}
+
+/**
+ * T86B F1 . THE L'S ARM IS A NEIGHBOUR (CLAUDE.md T86B law 1).
+ *
+ * The owner, 30.10.2026 (22:26): *"jak mamy szafy dochodzace do L shape szafy
+ * to liczy infill a nie powinien"*. Arm B of an L on the NEXT wall is, to the
+ * run that ends against it, a cabinet side: the run meets it as cabinet meets
+ * cabinet, with no side infill and no wall gap. Until tonight only the plus
+ * stood a stand-in unit of the arm's span in its `others`; the side infill
+ * (`projectStore.refreshAutoParts`) and the share-out (`shareOut.js runFor`)
+ * saw the wall beyond it and reserved a filler there. ONE arithmetic: the
+ * stand-in of `cornerLAdjacentSpan`'s span, read by all three.
+ *
+ * @param {Array} units   every unit in the project
+ * @param {number} wall   the wall the run stands on
+ * @param {string} mount  the run's level (`getUnitType(type).mount`)
+ * @returns {Array<{id:string, position:{wall:number,x_mm:number}, params:{width:number}}>}
+ */
+export function cornerArmStandIns(units, wall, mount, walls = [], profile) {
+  const out = [];
+  for (const u of units || []) {
+    if ((u.position?.wall ?? 0) === wall || getUnitType(u.type).mount !== mount) continue;
+    const adj = cornerLAdjacentSpan(u, walls, profile);
+    if (!adj || adj.wall !== wall) continue;
+    out.push({ id: `${u.id}:arm-b`, position: { wall, x_mm: adj.left }, params: { width: adj.right - adj.left } });
+  }
+  return out;
 }
 
 /**

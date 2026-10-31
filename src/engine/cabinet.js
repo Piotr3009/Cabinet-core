@@ -5448,6 +5448,8 @@ export function computeCabinet(params, profileOverride) {
         boxFrontLen: colBoxFrontLen,
         bottomW: colBoxFrontLen + DR.bottomOversize,
         partY,
+        // T86B F2 (law 2): the stack's height, the column twin of the full-width `drawerTotalH` (derived only).
+        totalH,
         // D27: held for the recess (the carcass alone is too shallow): its usable depth, for the drop's words.
         ...(heldForRecess ? { shallow: colMaxDl } : {}),
       });
@@ -5836,6 +5838,56 @@ export function computeCabinet(params, profileOverride) {
           } : {}),
         },
       }));
+    }
+  }
+
+  // ─── T86B F3 · A SHELF SPANS BETWEEN ITS WALLS AT ITS OWN HEIGHT ──────────
+  // CLAUDE.md T86B law 3; the owner, 30.10.2026, 23:02: *"zrob jak rekomendujesz"*. A shelf item in a zone is cut to
+  // its BAY, and a bay's walls are the dividers either side of it. Above a recess column's cap there are no dividers
+  // (T85 D29: they stop under the board over the drawers), and above the ONE board over every column neither (T79
+  // F3), so a shelf added there in the column was cut the column's width while its pins went into the sides (the
+  // drilling has always asked `shelfBearers` for the walls AT the shelf's height). One law, the drilling's: the walls
+  // a zoned shelf is measured between are the nearest boards that reach its height, the carcass sides when no divider
+  // does, a divider of the joiner's own when one does. The shelf's cut (the LISP's shelf routine) is unchanged: its
+  // clearance, its depth, its frame. A shelf whose bay walls reach it (every shelf in every cabinet before tonight
+  // but the ones above a cap) meets this pass and leaves it byte for byte.
+  {
+    const walls = bearingWalls(panels);
+    for (let pi = 0; pi < panels.length; pi += 1) {
+      const sh = panels[pi];
+      if (sh.part !== 'SHELF' || sh.meta?.splitDivider || sh.meta?.zone == null || !sh.box) continue;
+      const bay = bays[sh.meta.zone];
+      if (!bay) continue;
+      const at = shelfBearers({ walls, run: { from: bay.from, to: bay.to }, level: sh.box.y });
+      const from = at.left ? at.left.face : G;
+      const to = at.right ? at.right.face : W - G;
+      if (Math.abs(from - bay.from) < 1e-6 && Math.abs(to - bay.to) < 1e-6) continue;
+      const fixed = sh.meta?.locked === true;
+      const w = fixed ? to - from : to - from - C.shelfWidthClearance;
+      const x = fixed ? from : from + C.shelfWidthClearance / 2;
+      // A slope over the wider span: the shelf keeps its bay rather than pierce it (T46 F5's FULL SPAN).
+      if (cut && sh.box.y + (Number(sh.thickness) || G) > shelfCeilingOver(x, x + w) + 1e-6) continue;
+      const rebuilt = panel({
+        id: sh.id, part: sh.part, role: sh.role, w, h: sh.h, thickness: sh.thickness,
+        edgeCode: sh.edging?.code, edgeLen: metres(w),
+        box: { ...sh.box, x, w },
+        cnc: { ...sh.cnc, drawn_h: w, ...rectGeometry(sh.h, w) },
+        meta: { ...sh.meta, run: { from: x, to: x + w } },
+      });
+      panels[pi] = { ...sh, ...rebuilt };
+      // The shoe shelf's stop rail is cut with its board.
+      const rail = panels.findIndex((q) => q.part === 'SHOE-RAIL' && q.meta?.index === sh.meta.index);
+      if (rail >= 0) {
+        const r = panels[rail];
+        panels[rail] = {
+          ...r,
+          ...panel({
+            id: r.id, part: r.part, role: r.role, w, h: r.h, thickness: r.thickness,
+            edgeCode: r.edging?.code, edgeLen: metres(w), box: { ...r.box, x, w },
+            cnc: rectGeometry(w, r.h), meta: r.meta,
+          }),
+        };
+      }
     }
   }
 
@@ -6892,6 +6944,8 @@ export function computeCabinet(params, profileOverride) {
   // The run element is a PROJECT decision and arrives only from the store.
   const runPlinth = params?.run_plinth || null;
   const plinthMember = runPlinth?.role === 'member';
+  // T86B F4 (law 5): a chest on a chest island's face, its exposed sides (the store's `plinth_free`); null elsewhere.
+  const plinthFree = params?.plinth_free && typeof params.plinth_free === 'object' ? params.plinth_free : null;
   const plinthLength = runPlinth?.role === 'owner' ? Number(runPlinth.length) || W : W;
   const plinthX = runPlinth?.role === 'owner' ? Number(runPlinth.offset) || 0 : 0;
   // ─── TURN 53 (CLAUDE.md F6): A PLINTH LONGER THAN THE BOARD IS STRIPS ────
@@ -6918,7 +6972,7 @@ export function computeCabinet(params, profileOverride) {
   const plinthTooWide = runPlinth?.role === 'owner' && Array.isArray(runPlinth.spans)
     ? oversizeCabinets(runPlinth.spans, plinthLimit)
     : [];
-  if (wantsPlinth && !plinthMember && plinthStrips && plinthStrips.length > 1) {
+  if (wantsPlinth && !plinthMember && !plinthFree && plinthStrips && plinthStrips.length > 1) {
     const t = AP.plinth.thickness ?? G;
     for (const strip of plinthStrips) {
       panels.push(panel({
@@ -6955,6 +7009,43 @@ export function computeCabinet(params, profileOverride) {
           },
         },
       }));
+    }
+  } else if (wantsPlinth && !plinthMember && plinthFree) {
+    // ─── T86B F4 · A FREE-STANDING PLINTH IS SET BACK ALL ROUND (law 5) ─────
+    // CLAUDE.md T86B; the owner, 30.10.2026 (22:52): *"cos jak wyspa ale przez grab i move; i dodanie panela z tylu
+    // lub polaczenie szuflad z 2 stron"*. A chest standing on a chest island's face has its carcass sides (and, behind
+    // a back panel, its back) in the room: its toe kick is set back on EVERY exposed side by the one number the front
+    // has always been set back by (`autoParts.plinth.setback`), never only at the front. The front and the back boards
+    // run between the two set-back side faces; the side returns fit between them. Behind the back panel the back board
+    // is set back from the PANEL's face (`backFaceMm`, its thickness); where two chests meet back to back the backs are
+    // not in the room and the returns run to the carcass back. The key arrives from the store only (paramsForEngine,
+    // `plinth_free`, lib/chestIsland.js chestIslandPlinthSides): a bare kit and every golden pass none.
+    const t = AP.plinth.thickness ?? G;
+    const sb = Number(AP.plinth.setback) || 0;
+    const xL = plinthFree.left ? sb : 0;
+    const xR = plinthFree.right ? W - sb : W;
+    const runW = roundTo(xR - xL, 4);
+    const zFront = D - sb - t;
+    const zBack = plinthFree.back ? -(Number(plinthFree.backFaceMm) || 0) + sb : null;
+    const board = (id, side, w, box) => panel({
+      id, part: 'PLINTH', role: 'plinth', w, h: plinthH, thickness: t,
+      edgeCode: codes.topBottom, edgeLen: metres(2 * w), box,
+      cnc: rectGeometry(w, plinthH),
+      meta: { free: { side, setback: sb } },
+    });
+    panels.push(board('PLINTH', 'front', runW, { x: xL, y: -plinthH, z: zFront, w: runW, h: plinthH, d: t }));
+    if (zBack != null) {
+      panels.push(board('PLINTH-B', 'back', runW, { x: xL, y: -plinthH, z: zBack, w: runW, h: plinthH, d: t }));
+    }
+    const z0 = zBack != null ? zBack + t : 0;
+    const len = roundTo(zFront - z0, 4);
+    if (len > 0) {
+      if (plinthFree.left) {
+        panels.push(board('PLINTH-L', 'left', len, { x: xL, y: -plinthH, z: z0, w: t, h: plinthH, d: len }));
+      }
+      if (plinthFree.right) {
+        panels.push(board('PLINTH-R', 'right', len, { x: xR - t, y: -plinthH, z: z0, w: t, h: plinthH, d: len }));
+      }
     }
   } else if (wantsPlinth && !plinthMember) {
     const t = AP.plinth.thickness ?? G;
@@ -12398,6 +12489,16 @@ export function computeCabinet(params, profileOverride) {
       drawer_front_x: budr.cols.map((c) => c.frontX),
       column_openings: budr.cols.map((c) => ({ from: c.opening.from, to: c.opening.to, w: c.opening.w })),
       divider_x: budr.divider.x,
+    } : {}),
+    // T86B F2 . A STACK IN A COLUMN HAS THE SAME NUMBERS AS A STACK ACROSS (CLAUDE.md T86B law 2; the owner,
+    // 30.10.2026, 23:02: *"zrob jak rekomendujesz"*): per zone, the stack's height and the underside of the board
+    // that closes it (the column's own, the ONE board over the columns, or the recess column's cap), read as the
+    // full-width `drawerTotalH` and `partition_bottom_y` are. Absent without a column stack: no golden grows a key.
+    ...(columnDrawerSets.length ? {
+      columnStacks: Object.fromEntries(columnDrawerSets.map((set) => [set.zone, {
+        drawerTotalH: set.totalH,
+        partition_bottom_y: columnCap ? columnCap.y : set.partY,
+      }])),
     } : {}),
     // T42-F1: `rail_partition_y` is deleted with the board it located.
     ...(hasRail ? { rail_y: railY, rail_support_y: railSupportY } : {}),

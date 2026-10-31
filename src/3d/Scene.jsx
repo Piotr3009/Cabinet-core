@@ -54,6 +54,8 @@ import { categoryOf, isFreePanel } from '../engine/types.js';
 // T37-F1: the piece selection spans cabinets; each unit gets its own members.
 import { refsForUnit } from '../lib/selection.js';
 import Ruler from './Ruler.jsx';
+// T86B F8 (law 7): a sprayed slab wears the sprayed fronts' surface.
+import { worktopSurface } from './materials.js';
 import useContextGuard from './contextGuard.jsx';
 
 // T36 F2: one frozen empty array, so a unit outside the selection does not
@@ -900,9 +902,11 @@ function FrontGapMarks({
  * about where the wall is.
  */
 function Worktops({
-  worktops, walls, roomCentre, colour,
+  worktops, walls, roomCentre, colour, profile = null, sheen = null,
 }) {
   return worktops.map((w) => {
+    // T86B F8 (law 7) · 'spray': the sprayed fronts' surface; 'decor': today's grey slab.
+    const surface = profile ? worktopSurface(w, profile, sheen) : null;
     const g = w.geometry;
     const wall = walls[g.wall] || walls[0];
     if (!wall) return null;
@@ -913,7 +917,7 @@ function Worktops({
     // own `slabId`. The cut-outs are drawn as dark insets on the top face.
     if (Array.isArray(g.outline) && g.outline.length >= 3) {
       return (
-        <WorktopOutline key={w.slabId || w.id} w={w} wall={wall} roomCentre={roomCentre} colour={colour} />
+        <WorktopOutline key={w.slabId || w.id} w={w} wall={wall} roomCentre={roomCentre} colour={colour} surface={surface} />
       );
     }
     // T82 F11 · a slab with a basin set into it is extruded from its own
@@ -921,7 +925,7 @@ function Worktops({
     if ((g.cutouts || []).some((c) => c.kind === 'basin')) {
       const rectOutline = [[g.x, g.z || 0], [g.x + g.w, g.z || 0], [g.x + g.w, (g.z || 0) + g.d], [g.x, (g.z || 0) + g.d]];
       return (
-        <WorktopOutline key={w.slabId || w.id} w={w} wall={wall} roomCentre={roomCentre} colour={colour} outline={rectOutline} />
+        <WorktopOutline key={w.slabId || w.id} w={w} wall={wall} roomCentre={roomCentre} colour={colour} outline={rectOutline} surface={surface} />
       );
     }
     const along = new THREE.Vector3(wall.along.x, 0, wall.along.y);
@@ -949,7 +953,7 @@ function Worktops({
           }}
         >
           <boxGeometry args={[mm(g.w), mm(g.h), mm(g.d)]} />
-          <meshStandardMaterial color={colour} roughness={0.55} metalness={0.04} />
+          <SlabMaterial surface={surface} colour={colour} />
         </mesh>
         <WorktopCutouts w={w} wall={wall} roomCentre={roomCentre} />
       </group>
@@ -1011,8 +1015,28 @@ function insideRing(ring, [x, z]) {
  * built in the wall's frame (x along the wall, y out from it) and stood on the
  * carcass tops at the slab's height.
  */
+/**
+ * T86B F8 (law 7) · the slab's material: the sprayed surface `worktopSurface`
+ * answers, as a sprayed front wears it (meshPhysicalMaterial, its colour,
+ * roughness, coat and probe), or today's grey slab when it answers null.
+ */
+function SlabMaterial({ surface, colour, side = undefined }) {
+  if (!surface) return <meshStandardMaterial color={colour} roughness={0.55} metalness={0.04} side={side} />;
+  return (
+    <meshPhysicalMaterial
+      color={surface.colour}
+      roughness={surface.roughness}
+      metalness={surface.metalness}
+      clearcoat={surface.clearcoat}
+      clearcoatRoughness={surface.clearcoatRoughness}
+      envMapIntensity={surface.envMapIntensity}
+      side={side}
+    />
+  );
+}
+
 function WorktopOutline({
-  w, wall, roomCentre, colour, outline = null,
+  w, wall, roomCentre, colour, outline = null, surface = null,
 }) {
   const g = w.geometry;
   // T82 F11 · the outline handed in (a plain slab with basins) or the slab's own (an L).
@@ -1069,7 +1093,7 @@ function WorktopOutline({
           } : {}),
         }}
       >
-        <meshStandardMaterial color={colour} roughness={0.55} metalness={0.04} side={THREE.DoubleSide} />
+        <SlabMaterial surface={surface} colour={colour} side={THREE.DoubleSide} />
       </mesh>
       <WorktopCutouts w={w} wall={wall} roomCentre={roomCentre} />
     </group>
@@ -2331,6 +2355,8 @@ export default function Scene({
           walls={walls}
           roomCentre={bounds.centre}
           colour={profile.appearance.worktop.colour}
+          profile={profile}
+          sheen={sheen}
         />
       )}
       {/* T82 F11 · the vanity's basins, hung in the slabs' ovals: to the eye only. */}

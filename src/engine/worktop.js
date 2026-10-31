@@ -50,6 +50,8 @@ import { vanitySpec, vanityWastes } from './vanity.js';
 // T83 F8 · the bowl that enters the shell is refused with the basins the top
 // cannot take (KIT_VANITY.lsp D29, `vanity-bowl-refused`).
 import { vanityBowlRefused, vanityBowlSentence, vanityTopThickness } from './vanity.js';
+// T86B F8 (law 7) · the finish a slab is cut in, read as the record says it.
+import { worktopFinishOf } from './design.js';
 
 /**
  * Does this kit take a worktop at all?
@@ -365,11 +367,15 @@ export function worktopsFor({
       continue;
     }
     const geometry = worktopGeometry({ units: mine, record, profile });
+    // T86B F8 (law 6) · a desk's own overhang, typed, all round (before the butt trim).
+    if (geometry && loneDesk && isDeskUnit(mine[0])) deskOverhang(geometry, record, profile);
     if (geometry && loneDesk && isDeskUnit(mine[0])) deskSideTrim(geometry, mine[0], units, profile);
     else if (geometry) sideTrim(geometry, mine, units, profile);
     if (geometry) out.push(withCutouts({ ...record, slabId: `${record.id}`, geometry }, mine, profile));
   }
-  return out;
+  // T86B F8 (law 7) · every slab says its finish: 'spray' with its colour and
+  // sheen, or 'decor' (today's road, and every record before tonight).
+  return out.map((slab) => ({ ...slab, ...worktopFinishOf(slab) }));
 }
 
 /**
@@ -379,6 +385,24 @@ export function worktopsFor({
  * board it could not be fitted through. A free end keeps its overhang, and a
  * length the client typed (`extendLeft` / `extendRight`) is his and stays.
  */
+/**
+ * T86B F8 (law 6) · THE WORKTOP'S OVERHANG IS A NUMBER: a desk record's own
+ * `overhangMm`, when typed, replaces the automat's front and side overhang
+ * (the free ends; a butting end is trimmed after, as always). A record with
+ * none keeps the slab T75 F17 gave it.
+ */
+function deskOverhang(geometry, record, profile) {
+  const own = Number(record?.overhangMm);
+  if (record?.overhangMm == null || !Number.isFinite(own) || own < 0) return;
+  const spec = worktopSpec(profile);
+  const ds = own - spec.sideOverhang;
+  geometry.x -= ds;
+  geometry.w += 2 * ds;
+  geometry.d += own - spec.frontOverhang;
+  geometry.depth = geometry.d;
+  geometry.overhang = { ...geometry.overhang, front: own, side: own };
+}
+
 function deskSideTrim(geometry, desk, units, profile) {
   sideTrim(geometry, [desk], units, profile);
 }
@@ -412,15 +436,17 @@ function endMeets(list, side, units, profile, y0, y1) {
  */
 function sideTrim(geometry, list, units, profile) {
   const spec = worktopSpec(profile);
+  // T86B F8 · the slab's own side overhang (a desk's typed one), else the profile's.
+  const side = Number.isFinite(Number(geometry.overhang?.side)) ? Number(geometry.overhang.side) : spec.sideOverhang;
   const y0 = geometry.y;
   const y1 = geometry.y + geometry.h;
   if (endMeets(list, 'left', units, profile, y0, y1)) {
-    geometry.x += spec.sideOverhang;
-    geometry.w -= spec.sideOverhang;
+    geometry.x += side;
+    geometry.w -= side;
     geometry.overhang = { ...geometry.overhang, left: 0 };
   }
   if (endMeets(list, 'right', units, profile, y0, y1)) {
-    geometry.w -= spec.sideOverhang;
+    geometry.w -= side;
     geometry.overhang = { ...geometry.overhang, right: 0 };
   }
 }
@@ -1021,6 +1047,19 @@ function islandExtend(record) {
   return Object.fromEntries(ISLAND_FACE_KEYS.map((k) => [k, Math.max(0, Number(e[k]) || 0)]));
 }
 
+/**
+ * T86B F8 (law 6) · THE WORKTOP'S OVERHANG IS A NUMBER, DEFAULT NONE: a chest
+ * island's own `islandOverhangMm` (carried on its faces), else the profile's
+ * `worktop.islandOverhangMm`, else 0. *"nie koniecznie nawis, nawis jako
+ * opcja prosze"* (the owner, 30.10.2026, 22:56).
+ */
+export function islandOverhangOf(island, profile) {
+  const own = Number(island?.islandOverhangMm);
+  if (island?.islandOverhangMm != null && Number.isFinite(own) && own >= 0) return own;
+  const def = Number(profile?.worktop?.islandOverhangMm ?? profile?.autoParts?.worktop?.islandOverhangMm);
+  return Number.isFinite(def) && def >= 0 ? def : 0;
+}
+
 function islandSlab({ record, units, walls, profile }) {
   const spec = worktopSpec(profile);
   const faces = Object.fromEntries(walls.filter((w) => w.island === record.island).map((w) => [w.face, w]));
@@ -1049,7 +1088,10 @@ function islandSlab({ record, units, walls, profile }) {
     for (const [pu, pv] of [[x, 0], [x + w, 0], [x + w, reach], [x, reach]]) pts.push(toA(plan(wall, pu, pv)));
   }
   const ext = islandExtend(record);
-  const over = spec.frontOverhang;
+  // T86B F8 (law 6) · over a CHEST island the slab's overhang is the island's
+  // own number (the profile's islandOverhangMm, 0, when it has none); a
+  // kitchen island keeps the front overhang it always had.
+  const over = A.chestIsland ? islandOverhangOf(A, profile) : spec.frontOverhang;
   const us = pts.map((p) => p[0]);
   const vs = pts.map((p) => p[1]);
   // In A's frame: A is "out" (+v), B is behind the core (-v), E1 lies at the

@@ -113,6 +113,35 @@ function saveBrightness(value) {
   return value;
 }
 
+// T86B F7.4: THE DIMENSION INK, REMEMBERED. *"menu, patrz SS: dimension powinien
+// pojsc do glownego paska, ustawienie koloru wymiarowania powinno byc w settings
+// nie tutaj"* (the owner, 30.10.2026, 21:54). Remembered per browser as
+// Brightness is; the profile's default when the key is unset or names an ink
+// the profile has never heard of.
+const DIMENSION_COLOUR_KEY = 'cc.dimensionColour';
+
+/** The ink a key names, or the profile's default (pure: tested without a browser). */
+export function dimensionColourFrom(stored, profile = DEFAULT_CABINET_PROFILE) {
+  return typeof stored === 'string' && Object.hasOwn(profile.dimensions.colours, stored)
+    ? stored
+    : profile.appearance.dimensions.colour;
+}
+
+function loadDimensionColour() {
+  if (!persistenceOn()) return DEFAULT_CABINET_PROFILE.appearance.dimensions.colour;
+  try {
+    return dimensionColourFrom(localStorage.getItem(DIMENSION_COLOUR_KEY));
+  } catch {
+    return DEFAULT_CABINET_PROFILE.appearance.dimensions.colour;
+  }
+}
+
+function saveDimensionColour(key) {
+  if (!persistenceOn()) return key;
+  try { localStorage.setItem(DIMENSION_COLOUR_KEY, key); } catch { /* private mode */ }
+  return key;
+}
+
 // ─── The editor stack, in and out of this store (turn 23, CLAUDE.md F1) ──────
 //
 // `lib/editorStack.js` owns the arithmetic and speaks one shape; this store
@@ -588,10 +617,11 @@ export const useUiStore = create((set, get) => ({
   // THE PROFILE (`appearance.dimensions.colour`) rather than written here — a
   // workshop that prefers navy changes one line in profile.js and every new
   // session starts there. `alt` beside it is the other one on the menu.
-  dimensionColour: DEFAULT_CABINET_PROFILE.appearance.dimensions.colour,
+  // T86B F7.4: read from, and written to, `cc.dimensionColour`.
+  dimensionColour: loadDimensionColour(),
   setDimensionColour: (key) => set((s) => ({
     dimensionColour: Object.hasOwn(DEFAULT_CABINET_PROFILE.dimensions.colours, key)
-      ? key
+      ? saveDimensionColour(key)
       : s.dimensionColour,
   })),
 

@@ -15,6 +15,8 @@ import { SHIPPED_SETS } from '../engine/sets.js';
 import { isSetRow } from '../lib/templates.js';
 import { placeBesideAnchor } from '../lib/menuPlacement.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
+// T86B F5 (law 4) . "Chest in the room" beside the chest kits: the variant asked once, then the store.
+import { ChestIslandPopup } from './ChestIslandPopup.jsx';
 
 // How far a flyout stands off the row that owns it, and how close it may come
 // to the edge of the screen. The same two numbers `Modal` uses for the rule-15
@@ -50,6 +52,8 @@ export default function LibraryPanel() {
   // one-click way past it (T11 F4.4's grammar). A filter, never a block.
   const projectCategory = getProjectType(design?.projectType).category;
   const [showAllTypes, setShowAllTypes] = useState(false);
+  const [chestAsk, setChestAsk] = useState(false);
+  const addChestIsland = useProjectStore((s) => s.addChestIsland);
 
   const drag = useRef(null);
   // ─── Turn 9 (CLAUDE.md F2) ───
@@ -259,6 +263,7 @@ export default function LibraryPanel() {
                   heights={heights}
                   onAdd={handleAdd}
                   onAction={handleAction}
+                  onChestInRoom={() => setChestAsk(true)}
                 />
               ))}
               {filtered.hidden > 0 && (
@@ -277,6 +282,18 @@ export default function LibraryPanel() {
           );
         })()}
       </div>
+      {chestAsk && (
+        <ChestIslandPopup
+          onClose={() => setChestAsk(false)}
+          onPick={(variant) => {
+            setChestAsk(false);
+            const res = addChestIsland('WARDROBE_CHEST3', { variant });
+            if (!res.ok) { notify(res.message, 'warn'); return; }
+            selectUnit(res.chestId);
+            notify('The chest stands in the middle of the room: drag it to move it, R turns it.', 'ok');
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -290,7 +307,7 @@ export default function LibraryPanel() {
  * not say why is a row a workshop asks about twice.
  */
 function LibraryEntry({
-  entry, profile, heights, onAdd, onAction = null, nested = false,
+  entry, profile, heights, onAdd, onAction = null, nested = false, onChestInRoom = null,
 }) {
   const [open, setOpen] = useState(false);
   const rowRef = useRef(null);
@@ -331,6 +348,18 @@ function LibraryEntry({
                 nested
               />
             ))}
+            {entry.id === 'chest-of-drawers' && onChestInRoom && (
+              <button
+                type="button"
+                className="w-full text-left px-2 py-2 rounded hover:bg-shell-700 border border-transparent hover:border-shell-600 transition-colors"
+                data-library-chest-in-room="1"
+                title="A chest standing free in the room: a back panel, or a second chest back to back"
+                onClick={() => { setOpen(false); onChestInRoom(); }}
+              >
+                <div className="text-sm text-ink-50">Chest in the room</div>
+                <div className="text-[11px] text-ink-400">Free standing: back panel or back to back</div>
+              </button>
+            )}
           </Flyout>
         )}
       </div>

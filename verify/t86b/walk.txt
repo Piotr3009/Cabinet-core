@@ -1,0 +1,99 @@
+T86B WALK: THE LIST OF EIGHT, A REAL MOUSE THROUGH THE SIX STATIONS (scripts/t86b-walk.mjs)
+walked 2026-10-31 01:54 UTC, HEAD c51854b5, http://127.0.0.1:4173/, stations a,b,c,d,e,f
+Every line: PASS or FAIL (the F, the gesture, what was expected, what was read), NOTE (a reading), FRAME (the file beside this one).
+The gestures are real clicks, hovers, drags, keys and typing (CDP); the stages are the store's; the numbers expected are the engine's and the spec's.
+
+
+STATION A . THE L'S ARM IS A NEIGHBOUR: A CORNER_L_BASE IN THE LEFT CORNER, A BUD ON ITS CORNER PLUS (F1)
+NOTE   [a] F11 the build under the mouse | the repo's HEAD c51854b5; url http://127.0.0.1:4173/
+NOTE   [a] F1 THE STAGE (the store's own actions): a new project, the owner's 4000 x 3000 room 2500 high | 4 walls
+PASS   [a] F1 the rail's Add, Kitchen, Base units, Corner L (real clicks): a CORNER_L_BASE in the left corner of wall 1 (index 0) | expect: CORNER_L_BASE on wall index 0, corner_side left | observed: {"num":"CL01","wall":0,"x":10,"w":900,"d":900,"side":"left"}
+PASS   [a] F1 the hand over the L (TOP-L) shows its pluses; the corner plus "Add a unit beside CL01 on wall 4" clicked (a real click), the library opens on that place | expect: the plus on wall 4 (index 3), the library's insert point set | observed: {"plus":{"title":"Add a unit beside CL01 on wall 4","px":{"x":267,"y":570},"first":true},"clicked":true,"titles":["Add something inside this unit","Add a unit to the right of CL01","Add a unit beside CL01 on wall 4"]}
+NOTE   [a] F1 wall 4 (index 3) after the add, and the arm's span there (cornerLAdjacentSpan) | {"run":[{"id":"u_55kvmqh","x":1490,"w":600}],"arm":{"wall":3,"span":{"left":2090,"right":2990},"left":2090,"right":2990,"x_mm":2090,"side":"left","armMm":558}}
+PASS   [a] F1 the BUD (Standard, door-base, pressed in the library the plus opened) on wall 4 at the arm's end | expect: a BUD on wall index 3 | observed: {"type":"BUD","num":"01","wall":3,"x":1490,"w":600,"infillL":0,"infillR":0,"infillPanels":[]}
+PASS   [a] F1 NO INFILL toward the arm (law 1): side_infill_right_mm 0, no infill board in the engine's parts | expect: side_infill_right_mm 0, infill panels [] | observed: {"infillR":0,"infillL":0,"panels":[]}
+PASS   [a] F1 the scene: no infill drawn between the BUD and the arm (no INFILL mesh under the BUD's group) | expect: no mesh id matching INFILL | observed: ["BUL","BUR","TOP","BOTTOM","BACK","PLINTH"]
+NOTE   [a] F1 the L and the BUD drawn (world mm, the room centred on the origin) | {"L":{"cx":-1540,"cz":-1040,"sx":900,"sz":900,"sy":870},"BUD":{"cx":-1711,"cz":-290,"sx":558,"sz":600,"sy":870}}
+PASS   [a] F1 the BUD stands against the arm: its right end flush with the arm B end, the corner stop (cornerLAdjacentSpan .left) | expect: x + w = 2090 on wall index 3 | observed: {"x":1490,"w":600,"end":2090}
+PASS   [a] F1 the hand over the BUD: the plus beyond it (its left, toward the wall), and no plus between it and the arm | expect: "Add a unit to the left of <BUD>" drawn; no "to the right of <BUD>" | observed: ["Add something inside this unit","Add a unit to the left of 01"]
+FRAME  [a] f11-a-l-neighbour.png
+NOTE   [a] F11 console errors on the page (station a) | none
+
+STATION B . THE OWNER'S RECESS WARDROBE: THE COLUMN STACK'S ROWS IN THE SECTION, A SHELF OVER THE CAP (F2, F3)
+NOTE   [b] F2 THE STAGE (the store's own actions, T85's): the 4000 x 3000 room, the 800 x 300 recess at 1000 on wall 0, the wardrobe 1200 x 2150 x 300 at 800 | {"id":"u_ss7wis8","x":800,"w":1200,"h":2150,"d":300}
+PASS   [b] F2 the wardrobe selected by a real click, Add items, Drawers, Count 3, Columns Recess, Bare boxes, Add: dividers 210 / 972, three drawers in Column 2 | expect: dividers [210, 972], 3 drawers zone 1 | observed: {"done":{"selected":true,"addItems":true,"recess":true,"bare":true,"add":true},"parts":[210,972],"zones":[1,1,1]}
+PASS   [b] F2 the engine: derived.columnStacks[1] written (drawerTotalH, partition_bottom_y = the cap's underside, where the dividers end) | expect: partition_bottom_y 629 (VPART-1 top) | observed: {"stacks":{"1":{"drawerTotalH":606,"partition_bottom_y":629}},"capUnder":629}
+PASS   [b] F2 the Section (Section 1 opened by its header) shows "Stack height" for Column 2 with the engine's number | expect: Stack height 606 | observed: "Stack height606 mm"
+PASS   [b] F2 the Section shows "Partition (locked, required above the stack)" for Column 2 with the engine's number | expect: Partition (locked, required above the stack) 629 | observed: "Partition (locked, required above the stack)629 mm"
+FRAME  [b] f11-b-section-rows.png
+PASS   [b] F3 Add items, Shelves, Bay 2, Add (real clicks; bays offered ["Bay 1 . 192","Bay 2 . 744","Bay 3 . 192"]): one shelf added in the column, above the cap | expect: a shelf in zone 1 above 647 | observed: {"item":{"id":"shelf_bgjxlzt","zone":1,"pos":1380.5},"y":1380.5}
+PASS   [b] F3 the shelf over the column spans the carcass side to side (law 3): x 20 to 1180 (the sides 18 less half the 4 clearance) | expect: x 20 to 1180 | observed: {"id":"SHELF-1","x0":20,"x1":1180,"y":1380.5}
+PASS   [b] F3 its supports are the sides (shelf pins on BUL and BUR at its height), nothing red | expect: pins [BUL, BUR], no red | observed: {"pins":["BUL","BUR"],"red":[]}
+FRAME  [b] f11-b-shelf-over-column.png
+NOTE   [b] F11 console errors on the page (station b) | none
+
+STATION C . THE CHEST IN THE ROOM: VARIANT A, DRAGGED +300, TURNED 90, SPRAYED RAL 3005, OVERHANG 20, VARIANT B (F4, F5, F8)
+NOTE   [c] F5 THE STAGE (the store's own actions): a new project, the 4000 x 3000 room | empty
+PASS   [c] F5 the rail's Add, Wardrobes, Chest of drawers flyout, "Chest in the room" (real clicks): the popup asks the variant with two pictures | expect: the entry, the popup, [panel+picture, double+picture] | observed: {"opened":true,"entry":true,"popup":true,"pictures":["panel+picture","double+picture"],"islandId":"island_0a8789m"}
+PASS   [c] F5 A: back panel pressed: an island at the room's centre, the chest on face A, a FREE_PANEL on face B (the spec's C) of the chest's width and height | expect: variant panel, chest on A, FREE_PANEL on B at the chest's w x h | observed: {"id":"island_0a8789m","cx":2000,"cy":1770,"rotation":0,"variant":"panel","overhang":0,"on":[{"id":"u_2z57tdw","type":"WARDROBE_CHEST3","face":"A","wall":4,"w":800,"h":647,"d":558},{"id":"u_rf688lr","type":"FREE_PANEL","face":"B","wall":6,"w":800,"h":647,"d":18}],"worktop":{"id":"worktop_ebxx3ho","finish":null,"colour":null,"sheen":null}}
+NOTE   [c] F5 the island record (core centre; the footprint centre is the chest's depth and the panel's about it) | {"cx":2000,"cy":1770,"roomCentre":{"x":2000,"y":1500},"said":[{"message":"front WC01 WC01-F1 \u22121.5 mm at the wall","level":"grey"},{"message":"front WC01 WC01-F2 \u22121.5 mm at the wall","level":"grey"},{"message":"front WC01 WC01-F3 \u22121.5 mm at the wall","level":"grey"},{"message":"The chest stands in the middle of the room: drag it to move it, R turns it.","level":"grey"}]}
+PASS   [c] F4 the back panel's board: the chest's width x height x the project's board (18) | expect: 800 x 647 x 18 | observed: [{"id":"FP","w":800,"h":647,"t":18,"box":{"x":0,"y":0,"z":0,"w":800,"h":647,"d":18}}]
+NOTE   [c] F4 the chest's plinth boards (law 5: set back on every exposed side) | [{"id":"PLINTH","box":{"x":50,"y":-100,"z":490,"w":700,"h":100,"d":18}},{"id":"PLINTH-B","box":{"x":50,"y":-100,"z":32,"w":700,"h":100,"d":18}},{"id":"PLINTH-L","box":{"x":50,"y":-100,"z":50,"w":18,"h":100,"d":440}},{"id":"PLINTH-R","box":{"x":732,"y":-100,"z":50,"w":18,"h":100,"d":440}}]
+PASS   [c] F5 one worktop over the whole island: the slab the chest's width by the footprint over its fronts and the panel (depth + gap + front + 18) plus 2 x overhang (0 by default) | expect: 1 slab 800 x 604, overhang 0 | observed: {"record":{"id":"worktop_ebxx3ho","finish":null,"colour":null,"sheen":null},"store":{"n":1,"slabs":[{"id":"worktop_ebxx3ho","w":800,"d":604,"overhang":{"front":0,"side":0,"wall":0}}]},"drawn":[{"id":"worktop_ebxx3ho","sx":800,"sz":604}]}
+NOTE   [c] F5 the Check on the chest as born in the room (runChecks): every red and yellow finding on it | {"counters":["counter-red 3","counter-yellow 3"],"red":["#18 red: WC01 D1: Runner NL500 (T): no article in catalogue - upload the model or adjust the ladder.","#18 red: WC01 D2: Runner NL500 (T): no article in catalogue - upload the model or adjust the ladder.","#18 red: WC01 D3: Runner NL500 (T): no article in catalogue - upload the model or adjust the ladder."],"yellow":["#2 yellow: WC01 WC01-F1 \u2192 the wall: 3 mm. infill? (dust collection)","#2 yellow: WC01 WC01-F2 \u2192 the wall: 3 mm. infill? (dust collection)","#2 yellow: WC01 WC01-F3 \u2192 the wall: 3 mm. infill? (dust collection)"]}
+PASS   [c] F5 the chest standing free in the room: no red finding about where it stands (the #18 catalogue reds of the mock hardware data set aside, they are the runner's article, not the room) | expect: 0 red about the room | observed: {"roomReds":[],"catalogue":3}
+FAIL   [c] F5 the chest standing free in the room: no finding reads a wall at its fronts (both its ends are in the room; frontClearance's "the wall: 3 mm. infill? (dust collection)" is for a bare wall) | expect: no "-> the wall" finding on the chest | observed: ["#2 yellow: WC01 WC01-F1 \u2192 the wall: 3 mm. infill? (dust collection)","#2 yellow: WC01 WC01-F2 \u2192 the wall: 3 mm. infill? (dust collection)","#2 yellow: WC01 WC01-F3 \u2192 the wall: 3 mm. infill? (dust collection)"]
+FRAME  [c] f11-c-1-chest-in-room.png
+PASS   [c] F5 the chest DRAGGED by its carcass (BUL, a real press, moves, release) +300 along face A: the island moved | expect: the island's core 300 (+- 8, the hand lands on whole pixels) from where it was | observed: {"moved":300,"from":[2000,1770],"to":[1700,1770],"drag":{"from":{"x":683,"y":591,"n":14},"to":{"x":620,"y":591},"grab":"BUL"}}
+PASS   [c] F5 its panel and its slab followed: the drawn chest, back panel and slab moved by the same vector | expect: chest = panel = slab (+- 2 mm), about 300 | observed: {"chest":[-300,0],"panel":[-300,0],"slab":[-300,0]}
+FAIL   [c] F5 the drag is ONE undo step (the snapshots the history took: the island's core in each) | expect: 1 step, its snapshot the island where the drag began | observed: {"steps":2,"snapshots":[[2000,1770],[1988,1770]],"began":[2000,1770]}
+FRAME  [c] f11-c-2-dragged-300.png
+PASS   [c] F5 the chest selected (a real click true), its panel's "Turn 90 degrees" pressed: the island turned by 90 | expect: rotation 90 | observed: {"before":0,"after":90,"row":true}
+PASS   [c] F5 after the turn the panel still stands at the chest's back and the slab over both: the slab's plan turned (x and z swapped), chest-to-panel distance kept | expect: slab 604 x 800, chest-panel 302 | observed: {"slab":[604,800],"dist":302}
+FRAME  [c] f11-c-3-turned-90.png
+PASS   [c] F8 Construction, the worktop's "Finish" (["Decor","Sprayed panel"]), "Sprayed panel" pressed, the RAL 3005 chip (real clicks): the record is sprayed in RAL 3005 | expect: finish spray, colour RAL 3005 (Burgundy Red #5e2028) | observed: {"id":"worktop_ebxx3ho","finish":"spray","colour":{"hex":"#5e2028","name":"Burgundy Red","system":"RAL"},"sheen":null}
+PASS   [c] F8 the slab drawn through the sprayed surface (meshPhysicalMaterial) in the record's colour | expect: MeshPhysicalMaterial #5e2028 | observed: {"type":"MeshPhysicalMaterial","colour":"#5e2028","roughness":0.4,"clearcoat":0.6}
+FRAME  [c] f11-c-4-sprayed-ral3005.png
+PASS   [c] F8 Overhang (mm) 20 typed (a real click, select, 20, Enter): the island's islandOverhangMm 20 and the slab grown by 2 x 20 each way | expect: overhang 20; slab 840 x 644 | observed: {"overhang":20,"before":{"id":"worktop_ebxx3ho","w":800,"d":604,"overhang":{"front":0,"side":0,"wall":0}},"after":{"id":"worktop_ebxx3ho","w":840,"d":644,"overhang":{"front":20,"side":20,"wall":0}},"drawn":[604,800]}
+FRAME  [c] f11-c-5-overhang-20.png
+NOTE   [c] F5 a second chest island at the room's centre was refused (the first stands there): the words said | [{"message":"There is no room for 800 mm at 0 mm on face A of island 2: move or remove something there first.","level":"yellow"}]
+NOTE   [c] F8 FINDING: the slab's finish across the variant change (the store makes a new slab for the new pair) | {"before":{"id":"worktop_ebxx3ho","finish":"spray","colour":"#5e2028"},"after":{"id":"worktop_gaxhmy0","finish":null,"colour":null,"sheen":null}}
+PASS   [c] F5 variant B built (the first island's own "B: back to back" in its panel): a second chest on face B, back to back, the first's params; one slab over both | expect: variant double, two chests of one size on A and B, a worktop record | observed: {"id":"island_0a8789m","cx":1430,"cy":1500,"rotation":90,"variant":"double","overhang":20,"on":[{"id":"u_2z57tdw","type":"WARDROBE_CHEST3","face":"A","wall":4,"w":800,"h":647,"d":558},{"id":"u_jin0rzp","type":"WARDROBE_CHEST3","face":"B","wall":6,"w":800,"h":647,"d":558}],"worktop":{"id":"worktop_gaxhmy0","finish":null,"colour":null,"sheen":null}}
+PASS   [c] F5 the slab over the back-to-back pair: one slab, the chest's width by twice its depth over its fronts, plus 2 x overhang | expect: 1 slab 840 x 1212 (overhang 20) | observed: {"n":1,"slabs":[{"id":"worktop_gaxhmy0","w":840,"d":1212,"overhang":{"front":20,"side":20,"wall":0}}]}
+FRAME  [c] f11-c-6-variant-b.png
+NOTE   [c] F11 console errors on the page (station c) | none
+
+STATION D . A RUN OF FIVE WITH A LEFTOVER: ONE SHARE-OUT BUTTON (F6)
+NOTE   [d] F6 THE STAGE (the store's own actions): five BUDs of 740 on wall 1 (index 0) of the 4000 x 3000 room, a leftover at the wall | [{"id":"u_b7974ue","wall":0,"x":40,"w":740},{"id":"u_a9ufzvp","wall":0,"x":780,"w":740},{"id":"u_gh6a7qb","wall":0,"x":1520,"w":740},{"id":"u_1z1tcrk","wall":0,"x":2260,"w":740},{"id":"u_fl24swu","wall":0,"x":3000,"w":740}]
+PASS   [d] F6 a run of five with a leftover (the bar up after the stage): the share-out bar shows ONE button (and the house cross), no data-share-out-extra | expect: 1 action button [data-share-out-go], 0 [data-share-out-extra] | observed: {"leftover":"260","buttons":[{"go":true,"dismiss":false,"text":"Share it out equally . 784 mm each"},{"go":false,"dismiss":true,"text":"\u2715"}],"extra":0,"each":"784"}
+FRAME  [d] f11-d-share-out-bar.png
+PASS   [d] F6 the button pressed (a real click): the run shared, five cabinets each 784 (the bar's number), none added, one undo step | expect: 5 cabinets x 784 | observed: {"after":[{"x":40,"w":784},{"x":824,"w":784},{"x":1608,"w":784},{"x":2392,"w":784},{"x":3176,"w":784}],"steps":1}
+PASS   [d] F6 after the share-out the bar is gone (no leftover to offer) | expect: no [data-share-out-bar] | observed: false
+FRAME  [d] f11-d-shared.png
+NOTE   [d] F11 console errors on the page (station d) | none
+
+STATION E . FIVE ON THE BAR, SEVEN IN THE VIEW POPUP, THE INK IN SETTINGS REMEMBERED (F7)
+NOTE   [e] F7 THE STAGE (the store's own actions): two BUDs on wall 1; the remembered ink cleared | cc.dimensionColour removed
+PASS   [e] F7 the scene toggles bar: five, Dimensions first | expect: ["dimensions","xray","hideFronts","outlines","openAll"] | observed: ["dimensions","xray","hideFronts","outlines","openAll"]
+PASS   [e] F7 Dimensions on the bar (two real clicks) flips the chains: drawn, then not, then drawn again (or the reverse) | expect: the chain count flips between >0 and 0, aria-pressed flips | observed: {"pressed":["false","true"],"chains":[0,3,0]}
+FRAME  [e] f11-e-bar-five.png
+PASS   [e] F7 the View popup (a real click on View): seven entries, Dimensions and Dimension colour gone | expect: ["frontDimensions","props","measure","contourView","brightness","realisticLighting","light"] | observed: ["frontDimensions","props","measure","contourView","brightness","realisticLighting","light"]
+FRAME  [e] f11-e-view-seven.png
+PASS   [e] F7 Settings (the rail's Materials, Project finishes, its Settings tab): ONE "Dimension colour" row in settings.dimensions, Navy / Red | expect: row in settings.dimensions, [Navy, Red] | observed: {"opened":true,"node":"settings.dimensions","opts":["Navy","Red"],"default":"red"}
+NOTE   [e] F7 the house ink before (the profile's default red); Navy pressed first (a real click) so Red is a change | {"ui":"navy","stored":"navy"}
+PASS   [e] F7 Red pressed (a real click): the store's ink red, remembered in localStorage cc.dimensionColour | expect: ui red, stored red, aria-checked true | observed: {"ui":"red","stored":"red","pressed":"true"}
+FRAME  [e] f11-e-settings-red.png
+NOTE   [e] F7 the reload (CDP Page.reload), the beforeunload question answered Leave | true
+PASS   [e] F7 reload: still Red (the ink read back from cc.dimensionColour at boot) | expect: red | observed: {"ui":"red","stored":"red"}
+PASS   [e] F7 after the reload the row shows Red pressed; Navy pressed (a real click) restores the house ink, remembered | expect: Red aria-checked true; then ui navy, stored navy | observed: {"redShown":"true","navy":{"ui":"navy","stored":"navy"}}
+NOTE   [e] F11 console errors on the page (station e) | none
+
+STATION F . THE TWO CORNERS AFTER THE FIX, FROM THE OWNER'S CAMERA (F9)
+PASS   [f] F9 the start screen's "Open from file" (a real click; the file handed to the app's own input): the owner's room with a right L built first, then his left L | expect: [u_t86b_right:right, u_tv0vzil:left] | observed: {"ids":["u_t86b_right:right","u_tv0vzil:left"],"answered":["keep-settings"]}
+PASS   [f] F9 the right L (u_t86b_right): every board drawn where the engine put it (localBox in the unit's frame against computeCabinet through paramsForEngine) | expect: 8 / 8 boards on the engine's boxes | observed: BACK-A ok, BACK-B ok, SIDE-A ok, SIDE-B ok, TOP-L ok, BOTTOM-L ok, PLINTH-A ok, PLINTH-B ok
+PASS   [f] F9 the left L (u_tv0vzil): every board drawn where the engine put it (localBox in the unit's frame against computeCabinet through paramsForEngine) | expect: 8 / 8 boards on the engine's boxes | observed: BACK-A ok, BACK-B ok, SIDE-A ok, SIDE-B ok, TOP-L ok, BOTTOM-L ok, PLINTH-A ok, PLINTH-B ok
+FRAME  [f] f11-corners-after.png
+NOTE   [f] F11 console errors on the page (station f) | none
+
+FRAMES (15): f11-a-l-neighbour.png, f11-b-section-rows.png, f11-b-shelf-over-column.png, f11-c-1-chest-in-room.png, f11-c-2-dragged-300.png, f11-c-3-turned-90.png, f11-c-4-sprayed-ral3005.png, f11-c-5-overhang-20.png, f11-c-6-variant-b.png, f11-d-share-out-bar.png, f11-d-shared.png, f11-e-bar-five.png, f11-e-view-seven.png, f11-e-settings-red.png, f11-corners-after.png
+T86B: 43 checks, 41 pass, 2 fail

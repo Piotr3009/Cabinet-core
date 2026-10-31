@@ -2756,6 +2756,14 @@ export const DEFAULT_CABINET_PROFILE = {
       upstand: { heightMm: 100, thicknessMm: 20 },    // T75 proposed, owner to confirm
       seatingMm: 300,                                 // T75 proposed, owner to confirm (F11)
       cnc: false,                                     // a worktop is machined on site unless this says so
+      // ─── T86B F4 · THE CHEST ISLAND'S SLAB (CLAUDE.md T86B laws 6, 7) ──────
+      // The owner, 30.10.2026 (22:56): *"nie koniecznie nawis, nawis jako opcja prosze"*; *"3 - dla komody oraz dla
+      // biurka, opcja inny blat tez (w przyszlosci) Hi-Macs"*. On a chest island and on a desk the slab overhangs by
+      // this number all round, none by default (CONFIRMED), a single field in the worktop section; a kitchen island's
+      // overhang law is untouched. A worktop record's finish is one of `finishes` (the enum name PROPOSED): 'decor'
+      // (the project's worktop decor) or 'spray' (the house's sprayed panel); HI-MACS is a later value.
+      islandOverhangMm: 0,
+      finishes: ['decor', 'spray'],
     },
     // ─── TURN 47 (CLAUDE.md F4): EVERY INFILL LEAVES THE MACHINE OVERSIZE ──
     //
@@ -4425,6 +4433,11 @@ export const DEFAULT_CABINET_PROFILE = {
   // one of them looks like. A workshop on a different hinge system changes these
   // numbers and both the drawing and the 3D follow.
   hardware: {
+    // T86B F10 (PROPOSED, the owner 30.10.2026 23:02: *"zrob jak
+    // rekomendujesz"*): how far a live silhouette's bounding box may stand
+    // from the reference's (reference/hardware/silhouettes.json) before the
+    // probe names the item (test/turn86b-f10-probes.test.js), in mm.
+    silhouetteToleranceMm: 1,
     // A 35 mm cup hinge (the Blum/Hettich standard the drilling in `hinges`
     // above is already dimensioned for — cup ⌀35, 11 deep, cup centre 21.5 in
     // from the door edge).
@@ -5997,8 +6010,9 @@ export const DEFAULT_CABINET_PROFILE = {
       minScreen: { widthPx: 1280, heightPx: 800 },
       // PROPOSED, the designer, 17:01: the four switches at the scene's top
       // edge, by their ids in components/studio/SceneToggles.jsx; the owner may
-      // swap one here.
-      sceneToggles: ['xray', 'hideFronts', 'outlines', 'openAll'],
+      // swap one here. T86B F7: Dimensions FIRST, *"dimension powinien pojsc do
+      // glownego paska"* (the owner, 30.10.2026, 21:54); the order PROPOSED.
+      sceneToggles: ['dimensions', 'xray', 'hideFronts', 'outlines', 'openAll'],
       // The door window's conduct: 'dock-left' is T37's (sticky, the leaf it
       // follows, Escape off), and it is what the app does tonight. 'beside' is
       // the designer's recommendation (PROPOSED in CLAUDE.md THE NUMBERS) and

@@ -195,8 +195,22 @@ test('F8.3 — one buffer per panel, shared by every identical panel in the job'
   const sides = r.panels.filter((p) => p.part === 'DRAWER-SIDE' && p.meta.drawer === 1);
   assert.equal(sides.length, 2);
   const [a, b] = sides.map((p) => panelSolids(p, L, CUTS_ON, r.drills));
-  assert.equal(a.solid, b.solid, 'the left and right sides of one drawer are one geometry');
-  assert.equal(a.cuts, b.cuts);
+  // T86B F9 (CLAUDE.md law 9, the owner 30.10.2026: *"wychodzi na to ze
+  // dziala CNC ale nie dziala 3D, tak?"*): the placement is part of the key,
+  // so the left and right sides (mirrored frames) are two buffers of ONE
+  // shape, and the SAME side in an identical cabinet is the one buffer.
+  const shape = (g) => {
+    const p = g.attributes.position.array; const s = new Set();
+    for (let i = 0; i < p.length; i += 3) s.add(`${Math.round(p[i] * 1e5)},${Math.round(p[i + 1] * 1e5)},${Math.round(p[i + 2] * 1e5)}`);
+    return [...s].sort().join(';');
+  };
+  assert.equal(shape(a.solid), shape(b.solid), 'the left and right sides of one drawer are one shape');
+  const twin = budr();
+  const twinSides = twin.panels.filter((p) => p.part === 'DRAWER-SIDE' && p.meta.drawer === 1);
+  const [c, d] = twinSides.map((p) => panelSolids(p, L, CUTS_ON, twin.drills));
+  assert.equal(c.solid, a.solid, 'the same side in an identical cabinet is one geometry');
+  assert.equal(d.solid, b.solid);
+  assert.equal(c.cuts, a.cuts);
   const after = panelSolidCacheSize();
   // Re-asking costs nothing at all.
   for (const p of sides) panelSolids(p, L, CUTS_ON, r.drills);

@@ -463,6 +463,30 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f50-t85-f04.mjs',
   // T85 F5 (30.10.2026): the walk, real mouse on the built app (W1)
   'scripts/t85-walk.mjs',
+  // T86B F1 to F4 (31.10.2026): PART A, the engine (E1)
+  'test/turn86b-f01-l-neighbour.test.js',
+  'scripts/t78-classify.d/f51-t86b-f01.mjs',
+  'test/turn86b-f02-column-section.test.js',
+  'scripts/t78-classify.d/f51-t86b-f02.mjs',
+  'test/turn86b-f03-shelf-over-column.test.js',
+  'scripts/t78-classify.d/f51-t86b-f03.mjs',
+  'src/lib/chestIsland.js',
+  'test/turn86b-f04-chest-island-engine.test.js',
+  'scripts/t78-classify.d/f51-t86b-f04.mjs',
+  // T86B F5, F6 (31.10.2026): PART B, the store and the room (S1)
+  'src/components/ChestIslandPopup.jsx',
+  'test/turn86b-f05-chest-island-store.test.js',
+  'scripts/t78-classify.d/f51-t86b-f05.mjs',
+  'test/turn86b-f06-share-out-one-button.test.js',
+  'scripts/t78-classify.d/f51-t86b-f06.mjs',
+  // T86B F7, F8 (31.10.2026): PART C, the UI (U1)
+  'test/turn86b-f07-view.test.js',
+  'test/turn86b-f08-worktop-finish.test.js',
+  // T86B F9 to F11 (31.10.2026): PART D, the picture, the probes and the walk (G1)
+  'test/turn86b-f09-corner-mirror.test.js',
+  'verify/t86b/probe-f09-scene.mjs',
+  'test/turn86b-f10-probes.test.js',
+  'scripts/t86b-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

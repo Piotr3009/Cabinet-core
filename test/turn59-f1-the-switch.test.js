@@ -414,7 +414,8 @@ const EXEMPT = {
     'T84 F1 · NEW, pure: studioWidths and studioCssVars, the numbers of profile.ui.studio as the shell\'s widths and CSS variables, typed nowhere else. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)'
     + ' Chat fix 30.10.2026 F2 · two inspector modes (full, none) and the panel\'s widths only; the card\'s three numbers left the profile with the card. *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)',
   'src/App.jsx':
-    'T84 F2 · the face: the factory entry with profile.ui.studio.enabled hands ConfiguratorPage studio={isStudioFace(audience, profile)}; the retail entry never mounts the Studio, and no button switches it. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER); *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)',
+    'T84 F2 · the face: the factory entry with profile.ui.studio.enabled hands ConfiguratorPage studio={isStudioFace(audience, profile)}; the retail entry never mounts the Studio, and no button switches it. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER); *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)'
+    + ' T-CC1a F2 · App mounts only after ready, so the company defaults are asked here once (the old login hook deleted); the build stamp, the beforeunload question and the two screens stay. *"warunek: tylko przez JC po zalogowaniu, nie dziala skopiowany url wklejony przez byle kogo"* (the owner, 31.10.2026, 09:08)',
   'src/components/studio/StudioShell.jsx':
     'T84 F2 · NEW, the Studio grid of Stage-1 (top bar, context strip, rail, scene, inspector, status bar) round the EXISTING canvas and its overlays; every later part comes in through a slot. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER); *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)'
     + ' T84 F6 · the scene\'s edge is drawn before the scene layer, where the canvas toolbar stands on the legacy face, so the Check, the BOM and the Library drawn after it at the same layer stand over it (the edge had covered the Check\'s head and the BOM\'s export buttons). *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
@@ -464,6 +465,10 @@ const EXEMPT = {
     'T-CC1a F1 · isJcOffline and JC_OFFLINE from lib/jcApi.js (lib/supabase.js deleted) for one commit; the file is deleted whole in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
   'src/components/MockModeBadge.jsx':
     'T-CC1a F1 · isJcOffline and JC_OFFLINE from lib/jcApi.js (lib/supabase.js deleted) for one commit; the file is deleted whole in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
+  'src/main.jsx':
+    'T-CC1a F2 · the session first: authStore.init() asks Joinery Core\'s /api/auth/me before the app exists; only ready imports App.jsx dynamically, a refused or unanswered session imports components/jc/RefusalScreen.jsx; a storage event that removes authToken flushes and shows the offline card. *"warunek: tylko przez JC po zalogowaniu, nie dziala skopiowany url wklejony przez byle kogo"* (the owner, 31.10.2026, 09:08)',
+  'src/components/jc/RefusalScreen.jsx':
+    'T-CC1a F2 · NEW, the refusal screen: one centred card, refused role (employee, never worker), refused company (coming soon), offline (Try again), its words from authStore\'s pure refusalCard. *"warunek: tylko przez JC po zalogowaniu, nie dziala skopiowany url wklejony przez byle kogo"* (the owner, 31.10.2026, 09:08)',
 };
 
 // ─── KASACJA, CHAT FIX 30.10.2026 · FOUR PRO FILES DELETED, BY NAME ─────────
@@ -497,7 +502,7 @@ const FROZEN = {
   'src/components/FrontDecorationControls.jsx': 'b32660180217d45760e074f4fcd8932f90b9a57f11cb02121c59670225de2546',
   'index.html': 'b2b3b538d436ab616bcde6e3d45d5f99a36e3c4a6c1fd6023ff01b5122cc4975',
   // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/App.jsx': '4f188eb03dff2bd07b62d99e47fd44935fb274e888a95c1ac2cf17beae07c43b',
+  'src/App.jsx': 'ccbb94364329cda0f1ef4224f38c4b1df297e4023285ff724c7261d0302eb984',
   // T78 F11 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F2, F3 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F11 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -640,7 +645,7 @@ const FROZEN = {
   // T80 F2 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/WizardSettings.jsx': '66a8a1505f41c2e09d52e656b1b78f8307df47fa7671540cceef753398c69d1f',
   'src/components/WizardSummary.jsx': '989a13f6bff6213a787a2ed78db2533d320c1cd6a99e82e0ca435e4edc60a2e3',
-  'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
+  'src/main.jsx': '7250f492eca41ee07d766942f1f5a663368704e676e89313825c2ebf33fb95d7',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F18 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -680,6 +685,7 @@ const FROZEN = {
   // T84 F7 · NEW PRO files (the rail's menus, Escape and the parity gate), frozen at their first hash; EXEMPT above carries the reason.
   'src/components/studio/RailMenus.jsx': 'b2e108f0cb6857aaf008f3bd5bff05869279b63fb6c36300dd81bf9a783a39b7',
   'src/components/studio/lib/studioEscape.js': 'fd7fe779ec3deb0ad7390b21274f456987445221b453861a227c82ff7b4d61ea',
+  'src/components/jc/RefusalScreen.jsx': '33988534189bc6d45b38062445d535c11a0fea2e58d78a7b4adf5e8bcc0a9894',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -961,6 +967,9 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'index.html',
     'src/components/AuthModal.jsx',
     'src/components/MockModeBadge.jsx',
+    // T-CC1a F2 · *"tylko przez JC po zalogowaniu"*: the session first in main.jsx; the refusal card, a NEW PRO file.
+    'src/main.jsx',
+    'src/components/jc/RefusalScreen.jsx',
 ].sort(), 'the exemption list is not the approved UI and CLAUDE.md paths');
   // AMENDED BY THE CHAT FIX OF 28.10.2026 (the job as a file): a NEW PRO file born of a chat fix has no turn to
   // name, so its reason names the fix by its date and its feature, `Chat fix 28.10.2026 F1`, the way the approved
@@ -1012,7 +1021,9 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // count is the manifest's own; no file was frozen or thawed by this line.
 
     // AMENDED BY T86B F5 (31.10.2026, INT): 91, components/ChestIslandPopup.jsx frozen at its first hash.
-    assert.ok(Object.keys(FROZEN).length === 91, 'no base ref: the manifest is the whole proof here');
+    // AMENDED BY T-CC1a F2 (31.10.2026, INT): 92, components/jc/RefusalScreen.jsx frozen at its first hash
+    // (*"tylko przez JC po zalogowaniu"*, the owner, 31.10.2026, 09:08).
+    assert.ok(Object.keys(FROZEN).length === 92, 'no base ref: the manifest is the whole proof here');
 
  
 

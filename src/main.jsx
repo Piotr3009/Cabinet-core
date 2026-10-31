@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.jsx';
+// T-CC1a F2: App.jsx is imported DYNAMICALLY below, only once Joinery Core's session says `ready`.
+import { useAuthStore } from './stores/authStore.js';
 import './index.css';
 import { useProjectStore } from './stores/projectStore.js';
 import { modalShellFaults, useUiStore } from './stores/uiStore.js';
@@ -464,8 +465,46 @@ watchProjectHistory();
 // taking this wrapper off. StrictMode is a development check that finds exactly
 // this class of bug, and it found this one. It compiles out of the production
 // bundle by itself; nothing here is a cost the owner's build pays.
-createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+//
+// ─── T-CC1a F2 · THE SESSION FIRST, THEN THE APP (CLAUDE.md T-CC1a law 1) ────
+// The owner, 31.10.2026, 09:08: *"warunek: tylko przez JC po zalogowaniu, nie
+// dziala skopiowany url wklejony przez byle kogo"*. Joinery Core's session is
+// asked BEFORE the app exists: no token goes to JC's login and nothing else is
+// requested; a refused or unanswered session draws the one card
+// (components/jc/RefusalScreen.jsx); only `ready` imports App.jsx, the order
+// the retail entry already uses (src/retail/main-retail.jsx). Retry on the card
+// runs init() again, and the screen follows the status.
+const root = createRoot(document.getElementById('root'));
+let drawn = null;
+async function draw(status) {
+  if (status === drawn || status === 'booting') return;
+  drawn = status;
+  if (status === 'ready') {
+    const App = (await import('./App.jsx')).default;
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>,
+    );
+    return;
+  }
+  const RefusalScreen = (await import('./components/jc/RefusalScreen.jsx')).default;
+  root.render(
+    <React.StrictMode>
+      <RefusalScreen />
+    </React.StrictMode>,
+  );
+}
+useAuthStore.subscribe((s, prev) => { if (s.status !== prev.status) draw(s.status); });
+// Another tab signed out of Joinery Core: JC's script removed `authToken` from
+// this origin's storage. The work is flushed to this browser first (the crash
+// buffer registers with onSignedOutFlush), then the offline card says why.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    const gone = (e.key === 'authToken' && !e.newValue) || (e.key === null && !window.localStorage.getItem('authToken'));
+    if (gone && useAuthStore.getState().status === 'ready') {
+      useAuthStore.getState().signedOutElsewhere();
+    }
+  });
+}
+useAuthStore.getState().init();

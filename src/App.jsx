@@ -13,6 +13,7 @@ import { loadHardwareCatalogues } from './lib/hardwareCatalogue.js';
 import { refreshHardwareCatalogues } from './lib/hardwareHealth.js';
 import { loadHardwareRegister } from './lib/hardwareRegister.js';
 import { useSettingsSetsStore } from './stores/settingsSetsStore.js';
+import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 // T84 F2 (CLAUDE.md PART A): which face the workshop's entry wears.
 import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
 import { isStudioFace } from './components/studio/lib/studioFace.js';
@@ -84,6 +85,13 @@ export default function App() {
   // the local shelf it has used since turn 7 is the list, and the wizard says
   // so in an amber line. Nothing here can throw and nothing here can block.
   useEffect(() => { useSettingsSetsStore.getState().syncFromDb(); }, []);
+
+  // ─── T-CC1a F2 · THE COMPANY DEFAULTS, AFTER THE SESSION ────────────────
+  // App mounts only once Joinery Core's session says `ready` (main.jsx), so
+  // the company row is asked here, once, and no longer from a login hook
+  // (the old authStore's, deleted). It stays local until T-CC1b (FROZEN 4).
+  // The owner: *"tylko przez JC po zalogowaniu"* (31.10.2026, 09:08).
+  useEffect(() => { useCompanyDefaultsStore.getState().load(); }, []);
 
   // ─── THE OTHER DOOR OUT (turn 31, CLAUDE.md F2) ─────────────────────────
   //

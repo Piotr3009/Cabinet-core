@@ -491,6 +491,8 @@ export const NEW_FILES = [
   'src/lib/jcApi.js',
   'test/turn-cc1a-f01-client.test.js',
   'scripts/t78-classify.d/f51-t-cc1a-f01.mjs',
+  'src/components/jc/RefusalScreen.jsx',
+  'test/turn-cc1a-f02-session.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

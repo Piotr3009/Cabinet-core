@@ -1268,8 +1268,13 @@ export const DEFAULT_CABINET_PROFILE = {
     // 14:15: *"zamien zolty na inny, malo widoczny na nadrukach, zolty
     // ostatecznie"*: yellow goes LAST; the third cabinet is orange (green and
     // purple are the element strips' own, so they come later in the cycle).
-    unitColours: ['#d7263d', '#1f6feb', '#e4572e', '#7a3ea1', '#0f9d8a', '#2e8b57', '#8c5e2a', '#e0a100'],
-    unitAci: [1, 5, 30, 6, 4, 3, 8, 2],
+    // CHAT FIX 31.10.2026: and then yellow goes altogether. The owner, of the
+    // eighth cabinet's colour (asked beside the no-yellow CNC layers): *"nie
+    // chce zoltego"*. The eighth is a rose: ACI 230 in the DXF (the index's
+    // own 255, 0, 127; no yellow family) and #d6336c on the sticker, a hue no
+    // other cabinet or element strip wears.
+    unitColours: ['#d7263d', '#1f6feb', '#e4572e', '#7a3ea1', '#0f9d8a', '#2e8b57', '#8c5e2a', '#d6336c'],
+    unitAci: [1, 5, 30, 6, 4, 3, 8, 230],
     kinds: {
       side: { label: 'SIDE', colour: '#1b5e20', order: 1 },
       topbottom: { label: 'TOP / BOTTOM', colour: '#6a1b9a', order: 2 },

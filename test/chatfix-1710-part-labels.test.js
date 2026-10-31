@@ -164,8 +164,10 @@ test('partNumberPlan numbers every part of the sheet through the project, cabine
   assert.deepEqual(plan.units.map((u) => u.colour), [unitColourOf(0, P), unitColourOf(1, P), unitColourOf(2, P)]);
   // 14:15: *"zamien zolty na inny, malo widoczny na nadrukach, zolty ostatecznie"*: the third is orange, yellow last.
   assert.deepEqual(plan.units.map((u) => u.aci), [1, 5, 30]);
-  assert.equal(P.labels.unitColours[P.labels.unitColours.length - 1], '#e0a100');
-  assert.equal(P.labels.unitAci[P.labels.unitAci.length - 1], 2);
+  // CHAT FIX 31.10.2026: and no yellow at all; the eighth is a rose (ACI 230, #d6336c): the owner, 31.10.2026: *"nie chce zoltego"* (of the eighth cabinet's colour, asked beside the no-yellow layers; 17.10 it was "zolty ostatecznie").
+  assert.equal(P.labels.unitColours[P.labels.unitColours.length - 1], '#d6336c');
+  assert.equal(P.labels.unitAci[P.labels.unitAci.length - 1], 230);
+  assert.ok(!P.labels.unitAci.some((a) => a === 2 || (a >= 40 && a <= 59)), 'no cabinet colour in the yellow family');
   assert.deepEqual(plan.units.map((u) => u.layer), ['LABEL_W01', 'LABEL_W_02_A', 'LABEL_W03']);
   assert.equal(unitColourOf(8, P), unitColourOf(0, P), 'the palette cycles');
   assert.equal(unitAciOf(9, P), unitAciOf(1, P));

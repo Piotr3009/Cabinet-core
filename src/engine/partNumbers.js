@@ -114,8 +114,10 @@ export function labelSettings(profile) {
       marginTop: Number.isFinite(Number(S.marginTop)) && S.marginTop !== null ? Number(S.marginTop) : null,
       insetMm: Math.max(0, num(S.insetMm, 2.5)),
     },
-    unitColours: Array.isArray(L.unitColours) && L.unitColours.length ? L.unitColours : ['#d7263d', '#1f6feb', '#e0a100'],
-    unitAci: Array.isArray(L.unitAci) && L.unitAci.length ? L.unitAci.map((v) => num(v, 7)) : [1, 5, 2],
+    // CHAT FIX 31.10.2026: the fallback palette (a profile with no colours) carries no yellow either (the owner: *"nie chce
+    // zoltego"*); the third is the orange of the profile's own cycle.
+    unitColours: Array.isArray(L.unitColours) && L.unitColours.length ? L.unitColours : ['#d7263d', '#1f6feb', '#e4572e'],
+    unitAci: Array.isArray(L.unitAci) && L.unitAci.length ? L.unitAci.map((v) => num(v, 7)) : [1, 5, 30],
     kinds: L.kinds || {},
     layerPrefix: String(L.dxf?.layerPrefix || 'LABEL_'),
     numberPad: Math.max(1, Math.round(num(L.numberPad, 2))),

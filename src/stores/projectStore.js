@@ -121,7 +121,7 @@ import { browserStorage, companyWithLogo, companyWithLogoRef, projectWithLogo, p
 // T-CC1a F4.3: an item opens from Joinery Core's row (one read through JC's client); the file's version gate is
 // the design's too (R16).
 import { JC_OFFLINE, withDb } from '../lib/jcApi.js';
-import { PROJECT_FILE_VERSION } from '../lib/projectFile.js';
+import { PROJECT_FILE_FORMAT, PROJECT_FILE_VERSION } from '../lib/projectFile.js';
 // T51 (CLAUDE.md F6 · decision 1): the light rig lives WITH THE PROJECT — *"a
 // room with one window and a showroom want different rigs, and a saved job
 // should reopen looking as it did."*
@@ -12862,30 +12862,57 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * The store is the live editor of the assignments; the project object is what
    * gets saved. This is the ONE place the two meet, so a save can never write a
    * stale set and no screen has to remember to copy them across.
+   *
+   * ─── T-CC1a F7 · THE ONE BUILDER OF THE ITEM JSON (CLAUDE.md T-CC1a law 5) ───
+   * The owner, 30.10.2026: *"dopiero caly json powinien sie zapisac do DB przy
+   * nacisnieciu Zapisz lub co 5 minut automatycznie"*. What Joinery Core keeps
+   * in `cc_items.design` is built HERE and nowhere else: the `.ccproject` shape
+   * `{ format, version, saved_at, app, project, units, assignments }` WITHOUT
+   * `profile` (the company numbers are this browser's until T-CC1b), the
+   * assignments folded, the `warehouseStamp`, the logo as its `{ ref }`
+   * (lib/projectLibrary.js projectWithLogoRef). `stamp: false` (the crash
+   * buffer) builds the same JSON without writing a new price stamp into the
+   * store, so keeping the buffer never marks the job changed.
    */
-  projectForSave: () => {
+  projectForSave: ({ stamp = true, storage = browserStorage(), at = Date.now() } = {}) => {
     const s = get();
+    let project = s.project;
+    let assignments = s.project?.assignments ?? null;
     try {
-      const assignments = useMaterialAssignmentStore.getState().data;
+      // The fold of lib/persist.js (turn 39), moved here whole with the one builder: the live blob, else the job's own.
+      assignments = useMaterialAssignmentStore.getState().data || assignments;
       // ─── T75 F21 · THE PRICES THE JOB WAS QUOTED AT, KEPT WITH IT ──────────
       // *"The project stores the `warehouseStamp` it was priced against and the
       // `price_source` per assigned material."*  Written at the save that first
       // has materials to price; later saves add newly assigned materials at
       // today's price and never move a quoted one (that is `acceptCatalogue`).
-      const stamp = priceSnapshot({
+      const priceStamp = priceSnapshot({
         assignments,
         materials: useMaterialAssignmentStore.getState().materials,
         at: s.project.warehouseStamp?.at || new Date().toISOString(),
         keep: s.project.warehouseStamp || null,
       });
-      const priced = Object.keys(stamp.prices).length ? { warehouseStamp: stamp } : {};
-      if (priced.warehouseStamp && JSON.stringify(priced.warehouseStamp) !== JSON.stringify(s.project.warehouseStamp)) {
+      const priced = Object.keys(priceStamp.prices).length ? { warehouseStamp: priceStamp } : {};
+      if (stamp && priced.warehouseStamp && JSON.stringify(priced.warehouseStamp) !== JSON.stringify(s.project.warehouseStamp)) {
         set((st) => ({ project: { ...st.project, warehouseStamp: priced.warehouseStamp } }));
       }
-      return { ...s.project, ...priced, assignments };
+      project = { ...s.project, ...priced, assignments };
     } catch {
-      return s.project;
+      project = s.project;
     }
+    // The binding lives in the row's columns (T-CC1a F4.3), never in the design.
+    const { jc_tenant_id: _t, jc_project_id: _p, jc_pipeline_id: _l, ...inner } = project || {};
+    const kept = projectWithLogoRef(storage, inner);
+    return {
+      format: PROJECT_FILE_FORMAT,
+      version: PROJECT_FILE_VERSION,
+      saved_at: new Date(Number(at) || Date.now()).toISOString(),
+      // eslint-disable-next-line no-undef
+      app: { name: 'Cabinet Core', build: typeof __BUILD_STAMP__ !== 'undefined' ? __BUILD_STAMP__ : 'dev' },
+      project: kept,
+      units: s.units,
+      assignments: kept?.assignments ?? null,
+    };
   },
 
   /**

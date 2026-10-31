@@ -176,7 +176,10 @@ test('F21 · the store: saved with its stamp; Accept today\'s prices is the owne
   const M = useMaterialAssignmentStore.getState();
   const mat = M.materials[0];
   useMaterialAssignmentStore.setState({ data: { ...M.data, base: { ...(M.data?.base || {}), carcase_side: { material_id: mat.id } } } });
-  const saved = S().projectForSave();
+  // AMENDED BY T-CC1a F7 (31.10.2026): projectForSave is the ONE builder of the item JSON ({ format, version,
+  // project, units, assignments }, no profile); the stamp rides its `project`. *"dopiero caly json powinien sie
+  // zapisac do DB przy nacisnieciu Zapisz lub co 5 minut automatycznie"* (the owner, 30.10.2026).
+  const saved = S().projectForSave().project;
   assert.ok(saved.warehouseStamp?.prices?.[mat.id], 'the save carries what the job was priced at');
   assert.deepEqual(S().catalogueMoves(), []);
   useMaterialAssignmentStore.setState({

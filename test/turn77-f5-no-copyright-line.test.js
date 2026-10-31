@@ -504,6 +504,10 @@ export const NEW_FILES = [
   'src/components/jc/JcProjectPicker.jsx',
   'test/turn-cc1a-f06-import.test.js',
   'scripts/t78-classify.d/f51-t-cc1a-f06.mjs',
+  // T-CC1a F7 to F9 (31.10.2026): PART C, the save (A3)
+  'src/lib/saveNumbers.js',
+  'test/turn-cc1a-f07-save.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f07.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -96,7 +96,11 @@ test('F3 . src/ names no AuthModal, MockModeBadge, isMockMode, scheduleCloudSave
   assert.equal(typeof cloud.saveCompanyDefaults, 'function');
   for (const gone of ['saveMaterialDb', 'saveManyDb', 'removeMaterialDb']) assert.ok(!(gone in warehouseDb), `warehouseDb still exports ${gone}`);
   assert.doesNotMatch(code(read('src/stores/materialAssignmentStore.js')), /cloudSync|cloudLoad|cloudSave/);
-  assert.doesNotMatch(code(read('src/lib/persist.js')), /cloudSync|saveCloudProject|jcApi/);
+  // AMENDED BY T-CC1a F7 (31.10.2026): persist.js speaks to Joinery Core again, through jcApi's withDb, with ONE
+  // request (cc_save_item; Save as new item reads its row's binding and calls cc_create_item first), never the
+  // cloud road. *"dopiero caly json powinien sie zapisac do DB przy nacisnieciu Zapisz lub co 5 minut automatycznie"*.
+  assert.doesNotMatch(code(read('src/lib/persist.js')), /cloudSync|saveCloudProject|cc_projects|saveLocalProject/);
+  assert.match(code(read('src/lib/persist.js')), /c\.rpc\('cc_save_item', params\)/);
   assert.doesNotMatch(code(read('src/components/TopBar.jsx')), /onAuth|drawAccount|topbar-account/, 'the Account button is gone');
   assert.doesNotMatch(code(read('src/pages/ConfiguratorPage.jsx')), /'auth'/, 'nothing opens the auth window');
   // Nothing imports supabase-js any more (retail included), so the package left package.json too.

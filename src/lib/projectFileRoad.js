@@ -30,13 +30,14 @@ import { useHistoryStore } from '../stores/historyStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { useAuthStore } from '../stores/authStore.js';
 import { getCabinetProfile } from '../engine/profile.js';
-import { browserStorage, projectWithLogoRef } from './projectLibrary.js';
+import { browserStorage } from './projectLibrary.js';
 import {
-  PROJECT_FILE_FORMAT, PROJECT_FILE_VERSION, buildProjectFile, jobLabel, parseProjectFile, projectFileName,
+  buildProjectFile, jobLabel, parseProjectFile, projectFileName,
   projectFileQuestions, projectFileText, projectForOpen,
 } from './projectFile.js';
 import { download } from './exporters.js';
-import { JC_OFFLINE, withDb } from './jcApi.js';
+import { withDb } from './jcApi.js';
+import { persistProject } from './persist.js';
 import { createItem, loadJcList, projectOfItem, pushRecent } from './jcList.js';
 
 /**
@@ -75,48 +76,22 @@ export function saveProjectToFile({ storage = browserStorage(), at = Date.now(),
 /** The words for a file that carries workshop settings (PROPOSED, CLAUDE.md T-CC1a F6.1). */
 export const PROFILE_NOT_IMPORTED = 'This file carries workshop settings; they are not imported (the company numbers live in Joinery Core from T-CC1b)';
 
-/** The build that writes an item, as the corner of the app shows it. */
-function buildStamp() {
-  // eslint-disable-next-line no-undef
-  return typeof __BUILD_STAMP__ !== 'undefined' ? __BUILD_STAMP__ : 'dev';
-}
-
 /**
- * The item JSON (law 5): the `.ccproject` shape WITHOUT `profile`, the logo as `{ ref }`, the assignments folded
- * (projectStore.projectForSave, the one place they meet). Built from the store as it stands.
- * PART C folds this into its one save (persistProject); until then the import's one save goes through here.
+ * The item JSON (law 5): the `.ccproject` shape WITHOUT `profile`, the logo as `{ ref }`, the assignments folded.
+ * T-CC1a F7: built by the store's projectForSave, the ONE builder; this name stays for the import's readers.
  */
 export function itemDesign({ storage = browserStorage(), at = Date.now() } = {}) {
-  const st = useProjectStore.getState();
-  const project = projectWithLogoRef(storage, st.projectForSave());
-  return {
-    format: PROJECT_FILE_FORMAT,
-    version: PROJECT_FILE_VERSION,
-    saved_at: new Date(Number(at) || Date.now()).toISOString(),
-    app: { name: 'Cabinet Core', build: buildStamp() },
-    project,
-    units: st.units,
-    assignments: project?.assignments ?? null,
-  };
+  return useProjectStore.getState().projectForSave({ storage, at });
 }
 
 /**
- * ONE `cc_save_item` of the item on the screen: `{ p_item_id, p_name, p_design }` through withDb. On success the
- * store is marked saved and `project.savedAt` is the row's `updated_at`; on a refusal it stays unsaved. Resolves
+ * ONE `cc_save_item` of the item on the screen. T-CC1a F7: through lib/persist.js persistProject, the one save
+ * road (the size guard, markSaved and `project.savedAt` on success, unsaved on a refusal). Resolves
  * `{ ok, data, error }` with the error in words (JC_OFFLINE when JC did not answer).
  */
 export async function saveItem({ storage = browserStorage(), at = Date.now(), db = withDb } = {}) {
-  const p_design = itemDesign({ storage, at });
-  const { project } = useProjectStore.getState();
-  const res = await db((c) => c.rpc('cc_save_item', { p_item_id: project.id, p_name: project.name, p_design }), null);
-  if (res?.mock || res?.error) {
-    useProjectStore.getState().markUnsaved();
-    return { ok: false, data: null, error: res?.mock ? JC_OFFLINE : String(res.error?.message || res.error) };
-  }
-  const data = Array.isArray(res.data) ? res.data[0] : res.data;
-  const savedAt = data?.updated_at || null;
-  useProjectStore.getState().markSaved({ ...useProjectStore.getState().project, savedAt, revision: data?.revision ?? null });
-  return { ok: true, data, error: null };
+  const r = await persistProject({ storage, at, db });
+  return r.stored ? { ok: true, data: r.data, error: null } : { ok: false, data: null, error: r.error || r.message };
 }
 
 /**

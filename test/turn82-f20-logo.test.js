@@ -322,49 +322,77 @@ const job = (i, logo = BIG) => ({
   titleBlock: { company: { name: 'SKYLON JOINERY', logo } },
 });
 
-test('F20 after the review · 40 jobs with a 256 KB logo all survive on the shelf, the picture kept once', async () => {
+// REWRITTEN BY T-CC1a F7 (31.10.2026) to the new law: a save is ONE cc_save_item to Joinery Core carrying the item
+// JSON (projectStore.projectForSave, the one builder); the shelf write of persistProject is deleted. What F20 asked
+// stands on the new road: the picture rides every save as its `{ ref }`, kept ONCE in this browser, and a refused
+// save is said in words, never "saved". *"dopiero caly json powinien sie zapisac do DB przy nacisnieciu Zapisz lub
+// co 5 minut automatycznie"* (the owner, 30.10.2026).
+
+/** A fake Joinery Core client: records every rpc; `refuse` answers each with that error. */
+function fakeJc({ refuse = null } = {}) {
+  const rpc = [];
+  const client = {
+    rpc: async (name, params) => {
+      rpc.push({ name, params });
+      if (refuse) return { data: null, error: { message: refuse } };
+      if (name === 'cc_create_item') return { data: { id: `srv-new-${rpc.length}`, name: params.p_name, revision: null, jc_project_number: '2601' }, error: null };
+      return { data: { id: params.p_item_id, updated_at: '2026-10-31T12:00:00Z', revision: 'A' }, error: null };
+    },
+    from: () => {
+      const q = {
+        select: () => q, eq: () => q, order: () => q, limit: () => q,
+        single: async () => (refuse ? { data: null, error: { message: refuse } }
+          : { data: { id: 'srv-road', jc_pipeline_id: null, jc_project_id: 'p1', jc_project_number: '2601' }, error: null }),
+      };
+      return q;
+    },
+  };
+  return { client, rpc };
+}
+async function withJc(client, fn) {
+  const had = globalThis.supabaseClient;
+  if (client) globalThis.supabaseClient = client; else delete globalThis.supabaseClient;
+  try { return await fn(); } finally { if (had) globalThis.supabaseClient = had; else delete globalThis.supabaseClient; }
+}
+
+test('F20 after the review · 40 items with a 256 KB logo: every save sends the logo as its ref, the picture kept once', async () => {
+  const { useProjectStore } = await import('../src/stores/projectStore.js');
   const shelf = quotaStorage();
-  const ids = [];
-  for (let i = 1; i <= 40; i += 1) {
-    const res = await persistProject({ project: job(i), units: [], at: i, storage: shelf });
-    assert.equal(res.tone, 'ok', `job ${i}: ${res.message}`);
-    assert.equal(res.message, 'Project saved on this computer.');
-    assert.deepEqual(res.project.titleBlock.company.logo, BIG, `job ${i} keeps its picture whole in memory`);
-    ids.push(res.project.id);
+  const jc = fakeJc();
+  await withJc(jc.client, async () => {
+    for (let i = 1; i <= 40; i += 1) {
+      useProjectStore.getState().newProject(`Job ${i}`, { id: `srv-${i}` });
+      useProjectStore.getState().setTitleBlock({ company: { name: 'SKYLON JOINERY', logo: BIG } });
+      const res = await persistProject({ at: i, storage: shelf });
+      assert.equal(res.tone, 'ok', `job ${i}: ${res.message}`);
+      assert.equal(res.stored, true);
+      assert.deepEqual(res.project.titleBlock.company.logo, BIG, `job ${i} keeps its picture whole in memory`);
+    }
+  });
+  assert.equal(jc.rpc.length, 40, 'one request per save');
+  for (const { name, params } of jc.rpc) {
+    assert.equal(name, 'cc_save_item');
+    const sent = JSON.stringify(params.p_design);
+    assert.ok(!sent.includes(BIG.href), 'no save carries the picture');
+    assert.deepEqual(params.p_design.project.titleBlock.company.logo, { ref: logoId(BIG) });
   }
-  assert.equal(listLocalProjects(shelf).length, 40, 'every job is on the shelf');
-  const raw = shelf.getItem(LIBRARY_KEY);
-  assert.ok(!raw.includes(BIG.href), 'no job carries the picture');
-  assert.ok(raw.length < 40 * 2000, `the shelf is ${raw.length} characters for 40 jobs`);
   assert.deepEqual(Object.keys(JSON.parse(shelf.getItem(LOGO_KEY))), [logoId(BIG)], 'the picture once');
-  for (const id of ids) {
-    assert.deepEqual(loadLocalProject(shelf, id).project.titleBlock.company.logo, BIG, `${id} opens with its logo`);
-  }
 });
 
-test('F20 after the review · a job the browser refuses is said in words, never "saved"', async () => {
-  // A storage that refuses every write.
-  const refusing = {
-    getItem: () => null,
-    setItem: () => { const err = new Error('The quota has been exceeded.'); err.name = 'QuotaExceededError'; throw err; },
-    removeItem: () => {},
-  };
-  const row = saveLocalProject(refusing, { project: job(1), units: [], at: 1 });
-  assert.equal(row.stored, false, 'the shelf says it did not take it');
-  const res = await persistProject({ project: job(1), units: [], at: 1, storage: refusing });
+test('F20 after the review · a save Joinery Core refuses is said in words, never "saved"', async () => {
+  const { useProjectStore } = await import('../src/stores/projectStore.js');
+  useProjectStore.getState().newProject('Refused', { id: 'srv-refused' });
+  const res = await withJc(fakeJc({ refuse: 'Forbidden' }).client, () => persistProject({ at: 1, storage: quotaStorage() }));
   assert.equal(res.tone, 'error');
-  assert.match(res.message, /^Not saved: this computer's storage for the app is full, so this job is not on its shelf\./);
-  assert.doesNotMatch(res.message, /Project saved/);
-  // A storage already full of other things: the job that does not fit is said, the ones before it stand.
-  const full = quotaStorage(64 * 1024);
-  full.setItem('somebody.else', 'x'.repeat(60 * 1024));
-  const big = await persistProject({ project: { ...job(2), units: [], note: 'y'.repeat(8 * 1024) }, units: [], at: 2, storage: full });
-  assert.equal(big.tone, 'error', big.message);
-  assert.match(big.message, /^Not saved: /);
-  assert.equal(listLocalProjects(full).length, 0, 'and indeed it is not there');
-  // A storage that takes it: saved, as before.
-  const ok = await persistProject({ project: job(3), units: [], at: 3, storage: quotaStorage() });
-  assert.equal(ok.message, 'Project saved on this computer.');
+  assert.equal(res.stored, false);
+  assert.match(res.message, /^Not saved: Forbidden/);
+  assert.doesNotMatch(res.message, /Saved/);
+  const off = await withJc(null, () => persistProject({ at: 2, storage: quotaStorage() }));
+  assert.equal(off.tone, 'error');
+  assert.match(off.message, /^Not saved: Joinery Core did not answer\./);
+  const ok = await withJc(fakeJc().client, () => persistProject({ at: 3, storage: quotaStorage() }));
+  assert.equal(ok.tone, 'ok');
+  assert.match(ok.message, /^Saved \d\d:\d\d\.$/);
 });
 
 test('F20 after the review · the sheet still draws the logo of a job read back, and of an old job that carries it', () => {
@@ -465,9 +493,12 @@ const ROADS = {
   },
 };
 
-async function driveRoad(road, storage) {
+// AMENDED BY T-CC1a F7 (31.10.2026): each road is driven against a fake Joinery Core (`client`), the one save's
+// door, instead of a browser storage. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026).
+async function driveRoad(road, client) {
   const { useProjectStore } = await import('../src/stores/projectStore.js');
-  globalThis.localStorage = storage;
+  const had = globalThis.supabaseClient;
+  if (client) globalThis.supabaseClient = client; else delete globalThis.supabaseClient;
   try {
     const st = useProjectStore.getState();
     st.newProject('Road', { id: 'srv-road' });
@@ -485,32 +516,35 @@ async function driveRoad(road, storage) {
     // eslint-disable-next-line no-new-func
     const fn = new Function(...names, `${road.src()}\nreturn ${road.name};`)(...names.map((k) => hands[k]));
     await road.run(fn);
-    return { dirty: useProjectStore.getState().dirty, said };
-  } finally { delete globalThis.localStorage; }
+    return { dirty: useProjectStore.getState().dirty, said, project: useProjectStore.getState().project };
+  } finally { if (had) globalThis.supabaseClient = had; else delete globalThis.supabaseClient; }
 }
 
+// REWRITTEN BY T-CC1a F7 (31.10.2026): the three roads save through the one cc_save_item; a refusal from Joinery
+// Core (or no Joinery Core at all) leaves the job marked unsaved and says so; Save as is "Save as new item":
+// cc_create_item in the same project, then the same save. *"dopiero caly json powinien sie zapisac do DB przy
+// nacisnieciu Zapisz lub co 5 minut automatycznie"* (the owner, 30.10.2026).
 for (const [label, road] of Object.entries(ROADS)) {
   test(`F20 after the review · ${label}: a refused write leaves the job marked unsaved, and says so`, async () => {
-    // AMENDED BY T-CC1a F5 (31.10.2026): Save as wrote a copy under a CC-minted loc_ id, a road law 4 deletes (*"automatyczne
-    // polaczenie danego projektu do danego pipelinu lub production projektu"*). Until PART C's "Save as new item"
-    // (cc_create_item) it is refused in words on any storage, and the job stays marked unsaved, never "saved".
-    if (road.name === 'onSaveAs') {
-      for (const storage of [REFUSING, quotaStorage()]) {
-        const r = await driveRoad(road, storage);
-        assert.equal(r.dirty, true);
-        assert.deepEqual(r.said.map((m) => m.tone), ['error']);
-        assert.match(r.said[0].message, /^Not saved: this job has no item in Joinery Core yet/);
-      }
-      return;
+    for (const client of [fakeJc({ refuse: 'Forbidden' }).client, null]) {
+      const refused = await driveRoad(road, client);
+      assert.equal(refused.dirty, true, 'the unsaved flag stands');
+      assert.equal(refused.said.length, 1);
+      assert.equal(refused.said[0].tone, 'error');
+      assert.match(refused.said[0].message, client ? /^Not saved: Forbidden/ : /^Not saved: Joinery Core did not answer/);
     }
-    const refused = await driveRoad(road, REFUSING);
-    assert.equal(refused.dirty, true, 'the unsaved flag stands');
-    assert.equal(refused.said.length, 1);
-    assert.equal(refused.said[0].tone, 'error');
-    assert.match(refused.said[0].message, /^Not saved: this computer's storage for the app is full/);
-    const taken = await driveRoad(road, quotaStorage());
-    assert.equal(taken.dirty, false, 'a save the shelf took clears it, as before');
+    const jc = fakeJc();
+    const taken = await driveRoad(road, jc.client);
+    assert.equal(taken.dirty, false, 'a save Joinery Core took clears it');
     assert.equal(taken.said[0].tone, 'ok');
+    if (road.name === 'onSaveAs') {
+      assert.deepEqual(jc.rpc.map((c) => c.name), ['cc_create_item', 'cc_save_item']);
+      assert.deepEqual(jc.rpc[0].params, { p_name: 'Copy of the job', p_project_id: 'p1' });
+      assert.equal(taken.project.id, jc.rpc[1].params.p_item_id, 'the job is now the new item');
+      assert.equal(taken.project.name, 'Copy of the job');
+    } else {
+      assert.deepEqual(jc.rpc.map((c) => [c.name, c.params.p_item_id]), [['cc_save_item', 'srv-road']]);
+    }
   });
 }
 
@@ -524,7 +558,11 @@ test('F20 after the review · the start screen: a brand-new item is not put on t
   assert.match(src, /openEditor\(\)/);
 });
 
+// REWRITTEN BY T-CC1a F7 (31.10.2026): the branches are Joinery Core's answers, not the shelf's.
 test('F20 after the review · persistProject says whether the job was stored, on every branch', async () => {
-  assert.equal((await persistProject({ project: job(1), units: [], storage: quotaStorage() })).stored, true);
-  assert.equal((await persistProject({ project: job(1), units: [], storage: REFUSING })).stored, false);
+  const { useProjectStore } = await import('../src/stores/projectStore.js');
+  useProjectStore.getState().newProject('Branches', { id: 'srv-branches' });
+  assert.equal((await withJc(fakeJc().client, () => persistProject({ storage: quotaStorage() }))).stored, true);
+  assert.equal((await withJc(fakeJc({ refuse: 'Forbidden' }).client, () => persistProject({ storage: quotaStorage() }))).stored, false);
+  assert.equal((await withJc(null, () => persistProject({ storage: quotaStorage() }))).stored, false);
 });

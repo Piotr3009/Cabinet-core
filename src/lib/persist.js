@@ -1,56 +1,136 @@
-import { browserStorage, notOnShelf, saveLocalProject } from './projectLibrary.js';
-import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
+import { useProjectStore } from '../stores/projectStore.js';
+import { getCabinetProfile } from '../engine/profile.js';
+import { browserStorage } from './projectLibrary.js';
+import { JC_OFFLINE, withDb } from './jcApi.js';
+import { createItem } from './jcList.js';
+import { byteSize, saveNumbers } from './saveNumbers.js';
 
 // ─── Saving, in one place ───
-// File ▸ Save and File ▸ Save as… are the same act with a different name, and
-// both have to answer the same question: WHERE does this project live?
+// File ▸ Save, Update and save, File ▸ Save as… (now "Save as new item"),
+// Ctrl+S, the autosave and the save before an export are the same act, and
+// they all come here.
 //
-// The local shelf always — it is what makes mock mode a working app rather than
-// a demo (CLAUDE.md rule 7). The database as well whenever keys are configured,
-// and if the database refuses, the save still HAPPENED and says where.
+// ─── T-CC1a F7 · ONE SAVE, ONE REQUEST (CLAUDE.md T-CC1a law 5) ─────────────
+// The owner, 30.10.2026: *"moje zdanie to powinno sie wszystko zapisywac na
+// pamiec podreczna, dopiero caly json powinien sie zapisac do DB przy
+// nacisnieciu Zapisz lub co 5 minut automatycznie"*. A change is memory (and
+// the crash buffer, F9); a save is ONE `cc_save_item` through Joinery Core's
+// client carrying the whole item JSON, built by the store's projectForSave
+// (the one builder: the `.ccproject` shape without `profile`, the logo as its
+// `{ ref }`). The shelf write and the cloud branch of the shelf days are
+// deleted. A body over `profile.save.maxBodyMb` is refused in words and never
+// sent. On a refusal the job stays marked unsaved, the words say why, and the
+// crash buffer already holds the work.
+
+/** The words of the size guard (PROPOSED, CLAUDE.md T-CC1a F7.2). */
+export const tooLargeWords = (mb) => `This item is too large to save: ${mb} MB. A logo or a picture is riding in it.`;
+
+/** The words of a job with no item (CC mints no id, law 4). */
+export const NO_ITEM = 'this job has no item in Joinery Core yet. Open it from the list, or start it with New item.';
+
+/** "Saved 14:05": the status words of a save that landed. */
+function savedWords(at) {
+  const d = new Date(Number(at) || Date.now());
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `Saved ${hh}:${mm}.`;
+}
 
 /**
- * @param {object} args
- *   project, units   the live state
- *   asName           a new name = Save as (a copy; the original stays put)
- *   at               timestamp, injected so the caller owns the clock
- * @returns {Promise<{project:object, message:string, tone:string}>}
+ * The one request's parameters for the item on the screen: `{ p_item_id, p_name, p_design }`, the design from
+ * the store's projectForSave. The keepalive save on leaving the page (lib/saveTriggers.js) sends the same.
  */
-export async function persistProject({ project, units, asName = null, at = Date.now(), storage = null }) {
-  const shelf = storage || browserStorage();
-  // ─── TURN 39 (CLAUDE.md F2): THE ASSIGNMENTS GO WITH THE JOB ─────────────
-  //
-  // The store is the live editor of the assignments; the project object is what
-  // gets written. Folding them in HERE rather than at each call site means a
-  // save can never write a stale set, and File ▸ Save, File ▸ Save as… and
-  // every future caller get it without remembering to.
-  //
-  // Reading the store is wrapped: a save must not fail because a store is not
-  // there, and a project with no assignments is a project, not an error.
-  let assignments = project?.assignments || null;
-  try { assignments = useMaterialAssignmentStore.getState().data || assignments; } catch { /* keep what the project had */ }
-  const withAssignments = assignments ? { ...project, assignments } : project;
+export function itemPayload({ storage = browserStorage(), at = Date.now(), stamp = true } = {}) {
+  const st = useProjectStore.getState();
+  const p_design = st.projectForSave({ stamp, storage, at });
+  return { p_item_id: st.project?.id || null, p_name: st.project?.name || '', p_design };
+}
 
-  const named = asName
-    ? { ...withAssignments, name: asName, id: null }   // a copy: a new id, not an overwrite
-    : withAssignments;
-
-  const row = saveLocalProject(shelf, { project: named, units, at });
-  const saved = row.project;
-  // T82 F20, after the review: a job the browser would not take is NOT on
-  // this computer, and the save says so in words instead of "saved". The job
-  // stays open as it is; nothing in it is lost while the window is open.
-  // `stored` says whether the save landed anywhere (the shelf, or the
-  // database where that is the road): a caller marks the job saved only then.
-  const notHere = notOnShelf(row);
-
-  // T-CC1a F3: the cloud branch (cc_projects, the assignments' row) is deleted with the road; the one request to
-  // Joinery Core is PART C's cc_save_item (*"oczywiscie do CC laczysz sie tylko przez JC"*).
-  if (notHere) return { project: saved, message: `Not saved: ${notHere}`, tone: 'error', stored: false };
+const refused = (project, words, extra = {}) => {
+  try { useProjectStore.getState().markUnsaved(); } catch { /* the store is the store */ }
   return {
-    project: saved,
-    message: asName ? `Saved as “${saved.name}” on this computer.` : 'Project saved on this computer.',
-    tone: 'ok',
-    stored: true,
+    project: useProjectStore.getState().project, message: `Not saved: ${words}`, tone: 'error', stored: false,
+    error: words, data: null, ...extra,
   };
+};
+
+// One save in flight at a time: a second ask while one is out shares its answer (Ctrl+S during an autosave).
+let inFlight = null;
+
+/** Is a save out right now? (the autosave never starts a second one, lib/saveTriggers.js) */
+export const saveInFlight = () => inFlight !== null;
+
+/**
+ * Save the item on the screen to Joinery Core: ONE `cc_save_item`.
+ *
+ * @param {object} args
+ *   asName   a name = "Save as new item": `cc_create_item` in the same Joinery Core project (the row's binding,
+ *            read once), the job becomes that new item, then the same one save
+ *   at       timestamp, injected so the caller owns the clock
+ *   db       withDb (a test hands its fake)
+ *   (`project` and `units` are accepted from the three callers of the shelf days and not read: the item JSON is
+ *   built from the store, in one place.)
+ * @returns {Promise<{project, message, tone, stored, error, data}>}
+ */
+export function persistProject({ asName = null, at = Date.now(), storage = null, db = withDb, numbers = null } = {}) {
+  if (!asName && inFlight) return inFlight;
+  const run = saveOnce({ asName, at, storage: storage || browserStorage(), db, numbers: numbers || saveNumbers(getCabinetProfile()) });
+  if (asName) return run;
+  inFlight = run.finally(() => { inFlight = null; });
+  return inFlight;
+}
+
+async function saveOnce({ asName, at, storage, db, numbers }) {
+  const start = useProjectStore.getState();
+  if (!start.project?.id) return refused(start.project, NO_ITEM);
+
+  if (asName) {
+    // "Save as new item" (PROPOSED): a new item in the SAME Joinery Core project. The binding lives in the row's
+    // columns, so the row is read once for it; then cc_create_item with the typed name.
+    const bind = await db((c) => c.from('cc_items')
+      .select('id, jc_pipeline_id, jc_project_id, jc_project_number').eq('id', start.project.id).single(), null);
+    if (bind?.mock) return refused(start.project, JC_OFFLINE);
+    const row = bind?.data;
+    if (bind?.error || !row || (!row.jc_pipeline_id && !row.jc_project_id)) {
+      return refused(start.project, String(bind?.error?.message || bind?.error || 'Joinery Core did not say which project this item belongs to.'));
+    }
+    const project = row.jc_pipeline_id
+      ? { kind: 'pipeline', id: row.jc_pipeline_id }
+      : { kind: 'production', id: row.jc_project_id };
+    const made = await createItem({ name: asName, project, db });
+    if (made.error) return refused(start.project, made.error);
+    useProjectStore.setState((s) => ({
+      project: {
+        ...s.project,
+        id: made.row.id,
+        name: made.row.name || asName,
+        number: String(made.row.jc_project_number ?? row.jc_project_number ?? s.project.number ?? ''),
+        savedAt: null,
+        revision: made.row.revision ?? null,
+      },
+    }));
+  }
+
+  const params = itemPayload({ storage, at });
+  const body = JSON.stringify(params);
+  const bytes = byteSize(body);
+  if (bytes > Number(numbers.maxBodyMb) * 1024 * 1024) {
+    return refused(params.p_design.project, tooLargeWords((bytes / (1024 * 1024)).toFixed(1)));
+  }
+  const sent = useProjectStore.getState();
+  const res = await db((c) => c.rpc('cc_save_item', params), null);
+  if (res?.mock) return refused(sent.project, JC_OFFLINE);
+  if (res?.error) return refused(sent.project, String(res.error?.message || res.error));
+  const data = (Array.isArray(res.data) ? res.data[0] : res.data) || {};
+  const now = useProjectStore.getState();
+  const stamped = { savedAt: data.updated_at || null, revision: data.revision ?? now.project.revision ?? null };
+  if (now.project === sent.project && now.units === sent.units) {
+    now.markSaved({ ...now.project, ...stamped });
+  } else {
+    // The joiner kept working while the request was out: the row holds what was sent; what came after is
+    // still unsaved, and the next save carries it.
+    useProjectStore.setState((s) => ({ project: { ...s.project, ...stamped }, dirty: true }));
+  }
+  const message = asName ? `Saved as new item "${useProjectStore.getState().project.name}". ${savedWords(at)}` : savedWords(at);
+  return { project: useProjectStore.getState().project, message, tone: 'ok', stored: true, error: null, data };
 }

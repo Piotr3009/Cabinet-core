@@ -111,7 +111,10 @@ test('the assignments fold as lib/persist.js folds them: the live blob, else the
   assert.deepEqual(withAssignments({ id: 'a', assignments: { x: 1 } }, ASSIGNED), { id: 'a', assignments: ASSIGNED });
   assert.deepEqual(withAssignments({ id: 'a' }, null), { id: 'a' }, 'nothing assigned, no key');
   // ...the very lines of persist.js, so the two can never fold differently.
-  assert.match(read('src/lib/persist.js'), /assignments = useMaterialAssignmentStore\.getState\(\)\.data \|\| assignments/);
+  // AMENDED BY T-CC1a F7 (31.10.2026): the fold moved whole from persist.js into projectStore.projectForSave, the ONE
+  // builder of the item JSON. *"dopiero caly json powinien sie zapisac do DB przy nacisnieciu Zapisz lub co 5 minut
+  // automatycznie"* (the owner, 30.10.2026).
+  assert.match(read('src/stores/projectStore.js'), /assignments = useMaterialAssignmentStore\.getState\(\)\.data \|\| assignments/);
 });
 
 test('a file that is not one says so in words, and never throws', () => {

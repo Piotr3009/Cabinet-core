@@ -1,4 +1,4 @@
-import { supabase, isMockMode, withDb } from './supabase.js';
+import { isJcOffline, jcClient, withDb } from './jcApi.js';
 
 // ─── Cloud persistence ───
 // Every function degrades gracefully: without keys (or before sql/001_init.sql
@@ -14,7 +14,7 @@ export async function listProjects() {
 }
 
 export async function loadProject(projectId) {
-  if (isMockMode || !supabase) return { project: null, units: [], mock: true, error: null };
+  if (isJcOffline()) return { project: null, units: [], mock: true, error: null };
   const p = await withDb((db) => db.from('cc_projects').select('*').eq('id', projectId).single(), null);
   if (!p.data) return { project: null, units: [], mock: p.mock, error: p.error };
   const u = await withDb(
@@ -38,7 +38,7 @@ export async function loadProject(projectId) {
  * unit. RLS makes both statements owner-scoped server-side.
  */
 export async function saveProject(project, units) {
-  if (isMockMode || !supabase) return { project, mock: true, error: null };
+  if (isJcOffline()) return { project, mock: true, error: null };
 
   const payload = {
     name: project.name,
@@ -91,7 +91,7 @@ export async function deleteProject(projectId) {
 
 /** This project's assignment blob, or null when there is nothing to read. */
 export async function loadAssignments(projectId) {
-  if (!projectId || isMockMode || !supabase) return null;
+  if (!projectId || isJcOffline()) return null;
   const { data } = await withDb(
     (db) => db.from('cc_material_assignments').select('data').eq('project_id', projectId).limit(1),
     null,
@@ -110,7 +110,7 @@ export async function loadAssignments(projectId) {
  *          has been applied.
  */
 export async function saveAssignments(projectId, data) {
-  if (!projectId || isMockMode || !supabase) return { saved: false, mock: true, error: null };
+  if (!projectId || isJcOffline()) return { saved: false, mock: true, error: null };
   const res = await withDb(
     (db) => db.from('cc_material_assignments')
       .upsert({ project_id: projectId, data: data || {} }, { onConflict: 'project_id' }),
@@ -127,7 +127,7 @@ export async function saveAssignments(projectId, data) {
 // as it always has. Nothing throws at the caller.
 
 export async function loadCompanyDefaults() {
-  if (isMockMode || !supabase) return { defaults: null, mock: true, error: null };
+  if (isJcOffline()) return { defaults: null, mock: true, error: null };
   const { data, error } = await withDb(
     (db) => db.from('cc_company_defaults').select('defaults, schema, updated_at').limit(1),
     null,
@@ -143,10 +143,10 @@ export async function loadCompanyDefaults() {
  * an owner and could not send somebody else's if it tried.
  */
 export async function saveCompanyDefaults(defaults) {
-  if (isMockMode || !supabase) {
+  if (isJcOffline()) {
     return { saved: false, mock: true, error: new Error('Mock data mode — no Supabase keys configured.') };
   }
-  const { data } = await supabase.auth.getUser().catch(() => ({ data: null }));
+  const { data } = await jcClient().auth.getUser().catch(() => ({ data: null }));
   const owner = data?.user?.id || null;
   if (!owner) return { saved: false, mock: false, error: new Error('Company defaults need an account.') };
   const res = await withDb(
@@ -162,9 +162,9 @@ export async function saveCompanyDefaults(defaults) {
 // ─── Auth ───
 
 export async function getSession() {
-  if (isMockMode || !supabase) return null;
+  if (isJcOffline()) return null;
   try {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await jcClient().auth.getSession();
     return data?.session ?? null;
   } catch {
     return null;
@@ -172,9 +172,9 @@ export async function getSession() {
 }
 
 export async function signIn(email, password) {
-  if (isMockMode || !supabase) return { user: null, error: new Error('Mock data mode — no Supabase keys configured.') };
+  if (isJcOffline()) return { user: null, error: new Error('Mock data mode — no Supabase keys configured.') };
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await jcClient().auth.signInWithPassword({ email, password });
     return { user: data?.user ?? null, error };
   } catch (error) {
     return { user: null, error };
@@ -182,9 +182,9 @@ export async function signIn(email, password) {
 }
 
 export async function signUp(email, password) {
-  if (isMockMode || !supabase) return { user: null, error: new Error('Mock data mode — no Supabase keys configured.') };
+  if (isJcOffline()) return { user: null, error: new Error('Mock data mode — no Supabase keys configured.') };
   try {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await jcClient().auth.signUp({ email, password });
     return { user: data?.user ?? null, error };
   } catch (error) {
     return { user: null, error };
@@ -192,9 +192,9 @@ export async function signUp(email, password) {
 }
 
 export async function signOut() {
-  if (isMockMode || !supabase) return { error: null };
+  if (isJcOffline()) return { error: null };
   try {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await jcClient().auth.signOut();
     return { error };
   } catch (error) {
     return { error };
@@ -202,7 +202,7 @@ export async function signOut() {
 }
 
 export function onAuthChange(callback) {
-  if (isMockMode || !supabase) return () => {};
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => callback(session));
+  if (isJcOffline()) return () => {};
+  const { data } = jcClient().auth.onAuthStateChange((_event, session) => callback(session));
   return () => data?.subscription?.unsubscribe?.();
 }

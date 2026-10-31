@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import * as cloud from '../lib/cloudSync.js';
-import { isMockMode } from '../lib/supabase.js';
+import { isJcOffline } from '../lib/jcApi.js';
 import { useCompanyDefaultsStore } from './companyDefaultsStore.js';
 
 // ─── Auth + cloud projects ───
@@ -13,10 +13,10 @@ export const useAuthStore = create((set, get) => ({
   projects: [],
   busy: false,
   error: null,
-  mock: isMockMode,
+  mock: isJcOffline(),
 
   init: async () => {
-    if (isMockMode) return;
+    if (isJcOffline()) return;
     const session = await cloud.getSession();
     set({ session, user: session?.user ?? null });
     // ─── Turn 22 (CLAUDE.md F2b) ───

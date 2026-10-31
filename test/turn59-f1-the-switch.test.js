@@ -389,7 +389,8 @@ const EXEMPT = {
   // T82 F20, after the review: the start screen reads whether the shelf took the brand-new job.
   'src/components/StartScreen.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' +
     'T82 F20, after the review · Start designing reads whether the shelf took the brand-new job; when the browser refused it the job opens marked unsaved (markUnsaved) and the start screen says the save\'s own red sentence (notOnShelf). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)' +
-    ' Chat fix 28.10.2026 F1 · the Open panel gains a third button, Open from file... (data-open-from-file): a .ccproject file goes on this computer\'s shelf and opens through lib/projectFileRoad.js, the File menu\'s own road. *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*; *"wiesz ze CC nie jest w chmurze jeszcze"* (28.10.2026)',
+    ' Chat fix 28.10.2026 F1 · the Open panel gains a third button, Open from file... (data-open-from-file): a .ccproject file goes on this computer\'s shelf and opens through lib/projectFileRoad.js, the File menu\'s own road. *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*; *"wiesz ze CC nie jest w chmurze jeszcze"* (28.10.2026)'
+    + ' T-CC1a F1 · the offline gate is isJcOffline() from lib/jcApi.js (lib/supabase.js deleted); the cloud list and the badge die in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
   // Chat fix 28.10.2026 F1 · a NEW PRO file, frozen at its first hash: the two questions of Open from file.
   'src/components/ProjectFileModal.jsx':
     'Chat fix 28.10.2026 F1 · NEW, the window of Open from file\'s two questions, in the shell (name "project-file"): the job is already on this computer (Replace with the file, gold; Keep both, open as a copy; Cancel), and the file was drawn with other workshop settings (Use the file\'s settings, gold; Keep this computer\'s); drawn in a root of its own by askProjectFile, so neither the top bar nor the start screen hosts it. *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"*; *"problem polega na tym ze nie dzialaja te szuflady ani import ani export plikow"* (28.10.2026)',
@@ -457,6 +458,12 @@ const EXEMPT = {
   'src/components/studio/lib/studioEscape.js':
     'T84 F7 · NEW, pure: one Escape, one action, in the order of verify/t84/p1-escape.md E; never unpins. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
     + ' Chat fix 30.10.2026 F2 · the refused card value (level 1) left with the quick card; the order is otherwise P1\'s. *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)',
+  'index.html':
+    'T-CC1a F1 · Joinery Core\'s client, <script src="/js/api-client.js?v=9">, before the module script, so apiFetch, rpc and supabaseClient are on the window when main.jsx runs. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
+  'src/components/AuthModal.jsx':
+    'T-CC1a F1 · isJcOffline and JC_OFFLINE from lib/jcApi.js (lib/supabase.js deleted) for one commit; the file is deleted whole in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
+  'src/components/MockModeBadge.jsx':
+    'T-CC1a F1 · isJcOffline and JC_OFFLINE from lib/jcApi.js (lib/supabase.js deleted) for one commit; the file is deleted whole in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
 };
 
 // ─── KASACJA, CHAT FIX 30.10.2026 · FOUR PRO FILES DELETED, BY NAME ─────────
@@ -488,7 +495,7 @@ const FROZEN = {
   'src/components/SetupArt.jsx': 'c2c70e0ea33beed219c3f32af8c7c8066686e4ba1d69f742c691f75cd58803f5',
   // T82 F15 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/FrontDecorationControls.jsx': 'b32660180217d45760e074f4fcd8932f90b9a57f11cb02121c59670225de2546',
-  'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
+  'index.html': 'b2b3b538d436ab616bcde6e3d45d5f99a36e3c4a6c1fd6023ff01b5122cc4975',
   // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/App.jsx': '4f188eb03dff2bd07b62d99e47fd44935fb274e888a95c1ac2cf17beae07c43b',
   // T78 F11 · re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -499,7 +506,7 @@ const FROZEN = {
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/AssignMaterialsModal.jsx': '1f9d71d9af9b57ba7e8f77b38c99fda7368a657a3289b69be87ac166337cc82e',
-  'src/components/AuthModal.jsx': 'b51d7a14910e89553528fe2e36f787502e4b4a77b6c408ebb24323510c164ddc',
+  'src/components/AuthModal.jsx': '90a111ca03e354c186df9d04e7970460e3ef1690742d81bc950c89b28197e3aa',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/BomPanel.jsx': 'ee8cf839b68c547c36a3f76de1edb89a5d44becddc4e04744c9f3242ca0af074',
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -564,7 +571,7 @@ const FROZEN = {
   // CHAT FIX 19.10.2026 re-frozen at the new hash, twice (the morning, the afternoon); EXEMPT above carries the reasons.
   // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/Messages.jsx': '0d2c65d4b1027e8ef07d7f0b6c7e1dd51c1e63744dbf1177c306e848ed42cab9',
-  'src/components/MockModeBadge.jsx': '081294a78610a7fd3baef730ca7a318d8d193e40ef66c5d278e45f9672c82826',
+  'src/components/MockModeBadge.jsx': '540ede7ed857c40570f3a9ac325994e78fd10630a0e88948877e55ee8ce67f92',
   'src/components/Modal.jsx': '0dc9c18a8196212304bf6606ec17146bdc5c9c831a5db2765ee41e857ce8775d',
   // T84 F4 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/MultiUnitPanel.jsx': 'df959555b30515a6990093f9a97dcdb5729b0af53959916945edcea7369a7162',
@@ -610,7 +617,7 @@ const FROZEN = {
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // Chat fix 28.10.2026 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/StartScreen.jsx': '7a5b95d523f4cb38e496210de8c9b570b848c5b11d3894bdd6726ca23b66afcd',
+  'src/components/StartScreen.jsx': '5318820c341733bdfcc7d61f5f07b388644d0bd32e5298a0b4ced6332739ec27',
   // Chat fix 28.10.2026 F1 · a NEW PRO file (the two questions of Open from file), frozen at its first hash; EXEMPT above carries the reason.
   'src/components/ProjectFileModal.jsx': 'c47a5857e6b3b2ec73dc31a042ef2914b2cf4afd4c910d536adbdd1cc6b70e5b',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -949,6 +956,11 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // Chat fix 28.10.2026 F1 · the job as a file: the window of Open from file's two questions, a NEW PRO file
     // (the owner: "zrobisz mi pozniej cos co zadziala, czyli export i import projektow").
     'src/components/ProjectFileModal.jsx',
+    // T-CC1a F1 · *"oczywiscie do CC laczysz sie tylko przez JC"*: JC's client tag in index.html; the badge and the
+    // login window re-pointed for one commit (deleted whole in F3).
+    'index.html',
+    'src/components/AuthModal.jsx',
+    'src/components/MockModeBadge.jsx',
 ].sort(), 'the exemption list is not the approved UI and CLAUDE.md paths');
   // AMENDED BY THE CHAT FIX OF 28.10.2026 (the job as a file): a NEW PRO file born of a chat fix has no turn to
   // name, so its reason names the fix by its date and its feature, `Chat fix 28.10.2026 F1`, the way the approved
@@ -958,7 +970,9 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
     // AMENDED BY T86B F5 (31.10.2026, INT): a turn may carry a letter (T86B, the second shift of 30.10), so the turn
     // reads T\d{2}[A-Z]?; nothing else in the pattern moves.
-    assert.match(why, /\b(?:(?:T\d{2}[A-Z]?|DECOR) F\d|Setup UI 26\.10\.2026 F1|Chat fix \d{2}\.\d{2}\.\d{4} F\d)/, `${rel} does not say which turn and feature licensed it`);
+    // AMENDED BY T-CC1a F1 (31.10.2026): the merger's turns are named T-CC<n><letter> (the owner's name for this turn,
+    // "T-CC1a"), so that name reads beside T\d{2}[A-Z]?; nothing else in the pattern moves.
+    assert.match(why, /\b(?:(?:T\d{2}[A-Z]?|DECOR) F\d|Setup UI 26\.10\.2026 F1|Chat fix \d{2}\.\d{2}\.\d{4} F\d)|T-CC\d[a-z]? F\d/, `${rel} does not say which turn and feature licensed it`);
     assert.match(why, /\*"/, `${rel} does not carry the owner's own words`);
     const got = createHash('sha256').update(readFileSync(join(ROOT, rel))).digest('hex');
     assert.equal(got, FROZEN[rel], `${rel}'s new hash is not the one written down`);

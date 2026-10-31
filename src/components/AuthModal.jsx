@@ -3,7 +3,7 @@ import Modal from './Modal.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useAuthStore } from '../stores/authStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
-import { isMockMode, MOCK_REASON } from '../lib/supabase.js';
+import { isJcOffline, JC_OFFLINE } from '../lib/jcApi.js';
 import * as cloud from '../lib/cloudSync.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 
@@ -61,10 +61,10 @@ export default function AuthModal() {
       anchor={anchor}
       width="w-[460px]"
     >
-      {isMockMode ? (
+      {isJcOffline() ? (
         <div className="space-y-3">
           <p className="text-sm text-ink-100">Running in <span className="text-status-warn">Mock data mode</span>.</p>
-          <p className="text-[12px] text-ink-400 leading-relaxed">{MOCK_REASON}</p>
+          <p className="text-[12px] text-ink-400 leading-relaxed">{JC_OFFLINE}</p>
           <p className="text-[12px] text-ink-400 leading-relaxed">
             Everything works — units, BOM, CSV and PDF. To store projects in the cloud, copy
             <code className="mx-1 px-1 rounded bg-shell-900 border border-shell-600">.env.example</code>

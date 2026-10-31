@@ -21,7 +21,7 @@
 // LOCAL SHELF is written first and always (`stores/warehouseStore.js`), so a
 // typed row is never lost because a database was slow.
 
-import { withDb } from './supabase.js';
+import { withDb } from './jcApi.js';
 import { CSV_COLUMNS, migrateMaterial } from '../engine/warehouse.js';
 
 const TABLE = 'cc_warehouse';

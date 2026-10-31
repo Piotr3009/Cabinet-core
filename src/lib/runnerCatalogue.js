@@ -61,7 +61,7 @@ export function loadRunnerCatalogue({ fetchImpl = null, profile = null } = {}) {
   // host is known. Turn 18 cached the empty result here and the session was
   // stuck with grey ironmongery for as long as it lasted.
   //
-  // `isMockMode` is no longer part of the gate, and that is the same fact
+  // The mock flag (gone with T-CC1a F1) is no longer part of the gate, and that is the same fact
   // stated once: mock mode means there is no DATABASE — no projects, no auth,
   // no keys. The manifest is a PUBLIC file in a PUBLIC bucket, fetched with
   // the platform's own `fetch` and no client, exactly as the decor pack's

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import * as cloud from '../lib/cloudSync.js';
-import { isMockMode } from '../lib/supabase.js';
+import { isJcOffline } from '../lib/jcApi.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import {
   DEFAULT_COMPANY_DEFAULTS, hasCompanyDefaults, setCompanyDefaults, validateCompanyDefaults,
@@ -35,11 +35,11 @@ export const useCompanyDefaultsStore = create((set, get) => ({
   busy: false,
   error: null,
   saved: false,
-  mock: isMockMode,
+  mock: isJcOffline(),
 
   /** Read the row. Safe to call with no session: it comes back null. */
   load: async () => {
-    if (isMockMode) { set({ loaded: true, mock: true }); return null; }
+    if (isJcOffline()) { set({ loaded: true, mock: true }); return null; }
     set({ busy: true, error: null });
     const { defaults, error } = await cloud.loadCompanyDefaults();
     const { value, rejected } = validateCompanyDefaults(defaults, getCabinetProfile());

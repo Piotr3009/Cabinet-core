@@ -8,7 +8,7 @@ import {
   mergeProjectLists, nextProjectNumber, notOnShelf, recentProjects, saveLocalProject, touchLocalProject,
 } from '../lib/projectLibrary.js';
 import { listProjects, loadProject as loadCloudProject } from '../lib/cloudSync.js';
-import { isMockMode } from '../lib/supabase.js';
+import { isJcOffline } from '../lib/jcApi.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { getProjectType } from '../engine/projectTypes.js';
 import { migrateDesign } from '../engine/design.js';
@@ -55,7 +55,7 @@ export default function StartScreen() {
     const recent = recentProjects(storage);
     // The database is the real home when it is configured; without keys this is
     // a no-op and the shelf is the whole library (mock mode must WORK, not warn).
-    const { projects: cloud } = isMockMode ? { projects: [] } : await listProjects();
+    const { projects: cloud } = isJcOffline() ? { projects: [] } : await listProjects();
     setRows({ recent, all: mergeProjectLists(local, cloud) });
   }, [storage]);
 
@@ -203,7 +203,7 @@ export default function StartScreen() {
                 {tab === 'recent' ? 'Recent projects' : 'All projects'}
               </h2>
               <span className="text-[11px] text-ink-400">
-                {isMockMode ? 'Saved on this computer — mock data mode' : 'This computer and the database'}
+                {isJcOffline() ? 'Saved on this computer — mock data mode' : 'This computer and the database'}
               </span>
             </div>
 

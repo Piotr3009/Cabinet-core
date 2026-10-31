@@ -4,7 +4,7 @@ import {
   normalizeAssignments, expandAssignments, legacyToCanonical, seedFromDefaults,
   assignmentFor, unassignedParts, unassignedByGroup, ALL_PARTS, PART_REGISTRY,
 } from '../engine/partRegistry.js';
-import { withDb, isMockMode, supabase } from '../lib/supabase.js';
+import { withDb, isJcOffline } from '../lib/jcApi.js';
 import { loadAssignments as cloudLoad, saveAssignments as cloudSave } from '../lib/cloudSync.js';
 
 // ─── Material assignments per BOM role ───
@@ -163,7 +163,7 @@ const initial = typeof localStorage !== 'undefined' ? load() : normalize(null);
 // works fine in (iron rule 6).
 let cloudTimer = null;
 function scheduleCloudSave(projectId, data) {
-  if (!projectId || isMockMode || !supabase) return;
+  if (!projectId || isJcOffline()) return;
   if (cloudTimer) clearTimeout(cloudTimer);
   cloudTimer = setTimeout(() => {
     cloudTimer = null;
@@ -198,7 +198,7 @@ export const useMaterialAssignmentStore = create((set, get) => ({
    * network and a table that is not there all leave the sample list standing.
    */
   loadMaterials: async () => {
-    if (isMockMode || !supabase) return { rows: MOCK_MATERIALS, mock: true };
+    if (isJcOffline()) return { rows: MOCK_MATERIALS, mock: true };
     const { data } = await withDb(
       (db) => db.from('cc_materials').select('id, name, category, thickness, unit, price, jc_uuid').order('name'),
       null,

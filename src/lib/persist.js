@@ -1,6 +1,6 @@
 import { browserStorage, notOnShelf, saveLocalProject } from './projectLibrary.js';
 import { saveProject as saveCloudProject, saveAssignments } from './cloudSync.js';
-import { isMockMode } from './supabase.js';
+import { isJcOffline } from './jcApi.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 
 // ─── Saving, in one place ───
@@ -46,7 +46,7 @@ export async function persistProject({ project, units, asName = null, at = Date.
   // database where that is the road): a caller marks the job saved only then.
   const notHere = notOnShelf(row);
 
-  if (isMockMode) {
+  if (isJcOffline()) {
     if (notHere) return { project: saved, message: `Not saved: ${notHere}`, tone: 'error', stored: false };
     return {
       project: saved,

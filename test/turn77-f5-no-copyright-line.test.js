@@ -487,6 +487,10 @@ export const NEW_FILES = [
   'verify/t86b/probe-f09-scene.mjs',
   'test/turn86b-f10-probes.test.js',
   'scripts/t86b-walk.mjs',
+  // T-CC1a F1 to F3 (31.10.2026): PART A, the door (A1)
+  'src/lib/jcApi.js',
+  'test/turn-cc1a-f01-client.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f01.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

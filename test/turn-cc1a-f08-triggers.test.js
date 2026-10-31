@@ -146,6 +146,22 @@ test('F8 . pagehide with a 10 KB dirty body: the buffer written and ONE keepaliv
   assert.equal(r.page.fetches.length, 1, 'the same body once');
 });
 
+test('F8 . one tab close is ONE keepalive even when the two events build different bodies (walk station e)', () => {
+  let n = 0;
+  const r = rig({ payload: () => ({ p_item_id: 'srv-1', p_name: 'Job', p_design: { saved_at: `t${(n += 1)}` } }) });
+  r.page.doc.visibilityState = 'hidden';
+  r.page.fire('doc', 'visibilitychange');
+  r.page.fire('win', 'pagehide');
+  assert.equal(r.flushes.length, 2, 'the buffer flushed on both events');
+  assert.equal(r.page.fetches.length, 1, 'one leaving, one keepalive');
+  // The joiner comes back to the tab and leaves again: one more.
+  r.page.doc.visibilityState = 'visible';
+  r.page.fire('doc', 'visibilitychange');
+  r.page.doc.visibilityState = 'hidden';
+  r.page.fire('doc', 'visibilitychange');
+  assert.equal(r.page.fetches.length, 2, 'a new leaving after the page was visible again sends again');
+});
+
 test('F8 . pagehide with a 100 KB body: the buffer written and NO fetch; a clean item sends nothing', () => {
   const r = rig({ payload: () => ({ p_item_id: 'srv-1', p_name: 'Job', p_design: { note: 'x'.repeat(100 * 1024) } }) });
   r.page.fire('win', 'pagehide');

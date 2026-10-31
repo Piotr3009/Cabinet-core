@@ -93,7 +93,9 @@ export function installSaveTriggers({
   setIntervalFn = globalThis.setInterval, clearIntervalFn = globalThis.clearInterval,
 }) {
   let inFlight = false;
-  let lastSentBody = null;
+  // One leaving, one keepalive: closing a tab fires visibilitychange (hidden) AND pagehide, and the two
+  // bodies differ by saved_at, so the second is stopped by this flag until the page is visible again.
+  let leftOnce = false;
   const state = { autosaves: 0, lastTickAt: null };
 
   const tick = () => {
@@ -112,15 +114,18 @@ export function installSaveTriggers({
   const leave = () => {
     try { buffer?.flush?.(); } catch { /* the buffer says its own words */ }
     if (typeof payload !== 'function') return;
-    const base = fetchFn === undefined ? globalThis.fetch : fetchFn;
+    if (leftOnce) return;
     const r = keepaliveSave({
       payload, isDirty, hasItem, maxKb: numbers?.keepaliveMaxKb ?? SAVE_DEFAULTS.keepaliveMaxKb,
-      fetchFn: lastSentBody ? onceAfter(base, lastSentBody) : base,
+      fetchFn: fetchFn === undefined ? globalThis.fetch : fetchFn,
       ...(token === undefined ? {} : { token }),
     });
-    if (r.sent) lastSentBody = r.body;
+    if (r.sent) leftOnce = true;
   };
-  const onHidden = () => { if (doc?.visibilityState === 'hidden') leave(); };
+  const onHidden = () => {
+    if (doc?.visibilityState === 'hidden') leave();
+    else if (doc?.visibilityState === 'visible') leftOnce = false;
+  };
   win?.addEventListener?.('pagehide', leave);
   doc?.addEventListener?.('visibilitychange', onHidden);
 
@@ -133,11 +138,6 @@ export function installSaveTriggers({
   uninstall.leave = leave;
   uninstall.state = state;
   return uninstall;
-}
-
-// The same body twice in a row (visibilitychange to hidden, then pagehide) is sent once.
-function onceAfter(fetchFn, lastBody) {
-  return (url, init) => (init?.body === lastBody ? undefined : fetchFn(url, init));
 }
 
 /**

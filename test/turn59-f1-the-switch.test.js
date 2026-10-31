@@ -203,7 +203,8 @@ const EXEMPT = {
   'src/components/SettingsPanel.jsx': 'DECOR F1: project and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T80 F2 · the FRONTS row (InframeRow): Lay-on or In-frame (British), one write setDesign({ inframe }), the hint and its tooltip the engine\'s (inframeHint / inframeTooltip off profile.inframe), no number typed. *"3 per projekt."* (21.10.2026, 22:40)',
   'src/components/WizardSettings.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' + 'DECOR F1: material-slot and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
-    + ' T80 F2 · the FRONTS row under the Sheen, SettingsPanel\'s own InframeRow imported (one row, two surfaces). *"3 per projekt."* (21.10.2026, 22:40)',
+    + ' T80 F2 · the FRONTS row under the Sheen, SettingsPanel\'s own InframeRow imported (one row, two surfaces). *"3 per projekt."* (21.10.2026, 22:40)'
+    + ' T86B F7 · ONE row Dimension colour (data-settings-dimension-colour) in the settings.dimensions node: the profile\'s two inks as radio chips at 13 px, reading uiStore.dimensionColour and writing setDimensionColour; Start and Save never touch it (not a project field). *"menu, patrz SS: dimension powinien pojsc do glownego paska, ustawienie koloru wymiarowania powinno byc w settings nie tutaj"* (the owner, 30.10.2026, 21:54)',
 
   // ─── ADDED BY TURN 74 · THE OWNER'S LIST OF 23.09 ────────────────────────
   // CLAUDE.md T74, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
@@ -444,7 +445,8 @@ const EXEMPT = {
   'src/components/studio/SceneToggles.jsx':
     'T84 F6 · NEW, the four toggles at the scene\'s top edge (profile.ui.studio.sceneToggles) with the canvas toolbar\'s own handlers and guards. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
   'src/components/studio/SceneViewMenu.jsx':
-    'T84 F6 · NEW, View at the scene\'s top right: the other nine scene controls with the same handlers, guards and disabled reasons. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)',
+    'T84 F6 · NEW, View at the scene\'s top right: the other nine scene controls with the same handlers, guards and disabled reasons. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
+    + ' T86B F7 · VIEW_ITEMS down to seven (frontDimensions, props, measure, contourView, brightness, realisticLighting, light): Show dimensions went to the scene toggles bar, the Dimension colour entry and its block (the colours map, colourDisabled) are deleted, its home is Settings; the seven keep their guards, labels, sentences and store actions byte for byte. *"menu, patrz SS: dimension powinien pojsc do glownego paska, ustawienie koloru wymiarowania powinno byc w settings nie tutaj"* (the owner, 30.10.2026, 21:54)',
   'src/components/studio/CameraBar.jsx':
     'T84 F6 · NEW, the camera bar: Plan, Iso, A, B, C, D and Frame selection through the room\'s registered camera, and Drawings as the drawing window\'s preview. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
   'src/components/studio/lib/cameraPresets.js':
@@ -628,7 +630,7 @@ const FROZEN = {
   'src/components/WatchLayoutModal.jsx': 'ca2f0acd8e432d5890a185ca15a9b0bdff565827464652e3826668981b0a35ee',
   'src/components/WizardHardware.jsx': 'd0de5ca0c32de92feffef65a1a091cc2d45eaeb02a446a73c5389c2d03c377a8',
   // T80 F2 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/WizardSettings.jsx': 'f78cbd96f67f4d13dbecb1d827522111bb4bc21cade6845b547e1f49126b96b7',
+  'src/components/WizardSettings.jsx': '66a8a1505f41c2e09d52e656b1b78f8307df47fa7671540cceef753398c69d1f',
   'src/components/WizardSummary.jsx': '989a13f6bff6213a787a2ed78db2533d320c1cd6a99e82e0ca435e4edc60a2e3',
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -664,7 +666,7 @@ const FROZEN = {
   'src/components/studio/lib/studioIssues.js': '49e8c7f94b9f6d28553380be6e33c20c962122fbdf8bede857aa90493bbbce4e',
   // T84 F6 · NEW PRO files (the scene's edge), frozen at their first hash; EXEMPT above carries the reason.
   'src/components/studio/SceneToggles.jsx': '9f32a1ec81a2fe4fc1edbaadd564a0d89b25acdd34e2e03495f5202c72f97204',
-  'src/components/studio/SceneViewMenu.jsx': '30e1d08c94d2549c91c00f9c8f8b14a569f52252bfc6cc9f865236388a355bea',
+  'src/components/studio/SceneViewMenu.jsx': 'cd3d66e23261d962f04c773635574f851e3de86c159121df7ccece3dc50f9162',
   'src/components/studio/CameraBar.jsx': '5fc9ef238bc0b9d724c85bde0c35f1cd304679f84b0b92167536654633995ac2',
   'src/components/studio/lib/cameraPresets.js': 'ebca96709d0a5e5c9803980130a4720357e06f724bf56b8bc5d59f0d63ebd6f6',
   // T84 F7 · NEW PRO files (the rail's menus, Escape and the parity gate), frozen at their first hash; EXEMPT above carries the reason.

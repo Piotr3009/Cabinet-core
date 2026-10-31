@@ -230,6 +230,9 @@ export default function WizardSettings({
   const saveSet = useSettingsSetsStore((s) => s.save);
   const removeSet = useSettingsSetsStore((s) => s.remove);
   const notify = useUiStore((s) => s.notify);
+  // T86B F7.3: the dimension ink, a browser preference (uiStore), never a project field.
+  const dimensionColour = useUiStore((s) => s.dimensionColour);
+  const setDimensionColour = useUiStore((s) => s.setDimensionColour);
 
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
   const heights = useMemo(() => projectHeights(design, profile), [design, profile]);
@@ -1529,6 +1532,30 @@ export default function WizardSettings({
                       Pre-filled from the workshop profile — the UK standard. A unit may still be given its own height
                       in the panel; this is where every new one starts.
                     </p>
+                  </div>
+                  {/* T86B F7.3: *"menu, patrz SS: dimension powinien pojsc do glownego
+                      paska, ustawienie koloru wymiarowania powinno byc w settings nie
+                      tutaj"* (the owner, 30.10.2026, 21:54). ONE row, the profile's two
+                      inks named as TopBar names them; it reads and writes the uiStore,
+                      so Start and Save never touch it. */}
+                  <div className="cc-row mt-2" data-settings-dimension-colour="1">
+                    <span className="text-[13px] text-ink-100">Dimension colour</span>
+                    <span className="flex-1" />
+                    <div className="flex gap-1" role="radiogroup" aria-label="Dimension colour">
+                      {Object.keys(profile.dimensions.colours).map((key) => (
+                        <button
+                          key={key}
+                          type="button"
+                          role="radio"
+                          aria-checked={dimensionColour === key}
+                          data-dimension-colour-option={key}
+                          className={`cc-btn px-2.5 text-[13px] ${dimensionColour === key ? 'border-gold text-gold' : ''}`}
+                          onClick={() => setDimensionColour(key)}
+                        >
+                          {key === 'navy' ? 'Navy' : 'Red'}
+                        </button>
+                      ))}
+                    </div>
                   </div>
             </div>
           )}

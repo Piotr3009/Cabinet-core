@@ -47,9 +47,12 @@ import { propsAvailable, propsReason, usePropsPack } from '../../lib/usePropsPac
 import { LAYER_CLASS } from '../../lib/modalLayer.js';
 import { Icon } from './StudioIcons.jsx';
 
-/** The nine, in the menu's order. */
+// T86B F7: *"menu, patrz SS: dimension powinien pojsc do glownego paska,
+// ustawienie koloru wymiarowania powinno byc w settings nie tutaj"* (the owner,
+// 30.10.2026, 21:54). Dimensions is on the scene toggles bar, the ink in Settings.
+/** The seven, in the menu's order. */
 const VIEW_ITEMS = Object.freeze([
-  'dimensions', 'frontDimensions', 'dimensionColour', 'props', 'measure',
+  'frontDimensions', 'props', 'measure',
   'contourView', 'brightness', 'realisticLighting', 'light',
 ]);
 
@@ -83,8 +86,6 @@ export default function SceneViewMenu() {
   const viewMode = useUiStore((s) => s.viewMode);
   const contourView = useUiStore((s) => s.contourView);
   // From CanvasToolbar.jsx (the toolbar's buttons, re-homed here).
-  const showDimensions = useUiStore((s) => s.showDimensions);
-  const toggleDimensions = useUiStore((s) => s.toggleDimensions);
   const showFrontDimensions = useUiStore((s) => s.showFrontDimensions);
   const toggleFrontDimensions = useUiStore((s) => s.toggleFrontDimensions);
   const props = useUiStore((s) => s.props);
@@ -94,8 +95,6 @@ export default function SceneViewMenu() {
   const rulerOn = useUiStore((s) => s.rulerOn);
   const toggleRuler = useUiStore((s) => s.toggleRuler);
   // From TopBar.jsx's View menu (its own entries, a second road to each).
-  const dimensionColour = useUiStore((s) => s.dimensionColour);
-  const setDimensionColour = useUiStore((s) => s.setDimensionColour);
   const toggleContourView = useUiStore((s) => s.toggleContourView);
   const brightness = useUiStore((s) => s.brightness);
   const setBrightness = useUiStore((s) => s.setBrightness);
@@ -129,13 +128,6 @@ export default function SceneViewMenu() {
 
   // The switches: label, state, guard, action, sentence.
   const switches = {
-    dimensions: {
-      label: 'Dimensions',
-      checked: showDimensions,
-      disabled: viewMode !== '3d',
-      run: toggleDimensions,
-      title: showDimensions ? 'Hide dimensions and distance arrows' : 'Show dimensions and distance arrows',
-    },
     frontDimensions: {
       label: 'Front dimensions',
       checked: showFrontDimensions,
@@ -186,52 +178,12 @@ export default function SceneViewMenu() {
     },
   };
 
-  // Dimension colour: TopBar's submenu, the profile's inks, named as TopBar names them.
-  const colourDisabled = viewMode !== '3d' || contourView;
-  const colours = Object.keys(profile.dimensions.colours).map((key) => ({
-    key,
-    label: key === 'navy' ? 'Navy' : 'Red',
-    checked: dimensionColour === key,
-  }));
-
   // Brightness: the SAME slider as TopBar's (one value, one setter, the profile's three numbers).
   const range = profile.appearance.studio.brightness;
 
   const pick = (run) => () => { run(); setOpen(false); };
 
   const item = (id) => {
-    if (id === 'dimensionColour') {
-      return (
-        <div
-          key={id}
-          role="group"
-          aria-label="Dimension colour"
-          className="studio-menu-item"
-          data-studio="popup-item"
-          data-item={id}
-          aria-disabled={colourDisabled}
-          title="Which ink the dimensions are drawn in"
-        >
-          <span>Dimension colour</span>
-          <span className="flex items-center gap-1">
-            {colours.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                role="menuitemradio"
-                className="cc-btn-ghost"
-                data-colour={c.key}
-                aria-checked={c.checked}
-                disabled={colourDisabled}
-                onClick={pick(() => setDimensionColour(c.key))}
-              >
-                {c.checked ? '✓ ' : ''}{c.label}
-              </button>
-            ))}
-          </span>
-        </div>
-      );
-    }
     if (id === 'brightness') {
       return (
         <label

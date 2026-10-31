@@ -262,7 +262,8 @@ test('F6 · the live view: the units\' groups found by ccUnitId, never a helper;
 // ═══ THE FOUR TOGGLES: THE TOOLBAR'S OWN HANDLERS, GUARDS AND STATES ═══════════
 
 test('F6 · the four toggles call the four toolbar handlers by name, with the toolbar\'s guards and pressed states', () => {
-  assert.deepEqual(P.ui.studio.sceneToggles, ['xray', 'hideFronts', 'outlines', 'openAll'], 'THE NUMBERS: the designer\'s four, PROPOSED');
+  // REWRITTEN BY T86B F7: *"menu, patrz SS: dimension powinien pojsc do glownego paska, ustawienie koloru wymiarowania powinno byc w settings nie tutaj"* (the owner, 30.10.2026, 21:54). Dimensions joins the bar, first (the order PROPOSED).
+  assert.deepEqual(P.ui.studio.sceneToggles, ['dimensions', 'xray', 'hideFronts', 'outlines', 'openAll'], 'THE NUMBERS: Dimensions and the designer\'s four');
   assert.match(TOGGLES, /useCabinetProfileStore\(\(s\) => s\.profile\?\.ui\?\.studio\?\.sceneToggles\)/, 'the list is the profile\'s');
   // Every switch the registry holds is a CanvasToolbar button, field for field.
   const HANDLER = {
@@ -287,7 +288,7 @@ test('F6 · the four toggles call the four toolbar handlers by name, with the to
     assert.ok(mine.includes(`pressed: ${bar.pressed},`), `${id}: the pressed state is not the toolbar's "${bar.pressed}"`);
   }
   // The four the profile names, by their DOM hooks, rendered with aria-pressed.
-  for (const hook of ['toggle-xray', 'toggle-hide-fronts', 'toggle-outlines', 'toggle-open-all']) {
+  for (const hook of ['toggle-dimensions', 'toggle-xray', 'toggle-hide-fronts', 'toggle-outlines', 'toggle-open-all']) {
     assert.ok(TOGGLES.includes(`hook: '${hook}',`), `no ${hook}`);
   }
   assert.match(TOGGLES, /data-studio=\{t\.hook\}/);
@@ -306,16 +307,21 @@ test('F6 · the four toggles call the four toolbar handlers by name, with the to
   assert.match(TOGGLES, /\.filter\(\(id\) => Object\.hasOwn\(toggles, id\)\)/);
 });
 
-// ═══ VIEW: EXACTLY THE NINE ═════════════════════════════════════════════════
+// ═══ VIEW: EXACTLY THE SEVEN ════════════════════════════════════════════════
+//
+// REWRITTEN BY T86B F7: *"menu, patrz SS: dimension powinien pojsc do glownego paska, ustawienie koloru wymiarowania powinno byc w settings nie tutaj"* (the owner, 30.10.2026, 21:54).
+// Dimensions went to the bar, Dimension colour to Settings; the other seven
+// keep their guards, labels, sentences and store actions.
 
-test('F6 · the View menu lists exactly the nine, each through its own store action, with the guard it has today', () => {
-  assert.match(VIEW, /\nconst VIEW_ITEMS = Object\.freeze\(\[\s*'dimensions', 'frontDimensions', 'dimensionColour', 'props', 'measure',\s*'contourView', 'brightness', 'realisticLighting', 'light',\s*\]\)/);
-  assert.match(VIEW, /\{VIEW_ITEMS\.map\(item\)\}/, 'the popup renders the nine and nothing else');
-  for (const label of ['Dimensions', 'Front dimensions', 'Dimension colour', 'Props', 'Measure', 'Contour view', 'Brightness', 'Realistic lighting', 'Turn on the light']) {
+test('F6 · the View menu lists exactly the seven, each through its own store action, with the guard it has today', () => {
+  assert.match(VIEW, /\nconst VIEW_ITEMS = Object\.freeze\(\[\s*'frontDimensions', 'props', 'measure',\s*'contourView', 'brightness', 'realisticLighting', 'light',\s*\]\)/);
+  assert.match(VIEW, /\{VIEW_ITEMS\.map\(item\)\}/, 'the popup renders the seven and nothing else');
+  for (const label of ['Front dimensions', 'Props', 'Measure', 'Contour view', 'Brightness', 'Realistic lighting', 'Turn on the light']) {
     assert.ok(VIEW.includes(`'${label}'`) || VIEW.includes(`>${label}<`), `no "${label}"`);
   }
-  // The four the toolbar had: the TOOLBAR's handler and guard (p1-registry.md row 5, never widened, never narrowed).
-  for (const [id, handler] of [['dimensions', 'toggleDimensions'], ['frontDimensions', 'toggleFrontDimensions'], ['props', 'toggleProps'], ['measure', 'toggleRuler']]) {
+  assert.doesNotMatch(code(VIEW), /dimensionColour|toggleDimensions|'Dimension colour'/, 'the ink is in Settings, Dimensions on the bar');
+  // The three the toolbar had: the TOOLBAR's handler and guard (p1-registry.md row 5, never widened, never narrowed).
+  for (const [id, handler] of [['frontDimensions', 'toggleFrontDimensions'], ['props', 'toggleProps'], ['measure', 'toggleRuler']]) {
     const mine = entry(VIEW, id);
     assert.ok(mine.includes(`run: ${handler},`), `${id}: not ${handler}`);
     assert.ok(mine.includes(`disabled: ${TOOLBAR[handler].disabled},`), `${id}: not the toolbar's guard`);
@@ -339,12 +345,8 @@ test('F6 · the View menu lists exactly the nine, each through its own store act
   }
   assert.match(TOPBAR, /run: \(\) => setLighting\(\{ on: !lightOn \}\)/, 'TopBar\'s own switch is the one copied');
   assert.match(VIEW, /const lightOn = useMemo\(\(\) => migrateDesign\(storedDesign\)\.lighting\.on, \[storedDesign\]\);/, 'the light read as TopBar reads it');
-  // Dimension colour: TopBar's submenu (its guard, the profile's inks, TopBar's names).
+  // Dimension colour: REWRITTEN BY T86B F7, it lives in Settings now (test/turn86b-f07-view.test.js); TopBar's legacy submenu is untouched (FROZEN 5).
   assert.equal(topGuard('Dimension colour'), "viewMode !== '3d' || contourView");
-  assert.match(VIEW, /const colourDisabled = viewMode !== '3d' \|\| contourView;/);
-  assert.match(VIEW, /Object\.keys\(profile\.dimensions\.colours\)\.map\(\(key\) => \(\{/);
-  assert.match(VIEW, /label: key === 'navy' \? 'Navy' : 'Red',/);
-  assert.match(VIEW, /setDimensionColour\(c\.key\)/);
   // Brightness: the SAME slider as TopBar's: one value, one setter, the profile's three numbers, shown as TopBar shows it.
   assert.equal(topGuard('Brightness'), "viewMode !== '3d'");
   assert.match(VIEW, /const range = profile\.appearance\.studio\.brightness;/);

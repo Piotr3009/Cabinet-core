@@ -479,6 +479,8 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f51-t86b-f05.mjs',
   'test/turn86b-f06-share-out-one-button.test.js',
   'scripts/t78-classify.d/f51-t86b-f06.mjs',
+  // T86B F7, F8 (31.10.2026): PART C, the UI (U1)
+  'test/turn86b-f07-view.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

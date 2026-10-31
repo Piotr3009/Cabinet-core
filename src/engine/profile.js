@@ -6005,8 +6005,9 @@ export const DEFAULT_CABINET_PROFILE = {
       minScreen: { widthPx: 1280, heightPx: 800 },
       // PROPOSED, the designer, 17:01: the four switches at the scene's top
       // edge, by their ids in components/studio/SceneToggles.jsx; the owner may
-      // swap one here.
-      sceneToggles: ['xray', 'hideFronts', 'outlines', 'openAll'],
+      // swap one here. T86B F7: Dimensions FIRST, *"dimension powinien pojsc do
+      // glownego paska"* (the owner, 30.10.2026, 21:54); the order PROPOSED.
+      sceneToggles: ['dimensions', 'xray', 'hideFronts', 'outlines', 'openAll'],
       // The door window's conduct: 'dock-left' is T37's (sticky, the leaf it
       // follows, Escape off), and it is what the app does tonight. 'beside' is
       // the designer's recommendation (PROPOSED in CLAUDE.md THE NUMBERS) and

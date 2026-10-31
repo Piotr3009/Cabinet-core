@@ -240,7 +240,8 @@ test('F7 parity · the Output is the legacy Output, whole, and nothing in the St
 const TOOLBAR_HOMES = [
   ['Undo', 'undo', 'src/components/TopBar.jsx', 'topbar-undo', /\bundo\b/],
   ['Redo', 'redo', 'src/components/TopBar.jsx', 'topbar-redo', /\bredo\b/],
-  ['Show dimensions', 'toggleDimensions', 'src/components/studio/SceneViewMenu.jsx', 'view-menu', /\btoggleDimensions\b/],
+  // T86B F7: *"dimension powinien pojsc do glownego paska"* (the owner, 30.10.2026, 21:54).
+  ['Show dimensions', 'toggleDimensions', 'src/components/studio/SceneToggles.jsx', 'toggle-dimensions', /\btoggleDimensions\b/],
   ['Front dimensions', 'toggleFrontDimensions', 'src/components/studio/SceneViewMenu.jsx', 'view-menu', /\btoggleFrontDimensions\b/],
   ['Outlines', 'toggleOutlines', 'src/components/studio/SceneToggles.jsx', 'toggle-outlines', /\btoggleOutlines\b/],
   ['X-ray', 'toggleXray', 'src/components/studio/SceneToggles.jsx', 'toggle-xray', /\btoggleXray\b/],
@@ -282,9 +283,12 @@ for (const [name, handler, file, hook, pattern] of TOOLBAR_HOMES) {
   });
 }
 
-test('F7 parity · the View menu holds the four toolbar switches it re-homes, by their ids', () => {
+// T86B F7: Dimensions left the View menu for the bar (*"dimension powinien pojsc
+// do glownego paska"*, the owner, 30.10.2026, 21:54): the menu re-homes three.
+test('F7 parity · the View menu holds the three toolbar switches it re-homes, by their ids', () => {
   const view = code(read('src/components/studio/SceneViewMenu.jsx'));
-  for (const [id, pattern] of [['dimensions', /run: toggleDimensions/], ['frontDimensions', /run: toggleFrontDimensions/],
+  assert.doesNotMatch(view, /toggleDimensions/, 'Dimensions lives on the bar now');
+  for (const [id, pattern] of [['frontDimensions', /run: toggleFrontDimensions/],
     ['props', /run: toggleProps/], ['measure', /run: toggleRuler/]]) {
     assert.match(view, new RegExp(`'${id}'`), `View lists no ${id}`);
     const at = view.search(new RegExp(`\\n\\s+${id}: \\{`));

@@ -4,7 +4,7 @@ import ConfiguratorPage from './pages/ConfiguratorPage.jsx';
 import StartScreen from './components/StartScreen.jsx';
 import Messages from './components/Messages.jsx';
 import { useUiStore } from './stores/uiStore.js';
-import { useProjectStore } from './stores/projectStore.js';
+import { flushCrashBuffer, useProjectStore } from './stores/projectStore.js';
 import { UNSAVED_MESSAGE } from './engine/messages.js';
 import { loadDecorCatalogue } from './lib/decorCatalogue.js';
 import { loadRunnerCatalogue } from './lib/runnerCatalogue.js';
@@ -101,11 +101,21 @@ export default function App() {
   // to ASK FOR IT, which is what a non-empty `returnValue` does. Registered
   // only while there is work to lose, because a page that always asks is a
   // page whose question stops being read.
+  //
+  // ─── T-CC1a F8 · REPLACED BY THE SAVE ON LEAVING (CLAUDE.md T-CC1a law 6) ──
+  // The owner, 30.10.2026: *"moje zdanie to powinno sie wszystko zapisywac na
+  // pamiec podreczna"*. Leaving flushes the crash buffer (and lib/saveTriggers.js
+  // sends the keepalive save on pagehide), so there is no question when the
+  // buffer took the work; the browser's own question is asked only when the
+  // flush itself failed (a full quota, an item over the buffer's ceiling).
   const dirty = useProjectStore((s) => s.dirty);
   const unitCount = useProjectStore((s) => s.units.length);
   useEffect(() => {
     if (!dirty || !unitCount) return undefined;
-    const onLeave = (e) => { e.preventDefault(); e.returnValue = UNSAVED_MESSAGE; return UNSAVED_MESSAGE; };
+    const onLeave = (e) => {
+      if (flushCrashBuffer()) return undefined;
+      e.preventDefault(); e.returnValue = UNSAVED_MESSAGE; return UNSAVED_MESSAGE;
+    };
     window.addEventListener('beforeunload', onLeave);
     return () => window.removeEventListener('beforeunload', onLeave);
   }, [dirty, unitCount]);

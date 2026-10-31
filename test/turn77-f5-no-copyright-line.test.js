@@ -508,6 +508,9 @@ export const NEW_FILES = [
   'src/lib/saveNumbers.js',
   'test/turn-cc1a-f07-save.test.js',
   'scripts/t78-classify.d/f51-t-cc1a-f07.mjs',
+  'src/lib/saveTriggers.js',
+  'test/turn-cc1a-f08-triggers.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f08.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

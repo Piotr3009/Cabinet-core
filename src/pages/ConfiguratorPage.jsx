@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TopBar from '../components/TopBar.jsx';
 import LibraryPanel from '../components/LibraryPanel.jsx';
 import RightPanel from '../components/RightPanel.jsx';
@@ -61,13 +61,16 @@ import { shippedSet } from '../engine/sets.js';
 import { migrateDesign, resolveUnitDesign } from '../engine/design.js';
 import { elementLabel } from '../engine/elements.js';
 import { useHistoryStore } from '../stores/historyStore.js';
-import { useProjectStore } from '../stores/projectStore.js';
+import { flushCrashBuffer, useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { exportBomCsv, exportCuttingListCsv, exportProjectPdf } from '../lib/exporters.js';
 import { labelsForUnit, projectLabelPlan, projectLabelRecords } from '../lib/partLabels.js';
 import { exportLabelsPdf } from '../lib/labelsPdf.js';
 import { exportUnitDxfZip } from '../lib/cncExport.js';
-import { persistProject } from '../lib/persist.js';
+// T-CC1a F8 (law 6): the four triggers of the one save; the numbers are the profile's (profile.save).
+import { itemPayload, persistProject } from '../lib/persist.js';
+import { handleSaveKey, installSaveTriggers, makeSaveFirst } from '../lib/saveTriggers.js';
+import { saveNumbers } from '../lib/saveNumbers.js';
 // Turn 39 (CLAUDE.md F7): the warning the CNC export carries when nobody has
 // said what a part is cut from.
 import { cncAssignmentWarning } from '../engine/bom.js';
@@ -221,6 +224,32 @@ export default function ConfiguratorPage({ studio = false } = {}) {
   // it needs the design — this component never subscribed to it before.
   const design = useProjectStore((s) => s.project.design);
 
+  // ─── T-CC1a F8 · FOUR TRIGGERS, ONE SAVE (CLAUDE.md T-CC1a law 6) ─────────
+  // The owner, 30.10.2026: *"dopiero caly json powinien sie zapisac do DB przy
+  // nacisnieciu Zapisz lub co 5 minut automatycznie"*. Ctrl+S, the autosave,
+  // leaving the page and the six exports all run lib/persist.js persistProject,
+  // the one save (lib/saveTriggers.js holds the triggers).
+  const saveNow = useCallback(async ({ autosave = false } = {}) => {
+    const res = await persistProject({});
+    // The autosave speaks only when it could not save; Ctrl+S always says what happened.
+    if (!autosave || res.tone !== 'ok') useUiStore.getState().notify(res.message, autosave && res.tone !== 'ok' ? 'warn' : res.tone);
+    return res;
+  }, []);
+  const saveFirst = useMemo(() => makeSaveFirst({
+    isDirty: () => useProjectStore.getState().dirty,
+    hasItem: () => Boolean(useProjectStore.getState().project?.id),
+    save: () => persistProject({}),
+    notify: (m, t) => useUiStore.getState().notify(m, t),
+  }), []);
+  useEffect(() => installSaveTriggers({
+    save: saveNow,
+    isDirty: () => useProjectStore.getState().dirty,
+    hasItem: () => Boolean(useProjectStore.getState().project?.id),
+    buffer: { flush: flushCrashBuffer },
+    payload: () => itemPayload({ stamp: false }),
+    numbers: saveNumbers(useCabinetProfileStore.getState().profile),
+  }), [saveNow]);
+
   // ─── Escape steps back OUT (turn 9, CLAUDE.md F4.1) ───
   // One level at a time, which is what a person expects of it: the first press
   // drops the shelf you had hold of and leaves the cabinet selected, the second
@@ -232,6 +261,9 @@ export default function ConfiguratorPage({ studio = false } = {}) {
   // right-hand panel, and the canvas does not have focus.
   useEffect(() => {
     const onKey = (e) => {
+      // T-CC1a F8: Ctrl+S / Cmd+S, beside Ctrl+Z and ahead of the field guard, so the browser's own "save page"
+      // never opens from a field either: the one save, when an item is open.
+      if (handleSaveKey(e, { save: saveNow, hasItem: () => Boolean(useProjectStore.getState().project?.id) })) return;
       // A field, a modal or a menu handles its own key first. A joiner typing
       // "450" into a width field is not asking for anything to be deleted.
       const tag = e.target?.tagName;
@@ -330,7 +362,7 @@ export default function ConfiguratorPage({ studio = false } = {}) {
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedElement, selectedUnitId, clearElement, clearSelection,
     units, unitResult, removeItem, removeUnit, removeFront, deleteSelectedElement,
-    notify, undo, redo, studio]);
+    notify, undo, redo, studio, saveNow]);
 
   // ─── TURN 54 (CLAUDE.md F6): DIMENSIONS GO TO SLEEP AFTER 30 SECONDS ─────
   //
@@ -442,6 +474,7 @@ export default function ConfiguratorPage({ studio = false } = {}) {
   }, [runChecks, setCheckOpen, notify, allResults, profile, project.design, materials]);
 
   const onExportCsv = useCallback(() => {
+    if (saveFirst(() => onExportCsv())) return;
     if (!guard()) return;
     checkBeforeExport();
     exportCuttingListCsv(allResults(), project.name);
@@ -453,6 +486,7 @@ export default function ConfiguratorPage({ studio = false } = {}) {
   // The RED findings ride at the top of the file, so a printed order carries
   // the same warning the panel shows.
   const onExportBom = useCallback(() => {
+    if (saveFirst(() => onExportBom())) return;
     if (!guard()) return;
     const found = checkBeforeExport();
     exportBomCsv({
@@ -472,6 +506,7 @@ export default function ConfiguratorPage({ studio = false } = {}) {
   }, [allResults, design, materials, project.name, units.length]);
 
   const onExportPdf = useCallback(() => {
+    if (saveFirst(() => onExportPdf())) return;
     if (!guard()) return;
     checkBeforeExport();
     exportProjectPdf({
@@ -491,6 +526,7 @@ export default function ConfiguratorPage({ studio = false } = {}) {
   // profile.labels.sheets); the sheet's numbers stay the profile's. The handover:
   // *"przełącznik 21/44 naklejek w oknie eksportu"*; the owner 14:55: *"ok daj"*.
   const onExportLabels = useCallback((opts) => {
+    if (saveFirst(() => onExportLabels(opts))) return;
     if (!guard()) return;
     try {
       const resultOf = (id) => unitCncResult(id) || unitResult(id);
@@ -509,6 +545,7 @@ export default function ConfiguratorPage({ studio = false } = {}) {
   // options object rather than out of argument one: an event is truthy and
   // would otherwise read as "export anyway".
   const onExportDxfZip = useCallback(async (opts) => {
+    if (saveFirst(() => onExportDxfZip(opts))) return;
     const exportAnyway = opts?.exportAnyway === true;
     if (!exportAnyway) checkBeforeExport();
     const unit = units.find((u) => u.id === selectedUnitId) || units[0] || null;
@@ -553,6 +590,8 @@ export default function ConfiguratorPage({ studio = false } = {}) {
   const onDrawing = useCallback((kind, e = null) => {
     const anchor = anchorOfEvent(e);
     if (kind === 'preview' || kind === 'front-elevation') { openModal('drawing', { kind, anchor }); return; }
+    // T-CC1a F8: a file leaves the app only after the one save (when the item is dirty).
+    if (saveFirst(() => onDrawing(kind, e))) return;
     const date = new Date().toLocaleDateString();
 
     if (kind === 'booklet') {

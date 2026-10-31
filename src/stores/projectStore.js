@@ -1959,6 +1959,20 @@ function saveCache(state) {
   }, 250);
 }
 
+/**
+ * T-CC1a F8 (law 6): write the cache NOW, synchronously, for the moment the page is left (lib/saveTriggers.js)
+ * and the tab's own leaving question (App.jsx). Answers whether this browser took it. F9 makes it the crash buffer.
+ */
+export function flushCrashBuffer() {
+  if (!persistenceOn() || typeof localStorage === 'undefined') return true;
+  if (cacheTimer) { clearTimeout(cacheTimer); cacheTimer = null; }
+  try {
+    const st = useProjectStore.getState();
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ project: projectWithLogoRef(localStorage, st.project), units: st.units }));
+    return true;
+  } catch { return false; }
+}
+
 // TURN 59: in `persistence: 'none'` (the PBI retail mount) the cache is not
 // even READ — a client must never open the workshop's last project.
 // PRO does not call `setPersistence`, so this is `true` and nothing moved.

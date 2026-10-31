@@ -19,7 +19,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
-import { memoryStorage, nextProjectNumber, listLocalProjects, saveLocalProject } from '../src/lib/projectLibrary.js';
+import { memoryStorage, listLocalProjects, saveLocalProject } from '../src/lib/projectLibrary.js';
+import * as library from '../src/lib/projectLibrary.js';
 import {
   applySettingsSet, deleteSettingsSet, listSettingsSets, loadSettingsSet,
   normaliseSetName, renameSettingsSet, saveSettingsSet,
@@ -45,26 +46,12 @@ const shelf = (numbers = []) => {
 
 // ─── the project number ─────────────────────────────────────────────────────
 
-test('the first project on an empty shelf gets the seed, not a guess', () => {
-  assert.equal(nextProjectNumber(memoryStorage()), '0001');
-  assert.equal(nextProjectNumber(memoryStorage(), { seed: '2601' }), '2601');
-});
-
-test('the proposal counts on in the workshop’s OWN format, whatever that is', () => {
-  // Plain digits, and the padding is kept: 0009 → 0010, not 10.
-  assert.equal(nextProjectNumber(shelf(['0008', '0009'])), '0010');
-  // A prefix is left alone.
-  assert.equal(nextProjectNumber(shelf(['K-118'])), 'K-119');
-  // …and so is everything before the LAST run of digits.
-  assert.equal(nextProjectNumber(shelf(['2026/09'])), '2026/10');
-  // The highest wins, not the most recently saved.
-  assert.equal(nextProjectNumber(shelf(['0042', '0007'])), '0043');
-});
-
-test('a number nobody can parse does not derail the sequence', () => {
-  assert.equal(nextProjectNumber(shelf(['0004', 'the smiths'])), '0005',
-    'the unparseable row is skipped, not corrected and not crashed on');
-  assert.equal(nextProjectNumber(shelf(['the smiths'])), '0001', 'and with nothing to count from, the seed');
+// REWRITTEN BY T-CC1a F4 (31.10.2026) to the new law: a project number is Joinery Core's and is never typed or
+// invented in CC (law 3), so the shelf's number proposal (`nextProjectNumber`) is deleted; the three tests that
+// asserted its arithmetic now assert it is gone. The owner: *"automatyczne polaczenie danego projektu do danego
+// pipelinu lub production projektu"*.
+test('T-CC1a F4 · no number is proposed in CC: nextProjectNumber is deleted', () => {
+  assert.equal(library.nextProjectNumber, undefined);
 });
 
 test('a project’s number and client are on the shelf row, not only inside it', () => {

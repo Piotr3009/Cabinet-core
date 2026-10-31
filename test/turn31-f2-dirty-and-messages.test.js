@@ -357,9 +357,16 @@ test('the greys whose effect is visible in 3D are gone', () => {
   // …and what SURVIVES is what left no trace on the screen: a file written, an
   // account, a saved record. Deleting those would be deleting the only
   // evidence the thing happened at all.
-  for (const kept of ['Signed in.', 'Project saved.', 'Saved settings applied.']) {
+  // REWRITTEN BY T-CC1a F3: 'Signed in.' left with the Account window (AuthModal.jsx deleted); the session is Joinery
+  // Core's (*"oczywiscie do CC laczysz sie tylko przez JC"*, the owner, 30.10.2026). The database road's 'Project
+  // saved.' left with persist's cloud branch; the save still says it in words ('Project saved on this computer.').
+  // AMENDED BY T-CC1a F7 (31.10.2026): the one save to Joinery Core says "Saved <time>." (lib/persist.js), the
+  // shelf's 'Project saved on this computer.' left with the shelf write. *"dopiero caly json powinien sie zapisac do
+  // DB przy nacisnieciu Zapisz lub co 5 minut automatycznie"* (the owner, 30.10.2026).
+  for (const kept of ['`Saved ${hh}:${mm}.`', 'Saved settings applied.']) {
     assert.ok(all.includes(kept), `"${kept}" should have survived`);
   }
+  assert.ok(!all.includes('Signed in.'), 'CC has no sign-in of its own to announce');
 });
 
 test('the single toast slot is gone, and nothing still reaches for it', () => {

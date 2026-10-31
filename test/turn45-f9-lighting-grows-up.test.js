@@ -105,7 +105,11 @@ test('F9b — it rides the PROJECT, because migrateLighting would drop it', () =
   assert.match(STORE, /import \{ migrateLedSpec \} from '\.\.\/lib\/ledSpec\.js'/);
   assert.match(STORE, /setLedSpec: \(patch\) => set/);
   assert.match(STORE, /ledSpec: migrateLedSpec\(project\?\.ledSpec\)/, 'a saved job carries it');
-  assert.match(STORE, /ledSpec: migrateLedSpec\(cached\.project\.ledSpec\)/, '…and a reloaded tab');
+  // AMENDED BY T-CC1a F9 (31.10.2026): the tab no longer reloads the job from a cache at module load; a reloaded tab
+  // offers the crash buffer, and Restore opens it through openItemDesign, i.e. loadProject, the line above.
+  // *"moje zdanie to powinno sie wszystko zapisywac na pamiec podreczna"* (the owner, 30.10.2026).
+  assert.doesNotMatch(STORE, /cached\.project/, 'no cache read at module load');
+  assert.match(STORE, /get\(\)\.loadProject\(project, Array\.isArray\(design\.units\)/, '…and a restored tab');
   // The engine's whitelist is untouched, and would indeed have dropped it.
   const DESIGN = readFileSync(new URL('../src/engine/design.js', import.meta.url), 'utf8');
   const mig = DESIGN.slice(DESIGN.indexOf('function migrateLighting'));

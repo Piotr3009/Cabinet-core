@@ -112,8 +112,12 @@ test('…and every STORE SETTER it wrote through is still called', () => {
   // 27 setters at the branch point. `setSetName` was the `Keep as…` field's own
   // local useState — it went WITH the control, to the finale, which is where
   // the assertion follows it.
+  // AMENDED BY T-CC1a F4 (31.10.2026): `setProjectInfo` leaves the list. The number and the client are Joinery
+  // Core's and read-only in the UI (CLAUDE.md T-CC1a F4.3), so the settings surface no longer writes through it; the
+  // item name is edited in the top bar. *"automatyczne polaczenie danego projektu do danego pipelinu lub production
+  // projektu"* (the owner, 30.10.2026).
   for (const setter of [
-    'setProjectInfo', 'setDesign', 'setProjectDefaults', 'setProjectHeights',
+    'setDesign', 'setProjectDefaults', 'setProjectHeights',
     'setFrontTypes', 'setFrontType', 'setFrontMaterial', 'setCarcassTypes', 'setCarcassSource',
     'setCarcassMaterial', 'setCarcassFinish', 'setSlotThickness', 'setHingeStandard',
     'setHingeHardware', 'setRunnerVariant', 'setShelfSleeve', 'setRunMaterial',

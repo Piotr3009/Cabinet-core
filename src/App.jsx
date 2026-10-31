@@ -4,7 +4,7 @@ import ConfiguratorPage from './pages/ConfiguratorPage.jsx';
 import StartScreen from './components/StartScreen.jsx';
 import Messages from './components/Messages.jsx';
 import { useUiStore } from './stores/uiStore.js';
-import { useProjectStore } from './stores/projectStore.js';
+import { flushCrashBuffer, useProjectStore } from './stores/projectStore.js';
 import { UNSAVED_MESSAGE } from './engine/messages.js';
 import { loadDecorCatalogue } from './lib/decorCatalogue.js';
 import { loadRunnerCatalogue } from './lib/runnerCatalogue.js';
@@ -13,6 +13,7 @@ import { loadHardwareCatalogues } from './lib/hardwareCatalogue.js';
 import { refreshHardwareCatalogues } from './lib/hardwareHealth.js';
 import { loadHardwareRegister } from './lib/hardwareRegister.js';
 import { useSettingsSetsStore } from './stores/settingsSetsStore.js';
+import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 // T84 F2 (CLAUDE.md PART A): which face the workshop's entry wears.
 import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
 import { isStudioFace } from './components/studio/lib/studioFace.js';
@@ -85,6 +86,13 @@ export default function App() {
   // so in an amber line. Nothing here can throw and nothing here can block.
   useEffect(() => { useSettingsSetsStore.getState().syncFromDb(); }, []);
 
+  // ─── T-CC1a F2 · THE COMPANY DEFAULTS, AFTER THE SESSION ────────────────
+  // App mounts only once Joinery Core's session says `ready` (main.jsx), so
+  // the company row is asked here, once, and no longer from a login hook
+  // (the old authStore's, deleted). It stays local until T-CC1b (FROZEN 4).
+  // The owner: *"tylko przez JC po zalogowaniu"* (31.10.2026, 09:08).
+  useEffect(() => { useCompanyDefaultsStore.getState().load(); }, []);
+
   // ─── THE OTHER DOOR OUT (turn 31, CLAUDE.md F2) ─────────────────────────
   //
   // The bar's own four doors go through `leaveProject`, which raises the RED.
@@ -93,11 +101,21 @@ export default function App() {
   // to ASK FOR IT, which is what a non-empty `returnValue` does. Registered
   // only while there is work to lose, because a page that always asks is a
   // page whose question stops being read.
+  //
+  // ─── T-CC1a F8 · REPLACED BY THE SAVE ON LEAVING (CLAUDE.md T-CC1a law 6) ──
+  // The owner, 30.10.2026: *"moje zdanie to powinno sie wszystko zapisywac na
+  // pamiec podreczna"*. Leaving flushes the crash buffer (and lib/saveTriggers.js
+  // sends the keepalive save on pagehide), so there is no question when the
+  // buffer took the work; the browser's own question is asked only when the
+  // flush itself failed (a full quota, an item over the buffer's ceiling).
   const dirty = useProjectStore((s) => s.dirty);
   const unitCount = useProjectStore((s) => s.units.length);
   useEffect(() => {
     if (!dirty || !unitCount) return undefined;
-    const onLeave = (e) => { e.preventDefault(); e.returnValue = UNSAVED_MESSAGE; return UNSAVED_MESSAGE; };
+    const onLeave = (e) => {
+      if (flushCrashBuffer()) return undefined;
+      e.preventDefault(); e.returnValue = UNSAVED_MESSAGE; return UNSAVED_MESSAGE;
+    };
     window.addEventListener('beforeunload', onLeave);
     return () => window.removeEventListener('beforeunload', onLeave);
   }, [dirty, unitCount]);

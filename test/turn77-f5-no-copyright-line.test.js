@@ -487,6 +487,36 @@ export const NEW_FILES = [
   'verify/t86b/probe-f09-scene.mjs',
   'test/turn86b-f10-probes.test.js',
   'scripts/t86b-walk.mjs',
+  // T-CC1a F1 to F3 (31.10.2026): PART A, the door (A1)
+  'src/lib/jcApi.js',
+  'test/turn-cc1a-f01-client.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f01.mjs',
+  'src/components/jc/RefusalScreen.jsx',
+  'test/turn-cc1a-f02-session.test.js',
+  'test/turn-cc1a-f03-kasacja.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f03.mjs',
+  // T-CC1a F4 to F6 (31.10.2026): PART B, the list and the binding (A2)
+  'src/lib/jcList.js',
+  'test/turn-cc1a-f04-list.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f04.mjs',
+  'test/turn-cc1a-f05-new-item.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f05.mjs',
+  'src/components/jc/JcProjectPicker.jsx',
+  'test/turn-cc1a-f06-import.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f06.mjs',
+  // T-CC1a F7 to F9 (31.10.2026): PART C, the save (A3)
+  'src/lib/saveNumbers.js',
+  'test/turn-cc1a-f07-save.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f07.mjs',
+  'src/lib/saveTriggers.js',
+  'test/turn-cc1a-f08-triggers.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f08.mjs',
+  'src/lib/crashBuffer.js',
+  'test/turn-cc1a-f09-crash-buffer.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f09.mjs',
+  // T-CC1a F10 (31.10.2026): PART D, the walk (A1)
+  'scripts/t-cc1a-fake-jc.mjs',
+  'scripts/t-cc1a-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

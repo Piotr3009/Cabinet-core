@@ -8,7 +8,7 @@
  */
 // T84 F2, THE SHELL (CLAUDE.md T84 PART A, F2): StatusBar, the foot of the Studio.
 //
-// CLAUDE.md T84 F2: *"the selection in words, MockModeBadge, the dirty
+// CLAUDE.md T84 F2: *"the selection in words, [the mock badge: deleted by T-CC1a F3], the dirty
 // marker, the Changes drawer (today's bottom-left `Changes · N` control, the
 // same component, re-homed), the issue counters of F5, the viewport size."*
 //
@@ -17,8 +17,8 @@
 //                        UPWARD over the scene from here; the messages column
 //                        stops drawing its own inside the shell
 //                        (`ChangesBarRehomed`, provided by StudioShell)
-//   MockModeBadge        moved here from the top bar, and nowhere else in the
-//                        Studio face
+//   (the badge)          T-CC1a F3: deleted with mock mode (*"oczywiscie do CC
+//                        laczysz sie tylko przez JC"*)
 //   the counters         the `extras` slot (F5's IssueCounters)
 //
 // The root is a <footer> carrying `data-studio-status`: the census finds the
@@ -27,7 +27,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useUiStore } from '../../stores/uiStore.js';
 import { useProjectStore } from '../../stores/projectStore.js';
-import MockModeBadge from '../MockModeBadge.jsx';
 import { HistoryBar } from '../Messages.jsx';
 import { statusSelectionWords, viewportWords } from './lib/studioFace.js';
 
@@ -101,7 +100,6 @@ export default function StatusBar({ extras = null, viewport = null }) {
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-gold shrink-0" aria-hidden />
         <span className="truncate">{words}</span>
       </span>
-      <MockModeBadge />
       {dirty && (
         <span className="flex items-center gap-1.5 shrink-0" data-studio="statusbar-dirty" title="Unsaved changes">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-status-warn" aria-hidden />

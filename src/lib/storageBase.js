@@ -77,11 +77,21 @@ export function overrideStorageBase() {
   }
 }
 
-/** What the build was configured with, or ''. */
-export function configuredStorageBase() {
+/**
+ * What the build was configured with, or ''.
+ *
+ * T-CC1a F1 (CLAUDE.md T-CC1a F1.4): `VITE_HARDWARE_STORAGE_URL` first, the old
+ * `VITE_SUPABASE_URL` second, so the Vercel setting of today keeps the hinge and
+ * runner models until the owner renames the variable; the derived host below
+ * when both are unset. The owner: *"oczywiscie do CC laczysz sie tylko przez JC"*:
+ * no key rides with it, this is a public bucket's address and nothing more.
+ */
+export function configuredStorageBase(env = null) {
   try {
-    const url = import.meta.env?.VITE_SUPABASE_URL;
-    if (typeof url === 'string' && url) return `${url.replace(/\/+$/, '')}/storage/v1/object/public`;
+    const vars = env || import.meta.env || {};
+    for (const url of [vars.VITE_HARDWARE_STORAGE_URL, vars.VITE_SUPABASE_URL]) {
+      if (typeof url === 'string' && url) return `${url.replace(/\/+$/, '')}/storage/v1/object/public`;
+    }
   } catch { /* not a vite build (node, a test) */ }
   return '';
 }

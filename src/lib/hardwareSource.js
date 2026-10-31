@@ -54,7 +54,7 @@ import { parseHingeCatalogue, setHingeCatalogue } from '../engine/hinges.js';
 import { parseRunnerManifest, setRunnerCatalogue } from '../engine/runners.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { overrideStorageBase, storageBaseUrl as resolveStorageBase } from './storageBase.js';
-import { supabase, isMockMode, withDb } from './supabase.js';
+import { isJcOffline, withDb } from './jcApi.js';
 import { CLIPTOP_HINGE_CATALOGUE, AVENTOS_CATALOGUE } from './hardwareCatalogue.js';
 
 /** The families `cc_hardware.family` may name — the SQL's own CHECK, in JS. */
@@ -168,7 +168,7 @@ export function manifestUrl(spec, base) {
  * which is the whole point of it.
  */
 export async function readHardwareRow(family, { system = null } = {}) {
-  if (isMockMode || !supabase) return null;
+  if (isJcOffline()) return null;
   const { data } = await withDb(async (db) => {
     let q = db.from('cc_hardware').select('family, system, manifest, bucket_path, updated_at')
       .eq('family', family);

@@ -1314,7 +1314,29 @@ function rowsOf(c) {
   }
   return rows;
 }
-function compare(now, was) {
+// ─── T-CC1a F3 · TWO HEADER CONTROLS AND ONE WINDOW DELETED, BY NAME ──────────
+// The owner, 30.10.2026: *"oczywiscie do CC laczysz sie tylko przez JC"*. Mock
+// mode and CC's own login are a kasacja (physical deletion, never a gate): the
+// MOCK DATA MODE badge, the Account button (onAuth) and the 'auth' window it
+// opened leave main's census here, by name, so ZERO KASOWANIA still holds for
+// every other control and a deletion is never mistaken for a lost function.
+const KASACJA_T_CC1A = { header: ['MOCK DATA MODE', 'Account'], modalKinds: ['auth'] };
+function withoutKasacja(was) {
+  const s = was && was.static;
+  if (!s) return was;
+  const out = { ...was, static: { ...s } };
+  if (s.header) {
+    const controls = (s.header.controls || []).filter((c) => !KASACJA_T_CC1A.header.includes(c.name));
+    out.static.header = { ...s.header, controls, count: s.header.count - ((s.header.controls || []).length - controls.length) };
+  }
+  if (s.modalKinds) {
+    const kinds = (s.modalKinds.kinds || []).filter((k) => !KASACJA_T_CC1A.modalKinds.includes(k.kind));
+    out.static.modalKinds = { ...s.modalKinds, kinds, count: s.modalKinds.count - ((s.modalKinds.kinds || []).length - kinds.length) };
+  }
+  return out;
+}
+function compare(now, wasWhole) {
+  const was = withoutKasacja(wasWhole);
   const before = new Map(rowsOf(was).map((r) => [r.key, r]));
   const out = [];
   for (const r of rowsOf(now)) {

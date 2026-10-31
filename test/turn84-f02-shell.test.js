@@ -24,7 +24,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
@@ -254,7 +254,7 @@ test('F2 · every header control is written once and drawn by both layouts', () 
     ['drawProjectName', 'onClick={() => setEditing(true)}'],
     ['drawSave', 'onClick={save}'],
     ['drawBrightness', 'onChange={(e) => setBrightness(Number(e.target.value))}'],
-    ['drawAccount', 'onClick={onAuth}'],
+    // REWRITTEN BY T-CC1a F3: the Account button (drawAccount, onAuth) is deleted with the login.
     ['drawBom', 'onClick={() => setBomOpen(!bomOpen)}'],
   ]) {
     assert.equal(TOP.split(handler).length - 1, 1, `${handler} is written once`);
@@ -264,14 +264,15 @@ test('F2 · every header control is written once and drawn by both layouts', () 
   }
   // The census reads the header's controls out of every `return (`: each
   // helper has its own.
-  for (const helper of ['drawWordmark', 'drawProjectName', 'drawSave', 'drawBrightness', 'drawAccount', 'drawBom']) {
+  for (const helper of ['drawWordmark', 'drawProjectName', 'drawSave', 'drawBrightness', 'drawBom']) {
     assert.match(helperOf(helper), /\{\n\s+return \(/, `${helper} returns through \`return (\``);
   }
   // The Studio order (CLAUDE.md T84 F2) and the legacy order (today's).
   const order = (src, names) => names.map((n) => src.indexOf(n));
-  const s = order(studio, ['{drawWordmark()}', '>PRO<', '{drawProjectName()}', '{drawMenuBar()}', '<StudioHistory />', '{drawSave()}', '{drawBrightness()}', '{drawAccount()}', '{drawBom()}']);
+  // REWRITTEN BY T-CC1a F3: Account and the mock badge are deleted from both orders; the rest keeps its place.
+  const s = order(studio, ['{drawWordmark()}', '>PRO<', '{drawProjectName()}', '{drawMenuBar()}', '<StudioHistory />', '{drawSave()}', '{drawBrightness()}', '{drawBom()}']);
   assert.ok(s.every((v, i) => v > 0 && (i === 0 || v > s[i - 1])), `the Studio bar's order: ${s}`);
-  const l = order(legacy, ['{drawWordmark()}', '{drawMenuBar()}', '{drawProjectName()}', '{drawSave()}', '<MockModeBadge />', '{drawBrightness()}', '{drawAccount()}', '{drawBom()}']);
+  const l = order(legacy, ['{drawWordmark()}', '{drawMenuBar()}', '{drawProjectName()}', '{drawSave()}', '{drawBrightness()}', '{drawBom()}']);
   assert.ok(l.every((v, i) => v > 0 && (i === 0 || v > l[i - 1])), `the legacy bar's order: ${l}`);
   assert.ok(!legacy.includes('StudioHistory') && !legacy.includes('PRO<'), 'the legacy bar gains nothing');
   assert.match(studio, /<header\b/, 'the Studio top bar is a <header> (the census finds it by its menu nav)');
@@ -321,23 +322,21 @@ test('F2 · Undo and Redo on the Studio bar are the history store\'s, with the t
   assert.ok(studio.includes('<StudioHistory />') && !legacy.includes('<StudioHistory'), 'drawn by the Studio bar only');
 });
 
-// ═══ 3. THE MOCK DATA BADGE: ON THE STATUS BAR, AND NOWHERE ELSE IN STUDIO ═════
+// ═══ 3. THE MOCK DATA BADGE AND THE ACCOUNT BUTTON: DELETED (REWRITTEN BY T-CC1a F3) ═══
+// The owner, 30.10.2026: *"oczywiscie do CC laczysz sie tylko przez JC"*. There is no mock mode and no login of CC's
+// own, so the badge that said "mock data" and the Account window are deleted, not hidden: no surface draws them.
 
-test('F2 · MockModeBadge is in the status bar and nowhere else in the Studio face', () => {
-  assert.match(STATUS, /import MockModeBadge from '\.\.\/MockModeBadge\.jsx';/);
-  assert.equal([...STATUS.matchAll(/<MockModeBadge \/>/g)].length, 1);
+test('F2 · (T-CC1a F3) the mock badge and the Account button are drawn by no surface, Studio or legacy', () => {
+  assert.doesNotMatch(STATUS, /MockModeBadge/);
   const { studio, legacy } = layoutsOfTopBar();
-  assert.ok(!studio.includes('MockModeBadge'), 'the Studio top bar does not draw it');
-  assert.equal([...legacy.matchAll(/<MockModeBadge \/>/g)].length, 1, 'the legacy bar keeps it');
-  for (const helper of ['drawWordmark', 'drawMenuBar', 'drawProjectName', 'drawSave', 'drawBrightness', 'drawAccount', 'drawBom']) {
-    assert.ok(!helperOf(helper).includes('MockModeBadge'), `${helper} does not carry it into the Studio bar`);
+  for (const [face, src] of [['Studio', studio], ['legacy', legacy]]) {
+    assert.ok(!src.includes('MockModeBadge'), `the ${face} top bar draws no badge`);
+    assert.ok(!src.includes('drawAccount'), `the ${face} top bar draws no Account`);
   }
-  const dir = join(ROOT, 'src/components/studio');
-  const walk = (d) => readdirSync(d).flatMap((n) => (statSync(join(d, n)).isDirectory() ? walk(join(d, n)) : [join(d, n)]));
-  const elsewhere = walk(dir).filter((f) => /\.jsx?$/.test(f) && !f.endsWith('StatusBar.jsx'))
-    .filter((f) => /<MockModeBadge\b/.test(readFileSync(f, 'utf8')));
-  assert.deepEqual(elsewhere, [], 'no other Studio surface draws it');
-  // Its home, as the census finds it: a <footer> carrying data-studio-status.
+  assert.doesNotMatch(TOP, /onAuth|drawAccount|MockModeBadge/);
+  assert.ok(!existsSync(join(ROOT, 'src/components/MockModeBadge.jsx')));
+  assert.ok(!existsSync(join(ROOT, 'src/components/AuthModal.jsx')));
+  // Its old home, as the census finds it, stays: a <footer> carrying data-studio-status.
   assert.match(STATUS, /<footer\s[^>]*data-studio="statusbar"[^>]*data-studio-status=""/);
 });
 
@@ -391,9 +390,11 @@ test('F2 · the shell\'s DOM hooks (CONTRACT section 6)', () => {
   assert.ok(STATUS.includes('data-studio="statusbar"'));
   const top = layoutsOfTopBar().studio;
   assert.ok(top.includes('data-studio="topbar"'));
-  for (const hook of ['topbar-save', 'topbar-brightness', 'topbar-account', 'topbar-bom']) {
+  for (const hook of ['topbar-save', 'topbar-brightness', 'topbar-bom']) {
     assert.ok(TOP.includes(`data-studio={studio ? '${hook}' : undefined}`), `${hook}, on the Studio layout only`);
   }
+  // REWRITTEN BY T-CC1a F3: topbar-account left with the Account button (*"oczywiscie do CC laczysz sie tylko przez JC"*).
+  assert.ok(!TOP.includes('topbar-account'), 'the Account hook is gone with its button');
 });
 
 // ═══ 5. THE RAIL ══════════════════════════════════════════════════════════════
@@ -525,7 +526,8 @@ test('F2 · the status bar: the selection in words, the Changes drawer re-homed,
   assert.equal(viewportWords(1440, 900), '1440 x 900');
   assert.equal(viewportWords(1280.4, 799.6), '1280 x 800');
   // The order of the bar.
-  const order = ['<ChangesDrawer />', 'data-studio="statusbar-selection"', '<MockModeBadge />', 'data-studio="statusbar-dirty"', '{extras}', 'data-studio="statusbar-viewport"']
+  // REWRITTEN BY T-CC1a F3: the mock badge is deleted; the bar's order is otherwise T84's.
+  const order = ['<ChangesDrawer />', 'data-studio="statusbar-selection"', 'data-studio="statusbar-dirty"', '{extras}', 'data-studio="statusbar-viewport"']
     .map((x) => STATUS.indexOf(x));
   assert.ok(order.every((v, i) => v > 0 && (i === 0 || v > order[i - 1])), `the status bar's order: ${order}`);
   assert.match(STATUS, /\{dirty && \(/, 'the dirty marker while there is unsaved work');

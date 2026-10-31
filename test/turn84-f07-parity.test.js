@@ -303,17 +303,22 @@ const HEADER_HOMES = [
   ['CABINET CORE', 'leaveProject', 'src/components/TopBar.jsx', 'studio-wordmark', /onClick=\{leaveProject\}/],
   ['project name (rename)', 'setEditing(true)', 'src/components/TopBar.jsx', 'studio-project-name', /setEditing\(true\)[\s\S]*|setProjectName/],
   ['Save', 'save', 'src/components/TopBar.jsx', 'topbar-save', /onClick=\{save\}/],
-  ['MOCK DATA MODE', null, 'src/components/studio/StatusBar.jsx', 'statusbar', /<MockModeBadge\b/],
   ['Bright', 'setBrightness(Number(e.target.value))', 'src/components/TopBar.jsx', 'topbar-brightness', /setBrightness\(Number\(e\.target\.value\)\)/],
-  ['Account', 'onAuth', 'src/components/TopBar.jsx', 'topbar-account', /onClick=\{onAuth\}/],
   ['Export (= BOM)', 'setBomOpen(!bomOpen)', 'src/components/TopBar.jsx', 'topbar-bom', /setBomOpen\(!bomOpen\)/],
 ];
 
-test('F7 parity · the header table names the census\'s seven, by name and by handler', () => {
+// REWRITTEN BY T-CC1a F3: of the census's seven, MOCK DATA MODE and Account are deleted with mock mode and CC's own
+// login (*"oczywiscie do CC laczysz sie tylko przez JC"*, the owner, 30.10.2026); the five left keep their homes.
+const DELETED_HEADER = ['MOCK DATA MODE', 'Account'];
+test('F7 parity · the header table names the census\'s seven less the two T-CC1a F3 deleted, by name and by handler', () => {
+  assert.equal(MAIN.static.header.controls.length, 7);
   assert.deepEqual(
     HEADER_HOMES.map(([name, handler]) => [name, handler]),
-    MAIN.static.header.controls.map((c) => [c.name, c.handler]),
+    MAIN.static.header.controls.filter((c) => !DELETED_HEADER.includes(c.name)).map((c) => [c.name, c.handler]),
   );
+  const top = code(read('src/components/TopBar.jsx'));
+  assert.doesNotMatch(top, /onAuth|topbar-account|MockModeBadge/, 'the deleted two are gone, not hidden');
+  assert.doesNotMatch(code(read('src/components/studio/StatusBar.jsx')), /MockModeBadge/);
 });
 
 for (const [name, handler, file, hook, pattern] of HEADER_HOMES) {
@@ -330,8 +335,7 @@ test('F7 parity · the project name keeps its rename and its end of edit; the go
   assert.ok(names.some((f) => /e\.key === 'Enter' \|\| e\.key === 'Escape'\) setEditing\(false\)/.test(f)), 'the edit no longer ends on Enter and Escape');
   const bom = hookPlaces(top, 'topbar-bom').map((at) => functionAround(top, at));
   assert.ok(bom.some((f) => /'BOM'/.test(f) && /setBomOpen\(!bomOpen\)/.test(f)), 'the gold button is not BOM with the same call');
-  // The badge stands on the status bar, the legacy header keeps its own (S1's own test says "nowhere else").
-  assert.match(code(read('src/components/studio/StatusBar.jsx')), /<MockModeBadge \/>/);
+  // REWRITTEN BY T-CC1a F3: the badge is deleted with mock mode (the header table above asserts it gone).
 });
 
 // === 4 · THE RIGHT-CLICK MENU AND THE 26 WINDOWS, UNTOUCHED ==================
@@ -342,7 +346,9 @@ test('F7 parity · the 22 right-click actions untouched: the two files byte for 
   assert.equal(sha('src/components/ContextMenu.jsx'), MAIN.static.context.component.sha256, 'ContextMenu.jsx moved (FROZEN 6)');
 });
 
-test('F7 parity · the 26 window kinds are each still opened by name from a PRO file', () => {
+// REWRITTEN BY T-CC1a F3: the 'auth' window (AuthModal.jsx) is deleted with CC's own login, by name; the other 25
+// are each still opened (*"oczywiscie do CC laczysz sie tylko przez JC"*, the owner, 30.10.2026).
+test('F7 parity · the 26 window kinds less the deleted auth window are each still opened by name from a PRO file', () => {
   assert.equal(MAIN.static.modalKinds.count, 26);
   const opened = new Map();
   for (const file of PRO) {
@@ -351,7 +357,7 @@ test('F7 parity · the 26 window kinds are each still opened by name from a PRO 
     }
   }
   const gone = MAIN.static.modalKinds.kinds.map((k) => k.kind).filter((k) => !opened.has(k));
-  assert.deepEqual(gone, [], `no PRO file opens: ${gone.join(', ')}`);
+  assert.deepEqual(gone, ['auth'], `no PRO file opens: ${gone.join(', ')}`);
 });
 
 // === 5 · THE LIBRARY ==========================================================

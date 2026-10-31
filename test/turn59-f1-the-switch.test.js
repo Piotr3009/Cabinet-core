@@ -203,10 +203,12 @@ const EXEMPT = {
   'src/components/PartDetailModal.jsx': 'DECOR F4: decorative layer colours follow the canonical part legend. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' Chat fix 17.10.2026, 16:10 \u00b7 a mark is drawn and boxed as the open walk it is (its pts): the corner mark one L through the corner. *"jeden L wektor ... obok linii"*',
   'src/components/SettingsPanel.jsx': 'DECOR F1: project and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
-    + ' T80 F2 · the FRONTS row (InframeRow): Lay-on or In-frame (British), one write setDesign({ inframe }), the hint and its tooltip the engine\'s (inframeHint / inframeTooltip off profile.inframe), no number typed. *"3 per projekt."* (21.10.2026, 22:40)',
+    + ' T80 F2 · the FRONTS row (InframeRow): Lay-on or In-frame (British), one write setDesign({ inframe }), the hint and its tooltip the engine\'s (inframeHint / inframeTooltip off profile.inframe), no number typed. *"3 per projekt."* (21.10.2026, 22:40)'
+    + ' T-CC1a F4 · the Project section\'s Number and Client are read-only (Joinery Core\'s, setProjectInfo no longer writes them); the item name is edited in the top bar. *"automatyczne polaczenie danego projektu do danego pipelinu lub production projektu"* (the owner, 30.10.2026)',
   'src/components/WizardSettings.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' + 'DECOR F1: material-slot and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T80 F2 · the FRONTS row under the Sheen, SettingsPanel\'s own InframeRow imported (one row, two surfaces). *"3 per projekt."* (21.10.2026, 22:40)'
-    + ' T86B F7 · ONE row Dimension colour (data-settings-dimension-colour) in the settings.dimensions node: the profile\'s two inks as radio chips at 13 px, reading uiStore.dimensionColour and writing setDimensionColour; Start and Save never touch it (not a project field). *"menu, patrz SS: dimension powinien pojsc do glownego paska, ustawienie koloru wymiarowania powinno byc w settings nie tutaj"* (the owner, 30.10.2026, 21:54)',
+    + ' T86B F7 · ONE row Dimension colour (data-settings-dimension-colour) in the settings.dimensions node: the profile\'s two inks as radio chips at 13 px, reading uiStore.dimensionColour and writing setDimensionColour; Start and Save never touch it (not a project field). *"menu, patrz SS: dimension powinien pojsc do glownego paska, ustawienie koloru wymiarowania powinno byc w settings nie tutaj"* (the owner, 30.10.2026, 21:54)'
+    + ' T-CC1a F4 · the edit door\'s Number and Client are read-only (Joinery Core\'s, setProjectInfo no longer writes them); the item name is edited in the top bar. *"automatyczne polaczenie danego projektu do danego pipelinu lub production projektu"* (the owner, 30.10.2026)',
 
   // ─── ADDED BY TURN 74 · THE OWNER'S LIST OF 23.09 ────────────────────────
   // CLAUDE.md T74, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
@@ -393,7 +395,8 @@ const EXEMPT = {
     'T82 F20, after the review · Start designing reads whether the shelf took the brand-new job; when the browser refused it the job opens marked unsaved (markUnsaved) and the start screen says the save\'s own red sentence (notOnShelf). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)' +
     ' Chat fix 28.10.2026 F1 · the Open panel gains a third button, Open from file... (data-open-from-file): a .ccproject file goes on this computer\'s shelf and opens through lib/projectFileRoad.js, the File menu\'s own road. *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*; *"wiesz ze CC nie jest w chmurze jeszcze"* (28.10.2026)'
     + ' T-CC1a F1 · the offline gate is isJcOffline() from lib/jcApi.js (lib/supabase.js deleted); the cloud list and the badge die in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)'
-    + ' T-CC1a F3 · the mock badge and the cc_projects cloud list are deleted (the list becomes Joinery Core\'s in F4); the shelf\'s own rows stand. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
+    + ' T-CC1a F3 · the mock badge and the cc_projects cloud list are deleted (the list becomes Joinery Core\'s in F4); the shelf\'s own rows stand. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)'
+    + ' T-CC1a F4 · the start screen is Joinery Core\'s project list: Production and Pipeline groups from lib/jcList.js (four reads, never the design), each project row with its items (Open, Archive; Show archived and Restore through cc_archive_item), a search over number, name, client and item name, Recent as the last five item ids per tenant, the company and the signed-in name in the header, JC\'s refusal in words with Retry; the shelf list, the number proposal and the remove are deleted; New item is asked of a project row. *"w cc musimy zapisywac na glownej stronie; projekty dzielimy na itemy"* (the owner, 30.10.2026)',
   // Chat fix 28.10.2026 F1 · a NEW PRO file, frozen at its first hash: the two questions of Open from file.
   'src/components/ProjectFileModal.jsx':
     'Chat fix 28.10.2026 F1 · NEW, the window of Open from file\'s two questions, in the shell (name "project-file"): the job is already on this computer (Replace with the file, gold; Keep both, open as a copy; Cancel), and the file was drawn with other workshop settings (Use the file\'s settings, gold; Keep this computer\'s); drawn in a root of its own by askProjectFile, so neither the top bar nor the start screen hosts it. *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"*; *"problem polega na tym ze nie dzialaja te szuflady ani import ani export plikow"* (28.10.2026)',
@@ -616,14 +619,14 @@ const FROZEN = {
   'src/components/SaveTemplateModal.jsx': '5de923d96cd981fd785005716ea84b7288d77c9b4ea044763112e672c6d1ba24',
   'src/components/Section.jsx': 'f3f64ad9f4d024d31a508f469a1f816c2bf1c0ffcf7d9221e95e2ee42d2a1a56',
   // T80 F2 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/SettingsPanel.jsx': 'd0087f5ed3b6dc9d431ce14bf8d1bf93a5eb18eb92b9fa3a4252848c689f3b0d',
+  'src/components/SettingsPanel.jsx': 'd1a3a9188d3bf998832557e447b865d9c7b026ddfffe3744838bf062460d756d',
   // T78 F21 · a NEW PRO component, frozen the night it is born: Output > Spraying, the spray schedule's one page. `EXEMPT` carries the owner's words.
   'src/components/SprayingPanel.jsx': '7d8f7adb67d26f0402c123e78d4c785981a2a15113968c43ed3132e5ada9bb9f',
   'src/components/SheenSlider.jsx': 'ec09e0dd7ad835672e4c024dee3013e649dcfa8ad64a2da5c120ed78d5c94bfb',
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // Chat fix 28.10.2026 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/StartScreen.jsx': '44e0be484fc0782d426a68630ece2319742e90fe47f8753d6034abc93b6b3985',
+  'src/components/StartScreen.jsx': 'e746ac48553f9ab16f2e38bd0719ff61e480350a56bed2d8c97c66a00e06d36d',
   // Chat fix 28.10.2026 F1 · a NEW PRO file (the two questions of Open from file), frozen at its first hash; EXEMPT above carries the reason.
   'src/components/ProjectFileModal.jsx': 'c47a5857e6b3b2ec73dc31a042ef2914b2cf4afd4c910d536adbdd1cc6b70e5b',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -644,7 +647,7 @@ const FROZEN = {
   'src/components/WatchLayoutModal.jsx': 'ca2f0acd8e432d5890a185ca15a9b0bdff565827464652e3826668981b0a35ee',
   'src/components/WizardHardware.jsx': 'd0de5ca0c32de92feffef65a1a091cc2d45eaeb02a446a73c5389c2d03c377a8',
   // T80 F2 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/WizardSettings.jsx': '66a8a1505f41c2e09d52e656b1b78f8307df47fa7671540cceef753398c69d1f',
+  'src/components/WizardSettings.jsx': '42c7a17dc2a402f07cb9142fb204c69c2617a6862155dbd9b7537a5e4639895f',
   'src/components/WizardSummary.jsx': '989a13f6bff6213a787a2ed78db2533d320c1cd6a99e82e0ca435e4edc60a2e3',
   'src/main.jsx': '7250f492eca41ee07d766942f1f5a663368704e676e89313825c2ebf33fb95d7',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.

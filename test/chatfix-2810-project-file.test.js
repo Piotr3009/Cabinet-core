@@ -308,7 +308,10 @@ test('File carries Open from file... after Open... and Save to file... after Sav
 
 test('the start screen\'s Open panel carries Open from file..., the same road', () => {
   const start = read('src/components/StartScreen.jsx');
-  const panel = start.slice(start.indexOf('>Open</h2>'), start.indexOf('</section>', start.indexOf('>Open</h2>')));
+  // AMENDED BY T-CC1a F4 (31.10.2026): the shelf's Open panel (All projects, Recent) is gone with the shelf list; Open
+  // from file stands alone in the Import panel, the one road in for an old job. *"w przyszlosci nie bedzie save to
+  // file, po co?"* (the owner, 31.10.2026, 01:06).
+  const panel = start.slice(start.indexOf('>Import</h2>'), start.indexOf('</section>', start.indexOf('>Import</h2>')));
   assert.match(panel, /data-open-from-file="1"/);
   assert.match(panel, /onClick=\{onOpenFile\}/);
   assert.match(panel, /Open from file…/);

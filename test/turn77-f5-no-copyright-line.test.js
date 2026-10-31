@@ -495,6 +495,10 @@ export const NEW_FILES = [
   'test/turn-cc1a-f02-session.test.js',
   'test/turn-cc1a-f03-kasacja.test.js',
   'scripts/t78-classify.d/f51-t-cc1a-f03.mjs',
+  // T-CC1a F4 to F6 (31.10.2026): PART B, the list and the binding (A2)
+  'src/lib/jcList.js',
+  'test/turn-cc1a-f04-list.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f04.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

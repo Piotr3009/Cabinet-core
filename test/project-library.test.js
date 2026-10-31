@@ -1,17 +1,21 @@
 // ─── The shelf the start screen reads from (BACKLOG #7) ───
 //
 // Mock mode has no database, so "Open" and "Recent" need somewhere for projects
-// to actually BE. What matters and is tested here: Recent means recently
-// OPENED (not recently saved), the list survives a corrupted shelf, and a
-// project that exists both locally and in the cloud appears once.
+// to actually BE. What matters and is tested here: the list survives a
+// corrupted shelf, and a save replaces rather than duplicates.
+//
+// REWRITTEN BY T-CC1a F4 (31.10.2026) to the new law: the list is Joinery
+// Core's and Recent is per tenant (lib/jcList.js); the shelf's own Recent, its
+// remove and the cloud merge are deleted, and this file asserts they are gone.
+// The owner: *"w cc musimy zapisywac na glownej stronie; projekty dzielimy na itemy"*.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  LIBRARY_KEY, RECENT_LIMIT, deleteLocalProject, listLocalProjects, loadLocalProject,
-  memoryStorage, mergeProjectLists, recentProjects, saveLocalProject, touchLocalProject,
+  LIBRARY_KEY, listLocalProjects, loadLocalProject, memoryStorage, saveLocalProject,
 } from '../src/lib/projectLibrary.js';
+import * as library from '../src/lib/projectLibrary.js';
 
 const project = (name, id = null) => ({ id, name, room: { height: 2500 }, design: null });
 const unit = (n) => ({ id: `u${n}`, type: 'BUD', position: { wall: 0, x_mm: 0 }, params: { width: 600 } });
@@ -40,46 +44,16 @@ test('saving twice replaces, it does not duplicate', () => {
   assert.equal(list[0].updated_at, 2000);
 });
 
-test('the list is newest first; Recent is recently OPENED, not recently saved', () => {
-  const s = memoryStorage();
-  const a = saveLocalProject(s, { project: project('A'), units: [], at: 100 });
-  const b = saveLocalProject(s, { project: project('B'), units: [], at: 300 });
-  const c = saveLocalProject(s, { project: project('C'), units: [], at: 200 });
-  assert.deepEqual(listLocalProjects(s).map((p) => p.name), ['B', 'C', 'A']);
-
-  // Opening A now puts it at the top of Recent while the SAVE order is untouched.
-  touchLocalProject(s, a.id, 999);
-  assert.deepEqual(recentProjects(s).map((p) => p.name), ['A', 'B', 'C']);
-  assert.deepEqual(listLocalProjects(s).map((p) => p.name), ['B', 'C', 'A'], 'saving order does not move');
-
-  assert.equal(touchLocalProject(s, 'loc_nope', 1), false);
-  assert.equal(b.opened_at, 300, 'a save counts as an open too — you were just in it');
-  assert.equal(c.id !== b.id, true);
-});
-
-test('Recent shows at most five', () => {
-  const s = memoryStorage();
-  for (let i = 1; i <= 8; i += 1) saveLocalProject(s, { project: project(`P${i}`), units: [], at: i * 10 });
-  const recent = recentProjects(s);
-  assert.equal(recent.length, RECENT_LIMIT);
-  assert.deepEqual(recent.map((p) => p.name), ['P8', 'P7', 'P6', 'P5', 'P4']);
-  assert.equal(recentProjects(s, 2).length, 2);
-});
-
-test('a project can be removed, and the rest are untouched', () => {
-  const s = memoryStorage();
-  const a = saveLocalProject(s, { project: project('A'), units: [], at: 1 });
-  saveLocalProject(s, { project: project('B'), units: [], at: 2 });
-  assert.equal(deleteLocalProject(s, a.id), true);
-  assert.equal(deleteLocalProject(s, a.id), false, 'deleting twice is not an error, just nothing');
-  assert.deepEqual(listLocalProjects(s).map((p) => p.name), ['B']);
+test('T-CC1a F4 · the shelf\'s own Recent, remove, number proposal and cloud merge are deleted', () => {
+  for (const gone of ['recentProjects', 'touchLocalProject', 'deleteLocalProject', 'mergeProjectLists', 'nextProjectNumber', 'RECENT_LIMIT']) {
+    assert.equal(library[gone], undefined, `${gone} is still exported`);
+  }
 });
 
 test('a corrupted shelf reads as empty rather than taking the app down', () => {
   for (const junk of ['not json', '{}', '[]', '{"projects":"nope"}', '{"projects":[null,{"no":"id"}]}']) {
     const s = memoryStorage({ [LIBRARY_KEY]: junk });
     assert.deepEqual(listLocalProjects(s), [], junk);
-    assert.deepEqual(recentProjects(s), [], junk);
     // …and it is still writable afterwards.
     const row = saveLocalProject(s, { project: project('Fresh'), units: [], at: 5 });
     assert.equal(loadLocalProject(s, row.id).project.name, 'Fresh');
@@ -94,25 +68,4 @@ test('a storage that refuses to write does not throw at the caller', () => {
   };
   assert.doesNotThrow(() => saveLocalProject(refusing, { project: project('X'), units: [], at: 1 }));
   assert.deepEqual(listLocalProjects(refusing), []);
-});
-
-test('the Open list merges the shelf with the database, once per project', () => {
-  const local = [
-    { id: 'loc_1', name: 'Local only', unit_count: 2, updated_at: 500, source: 'local' },
-    { id: 'db_1', name: 'Stale local copy', unit_count: 1, updated_at: 100, source: 'local' },
-  ];
-  const cloud = [
-    { id: 'db_1', name: 'Kitchen', updated_at: '2026-08-06T10:00:00Z' },
-    { id: 'db_2', name: 'Wardrobe run', updated_at: '2026-08-05T10:00:00Z' },
-  ];
-  const merged = mergeProjectLists(local, cloud);
-  assert.equal(merged.length, 3, 'db_1 appears once');
-  const db1 = merged.filter((p) => p.id === 'db_1');
-  assert.equal(db1.length, 1);
-  assert.equal(db1[0].source, 'cloud', 'the cloud row wins — it is the one that outlives this browser');
-  assert.equal(db1[0].name, 'Kitchen');
-  // Newest first, whichever shelf it came from.
-  assert.ok(merged[0].updated_at >= merged[1].updated_at);
-  assert.deepEqual(mergeProjectLists([], []), []);
-  assert.deepEqual(mergeProjectLists(local, []).map((p) => p.id), ['loc_1', 'db_1']);
 });

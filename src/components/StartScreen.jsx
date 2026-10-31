@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
+import { useAuthStore } from '../stores/authStore.js';
 import NewProjectFlow from './NewProjectFlow.jsx';
-import {
-  browserStorage, deleteLocalProject, listLocalProjects, loadLocalProject,
-  mergeProjectLists, nextProjectNumber, notOnShelf, recentProjects, saveLocalProject, touchLocalProject,
-} from '../lib/projectLibrary.js';
+import { browserStorage } from '../lib/projectLibrary.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { getProjectType } from '../engine/projectTypes.js';
 import { migrateDesign } from '../engine/design.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 // Chat fix 28.10.2026: a job saved to a file on another computer (Open from file).
-import { pickProjectFile } from '../lib/projectFile.js';
+import { fileStamp, pickProjectFile } from '../lib/projectFile.js';
 import { openProjectFromFile } from '../lib/projectFileRoad.js';
 import { askProjectFile } from './ProjectFileModal.jsx';
+// T-CC1a F4: the list is Joinery Core's.
+import {
+  archiveItem, listView, loadJcList, projectOfItem, pushRecent, readRecent, revisionLabel,
+} from '../lib/jcList.js';
 
 // ─── Start screen (BACKLOG #7; turn 7, BACKLOG #41) ───
 // The AutoCAD arrangement, because that is what Piotr opens every morning:
@@ -21,87 +23,90 @@ import { askProjectFile } from './ProjectFileModal.jsx';
 // you had open filling the page. The canvas is reached THROUGH a project —
 // there is no way in without one, so a drawing always belongs somewhere.
 //
-// Turn 7 changes two things. The room DIMENSIONS are gone from here — a room is
-// set up in the room editor, and asking for a width and a depth on the way past
-// was asking for two numbers nobody had yet. And a project row now reads the
-// way a workshop refers to a job: its number, its name and when it was last
-// touched, and nothing else.
-
-const stamp = (ms) => {
-  if (!ms) return '';
-  const d = new Date(ms);
-  const p = (n) => String(n).padStart(2, '0');
-  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
-};
+// ─── T-CC1a F4 · THE START SCREEN IS JOINERY CORE'S PROJECT LIST (law 3) ────
+// The owner, 30.10.2026: *"w cc musimy zapisywac na glownej stronie; projekty
+// dzielimy na itemy; kazdy projekt dodany to folder w JC"*. The page lists the
+// company's Production and Pipeline projects as JC holds them (lib/jcList.js,
+// four reads, never the design), each with its Cabinet Core items: Open,
+// Archive, and behind "Show archived" Restore (law 8). A search narrows by
+// number, name, client or item name over the embedded list (JC rule 6.3).
+// Recent is the last five items this tenant opened. A project number is JC's
+// and is never typed here; New item is asked of a project row. The shelf of
+// this browser (`cc.library.v1`) is no longer a list: nothing is lost there,
+// and Open from file is the one road in for an old job (F6).
 
 export default function StartScreen() {
   const storage = useMemo(() => browserStorage(), []);
-  const loadProject = useProjectStore((s) => s.loadProject);
-  const markUnsaved = useProjectStore((s) => s.markUnsaved);
+  const openItem = useProjectStore((s) => s.openItem);
   const openEditor = useUiStore((s) => s.openEditor);
   const setLibraryCategory = useUiStore((s) => s.setLibraryCategory);
   const notify = useUiStore((s) => s.notify);
+  const tenant = useAuthStore((s) => s.tenant);
+  const user = useAuthStore((s) => s.user);
 
-  const [tab, setTab] = useState('recent');       // 'recent' | 'open'
-  const [rows, setRows] = useState({ recent: [], all: [] });
+  const [list, setList] = useState(null);         // null while the four reads are out
+  const [query, setQuery] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const [recentIds, setRecentIds] = useState(() => readRecent(storage, tenant?.id));
   const [busy, setBusy] = useState(false);
-  const [flow, setFlow] = useState(null);         // { number } while the flow is open
+  const [flow, setFlow] = useState(null);         // { project, anchor } while New item is open
 
   const refresh = useCallback(async () => {
-    const local = listLocalProjects(storage);
-    const recent = recentProjects(storage);
-    // T-CC1a F3: the cc_projects list is deleted (the list becomes Joinery Core's in F4).
-    setRows({ recent, all: mergeProjectLists(local, []) });
-  }, [storage]);
+    setList(null);
+    setList(await loadJcList());
+  }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { setRecentIds(readRecent(storage, tenant?.id)); }, [storage, tenant?.id]);
 
-  const start = (project, units, { id = null } = {}) => {
-    // A different job: the undo stack from the last one must not reach into it
-    // (turn 12, CLAUDE.md F9 — the history survives nothing, least of all a
-    // project boundary).
-    useHistoryStore.getState().clear();
-    loadProject(project, units);
-    if (id) touchLocalProject(storage, id, Date.now());
-    openEditor();
-  };
+  const groups = useMemo(() => (list && !list.error ? listView(list, { query, showArchived }) : []), [list, query, showArchived]);
+  const recent = useMemo(() => {
+    if (!list || list.error) return [];
+    const byId = new Map(list.items.filter((it) => !it.archived_at).map((it) => [it.id, it]));
+    return recentIds.map((id) => byId.get(id)).filter(Boolean).map((item) => ({ item, project: projectOfItem(list, item) }));
+  }, [list, recentIds]);
+
+  const opened = (itemId) => setRecentIds(pushRecent(storage, tenant?.id, itemId));
 
   /**
-   * "Start designing". The flow has already built the project in the store —
-   * its number, its type, its heights, its room and its settings — so this puts
-   * it on the shelf and opens the canvas on the Library category the type asks
-   * for, which is the last thing the type is for.
+   * "Start designing". The flow has already built the item in the store (its id the server's) and
+   * opens the canvas on the Library category the type asks for.
    */
   const onFlowStart = () => {
-    const { project, units } = useProjectStore.getState();
-    const saved = saveLocalProject(storage, { project, units, at: Date.now() });
+    const { project } = useProjectStore.getState();
     // A different job: the undo stack from the last one must not reach into it
     // (turn 12, CLAUDE.md F9 — the history survives nothing, least of all a
     // project boundary).
     useHistoryStore.getState().clear();
-    loadProject(saved.project, units);
-    // T82 F20, after the review: a brand-new job the shelf refused opens
-    // marked unsaved, and the start screen says so in the save's own words.
-    if (saved.stored === false) {
-      markUnsaved();
-      notify(`Not saved: ${notOnShelf(saved)}`, 'error');
-    }
     const design = migrateDesign(project.design);
     if (design.projectType) setLibraryCategory(getProjectType(design.projectType).category);
+    if (project.id) opened(project.id);
     setFlow(null);
     openEditor();
   };
 
-  const onOpen = async (row) => {
+  const onOpen = async (item, project) => {
     setBusy(true);
     try {
-      if (row.source === 'local') {
-        const found = loadLocalProject(storage, row.id);
-        if (!found) { notify('That project is no longer on this computer.', 'warn'); await refresh(); return; }
-        start(found.project, found.units, { id: row.id });
-        return;
-      }
-      notify('That project is no longer on this computer.', 'warn');
+      useHistoryStore.getState().clear();
+      const res = await openItem(item.id, { client: project?.client || '' });
+      if (!res.ok) { notify(res.error, 'error'); return; }
+      const design = migrateDesign(useProjectStore.getState().project.design);
+      if (design.projectType) setLibraryCategory(getProjectType(design.projectType).category);
+      opened(item.id);
+      openEditor();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onArchive = async (item, restore) => {
+    setBusy(true);
+    try {
+      const res = await archiveItem(item.id, { restore });
+      if (!res.ok) { notify(res.error, 'error'); return; }
+      notify(restore ? `${item.name} is back in the list.` : `${item.name} archived. Show archived lists it.`, 'ok');
+      await refresh();
     } finally {
       setBusy(false);
     }
@@ -110,9 +115,7 @@ export default function StartScreen() {
   // ─── CHAT FIX 28.10.2026 · OPEN FROM FILE ──────────────────────────────────
   // The owner: *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*;
   // *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"*.
-  // A .ccproject file (File > Save to file on any computer) goes on this
-  // computer's shelf and opens: lib/projectFileRoad.js, the one road the File
-  // menu takes too, its questions in components/ProjectFileModal.jsx.
+  // lib/projectFileRoad.js, the one road the File menu takes too.
   const onOpenFile = async (e) => {
     const anchor = anchorOfEvent(e);
     const picked = await pickProjectFile();
@@ -121,14 +124,21 @@ export default function StartScreen() {
     });
   };
 
-  const onDelete = async (row, e) => {
-    e.stopPropagation();
-    if (row.source !== 'local') { notify('Only projects saved on this computer can be removed here.', 'info'); return; }
-    deleteLocalProject(storage, row.id);
-    await refresh();
-  };
-
-  const list = tab === 'recent' ? rows.recent : rows.all;
+  const itemRow = (item, project) => (
+    <li key={item.id} className="flex items-center gap-3 px-2 py-1.5" data-jc-item={item.id} data-archived={item.archived_at ? '1' : undefined}>
+      <span className="text-sm text-ink-50 flex-1 truncate">{item.name}</span>
+      <span className="cc-tag" title="Revision">{revisionLabel(item) || '-'}</span>
+      <span className="text-[11px] text-ink-400 w-32 text-right">{fileStamp(item.updated_at)}</span>
+      {item.archived_at ? (
+        <button type="button" className="cc-btn" disabled={busy} data-jc-restore={item.id} onClick={() => onArchive(item, true)}>Restore</button>
+      ) : (
+        <>
+          <button type="button" className="cc-btn-gold" disabled={busy} data-jc-open={item.id} onClick={() => onOpen(item, project)}>Open</button>
+          <button type="button" className="cc-btn" disabled={busy} data-jc-archive={item.id} onClick={() => onArchive(item, false)}>Archive</button>
+        </>
+      )}
+    </li>
+  );
 
   return (
     <div className="h-full w-full bg-shell-900 text-ink-50 overflow-y-auto relative">
@@ -137,11 +147,9 @@ export default function StartScreen() {
           <span className="font-semibold tracking-[0.2em] text-gold text-xl select-none">CABINET CORE</span>
           <span className="text-xs text-ink-400">Parametric cabinet &amp; fitted-furniture configurator</span>
           <span className="flex-1" />
-          {/* T45 F2 / iron rule 4: the Factory/Retail switch that stood here is
-              REMOVED. The head that reads the wizard is the DOOR the app was
-              opened through — `/client` is retail, everything else is the
-              workshop (lib/appEntry.js) — and it is not a thing to be chosen
-              on the way in. */}
+          {/* T-CC1a F4.2: the company and the signed-in name, from Joinery Core's /me (PROPOSED). */}
+          <span className="text-xs text-ink-200" data-jc-company="1">{tenant?.name || ''}</span>
+          <span className="text-xs text-ink-400" data-jc-user="1">{user?.full_name || user?.email || ''}</span>
         </header>
 
         <div className="cc-divider" />
@@ -149,38 +157,30 @@ export default function StartScreen() {
         <div className="grid grid-cols-[300px_1fr] gap-8 mt-6">
           {/* ── what you can do ── */}
           <div className="space-y-4">
-            <section className="cc-panel p-4 space-y-3">
-              <h2 className="text-xs uppercase tracking-wide text-ink-200">New project</h2>
-              <button
-                type="button"
-                className="cc-btn-gold w-full"
-                onClick={(e) => setFlow({
-                  number: nextProjectNumber(storage),
-                  // Turn 31 (CLAUDE.md F1): the flow is a window like any
-                  // other, so it stands beside the button that opened it.
-                  anchor: anchorOfEvent(e),
-                })}
-              >
-                New project
-              </button>
-              <p className="text-[11px] text-ink-400">
-                Set up the project, space and materials in one workspace. Start with your workshop defaults.
-              </p>
+            <section className="cc-panel p-4 space-y-2">
+              <h2 className="text-xs uppercase tracking-wide text-ink-200">Recent</h2>
+              {recent.length === 0 ? (
+                <p className="text-[11px] text-ink-400">Items you open appear here.</p>
+              ) : (
+                <ul className="space-y-1" data-jc-recent="1">
+                  {recent.map(({ item, project }) => (
+                    <li key={item.id}>
+                      <button type="button" className="cc-btn w-full text-left truncate" disabled={busy} onClick={() => onOpen(item, project)}>
+                        {project ? `${project.number} ` : ''}{item.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
 
             <section className="cc-panel p-4 space-y-2">
-              <h2 className="text-xs uppercase tracking-wide text-ink-200">Open</h2>
-              <button type="button" className="cc-btn w-full" onClick={() => { setTab('open'); refresh(); }}>
-                All projects{rows.all.length ? ` (${rows.all.length})` : ''}
-              </button>
-              <button type="button" className="cc-btn w-full" onClick={() => setTab('recent')}>
-                Recent{rows.recent.length ? ` (${rows.recent.length})` : ''}
-              </button>
+              <h2 className="text-xs uppercase tracking-wide text-ink-200">Import</h2>
               <button
                 type="button"
                 className="cc-btn w-full"
                 data-open-from-file="1"
-                title="A .ccproject file: File > Save to file on this computer or another"
+                title="A .ccproject file: an old job, imported once into a Joinery Core project"
                 onClick={onOpenFile}
               >
                 Open from file…
@@ -188,61 +188,69 @@ export default function StartScreen() {
             </section>
           </div>
 
-          {/* ── the work ── */}
-          <section className="cc-panel p-4">
-            <div className="cc-row">
-              <h2 className="text-xs uppercase tracking-wide text-ink-200">
-                {tab === 'recent' ? 'Recent projects' : 'All projects'}
-              </h2>
-              <span className="text-[11px] text-ink-400">
-                Saved on this computer
-              </span>
+          {/* ── the work: Joinery Core's projects and their items ── */}
+          <section className="cc-panel p-4 space-y-3">
+            <div className="cc-row gap-3">
+              <input
+                className="cc-input flex-1"
+                data-jc-search="1"
+                placeholder="Search by number, name, client or item"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <label className="text-[11px] text-ink-200 flex items-center gap-1">
+                <input type="checkbox" data-jc-show-archived="1" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+                Show archived
+              </label>
             </div>
 
-            {list.length === 0 ? (
-              <p className="text-sm text-ink-400 py-8 text-center">
-                Nothing here yet. Press New project on the left.
-              </p>
-            ) : (
-              <ul className="divide-y divide-shell-600">
-                {list.map((row) => (
-                  <li key={`${row.source}-${row.id}`}>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      className="w-full text-left px-2 py-2.5 hover:bg-shell-700 transition-colors flex items-center gap-3 disabled:opacity-50"
-                      onClick={() => onOpen(row)}
-                    >
-                      {/* Number · name · date. A workshop refers to a job by its
-                          number; how many units are in it is a question for the
-                          BOM, not for a list of projects. */}
-                      <span className="text-[11px] text-gold w-16 shrink-0 truncate">{row.number || '—'}</span>
-                      <span className="text-sm text-ink-50 flex-1 truncate">{row.name}</span>
-                      <span className="text-[11px] text-ink-400 w-32 text-right">
-                        {stamp(row.opened_at || row.updated_at)}
-                      </span>
-                      <span className="cc-tag">{row.source}</span>
-                      <span
-                        role="button"
-                        tabIndex={-1}
-                        title="Remove from this computer"
-                        className="cc-btn-ghost text-status-danger"
-                        onClick={(e) => onDelete(row, e)}
-                      >
-                        ×
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+            {!list && <p className="text-sm text-ink-400 py-8 text-center">Reading the projects from Joinery Core...</p>}
+            {list?.error && (
+              <div className="py-8 text-center space-y-3" role="alert" data-jc-list-error="1">
+                <p className="text-sm text-ink-50">{list.error}</p>
+                <button type="button" className="cc-btn-gold" data-jc-retry="1" onClick={refresh}>Retry</button>
+              </div>
             )}
+            {groups.map((g) => (
+              <div key={g.id} data-jc-group={g.id}>
+                <h2 className="text-xs uppercase tracking-wide text-ink-200 py-1">{g.label}</h2>
+                {g.projects.length === 0 ? (
+                  <p className="text-[11px] text-ink-400 px-2 pb-2">{query ? 'Nothing matches.' : 'No active projects.'}</p>
+                ) : (
+                  <ul className="divide-y divide-shell-600">
+                    {g.projects.map((p) => (
+                      <li key={p.key} className="py-2" data-jc-project={p.key}>
+                        <div className="flex items-center gap-3 px-2">
+                          <span className="text-[11px] text-gold w-20 shrink-0 truncate">{p.number}</span>
+                          <span className="text-sm text-ink-50 flex-1 truncate">{p.name}{p.client ? ` · ${p.client}` : ''}</span>
+                          <button
+                            type="button"
+                            className="cc-btn"
+                            data-jc-new-item={p.key}
+                            onClick={(e) => setFlow({ project: p, anchor: anchorOfEvent(e) })}
+                          >
+                            New item
+                          </button>
+                        </div>
+                        {p.items.length === 0 ? (
+                          <p className="text-[11px] text-ink-400 px-2 pl-[104px]">No items yet</p>
+                        ) : (
+                          <ul className="pl-[96px]">{p.items.map((it) => itemRow(it, p))}</ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
           </section>
         </div>
       </div>
 
       {flow && (
         <NewProjectFlow
-          initialNumber={flow.number}
+          initialNumber={flow.project.number}
+          jcProject={flow.project}
           anchor={flow.anchor}
           onCancel={() => setFlow(null)}
           onStart={onFlowStart}

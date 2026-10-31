@@ -500,34 +500,14 @@ for (const [label, road] of Object.entries(ROADS)) {
   });
 }
 
-test('F20 after the review · the start screen: a brand-new job the shelf refuses opens marked unsaved, in the same red words', async () => {
-  const { useProjectStore } = await import('../src/stores/projectStore.js');
-  const { useHistoryStore } = await import('../src/stores/historyStore.js');
-  const drive = (storage) => {
-    useProjectStore.getState().newProject('Brand new');
-    const said = [];
-    const hands = {
-      useProjectStore, useHistoryStore, saveLocalProject, notOnShelf, migrateDesign, getProjectType, storage,
-      loadProject: useProjectStore.getState().loadProject,
-      markUnsaved: useProjectStore.getState().markUnsaved,
-      notify: (message, tone) => said.push({ message, tone }),
-      setLibraryCategory: () => {}, setFlow: () => {}, openEditor: () => {},
-    };
-    const names = Object.keys(hands);
-    const src = roadOf('src/components/StartScreen.jsx', 'const onFlowStart = () => {', '\n  };');
-    // eslint-disable-next-line no-new-func
-    new Function(...names, `${src}\nreturn onFlowStart;`)(...names.map((k) => hands[k]))();
-    return { dirty: useProjectStore.getState().dirty, said, listed: listLocalProjects(storage).length };
-  };
-  const refused = drive(REFUSING);
-  assert.equal(refused.dirty, true, 'the job opens marked unsaved: it is not on the shelf');
-  assert.deepEqual(refused.said.map((m) => m.tone), ['error']);
-  assert.match(refused.said[0].message, /^Not saved: this computer's storage for the app is full, so this job is not on its shelf\./);
-  const shelf = quotaStorage();
-  const taken = drive(shelf);
-  assert.equal(taken.dirty, false, 'a job the shelf took opens clean, as before');
-  assert.deepEqual(taken.said, []);
-  assert.equal(taken.listed, 1);
+// REWRITTEN BY T-CC1a F4/F5 (31.10.2026) to the new law: the start screen no longer puts a brand-new job on this
+// browser's shelf. A new item is born in Joinery Core (cc_create_item, its id the server's) before the editor opens,
+// and its first save is the one request of PART C, so the shelf's refusal can no longer touch it. *"automatyczne
+// polaczenie danego projektu do danego pipelinu lub production projektu"* (the owner, 30.10.2026).
+test('F20 after the review · the start screen: a brand-new item is not put on the shelf any more (T-CC1a F4/F5)', () => {
+  const src = roadOf('src/components/StartScreen.jsx', 'const onFlowStart = () => {', '\n  };');
+  assert.doesNotMatch(src, /saveLocalProject|notOnShelf/);
+  assert.match(src, /openEditor\(\)/);
 });
 
 test('F20 after the review · persistProject says whether the job was stored, on every branch', async () => {

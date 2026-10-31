@@ -1465,7 +1465,7 @@ function frontChoiceLabel(type) {
  */
 function ProjectSection({ design, setDesign, onRoomSetup }) {
   const project = useProjectStore((s) => s.project);
-  const setProjectInfo = useProjectStore((s) => s.setProjectInfo);
+  // T-CC1a F4.3: the number and the client are Joinery Core's, read-only here (the item name is edited in the top bar).
   const notify = useUiStore((s) => s.notify);
   const sets = useSettingsSetsStore((s) => s.sets);
   const applyTo = useSettingsSetsStore((s) => s.applyTo);
@@ -1496,7 +1496,8 @@ function ProjectSection({ design, setDesign, onRoomSetup }) {
           <input
             className="cc-input"
             value={project.number || ''}
-            onChange={(e) => setProjectInfo({ number: e.target.value })}
+            readOnly
+            title="Joinery Core's: read-only in Cabinet Core"
           />
         </label>
         <label className="block">
@@ -1504,7 +1505,8 @@ function ProjectSection({ design, setDesign, onRoomSetup }) {
           <input
             className="cc-input"
             value={project.client || ''}
-            onChange={(e) => setProjectInfo({ client: e.target.value })}
+            readOnly
+            title="Joinery Core's: read-only in Cabinet Core"
           />
         </label>
         <label className="block">

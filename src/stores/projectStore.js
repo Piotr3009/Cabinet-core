@@ -117,7 +117,11 @@ import {
 import { migrateLedSpec } from '../lib/ledSpec.js';
 // T82 F20, after the review: the logo is kept once beside the company memory;
 // the cache and the memory carry its `{ ref }` and read it back whole.
-import { companyWithLogo, companyWithLogoRef, projectWithLogo, projectWithLogoRef } from '../lib/projectLibrary.js';
+import { browserStorage, companyWithLogo, companyWithLogoRef, projectWithLogo, projectWithLogoRef } from '../lib/projectLibrary.js';
+// T-CC1a F4.3: an item opens from Joinery Core's row (one read through JC's client); the file's version gate is
+// the design's too (R16).
+import { JC_OFFLINE, withDb } from '../lib/jcApi.js';
+import { PROJECT_FILE_VERSION } from '../lib/projectFile.js';
 // T51 (CLAUDE.md F6 · decision 1): the light rig lives WITH THE PROJECT — *"a
 // room with one window and a showroom want different rigs, and a saved job
 // should reopen looking as it did."*
@@ -2020,12 +2024,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * card, on the booklet cover and in the next auto-proposal — and the CLIENT
    * is free text until the JoineryCore client list arrives.
    */
+  // T-CC1a F4.3: the NUMBER and the CLIENT are Joinery Core's (the row's jc_project_number, the client of
+  // the bound project) and are read-only in the UI; the item NAME is the field this edits. *"automatyczne
+  // polaczenie danego projektu do danego pipelinu lub production projektu"* (the owner, 30.10.2026).
   setProjectInfo: (patch) => set((s) => ({
     project: {
       ...s.project,
       ...(patch.name !== undefined ? { name: patch.name } : {}),
-      ...(patch.number !== undefined ? { number: String(patch.number ?? '') } : {}),
-      ...(patch.client !== undefined ? { client: String(patch.client ?? '') } : {}),
     },
   })),
 
@@ -2641,11 +2646,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * carried over. "New" that inherits the last project's walls is how somebody
    * quotes a kitchen against the wrong room.
    */
+  // T-CC1a F5 (law 4): an item is born bound. Its `id` is the one Joinery Core's `cc_create_item` returned,
+  // its `number` the row's jc_project_number and its `client` the bound project's; CC mints no id of its own.
   newProject: (name = 'Untitled project', {
-    number = '', client = '', room = null, design = null, company = undefined,
+    id = null, number = '', client = '', room = null, design = null, company = undefined,
   } = {}) => set({
     project: {
-      id: null,
+      id: id || null,
       name: name || 'Untitled project',
       number: String(number || ''),
       client: String(client || ''),
@@ -2672,13 +2679,62 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // T71: the drawing set's title block starts with the company this
       // computer last typed, and nothing else; `setTitleBlock` fills the rest.
       titleBlock: (() => { const c = recallTitleBlockCompany(); return c ? { company: c } : {}; })(),
-      jc_tenant_id: null,
-      jc_project_id: null,
+      // T-CC1a F4.3: the binding lives in the row's columns (jc_pipeline_id / jc_project_id), never in the design.
     },
     units: [],
     runElements: {},
     dirty: false,
   }),
+
+  /**
+   * T-CC1a F4.3 · OPEN AN ITEM FROM JOINERY CORE. ONE read of `cc_items` by id (the design is read here and
+   * nowhere in the list); the design is the `.ccproject` shape without profile (`{ format, version, project,
+   * units, assignments }`). A `version` newer than this app's is refused in words and nothing loads (R16).
+   * The item's id, name and number are the ROW's (`jc_project_number`), the client the bound project's
+   * (`client`, handed in from the list); the design's own `jc_tenant_id` / `jc_project_id`, if any, are
+   * ignored: the binding lives in the row's columns. Then today's `loadProject` (migrations, healing,
+   * recompute) and `markSaved`, with the row's `updated_at` remembered as `project.savedAt` (PROPOSED).
+   * An item never saved yet (design `{}`) opens as a fresh job bound to its row. Resolves `{ ok, error }`.
+   * *"w cc musimy zapisywac na glownej stronie; projekty dzielimy na itemy"* (the owner, 30.10.2026).
+   */
+  openItem: async (itemId, { client = '', db = withDb, storage = browserStorage() } = {}) => {
+    const res = await db((c) => c.from('cc_items')
+      .select('id, name, revision, design, jc_pipeline_id, jc_project_id, jc_project_number, updated_at')
+      .eq('id', itemId).single(), null);
+    if (res?.mock) return { ok: false, error: JC_OFFLINE };
+    if (res?.error || !res?.data) {
+      return { ok: false, error: String(res?.error?.message || res?.error || 'That item is not in Joinery Core any more.') };
+    }
+    const row = res.data;
+    const design = row.design && typeof row.design === 'object' ? row.design : {};
+    const version = Number(design.version);
+    if (Number.isFinite(version) && version > PROJECT_FILE_VERSION) {
+      return {
+        ok: false,
+        error: `${row.name || 'This item'} was saved by a newer Cabinet Core (version ${version}); this one reads version `
+          + `${PROJECT_FILE_VERSION}. Reload the page and open it again.`,
+      };
+    }
+    const bound = {
+      id: row.id,
+      name: row.name || 'Untitled item',
+      number: String(row.jc_project_number ?? ''),
+      client: String(client || ''),
+      savedAt: row.updated_at || null,
+      revision: row.revision ?? null,
+    };
+    if (!design.project || typeof design.project !== 'object') {
+      get().newProject(bound.name, { id: bound.id, number: bound.number, client: bound.client });
+      set((s) => ({ project: { ...s.project, savedAt: bound.savedAt, revision: bound.revision } }));
+      return { ok: true, error: null };
+    }
+    const { jc_tenant_id: _t, jc_project_id: _p, jc_pipeline_id: _l, ...inner } = design.project;
+    const assignments = design.assignments || inner.assignments || null;
+    const project = projectWithLogo(storage, { ...inner, ...(assignments ? { assignments } : {}), ...bound });
+    get().loadProject(project, Array.isArray(design.units) ? design.units : []);
+    get().markSaved();
+    return { ok: true, error: null };
+  },
 
   // ── design settings (project level, CLAUDE.md phase 6) ───────────────────
   // Materials, the standard front, the workshop's own door styles, the front

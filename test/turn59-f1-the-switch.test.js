@@ -996,8 +996,12 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // checkout with no base ref (every pull request's CI: actions/checkout fetches only the merge ref) read 89 and
     // went red on PR #87, #88 and #89 while a push to main, which has origin/main, never reached this line. The
     // count is the manifest's own; no file was frozen or thawed by this line.
+
     // AMENDED BY T86B F5 (31.10.2026, INT): 91, components/ChestIslandPopup.jsx frozen at its first hash.
     assert.ok(Object.keys(FROZEN).length === 91, 'no base ref: the manifest is the whole proof here');
+
+ 
+
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

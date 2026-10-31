@@ -77,7 +77,9 @@
 ;;; router reads it; the NAME is the operation, which is what VCarve maps.
 
 (defun ledMakeLayers ( / )
-  (command "._LAYER" "_N" "LED_GROOVE" "_C" "44" "LED_GROOVE" "")
+  ;; CHAT FIX 31.10.2026: LED_GROOVE was "44" (the yellow family); 180, a violet blue (src/lib/ledGroove.js
+  ;; states the same 180). The comment above records the old number. the owner, 31.10.2026: "raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"; "staraj sie trzymac w exporcie do DXF i u nas te same kolory".
+  (command "._LAYER" "_N" "LED_GROOVE" "_C" "180" "LED_GROOVE" "")
 )
 
 ;;;========================================

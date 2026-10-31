@@ -127,7 +127,9 @@ test('F3.2 — a frame outside 10…200 is refused before anything else is asked
 
 test('F3.4 — a NAMED class on the front’s sheet, and only on shaker fronts', () => {
   assert.equal(spec.pocketLayer, 'SHAKER_PANEL_POCKET');
-  assert.equal(cncLayer('SHAKER_PANEL_POCKET').aci, 41);
+  // CHAT FIX 31.10.2026: 41 was the yellow family; 32, a dark orange
+  // (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*).
+  assert.equal(cncLayer('SHAKER_PANEL_POCKET').aci, 32);
   assert.equal(cncLayer('SHAKER_PANEL_POCKET').kind, 'pocket');
 
   const shaker = unit();

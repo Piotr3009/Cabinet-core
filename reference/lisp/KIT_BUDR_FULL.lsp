@@ -485,7 +485,9 @@
   (command "._LAYER" "_N" "DRAWER_FRONT_OUTLINE" "_C" "6" "DRAWER_FRONT_OUTLINE" "")
   (command "._LAYER" "_N" "DRAWER_SIDE_OUTLINE" "_C" "8" "DRAWER_SIDE_OUTLINE" "")
   (command "._LAYER" "_N" "DRAWER_RUNNER_POCKET" "_C" "1" "DRAWER_RUNNER_POCKET" "")
-  (command "._LAYER" "_N" "DRAWER_BOTTOM_POCKET" "_C" "2" "DRAWER_BOTTOM_POCKET" ""))
+  ;; CHAT FIX 31.10.2026: DRAWER_BOTTOM_POCKET was "2" (yellow); 230, a rose apart from the runner
+  ;; groove's red on the same board. the owner, 31.10.2026: "raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"; "staraj sie trzymac w exporcie do DXF i u nas te same kolory".
+  (command "._LAYER" "_N" "DRAWER_BOTTOM_POCKET" "_C" "230" "DRAWER_BOTTOM_POCKET" ""))
 
 ;;; Drawer side panel
 (defun drawDRAWER_SIDE (x0 y0 szufDl wysSIDE unitNum drawerNum sideNum G / midX midY)

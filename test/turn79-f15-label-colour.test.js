@@ -56,14 +56,24 @@ const sheetOf = (withPlan) => materialSheetDxf({ blocks: blocks(withPlan), gap: 
 const unitText = (i, labels) => buildUnitDxfFiles(results[i], P, labels ? { labels } : undefined).map((f) => f.dxf).join('\n');
 
 // Taken from the unmodified writer (HEAD before T79 F15), the same calls as below.
+// CHAT FIX 31.10.2026 (the owner: *"raczej staraj sie wszedzie omijac zolty bo on
+// jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*): NO YELLOW ON
+// THE MACHINE FILE moved the LAYER table's colour rows (PUZZLE_DOG_BONES 2 to 12,
+// SHAKER_PANEL_POCKET 41 to 32, DRAWER_BOTTOM_POCKET 2 to 230 on these six) and
+// the fourteen hashes with them; not a record of ENTITIES moved: each text with
+// the old numbers written back into those rows alone hashes to the pre-change
+// value to the character (verify/chatfix-3110/identity.md). The previous values:
+// WARDROBE 0ff434a1 / 978637bc, BUD 7dfd770b / aa9ae6f6, WUD 736e9170 / 6bd81c86,
+// BUDR 4e1c176f / f2de53f7, BUDR4 3d7ecad5 / d5f12948, PANTRY a5a5e3ed / 6c59ed23,
+// SHEET ae6690f0 / 5ecdd099.
 const BEFORE = {
-  WARDROBE: { plain: '0ff434a112102a476ebf911453a31acdd90d9334ff8d86d7ab644b10a667dac1', plan: '978637bc86acdbf3b19b26a6a710070250493f4303b4860dbf8c2b405bcafddb' },
-  BUD: { plain: '7dfd770b47b547a9800834dd1fb079c5a559a5a5b9fce58dacb2a43e74e59ef2', plan: 'aa9ae6f63f48b35fbc45774c42c93d46c616e52e8909aeda6e3a849c78eb46cb' },
-  WUD: { plain: '736e9170cb1c9a99b733f94828f92dc385d64f643e1e1b99a969345b482654e1', plan: '6bd81c864c5664a0c4828639ae367a064f9f74dc44b117f903e1a42724d2a9fd' },
-  BUDR: { plain: '4e1c176fc91906b002cf76676c67abf0331130ecfc8df84a3d2f4957ff9849ea', plan: 'f2de53f79dbd22aac09cf36d9043a405df9b39fb673a46910f0890749be5a294' },
-  BUDR4: { plain: '3d7ecad5b4d2d58017856c1aeef6ffca0fee9d6641cfd54aed11bb1df03c2eed', plan: 'd5f1294824a792ff6792d7489305527acbf9fadf20af3b9359e9c9d340ffdc90' },
-  PANTRY: { plain: 'a5a5e3ed10e804ebb068a5830d994aaf53e2d26876dedfb3b4dd845e9206f447', plan: '6c59ed233aa8a1a2413c07e69faca4376596e567668227ca2d05a93eb649b63e' },
-  SHEET: { plain: 'ae6690f0419fc6bbc7f04595958651e4ec9f1cb5d228804ef9a483dd242daae2', plan: '5ecdd09969c408d41985f3428a632bd512c915e9c76729821a0b75553a5abe4b' },
+  WARDROBE: { plain: '5325178ccdbaf1d76a18b4e6d18f79a81143c0d249fa6d5c0804314011a7c15b', plan: '52acee84fe54b0a7f3f5b26b2ceae6a9f206091d9b3aac21709588db2230745e' },
+  BUD: { plain: '8825fbd7279d9759c61d06b191eb84ec25dbc25081ed994e35f58932ef377636', plan: 'd8269135faf02d837c4588ba43ac792f5c2242bab4c4a7be19a3effed677c3ce' },
+  WUD: { plain: 'fe391c4d7d6997195656feb9a958c7b33d58caa10d9c2f6edceeba5e7d2209e3', plan: 'e608d3859eb9c5931bd932c34a0ddeda985e7a7da463d6c265c89bf6ee335a55' },
+  BUDR: { plain: '4ba30eba5da915af3ca7285f7e0f04ae1284bc65c15c5d38f007ab795f01095d', plan: 'bc218000781c360086adfdadef4d10064217769480b93fd723ac9717005e0885' },
+  BUDR4: { plain: '4e3146bcedae4bd16bb9fedecf02b3ae4420826adebab6569f05baa81f64dafe', plan: 'f8893c2ee40b95b89fe3038fe7bf4396cd5532ade432d9668d003fa1c3f4ee1c' },
+  PANTRY: { plain: 'd9b0686ef9e952ef0449deeaa929cc94bc96835cfd7c46553b7cd0038f08e2ed', plan: 'dea72766b4d4a6b885deb5bb696c01d3cc06a2e60701dce448ffbc1fa431ec05' },
+  SHEET: { plain: '8f498c0eb3fe2b6d00383f49f2403ef6e03437182e19871efbe16a16f4b5adbe', plan: '95d3bc166aa31983569c611909ce060541e5d9847d07ce78c28547d1dda7f5d2' },
 };
 
 /** The file's group pairs, as written (the writer pads no code). */

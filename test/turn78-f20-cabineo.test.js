@@ -467,7 +467,9 @@ test('F20 · THE GATE: the LISP\'s sentence verbatim, shut until the owner confi
 // ═══ THE TABLES THE SYSTEM WRITES INTO ═════════════════════════════════════
 
 test('F20 · the five layers, their policy rows, the part label, the system ids', () => {
-  for (const [name, aci, kind] of [['CABINEO_POCKET_15MM', 47, 'hole'], ['CABINEO_POCKET_10MM', 48, 'pocket'], ['CABINEO_POCKET_12MM', 49, 'pocket'], ['CABINEO_RECESS', 50, 'pocket'], ['CABINEO_HOLE_5MM', 51, 'hole']]) {
+  // CHAT FIX 31.10.2026: 47 to 51 were the yellow family; the pockets 200 / 202 / 204, the recess 212, the hole 150
+  // (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*; *"zmien prosze layer cabineo dziury kolor z zoltego"*).
+  for (const [name, aci, kind] of [['CABINEO_POCKET_15MM', 200, 'hole'], ['CABINEO_POCKET_10MM', 202, 'pocket'], ['CABINEO_POCKET_12MM', 204, 'pocket'], ['CABINEO_RECESS', 212, 'pocket'], ['CABINEO_HOLE_5MM', 150, 'hole']]) {
     assert.ok(CNC_LAYERS.some((l) => l.name === name), `${name} is in the layer table`);
     assert.equal(cncLayer(name).aci, aci);
     assert.equal(cncLayer(name).kind, kind);

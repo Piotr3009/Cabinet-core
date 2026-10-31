@@ -234,6 +234,24 @@ const CLASSES = [
     draw: true,
     reason: 'the wall bracket’s cut-out in the back panel — the bracket passes through it.',
   },
+  // CHAT FIX 31.10.2026: the watch drawer's three classes enter the layer table (engine/cnc/layers.js) at the kit's
+  // numbers of the same day, so they take a policy row here too (F3.3 forbids silence). Cut as the kit and the engine
+  // cut them since T52 and T53: a housing, a rebate, a cut-out, each to its own record's depth.
+  {
+    layer: 'WATCH_DIVIDER_SLOT',
+    draw: true,
+    reason: 'the watch insert\'s divider housing in a rail\'s face (KIT_WATCH_DRAWER.lsp), the full height of the rail, cut to the depth its own record states; the divider stands in it.',
+  },
+  {
+    layer: 'WATCH_GLASS_REBATE',
+    draw: true,
+    reason: 'the rebate round the glass opening in the shelf above the watch drawer (T53 F8b), cut to the depth its own record states; the pane lies in it.',
+  },
+  {
+    layer: 'WATCH_GLASS_OPENING',
+    draw: true,
+    reason: 'the opening through the shelf above the watch drawer for the pane (T53 F8b); its record states the board\'s own depth, so it is cut right through and the scene looks down into the tray.',
+  },
   {
     layer: 'RECESS_WINDOW',
     draw: true,

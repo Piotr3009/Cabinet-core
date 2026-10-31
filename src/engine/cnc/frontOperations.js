@@ -313,7 +313,16 @@ export function frontSetupPlacements(blocks = [], gap = 0) {
   return placements;
 }
 
-/** Shared preview and DXF layer declarations for each configured cutter. */
+/**
+ * Shared preview and DXF layer declarations for each configured cutter.
+ *
+ * CHAT FIX 31.10.2026: a decorated front's POCKETS wore the shaker pocket's
+ * ACI 41 (the yellow family) and its `#c3a06a`; they wear the shaker pocket's
+ * new 32 and `#bd5e00` (engine/cnc/layers.js SHAKER_PANEL_POCKET, the same
+ * day), so a pocket on a front is one colour in the DXF and on the sheet
+ * whichever road cut it. The centre lines keep the cyan 4: the owner, *"cyjan
+ * jest ok, tylko jasny zolty jest nie widoczny"*.
+ */
 export function frontDecorationLayers(panels = [], { referencePreview = false } = {}) {
   const layers = new Map();
   for (const panel of panels) {
@@ -330,7 +339,7 @@ export function frontDecorationLayers(panels = [], { referencePreview = false } 
         layers.set(entity.layer, {
           name: entity.layer,
           label: ornament ? 'Proposed ornament (3D surface)' : `Proposed profile reference: ${entity.depth} mm`,
-          screen: ornament ? '#63e6e2' : '#c3a06a', aci: ornament ? 4 : 41,
+          screen: ornament ? '#63e6e2' : '#bd5e00', aci: ornament ? 4 : 32,
           kind: 'mark', referenceOnly: true,
         });
       }
@@ -348,7 +357,7 @@ export function frontDecorationLayers(panels = [], { referencePreview = false } 
           : operation.kind === 'reed'
             ? `Reed valley: ${operation.depth} mm, ${operation.tool.diameter} mm reed profile`
             : `${line ? 'Flute' : 'Pocket'}: ${operation.depth} mm, ${operation.tool.diameter} mm ${operation.tool.kind}`,
-        screen: line ? '#63e6e2' : '#c3a06a', aci: line ? 4 : 41,
+        screen: line ? '#63e6e2' : '#bd5e00', aci: line ? 4 : 32,
         kind: line ? 'mark' : 'pocket',
       });
     }

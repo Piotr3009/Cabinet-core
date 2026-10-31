@@ -171,7 +171,9 @@ test('F4.2 — a horizontal bar’s two screws are side by side', () => {
 
 test('F4.2 — a NAMED class on the front’s sheet', () => {
   assert.equal(P.handles.layer, 'HANDLES_5MM');
-  assert.equal(cncLayer('HANDLES_5MM').aci, 42);
+  // CHAT FIX 31.10.2026: 42 was the yellow family; 170, the index's pure blue
+  // (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*).
+  assert.equal(cncLayer('HANDLES_5MM').aci, 170);
   assert.equal(cncLayer('HANDLES_5MM').kind, 'hole');
   const r = unit('BUD', { project_handle: BAR });
   const file = buildUnitDxfFiles(r, P).find((f) => f.name === '01-F.dxf');

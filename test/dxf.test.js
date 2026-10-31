@@ -269,6 +269,16 @@ test('$EXTMIN / $EXTMAX state the true extents, tabs included', () => {
 });
 
 test('layer table is a machine contract: names and ACI colours are the LISP ones', () => {
+  // ─── CHAT FIX 31.10.2026: NO YELLOW ─────────────────────────────────────
+  // The owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie
+  // widoczny na bialym tle (na takim pracuje vcarve)"*; *"cyjan jest ok,
+  // tylko jasny zolty jest nie widoczny"*; *"koduj"*. Every number of the
+  // yellow family (2, 40 to 59) below moved to a rung of another hue, the LISP
+  // amended the same day (SKYLON_COMMON, KIT_BUDR_FULL, KIT_WARDROBE_FULL,
+  // KIT_HAWA, KIT_LED_GROOVE, KIT_CORNER_L, KIT_NOTCH, KIT_WATCH_DRAWER,
+  // KIT_FRONT_JPULL, SKYLON_JOINTS_CABINEO); the historical comments beside
+  // each row keep the numbers the layer was born with. The watch drawer's
+  // three enter the table (the kit declared them, the table never did).
   // createCNCLayers in reference/lisp/SKYLON_COMMON.lsp, plus the per-kit
   // layers: createDrawerCNCLayers in KIT_BUDR_FULL.lsp (L482-488) and the
   // hanger cut-out layer in KIT_WUD_FULL.lsp (L192).
@@ -282,24 +292,27 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
   // the LISP's own table never uses it, so nothing it already draws changes
   // colour in AutoCAD.
   const expected = {
-    OUTLINE: 7, PUZZLE_SOCKET: 1, PUZZLE_DOG_BONES: 2, PUZZLE_HOLES_7_5MM: 3,
+    OUTLINE: 7, PUZZLE_SOCKET: 1, PUZZLE_DOG_BONES: 12, PUZZLE_HOLES_7_5MM: 3,
     SCREWS_3MM: 4, HINGES_5MM: 5, SHELVES_7_5MM: 6, FRONT_HINGES_35MM: 3,
     FRONT_HINGES_3MM: 30, RUNNERS_3MM: 5, UNIT_NUMBER: 94, CARCASE: 7,
-    DRAWER_RUNNER_POCKET: 1, DRAWER_BOTTOM_POCKET: 2, HANGER_HOLE: 4,
-    BISCUIT_4MM: 40,
+    DRAWER_RUNNER_POCKET: 1, DRAWER_BOTTOM_POCKET: 230, HANGER_HOLE: 4,
+    // 31.10.2026: the watch drawer's three, KIT_WATCH_DRAWER.lsp's numbers of
+    // the same day (34, 172, 174; they were 41, 42, 43 in the kit alone).
+    WATCH_DIVIDER_SLOT: 34, WATCH_GLASS_REBATE: 172, WATCH_GLASS_OPENING: 174,
+    BISCUIT_4MM: 22,
     // ─── TURN 25 (CLAUDE.md F3.4): ONE NEW NAME ───
     // The shaker panel POCKET. Until this turn a front's DXF was an outline and
     // its hinge holes; a shaker's face is machined, and a 6 mm flat-bottomed
     // pocket is a tool of its own on the bed — not a profile cut and not a
     // drilling. ACI 41 sits beside the biscuit's 40 and is likewise unused by
     // the LISP's own table, so nothing it already draws changes colour.
-    SHAKER_PANEL_POCKET: 41,
+    SHAKER_PANEL_POCKET: 32,
     // ─── TURN 25 (CLAUDE.md F4.2): AND ONE MORE ───
     // The handle screws — ⌀5 through the front, one for a knob and two for a
     // bar. Its own layer for the same reason: a handle hole mixed in with the
     // hinge plate's ⌀5 would be drilled by the plate's program, on the plate's
     // side of the door. ACI 42, again unused by the LISP's table.
-    HANDLES_5MM: 42,
+    HANDLES_5MM: 170,
     // ─── TURN 34 (CLAUDE.md F4): TWO NEW NAMES, AND THEY ARE A KIT'S ───────
     // T54-F7 AMENDED (28.08.2026): SHOE_GROOVE_6MM and SHOE_RUNNER_5MM died
     // with KIT_SHOE_BOX.lsp under licence (2) — the shoe is now a standard
@@ -317,36 +330,36 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     // the ⌀5 layer would be a 5 mm bit going into a 3 mm hole. ACI 43 sits
     // beyond the handles' 42 and is unused by the LISP's own table, so nothing
     // AutoCAD already draws changes colour.
-    HINGES_3MM: 43,
+    HINGES_3MM: 162,
     // ─── AMENDED BY T75 F23: TWO NEW NAMES, THE DOWEL'S TWO HALVES ────────
     // *"lisp najpierw."*  SKYLON_JOINTS_DOWEL.lsp's pair: the blind face hole
     // drilled from above, and the edge bore the 3-axis bed cannot make (named
     // for the sheet, never written to the machine file). ACI 45 and 46 sit
     // beyond the LED groove's 44 and are unused by the LISP's own table.
-    DOWEL_8MM: 45,
-    DOWEL_EDGE_8MM: 46,
+    DOWEL_8MM: 84,
+    DOWEL_EDGE_8MM: 86,
     // ─── AMENDED BY T78 F20: FIVE NEW NAMES, THE CABINEO'S ─────────────────
     // SKYLON_JOINTS_CABINEO.lsp D.9 (T78 proposed): the pocket by the tool
     // that cuts it (Lamello's Option 1 drill 15, Option 2 cutter >= 10,
     // Option 3 cutter 12), the cover cap's recess, the side's dia 5 hole.
     // ACI 47 to 51 sit beyond the dowel's 46 and are unused by the LISP's
     // own table.
-    CABINEO_POCKET_15MM: 47,
-    CABINEO_POCKET_10MM: 48,
-    CABINEO_POCKET_12MM: 49,
-    CABINEO_RECESS: 50,
-    CABINEO_HOLE_5MM: 51,
+    CABINEO_POCKET_15MM: 200,
+    CABINEO_POCKET_10MM: 202,
+    CABINEO_POCKET_12MM: 204,
+    CABINEO_RECESS: 212,
+    CABINEO_HOLE_5MM: 150,
     // ─── AMENDED 15.10.2026 (KIT_RECESS.lsp D9): ONE NEW NAME ─────────────
     // The window through the BACK into a recess extension, a through pocket on
     // its own layer. ACI 52 sits beyond the Cabineo's 51 and is unused by the
     // LISP's own table.
-    RECESS_WINDOW: 52,
+    RECESS_WINDOW: 142,
     // ─── CHAT FIX 17.10.2026: ONE NEW NAME, THE OWNER'S OWN ─────────────────
     // *"nazwij to corner 4 mm, wtedy ja wytne ten korner"*: the corner mark at
     // a re-entrant corner of an L outline, two open lines along the edges, cut
     // by the owner's 4 mm program (the dog bone that stood there is gone). A
     // MARK like BISCUIT_4MM; ACI 53, the next free number after 52.
-    CORNER_4MM: 53,
+    CORNER_4MM: 14,
     // ─── AMENDED BY T82 F5 (KIT_HAWA.lsp D15): FIVE NEW NAMES, THE POCKET'S ─
     // CLAUDE.md T82 F5: *"the hole patterns of F1(d) as drill operations on the
     // pocket panels ... on the layer grammar the CNC already has for hinge
@@ -358,12 +371,12 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     // carries no depth and the house's FRONT_HINGES_35MM is the owner's 11, so
     // the door's three take layers whose names carry their 13 (one layer, one
     // depth), the cup its own at ACI 59.
-    HAWA_3MM: 54,
-    FRONT_HINGES_5MM_D13: 55,
-    FRONT_HINGES_8MM_D13: 56,
-    HAWA_FOOT_35MM: 57,
-    HAWA_GROOVE_12MM: 58,
-    FRONT_HINGES_35MM_D13: 59,
+    HAWA_3MM: 220,
+    FRONT_HINGES_5MM_D13: 222,
+    FRONT_HINGES_8MM_D13: 224,
+    HAWA_FOOT_35MM: 190,
+    HAWA_GROOVE_12MM: 192,
+    FRONT_HINGES_35MM_D13: 194,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

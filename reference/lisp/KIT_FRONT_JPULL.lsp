@@ -167,7 +167,9 @@
 ;;; VCarve maps.
 
 (defun jpullMakeLayers ( / )
-  (command "._LAYER" "_N" "JPULL_EDGE" "_C" "45" "JPULL_EDGE" "")
+  ;; CHAT FIX 31.10.2026: JPULL_EDGE was "45" (the yellow family); 92, a green. The comment above
+  ;; records the old number. the owner, 31.10.2026: "raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"; "staraj sie trzymac w exporcie do DXF i u nas te same kolory".
+  (command "._LAYER" "_N" "JPULL_EDGE" "_C" "92" "JPULL_EDGE" "")
 )
 
 ;;;========================================

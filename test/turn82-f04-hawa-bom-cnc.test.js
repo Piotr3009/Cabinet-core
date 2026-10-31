@@ -389,7 +389,9 @@ test('F5 · the DXF: one file per part, the holes on their layers, the six layer
     assert.deepEqual(unitFindings(r, { profile: P }), [], 'the off-board, edge and drill guards hold on every pocket board');
   }
   const aci = Object.fromEntries(CNC_LAYERS.map((l) => [l.name, l.aci]));
-  assert.deepEqual(['HAWA_3MM', 'FRONT_HINGES_5MM_D13', 'FRONT_HINGES_8MM_D13', 'HAWA_FOOT_35MM', 'HAWA_GROOVE_12MM', 'FRONT_HINGES_35MM_D13'].map((n) => aci[n]), [54, 55, 56, 57, 58, 59]);
+  // CHAT FIX 31.10.2026: 54 to 59 were the pure yellows; the pinks 220 / 222 / 224 and the violets 190 / 192 / 194
+  // (31.10.2026, the owner: *"raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"*).
+  assert.deepEqual(['HAWA_3MM', 'FRONT_HINGES_5MM_D13', 'FRONT_HINGES_8MM_D13', 'HAWA_FOOT_35MM', 'HAWA_GROOVE_12MM', 'FRONT_HINGES_35MM_D13'].map((n) => aci[n]), [220, 222, 224, 190, 192, 194]);
   assert.equal(aci.FRONT_HINGES_35MM, 3, 'the house\'s cup layer is the house\'s, untouched');
   const policy = new Map(machiningClasses().map((c) => [c.layer, c]));
   const doc = read('verify/t26/sheet-vs-scene.md');

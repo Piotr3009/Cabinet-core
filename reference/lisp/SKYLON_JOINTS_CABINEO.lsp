@@ -1150,6 +1150,9 @@
 ;;; D.9 THE LAYERS (T78 proposed, the house grammar {FEATURE}_{DIAMETER}MM;
 ;;; the engine names them in engine/cnc/layers.js): the pocket by the tool
 ;;; that cuts it, the recess, the side's hole.
+;;; 31.10.2026: their colours are 200 / 202 / 204 (the three pockets), 212 (the
+;;; recess) and 150 (the hole), on both sides; the 47 to 51 the engine had were
+;;; the yellow family VCarve cannot show on its white sheet (G.2 states them).
 (defun cabineo-pocket-layer (prof)
   (cond
     ((= (cabineo-get prof "machining") "drill15") "CABINEO_POCKET_15MM")
@@ -1480,8 +1483,15 @@
       (if (null base) (setq base (list 0.0 0.0)))
       (cab-layer "OUTLINE" "7")
       (cab-layer "UNIT_NUMBER" "94")
-      (cab-layer (cabineo-pocket-layer prof) "30")
-      (cab-layer (cabineo-recess-layer) "32")
+      ;; CHAT FIX 31.10.2026: this drawing gave the pocket "30" and the recess "32" while the engine's
+      ;; table (engine/cnc/layers.js) had 47 to 51, the yellow family. One truth from this day, on both
+      ;; sides: the pocket by its tool, 200 (drill 15) / 202 (cutter 10) / 204 (cutter 12), the recess
+      ;; 212, the side's hole 150 as it was here. the owner, 31.10.2026: "zmien prosze layer cabineo dziury kolor z zoltego, raczej staraj sie wszedzie omijac zolty bo on jest mega nie widoczny na bialym tle (na takim pracuje vcarve)"; "staraj sie trzymac w exporcie do DXF i u nas te same kolory".
+      (cab-layer (cabineo-pocket-layer prof)
+                 (cond ((= (cabineo-get prof "machining") "drill15") "200")
+                       ((= (cabineo-get prof "machining") "cutter10") "202")
+                       (T "204")))
+      (cab-layer (cabineo-recess-layer) "212")
       (cab-layer (cabineo-hole-layer) "150")
       (setq sideW (- D G) topW (- W G G) gap 100.0)
       ;; The boards and their drawn sizes (w h), in export order.

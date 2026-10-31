@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="750" font-family="Arial, Helvetica, sans-serif" font-size="12">
+<rect width="1180" height="750" fill="#ffffff"/>
+<text x="16" y="26" font-size="16" font-weight="bold" fill="#111">Cabinet Core CNC layers, 31.10.2026: no yellow. DXF colour (VCarve, white sheet) and the app's sheet (black)</text>
+<text x="16" y="46" fill="#444">left to right: layer, the OLD DXF colour on white, the NEW DXF colour on white, the NEW app ink on the black sheet (same hue, lifted only as far as it needs to read)</text>
+<rect x="760" y="62" width="400" height="662" fill="#131313"/>
+<text x="330" y="58" fill="#444">old (ACI)</text><text x="520" y="58" fill="#444">new (ACI)</text><text x="770" y="58" fill="#444">app sheet (new)</text>
+<text x="16" y="84" fill="#111" font-family="monospace">PUZZLE_DOG_BONES</text>
+<rect x="330" y="70" width="60" height="18" fill="#ffff00" stroke="#ccc"/><line x1="330" y1="79" x2="390" y2="79" stroke="#ffff00" stroke-width="1"/><text x="398" y="84" fill="#666">2 #ffff00</text>
+<rect x="520" y="70" width="60" height="18" fill="#bd0000" stroke="#ccc"/><text x="588" y="84" fill="#666">12 #bd0000</text>
+<line x1="680" y1="79" x2="740" y2="79" stroke="#bd0000" stroke-width="1.2"/>
+<rect x="770" y="70" width="60" height="18" fill="#ca3030"/><line x1="840" y1="79" x2="920" y2="79" stroke="#ca3030" stroke-width="1.2"/><circle cx="940" cy="79" r="6" fill="none" stroke="#ca3030" stroke-width="1.2"/><text x="960" y="84" fill="#aaa" font-family="monospace">#ca3030</text>
+<text x="16" y="110" fill="#111" font-family="monospace">BISCUIT_4MM</text>
+<rect x="330" y="96" width="60" height="18" fill="#ffbf00" stroke="#ccc"/><line x1="330" y1="105" x2="390" y2="105" stroke="#ffbf00" stroke-width="1"/><text x="398" y="110" fill="#666">40 #ffbf00</text>
+<rect x="520" y="96" width="60" height="18" fill="#bd2e00" stroke="#ccc"/><text x="588" y="110" fill="#666">22 #bd2e00</text>
+<line x1="680" y1="105" x2="740" y2="105" stroke="#bd2e00" stroke-width="1.2"/>
+<rect x="770" y="96" width="60" height="18" fill="#c23d12"/><line x1="840" y1="105" x2="920" y2="105" stroke="#c23d12" stroke-width="1.2"/><circle cx="940" cy="105" r="6" fill="none" stroke="#c23d12" stroke-width="1.2"/><text x="960" y="110" fill="#aaa" font-family="monospace">#c23d12</text>
+<text x="16" y="136" fill="#111" font-family="monospace">SHAKER_PANEL_POCKET</text>
+<rect x="330" y="122" width="60" height="18" fill="#ffeaaa" stroke="#ccc"/><line x1="330" y1="131" x2="390" y2="131" stroke="#ffeaaa" stroke-width="1"/><text x="398" y="136" fill="#666">41 #ffeaaa</text>
+<rect x="520" y="122" width="60" height="18" fill="#bd5e00" stroke="#ccc"/><text x="588" y="136" fill="#666">32 #bd5e00</text>
+<line x1="680" y1="131" x2="740" y2="131" stroke="#bd5e00" stroke-width="1.2"/>
+<rect x="770" y="122" width="60" height="18" fill="#bd5e00"/><line x1="840" y1="131" x2="920" y2="131" stroke="#bd5e00" stroke-width="1.2"/><circle cx="940" cy="131" r="6" fill="none" stroke="#bd5e00" stroke-width="1.2"/><text x="960" y="136" fill="#aaa" font-family="monospace">#bd5e00</text>
+<text x="16" y="162" fill="#111" font-family="monospace">HANDLES_5MM</text>
+<rect x="330" y="148" width="60" height="18" fill="#bd8d00" stroke="#ccc"/><line x1="330" y1="157" x2="390" y2="157" stroke="#bd8d00" stroke-width="1"/><text x="398" y="162" fill="#666">42 #bd8d00</text>
+<rect x="520" y="148" width="60" height="18" fill="#0000ff" stroke="#ccc"/><text x="588" y="162" fill="#666">170 #0000ff</text>
+<line x1="680" y1="157" x2="740" y2="157" stroke="#0000ff" stroke-width="1.2"/>
+<rect x="770" y="148" width="60" height="18" fill="#5252ff"/><line x1="840" y1="157" x2="920" y2="157" stroke="#5252ff" stroke-width="1.2"/><circle cx="940" cy="157" r="6" fill="none" stroke="#5252ff" stroke-width="1.2"/><text x="960" y="162" fill="#aaa" font-family="monospace">#5252ff</text>
+<text x="16" y="188" fill="#111" font-family="monospace">HINGES_3MM</text>
+<rect x="330" y="174" width="60" height="18" fill="#bdad7e" stroke="#ccc"/><line x1="330" y1="183" x2="390" y2="183" stroke="#bdad7e" stroke-width="1"/><text x="398" y="188" fill="#666">43 #bdad7e</text>
+<rect x="520" y="174" width="60" height="18" fill="#002ebd" stroke="#ccc"/><text x="588" y="188" fill="#666">162 #002ebd</text>
+<line x1="680" y1="183" x2="740" y2="183" stroke="#002ebd" stroke-width="1.2"/>
+<rect x="770" y="174" width="60" height="18" fill="#4566cf"/><line x1="840" y1="183" x2="920" y2="183" stroke="#4566cf" stroke-width="1.2"/><circle cx="940" cy="183" r="6" fill="none" stroke="#4566cf" stroke-width="1.2"/><text x="960" y="188" fill="#aaa" font-family="monospace">#4566cf</text>
+<text x="16" y="214" fill="#111" font-family="monospace">DOWEL_8MM</text>
+<rect x="330" y="200" width="60" height="18" fill="#817656" stroke="#ccc"/><line x1="330" y1="209" x2="390" y2="209" stroke="#817656" stroke-width="1"/><text x="398" y="214" fill="#666">45 #817656</text>
+<rect x="520" y="200" width="60" height="18" fill="#1f8100" stroke="#ccc"/><text x="588" y="214" fill="#666">84 #1f8100</text>
+<line x1="680" y1="209" x2="740" y2="209" stroke="#1f8100" stroke-width="1.2"/>
+<rect x="770" y="200" width="60" height="18" fill="#1f8100"/><line x1="840" y1="209" x2="920" y2="209" stroke="#1f8100" stroke-width="1.2"/><circle cx="940" cy="209" r="6" fill="none" stroke="#1f8100" stroke-width="1.2"/><text x="960" y="214" fill="#aaa" font-family="monospace">#1f8100</text>
+<text x="16" y="240" fill="#111" font-family="monospace">DOWEL_EDGE_8MM</text>
+<rect x="330" y="226" width="60" height="18" fill="#684e00" stroke="#ccc"/><line x1="330" y1="235" x2="390" y2="235" stroke="#684e00" stroke-width="1"/><text x="398" y="240" fill="#666">46 #684e00</text>
+<rect x="520" y="226" width="60" height="18" fill="#196800" stroke="#ccc"/><text x="588" y="240" fill="#666">86 #196800</text>
+<line x1="680" y1="235" x2="740" y2="235" stroke="#196800" stroke-width="1.2"/>
+<rect x="770" y="226" width="60" height="18" fill="#377c21"/><line x1="840" y1="235" x2="920" y2="235" stroke="#377c21" stroke-width="1.2"/><circle cx="940" cy="235" r="6" fill="none" stroke="#377c21" stroke-width="1.2"/><text x="960" y="240" fill="#aaa" font-family="monospace">#377c21</text>
+<text x="16" y="266" fill="#111" font-family="monospace">CABINEO_POCKET_15MM</text>
+<rect x="330" y="252" width="60" height="18" fill="#685f45" stroke="#ccc"/><line x1="330" y1="261" x2="390" y2="261" stroke="#685f45" stroke-width="1"/><text x="398" y="266" fill="#666">47 #685f45</text>
+<rect x="520" y="252" width="60" height="18" fill="#bf00ff" stroke="#ccc"/><text x="588" y="266" fill="#666">200 #bf00ff</text>
+<line x1="680" y1="261" x2="740" y2="261" stroke="#bf00ff" stroke-width="1.2"/>
+<rect x="770" y="252" width="60" height="18" fill="#bf00ff"/><line x1="840" y1="261" x2="920" y2="261" stroke="#bf00ff" stroke-width="1.2"/><circle cx="940" cy="261" r="6" fill="none" stroke="#bf00ff" stroke-width="1.2"/><text x="960" y="266" fill="#aaa" font-family="monospace">#bf00ff</text>
+<text x="16" y="292" fill="#111" font-family="monospace">CABINEO_POCKET_10MM</text>
+<rect x="330" y="278" width="60" height="18" fill="#4f3b00" stroke="#ccc"/><line x1="330" y1="287" x2="390" y2="287" stroke="#4f3b00" stroke-width="1"/><text x="398" y="292" fill="#666">48 #4f3b00</text>
+<rect x="520" y="278" width="60" height="18" fill="#8d00bd" stroke="#ccc"/><text x="588" y="292" fill="#666">202 #8d00bd</text>
+<line x1="680" y1="287" x2="740" y2="287" stroke="#8d00bd" stroke-width="1.2"/>
+<rect x="770" y="278" width="60" height="18" fill="#a536cb"/><line x1="840" y1="287" x2="920" y2="287" stroke="#a536cb" stroke-width="1.2"/><circle cx="940" cy="287" r="6" fill="none" stroke="#a536cb" stroke-width="1.2"/><text x="960" y="292" fill="#aaa" font-family="monospace">#a536cb</text>
+<text x="16" y="318" fill="#111" font-family="monospace">CABINEO_POCKET_12MM</text>
+<rect x="330" y="304" width="60" height="18" fill="#4f4935" stroke="#ccc"/><line x1="330" y1="313" x2="390" y2="313" stroke="#4f4935" stroke-width="1"/><text x="398" y="318" fill="#666">49 #4f4935</text>
+<rect x="520" y="304" width="60" height="18" fill="#600081" stroke="#ccc"/><text x="588" y="318" fill="#666">204 #600081</text>
+<line x1="680" y1="313" x2="740" y2="313" stroke="#600081" stroke-width="1.2"/>
+<rect x="770" y="304" width="60" height="18" fill="#9352a9"/><line x1="840" y1="313" x2="920" y2="313" stroke="#9352a9" stroke-width="1.2"/><circle cx="940" cy="313" r="6" fill="none" stroke="#9352a9" stroke-width="1.2"/><text x="960" y="318" fill="#aaa" font-family="monospace">#9352a9</text>
+<text x="16" y="344" fill="#111" font-family="monospace">CABINEO_RECESS</text>
+<rect x="330" y="330" width="60" height="18" fill="#ffff00" stroke="#ccc"/><line x1="330" y1="339" x2="390" y2="339" stroke="#ffff00" stroke-width="1"/><text x="398" y="344" fill="#666">50 #ffff00</text>
+<rect x="520" y="330" width="60" height="18" fill="#bd00bd" stroke="#ccc"/><text x="588" y="344" fill="#666">212 #bd00bd</text>
+<line x1="680" y1="339" x2="740" y2="339" stroke="#bd00bd" stroke-width="1.2"/>
+<rect x="770" y="330" width="60" height="18" fill="#bf08bf"/><line x1="840" y1="339" x2="920" y2="339" stroke="#bf08bf" stroke-width="1.2"/><circle cx="940" cy="339" r="6" fill="none" stroke="#bf08bf" stroke-width="1.2"/><text x="960" y="344" fill="#aaa" font-family="monospace">#bf08bf</text>
+<text x="16" y="370" fill="#111" font-family="monospace">CABINEO_HOLE_5MM</text>
+<rect x="330" y="356" width="60" height="18" fill="#ffffaa" stroke="#ccc"/><line x1="330" y1="365" x2="390" y2="365" stroke="#ffffaa" stroke-width="1"/><text x="398" y="370" fill="#666">51 #ffffaa</text>
+<rect x="520" y="356" width="60" height="18" fill="#007fff" stroke="#ccc"/><text x="588" y="370" fill="#666">150 #007fff</text>
+<line x1="680" y1="365" x2="740" y2="365" stroke="#007fff" stroke-width="1.2"/>
+<rect x="770" y="356" width="60" height="18" fill="#007fff"/><line x1="840" y1="365" x2="920" y2="365" stroke="#007fff" stroke-width="1.2"/><circle cx="940" cy="365" r="6" fill="none" stroke="#007fff" stroke-width="1.2"/><text x="960" y="370" fill="#aaa" font-family="monospace">#007fff</text>
+<text x="16" y="396" fill="#111" font-family="monospace">RECESS_WINDOW</text>
+<rect x="330" y="382" width="60" height="18" fill="#bdbd00" stroke="#ccc"/><line x1="330" y1="391" x2="390" y2="391" stroke="#bdbd00" stroke-width="1"/><text x="398" y="396" fill="#666">52 #bdbd00</text>
+<rect x="520" y="382" width="60" height="18" fill="#008dbd" stroke="#ccc"/><text x="588" y="396" fill="#666">142 #008dbd</text>
+<line x1="680" y1="391" x2="740" y2="391" stroke="#008dbd" stroke-width="1.2"/>
+<rect x="770" y="382" width="60" height="18" fill="#008dbd"/><line x1="840" y1="391" x2="920" y2="391" stroke="#008dbd" stroke-width="1.2"/><circle cx="940" cy="391" r="6" fill="none" stroke="#008dbd" stroke-width="1.2"/><text x="960" y="396" fill="#aaa" font-family="monospace">#008dbd</text>
+<text x="16" y="422" fill="#111" font-family="monospace">CORNER_4MM</text>
+<rect x="330" y="408" width="60" height="18" fill="#bdbd7e" stroke="#ccc"/><line x1="330" y1="417" x2="390" y2="417" stroke="#bdbd7e" stroke-width="1"/><text x="398" y="422" fill="#666">53 #bdbd7e</text>
+<rect x="520" y="408" width="60" height="18" fill="#810000" stroke="#ccc"/><text x="588" y="422" fill="#666">14 #810000</text>
+<line x1="680" y1="417" x2="740" y2="417" stroke="#810000" stroke-width="1.2"/>
+<rect x="770" y="408" width="60" height="18" fill="#a95252"/><line x1="840" y1="417" x2="920" y2="417" stroke="#a95252" stroke-width="1.2"/><circle cx="940" cy="417" r="6" fill="none" stroke="#a95252" stroke-width="1.2"/><text x="960" y="422" fill="#aaa" font-family="monospace">#a95252</text>
+<text x="16" y="448" fill="#111" font-family="monospace">HAWA_3MM</text>
+<rect x="330" y="434" width="60" height="18" fill="#818100" stroke="#ccc"/><line x1="330" y1="443" x2="390" y2="443" stroke="#818100" stroke-width="1"/><text x="398" y="448" fill="#666">54 #818100</text>
+<rect x="520" y="434" width="60" height="18" fill="#ff00bf" stroke="#ccc"/><text x="588" y="448" fill="#666">220 #ff00bf</text>
+<line x1="680" y1="443" x2="740" y2="443" stroke="#ff00bf" stroke-width="1.2"/>
+<rect x="770" y="434" width="60" height="18" fill="#ff00bf"/><line x1="840" y1="443" x2="920" y2="443" stroke="#ff00bf" stroke-width="1.2"/><circle cx="940" cy="443" r="6" fill="none" stroke="#ff00bf" stroke-width="1.2"/><text x="960" y="448" fill="#aaa" font-family="monospace">#ff00bf</text>
+<text x="16" y="474" fill="#111" font-family="monospace">FRONT_HINGES_5MM_D13</text>
+<rect x="330" y="460" width="60" height="18" fill="#818156" stroke="#ccc"/><line x1="330" y1="469" x2="390" y2="469" stroke="#818156" stroke-width="1"/><text x="398" y="474" fill="#666">55 #818156</text>
+<rect x="520" y="460" width="60" height="18" fill="#bd008d" stroke="#ccc"/><text x="588" y="474" fill="#666">222 #bd008d</text>
+<line x1="680" y1="469" x2="740" y2="469" stroke="#bd008d" stroke-width="1.2"/>
+<rect x="770" y="460" width="60" height="18" fill="#c41c9a"/><line x1="840" y1="469" x2="920" y2="469" stroke="#c41c9a" stroke-width="1.2"/><circle cx="940" cy="469" r="6" fill="none" stroke="#c41c9a" stroke-width="1.2"/><text x="960" y="474" fill="#aaa" font-family="monospace">#c41c9a</text>
+<text x="16" y="500" fill="#111" font-family="monospace">FRONT_HINGES_8MM_D13</text>
+<rect x="330" y="486" width="60" height="18" fill="#686800" stroke="#ccc"/><line x1="330" y1="495" x2="390" y2="495" stroke="#686800" stroke-width="1"/><text x="398" y="500" fill="#666">56 #686800</text>
+<rect x="520" y="486" width="60" height="18" fill="#810060" stroke="#ccc"/><text x="588" y="500" fill="#666">224 #810060</text>
+<line x1="680" y1="495" x2="740" y2="495" stroke="#810060" stroke-width="1.2"/>
+<rect x="770" y="486" width="60" height="18" fill="#a64a8e"/><line x1="840" y1="495" x2="920" y2="495" stroke="#a64a8e" stroke-width="1.2"/><circle cx="940" cy="495" r="6" fill="none" stroke="#a64a8e" stroke-width="1.2"/><text x="960" y="500" fill="#aaa" font-family="monospace">#a64a8e</text>
+<text x="16" y="526" fill="#111" font-family="monospace">HAWA_FOOT_35MM</text>
+<rect x="330" y="512" width="60" height="18" fill="#686845" stroke="#ccc"/><line x1="330" y1="521" x2="390" y2="521" stroke="#686845" stroke-width="1"/><text x="398" y="526" fill="#666">57 #686845</text>
+<rect x="520" y="512" width="60" height="18" fill="#7f00ff" stroke="#ccc"/><text x="588" y="526" fill="#666">190 #7f00ff</text>
+<line x1="680" y1="521" x2="740" y2="521" stroke="#7f00ff" stroke-width="1.2"/>
+<rect x="770" y="512" width="60" height="18" fill="#9329ff"/><line x1="840" y1="521" x2="920" y2="521" stroke="#9329ff" stroke-width="1.2"/><circle cx="940" cy="521" r="6" fill="none" stroke="#9329ff" stroke-width="1.2"/><text x="960" y="526" fill="#aaa" font-family="monospace">#9329ff</text>
+<text x="16" y="552" fill="#111" font-family="monospace">HAWA_GROOVE_12MM</text>
+<rect x="330" y="538" width="60" height="18" fill="#4f4f00" stroke="#ccc"/><line x1="330" y1="547" x2="390" y2="547" stroke="#4f4f00" stroke-width="1"/><text x="398" y="552" fill="#666">58 #4f4f00</text>
+<rect x="520" y="538" width="60" height="18" fill="#5e00bd" stroke="#ccc"/><text x="588" y="552" fill="#666">192 #5e00bd</text>
+<line x1="680" y1="547" x2="740" y2="547" stroke="#5e00bd" stroke-width="1.2"/>
+<rect x="770" y="538" width="60" height="18" fill="#8d4ad0"/><line x1="840" y1="547" x2="920" y2="547" stroke="#8d4ad0" stroke-width="1.2"/><circle cx="940" cy="547" r="6" fill="none" stroke="#8d4ad0" stroke-width="1.2"/><text x="960" y="552" fill="#aaa" font-family="monospace">#8d4ad0</text>
+<text x="16" y="578" fill="#111" font-family="monospace">FRONT_HINGES_35MM_D13</text>
+<rect x="330" y="564" width="60" height="18" fill="#4f4f35" stroke="#ccc"/><line x1="330" y1="573" x2="390" y2="573" stroke="#4f4f35" stroke-width="1"/><text x="398" y="578" fill="#666">59 #4f4f35</text>
+<rect x="520" y="564" width="60" height="18" fill="#400081" stroke="#ccc"/><text x="588" y="578" fill="#666">194 #400081</text>
+<line x1="680" y1="573" x2="740" y2="573" stroke="#400081" stroke-width="1.2"/>
+<rect x="770" y="564" width="60" height="18" fill="#8359ad"/><line x1="840" y1="573" x2="920" y2="573" stroke="#8359ad" stroke-width="1.2"/><circle cx="940" cy="573" r="6" fill="none" stroke="#8359ad" stroke-width="1.2"/><text x="960" y="578" fill="#aaa" font-family="monospace">#8359ad</text>
+<text x="16" y="604" fill="#111" font-family="monospace">DRAWER_BOTTOM_POCKET</text>
+<rect x="330" y="590" width="60" height="18" fill="#ffff00" stroke="#ccc"/><line x1="330" y1="599" x2="390" y2="599" stroke="#ffff00" stroke-width="1"/><text x="398" y="604" fill="#666">2 #ffff00</text>
+<rect x="520" y="590" width="60" height="18" fill="#ff007f" stroke="#ccc"/><text x="588" y="604" fill="#666">230 #ff007f</text>
+<line x1="680" y1="599" x2="740" y2="599" stroke="#ff007f" stroke-width="1.2"/>
+<rect x="770" y="590" width="60" height="18" fill="#ff007f"/><line x1="840" y1="599" x2="920" y2="599" stroke="#ff007f" stroke-width="1.2"/><circle cx="940" cy="599" r="6" fill="none" stroke="#ff007f" stroke-width="1.2"/><text x="960" y="604" fill="#aaa" font-family="monospace">#ff007f</text>
+<text x="16" y="630" fill="#111" font-family="monospace">WATCH_DIVIDER_SLOT</text>
+<rect x="330" y="616" width="60" height="18" fill="#ffeaaa" stroke="#ccc"/><line x1="330" y1="625" x2="390" y2="625" stroke="#ffeaaa" stroke-width="1"/><text x="398" y="630" fill="#666">41 #ffeaaa</text>
+<rect x="520" y="616" width="60" height="18" fill="#814000" stroke="#ccc"/><text x="588" y="630" fill="#666">34 #814000</text>
+<line x1="680" y1="625" x2="740" y2="625" stroke="#814000" stroke-width="1.2"/>
+<rect x="770" y="616" width="60" height="18" fill="#96602b"/><line x1="840" y1="625" x2="920" y2="625" stroke="#96602b" stroke-width="1.2"/><circle cx="940" cy="625" r="6" fill="none" stroke="#96602b" stroke-width="1.2"/><text x="960" y="630" fill="#aaa" font-family="monospace">#96602b</text>
+<text x="16" y="656" fill="#111" font-family="monospace">WATCH_GLASS_REBATE</text>
+<rect x="330" y="642" width="60" height="18" fill="#bd8d00" stroke="#ccc"/><line x1="330" y1="651" x2="390" y2="651" stroke="#bd8d00" stroke-width="1"/><text x="398" y="656" fill="#666">42 #bd8d00</text>
+<rect x="520" y="642" width="60" height="18" fill="#0000bd" stroke="#ccc"/><text x="588" y="656" fill="#666">172 #0000bd</text>
+<line x1="680" y1="651" x2="740" y2="651" stroke="#0000bd" stroke-width="1.2"/>
+<rect x="770" y="642" width="60" height="18" fill="#5e5ed5"/><line x1="840" y1="651" x2="920" y2="651" stroke="#5e5ed5" stroke-width="1.2"/><circle cx="940" cy="651" r="6" fill="none" stroke="#5e5ed5" stroke-width="1.2"/><text x="960" y="656" fill="#aaa" font-family="monospace">#5e5ed5</text>
+<text x="16" y="682" fill="#111" font-family="monospace">WATCH_GLASS_OPENING</text>
+<rect x="330" y="668" width="60" height="18" fill="#bdad7e" stroke="#ccc"/><line x1="330" y1="677" x2="390" y2="677" stroke="#bdad7e" stroke-width="1"/><text x="398" y="682" fill="#666">43 #bdad7e</text>
+<rect x="520" y="668" width="60" height="18" fill="#000081" stroke="#ccc"/><text x="588" y="682" fill="#666">174 #000081</text>
+<line x1="680" y1="677" x2="740" y2="677" stroke="#000081" stroke-width="1.2"/>
+<rect x="770" y="668" width="60" height="18" fill="#6363b2"/><line x1="840" y1="677" x2="920" y2="677" stroke="#6363b2" stroke-width="1.2"/><circle cx="940" cy="677" r="6" fill="none" stroke="#6363b2" stroke-width="1.2"/><text x="960" y="682" fill="#aaa" font-family="monospace">#6363b2</text>
+<text x="16" y="708" fill="#111" font-family="monospace">LED_GROOVE</text>
+<rect x="330" y="694" width="60" height="18" fill="#816000" stroke="#ccc"/><line x1="330" y1="703" x2="390" y2="703" stroke="#816000" stroke-width="1"/><text x="398" y="708" fill="#666">44 #816000</text>
+<rect x="520" y="694" width="60" height="18" fill="#3f00ff" stroke="#ccc"/><text x="588" y="708" fill="#666">180 #3f00ff</text>
+<line x1="680" y1="703" x2="740" y2="703" stroke="#3f00ff" stroke-width="1.2"/>
+<rect x="770" y="694" width="60" height="18" fill="#7345ff"/><line x1="840" y1="703" x2="920" y2="703" stroke="#7345ff" stroke-width="1.2"/><circle cx="940" cy="703" r="6" fill="none" stroke="#7345ff" stroke-width="1.2"/><text x="960" y="708" fill="#aaa" font-family="monospace">#7345ff</text>
+</svg>

@@ -499,6 +499,18 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
   const key = [
     panel.part,
     w, h, thickness, radius,
+    // ─── T86B F9 (CLAUDE.md law 9): THE LEFT CORNER IS THE MIRROR OF THE RIGHT
+    // The owner, 30.10.2026: *"zobacz lewa szafa, bul i bur sie nie
+    // odwrocily"*; *"bok, tutaj nie ma drzwi"*; *"wychodzi na to ze dziala
+    // CNC ale nie dziala 3D, tak?"* Yes. The L's SIDE-A and SIDE-B are both
+    // part 'SIDE', 550 x 2150 x 18, and the left SIDE-B carries the very tabs
+    // the right SIDE-A does (and the left SIDE-A the right SIDE-B's), so the
+    // key held nothing that told them apart and the cache handed the second
+    // L the first one's solid, built in the OTHER board's frame: the left
+    // SIDE-B stood 18 x 2150 x 568 along the wall (verify/t86b/
+    // corner-diagnosis.md). The solid is built in its placement's frame, so
+    // the placement is part of what the solid IS: one law, every board.
+    placementKey(placement, panel.box),
     ...notches.map((n) => `${n.edge}:${n.from}:${n.to}:${n.depth}`),
     // The tabs are part of the SHAPE, so two panels that differ only in their
     // tabs must not share a cached solid.
@@ -561,6 +573,17 @@ export function panelSolids(cutPanel, layers, profile, drills = []) {
 }
 
 const NOTHING = { solid: null, cuts: null };
+
+/**
+ * T86B F9 · the frame a solid is built in, as a cache key: the CNC origin
+ * from the box's own corner (mm) and the three axes. The solid is centred on
+ * its box, so these and the box's size are all the placement adds to it.
+ */
+function placementKey(placement, box) {
+  const o = placement.origin;
+  const at = [o[0] - box.x, o[1] - box.y, o[2] - box.z].map((n) => Math.round(n * 1000) / 1000);
+  return `pl:${at.join(',')}:${placement.u.join(',')}:${placement.v.join(',')}:${placement.n.join(',')}`;
+}
 
 /**
  * The raked strip, extruded from its four room-frame corners (T55, CLAUDE.md

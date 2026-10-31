@@ -482,6 +482,9 @@ export const NEW_FILES = [
   // T86B F7, F8 (31.10.2026): PART C, the UI (U1)
   'test/turn86b-f07-view.test.js',
   'test/turn86b-f08-worktop-finish.test.js',
+  // T86B F9 to F11 (31.10.2026): PART D, the picture, the probes and the walk (G1)
+  'test/turn86b-f09-corner-mirror.test.js',
+  'verify/t86b/probe-f09-scene.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

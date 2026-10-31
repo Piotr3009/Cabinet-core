@@ -27,6 +27,8 @@ import { migrateDesign, projectHeights } from '../engine/design.js';
 import { wizardStartBlockers } from '../engine/projectSettings.js';
 import { DEFAULT_SCOPE } from '../lib/wizardSteps.js';
 import { visibleTabs, wardrobeSeed } from '../lib/wizardTabs.js';
+// T-CC1a F5: an item is born bound to the Joinery Core project it was opened from (cc_create_item).
+import { startItem } from '../lib/jcList.js';
 
 const SECTION_META = {
   project: { label: 'Project', icon: 'project', hint: 'Name the job and choose what you are making.' },
@@ -57,14 +59,26 @@ const INITIAL_STATUS = {
 // not a new measurement and must not invalidate an already confirmed section.
 const sameRoomValues = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 
+// ─── T-CC1a F5 · NEW ITEM BINDS TO A JC PROJECT (CLAUDE.md T-CC1a law 4) ─────
+// The owner, 30.10.2026: *"automatyczne polaczenie danego projektu do danego
+// pipelinu lub production projektu"*. The flow is opened from a project row of
+// the start screen (`jcProject`: kind, id, number, name, client) and shows that
+// project READ-ONLY; the one typed field is the item's name. Confirming the
+// first section asks Joinery Core for the item (`cc_create_item`, through
+// withDb): the record is built with the server's id and the row's
+// jc_project_number, and nothing is made locally when JC refuses (403,
+// offline): the words stay on the flow. The rest of the workspace is as it was.
+
 /** One workspace, the existing editors and store setters, one navigation row. */
-export default function NewProjectFlow({ initialNumber = '', onCancel, onStart, anchor = null }) {
+export default function NewProjectFlow({ jcProject = null, onCancel, onStart, anchor = null }) {
   const project = useProjectStore((s) => s.project);
   const profile = useCabinetProfileStore((s) => s.profile);
   const assignmentData = useMaterialAssignmentStore((s) => s.data);
   const audience = useUiStore((s) => s.audience);
   const [step, setStep] = useState('project');
-  const [info, setInfo] = useState({ number: initialNumber, name: '', client: '' });
+  const [info, setInfo] = useState({ name: '' });
+  const [refusal, setRefusal] = useState(null);   // JC's words when cc_create_item was refused
+  const [asking, setAsking] = useState(false);    // cc_create_item in flight
   const [typeId, setTypeId] = useState(PROJECT_TYPES[0].id);
   const [scope, setScope] = useState(DEFAULT_SCOPE);
   const [created, setCreated] = useState(false);
@@ -124,7 +138,7 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart, 
     if (!created) return;
     const current = useProjectStore.getState().project;
     const currentDesign = migrateDesign(current.design);
-    setInfo({ number: current.number || '', name: current.name || '', client: current.client || '' });
+    setInfo({ name: current.name || '' });
     setTypeId(currentDesign.projectType || typeId);
     setScope(currentDesign.scope || scope);
     seededType.current = currentDesign.projectType || typeId;
@@ -168,14 +182,27 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart, 
 
   const commitProject = (destination = 'space') => {
     const store = useProjectStore.getState();
-    const number = info.number.trim();
-    const name = info.name.trim() || (number ? `Project ${number}` : 'Untitled project');
-    if (created) store.setProjectInfo({ name, number, client: info.client.trim() });
-    else {
-      useHistoryStore.getState().clear();
-      store.newProject(name, { number, client: info.client.trim() });
+    const name = info.name.trim();
+    if (!name) { setRefusal('Name the item first: what is it (Kitchen, Wardrobe bedroom 2 ...)?'); return; }
+    if (created) { store.setProjectInfo({ name }); settleProject(destination, true); return; }
+    if (asking) return;
+    if (!jcProject?.id) { setRefusal('Open New item from a project of the list: an item belongs to one Joinery Core project.'); return; }
+    setAsking(true);
+    startItem({
+      name,
+      project: jcProject,
+      newProject: (n, opts) => { useHistoryStore.getState().clear(); store.newProject(n, opts); },
+    }).then((born) => {
+      setAsking(false);
+      if (!born.ok) { setRefusal(born.error); return; }
+      setRefusal(null);
       setCreated(true);
-    }
+      settleProject(destination, false);
+    });
+  };
+  // The rest of the first section's confirm, as it was: `created` is whether the item stood before this confirm.
+  const settleProject = (destination, created) => {
+    const store = useProjectStore.getState();
     store.setDesign({ scope, projectType: typeId });
     // Revisiting the name or client must never re-seed customised heights.
     if (!created || seededType.current !== typeId) {
@@ -238,16 +265,17 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart, 
         : nav?.nextLabel || 'Continue';
   const primaryAction = step === 'project' ? () => commitProject()
     : step === 'summary' ? onStart : nav?.next;
-  const primaryDisabled = step === 'summary' ? !canStart : step === 'project' ? false : !nav || nav.canNext === false;
+  const primaryDisabled = step === 'summary' ? !canStart : step === 'project' ? asking : !nav || nav.canNext === false;
   const backAction = step === 'summary' ? () => goSection(tabs[tabs.length - 1].id)
     : step === 'settings' || step === 'space' ? nav?.back : null;
   const currentMeta = SECTION_META[active];
-  const footerHint = step === 'summary' ? (canStart ? 'Ready to create the design. Start designing saves this project locally.' : [...blockers.map((b) => b.message), ...confirmationHints].join(' '))
-    : nav?.hint || 'Project draft. Confirmed sections are shown in the sidebar; the project is saved when you start designing.';
+  const footerHint = step === 'project' && refusal ? refusal
+    : step === 'summary' ? (canStart ? 'Ready to create the design. Save (Ctrl+S) writes it to Joinery Core.' : [...blockers.map((b) => b.message), ...confirmationHints].join(' '))
+      : nav?.hint || 'Item draft. Confirmed sections are shown in the sidebar; the item is made in Joinery Core when the first section is confirmed.';
 
   return (
     <Modal
-      name="new-project" title="New project" anchor={anchor} workspace className="cc-setup"
+      name="new-project" title="New item" anchor={anchor} workspace className="cc-setup"
       onClose={onCancel}
       onEscape={() => { if (backAction) backAction(); else if (step === 'project') onCancel(); }}
       footer={(
@@ -265,7 +293,7 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart, 
       <div className="cc-setup-layout" data-wizard-step={step === 'project' ? 'info' : step === 'space' ? editor : step}
         data-wizard-gates={`${gates.carcasses ? 'carcasses' : ''}${gates.carcasses && gates.fronts ? '+' : ''}${gates.fronts ? 'fronts' : ''}` || 'none'}>
         <aside className="cc-setup-sidebar" aria-label="Project setup progress">
-          <div className="cc-setup-sidebar-intro"><span className="cc-setup-kicker">Project setup</span><strong>{created ? project.name : 'Your next project'}</strong>
+          <div className="cc-setup-sidebar-intro"><span className="cc-setup-kicker">Project setup</span><strong>{created ? project.name : 'Your next item'}</strong>
             <span>{created ? `${readyCount} of ${sections.length - 1} sections ready` : 'Start with the project details'}</span>
             <progress className="cc-setup-progress" value={readyCount} max={sections.length - 1} aria-label="Sections ready" />
           </div>
@@ -298,16 +326,21 @@ export default function NewProjectFlow({ initialNumber = '', onCancel, onStart, 
           <div className="cc-setup-content" ref={content}>
             {step === 'project' && <div className="cc-setup-project">
               <section className="cc-setup-project-details">
-                <div className="cc-setup-field-grid">
-                  {[
-                    ['number', 'Project number', '', true], ['name', 'Project name (optional)', 'Hampstead kitchen', false], ['client', 'Client (optional)', '', false],
-                  ].map(([key, label, placeholder, required]) => <label key={key} className={required ? 'block cc-setup-required' : 'block'} data-required={required ? '1' : undefined}>
-                    <span className="cc-label">{label}{required && <em className="cc-setup-required-mark" title="Required">*</em>}</span><input className="cc-input" data-project-field={key} required={required || undefined} aria-required={required || undefined}
-                      value={info[key]} placeholder={placeholder} onChange={(e) => { setInfo({ ...info, [key]: e.target.value }); markDirty('project'); }}
-                      onKeyDown={(e) => { if (e.key === 'Enter') commitProject(); }} />
+                {/* T-CC1a F5: the Joinery Core project, READ-ONLY (its number is JC's, never typed here). */}
+                <div className="cc-setup-field-grid" data-jc-bound-project={jcProject?.key || ''}>
+                  {[['number', 'Project number'], ['name', 'Project'], ['client', 'Client']].map(([key, label]) => <label key={key} className="block">
+                    <span className="cc-label">{label}</span><input className="cc-input" data-jc-project-field={key} readOnly
+                      value={jcProject?.[key] || ''} title="Joinery Core's: read-only in Cabinet Core" />
                   </label>)}
                 </div>
-                <button type="button" className="cc-btn" disabled title="Import will be available when Joinery Core is connected">Import from Joinery Core <span className="cc-tag">soon</span></button>
+                <div className="cc-setup-field-grid">
+                  <label className="block cc-setup-required" data-required="1">
+                    <span className="cc-label">Item name<em className="cc-setup-required-mark" title="Required">*</em></span><input className="cc-input" data-project-field="name" required aria-required
+                      value={info.name} placeholder="Kitchen, Wardrobe bedroom 2 ..." onChange={(e) => { setInfo({ name: e.target.value }); setRefusal(null); markDirty('project'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') commitProject(); }} />
+                  </label>
+                </div>
+                {refusal && <p className="cc-setup-help text-status-danger" role="alert" data-jc-refusal="1">{refusal}</p>}
               </section>
               <section><h2>What are you making?</h2><p className="cc-setup-help">The type sets the starting dimensions and where the furniture library opens. You can adjust every dimension later.</p>
                 <div className="cc-setup-project-grid">{PROJECT_TYPES.map((type) => {

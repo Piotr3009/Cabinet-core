@@ -13,7 +13,7 @@
 // reads so node tests drive every branch, a memoised load that never
 // rejects, and a cache the answers are read from.
 
-import { isMockMode, supabase, withDb } from './supabase.js';
+import { isJcOffline, withDb } from './jcApi.js';
 
 let cache = [];
 let pending = null;
@@ -77,7 +77,7 @@ export function makeRegisterLookup(rows) {
 }
 
 async function readTable() {
-  if (isMockMode || !supabase) return null;
+  if (isJcOffline()) return null;
   const { data } = await withDb(
     (db) => db.from('cc_hardware_register')
       .select('category, family, finish, variant, angle, article, source, label'),

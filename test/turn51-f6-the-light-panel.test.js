@@ -159,7 +159,9 @@ test('F6 — and the panel SAYS so, in one line', () => {
 // ─── decision 1: the settings live with the project ────────────────────────
 
 test('F6 — the rig is PROJECT data, saved and migrated like every other record', () => {
-  assert.match(STORE, /lightRig: migrateLightRig\(cached\.project\.lightRig\)/, 'restored from the cache');
+  // AMENDED BY T-CC1a F9 (31.10.2026): no cache is read at module load any more; a restored crash buffer opens
+  // through loadProject (the line below), so the rig is migrated on that one road. *"moje zdanie to powinno sie wszystko zapisywac na pamiec podreczna"* (the owner, 30.10.2026).
+  assert.doesNotMatch(STORE, /cached\.project/, 'no cache read at module load');
   assert.match(STORE, /lightRig: project\?\.lightRig/, 'and from a saved job');
   assert.match(STORE, /setLightRig: \(patch\) => set\(\(s\) => \{/, 'a patch setter, like setLedSpec');
   // A job saved before tonight has none and opens on the rig it was drawn

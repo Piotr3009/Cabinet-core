@@ -190,7 +190,7 @@ export default function WizardSettings({
   const editDoor = door === 'project';
   const project = useProjectStore((s) => s.project);
   const storedDesign = useProjectStore((s) => s.project.design);
-  const setProjectInfo = useProjectStore((s) => s.setProjectInfo);
+  // T-CC1a F4.3: the number and the client are Joinery Core's, read-only here (the item name is edited in the top bar).
   const setDesign = useProjectStore((s) => s.setDesign);
   const setProjectDefaults = useProjectStore((s) => s.setProjectDefaults);
   const setProjectHeights = useProjectStore((s) => s.setProjectHeights);
@@ -1264,7 +1264,8 @@ export default function WizardSettings({
                             className="cc-input"
                             data-project-number="1"
                             value={project.number || ''}
-                            onChange={(e) => setProjectInfo({ number: e.target.value })}
+                            readOnly
+                            title="Joinery Core's: read-only in Cabinet Core"
                           />
                         </label>
                         <label className="block">
@@ -1273,7 +1274,8 @@ export default function WizardSettings({
                             className="cc-input"
                             data-project-client="1"
                             value={project.client || ''}
-                            onChange={(e) => setProjectInfo({ client: e.target.value })}
+                            readOnly
+                            title="Joinery Core's: read-only in Cabinet Core"
                           />
                         </label>
                       </div>

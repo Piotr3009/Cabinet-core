@@ -14,9 +14,7 @@
 // migration against — the three are one code path (`lib/warehouseDb.js`).
 
 import { create } from 'zustand';
-import {
-  listWarehouse, removeMaterialDb, saveManyDb, saveMaterialDb,
-} from '../lib/warehouseDb.js';
+import { listWarehouse } from '../lib/warehouseDb.js';
 import {
   PRICE_TYPED, mergeImport, migrateMaterial, newMaterial, renameSubcategory,
 } from '../engine/warehouse.js';
@@ -77,9 +75,7 @@ export const useWarehouseStore = create((set, get) => ({
     const merged = [...rows, ...mine];
     get().put(merged);
     set({ loading: false, source: 'db', error: null });
-    // Anything that was only ever local goes up, now that there is somewhere
-    // to put it.
-    if (mine.length) await saveManyDb(mine);
+    // T-CC1a F3: nothing goes up; the rows stay in this browser until T-CC2.
     return { source: 'db', error: null };
   },
 
@@ -88,7 +84,6 @@ export const useWarehouseStore = create((set, get) => ({
     const rows = get().rows;
     const born = newMaterial(rows, patch);
     get().put([...rows, born]);
-    saveMaterialDb(born).then(({ ok }) => { if (!ok) set({ source: 'local' }); });
     return born;
   },
 
@@ -108,21 +103,17 @@ export const useWarehouseStore = create((set, get) => ({
     const out = [...rows];
     out[at] = { ...next, id: rows[at].id, item_number: rows[at].item_number };
     get().put(out);
-    saveMaterialDb(out[at]).then(({ ok }) => { if (!ok) set({ source: 'local' }); });
     return out[at];
   },
 
   removeMaterial: (id) => {
     get().put(get().rows.filter((r) => r.id !== id));
-    removeMaterialDb(id).then(({ ok }) => { if (!ok) set({ source: 'local' }); });
   },
 
   /** *"renameable in bulk"* — every row wearing the old name, in one write. */
   renameSubcategory: (from, to) => {
     const rows = renameSubcategory(get().rows, from, to);
     get().put(rows);
-    saveManyDb(rows.filter((r) => r.subcategory === String(to || '').trim()))
-      .then(({ ok }) => { if (!ok) set({ source: 'local' }); });
   },
 
   /**
@@ -136,7 +127,6 @@ export const useWarehouseStore = create((set, get) => ({
     const result = mergeImport(get().rows, incoming);
     get().put(result.rows);
     set({ lastImport: { added: result.added, updated: result.updated, repriced: result.repriced } });
-    saveManyDb(result.rows).then(({ ok }) => { if (!ok) set({ source: 'local' }); });
     return result;
   },
 

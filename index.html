@@ -19,6 +19,11 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- T-CC1a F1: Joinery Core's own client, a classic script served by JC on
+         the same host, BEFORE the module script so apiFetch, rpc and
+         supabaseClient are on the window when main.jsx runs. The owner:
+         "oczywiscie do CC laczysz sie tylko przez JC". -->
+    <script src="/js/api-client.js?v=9"></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

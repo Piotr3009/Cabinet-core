@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 
 import * as cloud from '../lib/cloudSync.js';
-import { isMockMode } from '../lib/supabase.js';
+import { isJcOffline } from '../lib/jcApi.js';
+import { useAuthStore } from './authStore.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import {
   DEFAULT_COMPANY_DEFAULTS, hasCompanyDefaults, setCompanyDefaults, validateCompanyDefaults,
@@ -35,11 +36,11 @@ export const useCompanyDefaultsStore = create((set, get) => ({
   busy: false,
   error: null,
   saved: false,
-  mock: isMockMode,
+  mock: isJcOffline(),
 
   /** Read the row. Safe to call with no session: it comes back null. */
   load: async () => {
-    if (isMockMode) { set({ loaded: true, mock: true }); return null; }
+    if (isJcOffline()) { set({ loaded: true, mock: true }); return null; }
     set({ busy: true, error: null });
     const { defaults, error } = await cloud.loadCompanyDefaults();
     const { value, rejected } = validateCompanyDefaults(defaults, getCabinetProfile());
@@ -69,7 +70,8 @@ export const useCompanyDefaultsStore = create((set, get) => ({
   save: async () => {
     const row = get().defaults || DEFAULT_COMPANY_DEFAULTS;
     set({ busy: true, error: null, saved: false });
-    const { saved, error } = await cloud.saveCompanyDefaults(row);
+    // T-CC1a F3: the owner is the signed-in Joinery Core user (authStore), never a getUser() of a second client.
+    const { saved, error } = await cloud.saveCompanyDefaults(row, useAuthStore.getState().user?.id || null);
     set({ busy: false, saved, error: error ? error.message : null });
     return saved;
   },

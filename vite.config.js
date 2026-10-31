@@ -22,7 +22,12 @@ export default defineConfig({
   // `open` is a DEV convenience and nothing else: `npm run dev` shows the
   // switch first, because a switch nobody can find is not a switch. The built
   // site is unaffected and `/` is still PRO's front door (CLAUDE.md F1.3).
-  server: { port: 5173, host: true, open: '/start.html' },
+  // T-CC1a F1: Cabinet Core lives at joinerycore.com/cabinet (JC's vercel.json
+  // routes /cabinet/ to this deployment), so every asset URL starts with the
+  // base; `open` follows it. The owner: *"oczywiscie do CC laczysz sie tylko
+  // przez JC"*.
+  base: '/cabinet/',
+  server: { port: 5173, host: true, open: '/cabinet/start.html' },
   build: {
     outDir: 'dist',
     sourcemap: true,

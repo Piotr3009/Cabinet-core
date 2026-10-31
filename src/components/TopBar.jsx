@@ -6,7 +6,6 @@ import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 // T84 F2 (CLAUDE.md PART A): Undo and Redo on the Studio top bar, the history store's own.
 import { useHistoryStore } from '../stores/historyStore.js';
-import MockModeBadge from './MockModeBadge.jsx';
 // Turn 44 (CLAUDE.md iron rule 5): which head is reading — factory or retail.
 import MenuBar from './MenuBar.jsx';
 import { UNIT_CATEGORIES } from '../engine/types.js';
@@ -19,6 +18,8 @@ import { persistProject } from '../lib/persist.js';
 import { pickProjectFile } from '../lib/projectFile.js';
 import { openProjectFromFile, saveProjectToFile } from '../lib/projectFileRoad.js';
 import { askProjectFile } from './ProjectFileModal.jsx';
+// T-CC1a F6: Open from file is the import road, bound to a Joinery Core project picked in its own window.
+import { askJcProject } from './jc/JcProjectPicker.jsx';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 // T84 F2: the Studio's icons (StudioShell mounts their sprite once).
@@ -38,7 +39,7 @@ import { Icon } from './studio/StudioIcons.jsx';
 // a drawing, a cut list, a DXF, a PDF — is in one place, in the order a
 // workshop meets them: show the client, draw it, cut it.
 export default function TopBar({
-  onExportCsv, onExportPdf, onExportDxfZip, onExportLabels, onRender, onDrawing, onAuth,
+  onExportCsv, onExportPdf, onExportDxfZip, onExportLabels, onRender, onDrawing,
   // T84 F2 (CLAUDE.md PART A): 'studio' when StudioShell holds the bar; absent, the bar of today.
   variant = null,
 }) {
@@ -151,6 +152,7 @@ export default function TopBar({
       picked,
       anchor,
       ask: askProjectFile,
+      pickProject: askJcProject,
       beforeOpen: () => {
         const now = useProjectStore.getState();
         warnIfUnsaved({ dirty: now.dirty, units: now.units });
@@ -164,7 +166,7 @@ export default function TopBar({
       items: [
         { label: 'New project…', hint: 'Name it and set the room on the start screen', run: leaveProject },
         { label: 'Open…', hint: 'Recent projects and everything saved', run: leaveProject },
-        { label: 'Open from file…', hint: 'A .ccproject file, saved on this computer or another', run: (e) => openFromFile(anchorOfEvent(e)) },
+        { label: 'Open from file…', hint: 'Import an old .ccproject job into a Joinery Core project', run: (e) => openFromFile(anchorOfEvent(e)) },
         { divider: true },
         { label: 'Save', hint: dirty ? 'Unsaved changes' : 'Up to date', run: save },
         { label: 'Save as…', run: (e) => openModal('save-as', { anchor: anchorOfEvent(e) }) },
@@ -388,9 +390,9 @@ export default function TopBar({
   // legacy layout draws them where it always did. The Studio layout adds three
   // things of its own: the PRO label, Undo and Redo (`StudioHistory`, at the
   // end of this file) and the word BOM on the gold button (the owner, 16:27:
-  // *"tak"*, renamed, the same call). Its MockModeBadge stands on the Studio
-  // status bar instead (components/studio/StatusBar.jsx), and its look is the
-  // skin's (components/studio/studio.css, the `studio-*` classes).
+  // *"tak"*, renamed, the same call). Its look is the skin's
+  // (components/studio/studio.css, the `studio-*` classes). T-CC1a F3: the
+  // mock badge and the Account button are deleted with the login.
   const drawWordmark = () => {
     return (
       <button
@@ -485,11 +487,6 @@ export default function TopBar({
       </label>
     );
   };
-  const drawAccount = () => {
-    return (
-      <button type="button" className="cc-btn" data-studio={studio ? 'topbar-account' : undefined} onClick={onAuth}>Account</button>
-    );
-  };
   const drawBom = () => {
     return (
       <button type="button" className="cc-btn-gold" data-studio={studio ? 'topbar-bom' : undefined} onClick={() => setBomOpen(!bomOpen)}>
@@ -502,7 +499,7 @@ export default function TopBar({
   // Stage-1's order (verify/t84/astra/, CLAUDE.md T84 F2): the wordmark and the
   // PRO label, the project name, the legacy menus WHOLE (the same `menus`, the
   // same MenuBar: every leaf, `run`, `disabled` and `checked` of THE CENSUS),
-  // then Undo and Redo, Save, Brightness, Account and BOM. Its height is the
+  // then Undo and Redo, Save, Brightness and BOM (T-CC1a F3: Account deleted). Its height is the
   // profile's, through the shell's `--studio-top`.
   if (studio) {
     return (
@@ -520,7 +517,6 @@ export default function TopBar({
         <StudioHistory />
         {drawSave()}
         {drawBrightness()}
-        {drawAccount()}
         {drawBom()}
       </header>
     );
@@ -544,8 +540,6 @@ export default function TopBar({
           Save since turn 4, where a joiner cannot see what it did; this is the
           same call with a face on it, beside the dirty dot that asks for it. */}
       {drawSave()}
-
-      <MockModeBadge />
 
       <div className="flex-1" />
 
@@ -571,7 +565,7 @@ export default function TopBar({
           about the lighting changes. */}
       {drawBrightness()}
 
-      {drawAccount()}
+      {/* T-CC1a F3: the Account button is deleted; the session is Joinery Core's (*"oczywiscie do CC laczysz sie tylko przez JC"*). */}
       {drawBom()}
     </header>
   );

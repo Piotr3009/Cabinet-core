@@ -111,7 +111,10 @@ test('the assignments fold as lib/persist.js folds them: the live blob, else the
   assert.deepEqual(withAssignments({ id: 'a', assignments: { x: 1 } }, ASSIGNED), { id: 'a', assignments: ASSIGNED });
   assert.deepEqual(withAssignments({ id: 'a' }, null), { id: 'a' }, 'nothing assigned, no key');
   // ...the very lines of persist.js, so the two can never fold differently.
-  assert.match(read('src/lib/persist.js'), /assignments = useMaterialAssignmentStore\.getState\(\)\.data \|\| assignments/);
+  // AMENDED BY T-CC1a F7 (31.10.2026): the fold moved whole from persist.js into projectStore.projectForSave, the ONE
+  // builder of the item JSON. *"dopiero caly json powinien sie zapisac do DB przy nacisnieciu Zapisz lub co 5 minut
+  // automatycznie"* (the owner, 30.10.2026).
+  assert.match(read('src/stores/projectStore.js'), /assignments = useMaterialAssignmentStore\.getState\(\)\.data \|\| assignments/);
 });
 
 test('a file that is not one says so in words, and never throws', () => {
@@ -195,7 +198,42 @@ test('Save to file: the job on the screen, its live assignments, its settings, o
   assert.ok(UI().messages.some((m) => String(m.message).startsWith(`Saved to a file: ${name}`)), 'the save says where the file went');
 });
 
-test('Open from file: a new job goes on the shelf and opens, with its own assignments, nothing asked', async () => {
+// ─── REWRITTEN BY T-CC1a F6 (31.10.2026) TO THE NEW LAW ─────────────────────
+// The owner, 31.10.2026, 01:06 (answer 10): *"w przyszlosci nie bedzie save to file, po co?"*: Open from file is the
+// one-time IMPORT of an old job. It no longer puts the job on this computer's shelf: it is bound to the Joinery Core
+// project the picker returns, born with cc_create_item (its id the server's) and saved once with cc_save_item; the
+// id-collision question is asked against Joinery Core's items; the file's settings are never asked and never applied.
+// The four cases below assert that road on a fake Joinery Core, case for case where the shelf road stood.
+const KOWALSKI_PROJECT = { key: 'p:p9', kind: 'production', id: 'p9', number: '1234', name: 'Kowalski', client: 'Kowalski' };
+function fakeJc(items = []) {
+  const rpc = [];
+  let n = 0;
+  const from = (table) => {
+    const chain = {
+      select: () => chain, eq: () => chain, order: () => chain, limit: () => chain, single: () => chain,
+      then: (res, rej) => Promise.resolve({ data: table === 'cc_items' ? items : [], error: null }).then(res, rej),
+    };
+    return chain;
+  };
+  return {
+    rpc,
+    client: {
+      from,
+      rpc: (name, params) => {
+        rpc.push({ name, params });
+        if (name === 'cc_create_item') { n += 1; return Promise.resolve({ data: { id: `srv-new-${n}`, name: params.p_name, jc_project_number: '1234' }, error: null }); }
+        return Promise.resolve({ data: { id: params.p_item_id, updated_at: '2026-10-31T12:00:00Z', revision: null }, error: null });
+      },
+    },
+  };
+}
+async function onJc(jc, fn) {
+  const before = globalThis.supabaseClient;
+  globalThis.supabaseClient = jc.client;
+  try { return await fn(); } finally { if (before === undefined) delete globalThis.supabaseClient; else globalThis.supabaseClient = before; }
+}
+
+test('Open from file: a new job is imported into the picked JC project and opens, with its own assignments', async () => {
   const shelf = memoryStorage();
   const file = buildProjectFile({ project: job(), units: [], assignments: ASSIGNED, profile: getCabinetProfile(), at: AT });
   storeJob();
@@ -203,77 +241,72 @@ test('Open from file: a new job goes on the shelf and opens, with its own assign
   S().setProjectName?.('changed');
   let asked = 0;
   let before = 0;
-  const said = await openProjectFromFile({
+  const jc = fakeJc();
+  const said = await onJc(jc, () => openProjectFromFile({
     picked: { name: 'k.ccproject', text: projectFileText(file) },
     storage: shelf,
     at: AT + 1,
     ask: async () => { asked += 1; return null; },
+    pickProject: async () => KOWALSKI_PROJECT,
     beforeOpen: () => { before += 1; },
-  });
+  }));
   assert.equal(said, 'opened');
-  assert.equal(asked, 0, 'nothing to ask');
+  assert.equal(asked, 0, 'no collision: nothing to ask');
   assert.equal(before, 1, 'the word about unsaved work is spoken before the job is replaced');
-  assert.equal(S().project.id, 'loc_kowalski');
+  assert.deepEqual(jc.rpc.map((c) => c.name), ['cc_create_item', 'cc_save_item']);
+  assert.equal(S().project.id, 'srv-new-1', 'the server\'s id');
   assert.equal(S().project.name, 'Kowalski szafa');
   assert.equal(S().project.titleBlock.company.logo.href, LOGO.href);
-  assert.deepEqual(listLocalProjects(shelf).map((r) => r.id), ['loc_kowalski'], 'on this computer\'s shelf');
-  assert.equal(loadLocalProject(shelf, 'loc_kowalski').project.number, '1234');
-  assert.equal(useMaterialAssignmentStore.getState().projectId, 'loc_kowalski');
+  assert.deepEqual(listLocalProjects(shelf), [], 'nothing on this computer\'s shelf');
+  assert.equal(useMaterialAssignmentStore.getState().projectId, 'srv-new-1');
   assert.match(JSON.stringify(useMaterialAssignmentStore.getState().data), /MAT-OAK-18/, 'its own assignments opened with it');
   assert.equal(useHistoryStore.getState().past.length, 0, 'the undo stack of the last job does not reach into it');
   assert.equal(UI().screen, 'editor');
 });
 
-test('Open from file: the same job on the shelf asks first; Cancel (or no window) replaces nothing', async () => {
-  const shelf = memoryStorage();
-  saveLocalProject(shelf, { project: job({ name: 'Kowalski on this computer' }), units: [], at: 7 });
-  const file = buildProjectFile({ project: job(), units: UNITS, profile: getCabinetProfile(), at: AT });
+test('Open from file: a job that is already a JC item asks first; Cancel (or no window) replaces nothing', async () => {
+  const file = buildProjectFile({ project: job({ id: 'srv-kowalski' }), units: UNITS, profile: getCabinetProfile(), at: AT });
   storeJob();
   const picked = { name: 'k.ccproject', text: projectFileText(file) };
+  const jc = fakeJc([{ id: 'srv-kowalski', name: 'Kowalski in Joinery Core', updated_at: '2026-10-30T10:00:00Z', jc_project_id: 'p9', jc_project_number: '1234' }]);
   let seen = null;
-  assert.equal(await openProjectFromFile({ picked, storage: shelf, ask: async (q) => { seen = q; return null; } }), 'cancelled');
-  assert.equal(seen.questions.collision.id, 'loc_kowalski', 'the window is told which row');
-  assert.equal(seen.questions.profile, null);
-  assert.equal(await openProjectFromFile({ picked, storage: shelf }), 'cancelled', 'no window to ask in is a Cancel');
-  assert.equal(loadLocalProject(shelf, 'loc_kowalski').project.name, 'Kowalski on this computer', 'the shelf is as it was');
+  assert.equal(await onJc(jc, () => openProjectFromFile({ picked, ask: async (q) => { seen = q; return null; } })), 'cancelled');
+  assert.equal(seen.questions.collision.id, 'srv-kowalski', 'the window is told which item');
+  assert.equal(seen.questions.profile, null, 'the settings are never asked');
+  assert.equal(await onJc(jc, () => openProjectFromFile({ picked })), 'cancelled', 'no window to ask in is a Cancel');
+  assert.deepEqual(jc.rpc, [], 'nothing written to Joinery Core');
   assert.equal(S().project.id, 'loc_store_job', 'the job on the screen is as it was');
 });
 
-test('Open from file: Replace overwrites the row; Keep both opens a copy beside it', async () => {
-  const shelf = memoryStorage();
-  saveLocalProject(shelf, { project: job({ name: 'Kowalski on this computer' }), units: [], at: 7 });
-  const file = buildProjectFile({ project: job(), units: UNITS, profile: getCabinetProfile(), at: AT });
+test('Open from file: Replace saves the file into that item; Keep both makes a new item beside it', async () => {
+  const file = buildProjectFile({ project: job({ id: 'srv-kowalski' }), units: UNITS, profile: getCabinetProfile(), at: AT });
   const picked = { name: 'k.ccproject', text: projectFileText(file) };
-  assert.equal(await openProjectFromFile({ picked, storage: shelf, ask: async () => ({ mode: 'replace', takeProfile: false }) }), 'opened');
-  assert.deepEqual(listLocalProjects(shelf).map((r) => r.name), ['Kowalski szafa'], 'one row, the file\'s');
+  const items = [{ id: 'srv-kowalski', name: 'Kowalski szafa', updated_at: '2026-10-30T10:00:00Z', jc_project_id: 'p9', jc_project_number: '1234' }];
+  const replace = fakeJc(items);
+  assert.equal(await onJc(replace, () => openProjectFromFile({ picked, ask: async () => ({ mode: 'replace', takeProfile: false }) })), 'opened');
+  assert.deepEqual(replace.rpc.map((c) => [c.name, c.params.p_item_id]), [['cc_save_item', 'srv-kowalski']], 'one save, into the item');
   assert.equal(S().units.length, 1);
-  assert.equal(await openProjectFromFile({ picked, storage: shelf, at: AT + 5, ask: async () => ({ mode: 'copy', takeProfile: false }) }), 'opened');
-  const rows = listLocalProjects(shelf);
-  assert.equal(rows.length, 2, 'both stand');
-  assert.ok(rows.some((r) => r.id === 'loc_kowalski' && r.name === 'Kowalski szafa'));
-  const copy = rows.find((r) => r.id !== 'loc_kowalski');
-  assert.equal(copy.name, 'Kowalski szafa copy');
-  assert.equal(S().project.id, copy.id, 'the copy is the job on the screen');
+  const copy = fakeJc(items);
+  assert.equal(await onJc(copy, () => openProjectFromFile({
+    picked, at: AT + 5, ask: async () => ({ mode: 'copy', takeProfile: false }), pickProject: async () => KOWALSKI_PROJECT,
+  })), 'opened');
+  assert.deepEqual(copy.rpc.map((c) => c.name), ['cc_create_item', 'cc_save_item'], 'a new item, saved once');
+  assert.equal(S().project.id, 'srv-new-1', 'the copy is the job on the screen');
 });
 
-test('Open from file: other workshop settings are asked; taken, they become this computer\'s', async () => {
-  const shelf = memoryStorage();
+test('Open from file: other workshop settings are never asked and never applied (the read-only words)', async () => {
   const theirs = JSON.parse(JSON.stringify(getCabinetProfile()));
   theirs.carcass.shelfSetbackMm = 20;
   const file = buildProjectFile({ project: job({ id: 'loc_settings' }), units: [], profile: theirs, at: AT });
   const picked = { name: 's.ccproject', text: projectFileText(file) };
+  let told = null;
   try {
-    let q = null;
-    assert.equal(await openProjectFromFile({
-      picked, storage: shelf, ask: async (x) => { q = x.questions; return { mode: 'replace', takeProfile: false }; },
-    }), 'opened');
-    assert.equal(q.profile.rows[0].path, 'carcass.shelfSetbackMm');
-    assert.notEqual(getCabinetProfile().carcass.shelfSetbackMm, 20, 'kept: this computer\'s stand');
-    assert.equal(await openProjectFromFile({
-      picked, storage: shelf, ask: async () => ({ mode: 'replace', takeProfile: true }),
-    }), 'opened');
-    assert.equal(getCabinetProfile().carcass.shelfSetbackMm, 20, 'taken: the file\'s are this computer\'s now');
-    assert.equal(useCabinetProfileStore.getState().profile.carcass.shelfSetbackMm, 20);
+    assert.equal(await onJc(fakeJc(), () => openProjectFromFile({
+      picked, ask: async () => { throw new Error('nothing to ask'); }, pickProject: async (o) => { told = o; return KOWALSKI_PROJECT; },
+    })), 'opened');
+    assert.equal(told.profileNote, true, 'the picker is told, to say it in words');
+    assert.notEqual(getCabinetProfile().carcass.shelfSetbackMm, 20, 'this computer\'s stand');
+    assert.notEqual(useCabinetProfileStore.getState().profile.carcass.shelfSetbackMm, 20);
   } finally {
     useCabinetProfileStore.getState().resetProfile();
   }
@@ -302,17 +335,23 @@ test('File carries Open from file... after Open... and Save to file... after Sav
   assert.match(file, /label: 'Save to file…', hint: '[^']+', run: saveToFile/);
   assert.match(top, /const saveToFile = \(\) => \{ saveProjectToFile\(\); \};/);
   assert.match(top, /ask: askProjectFile,/);
+  // AMENDED BY T-CC1a F6: and the picker of the Joinery Core project the import binds to.
+  assert.match(top, /pickProject: askJcProject,/);
   assert.match(top, /warnIfUnsaved\(\{ dirty: now\.dirty, units: now\.units \}\)/, 'the word about unsaved work, as File > Open says it');
   assert.match(top, /import \{ openProjectFromFile, saveProjectToFile \} from '\.\.\/lib\/projectFileRoad\.js';/);
 });
 
 test('the start screen\'s Open panel carries Open from file..., the same road', () => {
   const start = read('src/components/StartScreen.jsx');
-  const panel = start.slice(start.indexOf('>Open</h2>'), start.indexOf('</section>', start.indexOf('>Open</h2>')));
+  // AMENDED BY T-CC1a F4 (31.10.2026): the shelf's Open panel (All projects, Recent) is gone with the shelf list; Open
+  // from file stands alone in the Import panel, the one road in for an old job. *"w przyszlosci nie bedzie save to
+  // file, po co?"* (the owner, 31.10.2026, 01:06).
+  const panel = start.slice(start.indexOf('>Import</h2>'), start.indexOf('</section>', start.indexOf('>Import</h2>')));
   assert.match(panel, /data-open-from-file="1"/);
   assert.match(panel, /onClick=\{onOpenFile\}/);
   assert.match(panel, /Open from file…/);
-  assert.match(start, /await openProjectFromFile\(\{\s*picked, anchor, storage, ask: askProjectFile,\s*\}\);/);
+  // AMENDED BY T-CC1a F6: the import road, the picker bound to the list the screen already holds.
+  assert.match(start, /await openProjectFromFile\(\{\s*picked, anchor, storage, ask: askProjectFile, pickProject, list: known,\s*\}\);/);
 });
 
 test('the questions are a shell window, named in the registry, its buttons as the mockup drew them', () => {

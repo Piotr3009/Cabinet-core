@@ -433,9 +433,16 @@ test('F20 after the review · the company memory and the cache keep a ref; a ref
     }
     assert.ok(!mem.getItem('cabinet-core.titleBlock.company').includes(BIG.href), 'the memory names it by ref');
     // The current-job cache is written 250 ms after a change, with the ref.
+    // AMENDED BY T-CC1a F9 (31.10.2026): the cache is the crash buffer of the open item, keyed by tenant and item
+    // (lib/crashBuffer.js); it keeps the logo as its ref as the cache did. *"moje zdanie to powinno sie wszystko
+    // zapisywac na pamiec podreczna"* (the owner, 30.10.2026).
+    const { useAuthStore } = await import('../src/stores/authStore.js');
+    useAuthStore.setState({ tenant: { id: 'tenant-f20', name: 'Skylon' } });
+    useProjectStore.getState().newProject('Cached', { id: 'srv-cached' });
     useProjectStore.getState().setProjectName('Cached job');
     await new Promise((r) => setTimeout(r, 400));
-    const cache = mem.getItem('cc.project.cache.v1') || '';
+    const cache = mem.getItem('cc.tenant-f20.item.srv-cached.buffer.v1') || '';
+    useAuthStore.setState({ tenant: null });
     assert.ok(cache.includes('Cached job'), 'the cache was written');
     assert.ok(!cache.includes(BIG.href) && cache.includes(logoId(BIG)), 'with the logo as its ref');
     // A computer that refuses: the store answers false, and the window says so.

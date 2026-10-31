@@ -8,8 +8,9 @@
 //   today, add a documented `persistence: 'none'` mode to the shared core
 //   (additive; PRO keeps its default)."*
 //
-// It does persist unconditionally. `projectStore` reads `cc.project.cache.v1`
-// at MODULE LOAD and writes it on every change; `uiStore` reads and writes five
+// It does persist unconditionally. `projectStore` read its job cache at MODULE
+// LOAD and wrote it on every change (T-CC1a F9: now the crash buffer, written
+// on every change and never read at load); `uiStore` reads and writes five
 // more keys. A client designing a wardrobe on the PBI site would therefore open
 // the joiner's last kitchen and then overwrite it — which is not a bug in a
 // preference, it is a stranger in the workshop's files.

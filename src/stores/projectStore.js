@@ -122,6 +122,10 @@ import { browserStorage, companyWithLogo, companyWithLogoRef, projectWithLogo, p
 // the design's too (R16).
 import { JC_OFFLINE, withDb } from '../lib/jcApi.js';
 import { PROJECT_FILE_FORMAT, PROJECT_FILE_VERSION } from '../lib/projectFile.js';
+// T-CC1a F9: the crash buffer, keyed by tenant and item (lib/crashBuffer.js), and the tenant it is keyed by.
+import { bufferKey, bufferOffWords, writeBuffer } from '../lib/crashBuffer.js';
+import { saveNumbers } from '../lib/saveNumbers.js';
+import { onSignedOutFlush, useAuthStore } from './authStore.js';
 // T51 (CLAUDE.md F6 · decision 1): the light rig lives WITH THE PROJECT — *"a
 // room with one window and a showroom want different rigs, and a saved job
 // should reopen looking as it did."*
@@ -256,7 +260,8 @@ import { CHEST_ISLAND_BACK_FACE, chestIslandPlinthSides } from '../lib/chestIsla
 // The database is the home of this data; localStorage is only a cache so a
 // refresh in mock mode does not lose work (CLAUDE.md rule 7).
 
-const CACHE_KEY = 'cc.project.cache.v1';
+// T-CC1a F9 (law 7): the browser's copy of the open item is the crash buffer, keyed by tenant and item
+// (lib/crashBuffer.js bufferKey); the one job-wide cache key of the shelf days is deleted with its read.
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
 
@@ -1870,23 +1875,6 @@ const migrateUnits = (units) => (Array.isArray(units)
   )))))
   : []);
 
-function loadCache() {
-  // TURN 59: belt AND braces. The call site below is already gated; so is
-  // this, so that the gate travels with the localStorage call rather than
-  // living thirty lines away from it.
-  if (!persistenceOn()) return null;
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed?.project || !Array.isArray(parsed.units)) return null;
-    // T82 F20, after the review: the cached job's logo comes back whole.
-    return { ...parsed, project: projectWithLogo(localStorage, parsed.project) };
-  } catch {
-    return null;
-  }
-}
-
 /**
  * ─── TURN 39 (CLAUDE.md F2): THE PROJECT'S OWN ASSIGNED MATERIALS ───────────
  *
@@ -1942,42 +1930,63 @@ function recallTitleBlockCompany() {
 
 // Throttled: a shelf drag updates the store on every pointer frame, and
 // serialising the whole project 60 times a second is pure jank.
+//
+// ─── T-CC1a F9 · THE CRASH BUFFER (CLAUDE.md T-CC1a law 7) ──────────────────
+// The owner, 30.10.2026: *"moje zdanie to powinno sie wszystko zapisywac na
+// pamiec podreczna, dopiero caly json powinien sie zapisac do DB przy
+// nacisnieciu Zapisz lub co 5 minut automatycznie"*. Every change of the open
+// item is written, at most once per 250 ms, to THIS browser under the tenant
+// and item key, with `dirty` and `savedAt` beside the design (the item JSON of
+// projectForSave, the one builder). Nothing is read back at module load: the
+// app opens on the start screen, and a dirty buffer is OFFERED there, never
+// applied in silence (components/StartScreen.jsx).
 let cacheTimer = null;
-let cachePending = null;
+let bufferWasOff = false;
 function saveCache(state) {
   // TURN 59: memory-only mode writes nothing, and leaves no key behind.
   if (!persistenceOn()) return;
-  cachePending = { project: state.project, units: state.units };
+  if (!state?.project?.id) return;
   if (cacheTimer) return;
   cacheTimer = setTimeout(() => {
     cacheTimer = null;
-    try {
-      // T82 F20, after the review: the cache keeps the logo as its `{ ref }`.
-      const kept = { ...cachePending, project: projectWithLogoRef(localStorage, cachePending.project) };
-      localStorage.setItem(CACHE_KEY, JSON.stringify(kept));
-    } catch { /* quota or private mode — the DB is the real home anyway */ }
+    flushCrashBuffer();
   }, 250);
 }
 
 /**
- * T-CC1a F8 (law 6): write the cache NOW, synchronously, for the moment the page is left (lib/saveTriggers.js)
- * and the tab's own leaving question (App.jsx). Answers whether this browser took it. F9 makes it the crash buffer.
+ * Write the open item's crash buffer NOW, synchronously: the throttle's end, `markSaved` (dirty false), leaving
+ * the page (lib/saveTriggers.js, App.jsx) and Joinery Core signing this browser out (authStore onSignedOutFlush).
+ * Answers whether the buffer holds the item: false when the browser refused it or the item is over
+ * profile.save.bufferMaxMb (the words are said once, when the buffer goes off), true when there is nothing to keep.
  */
 export function flushCrashBuffer() {
-  if (!persistenceOn() || typeof localStorage === 'undefined') return true;
   if (cacheTimer) { clearTimeout(cacheTimer); cacheTimer = null; }
+  if (!persistenceOn() || typeof localStorage === 'undefined') return true;
+  let st;
+  try { st = useProjectStore.getState(); } catch { return true; }
+  if (!st?.project?.id) return true;
+  let tenantId = null;
+  try { tenantId = useAuthStore.getState().tenant?.id || null; } catch { tenantId = null; }
+  if (!tenantId) return false;
+  const { bufferMaxMb } = saveNumbers(getCabinetProfile());
+  let res;
   try {
-    const st = useProjectStore.getState();
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ project: projectWithLogoRef(localStorage, st.project), units: st.units }));
-    return true;
-  } catch { return false; }
+    const design = st.projectForSave({ stamp: false, storage: localStorage });
+    res = writeBuffer(localStorage, bufferKey(tenantId, st.project.id), {
+      savedAt: st.project.savedAt || null, dirty: Boolean(st.dirty), at: Date.now(), design,
+    }, { maxMb: bufferMaxMb });
+  } catch (err) {
+    res = { ok: false, error: String(err?.message || bufferOffWords(bufferMaxMb)) };
+  }
+  if (!res.ok && !bufferWasOff) {
+    try { useUiStore.getState().notify(res.error, 'warn'); } catch { /* the words are a courtesy */ }
+  }
+  bufferWasOff = !res.ok;
+  return res.ok;
 }
 
-// TURN 59: in `persistence: 'none'` (the PBI retail mount) the cache is not
-// even READ — a client must never open the workshop's last project.
-// PRO does not call `setPersistence`, so this is `true` and nothing moved.
-const cached = persistenceOn() && typeof localStorage !== 'undefined' ? loadCache() : null;
-
+// T-CC1a F2/F9: another tab signed this browser out of Joinery Core; the work is kept before the card shows.
+onSignedOutFlush(() => { flushCrashBuffer(); });
 
 // T55 (CLAUDE.md F3): how deep the slope-door sweep is allowed to re-enter
 // itself — an act writes params, the write refreshes, the refresh sweeps
@@ -1994,36 +2003,24 @@ const deferredRecessFollow = new Set();
 const gestureStartItems = new Map();
 
 export const useProjectStore = create(dirtyGate((set, get) => ({
-  // A cached project may predate room v2 — migrate on the way in, so an old
-  // tab that reloads gets four walls instead of a crash.
-  project: cached?.project
-    ? {
-      ...cached.project,
-      room: migrateRoom(cached.project.room),
-      design: migrateDesign(cached.project.design),
-      wallSlopes: wallElements(cached.project.wallSlopes),
-      ledSpec: migrateLedSpec(cached.project.ledSpec),
-      lightRig: migrateLightRig(cached.project.lightRig),
-      // T54 F5.3: the scene light rides the project, like the rig above.
-      sceneLight: migrateSceneLight(cached.project.sceneLight),
-    }
-    : {
-      id: null, name: 'Untitled project', number: '', client: '',
-      room: DEFAULT_ROOM, design: migrateDesign(null),
-      // Turn 44 (CLAUDE.md F1): the wall elevation's slopes, beside the room
-      // rather than inside it — `setWallSlopes` says why.
-      wallSlopes: [],
-      // T45 F9b: a new job's LED spec — flexi, 4 mm, no W/m typed yet.
-      ledSpec: migrateLedSpec(null),
-      // T51 F6: SHOWROOM, adjusted to whatever the profile's pillars are — so a
-      // project opened with the panel untouched looks exactly as it did before
-      // tonight. `engine/lightRig.js defaultLightRig` says why.
-      lightRig: defaultLightRig(getCabinetProfile()),
-      // T54 F5.3: a fresh job's scene light is today's 1.0 — nothing moves.
-      sceneLight: migrateSceneLight(null),
-      jc_tenant_id: null, jc_project_id: null,
-    },
-  units: migrateUnits(cached?.units),
+  // T-CC1a F9: the store opens blank; the crash buffer is offered on the start screen, never read here.
+  project: {
+    id: null, name: 'Untitled project', number: '', client: '',
+    room: DEFAULT_ROOM, design: migrateDesign(null),
+    // Turn 44 (CLAUDE.md F1): the wall elevation's slopes, beside the room
+    // rather than inside it — `setWallSlopes` says why.
+    wallSlopes: [],
+    // T45 F9b: a new job's LED spec — flexi, 4 mm, no W/m typed yet.
+    ledSpec: migrateLedSpec(null),
+    // T51 F6: SHOWROOM, adjusted to whatever the profile's pillars are — so a
+    // project opened with the panel untouched looks exactly as it did before
+    // tonight. `engine/lightRig.js defaultLightRig` says why.
+    lightRig: defaultLightRig(getCabinetProfile()),
+    // T54 F5.3: a fresh job's scene light is today's 1.0 — nothing moves.
+    sceneLight: migrateSceneLight(null),
+    jc_tenant_id: null, jc_project_id: null,
+  },
+  units: [],
   // T55 ("tnij"): derived run elements, keyed by unit id — in memory only.
   // The boot sweep and every mutation rebuild it; nothing serialises it.
   runElements: {},
@@ -2719,8 +2716,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (res?.error || !res?.data) {
       return { ok: false, error: String(res?.error?.message || res?.error || 'That item is not in Joinery Core any more.') };
     }
-    const row = res.data;
-    const design = row.design && typeof row.design === 'object' ? row.design : {};
+    return get().openItemDesign(res.data, res.data.design, { client, storage });
+  },
+
+  /**
+   * T-CC1a F4.3 / F9 · an item's design opened under its row: the version gate (R16), the row's id, name, number
+   * and `updated_at` (`project.savedAt`), the client handed in, the design's own `jc_*` fields ignored, then
+   * `loadProject`. `openItem` hands it the row's design and marks it saved; the boot question's Restore
+   * (components/StartScreen.jsx) hands it the crash buffer's design with `dirty: true`: the item opens unsaved,
+   * never saved in silence. Resolves `{ ok, error }`.
+   */
+  openItemDesign: (row, rowDesign, { client = '', storage = browserStorage(), dirty = false } = {}) => {
+    const design = rowDesign && typeof rowDesign === 'object' ? rowDesign : {};
     const version = Number(design.version);
     if (Number.isFinite(version) && version > PROJECT_FILE_VERSION) {
       return {
@@ -2739,14 +2746,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     };
     if (!design.project || typeof design.project !== 'object') {
       get().newProject(bound.name, { id: bound.id, number: bound.number, client: bound.client });
-      set((s) => ({ project: { ...s.project, savedAt: bound.savedAt, revision: bound.revision } }));
+      set((s) => ({ project: { ...s.project, savedAt: bound.savedAt, revision: bound.revision }, dirty: Boolean(dirty) }));
       return { ok: true, error: null };
     }
     const { jc_tenant_id: _t, jc_project_id: _p, jc_pipeline_id: _l, ...inner } = design.project;
     const assignments = design.assignments || inner.assignments || null;
     const project = projectWithLogo(storage, { ...inner, ...(assignments ? { assignments } : {}), ...bound });
     get().loadProject(project, Array.isArray(design.units) ? design.units : []);
-    get().markSaved();
+    if (dirty) set({ dirty: true });
+    else get().markSaved();
     return { ok: true, error: null };
   },
 
@@ -12859,7 +12867,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return rows.map((row) => ({ ...row, unitId: u.id, unitNum: u.params.unit_num }));
   }),
 
-  markSaved: (project) => set((s) => ({ project: project || s.project, dirty: false })),
+  // T-CC1a F9: the save landed; the crash buffer is written once more, now with dirty false.
+  markSaved: (project) => { set((s) => ({ project: project || s.project, dirty: false })); flushCrashBuffer(); },
 
   /**
    * T82 F20, after the review: a job that is NOT on the shelf (the browser
@@ -12970,7 +12979,7 @@ onGestureEnding(() => {
   }
 });
 
-// Cache to localStorage on every change (fallback only — the DB stays primary)
+// T-CC1a F9: every change of the open item goes to its crash buffer (throttled, saveCache above).
 useProjectStore.subscribe((state) => saveCache(state));
 
 // ─── T79 F12 · CENTER BETWEEN: THE SECOND PICK RUNS IT ──────────────────────

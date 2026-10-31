@@ -511,6 +511,9 @@ export const NEW_FILES = [
   'src/lib/saveTriggers.js',
   'test/turn-cc1a-f08-triggers.test.js',
   'scripts/t78-classify.d/f51-t-cc1a-f08.mjs',
+  'src/lib/crashBuffer.js',
+  'test/turn-cc1a-f09-crash-buffer.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f09.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

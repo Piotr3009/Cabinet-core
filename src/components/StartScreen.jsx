@@ -16,8 +16,11 @@ import { askProjectFile } from './ProjectFileModal.jsx';
 import { askJcProject } from './jc/JcProjectPicker.jsx';
 // T-CC1a F4: the list is Joinery Core's.
 import {
-  archiveItem, listView, loadJcList, projectOfItem, pushRecent, readRecent, revisionLabel,
+  archiveItem, createItem, listView, loadJcList, projectOfItem, pushRecent, readRecent, revisionLabel,
 } from '../lib/jcList.js';
+// T-CC1a F9: the crash buffer's boot question (law 7) and the one save for "Save as new item".
+import { bootOffers, clearBuffer, offerQuestion, RESTORED_WORDS } from '../lib/crashBuffer.js';
+import { persistProject } from '../lib/persist.js';
 
 // ─── Start screen (BACKLOG #7; turn 7, BACKLOG #41) ───
 // The AutoCAD arrangement, because that is what Piotr opens every morning:
@@ -59,6 +62,58 @@ export default function StartScreen() {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // ─── T-CC1a F9 · THE BOOT QUESTION (CLAUDE.md T-CC1a law 7) ────────────────
+  // The owner, 30.10.2026: *"moje zdanie to powinno sie wszystko zapisywac na
+  // pamiec podreczna"*. After the list loads, every dirty crash buffer of this
+  // tenant newer than its item's row is OFFERED in words, never applied in
+  // silence and never dropped in silence: Restore opens the item from the
+  // buffer, unsaved; Discard clears it; an item no longer in the list is
+  // offered "Save as new item" instead. Another tenant's buffers are cleared.
+  const [offers, setOffers] = useState([]);
+  useEffect(() => {
+    if (!list || list.error || !tenant?.id) { setOffers([]); return; }
+    setOffers(bootOffers({ storage, tenantId: tenant.id, items: list.items }));
+  }, [list, storage, tenant?.id]);
+  const dropOffer = (offer) => setOffers((all) => all.filter((o) => o.key !== offer.key));
+
+  const onRestore = (offer) => {
+    useHistoryStore.getState().clear();
+    const res = useProjectStore.getState().openItemDesign(offer.item, offer.design, {
+      client: projectOfItem(list, offer.item)?.client || '', storage, dirty: true,
+    });
+    if (!res.ok) { notify(res.error, 'error'); return; }
+    dropOffer(offer);
+    notify(RESTORED_WORDS, 'warn');
+    opened(offer.itemId);
+    openEditor();
+  };
+
+  const onDiscard = (offer) => {
+    clearBuffer(storage, offer.key);
+    dropOffer(offer);
+  };
+
+  const onSaveAsNew = async (offer, e) => {
+    const project = await askJcProject({ jobName: offer.name, list: list && !list.error ? list : null, anchor: anchorOfEvent(e) });
+    if (!project) return;
+    setBusy(true);
+    try {
+      const made = await createItem({ name: offer.name, project });
+      if (made.error) { notify(`${offer.name}: not saved as a new item. ${made.error}`, 'error'); return; }
+      useHistoryStore.getState().clear();
+      const res = useProjectStore.getState().openItemDesign(made.row, offer.design, { client: project.client || '', storage, dirty: true });
+      if (!res.ok) { notify(res.error, 'error'); return; }
+      const saved = await persistProject({});
+      notify(saved.message, saved.tone);
+      clearBuffer(storage, offer.key);
+      dropOffer(offer);
+      opened(made.row.id);
+      openEditor();
+    } finally {
+      setBusy(false);
+    }
+  };
   useEffect(() => { setRecentIds(readRecent(storage, tenant?.id)); }, [storage, tenant?.id]);
 
   const groups = useMemo(() => (list && !list.error ? listView(list, { query, showArchived }) : []), [list, query, showArchived]);
@@ -161,6 +216,22 @@ export default function StartScreen() {
         </header>
 
         <div className="cc-divider" />
+
+        {offers.length > 0 && (
+          <section className="cc-panel p-4 mt-6 space-y-2" role="alertdialog" data-crash-offers="1">
+            {offers.map((offer) => (
+              <div key={offer.key} className="flex items-center gap-3" data-crash-offer={offer.itemId}>
+                <span className="text-sm text-ink-50 flex-1">{offerQuestion(offer)}</span>
+                {offer.exists ? (
+                  <button type="button" className="cc-btn-gold" disabled={busy} data-crash-restore={offer.itemId} onClick={() => onRestore(offer)}>Restore</button>
+                ) : (
+                  <button type="button" className="cc-btn-gold" disabled={busy} data-crash-save-new={offer.itemId} onClick={(e) => onSaveAsNew(offer, e)}>Save as new item</button>
+                )}
+                <button type="button" className="cc-btn" disabled={busy} data-crash-discard={offer.itemId} onClick={() => onDiscard(offer)}>Discard</button>
+              </div>
+            ))}
+          </section>
+        )}
 
         <div className="grid grid-cols-[300px_1fr] gap-8 mt-6">
           {/* ── what you can do ── */}

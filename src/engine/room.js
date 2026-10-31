@@ -780,6 +780,14 @@ export function migrateIsland(island, i = 0) {
     w: round4(Math.max(MIN_BOX_SIZE, Number(island.w) || 0)),
     d: round4(Math.max(MIN_BOX_SIZE, Number(island.d) || 0)),
     rotation: quarterTurns(island.rotation),
+    // T86B F4 · a chest island (CLAUDE.md T86B law 4) keeps its variant and its slab's own overhang; the keys are
+    // ABSENT on every other island, so a kitchen island migrates exactly as yesterday.
+    ...(island.chestIsland && typeof island.chestIsland === 'object'
+      ? { chestIsland: { variant: island.chestIsland.variant === 'double' ? 'double' : 'panel' } }
+      : {}),
+    ...(island.chestIsland && Number.isFinite(Number(island.islandOverhangMm)) && island.islandOverhangMm !== null
+      ? { islandOverhangMm: Math.max(0, Number(island.islandOverhangMm)) }
+      : {}),
   };
 }
 

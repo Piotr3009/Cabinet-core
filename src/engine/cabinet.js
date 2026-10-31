@@ -6944,6 +6944,8 @@ export function computeCabinet(params, profileOverride) {
   // The run element is a PROJECT decision and arrives only from the store.
   const runPlinth = params?.run_plinth || null;
   const plinthMember = runPlinth?.role === 'member';
+  // T86B F4 (law 5): a chest on a chest island's face, its exposed sides (the store's `plinth_free`); null elsewhere.
+  const plinthFree = params?.plinth_free && typeof params.plinth_free === 'object' ? params.plinth_free : null;
   const plinthLength = runPlinth?.role === 'owner' ? Number(runPlinth.length) || W : W;
   const plinthX = runPlinth?.role === 'owner' ? Number(runPlinth.offset) || 0 : 0;
   // ─── TURN 53 (CLAUDE.md F6): A PLINTH LONGER THAN THE BOARD IS STRIPS ────
@@ -6970,7 +6972,7 @@ export function computeCabinet(params, profileOverride) {
   const plinthTooWide = runPlinth?.role === 'owner' && Array.isArray(runPlinth.spans)
     ? oversizeCabinets(runPlinth.spans, plinthLimit)
     : [];
-  if (wantsPlinth && !plinthMember && plinthStrips && plinthStrips.length > 1) {
+  if (wantsPlinth && !plinthMember && !plinthFree && plinthStrips && plinthStrips.length > 1) {
     const t = AP.plinth.thickness ?? G;
     for (const strip of plinthStrips) {
       panels.push(panel({
@@ -7007,6 +7009,43 @@ export function computeCabinet(params, profileOverride) {
           },
         },
       }));
+    }
+  } else if (wantsPlinth && !plinthMember && plinthFree) {
+    // ─── T86B F4 · A FREE-STANDING PLINTH IS SET BACK ALL ROUND (law 5) ─────
+    // CLAUDE.md T86B; the owner, 30.10.2026 (22:52): *"cos jak wyspa ale przez grab i move; i dodanie panela z tylu
+    // lub polaczenie szuflad z 2 stron"*. A chest standing on a chest island's face has its carcass sides (and, behind
+    // a back panel, its back) in the room: its toe kick is set back on EVERY exposed side by the one number the front
+    // has always been set back by (`autoParts.plinth.setback`), never only at the front. The front and the back boards
+    // run between the two set-back side faces; the side returns fit between them. Behind the back panel the back board
+    // is set back from the PANEL's face (`backFaceMm`, its thickness); where two chests meet back to back the backs are
+    // not in the room and the returns run to the carcass back. The key arrives from the store only (paramsForEngine,
+    // `plinth_free`, lib/chestIsland.js chestIslandPlinthSides): a bare kit and every golden pass none.
+    const t = AP.plinth.thickness ?? G;
+    const sb = Number(AP.plinth.setback) || 0;
+    const xL = plinthFree.left ? sb : 0;
+    const xR = plinthFree.right ? W - sb : W;
+    const runW = roundTo(xR - xL, 4);
+    const zFront = D - sb - t;
+    const zBack = plinthFree.back ? -(Number(plinthFree.backFaceMm) || 0) + sb : null;
+    const board = (id, side, w, box) => panel({
+      id, part: 'PLINTH', role: 'plinth', w, h: plinthH, thickness: t,
+      edgeCode: codes.topBottom, edgeLen: metres(2 * w), box,
+      cnc: rectGeometry(w, plinthH),
+      meta: { free: { side, setback: sb } },
+    });
+    panels.push(board('PLINTH', 'front', runW, { x: xL, y: -plinthH, z: zFront, w: runW, h: plinthH, d: t }));
+    if (zBack != null) {
+      panels.push(board('PLINTH-B', 'back', runW, { x: xL, y: -plinthH, z: zBack, w: runW, h: plinthH, d: t }));
+    }
+    const z0 = zBack != null ? zBack + t : 0;
+    const len = roundTo(zFront - z0, 4);
+    if (len > 0) {
+      if (plinthFree.left) {
+        panels.push(board('PLINTH-L', 'left', len, { x: xL, y: -plinthH, z: z0, w: t, h: plinthH, d: len }));
+      }
+      if (plinthFree.right) {
+        panels.push(board('PLINTH-R', 'right', len, { x: xR - t, y: -plinthH, z: z0, w: t, h: plinthH, d: len }));
+      }
     }
   } else if (wantsPlinth && !plinthMember) {
     const t = AP.plinth.thickness ?? G;

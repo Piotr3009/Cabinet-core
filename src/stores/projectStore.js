@@ -241,6 +241,8 @@ import {
   MIRROR_STILE_KINDS, mirrorBalanceWidths, mirrorCarcass, mirrorConstants, mirrorOwnWidths, mirrorParamsOf, mirrorStileKinds,
   mirrorStilesTotal, mirrorWidthsRefusal,
 } from '../engine/mirrorCabinet.js';
+// T86B F4 · the chest island's plinth sides (law 5).
+import { CHEST_ISLAND_BACK_FACE, chestIslandPlinthSides } from '../lib/chestIsland.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -1193,6 +1195,33 @@ function vanityTopMmOf(unit, design) {
   return Number.isFinite(t) && t > 0 ? { vanity_top_mm: t } : {};
 }
 
+/**
+ * T86B F4 · A FREE-STANDING PLINTH IS SET BACK ALL ROUND (CLAUDE.md T86B law 5). The owner, 30.10.2026 (22:52):
+ * *"cos jak wyspa ale przez grab i move; i dodanie panela z tylu lub polaczenie szuflad z 2 stron"*. For a chest on
+ * a chest island's face (the island record's `chestIsland`), which sides of its plinth stand in the room
+ * (lib/chestIsland.js chestIslandPlinthSides): both ends, and the back behind the panel (set back behind the panel's
+ * face, its thickness the FREE PANEL's own `board_t`) unless a second chest meets it back to back. Null for every other unit,
+ * so no kitchen island and no wall run hands the engine a new key.
+ */
+function chestIslandPlinthFor(unit) {
+  const st = useProjectStore.getState();
+  const room = st?.project?.room;
+  if (!(room?.islands || []).some((i) => i?.chestIsland)) return null;
+  const walls = roomWalls(room);
+  const wall = walls[unit?.position?.wall ?? 0];
+  if (!wall?.island) return null;
+  const island = roomIslands(room).find((i) => i.id === wall.island);
+  if (!island?.chestIsland) return null;
+  const variant = island.chestIsland.variant;
+  const panel = variant === 'panel'
+    ? (st.units || []).find((u) => u.type === 'FREE_PANEL' && walls[u.position?.wall ?? 0]?.island === wall.island
+      && walls[u.position?.wall ?? 0]?.face === CHEST_ISLAND_BACK_FACE)
+    : null;
+  // The FREE PANEL's board is its own `board_t` (T82 F18), the project's carcass board where none is said.
+  const panelT = Number(panel?.params?.board_t) > 0 ? Number(panel.params.board_t) : getCabinetProfile().board.thickness;
+  return chestIslandPlinthSides({ type: unit.type, face: wall.face, variant, panelT });
+}
+
 function paramsForEngine(unit, design = null) {
   // ─── T55 ("tnij"): THE FOSSIL HAS NO ROAD ────────────────────────────────
   // run_* are destructured OUT of the saved params before anything spreads,
@@ -1216,6 +1245,8 @@ function paramsForEngine(unit, design = null) {
   // cabinet stands partly in), derived here and never stored.
   const recessExtension = recessExtensionFor(unit);
   const recessBandWhole = wholeRecessBandFor(unit);
+  // T86B F4 (law 5): a chest on a chest island's face, the sides of its plinth that are in the room.
+  const plinthFree = chestIslandPlinthFor(unit);
   const elements = useProjectStore.getState().runElements?.[unit.id] || null;
   return {
     ...p,
@@ -1224,6 +1255,7 @@ function paramsForEngine(unit, design = null) {
     ...(obstacleNotch ? { notch: obstacleNotch } : {}),
     ...(recessExtension ? { extension: recessExtension } : {}),
     ...(recessBandWhole ? { recess_band: recessBandWhole } : {}),
+    ...(plinthFree ? { plinth_free: plinthFree } : {}),
     ...(elements ? {
       run_top_infill: elements.top_infill,
       run_plinth: elements.plinth,

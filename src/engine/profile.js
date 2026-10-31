@@ -2756,6 +2756,14 @@ export const DEFAULT_CABINET_PROFILE = {
       upstand: { heightMm: 100, thicknessMm: 20 },    // T75 proposed, owner to confirm
       seatingMm: 300,                                 // T75 proposed, owner to confirm (F11)
       cnc: false,                                     // a worktop is machined on site unless this says so
+      // ─── T86B F4 · THE CHEST ISLAND'S SLAB (CLAUDE.md T86B laws 6, 7) ──────
+      // The owner, 30.10.2026 (22:56): *"nie koniecznie nawis, nawis jako opcja prosze"*; *"3 - dla komody oraz dla
+      // biurka, opcja inny blat tez (w przyszlosci) Hi-Macs"*. On a chest island and on a desk the slab overhangs by
+      // this number all round, none by default (CONFIRMED), a single field in the worktop section; a kitchen island's
+      // overhang law is untouched. A worktop record's finish is one of `finishes` (the enum name PROPOSED): 'decor'
+      // (the project's worktop decor) or 'spray' (the house's sprayed panel); HI-MACS is a later value.
+      islandOverhangMm: 0,
+      finishes: ['decor', 'spray'],
     },
     // ─── TURN 47 (CLAUDE.md F4): EVERY INFILL LEAVES THE MACHINE OVERSIZE ──
     //

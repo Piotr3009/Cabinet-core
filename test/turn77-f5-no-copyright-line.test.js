@@ -514,6 +514,9 @@ export const NEW_FILES = [
   'src/lib/crashBuffer.js',
   'test/turn-cc1a-f09-crash-buffer.test.js',
   'scripts/t78-classify.d/f51-t-cc1a-f09.mjs',
+  // T-CC1a F10 (31.10.2026): PART D, the walk (A1)
+  'scripts/t-cc1a-fake-jc.mjs',
+  'scripts/t-cc1a-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

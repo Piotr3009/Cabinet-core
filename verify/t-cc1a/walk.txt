@@ -1,0 +1,82 @@
+T-CC1a F10 . THE WALK (scripts/t-cc1a-walk.mjs)
+HEAD c1434452 . 2026-10-31T11:43:48.831Z . the built app (vite preview 4173) behind the fake Joinery Core (http://127.0.0.1:4380)
+Every line PASS or FAIL with the number expected and the number read; a FAIL is written down, never patched.
+
+
+== station a ==
+PASS  [a] open /cabinet/ with no token: the browser lands on JC's login | expect: /login.html?next=%2Fcabinet%2F | read: /login.html?next=%2Fcabinet%2F
+PASS  [a] no token: not one request to JC's api before the login (the fake's counters) | expect: me +0, db/query +0, rpc +0 | read: me +0, db/query +0, rpc +0
+PASS  [a] press Sign in (a real click): back on /cabinet/ | expect: /cabinet/ | read: /cabinet/
+PASS  [a] the list: two production projects | expect: 2 | read: 2 ["p:prj-1002","p:prj-1001"]
+PASS  [a] the list: one pipeline project | expect: 1 | read: 1 ["pl:pip-2001"]
+PASS  [a] their items: the two seeded items under their production projects | expect: p:prj-1001:Bedroom wardrobe, p:prj-1002:Island units | read: ["p:prj-1002:Island units","p:prj-1001:Bedroom wardrobe"]
+PASS  [a] the header: the company and the signed-in name from /me | expect: Skylon Development Ltd / Ada Admin | read: {"company":"Skylon Development Ltd","user":"Ada Admin"}
+PASS  [a] the four reads of the list, cc_items never with * and never with design | expect: pipeline_projects, projects, clients, cc_items each >= 1; select * on cc_items 0; design read 0 | read: {"pipeline_projects":1,"projects":1,"clients":1,"cc_items":1,"cc_hardware":3,"cc_company_defaults":1,"cc_hardware_register":1,"cc_settings_sets":1,"star":0,"design":0}
+PASS  [a] auth.getSession() never called | expect: 0 | read: 0
+FRAME [a] f10-a-list.png
+
+== station b ==
+PASS  [b] the fake's user switched to the employee, reload: the refusal card | expect: data-jc-refusal="role" | read: "role"
+PASS  [b] the card says "employee", never "worker" | expect: contains employee, not worker | read: "CABINET CORE Cabinet Core opens for owners, admins and managers Your Joinery Core account is an employee account. Ask an admin of Skylon Development Ltd if you need the design tool. Back to Joinery Co"
+PASS  [b] no list request made (the fake counts): /me once, db/query 0, rpc 0 | expect: me 1, db/query 0, rpc 0 | read: me 1, db/query 0 {}, rpc {}
+PASS  [b] no list drawn under the card | expect: 0 | read: 0
+FRAME [b] f10-b-refusal.png
+NOTE  [b] the fake's user back to the admin, reload | projects drawn: 3
+
+== station c ==
+PASS  [c] New item on the pipeline project (a real click): the flow opens bound to it | expect: the flow, bound to pl:pip-2001 | read: "pl:pip-2001"
+NOTE  [c] the flow walked by hand (name typed, the Wardrobe card, every section confirmed, the stock boards picked) | Confirm project & continue > Confirm space & continue > Confirm section & continue > Next - Carcass 1 - board and sheet > carcass:c1=generic-18 > Next - What was chosen > Confirm section & continue > Next - Front 1 - colour, board and sheet > front:f1=generic-18 > Next - Shape, opening and shine > Confirm section & continue > Confirm section & continue > Confirm section & continue > Confirm & review project > Start designing
+PASS  [c] Start designing: the editor opens | expect: screen editor | read: editor
+PASS  [c] the fake has ONE cc_create_item | expect: 1 | read: 1
+PASS  [c] the item is bound to the pipeline project (the row's columns), the job carries its id | expect: jc_pipeline_id pip-2001, jc_project_id null, project.id = the row id | read: {"row":{"id":"itm-walk-1","pipe":"pip-2001","prj":null,"number":"Q-2001"},"job":"itm-walk-1"}
+PASS  [c] add a WARDROBE (the rail's Add, the category, the Wardrobe row: real clicks) | expect: 1 WARDROBE | read: 1 (categories ["kitchen","wardrobe","sets","media"], picked wardrobe)
+PASS  [c] Ctrl+S: ONE cc_save_item | expect: 1 | read: 1 (dirty before true)
+PASS  [c] the design the fake stored has NO profile, and holds the WARDROBE | expect: hasProfile false, units include WARDROBE | read: {"keys":["format","version","saved_at","app","project","units","assignments"],"hasProfile":false,"units":[{"id":"u_8ikyhd3","type":"WARDROBE"}],"bytes":3026}
+PASS  [c] after the save: the job is clean, the words say Saved HH:MM. | expect: dirty false, "Saved HH:MM." | read: {"dirty":false,"said":["Saved 11:44."]}
+FRAME [c] f10-c-editor.png
+
+== station d ==
+NOTE  [d] THE STAGE (the store's addShelves, then Ctrl+S): the default WARDROBE has no shelf, one added and saved | {"shelves":[{"id":"shelf_vo8bat6","pos":1066}],"dirty":false}
+NOTE  [d] THE STAGE (the store's moveShelf): the shelf 64 mm up | {"id":"shelf_vo8bat6","y0":1066,"y1":1130,"dirty":true}
+PASS  [d] the shelf moved and the job is dirty | expect: pos_mm changed, dirty true | read: {"id":"shelf_vo8bat6","y0":1066,"y1":1130,"dirty":true}
+PASS  [d] the clock advanced 5 minutes (Playwright clock.runFor): ONE more cc_save_item (the autosave) | expect: +1 | read: +1
+PASS  [d] after the autosave the job is clean | expect: false | read: false
+PASS  [d] 5 more minutes with no change: no cc_save_item | expect: +0 | read: +0
+
+== station e ==
+NOTE  [e] THE STAGE (the store's addDrawers): one drawer added to the wardrobe | {"unit":"u_8ikyhd3","n0":0,"n1":1,"dirty":true}
+PASS  [e] the drawer is in the job and the job is dirty | expect: drawers +1, dirty true | read: {"unit":"u_8ikyhd3","n0":0,"n1":1,"dirty":true}
+PASS  [e] the crash buffer holds the dirty job before the tab goes | expect: a buffer key for the item, dirty true | read: {"key":"cc.ten-skylon.item.itm-walk-1.buffer.v1","dirty":true,"at":1793447664119,"units":1}
+NOTE  [e] the tab closed with no save (page.close): what reached the fake on the way out | {"cc_save_item":0,"keepalive_cc_save_item":2}
+FAIL  [e] the way out: at most ONE keepalive cc_save_item (F8.1: "ONE fetch('/api/rpc', { keepalive: true })") | expect: <= 1 | read: 2 (pagehide and visibilitychange hidden each sent one; the bodies differ by saved_at, so the "same body" guard did not hold the second)
+NOTE  [e] the row after the tab went (the keepalive saved the drawer's job into JC) and the clocks | {"row_updated_at":"2026-10-31T11:48:30.709Z","buffer_at":"2026-10-31T11:54:24.119Z","browser_clock_ahead_of_real_ms":351901,"reading":"the boot offer needs buffer.at > row.updated_at; the browser clock is ahead by the minutes clock.runFor added in (d), so the offer below stands on that skew; on one real clock the keepalive save would stamp the row AFTER the flush and bootOffers (src/lib/crashBuffer.js) would filter the offer out: read from the code, not walked"}
+PASS  [e] reopen /cabinet/: "Restore unsaved changes to Walk wardrobe?" | expect: Restore unsaved changes to Walk wardrobe (dd.mm hh:mm)? | read: "Restore unsaved changes to Walk wardrobe (31.10 11:54)? Restore Discard"
+FRAME [e] f10-e-restore-offer.png
+PASS  [e] Restore (a real click): the editor opens on the item | expect: screen editor, project.id itm-walk-1 | read: "itm-walk-1"
+PASS  [e] the drawer is there | expect: drawers 1 | read: drawers 1
+PASS  [e] the status says not saved: "Not saved yet: press Ctrl+S", the job dirty, the status bar's unsaved mark | expect: dirty true, the words, statusbar-dirty shown | read: {"dirty":true,"said":["Not saved yet: press Ctrl+S"],"bar":"Unsaved changes"}
+FRAME [e] f10-e-restored.png
+
+== station f ==
+NOTE  [f] Ctrl+S before going back to the list (the restored drawer saved) | dirty false
+PASS  [f] the item stands in the list under the pipeline project | expect: item itm-walk-1 listed | read: {"id":"itm-walk-1","name":"Walk wardrobe","archived":false}
+PASS  [f] Archive (a real click): ONE cc_archive_item, the item disappears from the list | expect: cc_archive_item 1, not listed | read: cc_archive_item 1, listed null
+PASS  [f] "Show archived" (a real click): it is listed, archived, with Restore | expect: listed, data-archived 1, a Restore button | read: {"id":"itm-walk-1","name":"Walk wardrobe","archived":true}
+FRAME [f] f10-f-archived.png
+PASS  [f] Restore (a real click): cc_archive_item with restore, the item back in the list with Open | expect: cc_archive_item 2, listed, not archived, Open shown | read: cc_archive_item 2, {"id":"itm-walk-1","name":"Walk wardrobe","archived":false}
+PASS  [f] "Show archived" off again: the item stays listed | expect: listed | read: {"id":"itm-walk-1","name":"Walk wardrobe","archived":false}
+
+== station g ==
+PASS  [g] Open from file (a real click): the browser's file chooser | expect: a file chooser | read: true
+PASS  [g] the picker asks which Joinery Core project the old job belongs to | expect: the picker | read: true
+NOTE  [g] the picker's read-only line on the profile | "This file carries workshop settings; they are not imported (the company numbers live in Joinery Core from T-CC1b)"
+PASS  [g] bound to the production project P-1001: ONE cc_create_item, ONE cc_save_item | expect: create 1, save 1 | read: create 1, save 1
+PASS  [g] the new row: bound to prj-1001, named as the file's job, its design saved without a profile, the owner's unit in it | expect: one row, prj-1001, "Test qwardrobe", hasProfile false, a CORNER_L_WARDROBE | read: {"id":"itm-walk-2","prj":"prj-1001","name":"Test qwardrobe","design":{"hasProfile":false,"units":[{"id":"u_tv0vzil","type":"CORNER_L_WARDROBE"}]}}
+NOTE  [g] after the import the app is on | editor
+PASS  [g] the list shows it under P-1001 | expect: p:prj-1001 lists itm-walk-2 "Test qwardrobe" | read: [{"id":"itm-walk-2","name":"Test qwardrobe","archived":false},{"id":"itm-seed-1","name":"Bedroom wardrobe","archived":false}]
+FRAME [g] f10-g-imported.png
+NOTE  [end] page errors the walk saw (uncaught) | none
+NOTE  [end] the fake's counters at the end (since the last reset) | {"me":1,"me401":0,"query":10,"queryByTable":{"pipeline_projects":1,"projects":1,"clients":1,"cc_items":1,"cc_hardware":3,"cc_company_defaults":1,"cc_hardware_register":1,"cc_settings_sets":1},"queryRefused":6,"writesRefused":0,"starOnItems":0,"designReads":0,"rpc":{"cc_create_item":1,"cc_save_item":1},"rpcKeepalive":{},"rpcRefused":0,"getSession":0,"proxied":25}
+
+RESULT: 41 PASS, 1 FAIL
+FRAMES: f10-a-list.png, f10-b-refusal.png, f10-c-editor.png, f10-e-restore-offer.png, f10-e-restored.png, f10-f-archived.png, f10-g-imported.png

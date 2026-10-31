@@ -372,7 +372,7 @@ async function legE(ctx, page) {
   }));
   const keep = keepN(c1, 'cc_save_item') - keepN(c0, 'cc_save_item');
   check('the way out: at most ONE keepalive cc_save_item (F8.1: "ONE fetch(\'/api/rpc\', { keepalive: true })")', keep <= 1,
-    '<= 1', `${keep} (pagehide and visibilitychange hidden each sent one; the bodies differ by saved_at, so the "same body" guard did not hold the second)`);
+    '<= 1', keep > 1 ? `${keep} (pagehide and visibilitychange hidden each sent one)` : String(keep));
   const rowOut = (await items()).find((i) => i.id === ctxState.itemId) || null;
   const skew = Number(buf && buf.at) - Date.now();
   note('the row after the tab went (the keepalive saved the drawer\'s job into JC) and the clocks', j({

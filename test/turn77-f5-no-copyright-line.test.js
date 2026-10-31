@@ -485,6 +485,7 @@ export const NEW_FILES = [
   // T86B F9 to F11 (31.10.2026): PART D, the picture, the probes and the walk (G1)
   'test/turn86b-f09-corner-mirror.test.js',
   'verify/t86b/probe-f09-scene.mjs',
+  'test/turn86b-f10-probes.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

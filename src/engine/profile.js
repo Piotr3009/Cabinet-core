@@ -4433,6 +4433,11 @@ export const DEFAULT_CABINET_PROFILE = {
   // one of them looks like. A workshop on a different hinge system changes these
   // numbers and both the drawing and the 3D follow.
   hardware: {
+    // T86B F10 (PROPOSED, the owner 30.10.2026 23:02: *"zrob jak
+    // rekomendujesz"*): how far a live silhouette's bounding box may stand
+    // from the reference's (reference/hardware/silhouettes.json) before the
+    // probe names the item (test/turn86b-f10-probes.test.js), in mm.
+    silhouetteToleranceMm: 1,
     // A 35 mm cup hinge (the Blum/Hettich standard the drilling in `hinges`
     // above is already dimensioned for — cup ⌀35, 11 deep, cup centre 21.5 in
     // from the door edge).

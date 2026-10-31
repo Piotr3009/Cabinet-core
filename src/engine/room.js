@@ -785,7 +785,21 @@ export function migrateIsland(island, i = 0) {
     w: round4(Math.max(MIN_BOX_SIZE, Number(island.w) || 0)),
     d: round4(Math.max(chest ? 0 : MIN_BOX_SIZE, Number(island.d) || 0)),
     rotation: quarterTurns(island.rotation),
-    ...(chest ? { chestIsland: chest, islandOverhangMm: round4(Math.max(0, Number(island.islandOverhangMm) || 0)) } : {}),
+    // T86B F8 (laws 4, 6) · a chest island says so, and carries the slab's
+    // overhang as a number (the profile's 0 when it has none of its own).
+    // *"nie koniecznie nawis, nawis jako opcja prosze"* (the owner, 30.10.2026, 22:56).
+    ...chestIslandOf(island),
+  };
+}
+
+/** T86B F8 · a chest island's own two fields, or nothing (every other island as it was). */
+function chestIslandOf(island) {
+  const variant = island?.chestIsland?.variant;
+  if (variant !== 'panel' && variant !== 'double') return {};
+  const over = Number(island.islandOverhangMm);
+  return {
+    chestIsland: { variant },
+    ...(island.islandOverhangMm != null && Number.isFinite(over) && over >= 0 ? { islandOverhangMm: round4(over) } : {}),
   };
 }
 
@@ -831,8 +845,8 @@ export function islandFaces(island, base = 0) {
       angle: Math.atan2(-uy, ux),
       island: i.id,
       face,
-      // T86B F5 . a chest island's faces carry what the slab over it reads (its overhang, law 6).
-      ...(i.chestIsland ? { chestIsland: i.chestIsland, islandOverhangMm: i.islandOverhangMm } : {}),
+      // T86B F8 · the slab over a chest island reads its overhang off its faces.
+      ...(i.chestIsland ? { chestIsland: i.chestIsland, islandOverhangMm: i.islandOverhangMm ?? null } : {}),
     };
   });
 }

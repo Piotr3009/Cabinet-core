@@ -30,6 +30,11 @@ import Modal from './Modal.jsx';
 import { notchApplies } from '../engine/notch.js';
 // T75 F4/F11 · the worktop row: who takes one alone, and the island's seating.
 import { takesWorktop, worktopEligible } from '../engine/worktop.js';
+// T86B F8 (law 6) · the chest island's overhang, read as the slab reads it.
+import { islandOverhangOf } from '../engine/worktop.js';
+// T86B F8 (law 7) · the fronts' own colour chip and sheen slider, reused for a sprayed slab.
+import ColourPicker from './ColourPicker.jsx';
+import SheenSlider from './SheenSlider.jsx';
 import { CABINEO_REFUSAL, dowelKitRefusal, jointSystemOf } from '../engine/dowels.js';
 import { biscuitKitRefusal } from '../engine/biscuitJoints.js';
 import { cabineoKitRefusal, isCabineoSystem } from '../engine/cabineo.js';
@@ -2953,6 +2958,9 @@ function WorktopRow({ unit }) {
           />
         </div>
       )}
+      {/* T86B F8 (laws 6, 7) · on a chest island's slab and a desk's: the
+          finish and the overhang. Every other slab: absent tonight. */}
+      <WorktopFinishRows record={record} unit={unit} walls={walls} />
       {empty.map((f) => {
         const on = Number(record.extend?.[f.face]) > 0;
         return (
@@ -2975,6 +2983,94 @@ function WorktopRow({ unit }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * ─── T86B F8 · THE WORKTOP'S FINISH AND ITS OVERHANG ─────────────────────────
+ *
+ * The owner, 30.10.2026: *"mozliwosc dodania worktopu z naszego sprayowanego
+ * panelu nie tylko szary worktop"* (22:52); *"nie koniecznie nawis, nawis jako
+ * opcja prosze"*, *"3 - dla komody oraz dla biurka, opcja inny blat tez (w
+ * przyszlosci) Hi-Macs"* (22:56). On a chest island's slab and a desk's slab:
+ * "Finish: Decor / Sprayed panel" (law 7), Sprayed with the fronts' own colour
+ * chip and sheen slider (one road, the components reused), and "Overhang"
+ * (law 6), the island's or the desk's number, 0 by default. Every choice is a
+ * store action and a refusal is said in its words.
+ */
+function WorktopFinishRows({ record, unit, walls }) {
+  const design = useProjectStore((s) => s.project.design);
+  const setWorktopFinish = useProjectStore((s) => s.setWorktopFinish);
+  const setWorktopOverhang = useProjectStore((s) => s.setWorktopOverhang);
+  const notify = useUiStore((s) => s.notify);
+  const profile = useCabinetProfileStore((s) => s.profile);
+  const [picking, setPicking] = useState(false);
+  const chestFace = record.island ? walls.find((w) => w.island === record.island && w.chestIsland) : null;
+  const desk = !record.island && getUnitType(unit.type)?.desk === true;
+  if (!chestFace && !desk) return null;
+  const offered = profile?.worktop?.finishes || profile?.autoParts?.worktop?.finishes || ['decor', 'spray'];
+  const finish = record.finish === 'spray' ? 'spray' : 'decor';
+  const said = (res) => { if (res && !res.ok) notify(res.error, 'warn'); return res; };
+  const overhang = chestFace
+    ? islandOverhangOf(chestFace, profile)
+    : (record.overhangMm != null ? Number(record.overhangMm) : Number(profile?.autoParts?.worktop?.frontOverhang) || 0);
+  const choose = (id) => {
+    if (id === 'decor') { setPicking(false); said(setWorktopFinish(record.id, { finish: 'decor' })); return; }
+    const res = setWorktopFinish(record.id, { finish: 'spray' });
+    // No colour yet (the project has no front colour): the chip opens to pick one.
+    setPicking(!res.ok);
+  };
+  const label = { decor: 'Decor', spray: 'Sprayed panel' };
+  return (
+    <div className="space-y-1" data-worktop-finish={record.id}>
+      <div className="cc-row">
+        <span className="text-[11px] text-ink-400">Finish</span>
+        <div className="flex gap-1" role="radiogroup" aria-label="Worktop finish">
+          {offered.filter((id) => label[id]).map((id) => (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={finish === id}
+              data-worktop-finish-option={id}
+              className={`cc-btn px-2 ${finish === id ? 'border-gold text-gold' : ''}`}
+              onClick={() => choose(id)}
+            >
+              {label[id]}
+            </button>
+          ))}
+        </div>
+      </div>
+      {(finish === 'spray' || picking) && (
+        <div className="space-y-1" data-worktop-spray={record.id}>
+          <ColourPicker
+            label="Panel colour"
+            value={record.colour || null}
+            onChange={(c) => {
+              if (!c) { setPicking(false); said(setWorktopFinish(record.id, { finish: 'decor' })); return; }
+              if (said(setWorktopFinish(record.id, { finish: 'spray', colour: c })).ok) setPicking(false);
+            }}
+          />
+          {finish === 'spray' && (
+            <SheenSlider
+              design={{ ...design, sheen: record.sheen ?? migrateDesign(design).sheen }}
+              setDesign={({ sheen }) => said(setWorktopFinish(record.id, { sheen }))}
+              profile={profile}
+            />
+          )}
+        </div>
+      )}
+      <div className="cc-row" data-worktop-overhang={record.id}>
+        <span className="text-[11px] text-ink-400">Overhang (mm)</span>
+        <NumberField
+          data-worktop-overhang-field="1"
+          title="How far the slab stands past the carcass, all round: none by default."
+          step={1}
+          value={overhang}
+          onCommit={(v) => said(setWorktopOverhang(record.id, v))}
+        />
+      </div>
     </div>
   );
 }

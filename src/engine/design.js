@@ -527,6 +527,16 @@ function migrateDesignFresh(design) {
         // T75 F17 · the per-worktop thickness: a positive number, or nothing
         // (the profile's 38 stands).
         ...(Number(w?.thickness) > 0 ? { thickness: Number(w.thickness) } : {}),
+        // T86B F8 (law 7): A WORKTOP HAS A FINISH. *"mozliwosc dodania worktopu
+        // z naszego sprayowanego panelu nie tylko szary worktop"* (the owner,
+        // 30.10.2026, 22:52). 'spray' carries the fronts' own `colour` and the
+        // sheen; 'decor' is today's road, read as the absence of a spray (an
+        // old record is stored byte for byte as it was: the T75 fixtures hold)
+        // and stamped on every resolved slab (worktop.js worktopsFor).
+        ...(worktopFinishOf(w).finish === 'spray' ? worktopFinishOf(w) : {}),
+        // T86B F8 (law 6) · a desk's slab may carry its own overhang, all round.
+        ...(w?.overhangMm != null && Number.isFinite(Number(w.overhangMm)) && Number(w.overhangMm) >= 0
+          ? { overhangMm: Number(w.overhangMm) } : {}),
         // T75 F11 · an island's slab is the island's, with an extension per face.
         ...(w?.island ? {
           island: String(w.island),
@@ -1011,6 +1021,21 @@ export function normaliseColour(colour) {
     name: colour.name || hex.toLowerCase(),
     system: ['RAL', 'F&B', 'custom'].includes(colour.system) ? colour.system : 'custom',
   };
+}
+
+/**
+ * T86B F8 (law 7) · a worktop record's finish: `{ finish: 'decor' }` (the
+ * project's worktop decor, the grey slab: today's road, and every old record),
+ * or `{ finish: 'spray', colour, sheen }`, the house's sprayed panel in a
+ * colour of the spray palette (the fronts' own `colour` field, normalised as
+ * theirs is) and the sheen as the project carries it (null: the project's).
+ * A 'spray' with no valid colour is not a sprayed slab and stays 'decor'.
+ */
+export function worktopFinishOf(w) {
+  const colour = w?.finish === 'spray' ? normaliseColour(w?.colour) : null;
+  if (!colour) return { finish: 'decor' };
+  const sheen = Number(w?.sheen);
+  return { finish: 'spray', colour, sheen: Number.isFinite(sheen) && w?.sheen != null ? sheen : null };
 }
 
 export function normaliseDoorStyle(style) {

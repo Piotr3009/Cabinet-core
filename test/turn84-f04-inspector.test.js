@@ -148,7 +148,11 @@ test('F4 · the host adaptation adds no control to the panel sources (the census
   // host's either: Center all (the same call under the store's one name) and Center between, with no shelf selected
   // first. The owner: *"jest ta funkcja ale tylko w double click ale nie ma w carcas lub w section a powinn byc bo
   // zaznaczyc polki i kliknac center between to za duzo i za duzo szukania"*. 109 - 1 + 2.
-  assert.equal(tags(panel()), 110, 'RightPanel.jsx');
+  // T86B F8 AMENDED: the worktop section, on a chest island's slab and a desk's only, gains Finish (Decor, Sprayed
+  // panel: one button tag mapped over the profile's finishes) and Overhang (one field), not the host's either. The owner: *"mozliwosc dodania worktopu z
+  // naszego sprayowanego panelu nie tylko szary worktop"*; *"nie koniecznie nawis, nawis jako opcja prosze"*
+  // (30.10.2026, 22:52 and 22:56). 110 + 1 + 1.
+  assert.equal(tags(panel()), 112, 'RightPanel.jsx');
   assert.equal(tags(multi()), 16, 'MultiUnitPanel.jsx');
 });
 

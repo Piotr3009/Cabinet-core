@@ -11511,6 +11511,75 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return { ok: true, error: null };
   },
 
+  /**
+   * T86B F8 (law 7) · A WORKTOP HAS A FINISH: 'decor' (today's road) or
+   * 'spray', the house's sprayed panel, with the fronts' own `colour` and a
+   * sheen (null: the project's). *"mozliwosc dodania worktopu z naszego
+   * sprayowanego panelu nie tylko szary worktop"* (the owner, 30.10.2026,
+   * 22:52). A finish the profile does not offer, or a spray with no colour,
+   * is refused in words and nothing changes.
+   *
+   * @param {string} worktopId
+   * @param {{finish?:'decor'|'spray', colour?:object|null, sheen?:number|null}} patch
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setWorktopFinish: (worktopId, patch = {}) => {
+    const design = migrateDesign(get().project.design);
+    const record = design.worktops.find((w) => w.id === worktopId);
+    if (!record) return { ok: false, error: 'No such worktop.' };
+    const P = getCabinetProfile();
+    const offered = P?.worktop?.finishes || P?.autoParts?.worktop?.finishes || ['decor', 'spray'];
+    const finish = patch.finish ?? record.finish ?? 'decor';
+    if (!offered.includes(finish)) return { ok: false, error: `A worktop is finished in ${offered.join(' or ')}: not ${finish}.` };
+    if (finish === 'decor') {
+      get().setDesign({
+        worktops: design.worktops.map((w) => {
+          if (w.id !== worktopId) return w;
+          const { colour: _c, sheen: _s, ...rest } = w;
+          return { ...rest, finish: 'decor' };
+        }),
+      });
+      return { ok: true, error: null };
+    }
+    const colour = patch.colour !== undefined ? patch.colour : (record.colour ?? design.colour.front ?? null);
+    if (!colour?.hex) return { ok: false, error: 'A sprayed worktop needs its colour: pick one from the spray palette.' };
+    const sheen = patch.sheen !== undefined ? patch.sheen : (record.sheen ?? null);
+    get().setDesign({
+      worktops: design.worktops.map((w) => (w.id === worktopId ? { ...w, finish: 'spray', colour, sheen } : w)),
+    });
+    return { ok: true, error: null };
+  },
+
+  /**
+   * T86B F8 (law 6) · THE WORKTOP'S OVERHANG IS A NUMBER, DEFAULT NONE: one
+   * field for the slab over a chest island (the island's `islandOverhangMm`)
+   * and a desk's slab (the record's `overhangMm`). *"nie koniecznie nawis,
+   * nawis jako opcja prosze"* (the owner, 30.10.2026, 22:56). Anything else,
+   * or a number below 0, is refused in words and nothing changes.
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setWorktopOverhang: (worktopId, mm) => {
+    const s = get();
+    const design = migrateDesign(s.project.design);
+    const record = design.worktops.find((w) => w.id === worktopId);
+    if (!record) return { ok: false, error: 'No such worktop.' };
+    const v = Number(mm);
+    if (!(Number.isFinite(v) && v >= 0)) return { ok: false, error: 'An overhang is a number of millimetres, 0 or more.' };
+    if (record.island) {
+      const isle = roomIslands(s.project.room).find((i) => i.id === record.island);
+      if (!isle?.chestIsland) return { ok: false, error: 'A kitchen island keeps its own overhang: the field is for a chest island and a desk.' };
+      const verdict = get().updateIsland(record.island, { islandOverhangMm: v });
+      return { ok: verdict?.ok !== false, error: verdict?.ok === false ? (verdict.message || 'The island refused the overhang.') : null };
+    }
+    const desk = record.unitIds.length === 1 && getUnitType(s.units.find((u) => u.id === record.unitIds[0])?.type)?.desk === true;
+    if (!desk) return { ok: false, error: 'The overhang field is for a chest island and a desk: this slab keeps the automat\'s.' };
+    get().setDesign({
+      worktops: design.worktops.map((w) => (w.id === worktopId ? { ...w, overhangMm: v } : w)),
+    });
+    return { ok: true, error: null };
+  },
+
   /** Take one off. No confirmation — Undo covers it (turn 25's rule, F11). */
   removeWorktop: (worktopId) => {
     const design = migrateDesign(get().project.design);

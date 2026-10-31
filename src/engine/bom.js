@@ -20,13 +20,13 @@ import { lightingBomLines } from './ledStrips.js';
 // T75 F22 · the state of every line, read off the part.
 import { appliedStripNotes, readinessOf, vanityTopNotes } from './readiness.js';
 import { worktopsFor } from './worktop.js';
-import { migrateDesign } from './design.js';
+import { migrateDesign, sprayFinishLabel } from './design.js';
 import { roomWalls } from './room.js';
 import { dowelNoteRow } from './dowels.js';
 // T78 F20 · a Cabineo unit's cut list says so in a NOTE row of the same grammar (OUTSIDE FACE UP, the gate).
 import { cabineoNoteRow } from './cabineo.js';
 // T78 F21 - the paint of the sprayed sets, litres off the spray schedule (CLAUDE.md PART F).
-import { paintPurchaseQtys } from './spray.js';
+import { paintPurchaseQtys, sprayAreaFor } from './spray.js';
 // T83 F4 . the profile the mirror cabinet's articles are read from when the caller hands none.
 import { getCabinetProfile } from './profile.js';
 
@@ -475,25 +475,58 @@ export function buildBom(entries, {
       for (const slab of slabs) {
         const g = slab.geometry;
         const area = Array.isArray(g.outline) ? polygonAreaM2(g.outline) : roundTo((g.w * g.d) / 1e6, 4);
-        worktopArea += area;
-        rows.push({
-          unit_num: 'WT',
-          id: slab.slabId || slab.id,
-          part: 'WORKTOP',
-          role: 'worktop',
-          material_role: 'worktop',
-          material_label: g.decor || `Worktop ${g.thickness} mm${g.shape === 'L' ? ', L-shaped' : ''}`,
-          material_key: null,
-          material_id: null,
-          w: roundTo(g.w, 1),
-          h: roundTo(g.d, 1),
-          qty: 1,
-          thickness: g.thickness,
-          edge: '',
-          edge_m: 0,
-          area_m2: area,
-          readiness: 'bought',
-        });
+        // ─── T86B F8 (law 7) · A SPRAYED SLAB IS A SPRAYED PANEL ──────────
+        // *"mozliwosc dodania worktopu z naszego sprayowanego panelu nie tylko
+        // szary worktop"* (the owner, 30.10.2026, 22:52): not a bought decor
+        // slab but the house's panel, cut and sprayed: listed on the panel's
+        // own road (the free panel's spray rule, 2 faces and 4 edges, its
+        // spray area beside it), never counted in the worktop's bought area.
+        if (slab.finish === 'spray' && slab.colour?.hex) {
+          const spray = sprayAreaFor({ w: g.w, h: g.d, thickness: g.thickness }, { id: 'free_panel', kind: null }, profile);
+          rows.push({
+            unit_num: 'WT',
+            id: slab.slabId || slab.id,
+            part: 'WORKTOP-PANEL',
+            role: 'free_panel',
+            material_role: 'front',
+            material_label: `Sprayed panel ${g.thickness} mm, ${sprayFinishLabel(slab.colour)}`,
+            material_key: null,
+            material_id: null,
+            w: roundTo(g.w, 1),
+            h: roundTo(g.d, 1),
+            qty: 1,
+            thickness: g.thickness,
+            edge: '',
+            edge_m: 0,
+            area_m2: area,
+            spray_m2: spray.m2Each,
+            spray_code: spray.code,
+            finish: 'spray',
+            colour: slab.colour,
+            sheen: slab.sheen ?? null,
+            readiness: 'cut',
+          });
+        } else {
+          worktopArea += area;
+          rows.push({
+            unit_num: 'WT',
+            id: slab.slabId || slab.id,
+            part: 'WORKTOP',
+            role: 'worktop',
+            material_role: 'worktop',
+            material_label: g.decor || `Worktop ${g.thickness} mm${g.shape === 'L' ? ', L-shaped' : ''}`,
+            material_key: null,
+            material_id: null,
+            w: roundTo(g.w, 1),
+            h: roundTo(g.d, 1),
+            qty: 1,
+            thickness: g.thickness,
+            edge: '',
+            edge_m: 0,
+            area_m2: area,
+            readiness: 'bought',
+          });
+        }
         for (const c of slab.cutouts || []) {
           rows.push({
             unit_num: 'WT',
@@ -560,7 +593,7 @@ export function buildBom(entries, {
         unitNum: 'WT',
         type: 'WORKTOP',
         rows,
-        totals: { pieces_total: rows.filter((r) => r.role === 'worktop').length },
+        totals: { pieces_total: rows.filter((r) => r.role === 'worktop' || r.part === 'WORKTOP-PANEL').length },
         warnings: [],
       });
     }

@@ -461,6 +461,37 @@ export function surfaceFor({
   };
 }
 
+/**
+ * T86B F8 (law 7) · A WORKTOP HAS A FINISH: the surface a slab wears.
+ *
+ * *"mozliwosc dodania worktopu z naszego sprayowanego panelu nie tylko szary
+ * worktop"* (the owner, 30.10.2026, 22:52). A slab whose record says
+ * `finish: 'spray'` is the house's sprayed panel: it takes THE SAME road the
+ * sprayed fronts take (`surfaceFor`, the sprayed, sheen-driven branch, T80's
+ * gloss ride) with its own colour and sheen, the project's sheen when it has
+ * none of its own. A 'decor' slab, and every slab before tonight, answers
+ * null: the caller keeps today's road (the grey slab), untouched.
+ *
+ * @param {object} slab           a resolved slab (`worktopsFor`), the record's fields spread on it
+ * @param {object} profile
+ * @param {number|null} fallbackSheen  the project's sheen (design.js `projectSheen`)
+ * @returns {object|null}  surfaceFor()'s answer, or null for a decor slab
+ */
+export function worktopSurface(slab, profile, fallbackSheen = null) {
+  const c = slab?.finish === 'spray' ? slab.colour : null;
+  if (!c?.hex) return null;
+  const sheen = slab.sheen != null && Number.isFinite(Number(slab.sheen)) ? Number(slab.sheen) : fallbackSheen;
+  return surfaceFor({
+    role: 'front',
+    materialRole: 'front',
+    finishExposed: true,
+    finishes: { front: { id: `spray:${c.hex}`, kind: 'spray', hex: c.hex, colour: c }, carcass: null },
+    profile,
+    frontColour: c.hex,
+    sheen,
+  });
+}
+
 /** The contour-view surface: the material steps back, the outline stays. */
 export function contourSurface(profile) {
   const C = profile.appearance.contour;

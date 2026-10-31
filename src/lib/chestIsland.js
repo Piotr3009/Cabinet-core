@@ -29,6 +29,7 @@
 // Pure: numbers in, numbers out. No React, no store, no three.js.
 
 import { UNIT_TYPE_ORDER } from '../engine/types.js';
+import { islandOverhangOf as overhangOf } from '../engine/worktop.js';
 
 /** The chest-of-drawers kits that may stand in the room tonight (law 4: the chests and nothing else). */
 export const CHEST_ISLAND_KITS = Object.freeze(UNIT_TYPE_ORDER.filter((id) => /^WARDROBE_CHEST\d+$/.test(id)));
@@ -49,8 +50,8 @@ const finite = (v) => Number.isFinite(Number(v)) && v !== null && v !== '';
 
 /** The overhang the profile states for a chest island's (and a desk's) slab: 0, none, by default (law 6). */
 export function islandOverhangOf(profile) {
-  const v = profile?.autoParts?.worktop?.islandOverhangMm;
-  return finite(v) ? Math.max(0, Number(v)) : 0;
+  // T86B F8 · one law one path: the profile's default read by the engine's own reader (engine/worktop.js).
+  return overhangOf(null, profile);
 }
 
 /**

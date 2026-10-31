@@ -1049,7 +1049,8 @@ function islandSlab({ record, units, walls, profile }) {
     for (const [pu, pv] of [[x, 0], [x + w, 0], [x + w, reach], [x, reach]]) pts.push(toA(plan(wall, pu, pv)));
   }
   const ext = islandExtend(record);
-  const over = spec.frontOverhang;
+  // T86B F5 (law 6) . a chest island's slab overhangs by its own number, 0 by default (*"nawis jako opcja"*).
+  const over = A.chestIsland ? Math.max(0, Number(A.islandOverhangMm) || 0) : spec.frontOverhang;
   const us = pts.map((p) => p[0]);
   const vs = pts.map((p) => p[1]);
   // In A's frame: A is "out" (+v), B is behind the core (-v), E1 lies at the

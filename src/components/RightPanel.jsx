@@ -37,6 +37,8 @@ import FrontDecorationControls from './FrontDecorationControls.jsx';
 import MultiUnitPanel from './MultiUnitPanel.jsx';
 import AddItems from './AddItems.jsx';
 import Section from './Section.jsx';
+// T86B F5 . the chest in the room: Stand in the room, its variant and its turn by 90.
+import { ChestIslandRow } from './ChestIslandPopup.jsx';
 import ElementProperties from './ElementProperties.jsx';
 import CncTree from './CncTree.jsx';
 import UnitWarnings from './UnitWarnings.jsx';
@@ -485,6 +487,9 @@ export default function RightPanel({ layout = 'overlay', headerActions = null } 
             <button type="button" className="cc-btn flex-1" onClick={() => rotateUnit(unit.id, 'back')}>Back to wall</button>
             <button type="button" className="cc-btn flex-1" onClick={() => rotateUnit(unit.id, 'side')}>Side to wall</button>
           </div>
+
+          {/* T86B F5 (law 4) . a chest stands in the room: *"cos jak wyspa ale przez grab i move"* (30.10.2026). */}
+          <ChestIslandRow unit={unit} />
 
           {/* T75 F7 · CUT CORNER: lights the four plan corners in the scene. */}
           {notchApplies(type) && <NotchRow unit={unit} />}

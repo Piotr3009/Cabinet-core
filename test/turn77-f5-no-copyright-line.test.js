@@ -473,6 +473,10 @@ export const NEW_FILES = [
   'src/lib/chestIsland.js',
   'test/turn86b-f04-chest-island-engine.test.js',
   'scripts/t78-classify.d/f51-t86b-f04.mjs',
+  // T86B F5, F6 (31.10.2026): PART B, the store and the room (S1)
+  'src/components/ChestIslandPopup.jsx',
+  'test/turn86b-f05-chest-island-store.test.js',
+  'scripts/t78-classify.d/f51-t86b-f05.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

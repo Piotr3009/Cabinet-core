@@ -79,7 +79,8 @@ export function islandClash({ room, units = [], profile }) {
     const island = islands[k];
     const name = `Island ${k + 1}`;
     const core = islandCorners(island);
-    const mine = units.filter((u) => onIsland(u, walls, island.id) && !getUnitType(u.type)?.freePanel);
+    // T86B F5 . a chest island's back panel is its own board and is measured with it.
+    const mine = units.filter((u) => onIsland(u, walls, island.id) && (island.chestIsland || !getUnitType(u.type)?.freePanel));
     const bodies = [{ poly: core, what: name }, ...mine.map((u) => ({ poly: footprintOf(u, walls, profile), what: labelOf(u) }))]
       .filter((b) => b.poly);
     for (const b of bodies.slice(1)) {

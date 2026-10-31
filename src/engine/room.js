@@ -773,21 +773,19 @@ const quarterTurns = (deg) => (((Math.round((Number(deg) || 0) / 90) % 4) + 4) %
 /** An island, from anything: id kept, sizes made real, rotation in quarter turns. */
 export function migrateIsland(island, i = 0) {
   if (!island || typeof island !== 'object') return null;
+  // T86B F5 (law 4) . A CHEST ISLAND: the owner, 30.10.2026 (22:52), *"cos jak wyspa ale przez grab i move"*. Its
+  // core is the line the chest's back stands on (0 deep: the panel or the second chest meets it), and it keeps its
+  // variant and its own overhang. Every other island is read exactly as before.
+  const v = island.chestIsland?.variant;
+  const chest = v === 'panel' || v === 'double' ? { variant: v } : null;
   return {
     id: String(island.id || `island_${i + 1}`),
     cx: round4(Number(island.cx) || 0),
     cy: round4(Number(island.cy) || 0),
     w: round4(Math.max(MIN_BOX_SIZE, Number(island.w) || 0)),
-    d: round4(Math.max(MIN_BOX_SIZE, Number(island.d) || 0)),
+    d: round4(Math.max(chest ? 0 : MIN_BOX_SIZE, Number(island.d) || 0)),
     rotation: quarterTurns(island.rotation),
-    // T86B F4 · a chest island (CLAUDE.md T86B law 4) keeps its variant and its slab's own overhang; the keys are
-    // ABSENT on every other island, so a kitchen island migrates exactly as yesterday.
-    ...(island.chestIsland && typeof island.chestIsland === 'object'
-      ? { chestIsland: { variant: island.chestIsland.variant === 'double' ? 'double' : 'panel' } }
-      : {}),
-    ...(island.chestIsland && Number.isFinite(Number(island.islandOverhangMm)) && island.islandOverhangMm !== null
-      ? { islandOverhangMm: Math.max(0, Number(island.islandOverhangMm)) }
-      : {}),
+    ...(chest ? { chestIsland: chest, islandOverhangMm: round4(Math.max(0, Number(island.islandOverhangMm) || 0)) } : {}),
   };
 }
 
@@ -833,6 +831,8 @@ export function islandFaces(island, base = 0) {
       angle: Math.atan2(-uy, ux),
       island: i.id,
       face,
+      // T86B F5 . a chest island's faces carry what the slab over it reads (its overhang, law 6).
+      ...(i.chestIsland ? { chestIsland: i.chestIsland, islandOverhangMm: i.islandOverhangMm } : {}),
     };
   });
 }

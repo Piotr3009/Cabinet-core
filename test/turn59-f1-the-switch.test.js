@@ -114,7 +114,8 @@ const EXEMPT = {
   'src/components/LibraryPanel.jsx':
     'T75 F20 · the sets shelf: the Library\'s Sets category lists the five shipped sets (engine/sets.js) above the saved ones, a saved SET row names its units, and a click inserts the whole set through the store (insertSet) where a unit would go. *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."* '
     + 'T75 F10 · a plus on an empty island face opens the library ON that face and the unit is added there (addUnit with the face\'s index). *"A unit is added to a face as to a wall (addUnit with the face\'s index; the library\'s plus points on the plan show the faces)."*'
-    + ' ' + 'T75 F15 · the Extras row "Pelmet" is an ACTION done to the selected wall unit\'s run: the panel hands the store the action and the selection (libraryAction) and says its answer. *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet: a flat strip under a run of wall units."*',
+    + ' ' + 'T75 F15 · the Extras row "Pelmet" is an ACTION done to the selected wall unit\'s run: the panel hands the store the action and the selection (libraryAction) and says its answer. *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet: a flat strip under a run of wall units."*'
+    + ' T86B F5 · the chest-of-drawers flyout gains Chest in the room (data-chest-in-room), which asks the variant once (ChestIslandPopup, A: back panel, B: back to back) and runs projectStore.addChestIsland: the chest on face A of an island of its own footprint at the room\'s centre, the panel or the second chest on the face behind, one slab, one undo. *"chest powinna byc mozliwosc odsuniecia od sciany ale nie na zasadzie back move tylko powinna byc mozliwosc na srodku pokoju cos jak wyspa ale przez grab i move; i dodanie panela z tylu lub polaczenie szuflad z 2 stron; chest dodany w changing room; mozliwosc dodania worktopu z naszego sprayowanego panelu nie tylko szary worktop"* (the owner, 30.10.2026, 22:52); *"nie koniecznie nawis, nawis jako opcja prosze; 1 - oba; 2 - wchodzi; 3 - dla komody oraz dla biurka, opcja inny blat tez (w przyszlosci) Hi-Macs"* (the owner, 30.10.2026, 22:56)',
   // ─── ADDED BY TURN 75 · THE BIG TURN ───────────────────────────────────
   'src/components/ContextMenu.jsx':
     'T75 F5 · the right-click offers the UPSTAND beside the plinth, on and off per run, and the menu is handed the two store calls it needs (addUpstand, removeUpstand). *"UPSTAND: an auto-part along the wall behind every base run that has a worktop ... on and off per run like the plinth (BACKLOG #16\'s grammar: added by a decision, visible only then)."*',
@@ -167,7 +168,8 @@ const EXEMPT = {
     + ' T84 F4 · the host adaptation (verify/t84/p1-host.md C): layout="embedded" fills the inspector column instead of laying the panel over the canvas (no absolute right-0, no width, no z layer), headerActions (Pin, Back to quick settings) stand INSIDE the existing header before the x on every branch (CNC sheet, nothing selected, several cabinets, one cabinet), the title gives way in the embedded header, the duplicate inline ElementSection is suppressed in the embedded layout only, and the cut-corner, cut-edge and mirror-back windows are exported so the host mounts each once while the panel is embedded; overlay, the panel is what it was, and every row, section and the x stay. *"ok jak juz bedziesz wiedzial dokladnie to tabela porownaj ze mamy wszystko nic nie zgubilismy, teraz daj do tury"* (the owner, 27.10.2026, 22:11 to 22:25); *"Suppress only the duplicate inline ElementSection in the Studio inspector; the existing part editor remains independent"* (the designer, CLAUDE.md T84 PART P (c))'
     + ' CHAT FIX 28.10.2026, 23:26 (KIT_RECESS.lsp D27) · the Section\'s drawer row says what each stack is: a column\'s stack its column and depth (result.assemblies.columnDrawers, the box side Z<k>D1-SL), never "dropped" because the full-width zone is empty; a full-width stack the carcass cannot hold says so (data-dropped-drawers) beside a Remove button (data-remove-dropped-drawers) that removes it through the store\'s own addDrawers(unit, 0). *"nie da sie tego zrobic why ?"* (the owner, a wardrobe 1200 x 2150 x 300 before a recess).'
     + ' Chat fix 29.10.2026 F1 · the Section\'s Shelves row (ShelvesHead) carries Center all and Center between, with no shelf selected first: Center all is the row\'s Even under the store\'s one name (centreShelves(unit, null), each bay on its own ladder, the same call); Center between (data-section-centre-between) arms the shared uiStore two-pick mode on this cabinet, the row says which pick is next (data-section-centre-between-step), a second press or Escape cancels, and the project store centres the shelves between the two picks or says why not (T79 F12). *"jest ta funkcja ale tylko w double click ale nie ma w carcas lub w section a powinn byc bo zaznaczyc polki i kliknac center between to za duzo i za duzo szukania"* (the owner, 29.10.2026, 06:01).'
-    + ' T86B F2 · the Section shows Stack height and Partition (locked, required above the stack) for a recess column\'s stack from derived.columnStacks[zone], the same rows and words as the full-width stack (T79). *"zrob jak rekomendujesz"* (the owner, 30.10.2026, 23:02, on the Section for a column stack)',
+    + ' T86B F2 · the Section shows Stack height and Partition (locked, required above the stack) for a recess column\'s stack from derived.columnStacks[zone], the same rows and words as the full-width stack (T79). *"zrob jak rekomendujesz"* (the owner, 30.10.2026, 23:02, on the Section for a column stack)'
+    + ' T86B F5 · ChestIslandRow in the Carcass layout group of a chest: Stand in the room (addChestIsland on the chest itself), and on a chest that stands in the room its variant (Back panel / Back to back) and Turn 90 (rotateChestIsland, the R key with the chest selected), each refused in words where it would not fit. *"chest powinna byc mozliwosc odsuniecia od sciany ale nie na zasadzie back move tylko powinna byc mozliwosc na srodku pokoju cos jak wyspa ale przez grab i move; i dodanie panela z tylu lub polaczenie szuflad z 2 stron; chest dodany w changing room; mozliwosc dodania worktopu z naszego sprayowanego panelu nie tylko szary worktop"* (the owner, 30.10.2026, 22:52); *"nie koniecznie nawis, nawis jako opcja prosze; 1 - oba; 2 - wchodzi; 3 - dla komody oraz dla biurka, opcja inny blat tez (w przyszlosci) Hi-Macs"* (the owner, 30.10.2026, 22:56)',
   // ─── ADDED BY THE CHAT FIX OF 29.10.2026 · CENTER BETWEEN IN THE STUDIO ────
   // The piece's window is a retail copy's original (scripts/t63-copies.mjs), re-copied by the machine
   // (scripts/t78-copy.mjs T78_PRO_EDITS), never by hand; the door window's conduct (T37) is untouched.
@@ -389,6 +391,9 @@ const EXEMPT = {
   // Chat fix 28.10.2026 F1 · a NEW PRO file, frozen at its first hash: the two questions of Open from file.
   'src/components/ProjectFileModal.jsx':
     'Chat fix 28.10.2026 F1 · NEW, the window of Open from file\'s two questions, in the shell (name "project-file"): the job is already on this computer (Replace with the file, gold; Keep both, open as a copy; Cancel), and the file was drawn with other workshop settings (Use the file\'s settings, gold; Keep this computer\'s); drawn in a root of its own by askProjectFile, so neither the top bar nor the start screen hosts it. *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"*; *"problem polega na tym ze nie dzialaja te szuflady ani import ani export plikow"* (28.10.2026)',
+  // T86B F5 (31.10.2026, INT) · a NEW PRO file, frozen at its first hash: the chest island's variant popup.
+  'src/components/ChestIslandPopup.jsx':
+    'T86B F5 · NEW, the small Studio popup that asks a chest in the room its variant ONCE, with two pictures from the chat\'s mockup (A: back panel, B: back to back); the answer is the island\'s chestIsland.variant, changeable later in the chest\'s panel. *"chest powinna byc mozliwosc odsuniecia od sciany ale nie na zasadzie back move tylko powinna byc mozliwosc na srodku pokoju cos jak wyspa ale przez grab i move; i dodanie panela z tylu lub polaczenie szuflad z 2 stron; chest dodany w changing room; mozliwosc dodania worktopu z naszego sprayowanego panelu nie tylko szary worktop"* (the owner, 30.10.2026, 22:52); *"nie koniecznie nawis, nawis jako opcja prosze; 1 - oba; 2 - wchodzi; 3 - dla komody oraz dla biurka, opcja inny blat tez (w przyszlosci) Hi-Macs"* (the owner, 30.10.2026, 22:56)',
   // ADDED BY TURN 84 (27.10.2026) · STUDIO, PRO'S FACE. CLAUDE.md T84 FROZEN 4: *"every PRO file edited is licensed in
   // EXEMPT with the owner's words from this file and re-frozen in the same commit."* Every NEW file under
   // src/components/studio/ stands here too, each with its own reason: the git assertion below excludes EXEMPT paths
@@ -534,6 +539,8 @@ const FROZEN = {
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F16 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F18 re-frozen at the new hash; EXEMPT above carries the reason.
+  // T86B F5 · NEW PRO file (the chest island's variant popup), frozen at its first hash; EXEMPT above carries the reason.
+  'src/components/ChestIslandPopup.jsx': 'dd212a492906192eed2fc521c4ecc9ebed0af420ac2b1db9bb07729d709436bd',
   'src/components/ElementProperties.jsx': '17372ffa62c00c834c574d8a30942a2bfb8ff0ec158c5a7e0c8b3232599e049f',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
@@ -545,7 +552,7 @@ const FROZEN = {
   // T72 F4 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/JpullRunModal.jsx': '652b4f701a455134eb2571565f03dc6fca89c273f4041ad9eb66d8b0c7bd6aa7',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/LibraryPanel.jsx': 'ce948c2fb0a4092f3fb66a523dfb77fb2609504ca1bcc248930deab6110f7153',
+  'src/components/LibraryPanel.jsx': 'f9bc874928c33fe8743121891e1db746deb4a3d231ab9e4e036d1242e2842e39',
   'src/components/LightingPanel.jsx': '65bf9cbc3cf6fe4b687def6f2d9538d4b363690c3c5d5ad2fddb0f7a77e48d2d',
   'src/components/MaterialChoicePanel.jsx': '16d2ed3171b4756141f21f693123c46bd6b33f772cad58013b2a45ec9a8fcb71',
   'src/components/MaterialPicker.jsx': 'd2b1d49bb1ef08d55652437986d4d40a2cac7c1683b42d16b0523b0e08fca5b7',
@@ -583,7 +590,7 @@ const FROZEN = {
   // T83 F5 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 26.10.2026 re-frozen at the new hash (the mirror cabinet's door widths held and balanced); EXEMPT above carries the owner's words.
   // T84 F4 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/RightPanel.jsx': '536c285e58ae71ba018daa2f4c372761dc980afeebef1820c234e6e492b6ad72',
+  'src/components/RightPanel.jsx': '7007dd5c67e688d41259bc9b30084da4d71cb60369c2c0249fcc3ccb18139f47',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   // CHAT FIX 17.10.2026 re-frozen at the new hash (the window 1290 wide); `EXEMPT` above carries the owner's words.
   'src/components/RoomModal.jsx': 'cc9a92536ce6fa813da4d6523c4a41bb38375f066f92e6be4e118d662aab3598',
@@ -874,6 +881,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // Chat fix 29.10.2026 F2 · *"droban funcje ale jej nei ma czyli center between soprawdz jeszcze raz prosze"*:
     // the piece's window lets Center between's two picks through to the scene while the mode is armed.
     'src/components/DoorModal.jsx',
+    // T86B F5 · the chest island's variant popup, a NEW PRO file (the owner: "cos jak wyspa ale przez grab i move").
+    'src/components/ChestIslandPopup.jsx',
     'src/components/DrawRoomModal.jsx',
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',
@@ -944,7 +953,9 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
   // *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"* (28.10.2026).
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
-    assert.match(why, /\b(?:(?:T\d{2}|DECOR) F\d|Setup UI 26\.10\.2026 F1|Chat fix \d{2}\.\d{2}\.\d{4} F\d)/, `${rel} does not say which turn and feature licensed it`);
+    // AMENDED BY T86B F5 (31.10.2026, INT): a turn may carry a letter (T86B, the second shift of 30.10), so the turn
+    // reads T\d{2}[A-Z]?; nothing else in the pattern moves.
+    assert.match(why, /\b(?:(?:T\d{2}[A-Z]?|DECOR) F\d|Setup UI 26\.10\.2026 F1|Chat fix \d{2}\.\d{2}\.\d{4} F\d)/, `${rel} does not say which turn and feature licensed it`);
     assert.match(why, /\*"/, `${rel} does not carry the owner's own words`);
     const got = createHash('sha256').update(readFileSync(join(ROOT, rel))).digest('hex');
     assert.equal(got, FROZEN[rel], `${rel}'s new hash is not the one written down`);
@@ -982,7 +993,8 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // checkout with no base ref (every pull request's CI: actions/checkout fetches only the merge ref) read 89 and
     // went red on PR #87, #88 and #89 while a push to main, which has origin/main, never reached this line. The
     // count is the manifest's own; no file was frozen or thawed by this line.
-    assert.ok(Object.keys(FROZEN).length === 90, 'no base ref: the manifest is the whole proof here');
+    // AMENDED BY T86B F5 (31.10.2026, INT): 91, components/ChestIslandPopup.jsx frozen at its first hash.
+    assert.ok(Object.keys(FROZEN).length === 91, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

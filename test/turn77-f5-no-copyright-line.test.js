@@ -486,6 +486,7 @@ export const NEW_FILES = [
   'test/turn86b-f09-corner-mirror.test.js',
   'verify/t86b/probe-f09-scene.mjs',
   'test/turn86b-f10-probes.test.js',
+  'scripts/t86b-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

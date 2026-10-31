@@ -33,7 +33,7 @@ const KEY_RE = /^cc\.(.+?)\.item\.(.+)\.buffer\.v1$/;
 export const bufferKey = (tenantId, itemId) => `cc.${tenantId}.item.${itemId}.buffer.v1`;
 
 /** { tenantId, itemId } of a buffer key, or null for any other key. */
-export function parseBufferKey(key) {
+function parseBufferKey(key) {
   const m = KEY_RE.exec(String(key || ''));
   return m ? { tenantId: m[1], itemId: m[2] } : null;
 }
@@ -42,7 +42,7 @@ export function parseBufferKey(key) {
 export const bufferOffWords = (mb = SAVE_DEFAULTS.bufferMaxMb) => `Crash buffer off: the item is over ${mb} MB`;
 
 /** The browser's refusal in a joiner's words (lib/projectLibrary.js storageRefusal is the model). */
-export function refusalWords(err) {
+function refusalWords(err) {
   const name = String(err?.name || '');
   if (/quota/i.test(name) || /quota/i.test(String(err?.message || ''))) {
     return 'Crash buffer off: this computer\'s storage for the app is full';

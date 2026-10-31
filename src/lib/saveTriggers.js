@@ -36,7 +36,7 @@ import { byteSize, SAVE_DEFAULTS } from './saveNumbers.js';
 export const RPC_ENDPOINT = '/api/rpc';
 
 /** The rpc the keepalive carries: the same one save as F7. */
-export const SAVE_RPC = 'cc_save_item';
+const SAVE_RPC = 'cc_save_item';
 
 /** Is this key press Ctrl+S or Cmd+S (no Alt, no Shift)? */
 export function isSaveKey(e) {

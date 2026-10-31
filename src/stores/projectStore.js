@@ -2723,7 +2723,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * T-CC1a F4.3 / F9 · an item's design opened under its row: the version gate (R16), the row's id, name, number
    * and `updated_at` (`project.savedAt`), the client handed in, the design's own `jc_*` fields ignored, then
    * `loadProject`. `openItem` hands it the row's design and marks it saved; the boot question's Restore
-   * (components/StartScreen.jsx) hands it the crash buffer's design with `dirty: true`: the item opens unsaved,
+   * (components/StartScreen.jsx) hands it the crash buffer's design and `dirty` set: the item opens unsaved,
    * never saved in silence. Resolves `{ ok, error }`.
    */
   openItemDesign: (row, rowDesign, { client = '', storage = browserStorage(), dirty = false } = {}) => {
@@ -2753,7 +2753,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const assignments = design.assignments || inner.assignments || null;
     const project = projectWithLogo(storage, { ...inner, ...(assignments ? { assignments } : {}), ...bound });
     get().loadProject(project, Array.isArray(design.units) ? design.units : []);
-    if (dirty) set({ dirty: true });
+    if (dirty) set({ dirty: Boolean(dirty) });
     else get().markSaved();
     return { ok: true, error: null };
   },

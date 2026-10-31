@@ -26,7 +26,7 @@ import { byteSize, saveNumbers } from './saveNumbers.js';
 export const tooLargeWords = (mb) => `This item is too large to save: ${mb} MB. A logo or a picture is riding in it.`;
 
 /** The words of a job with no item (CC mints no id, law 4). */
-export const NO_ITEM = 'this job has no item in Joinery Core yet. Open it from the list, or start it with New item.';
+const NO_ITEM = 'this job has no item in Joinery Core yet. Open it from the list, or start it with New item.';
 
 /** "Saved 14:05": the status words of a save that landed. */
 function savedWords(at) {
@@ -56,9 +56,6 @@ const refused = (project, words, extra = {}) => {
 
 // One save in flight at a time: a second ask while one is out shares its answer (Ctrl+S during an autosave).
 let inFlight = null;
-
-/** Is a save out right now? (the autosave never starts a second one, lib/saveTriggers.js) */
-export const saveInFlight = () => inFlight !== null;
 
 /**
  * Save the item on the screen to Joinery Core: ONE `cc_save_item`.

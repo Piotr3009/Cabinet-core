@@ -493,6 +493,8 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f51-t-cc1a-f01.mjs',
   'src/components/jc/RefusalScreen.jsx',
   'test/turn-cc1a-f02-session.test.js',
+  'test/turn-cc1a-f03-kasacja.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f03.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

@@ -1,6 +1,4 @@
 import { browserStorage, notOnShelf, saveLocalProject } from './projectLibrary.js';
-import { saveProject as saveCloudProject, saveAssignments } from './cloudSync.js';
-import { isJcOffline } from './jcApi.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 
 // ─── Saving, in one place ───
@@ -38,7 +36,7 @@ export async function persistProject({ project, units, asName = null, at = Date.
     : withAssignments;
 
   const row = saveLocalProject(shelf, { project: named, units, at });
-  let saved = row.project;
+  const saved = row.project;
   // T82 F20, after the review: a job the browser would not take is NOT on
   // this computer, and the save says so in words instead of "saved". The job
   // stays open as it is; nothing in it is lost while the window is open.
@@ -46,55 +44,12 @@ export async function persistProject({ project, units, asName = null, at = Date.
   // database where that is the road): a caller marks the job saved only then.
   const notHere = notOnShelf(row);
 
-  if (isJcOffline()) {
-    if (notHere) return { project: saved, message: `Not saved: ${notHere}`, tone: 'error', stored: false };
-    return {
-      project: saved,
-      message: asName ? `Saved as “${saved.name}” on this computer.` : 'Project saved on this computer.',
-      tone: 'ok',
-      stored: true,
-    };
-  }
-
-  const res = await saveCloudProject({ ...named }, units);
-  if (res.error && notHere) {
-    return {
-      project: saved,
-      message: `Not saved: the database refused it (${res.error.message || 'error'}) and ${notHere}`,
-      tone: 'error',
-      stored: false,
-    };
-  }
-  if (res.error) {
-    return {
-      project: saved,
-      message: `Saved on this computer — the database refused it: ${res.error.message || 'error'}`,
-      tone: 'warn',
-      stored: true,
-    };
-  }
-  saved = { ...saved, id: res.project?.id || saved.id };
-  // The assignment row goes in under whatever id the project ended up with —
-  // which for a Save as… is a NEW id, so the copy gets its own materials rather
-  // than sharing the original's row.
-  //
-  // It is deliberately NOT part of the success test. sql/006_tura39.sql has not
-  // been run when the owner first opens this build, and a project that saved
-  // perfectly must not report a failure because a table nobody created yet
-  // refused a write (iron rule 6). The blob is already on the local shelf and in
-  // `cc_projects` nowhere — the shelf is what makes it survive.
-  if (assignments && saved.id) {
-    try {
-      useMaterialAssignmentStore.setState({ projectId: saved.id });
-      await saveAssignments(saved.id, assignments);
-    } catch { /* the local copy is the copy */ }
-  }
-  if (notHere) {
-    return { project: saved, message: `Saved in the database, but not on this computer: ${notHere}`, tone: 'warn', stored: true };
-  }
+  // T-CC1a F3: the cloud branch (cc_projects, the assignments' row) is deleted with the road; the one request to
+  // Joinery Core is PART C's cc_save_item (*"oczywiscie do CC laczysz sie tylko przez JC"*).
+  if (notHere) return { project: saved, message: `Not saved: ${notHere}`, tone: 'error', stored: false };
   return {
     project: saved,
-    message: asName ? `Saved as “${saved.name}”.` : 'Project saved.',
+    message: asName ? `Saved as “${saved.name}” on this computer.` : 'Project saved on this computer.',
     tone: 'ok',
     stored: true,
   };

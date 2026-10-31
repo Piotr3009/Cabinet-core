@@ -5,7 +5,6 @@ import {
   assignmentFor, unassignedParts, unassignedByGroup, ALL_PARTS, PART_REGISTRY,
 } from '../engine/partRegistry.js';
 import { withDb, isJcOffline } from '../lib/jcApi.js';
-import { loadAssignments as cloudLoad, saveAssignments as cloudSave } from '../lib/cloudSync.js';
 
 // ─── Material assignments per BOM role ───
 // Pattern taken from Production Core's materialAssignmentStore: a canonical
@@ -155,21 +154,8 @@ function load() {
 
 const initial = typeof localStorage !== 'undefined' ? load() : normalize(null);
 
-// ─── THE CLOUD WRITE, COALESCED ─────────────────────────────────────────────
-// A joiner dragging a yield slider fires a mutation per frame. One row per
-// project is cheap to write and expensive to write sixty times a second, so
-// the write is debounced — and it is FIRE AND FORGET: a database that refuses
-// it is the state before the migration has been run, which is a state this app
-// works fine in (iron rule 6).
-let cloudTimer = null;
-function scheduleCloudSave(projectId, data) {
-  if (!projectId || isJcOffline()) return;
-  if (cloudTimer) clearTimeout(cloudTimer);
-  cloudTimer = setTimeout(() => {
-    cloudTimer = null;
-    cloudSave(projectId, data).catch(() => { /* the local copy is the copy */ });
-  }, 600);
-}
+// T-CC1a F3: the assignments' own cloud row is deleted; they ride `project.assignments` alone, saved with the item
+// (*"oczywiscie do CC laczysz sie tylko przez JC"*, the owner, 30.10.2026).
 
 export const useMaterialAssignmentStore = create((set, get) => ({
   data: initial,
@@ -212,8 +198,9 @@ export const useMaterialAssignmentStore = create((set, get) => ({
   /**
    * Open a project's assignments.
    *
-   * The order is deliberate and it is the owner's: what the CLOUD holds wins,
-   * then what this browser cached for this project, then turn 3's global blob —
+   * The order is deliberate and it is the owner's: the project's own blob
+   * (T-CC1a F3: the cloud row that won over it is deleted), then what this
+   * browser cached for this project, then turn 3's global blob,
    * and whatever comes out of that, the workshop's DEFAULTS fill in the parts
    * it is silent about, never overwriting a choice somebody made by hand.
    *
@@ -224,14 +211,7 @@ export const useMaterialAssignmentStore = create((set, get) => ({
    *                         `profile.materials.defaults`.
    */
   openProject: async (projectId, { blob = null, defaults = null } = {}) => {
-    const local = blob ? normalize(blob) : readLocal(projectId);
-    let d = local;
-    const cloud = await cloudLoad(projectId).catch(() => null);
-    // A joiner who opens job A and then job B before the network answers must
-    // not get A's boards written over B's. The awaited answer is only allowed
-    // to land if this is still the project it was asked about.
-    if (get().projectId !== (projectId || null)) return get().data;
-    if (cloud) d = normalize(cloud);
+    let d = blob ? normalize(blob) : readLocal(projectId);
     if (defaults) d = seedFromDefaults(d, defaults);
     set({ projectId: projectId || null, ...project(d, projectId) });
     return d;
@@ -247,7 +227,6 @@ export const useMaterialAssignmentStore = create((set, get) => ({
   /** Fill every part the workshop has a default for and the project has not. */
   seedDefaults: (defaults) => set((s) => {
     const d = seedFromDefaults(s.data, defaults);
-    scheduleCloudSave(s.projectId, d);
     return project(d, s.projectId);
   }),
 
@@ -270,7 +249,6 @@ export const useMaterialAssignmentStore = create((set, get) => ({
     // A HAND assignment clears the `auto` tag for that part (F4): the rule may
     // not take it back, and the tag is what the rule reads to know.
     if (d.auto?.[key]) { delete d.auto[key]; }
-    scheduleCloudSave(s.projectId, d);
     return project(d, s.projectId);
   }),
 
@@ -295,7 +273,6 @@ export const useMaterialAssignmentStore = create((set, get) => ({
     if (v) d.overrides[key] = { ...(d.overrides[key] || {}), [v]: next };
     else d.base[key] = next;
     d.auto = { ...(d.auto || {}), [key]: true };
-    scheduleCloudSave(s.projectId, d);
     return project(d, s.projectId);
   }),
 
@@ -310,7 +287,6 @@ export const useMaterialAssignmentStore = create((set, get) => ({
     const next = { ...prev, yield: yieldCoeff };
     if (v) d.overrides[key] = { ...(d.overrides[key] || {}), [v]: next };
     else d.base[key] = next;
-    scheduleCloudSave(s.projectId, d);
     return project(d, s.projectId);
   }),
 
@@ -327,7 +303,6 @@ export const useMaterialAssignmentStore = create((set, get) => ({
       delete d.overrides[key];
       if (d.auto) delete d.auto[key];
     }
-    scheduleCloudSave(s.projectId, d);
     return project(d, s.projectId);
   }),
 
@@ -392,7 +367,6 @@ export const useMaterialAssignmentStore = create((set, get) => ({
         unit: unit || 'pcs',
         qtyPerUnit: Number(qtyPerUnit) > 0 ? Number(qtyPerUnit) : 1,
       }];
-      scheduleCloudSave(s.projectId, d);
       return project(d, s.projectId);
     });
     return id;
@@ -410,7 +384,6 @@ export const useMaterialAssignmentStore = create((set, get) => ({
           : cp.qtyPerUnit,
       }
       : cp));
-    scheduleCloudSave(s.projectId, d);
     return project(d, s.projectId);
   }),
 
@@ -422,7 +395,6 @@ export const useMaterialAssignmentStore = create((set, get) => ({
     delete d.base[id];
     delete d.overrides[id];
     if (d.auto) delete d.auto[id];
-    scheduleCloudSave(s.projectId, d);
     return project(d, s.projectId);
   }),
 

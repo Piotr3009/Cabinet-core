@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
-import MockModeBadge from './MockModeBadge.jsx';
 import NewProjectFlow from './NewProjectFlow.jsx';
 import {
   browserStorage, deleteLocalProject, listLocalProjects, loadLocalProject,
   mergeProjectLists, nextProjectNumber, notOnShelf, recentProjects, saveLocalProject, touchLocalProject,
 } from '../lib/projectLibrary.js';
-import { listProjects, loadProject as loadCloudProject } from '../lib/cloudSync.js';
-import { isJcOffline } from '../lib/jcApi.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { getProjectType } from '../engine/projectTypes.js';
 import { migrateDesign } from '../engine/design.js';
@@ -53,10 +50,8 @@ export default function StartScreen() {
   const refresh = useCallback(async () => {
     const local = listLocalProjects(storage);
     const recent = recentProjects(storage);
-    // The database is the real home when it is configured; without keys this is
-    // a no-op and the shelf is the whole library (mock mode must WORK, not warn).
-    const { projects: cloud } = isJcOffline() ? { projects: [] } : await listProjects();
-    setRows({ recent, all: mergeProjectLists(local, cloud) });
+    // T-CC1a F3: the cc_projects list is deleted (the list becomes Joinery Core's in F4).
+    setRows({ recent, all: mergeProjectLists(local, []) });
   }, [storage]);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -106,9 +101,7 @@ export default function StartScreen() {
         start(found.project, found.units, { id: row.id });
         return;
       }
-      const { project, units, error } = await loadCloudProject(row.id);
-      if (error || !project) { notify('Could not open that project from the database.', 'warn'); return; }
-      start(project, units);
+      notify('That project is no longer on this computer.', 'warn');
     } finally {
       setBusy(false);
     }
@@ -149,7 +142,6 @@ export default function StartScreen() {
               opened through — `/client` is retail, everything else is the
               workshop (lib/appEntry.js) — and it is not a thing to be chosen
               on the way in. */}
-          <MockModeBadge />
         </header>
 
         <div className="cc-divider" />
@@ -203,7 +195,7 @@ export default function StartScreen() {
                 {tab === 'recent' ? 'Recent projects' : 'All projects'}
               </h2>
               <span className="text-[11px] text-ink-400">
-                {isJcOffline() ? 'Saved on this computer — mock data mode' : 'This computer and the database'}
+                Saved on this computer
               </span>
             </div>
 

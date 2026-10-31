@@ -246,7 +246,10 @@ test('F7 — it degrades: the warehouse opens, says so, and loses no typed row',
   // The local shelf is written FIRST, and the load MERGES rather than replaces.
   assert.match(STORE, /put: \(rows\) => \{\s*\n\s*saveShelf\(rows\);/);
   assert.match(STORE, /const mine = here\.filter\(\(r\) => !fromDb\.has\(r\.id\)\);/);
-  assert.match(STORE, /if \(mine\.length\) await saveManyDb\(mine\);/, 'and pushes them up when the signal returns');
+  // REWRITTEN BY T-CC1a F3: the six network writes are deleted; the rows stay in this browser until T-CC2 moves the
+  // warehouse to Joinery Core (*"oczywiscie do CC laczysz sie tylko przez JC"*, the owner, 30.10.2026).
+  assert.doesNotMatch(STORE, /saveManyDb|saveMaterialDb|removeMaterialDb/, 'nothing is pushed up');
+  assert.doesNotMatch(DB, /upsert|\.delete\(/, 'the DB layer writes nothing');
   // …and the surface says it out loud.
   assert.match(PANEL, /data-warehouse-offline="1"/);
 });

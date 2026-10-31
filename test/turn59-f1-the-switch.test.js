@@ -95,7 +95,8 @@ const EXEMPT = {
     + ' Chat fix 17.10.2026 \u00b7 Output > Part labels (PDF): the sticker sheets (onExportLabels). *"naklejki 44 na A4 bo takie mam, kolorami ... napis co to, i strzalka co oklejamy ... ok koduj"*'
     + ' T82 F20, after the review · File > Save marks the job saved only when the save was stored (persistProject answers stored); a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
     + ' T84 F2 · variant="studio" for the Studio\'s top bar: each header control written once and drawn by either layout (the same handler, guard and state); the Studio layout is the wordmark with the PRO label, the project name, the same menus array through the same MenuBar with orderMenus whole (every leaf, run, disabled and checked of the census), then Undo and Redo (the history store\'s, the toolbar\'s guards), Save, Brightness, Account and the gold button, Export renamed BOM with the same call setBomOpen(!bomOpen); its MockModeBadge stands on the status bar; the legacy layout is what it was. *"tak"* (the owner, 27.10.2026, 16:27, to the header\'s Export renamed BOM); *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)'
-    + ' Chat fix 28.10.2026 F1 · File gains Open from file... (after Open...) and Save to file... (after Save as...): the job as one .ccproject file through lib/projectFileRoad.js, its questions in components/ProjectFileModal.jsx; before the job on the screen is replaced, the same red word about unsaved work File > Open says (warnIfUnsaved). Every other leaf, run and control as it was. *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*; *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"* (28.10.2026)',
+    + ' Chat fix 28.10.2026 F1 · File gains Open from file... (after Open...) and Save to file... (after Save as...): the job as one .ccproject file through lib/projectFileRoad.js, its questions in components/ProjectFileModal.jsx; before the job on the screen is replaced, the same red word about unsaved work File > Open says (warnIfUnsaved). Every other leaf, run and control as it was. *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*; *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"* (28.10.2026)'
+    + ' T-CC1a F3 · the Account button (drawAccount, onAuth, topbar-account) and the legacy bar\'s mock badge are deleted with CC\'s own login and mock mode; everything else in the bar is as it was. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
   // ─── ADDED 15.10.2026 (the evening) · THE RECESS SEEN FROM THE FRONT ──────
   // The owner: *"na setup room jak widze sciane od frontu nie top tylko front
   // to nie widze kresek, gdzie jest komin i gdzie wneka"* and *"reces pionowy
@@ -307,7 +308,8 @@ const EXEMPT = {
     + ' T84 F5 · the status bar\'s issue counters, the strip and the refused field handed to the shell, and the unit issue marker registered in the scene\'s one adornment slot while the Studio face is mounted. *"napewno naprzyklad wszystkie bledy zolte i czerwone sa totalnie niewidoczne, mala czcionka etc"* (the owner, 27.10.2026, 16:27)'
     + ' T84 F6 · under the Studio face the scene\'s edge is the four toggles, View and the camera bar (Drawings opens the drawing window, the preview), and the canvas toolbar is not rendered; the legacy face keeps it. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)'
     + ' T84 F7 · the rail\'s popups (Add, Materials) handed to the shell, and under the Studio face the page\'s own Escape branch is off: the shell\'s one keydown owner keeps one key event, one action. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
-    + ' Chat fix 30.10.2026 F2 · InspectorHost takes the strip only (RefusedField, the card\'s field, is deleted with the card). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)',
+    + ' Chat fix 30.10.2026 F2 · InspectorHost takes the strip only (RefusedField, the card\'s field, is deleted with the card). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)'
+    + ' T-CC1a F3 · the AuthModal import, its onAuth prop and its \'auth\' mount are deleted with CC\'s own login. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -390,7 +392,8 @@ const EXEMPT = {
   'src/components/StartScreen.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' +
     'T82 F20, after the review · Start designing reads whether the shelf took the brand-new job; when the browser refused it the job opens marked unsaved (markUnsaved) and the start screen says the save\'s own red sentence (notOnShelf). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)' +
     ' Chat fix 28.10.2026 F1 · the Open panel gains a third button, Open from file... (data-open-from-file): a .ccproject file goes on this computer\'s shelf and opens through lib/projectFileRoad.js, the File menu\'s own road. *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*; *"wiesz ze CC nie jest w chmurze jeszcze"* (28.10.2026)'
-    + ' T-CC1a F1 · the offline gate is isJcOffline() from lib/jcApi.js (lib/supabase.js deleted); the cloud list and the badge die in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
+    + ' T-CC1a F1 · the offline gate is isJcOffline() from lib/jcApi.js (lib/supabase.js deleted); the cloud list and the badge die in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)'
+    + ' T-CC1a F3 · the mock badge and the cc_projects cloud list are deleted (the list becomes Joinery Core\'s in F4); the shelf\'s own rows stand. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
   // Chat fix 28.10.2026 F1 · a NEW PRO file, frozen at its first hash: the two questions of Open from file.
   'src/components/ProjectFileModal.jsx':
     'Chat fix 28.10.2026 F1 · NEW, the window of Open from file\'s two questions, in the shell (name "project-file"): the job is already on this computer (Replace with the file, gold; Keep both, open as a copy; Cancel), and the file was drawn with other workshop settings (Use the file\'s settings, gold; Keep this computer\'s); drawn in a root of its own by askProjectFile, so neither the top bar nor the start screen hosts it. *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"*; *"problem polega na tym ze nie dzialaja te szuflady ani import ani export plikow"* (28.10.2026)',
@@ -425,7 +428,8 @@ const EXEMPT = {
   'src/components/studio/SelectionBreadcrumb.jsx':
     'T84 F2 · NEW, the context strip: the room, the wall or island, the unit number, the selection in words, and the button that shows the inspector again. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)',
   'src/components/studio/StatusBar.jsx':
-    'T84 F2 · NEW, the status bar: the selection in words, the MockModeBadge, the dirty marker, the Changes bar (the same component, re-homed) and the viewport size. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)',
+    'T84 F2 · NEW, the status bar: the selection in words, the MockModeBadge, the dirty marker, the Changes bar (the same component, re-homed) and the viewport size. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
+    + ' T-CC1a F3 · the mock badge is deleted with mock mode; the bar\'s order is otherwise T84\'s. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
   'src/components/studio/lib/studioFace.js':
     'T84 F2 · NEW, pure: isStudioFace(audience, profile), the factory entry with profile.ui.studio.enabled; no switch in the UI. *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)',
   'src/components/MultiUnitPanel.jsx':
@@ -461,10 +465,6 @@ const EXEMPT = {
     + ' Chat fix 30.10.2026 F2 · the refused card value (level 1) left with the quick card; the order is otherwise P1\'s. *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)',
   'index.html':
     'T-CC1a F1 · Joinery Core\'s client, <script src="/js/api-client.js?v=9">, before the module script, so apiFetch, rpc and supabaseClient are on the window when main.jsx runs. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
-  'src/components/AuthModal.jsx':
-    'T-CC1a F1 · isJcOffline and JC_OFFLINE from lib/jcApi.js (lib/supabase.js deleted) for one commit; the file is deleted whole in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
-  'src/components/MockModeBadge.jsx':
-    'T-CC1a F1 · isJcOffline and JC_OFFLINE from lib/jcApi.js (lib/supabase.js deleted) for one commit; the file is deleted whole in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
   'src/main.jsx':
     'T-CC1a F2 · the session first: authStore.init() asks Joinery Core\'s /api/auth/me before the app exists; only ready imports App.jsx dynamically, a refused or unanswered session imports components/jc/RefusalScreen.jsx; a storage event that removes authToken flushes and shows the offline card. *"warunek: tylko przez JC po zalogowaniu, nie dziala skopiowany url wklejony przez byle kogo"* (the owner, 31.10.2026, 09:08)',
   'src/components/jc/RefusalScreen.jsx':
@@ -484,6 +484,9 @@ const DELETED = {
   'src/components/studio/cards/CardRow.jsx': 'Chat fix 30.10.2026 F2 · one row of the quick card (T84 F3). *"tylko ten jeden przycisk usun, Full settings"*',
   'src/components/studio/lib/studioCards.js': 'Chat fix 30.10.2026 F2 · the quick cards as data (T84 F3). *"tylko ten jeden przycisk usun, Full settings"*',
   'src/components/studio/RefusedField.jsx': 'Chat fix 30.10.2026 F2 · the card\'s refused field (T84 F5), the card its only home. *"tylko ten jeden przycisk usun, Full settings"*',
+  // T-CC1a F3 (31.10.2026): CC's own login and mock mode, a kasacja (CLAUDE.md T-CC1a F3.1).
+  'src/components/AuthModal.jsx': 'T-CC1a F3 · the Account window, CC\'s own login (signIn, signUp, the direct save to cc_projects); the session is Joinery Core\'s. *"oczywiscie do CC laczysz sie tylko przez JC"*',
+  'src/components/MockModeBadge.jsx': 'T-CC1a F3 · the Mock data mode badge; there is no mock mode, Joinery Core not answering is said in words (JC_OFFLINE). *"oczywiscie do CC laczysz sie tylko przez JC"*',
 };
 
 /**
@@ -511,7 +514,6 @@ const FROZEN = {
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/AssignMaterialsModal.jsx': '1f9d71d9af9b57ba7e8f77b38c99fda7368a657a3289b69be87ac166337cc82e',
-  'src/components/AuthModal.jsx': '90a111ca03e354c186df9d04e7970460e3ef1690742d81bc950c89b28197e3aa',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/BomPanel.jsx': 'ee8cf839b68c547c36a3f76de1edb89a5d44becddc4e04744c9f3242ca0af074',
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -576,7 +578,6 @@ const FROZEN = {
   // CHAT FIX 19.10.2026 re-frozen at the new hash, twice (the morning, the afternoon); EXEMPT above carries the reasons.
   // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/Messages.jsx': '0d2c65d4b1027e8ef07d7f0b6c7e1dd51c1e63744dbf1177c306e848ed42cab9',
-  'src/components/MockModeBadge.jsx': '540ede7ed857c40570f3a9ac325994e78fd10630a0e88948877e55ee8ce67f92',
   'src/components/Modal.jsx': '0dc9c18a8196212304bf6606ec17146bdc5c9c831a5db2765ee41e857ce8775d',
   // T84 F4 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/MultiUnitPanel.jsx': 'df959555b30515a6990093f9a97dcdb5729b0af53959916945edcea7369a7162',
@@ -622,14 +623,14 @@ const FROZEN = {
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // Chat fix 28.10.2026 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/StartScreen.jsx': '5318820c341733bdfcc7d61f5f07b388644d0bd32e5298a0b4ced6332739ec27',
+  'src/components/StartScreen.jsx': '44e0be484fc0782d426a68630ece2319742e90fe47f8753d6034abc93b6b3985',
   // Chat fix 28.10.2026 F1 · a NEW PRO file (the two questions of Open from file), frozen at its first hash; EXEMPT above carries the reason.
   'src/components/ProjectFileModal.jsx': 'c47a5857e6b3b2ec73dc31a042ef2914b2cf4afd4c910d536adbdd1cc6b70e5b',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
   // Chat fix 28.10.2026 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/TopBar.jsx': 'a031327293e295b7be38138c877c06b7a5b451f2f6c395ffb43ca16cccf703d2',
+  'src/components/TopBar.jsx': 'd43edf6fc826df8d79c2c0e2c21a6b4b0799e07d80d52d73210d02a623f51d6c',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
   // T78 F5 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/UnitSizeModal.jsx': 'e8b94789f07fffaeb5b66a2a8fd160c28d9d4f4b0ed56383ecc18532f7b06c1f',
@@ -656,7 +657,7 @@ const FROZEN = {
   // T84 F5 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F7 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '2bc06ea974b8aca36d35c0db2ba6401d1fb92c8a7c51d3981c19a2b4168747d4',
+  'src/pages/ConfiguratorPage.jsx': '1dac783c23e200b39c31710544e7f522204b135b963ce3b4ad066019db8e315c',
   // T84 F1 · NEW PRO files (the skin), frozen at their first hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F8 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -668,7 +669,7 @@ const FROZEN = {
   'src/components/studio/StudioShell.jsx': '3f0a946d45fc1d9c2b283536ab42f9be46b5cb43e3d3e8cf22e926cdc6fbfec3',
   'src/components/studio/StudioRail.jsx': '09a32f77522d130b3d76e3ff8a4a3a17688ba98c434733313fa2ae435854e7ff',
   'src/components/studio/SelectionBreadcrumb.jsx': '29dfd5f6748b83a8d6b8ac36c778e40c2d6971b7290cf8ff3a8c9c92a86e7dc0',
-  'src/components/studio/StatusBar.jsx': '7c6651108bbeab5b7263eee8732fe73c461bdf859bbc626ccfab377182dd1106',
+  'src/components/studio/StatusBar.jsx': 'cbc25914a5ca5369f84c0a986005cd043c5dd9af6ff1afad99b8894eef329abf',
   'src/components/studio/lib/studioFace.js': '550ae67a86068132c172498c49715dba928da790ca7846b799e15d642d647a6a',
   // T84 F3 · the quick cards: DELETED by the chat fix of 30.10.2026 (DELETED below carries the reason).
   // T84 F4 · NEW PRO files (the inspector host), frozen at their first hash; EXEMPT above carries the reason.
@@ -962,11 +963,9 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // Chat fix 28.10.2026 F1 · the job as a file: the window of Open from file's two questions, a NEW PRO file
     // (the owner: "zrobisz mi pozniej cos co zadziala, czyli export i import projektow").
     'src/components/ProjectFileModal.jsx',
-    // T-CC1a F1 · *"oczywiscie do CC laczysz sie tylko przez JC"*: JC's client tag in index.html; the badge and the
-    // login window re-pointed for one commit (deleted whole in F3).
+    // T-CC1a F1 · *"oczywiscie do CC laczysz sie tylko przez JC"*: JC's client tag in index.html (the badge and the
+    // login window, re-pointed for F1, left the list with their deletion in F3: DELETED below).
     'index.html',
-    'src/components/AuthModal.jsx',
-    'src/components/MockModeBadge.jsx',
     // T-CC1a F2 · *"tylko przez JC po zalogowaniu"*: the session first in main.jsx; the refusal card, a NEW PRO file.
     'src/main.jsx',
     'src/components/jc/RefusalScreen.jsx',
@@ -993,10 +992,12 @@ test('Kasacja 30.10.2026 · the four deleted files are gone whole: not on disk, 
     assert.ok(!existsSync(join(ROOT, rel)), `${rel} is still on disk: a deletion, not a gate`);
     assert.equal(FROZEN[rel], undefined, `${rel} is still frozen`);
     assert.equal(EXEMPT[rel], undefined, `${rel} is still exempt`);
-    assert.match(why, /Chat fix 30\.10\.2026 F2/);
+    // AMENDED BY T-CC1a F3: a deletion names its fix or its turn and feature.
+    assert.match(why, /Chat fix 30\.10\.2026 F2|T-CC1a F3/);
     assert.match(why, /\*"/, `${rel} does not carry the owner's own words`);
   }
-  const names = /QuickSelectionCard|studioCards|CardRow|RefusedField/;
+  // AMENDED BY T-CC1a F3: the two files of CC's own login and mock mode, by name.
+  const names = /QuickSelectionCard|studioCards|CardRow|RefusedField|AuthModal|MockModeBadge/;
   for (const abs of [...filesUnder(join(SRC, 'components')), ...filesUnder(join(SRC, 'pages')), ...filesUnder(join(SRC, 'stores'))]) {
     const code = readFileSync(abs, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
     assert.doesNotMatch(code, names, `${show(abs)} still names a deleted file`);
@@ -1023,7 +1024,9 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // AMENDED BY T86B F5 (31.10.2026, INT): 91, components/ChestIslandPopup.jsx frozen at its first hash.
     // AMENDED BY T-CC1a F2 (31.10.2026, INT): 92, components/jc/RefusalScreen.jsx frozen at its first hash
     // (*"tylko przez JC po zalogowaniu"*, the owner, 31.10.2026, 09:08).
-    assert.ok(Object.keys(FROZEN).length === 92, 'no base ref: the manifest is the whole proof here');
+    // AMENDED BY T-CC1a F3 (31.10.2026, INT): 90, components/AuthModal.jsx and components/MockModeBadge.jsx deleted
+    // (DELETED above; *"oczywiscie do CC laczysz sie tylko przez JC"*, the owner, 30.10.2026).
+    assert.ok(Object.keys(FROZEN).length === 90, 'no base ref: the manifest is the whole proof here');
 
  
 

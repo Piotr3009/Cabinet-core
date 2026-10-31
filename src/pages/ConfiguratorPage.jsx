@@ -7,7 +7,6 @@ import DrawRoomModal from '../components/DrawRoomModal.jsx';
 // T51 (CLAUDE.md F7): Database ▸ Materials opens the WAREHOUSE.
 import WarehouseModal from '../components/WarehouseModal.jsx';
 import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
-import AuthModal from '../components/AuthModal.jsx';
 import CompanyDefaultsModal from '../components/CompanyDefaultsModal.jsx';
 import AssignMaterialsModal from '../components/AssignMaterialsModal.jsx';
 // T78 F21 (CLAUDE.md PART F): the Spraying page, Output > Spraying and the Spraying button.
@@ -693,7 +692,6 @@ export default function ConfiguratorPage({ studio = false } = {}) {
         onExportDxfZip={onExportDxfZip}
         onRender={(e) => openModal('render', { anchor: anchorOfEvent(e) })}
         onDrawing={onDrawing}
-        onAuth={(e) => openModal('auth', { anchor: anchorOfEvent(e) })}
       />
     )}>
       <SceneSlot studio={studio}>
@@ -751,7 +749,6 @@ export default function ConfiguratorPage({ studio = false } = {}) {
         {modal === 'draw-room' && <DrawRoomModal />}
         {modal === 'warehouse' && <WarehouseModal />}
         {modal === 'design' && <DesignSettingsModal />}
-        {modal === 'auth' && <AuthModal />}
         {/* Turn 22 (CLAUDE.md F2b.2 / F3): Database ▸ Company defaults. */}
         {modal === 'company-defaults' && <CompanyDefaultsModal />}
         {/* Turn 39 (CLAUDE.md F3): Assign materials — the layer between the

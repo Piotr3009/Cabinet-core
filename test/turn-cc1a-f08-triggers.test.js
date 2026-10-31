@@ -138,7 +138,8 @@ test('F8 . pagehide with a 10 KB dirty body: the buffer written and ONE keepaliv
   assert.equal(init.method, 'POST');
   assert.equal(init.keepalive, true);
   assert.deepEqual(init.headers, { Authorization: 'Bearer tok-123', 'Content-Type': 'application/json' });
-  assert.deepEqual(JSON.parse(init.body), { name: 'cc_save_item', params: body10 });
+  // CHAT FIX 31.10.2026: JC's rpc.js reads `function`, not `name` (api/routes/rpc.js, js/api-client.js rpc()).
+  assert.deepEqual(JSON.parse(init.body), { function: 'cc_save_item', params: body10 });
   // visibilitychange to hidden after it with the same body: not sent twice.
   r.page.doc.visibilityState = 'hidden';
   r.page.fire('doc', 'visibilitychange');
@@ -189,7 +190,7 @@ test('F8 . the keepalive carries the same payload as the one save (the real stor
   });
   assert.equal(out.sent, true);
   const sent = JSON.parse(fetches[0].i.body);
-  assert.equal(sent.name, 'cc_save_item');
+  assert.equal(sent.function, 'cc_save_item');
   assert.equal(sent.params.p_item_id, 'srv-keep');
   assert.equal('profile' in sent.params.p_design, false);
   assert.equal(sent.params.p_design.units.length, 1);

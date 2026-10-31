@@ -23,7 +23,7 @@
 // Where the real JC differs, T-JC1's PR is the truth. Two choices of this file
 // the spec does not name, said here so nobody reads them as JC's: the shim's
 // `/api/db/query` body is `{ table, select, filters, order, limit, single,
-// maybeSingle, write }` and its `/api/rpc` body is `{ name, params }` (the same
+// maybeSingle, write }` and its `/api/rpc` body is `{ function, params }` (JC's own, the same
 // shape CC's keepalive sends, src/lib/saveTriggers.js). Requests the shim
 // makes carry `X-Fake-Shim: 1`, so a keepalive POST (which does not) is
 // counted apart.
@@ -108,7 +108,7 @@ const SHIM = `/* Fake Joinery Core api-client (scripts/t-cc1a-fake-jc.mjs). Not 
     return { data: body && Object.prototype.hasOwnProperty.call(body, 'data') ? body.data : body, error: null };
   }
   function rpc(name, params) {
-    return apiFetch('/api/rpc', { method: 'POST', body: JSON.stringify({ name: name, params: params || {} }) });
+    return apiFetch('/api/rpc', { method: 'POST', body: JSON.stringify({ function: name, params: params || {} }) });
   }
   function from(table) {
     var q = { table: table, select: '*', filters: [], order: [], limit: null, single: false, maybeSingle: false, write: null };
@@ -330,7 +330,7 @@ export async function startFakeJc({ port = 4380, upstream = 4173, host = '127.0.
       }
       if (path === '/api/rpc' && req.method === 'POST') {
         const body = await readBody(req);
-        const name = String(body.name || '');
+        const name = String(body.function || '');
         const keep = req.headers['x-fake-shim'] !== '1';
         bump(keep ? counters.rpcKeepalive : counters.rpc, name);
         log.push({ at: Date.now(), path, rpc: name, keepalive: keep, as });

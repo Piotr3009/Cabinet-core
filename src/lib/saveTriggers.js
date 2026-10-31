@@ -60,15 +60,16 @@ function jcToken() {
 }
 
 /**
- * The keepalive save on leaving: ONE POST to /api/rpc carrying `{ name: 'cc_save_item', params }` (the JC rpc
- * body, PROPOSED as the fake JC reads it), only when the body is within `maxKb`. Answers 'sent', 'too-large',
+ * The keepalive save on leaving: ONE POST to /api/rpc carrying `{ function: 'cc_save_item', params }` (the body
+ * JC's api/routes/rpc.js reads: `const { function: functionName, params } = req.body`; CHAT FIX 31.10.2026, the
+ * audit of T-CC1a against T-JC1), only when the body is within `maxKb`. Answers 'sent', 'too-large',
  * 'clean' or 'no-fetch'.
  */
 export function keepaliveSave({ payload, isDirty, hasItem, maxKb = SAVE_DEFAULTS.keepaliveMaxKb, fetchFn = globalThis.fetch, token = jcToken }) {
   if (!hasItem() || !isDirty()) return { sent: false, why: 'clean' };
   const params = payload();
   if (!params) return { sent: false, why: 'clean' };
-  const body = JSON.stringify({ name: SAVE_RPC, params });
+  const body = JSON.stringify({ function: SAVE_RPC, params });
   if (byteSize(body) > Number(maxKb) * 1024) return { sent: false, why: 'too-large', body };
   if (typeof fetchFn !== 'function') return { sent: false, why: 'no-fetch', body };
   try {

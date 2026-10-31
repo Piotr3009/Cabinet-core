@@ -12,6 +12,8 @@ import { useHistoryStore } from '../stores/historyStore.js';
 import { fileStamp, pickProjectFile } from '../lib/projectFile.js';
 import { openProjectFromFile } from '../lib/projectFileRoad.js';
 import { askProjectFile } from './ProjectFileModal.jsx';
+// T-CC1a F6: the import asks which Joinery Core project the old job belongs to.
+import { askJcProject } from './jc/JcProjectPicker.jsx';
 // T-CC1a F4: the list is Joinery Core's.
 import {
   archiveItem, listView, loadJcList, projectOfItem, pushRecent, readRecent, revisionLabel,
@@ -115,13 +117,19 @@ export default function StartScreen() {
   // ─── CHAT FIX 28.10.2026 · OPEN FROM FILE ──────────────────────────────────
   // The owner: *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*;
   // *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"*.
-  // lib/projectFileRoad.js, the one road the File menu takes too.
+  // lib/projectFileRoad.js, the one road the File menu takes too. T-CC1a F6 (the
+  // owner, 31.10.2026: *"w przyszlosci nie bedzie save to file, po co?"*): it is
+  // the one-time IMPORT of an old job, bound to the project picked from this
+  // very list, and the list is read again so the new item shows.
   const onOpenFile = async (e) => {
     const anchor = anchorOfEvent(e);
     const picked = await pickProjectFile();
-    await openProjectFromFile({
-      picked, anchor, storage, ask: askProjectFile,
+    const known = list && !list.error ? list : null;
+    const pickProject = (opts) => askJcProject({ ...opts, list: known });
+    const done = await openProjectFromFile({
+      picked, anchor, storage, ask: askProjectFile, pickProject, list: known,
     });
+    if (done === 'opened') opened(useProjectStore.getState().project.id);
   };
 
   const itemRow = (item, project) => (

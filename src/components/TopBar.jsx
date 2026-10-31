@@ -18,6 +18,8 @@ import { persistProject } from '../lib/persist.js';
 import { pickProjectFile } from '../lib/projectFile.js';
 import { openProjectFromFile, saveProjectToFile } from '../lib/projectFileRoad.js';
 import { askProjectFile } from './ProjectFileModal.jsx';
+// T-CC1a F6: Open from file is the import road, bound to a Joinery Core project picked in its own window.
+import { askJcProject } from './jc/JcProjectPicker.jsx';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 // T84 F2: the Studio's icons (StudioShell mounts their sprite once).
@@ -150,6 +152,7 @@ export default function TopBar({
       picked,
       anchor,
       ask: askProjectFile,
+      pickProject: askJcProject,
       beforeOpen: () => {
         const now = useProjectStore.getState();
         warnIfUnsaved({ dirty: now.dirty, units: now.units });
@@ -163,7 +166,7 @@ export default function TopBar({
       items: [
         { label: 'New project…', hint: 'Name it and set the room on the start screen', run: leaveProject },
         { label: 'Open…', hint: 'Recent projects and everything saved', run: leaveProject },
-        { label: 'Open from file…', hint: 'A .ccproject file, saved on this computer or another', run: (e) => openFromFile(anchorOfEvent(e)) },
+        { label: 'Open from file…', hint: 'Import an old .ccproject job into a Joinery Core project', run: (e) => openFromFile(anchorOfEvent(e)) },
         { divider: true },
         { label: 'Save', hint: dirty ? 'Unsaved changes' : 'Up to date', run: save },
         { label: 'Save as…', run: (e) => openModal('save-as', { anchor: anchorOfEvent(e) }) },

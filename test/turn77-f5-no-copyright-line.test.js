@@ -501,6 +501,9 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f51-t-cc1a-f04.mjs',
   'test/turn-cc1a-f05-new-item.test.js',
   'scripts/t78-classify.d/f51-t-cc1a-f05.mjs',
+  'src/components/jc/JcProjectPicker.jsx',
+  'test/turn-cc1a-f06-import.test.js',
+  'scripts/t78-classify.d/f51-t-cc1a-f06.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

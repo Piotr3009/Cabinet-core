@@ -97,7 +97,8 @@ const EXEMPT = {
     + ' T82 F20, after the review · File > Save marks the job saved only when the save was stored (persistProject answers stored); a write the browser refused leaves it marked unsaved and says "Not saved: ...". *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
     + ' T84 F2 · variant="studio" for the Studio\'s top bar: each header control written once and drawn by either layout (the same handler, guard and state); the Studio layout is the wordmark with the PRO label, the project name, the same menus array through the same MenuBar with orderMenus whole (every leaf, run, disabled and checked of the census), then Undo and Redo (the history store\'s, the toolbar\'s guards), Save, Brightness, Account and the gold button, Export renamed BOM with the same call setBomOpen(!bomOpen); its MockModeBadge stands on the status bar; the legacy layout is what it was. *"tak"* (the owner, 27.10.2026, 16:27, to the header\'s Export renamed BOM); *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)'
     + ' Chat fix 28.10.2026 F1 · File gains Open from file... (after Open...) and Save to file... (after Save as...): the job as one .ccproject file through lib/projectFileRoad.js, its questions in components/ProjectFileModal.jsx; before the job on the screen is replaced, the same red word about unsaved work File > Open says (warnIfUnsaved). Every other leaf, run and control as it was. *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*; *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"* (28.10.2026)'
-    + ' T-CC1a F3 · the Account button (drawAccount, onAuth, topbar-account) and the legacy bar\'s mock badge are deleted with CC\'s own login and mock mode; everything else in the bar is as it was. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
+    + ' T-CC1a F3 · the Account button (drawAccount, onAuth, topbar-account) and the legacy bar\'s mock badge are deleted with CC\'s own login and mock mode; everything else in the bar is as it was. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)'
+    + ' T-CC1a F6 · File > Open from file is the import road: the same openProjectFromFile with the Joinery Core project picker (askJcProject) beside the id-collision question; its hint says import. *"w przyszlosci nie bedzie save to file, po co?"* (the owner, 31.10.2026, 01:06)',
   // ─── ADDED 15.10.2026 (the evening) · THE RECESS SEEN FROM THE FRONT ──────
   // The owner: *"na setup room jak widze sciane od frontu nie top tylko front
   // to nie widze kresek, gdzie jest komin i gdzie wneka"* and *"reces pionowy
@@ -398,7 +399,8 @@ const EXEMPT = {
     + ' T-CC1a F1 · the offline gate is isJcOffline() from lib/jcApi.js (lib/supabase.js deleted); the cloud list and the badge die in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)'
     + ' T-CC1a F3 · the mock badge and the cc_projects cloud list are deleted (the list becomes Joinery Core\'s in F4); the shelf\'s own rows stand. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)'
     + ' T-CC1a F4 · the start screen is Joinery Core\'s project list: Production and Pipeline groups from lib/jcList.js (four reads, never the design), each project row with its items (Open, Archive; Show archived and Restore through cc_archive_item), a search over number, name, client and item name, Recent as the last five item ids per tenant, the company and the signed-in name in the header, JC\'s refusal in words with Retry; the shelf list, the number proposal and the remove are deleted; New item is asked of a project row. *"w cc musimy zapisywac na glownej stronie; projekty dzielimy na itemy"* (the owner, 30.10.2026)'
-    + ' T-CC1a F5 · New item hands the flow its Joinery Core project (jcProject); no number is proposed. *"automatyczne polaczenie danego projektu do danego pipelinu lub production projektu"* (the owner, 30.10.2026)',
+    + ' T-CC1a F5 · New item hands the flow its Joinery Core project (jcProject); no number is proposed. *"automatyczne polaczenie danego projektu do danego pipelinu lub production projektu"* (the owner, 30.10.2026)'
+    + ' T-CC1a F6 · Open from file is the import road: openProjectFromFile with the id-collision question (askProjectFile) against Joinery Core\'s items and the project picker (askJcProject) bound to the list the screen holds; the imported item goes to Recent. *"w przyszlosci nie bedzie save to file, po co?"* (the owner, 31.10.2026, 01:06)',
   // Chat fix 28.10.2026 F1 · a NEW PRO file, frozen at its first hash: the two questions of Open from file.
   'src/components/ProjectFileModal.jsx':
     'Chat fix 28.10.2026 F1 · NEW, the window of Open from file\'s two questions, in the shell (name "project-file"): the job is already on this computer (Replace with the file, gold; Keep both, open as a copy; Cancel), and the file was drawn with other workshop settings (Use the file\'s settings, gold; Keep this computer\'s); drawn in a root of its own by askProjectFile, so neither the top bar nor the start screen hosts it. *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"*; *"problem polega na tym ze nie dzialaja te szuflady ani import ani export plikow"* (28.10.2026)',
@@ -474,6 +476,8 @@ const EXEMPT = {
     'T-CC1a F2 · the session first: authStore.init() asks Joinery Core\'s /api/auth/me before the app exists; only ready imports App.jsx dynamically, a refused or unanswered session imports components/jc/RefusalScreen.jsx; a storage event that removes authToken flushes and shows the offline card. *"warunek: tylko przez JC po zalogowaniu, nie dziala skopiowany url wklejony przez byle kogo"* (the owner, 31.10.2026, 09:08)',
   'src/components/jc/RefusalScreen.jsx':
     'T-CC1a F2 · NEW, the refusal screen: one centred card, refused role (employee, never worker), refused company (coming soon), offline (Try again), its words from authStore\'s pure refusalCard. *"warunek: tylko przez JC po zalogowaniu, nie dziala skopiowany url wklejony przez byle kogo"* (the owner, 31.10.2026, 09:08)',
+  'src/components/jc/JcProjectPicker.jsx':
+    'T-CC1a F6 · NEW, the import\'s project picker: the Joinery Core list (lib/jcList.js) embedded with a search above it, in the shell\'s Open from file window (name "project-file"), the read-only words when the file carries workshop settings (they are not imported); drawn in a root of its own by askJcProject for the start screen and the File menu. *"w przyszlosci nie bedzie save to file, po co?"* (the owner, 31.10.2026, 01:06)',
 };
 
 // ─── KASACJA, CHAT FIX 30.10.2026 · FOUR PRO FILES DELETED, BY NAME ─────────
@@ -628,14 +632,14 @@ const FROZEN = {
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // Chat fix 28.10.2026 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/StartScreen.jsx': '4b3943da7887456d34dbfe6c73082bc33744b89741cb916908c561cadaa8a340',
+  'src/components/StartScreen.jsx': '55e142275027b0303f2bbaf8516133035d6c7afc09310ecf95ffca26c775d426',
   // Chat fix 28.10.2026 F1 · a NEW PRO file (the two questions of Open from file), frozen at its first hash; EXEMPT above carries the reason.
   'src/components/ProjectFileModal.jsx': 'c47a5857e6b3b2ec73dc31a042ef2914b2cf4afd4c910d536adbdd1cc6b70e5b',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
   // Chat fix 28.10.2026 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/TopBar.jsx': 'd43edf6fc826df8d79c2c0e2c21a6b4b0799e07d80d52d73210d02a623f51d6c',
+  'src/components/TopBar.jsx': '562892b41670c28c8af16dff5114ec7bfda7fe277599bc6d4cad409ca76bc884',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
   // T78 F5 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/UnitSizeModal.jsx': 'e8b94789f07fffaeb5b66a2a8fd160c28d9d4f4b0ed56383ecc18532f7b06c1f',
@@ -692,6 +696,8 @@ const FROZEN = {
   'src/components/studio/RailMenus.jsx': 'b2e108f0cb6857aaf008f3bd5bff05869279b63fb6c36300dd81bf9a783a39b7',
   'src/components/studio/lib/studioEscape.js': 'fd7fe779ec3deb0ad7390b21274f456987445221b453861a227c82ff7b4d61ea',
   'src/components/jc/RefusalScreen.jsx': '33988534189bc6d45b38062445d535c11a0fea2e58d78a7b4adf5e8bcc0a9894',
+  // T-CC1a F6 · a NEW PRO file, frozen at its first hash: the import's Joinery Core project picker.
+  'src/components/jc/JcProjectPicker.jsx': '59ed52c4fb29574674129728666248cf94e5b8df28aacd03386e33baf4a6af9d',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -974,6 +980,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // T-CC1a F2 · *"tylko przez JC po zalogowaniu"*: the session first in main.jsx; the refusal card, a NEW PRO file.
     'src/main.jsx',
     'src/components/jc/RefusalScreen.jsx',
+    // T-CC1a F6 · *"w przyszlosci nie bedzie save to file, po co?"*: the import's project picker, a NEW PRO file.
+    'src/components/jc/JcProjectPicker.jsx',
 ].sort(), 'the exemption list is not the approved UI and CLAUDE.md paths');
   // AMENDED BY THE CHAT FIX OF 28.10.2026 (the job as a file): a NEW PRO file born of a chat fix has no turn to
   // name, so its reason names the fix by its date and its feature, `Chat fix 28.10.2026 F1`, the way the approved
@@ -1031,7 +1039,9 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // (*"tylko przez JC po zalogowaniu"*, the owner, 31.10.2026, 09:08).
     // AMENDED BY T-CC1a F3 (31.10.2026, INT): 90, components/AuthModal.jsx and components/MockModeBadge.jsx deleted
     // (DELETED above; *"oczywiscie do CC laczysz sie tylko przez JC"*, the owner, 30.10.2026).
-    assert.ok(Object.keys(FROZEN).length === 90, 'no base ref: the manifest is the whole proof here');
+    // AMENDED BY T-CC1a F6 (31.10.2026): 91, components/jc/JcProjectPicker.jsx frozen at its first hash
+    // (*"w przyszlosci nie bedzie save to file, po co?"*, the owner, 31.10.2026, 01:06).
+    assert.ok(Object.keys(FROZEN).length === 91, 'no base ref: the manifest is the whole proof here');
 
  
 

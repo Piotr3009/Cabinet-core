@@ -2008,15 +2008,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     id: null, name: 'Untitled project', number: '', client: '',
     room: DEFAULT_ROOM, design: migrateDesign(null),
     // Turn 44 (CLAUDE.md F1): the wall elevation's slopes, beside the room
-    // rather than inside it — `setWallSlopes` says why.
+    // rather than inside it: `setWallSlopes` says why.
     wallSlopes: [],
-    // T45 F9b: a new job's LED spec — flexi, 4 mm, no W/m typed yet.
+    // T45 F9b: a new job's LED spec: flexi, 4 mm, no W/m typed yet.
     ledSpec: migrateLedSpec(null),
-    // T51 F6: SHOWROOM, adjusted to whatever the profile's pillars are — so a
+    // T51 F6: SHOWROOM, adjusted to whatever the profile's pillars are, so a
     // project opened with the panel untouched looks exactly as it did before
     // tonight. `engine/lightRig.js defaultLightRig` says why.
     lightRig: defaultLightRig(getCabinetProfile()),
-    // T54 F5.3: a fresh job's scene light is today's 1.0 — nothing moves.
+    // T54 F5.3: a fresh job's scene light is today's 1.0: nothing moves.
     sceneLight: migrateSceneLight(null),
     jc_tenant_id: null, jc_project_id: null,
   },

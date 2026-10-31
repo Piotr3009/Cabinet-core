@@ -17,25 +17,30 @@ import {
 } from '../src/lib/projectLibrary.js';
 import * as library from '../src/lib/projectLibrary.js';
 
-const project = (name, id = null) => ({ id, name, room: { height: 2500 }, design: null });
+// AMENDED BY T-CC1a F5 (31.10.2026): a job carries its item id, the server's (law 4); CC mints none. *"automatyczne
+// polaczenie danego projektu do danego pipelinu lub production projektu"*.
+const project = (name, id = `srv-${name}`) => ({ id, name, room: { height: 2500 }, design: null });
 const unit = (n) => ({ id: `u${n}`, type: 'BUD', position: { wall: 0, x_mm: 0 }, params: { width: 600 } });
 
 test('a saved project comes back with its units and its id', () => {
   const s = memoryStorage();
   const row = saveLocalProject(s, { project: project('Kitchen'), units: [unit(1), unit(2)], at: 1000 });
-  assert.match(row.id, /^loc_/);
+  assert.equal(row.id, 'srv-Kitchen', 'the item id it was given, never an invented one');
+  const none = saveLocalProject(s, { project: project('No id', null), units: [], at: 1 });
+  assert.equal(none.stored, false);
+  assert.equal(none.storeError, 'this job has no item in Joinery Core yet');
   assert.equal(row.unit_count, 2);
 
   const loaded = loadLocalProject(s, row.id);
   assert.equal(loaded.project.name, 'Kitchen');
   assert.equal(loaded.project.id, row.id, 'the id is written back into the project');
   assert.equal(loaded.units.length, 2);
-  assert.equal(loadLocalProject(s, 'loc_nope'), null);
+  assert.equal(loadLocalProject(s, 'srv-nope'), null);
 });
 
 test('saving twice replaces, it does not duplicate', () => {
   const s = memoryStorage();
-  const first = saveLocalProject(s, { project: project('Kitchen'), units: [unit(1)], at: 1000 });
+  const first = saveLocalProject(s, { project: project('Kitchen', 'srv-1'), units: [unit(1)], at: 1000 });
   saveLocalProject(s, { project: project('Kitchen renamed', first.id), units: [unit(1), unit(2)], at: 2000 });
   const list = listLocalProjects(s);
   assert.equal(list.length, 1);

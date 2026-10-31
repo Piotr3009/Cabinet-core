@@ -183,3 +183,33 @@ export function revisionLabel(item) {
   const r = item?.revision;
   return r == null || r === '' ? '' : String(r);
 }
+
+// ─── AN ITEM IS BORN BOUND (CLAUDE.md T-CC1a law 4, F5) ─────────────────────
+/**
+ * `cc_create_item` for a project row of the list: `p_pipeline_id` for a pipeline project, `p_project_id`
+ * for a production one, never both. Resolves `{ row, error }`: the server's row (id, name, revision,
+ * jc_project_number, ...) or the refusal in words (403, JC did not answer). Nothing is made locally.
+ */
+export async function createItem({ name, project, db = withDb } = {}) {
+  const binding = project?.kind === 'pipeline' ? { p_pipeline_id: project.id } : { p_project_id: project?.id };
+  const res = await db((c) => c.rpc('cc_create_item', { p_name: String(name || ''), ...binding }), null);
+  const error = words(res);
+  if (error) return { row: null, error };
+  const row = Array.isArray(res.data) ? res.data[0] : res.data;
+  if (!row?.id) return { row: null, error: 'Joinery Core made no item: it answered without an id.' };
+  return { row, error: null };
+}
+
+/**
+ * New item's one act (components/NewProjectFlow.jsx commitProject): ask JC for the item, then build the record
+ * with `newProject` (the store's, handed in) from the SERVER's row: its id, its jc_project_number, the bound
+ * project's client. A refusal builds nothing and resolves the words. Resolves `{ ok, row, error }`.
+ */
+export async function startItem({ name, project, newProject, db = withDb } = {}) {
+  const { row, error } = await createItem({ name, project, db });
+  if (error) return { ok: false, row: null, error };
+  newProject(row.name || name, {
+    id: row.id, number: String(row.jc_project_number ?? project?.number ?? ''), client: project?.client || '',
+  });
+  return { ok: true, row, error: null };
+}

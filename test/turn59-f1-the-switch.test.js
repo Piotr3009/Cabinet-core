@@ -79,7 +79,8 @@ const EXEMPT = {
   'src/components/setup-workspace.css': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*. ' +
     'Chat fix 28.10.2026: type tiles 25 percent smaller, the required field in gold, four types locked coming soon, the scope choice at the top of section 2. *"kafelki za duze, przynajmniej 25 procent mniejsze"*; *"koduj tutaj"*.',
   'src/components/NewProjectFlow.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' +
-    'Chat fix 28.10.2026: smaller type tiles, the required field in gold, four types locked coming soon, the scope choice at the top of section 2. *"kafelki za duze, przynajmniej 25 procent mniejsze"*; *"pola ktore musza byc wypelnione powinny sie odznaczac innym kolorem"*; *"media wall utility other i hallway zostaw ale zablokuj i napisz coming soon"*; *"settings up space powinno byc w 2 nie w jedynce"*; *"koduj tutaj"*.',
+    'Chat fix 28.10.2026: smaller type tiles, the required field in gold, four types locked coming soon, the scope choice at the top of section 2. *"kafelki za duze, przynajmniej 25 procent mniejsze"*; *"pola ktore musza byc wypelnione powinny sie odznaczac innym kolorem"*; *"media wall utility other i hallway zostaw ale zablokuj i napisz coming soon"*; *"settings up space powinno byc w 2 nie w jedynce"*; *"koduj tutaj"*.'
+    + ' T-CC1a F5 · New item: opened from a project row of the start screen (jcProject), its first section shows that Joinery Core project READ-ONLY (number, name, client) and types the item name alone (required); confirming asks cc_create_item through withDb (lib/jcList.js startItem) and builds the record with the server\'s id, the row\'s jc_project_number and the project\'s client; a refusal (403, offline) stays on the flow in words and nothing is made locally; the disabled Import from Joinery Core button is deleted; the rest of the workspace as it was. *"automatyczne polaczenie danego projektu do danego pipelinu lub production projektu"* (the owner, 30.10.2026)',
   'src/components/WizardSummary.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*.',
   'src/components/CncTree.jsx':
     'T75 F22 · after an export the CNC view says how many parts the machine does not finish (the export\'s readiness banner), one line beside the gate\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."*'
@@ -396,7 +397,8 @@ const EXEMPT = {
     ' Chat fix 28.10.2026 F1 · the Open panel gains a third button, Open from file... (data-open-from-file): a .ccproject file goes on this computer\'s shelf and opens through lib/projectFileRoad.js, the File menu\'s own road. *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*; *"wiesz ze CC nie jest w chmurze jeszcze"* (28.10.2026)'
     + ' T-CC1a F1 · the offline gate is isJcOffline() from lib/jcApi.js (lib/supabase.js deleted); the cloud list and the badge die in F3. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)'
     + ' T-CC1a F3 · the mock badge and the cc_projects cloud list are deleted (the list becomes Joinery Core\'s in F4); the shelf\'s own rows stand. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)'
-    + ' T-CC1a F4 · the start screen is Joinery Core\'s project list: Production and Pipeline groups from lib/jcList.js (four reads, never the design), each project row with its items (Open, Archive; Show archived and Restore through cc_archive_item), a search over number, name, client and item name, Recent as the last five item ids per tenant, the company and the signed-in name in the header, JC\'s refusal in words with Retry; the shelf list, the number proposal and the remove are deleted; New item is asked of a project row. *"w cc musimy zapisywac na glownej stronie; projekty dzielimy na itemy"* (the owner, 30.10.2026)',
+    + ' T-CC1a F4 · the start screen is Joinery Core\'s project list: Production and Pipeline groups from lib/jcList.js (four reads, never the design), each project row with its items (Open, Archive; Show archived and Restore through cc_archive_item), a search over number, name, client and item name, Recent as the last five item ids per tenant, the company and the signed-in name in the header, JC\'s refusal in words with Retry; the shelf list, the number proposal and the remove are deleted; New item is asked of a project row. *"w cc musimy zapisywac na glownej stronie; projekty dzielimy na itemy"* (the owner, 30.10.2026)'
+    + ' T-CC1a F5 · New item hands the flow its Joinery Core project (jcProject); no number is proposed. *"automatyczne polaczenie danego projektu do danego pipelinu lub production projektu"* (the owner, 30.10.2026)',
   // Chat fix 28.10.2026 F1 · a NEW PRO file, frozen at its first hash: the two questions of Open from file.
   'src/components/ProjectFileModal.jsx':
     'Chat fix 28.10.2026 F1 · NEW, the window of Open from file\'s two questions, in the shell (name "project-file"): the job is already on this computer (Replace with the file, gold; Keep both, open as a copy; Cancel), and the file was drawn with other workshop settings (Use the file\'s settings, gold; Keep this computer\'s); drawn in a root of its own by askProjectFile, so neither the top bar nor the start screen hosts it. *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"*; *"problem polega na tym ze nie dzialaja te szuflady ani import ani export plikow"* (28.10.2026)',
@@ -584,7 +586,7 @@ const FROZEN = {
   'src/components/Modal.jsx': '0dc9c18a8196212304bf6606ec17146bdc5c9c831a5db2765ee41e857ce8775d',
   // T84 F4 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/MultiUnitPanel.jsx': 'df959555b30515a6990093f9a97dcdb5729b0af53959916945edcea7369a7162',
-  'src/components/NewProjectFlow.jsx': '46e8c9a41479f73b23e3ba914f51e4ee82beadce8f01df42b815bf19cbe2785b',
+  'src/components/NewProjectFlow.jsx': '93ca0038fe2bea82a9ad44e950f1c85709ef5d8ab6ccbf0dcf875fbb37b13bcf',
   // Chat fix 28.10.2026: the setup workspace's stylesheet, licensed with the owner's words in EXEMPT.
   'src/components/setup-workspace.css': 'e0c92676f1491a10cabec65f27c72e0411b6eaa09bdedeeea7e2cd7e4a6a4f78',
   'src/components/NumberField.jsx': 'ae2f9b89ea20a8da26fdf77db1cdb00cb487a2e5110128263f4c33f32eb5c176',
@@ -626,7 +628,7 @@ const FROZEN = {
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // Chat fix 28.10.2026 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/StartScreen.jsx': 'e746ac48553f9ab16f2e38bd0719ff61e480350a56bed2d8c97c66a00e06d36d',
+  'src/components/StartScreen.jsx': '4b3943da7887456d34dbfe6c73082bc33744b89741cb916908c561cadaa8a340',
   // Chat fix 28.10.2026 F1 · a NEW PRO file (the two questions of Open from file), frozen at its first hash; EXEMPT above carries the reason.
   'src/components/ProjectFileModal.jsx': 'c47a5857e6b3b2ec73dc31a042ef2914b2cf4afd4c910d536adbdd1cc6b70e5b',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.

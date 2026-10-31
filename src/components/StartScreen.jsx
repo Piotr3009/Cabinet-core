@@ -249,7 +249,6 @@ export default function StartScreen() {
 
       {flow && (
         <NewProjectFlow
-          initialNumber={flow.project.number}
           jcProject={flow.project}
           anchor={flow.anchor}
           onCancel={() => setFlow(null)}

@@ -172,11 +172,7 @@ export function projectWithLogo(storage, project) {
   return next === company ? project : { ...project, titleBlock: { ...project.titleBlock, company: next } };
 }
 
-/** A project id that does not collide and reads as ours. */
-function newProjectId(seed) {
-  const rand = seed != null ? String(seed) : Math.random().toString(36).slice(2, 9);
-  return `loc_${rand}`;
-}
+// T-CC1a F5 (law 4): CC mints no id of its own; an item's id is the one Joinery Core's cc_create_item returned.
 
 /**
  * Save (insert or replace) one project with its units.
@@ -185,7 +181,14 @@ function newProjectId(seed) {
  */
 export function saveLocalProject(storage, { project, units, at = 0, id = null }) {
   const data = read(storage);
-  const projectId = project?.id || id || newProjectId();
+  const projectId = project?.id || id || null;
+  // T-CC1a F5: a job without an item id is not kept under an invented one: the shelf says so in words.
+  if (!projectId) {
+    return {
+      id: null, name: project?.name || 'Untitled project', project, units: Array.isArray(units) ? units : [],
+      stored: false, storeError: 'this job has no item in Joinery Core yet',
+    };
+  }
   const row = {
     id: projectId,
     name: project?.name || 'Untitled project',

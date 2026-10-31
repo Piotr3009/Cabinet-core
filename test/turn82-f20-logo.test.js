@@ -315,8 +315,10 @@ function quotaStorage(limit = 5 * 1024 * 1024) {
 }
 // A logo at the cap: 256 KB of data URL (the sheet reads its size off the object).
 const BIG = { href: `data:image/png;base64,${'A'.repeat(256 * 1024 - 22)}`, width: 200, height: 100 };
+// AMENDED BY T-CC1a F5 (31.10.2026): a job carries its item id (the server's, law 4); the shelf keeps no job under an
+// invented id any more. *"automatyczne polaczenie danego projektu do danego pipelinu lub production projektu"*.
 const job = (i, logo = BIG) => ({
-  name: `Job ${i}`, number: String(i), room: { height: 2500 }, design: null,
+  id: `srv-${i}`, name: `Job ${i}`, number: String(i), room: { height: 2500 }, design: null,
   titleBlock: { company: { name: 'SKYLON JOINERY', logo } },
 });
 
@@ -468,7 +470,7 @@ async function driveRoad(road, storage) {
   globalThis.localStorage = storage;
   try {
     const st = useProjectStore.getState();
-    st.newProject('Road');
+    st.newProject('Road', { id: 'srv-road' });
     useProjectStore.getState().setProjectName('Road, changed');
     assert.equal(useProjectStore.getState().dirty, true, 'the job has unsaved changes');
     const said = [];
@@ -489,6 +491,18 @@ async function driveRoad(road, storage) {
 
 for (const [label, road] of Object.entries(ROADS)) {
   test(`F20 after the review · ${label}: a refused write leaves the job marked unsaved, and says so`, async () => {
+    // AMENDED BY T-CC1a F5 (31.10.2026): Save as wrote a copy under a CC-minted loc_ id, a road law 4 deletes (*"automatyczne
+    // polaczenie danego projektu do danego pipelinu lub production projektu"*). Until PART C's "Save as new item"
+    // (cc_create_item) it is refused in words on any storage, and the job stays marked unsaved, never "saved".
+    if (road.name === 'onSaveAs') {
+      for (const storage of [REFUSING, quotaStorage()]) {
+        const r = await driveRoad(road, storage);
+        assert.equal(r.dirty, true);
+        assert.deepEqual(r.said.map((m) => m.tone), ['error']);
+        assert.match(r.said[0].message, /^Not saved: this job has no item in Joinery Core yet/);
+      }
+      return;
+    }
     const refused = await driveRoad(road, REFUSING);
     assert.equal(refused.dirty, true, 'the unsaved flag stands');
     assert.equal(refused.said.length, 1);

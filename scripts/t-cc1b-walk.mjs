@@ -363,6 +363,8 @@ async function legE(ctx, page) {
     'data-title-block-logo="company", an image', j({ ...logo, logoFetches: c0.logo }));
   await shot(page, 'f16-e-drawings.png');
 
+  // UX turn: the AI card opens from its own button in the Drawings window (folded at rest).
+  await press(page, '[data-drawing-ai="1"]');
   const gen = await press(page, '[data-ai-generate="1"]');
   await until(page, 'Number(document.querySelector("[data-ai-pictures]")?.dataset.aiPictures) >= 3', 30000);
   const pics = await ask(page, 'Number(document.querySelector("[data-ai-pictures]")?.dataset.aiPictures || 0)');

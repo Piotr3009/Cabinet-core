@@ -15,7 +15,8 @@
 // It owns LAYOUT and the display of the selection, never a part, never a row:
 //
 //   topBar         the existing TopBar, `variant="studio"` (row 1)
-//   inspector      the inspector column (F4); absent, or 'none', the column is 0
+//   inspector      the inspector column (F4); absent, or 'none', or with nothing
+//                  to show (the UX turn, U2, below), the column is 0
 //   sceneEdge      what stands at the scene's edge (F6), drawn over the scene
 //   statusExtras   what the status bar carries besides its own (F5's counters)
 //   renderRailMenu (kind, { anchor, onClose }) => the rail's popups (F7)
@@ -27,10 +28,21 @@
 // (verify/t84/agents/CONTRACT.md section 5). Every number is the profile's
 // (`profile.ui.studio`), set on the root as CSS variables by studioSkin's
 // `studioCssVars` and re-read when the window is resized.
+//
+// THE UX TURN, U2 · THE PANEL THAT HIDES. Nothing selected and nothing pinned,
+// the inspector column is not drawn and the scene takes the whole width; a
+// cabinet or a part selected, the column comes back and the scene narrows. The
+// owner: *"niech sie zweza, nie chce ustawiac sceny od nowa"*. Only the grid's
+// third column changes (`--studio-inspector`, 0 or the panel's width): the
+// scene slot below and the canvas inside it stay mounted, so the canvas is
+// resized as it is when the window is resized, and the camera stays where it
+// is (@react-three/fiber makes its camera once, at the canvas's creation, and
+// a new size only sets its aspect).
 
 import { useEffect, useRef, useState } from 'react';
 import './studio.css';
 import { useUiStore } from '../../stores/uiStore.js';
+import { useProjectStore } from '../../stores/projectStore.js';
 import { useCabinetProfileStore } from '../../stores/cabinetProfileStore.js';
 import { ChangesBarRehomed } from '../Messages.jsx';
 import StudioIcons from './StudioIcons.jsx';
@@ -72,6 +84,21 @@ const WORKSPACE_GRID = {
   gridTemplateRows: 'minmax(0, 1fr)',
 };
 
+/**
+ * THE UX TURN, U2: whether the inspector column has anything to show. The CNC
+ * view (its tree), a cabinet or a part of one that still exists (`unitType`
+ * is read off the project, null when the cabinet is gone), or a pinned panel
+ * (its empty branch): a column. Nothing selected and nothing pinned: no
+ * column. ONE answer: the shell sizes the column by it and InspectorHost.jsx
+ * draws the column by it, so the two never disagree.
+ *
+ * @param {{ viewMode?: string, unitType?: string|null, pinned?: boolean }} at
+ * @returns {boolean}
+ */
+export function inspectorHasContent({ viewMode = '3d', unitType = null, pinned = false } = {}) {
+  return viewMode === 'cnc' || Boolean(unitType) || Boolean(pinned);
+}
+
 export default function StudioShell({
   topBar = null,
   inspector = null,
@@ -82,10 +109,17 @@ export default function StudioShell({
 }) {
   const profile = useCabinetProfileStore((s) => s.profile);
   const mode = useUiStore((s) => s.inspector);
+  // U2: what the column would show, read as the host reads it.
+  const viewMode = useUiStore((s) => s.viewMode);
+  const pinned = useUiStore((s) => s.inspectorPinned);
+  const unitId = useUiStore((s) => s.selectedUnitId);
+  const unitType = useProjectStore((s) => (unitId ? (s.units.find((u) => u.id === unitId)?.type ?? null) : null));
+  const shown = inspectorHasContent({ viewMode, unitType, pinned });
   const viewport = useViewport();
-  // The inspector column is 0 when no inspector is handed in (before F4) or
-  // when it is hidden; the root still says the store's mode (`data-inspector`).
-  const column = inspector && mode !== 'none' ? mode : 'none';
+  // The inspector column is 0 when no inspector is handed in (before F4), when
+  // it is hidden, or (U2) when it has nothing to show; the root still says the
+  // store's mode (`data-inspector`) and, beside it, the column it draws.
+  const column = inspector && mode !== 'none' && shown ? mode : 'none';
   const widths = studioWidths(profile, viewport.width);
   const vars = studioCssVars(profile, { viewportWidth: viewport.width, inspector: column });
   // The scene slot, for the rail's Add (the Library is placed in its
@@ -102,11 +136,13 @@ export default function StudioShell({
         data-studio="shell"
         data-studio-shell=""
         data-inspector={mode || 'full'}
+        data-inspector-column={column}
         style={{ ...vars, ...SHELL_GRID }}
       >
         <StudioIcons />
         {topBar}
-        <SelectionBreadcrumb />
+        {/* U2: the breadcrumb's button stands only where the column it brings back would hold something. */}
+        <SelectionBreadcrumb canShowInspector={shown} />
         <div className="studio-workspace min-h-0 min-w-0" data-studio="workspace" style={WORKSPACE_GRID}>
           <StudioRail
             renderMenu={renderRailMenu}

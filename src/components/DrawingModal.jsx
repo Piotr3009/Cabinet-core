@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal.jsx';
 import RenderModal from './RenderModal.jsx';
-// T-CC1b F13 · A4's card, mounted here under the sheet list (one line, CLAUDE.md T-CC1b PART D).
+// T-CC1b F13 · A4's card, mounted here (one line, CLAUDE.md T-CC1b PART D); the UX turn, U3, opens it
+// from its button "AI visualisation..." in a small window of its own over the preview.
 import AiVisualCard from './drawings/AiVisualCard.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
@@ -207,6 +208,8 @@ export default function DrawingModal({ rig = null }) {
   }, [tenantId]);
   // F8.1 · the Render window opened over this one; its picture kept under profile.visuals.maxKb (PROPOSED 400).
   const [renderOpen, setRenderOpen] = useState(false);
+  // THE UX TURN, U3: the AI visualisation folds into its button (its card stays mounted while the window is open).
+  const [aiOpen, setAiOpen] = useState(false);
   const keepRender = async ({ dataUrl, preset }) => {
     const { maxKb } = visualNumbers(profile);
     const kept = await keepPicture(dataUrl, { maxKb });
@@ -369,15 +372,39 @@ export default function DrawingModal({ rig = null }) {
     // T-CC1b F6 · the all-units book, the SVG and the per-sheet PDF roads are deleted with their buttons.
   };
 
+  // ─── THE UX TURN, U3 · THE DRAWINGS WINDOW, NEAR FULL SCREEN ──────────────
+  // The owner: *"drawing super, ale prosze powieksz modal zeby nie trzeba bylo
+  // scrolowac ... lista rysunkow"*; and of the AI visualisation as a button
+  // that opens the same card: *"tak"*. The maximised work window of
+  // SprayingPanel.jsx and LinkMaterialsModal.jsx (near full screen, a restore
+  // button, dragged by its header once restored, the font floor cc-modal-wide).
+  // LEFT, the sheets, every one always in view with its tick, the current one
+  // marked gold, then the pictures (Render... and AI visualisation...). RIGHT,
+  // the title block folded, the sheet's header, and the preview in the height
+  // that is left, so the page itself never scrolls. Every road of the window is
+  // the one it had: tickSheet, setWallPage, All and None, Section through,
+  // save('walls-dxf'), save('walls-pdf'), the Render window, the title block.
+  const shownIndex = wallSheetList.length ? Math.min(wallPage, wallSheetList.length - 1) : -1;
+
   return (
     <Modal
       name="drawing"
       anchor={anchor}
       title={KINDS.walls.title}
       width="w-[880px]"
+      maximised
+      // The font floor of the big windows (index.css .cc-modal-wide, T-CC1b F12).
+      className="cc-modal-wide"
       onClose={closeModal}
+      // U3: while the AI visualisation is open, Escape folds it; then Escape closes this window, as ever.
+      onEscape={aiOpen ? () => setAiOpen(false) : null}
       footer={(
         <>
+          {wallSheetList.length ? (
+            <span className="text-[11px] text-ink-400 mr-auto tabular-nums" data-wall-sheets-picked={wallPicked.length}>
+              {`Export: ${wallPicked.length} of ${wallSheetList.length} sheets ticked, bound in the set's order.`}
+            </span>
+          ) : null}
           <button type="button" className="cc-btn" onClick={closeModal}>Close</button>
           {/* ─── TURN 40 (CLAUDE.md F5): THE WALL SET ─────────────────────
               The DXF as a SEPARATE output that says on the button what it
@@ -407,29 +434,100 @@ export default function DrawingModal({ rig = null }) {
         </>
       )}
     >
-      {(
-        <div className="space-y-3" data-drawing-kind={kind}>
-          <div className="cc-row">
-            <div className="flex flex-col">
-              <span className="text-sm text-ink-100">
-                {/* T42-F0: and the HEADING stops lying too. "No wall has a
-                    cabinet on it" over a red failure box is the same untruth
-                    the footer used to tell, said one line higher up. */}
-                {wallAt?.name
-                  || (wallError ? 'The wall set could not be built' : 'No wall has a cabinet on it')}
-              </span>
-              <span className="text-[11px] text-ink-400">
-                {/* T71: the set prints its scale in the title block ("1:20 @
-                    A3", or NTS for a picture); the window repeats it. */}
-                {sheet
-                  ? `${sheet.format.id} ${sheet.format.orientation} · ${sheet.scaleLabel || scaleLabel(sheet.scale)}`
-                    + (wallSheetList.length ? ` · sheet ${sheet.sheetNo} of ${sheet.sheetOf}` : '')
-                  : 'no sheet'}
-              </span>
-            </div>
-            {/* T-CC1b F8.1 · the user's own render, through the same Render window (its shots and its
-                resolution untouched), kept with the item as a sheet of the set. */}
-            <div className="flex gap-1 items-center">
+      <div className="relative flex gap-4 h-full min-h-0" data-drawing-kind={kind} data-drawing-layout="columns">
+        {/* ─── U3 · LEFT: THE SHEETS, ALWAYS IN VIEW, THEN THE PICTURES ────── */}
+        <aside className="w-[260px] shrink-0 flex flex-col gap-2 min-h-0" data-drawing-sheets="1">
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-sm text-ink-50">Sheets</h3>
+            <span className="ml-auto text-[11px] text-ink-400 tabular-nums" data-drawing-ticked={wallPicked.length}>
+              {`${wallPicked.length} of ${wallSheetList.length} ticked`}
+            </span>
+          </div>
+          {/* ─── TURN 40 (CLAUDE.md F5): THE SHEET LIST ──────────────────
+              A wall set is `Wall A /1`, `Wall A /2`, `Wall B /1`, ... and one
+              `Horizontal section`. The window walks them; showing only the
+              first would be a preview of a set nobody can see. U3: one row a
+              sheet, the tick, then the number and the name; a click on the
+              row's name shows that sheet. */}
+          {kind === 'walls' && wallSheetList.length ? (
+            <>
+              <div className="flex gap-1">
+                <button type="button" className="cc-btn px-2 text-[11px]" data-wall-sheets-all="1" onClick={() => setLeftOut(new Set())}>All</button>
+                <button type="button" className="cc-btn px-2 text-[11px]" data-wall-sheets-none="1" onClick={() => setLeftOut(new Set(wallSheetList.map((p) => p.name)))}>None</button>
+              </div>
+              <ul className="flex-1 min-h-0 overflow-y-auto rounded border border-shell-600 py-1" data-wall-sheets={wallSheetList.length}>
+                {wallSheetList.map((page, i) => {
+                  const current = i === shownIndex;
+                  return (
+                    <li
+                      key={page.no || page.name}
+                      className={`flex items-center gap-2 px-2 py-1 ${current ? 'bg-gold/[0.12] shadow-[inset_3px_0_0_#AA8E68]' : 'hover:bg-shell-700'}`}
+                      data-wall-sheet-row={page.name}
+                      data-current={current ? '1' : '0'}
+                    >
+                      {/* T83 F11 · this sheet goes into the PDF and the DXF when ticked. */}
+                      <input
+                        type="checkbox"
+                        data-wall-sheet-pick={page.name}
+                        aria-label={`Export ${page.name}`}
+                        title="Export this sheet with Export PDF and Wall DXF"
+                        checked={!leftOut.has(page.name)}
+                        onChange={(ev) => tickSheet(page.name, ev.target.checked)}
+                      />
+                      <button
+                        type="button"
+                        data-wall-sheet={page.name}
+                        aria-pressed={current}
+                        className={`flex-1 min-w-0 truncate text-left ${current ? 'text-gold' : 'text-ink-100 hover:text-ink-50'}`}
+                        title={page.no ? `${page.no} · ${page.name}` : page.name}
+                        onClick={() => setWallPage(i)}
+                      >
+                        {page.no ? `${page.no} · ${page.name}` : page.name}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          ) : <span className="flex-1" />}
+
+          {/* ─── TURN 43 (CLAUDE.md F5b): SECTION A-A THROUGH: ─────────────
+              The owner has asked for BOTH sections, twice. `/3` is the wall's
+              own and needs no choosing; A-A is *"through the cabinet the owner
+              points at"*, so this is where he points. Choosing appends a sheet
+              to the SET, not a second preview, which is what makes it land in
+              the PDF and in the DXF zip as well as on the glass. */}
+          {kind === 'walls' && sectionChoices.length ? (
+            <label className="flex flex-col gap-1 text-[11px] text-ink-400" htmlFor="cc-section-aa">
+              {/* T71: A-A and B-B are the set's own (the drawer unit, the
+                  sink); a cabinet chosen here is one more station. */}
+              <span>One more section through:</span>
+              <select
+                id="cc-section-aa"
+                data-section-aa="1"
+                className="cc-input px-1 py-0.5 text-[11px]"
+                value={sectionUnitId}
+                onChange={(e) => { setSectionUnitId(e.target.value); setWallPage(0); }}
+              >
+                <option value="">none</option>
+                {sectionChoices.map((u) => (
+                  <option key={u.id} value={u.id}>{`${u.unitNum} (Wall ${u.wallLabel})`}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          {/* ─── U3 · THE PICTURES ─────────────────────────────────────────
+              T-CC1b F8.1 · the user's own render, through the same Render
+              window (its shots and its resolution untouched), kept with the
+              item as a sheet of the set. T-CC1b F13 · the AI visualisation:
+              the same card, opened by its button in a small window of its own
+              over the preview (*"tak"*, the owner). The card stays mounted
+              while this window is open, folded or not, so a run in progress
+              and its pictures are not lost when it is folded. */}
+          <div className="shrink-0 border-t border-shell-600 pt-2 space-y-1.5" data-drawing-pictures="1">
+            <h3 className="text-sm text-ink-50">Pictures</h3>
+            <div className="flex flex-wrap gap-1">
               <button
                 type="button"
                 className="cc-btn px-2"
@@ -445,61 +543,60 @@ export default function DrawingModal({ rig = null }) {
                   Remove render
                 </button>
               ) : null}
+              <button
+                type="button"
+                className={`cc-btn px-2 ${aiOpen ? 'border-gold text-gold' : ''}`}
+                data-drawing-ai="1"
+                aria-expanded={aiOpen}
+                title="An impression for the client from a picture of this design; the chosen picture becomes the sheet Visualisation, AI"
+                onClick={() => setAiOpen((was) => !was)}
+              >
+                AI visualisation...
+              </button>
             </div>
           </div>
 
-          {/* ─── TURN 40 (CLAUDE.md F5): THE SHEET LIST ──────────────────
-              A wall set is `Wall A /1`, `Wall A /2`, `Wall B /1`, … and one
-              `Horizontal section`. The window walks them; showing only the
-              first would be a preview of a set nobody can see. */}
-          {kind === 'walls' && wallSheetList.length ? (
-            <div className="flex gap-1 flex-wrap" data-wall-sheets={wallSheetList.length}>
-              {wallSheetList.map((page, i) => (
-                <span key={page.no || page.name} className="inline-flex items-center gap-1">
-                  {/* T83 F11 · this sheet goes into the PDF and the DXF when ticked. */}
-                  <input
-                    type="checkbox"
-                    data-wall-sheet-pick={page.name}
-                    aria-label={`Export ${page.name}`}
-                    title="Export this sheet with Export PDF and Wall DXF"
-                    checked={!leftOut.has(page.name)}
-                    onChange={(ev) => tickSheet(page.name, ev.target.checked)}
-                  />
-                  <button
-                    type="button"
-                    data-wall-sheet={page.name}
-                    aria-pressed={i === Math.min(wallPage, wallSheetList.length - 1)}
-                    className={`cc-btn px-2 text-[11px] ${i === Math.min(wallPage, wallSheetList.length - 1) ? 'border-gold text-gold' : ''}`}
-                    onClick={() => setWallPage(i)}
-                  >
-                    {page.no ? `${page.no} · ${page.name}` : page.name}
-                  </button>
-                </span>
-              ))}
+          {/* The window's help, folded so the sheets keep the column. */}
+          <details className="shrink-0 text-[11px] text-ink-400" data-drawing-about="1">
+            <summary className="cursor-pointer select-none">About the set: the order, the colours, the DXF (AutoCAD only)</summary>
+            <div className="mt-1 max-h-[30vh] overflow-y-auto pr-1 space-y-1.5">
+              <p>
+                Layer colours follow the AutoLISP view layers: magenta fronts, green shelves behind them in a
+                hidden line, grey swing lines from the hinge side, teal hardware. Shelf positions are measured
+                from the base, drawer fronts front by front.
+              </p>
+              {kind === 'walls' ? (
+                <p data-wall-note="1">
+                  {/* T81 F2 · the owner's order, 22.10.2026: *"najpierw chce widziec 3d jak zrobiles pierwsza
+                      strona, pozniej chce widziec wszystkie fronty ... nastepnie widok wszystkich scian bez
+                      frontow ... pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu wizualizacja"*. */}
+                  One view per A3 sheet, every sheet with the same title strip, in the owner&apos;s order: <b>01</b> the
+                  room in <b>3D</b> with the index and the revisions, then every wall&apos;s <b>fronts</b> (only what the eye
+                  sees), every wall <b>without fronts</b> (the fronts lifted off), every wall in <b>X-ray</b>, the two
+                  <b> plans</b> cut through the base and the wall units, every wall&apos;s <b>sections</b>, the
+                  <b> visualisations</b> (the left and the right angle, your own render and the chosen AI picture when
+                  the item has them), and the <b>cut list</b>. Tick the sheets you want and press <b>Export PDF</b>.
+                  Every dimension appears once, in its own band. Fronts are magenta, handles green, the building fabric
+                  red. The DXF carries text and is <b>AutoCAD only, do NOT open it in VCarve</b>; the CNC export is a
+                  separate path and still ships no text of any kind.
+                </p>
+              ) : null}
             </div>
-          ) : null}
-          {kind === 'walls' && wallSheetList.length ? (
-            <div className="flex gap-2 items-center text-[11px] text-ink-400" data-wall-sheets-picked={wallPicked.length}>
-              <span>{`Export: ${wallPicked.length} of ${wallSheetList.length} sheets ticked, bound in the set's order and numbered 1 to ${wallPicked.length}.`}</span>
-              <button type="button" className="cc-btn px-2 text-[11px]" data-wall-sheets-all="1" onClick={() => setLeftOut(new Set())}>All</button>
-              <button type="button" className="cc-btn px-2 text-[11px]" data-wall-sheets-none="1" onClick={() => setLeftOut(new Set(wallSheetList.map((p) => p.name)))}>None</button>
-            </div>
-          ) : null}
-          {/* T-CC1b F13 · the AI visualisation card, under the sheet list; it writes project.visuals.ai itself. */}
-          <AiVisualCard project={project} visuals={visuals} />
-          {renderOpen ? (
-            <RenderModal rig={rig} onResult={keepRender} onClose={() => setRenderOpen(false)} />
-          ) : null}
+          </details>
+        </aside>
 
+        {/* ─── U3 · RIGHT: THE TITLE BLOCK, THE SHEET, THE PREVIEW ───────── */}
+        <section className="flex-1 min-w-0 flex flex-col gap-2 min-h-0" data-drawing-preview="1">
           {/* ─── T71: THE TITLE BLOCK'S WORDS ──────────────────────────────
               What every sheet's strip says and the engine cannot know: the
               company, who drew and checked it, the status and the revision.
               They ride the project (`setTitleBlock`); the company is
-              remembered on this computer for the next job. */}
+              remembered on this computer for the next job. U3: folded by
+              default, so the preview keeps the height. */}
           {kind === 'walls' ? (
-            <details className="text-[11px] text-ink-400" data-title-block="1">
+            <details className="shrink-0 text-[11px] text-ink-400" data-title-block="1">
               <summary className="cursor-pointer select-none">Title block: company, logo, drawn by, status, revision</summary>
-              <div className="grid grid-cols-4 gap-2 mt-2">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-2 mt-2 max-h-[40vh] overflow-y-auto pr-1">
                 {[
                   ['Company', 'company.name', 'CABINET CORE'],
                   ['Tagline', 'company.tagline', 'Bespoke fitted furniture'],
@@ -531,9 +628,9 @@ export default function DrawingModal({ rig = null }) {
                   if (key !== 'company.name') return field;
                   // T82 F20 · the LOGO row, beside Company: kept with it.
                   return [field, (
-                    <div key="company.logo" className="block" data-title-block-field="company.logo">
+                    <div key="company.logo" className="block col-span-2" data-title-block-field="company.logo">
                       <span className="cc-label">Logo (PNG, JPG or SVG)</span>
-                      <div className="flex items-center gap-1">
+                      <div className="flex flex-wrap items-center gap-1">
                         {shownLogoHref && !screenLogoBroken ? (
                           <img
                             src={shownLogoHref}
@@ -598,31 +695,22 @@ export default function DrawingModal({ rig = null }) {
             </details>
           ) : null}
 
-          {/* ─── TURN 43 (CLAUDE.md F5b): SECTION A-A THROUGH: ─────────────
-              The owner has asked for BOTH sections, twice. `/3` is the wall's
-              own and needs no choosing; A-A is *"through the cabinet the owner
-              points at"*, so this is where he points. Choosing appends a sheet
-              to the SET — not a second preview — which is what makes it land
-              in the PDF and in the DXF zip as well as on the glass. */}
-          {kind === 'walls' && sectionChoices.length ? (
-            <label className="flex items-center gap-2 text-[11px] text-ink-400" htmlFor="cc-section-aa">
-              {/* T71: A-A and B-B are the set's own (the drawer unit, the
-                  sink); a cabinet chosen here is one more station. */}
-              <span>One more section through:</span>
-              <select
-                id="cc-section-aa"
-                data-section-aa="1"
-                className="cc-input px-1 py-0.5 text-[11px]"
-                value={sectionUnitId}
-                onChange={(e) => { setSectionUnitId(e.target.value); setWallPage(0); }}
-              >
-                <option value="">— none —</option>
-                {sectionChoices.map((u) => (
-                  <option key={u.id} value={u.id}>{`${u.unitNum} (Wall ${u.wallLabel})`}</option>
-                ))}
-              </select>
-            </label>
-          ) : null}
+          {/* The sheet on the glass: <wall> · <paper> · <scale> · sheet n of m. */}
+          <div className="shrink-0 text-sm text-ink-100 truncate" data-drawing-sheet-head="1">
+            {/* T42-F0: and the HEADING stops lying too. "No wall has a
+                cabinet on it" over a red failure box is the same untruth
+                the footer used to tell, said one line higher up. */}
+            {wallAt?.name
+              || (wallError ? 'The wall set could not be built' : 'No wall has a cabinet on it')}
+            {/* T71: the set prints its scale in the title block ("1:20 @
+                A3", or NTS for a picture); the window repeats it. */}
+            {sheet ? (
+              <span className="text-ink-400">
+                {` · ${sheet.format.id} ${sheet.format.orientation} · ${sheet.scaleLabel || scaleLabel(sheet.scale)}`
+                  + (wallSheetList.length ? ` · sheet ${sheet.sheetNo} of ${sheet.sheetOf}` : '')}
+              </span>
+            ) : null}
+          </div>
 
           {/* ─── TURN 42 (CLAUDE.md F0): CRASHED, OR GENUINELY EMPTY ───────
               THREE STATES, and they are three different sentences on the
@@ -631,31 +719,31 @@ export default function DrawingModal({ rig = null }) {
               holding the mouse. */}
           {kind === 'walls' && wallError ? (
             <p
-              className="text-sm text-status-danger border border-status-danger/60 bg-status-danger/10 rounded px-2 py-1"
+              className="shrink-0 text-sm text-status-danger border border-status-danger/60 bg-status-danger/10 rounded px-2 py-1"
               data-wall-failed="1"
               data-wall-sheets="0"
             >
               Wall drawings failed: {drawingErrorText(wallError)}
               <span className="block text-[11px] text-status-danger/80">
-                This is a FAULT, not an empty job — the whole error is in the browser console.
+                This is a FAULT, not an empty job: the whole error is in the browser console.
               </span>
             </p>
           ) : null}
           {kind === 'walls' && !wallError && !wallSheetList.length ? (
-            <p className="text-sm text-ink-400" data-wall-sheets="0" data-wall-empty="1">
-              No cabinet is standing against a wall yet — a wall drawing is of a wall.
+            <p className="shrink-0 text-sm text-ink-400" data-wall-sheets="0" data-wall-empty="1">
+              No cabinet is standing against a wall yet: a wall drawing is of a wall.
             </p>
           ) : null}
 
-          {/* …and when a cabinet was LEFT OFF a sheet, the window says which
+          {/* ...and when a cabinet was LEFT OFF a sheet, the window says which
               one and why, rather than dropping a wall out of the list without
               a word. `wallGroups` had the reason all along; nothing asked. */}
           {kind === 'walls' && wallReport?.walls?.some((w) => w.skipped.length) ? (
-            <div className="text-[11px] text-status-warn" data-wall-skips="1">
+            <div className="shrink-0 text-[11px] text-status-warn" data-wall-skips="1">
               {wallReport.walls.filter((w) => w.skipped.length).map((w) => (
                 <p key={w.wall}>
                   <b>{`Wall ${w.label}`}</b>
-                  {w.elevation ? ' — drawn, but ' : ' — no elevation: '}
+                  {w.elevation ? ': drawn, but ' : ': no elevation, '}
                   {w.skipped.map((sk) => `${sk.unit} ${sk.reason}`).join('; ')}
                   .
                 </p>
@@ -664,36 +752,48 @@ export default function DrawingModal({ rig = null }) {
           ) : null}
 
           {/* The preview IS the export: the same SVG string, so what is on
-              screen cannot differ from what lands in the file. */}
+              screen cannot differ from what lands in the file. U3: the sheet
+              takes the height that is left and is fitted whole inside it (its
+              viewBox, met in the middle), so the window needs no scroll; the
+              46vh cap of index.css is lifted here only. */}
           <div
-            className="cc-drawing rounded border border-shell-600 bg-white p-2 overflow-auto"
+            className="cc-drawing flex-1 min-h-0 rounded border border-shell-600 bg-white p-2 overflow-hidden [&_svg]:!h-full [&_svg]:!w-full [&_svg]:!max-h-none"
+            data-drawing-sheet-preview="1"
             // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: svg || '' }}
           />
+        </section>
 
-          <p className="text-[11px] text-ink-400">
-            Layer colours follow the AutoLISP view layers: magenta fronts, green shelves behind them in a
-            hidden line, grey swing lines from the hinge side, teal hardware. Shelf positions are measured
-            from the base, drawer fronts front by front.
-          </p>
-          {kind === 'walls' ? (
-            <p className="text-[11px] text-ink-400" data-wall-note="1">
-              {/* T81 F2 · the owner's order, 22.10.2026: *"najpierw chce widziec 3d jak zrobiles pierwsza
-                  strona, pozniej chce widziec wszystkie fronty ... nastepnie widok wszystkich scian bez
-                  frontow ... pozniej przekroj z gory, i pozniej przekroje pionowe, a na koncu wizualizacja"*. */}
-              One view per A3 sheet, every sheet with the same title strip, in the owner&apos;s order: <b>01</b> the
-              room in <b>3D</b> with the index and the revisions, then every wall&apos;s <b>fronts</b> (only what the eye
-              sees), every wall <b>without fronts</b> (the fronts lifted off), every wall in <b>X-ray</b>, the two
-              <b> plans</b> cut through the base and the wall units, every wall&apos;s <b>sections</b>, the
-              <b> visualisations</b> (the left and the right angle, your own render and the chosen AI picture when
-              the item has them), and the <b>cut list</b>. Tick the sheets you want and press <b>Export PDF</b>.
-              Every dimension appears once, in its own band. Fronts are magenta, handles green, the building fabric
-              red. The DXF carries text and is <b>AutoCAD only, do NOT open it in VCarve</b>; the CNC export is a
-              separate path and still ships no text of any kind.
-            </p>
-          ) : null}
+        {/* ─── U3 · THE AI VISUALISATION, ITS OWN SMALL WINDOW ─────────────
+            T-CC1b F13's card as it is (components/drawings/AiVisualCard.jsx,
+            untouched); it writes project.visuals.ai itself. Over the preview,
+            beside the sheets; folded by its x, by Escape or by its button. */}
+        <div
+          className={`${aiOpen ? '' : 'hidden'} absolute left-[276px] bottom-0 w-[720px] max-w-[calc(100%-276px)] max-h-full overflow-y-auto rounded border border-gold/60 bg-shell-800 shadow-panel`}
+          role="region"
+          aria-label="AI visualisation"
+          data-drawing-ai-window={aiOpen ? 'open' : 'folded'}
+        >
+          <div className="flex items-center gap-2 px-3 pt-2">
+            <span className="text-[11px] text-ink-400 mr-auto">Its pictures stay here while the Drawings window is open.</span>
+            <button
+              type="button"
+              className="cc-btn-ghost"
+              data-drawing-ai-close="1"
+              title="Fold the AI visualisation (Escape)"
+              onClick={() => setAiOpen(false)}
+            >
+              ×
+            </button>
+          </div>
+          <div className="p-2">
+            <AiVisualCard project={project} visuals={visuals} />
+          </div>
         </div>
-      )}
+        {renderOpen ? (
+          <RenderModal rig={rig} onResult={keepRender} onClose={() => setRenderOpen(false)} />
+        ) : null}
+      </div>
     </Modal>
   );
 }

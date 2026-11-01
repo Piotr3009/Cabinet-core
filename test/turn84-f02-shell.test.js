@@ -32,6 +32,7 @@ import {
   selectionCountWords, statusSelectionWords, unitPlace, viewportWords,
 } from '../src/components/studio/lib/studioFace.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
+import * as SKIN from '../src/components/studio/lib/studioSkin.js';
 import { audienceForPath } from '../src/lib/appEntry.js';
 import { MENU_ORDER, orderMenus } from '../src/lib/topMenu.js';
 import { buildOutputMenu } from '../src/lib/outputMenu.js';
@@ -281,7 +282,10 @@ test('F2 · every header control is written once and drawn by both layouts', () 
   const order = (src, names) => names.map((n) => src.indexOf(n));
   // REWRITTEN BY T-CC1a F3: Account and the mock badge are deleted from both orders; the rest keeps its place.
   // AMENDED BY T-CC1b F1: [wordmark] [PRO] [menus] [spacer] [the job block] [Save] [Brightness] [BOM] [Back to Joinery Core].
-  const s = order(studio, ['{drawWordmark()}', '>PRO<', '{drawMenuBar()}', '{drawJobBlock()}', '<StudioHistory />', '{drawSave()}', '{drawBrightness()}', '{drawBom()}', '{drawBackToJc()}']);
+  // AMENDED BY THE UX TURN, U1: [Back to Joinery Core] first, then [wordmark] [PRO] [menus] [spacer] [the job block]
+  // [Save] [Brightness] [BOM] (the owner: *"zostaje zloty, tylko na lewo"*).
+  const s = order(studio, ['{drawBackToJc()}', '{drawWordmark()}', '>PRO<', '{drawMenuBar()}', '{drawJobBlock()}', '<StudioHistory />', '{drawSave()}', '{drawBrightness()}', '{drawBom()}']);
+  assert.equal(studio.indexOf('{drawBackToJc()}'), studio.lastIndexOf('{drawBackToJc()}'), 'the way back is drawn once');
   assert.ok(s.every((v, i) => v > 0 && (i === 0 || v > s[i - 1])), `the Studio bar's order: ${s}`);
   const l = order(legacy, ['{drawWordmark()}', '{drawMenuBar()}', '{drawProjectName()}', '{drawSave()}', '{drawBrightness()}', '{drawBom()}']);
   assert.ok(l.every((v, i) => v > 0 && (i === 0 || v > l[i - 1])), `the legacy bar's order: ${l}`);
@@ -366,7 +370,8 @@ test('F2 · StudioShell takes slots and imports nothing from a later F', () => {
   assert.match(SHELL, /import \{ studioCssVars, studioWidths \} from '\.\/lib\/studioSkin\.js';/);
   assert.equal([...SHELL.matchAll(/<StudioIcons \/>/g)].length, 1, 'the sprite, once');
   // Its rows: the top bar, the breadcrumb, the workspace, the status bar.
-  const rows = ['{topBar}', '<SelectionBreadcrumb />', 'data-studio="workspace"', '<StatusBar extras={statusExtras}'].map((x) => SHELL.indexOf(x));
+  // AMENDED BY THE UX TURN, U2: the breadcrumb is told whether a shown column would hold anything.
+  const rows = ['{topBar}', '<SelectionBreadcrumb canShowInspector={shown} />', 'data-studio="workspace"', '<StatusBar extras={statusExtras}'].map((x) => SHELL.indexOf(x));
   assert.ok(rows.every((v, i) => v > 0 && (i === 0 || v > rows[i - 1])), `the four rows in order: ${rows}`);
   const cols = ['<StudioRail', 'data-studio="scene"', '{inspector}'].map((x) => SHELL.indexOf(x));
   assert.ok(cols.every((v, i) => v > 0 && (i === 0 || v > cols[i - 1])), `rail | scene | inspector: ${cols}`);
@@ -380,7 +385,8 @@ test('F2 · StudioShell takes slots and imports nothing from a later F', () => {
 test('F2 · the shell\'s lengths are the profile\'s, through studioSkin; the inspector column is 0 when absent or hidden', () => {
   assert.match(SHELL, /gridTemplateRows: 'var\(--studio-top\) var\(--studio-context\) minmax\(0, 1fr\) var\(--studio-status\)'/);
   assert.match(SHELL, /gridTemplateColumns: 'var\(--studio-rail\) minmax\(0, 1fr\) var\(--studio-inspector\)'/);
-  assert.match(SHELL, /const column = inspector && mode !== 'none' \? mode : 'none';/);
+  // AMENDED BY THE UX TURN, U2: and 0 when the column has nothing to show (the U2 test below).
+  assert.match(SHELL, /const column = inspector && mode !== 'none' && shown \? mode : 'none';/);
   assert.match(SHELL, /studioCssVars\(profile, \{ viewportWidth: viewport\.width, inspector: column \}\)/);
   assert.match(SHELL, /studioWidths\(profile, viewport\.width\)/);
   assert.match(SHELL, /data-inspector=\{mode \|\| 'full'\}/, 'the root says the store\'s mode (CHAT FIX 30.10.2026: full or none)');
@@ -392,6 +398,67 @@ test('F2 · the shell\'s lengths are the profile\'s, through studioSkin; the ins
   for (const [name, src] of [['StudioShell', SHELL], ['StudioRail', RAIL], ['SelectionBreadcrumb', CRUMB], ['StatusBar', STATUS]]) {
     assert.ok(!numbers.test(src), `${name} types one of THE NUMBERS: ${src.match(numbers)}`);
   }
+});
+
+// ═══ THE UX TURN, U2 · THE PANEL THAT HIDES ════════════════════════════════
+// The owner, over the mockup: with nothing selected the inspector column stood black; now it is not
+// drawn and the scene takes the width, and a selection brings it back with the scene narrowed
+// (*"niech sie zweza, nie chce ustawiac sceny od nowa"*).
+
+/** A function of `src` as written, from `function name(` to its closing brace, run as written. */
+function runFunction(src, name) {
+  const at = src.indexOf(`function ${name}(`);
+  assert.ok(at >= 0, `function ${name} is in the source`);
+  const body = src.indexOf('{', src.indexOf(')', at));
+  // eslint-disable-next-line no-new-func
+  return new Function(`return (${src.slice(at, closeOf(src, body) + 1)});`)();
+}
+
+test('U2 · one answer to "has the column anything to show", the same truth as the host\'s old panel rule, over every case', () => {
+  const has = runFunction(SHELL, 'inspectorHasContent');
+  for (const viewMode of ['3d', 'cnc']) {
+    for (const unitType of [null, 'BUD']) {
+      for (const several of [false, true]) {
+        for (const pinned of [false, true]) {
+          // T84 F4's rule as InspectorHost wrote it before tonight.
+          let shows = 'nothing';
+          if (viewMode === 'cnc') shows = 'cnc';
+          else if (unitType && several) shows = 'several';
+          else if (unitType) shows = 'one';
+          const was = shows === 'cnc' || shows === 'several' || shows === 'one' || (shows === 'nothing' && pinned);
+          assert.equal(has({ viewMode, unitType, pinned }), was, JSON.stringify({ viewMode, unitType, several, pinned }));
+        }
+      }
+    }
+  }
+  assert.equal(has({}), false, 'nothing said: nothing to show');
+  assert.equal(has({ viewMode: '3d', unitType: null, pinned: false }), false, 'nothing selected, unpinned: no column');
+  const HOST = read('src/components/studio/InspectorHost.jsx');
+  assert.match(HOST, /const panel = inspectorHasContent\(\{ viewMode, unitType, pinned \}\);/, 'the host draws by the same answer');
+  assert.match(HOST, /const column = mode === 'none' \|\| !panel \? null : \(/);
+});
+
+test('U2 · the shell sizes only the third column by it; the scene slot and the canvas in it stay mounted', () => {
+  assert.match(SHELL, /export function inspectorHasContent\(\{ viewMode = '3d', unitType = null, pinned = false \} = \{\}\) \{/);
+  for (const line of [
+    "const viewMode = useUiStore((s) => s.viewMode);",
+    "const pinned = useUiStore((s) => s.inspectorPinned);",
+    "const unitId = useUiStore((s) => s.selectedUnitId);",
+    "const unitType = useProjectStore((s) => (unitId ? (s.units.find((u) => u.id === unitId)?.type ?? null) : null));",
+    "const shown = inspectorHasContent({ viewMode, unitType, pinned });",
+  ]) assert.ok(SHELL.includes(line), line);
+  assert.match(SHELL, /data-inspector-column=\{column\}/, 'the column the shell draws, readable from outside');
+  // `shown` reaches the column's width and the breadcrumb's button, nothing else: no key, no condition on the scene.
+  const uses = [...SHELL.matchAll(/\bshown\b/g)].length;
+  assert.equal(uses, 3, 'declared, sizes the column, tells the breadcrumb');
+  const scene = SHELL.slice(SHELL.indexOf('<div ref={sceneRef} data-studio="scene"'), SHELL.indexOf('{inspector}'));
+  assert.doesNotMatch(scene, /\bkey=|\bshown\b|\bcolumn\b/, 'the scene slot is the same element whatever the column');
+  // The width is studioSkin's: the panel's, or 0.
+  const { studioCssVars, studioWidths } = SKIN;
+  assert.equal(studioCssVars(P, { viewportWidth: 1600, inspector: 'none' })['--studio-inspector'], '0px');
+  assert.equal(studioCssVars(P, { viewportWidth: 1600, inspector: 'full' })['--studio-inspector'], `${studioWidths(P, 1600).fullPx}px`);
+  // The camera: the canvas makes its camera once from a plain options object (3d/Scene.jsx); a resize sets its aspect.
+  assert.match(read('src/3d/Scene.jsx'), /camera=\{\{ position: \[/, 'the camera is an options object, made once by @react-three/fiber');
 });
 
 test('F2 · the shell\'s DOM hooks (CONTRACT section 6)', () => {
@@ -522,7 +589,9 @@ test('F2 · the breadcrumb: the project, the place, the unit number in bold', ()
   const gone = breadcrumbOf({ projectName: 'Hampstead', units, selectedUnitIds: ['zz'], selectedUnitId: 'zz' });
   assert.equal(gone.count, 0, 'a deleted cabinet is not selected');
   // The component shows the button only while the inspector is hidden, and it only shows it.
-  assert.match(CRUMB, /\{inspector === 'none' && \(/);
+  // AMENDED BY THE UX TURN, U2: and only where the column it brings back would hold something.
+  assert.match(CRUMB, /\{inspector === 'none' && canShowInspector && \(/);
+  assert.match(CRUMB, /export default function SelectionBreadcrumb\(\{ canShowInspector = true \} = \{\}\)/, 'alone, it shows the button as before');
   assert.match(CRUMB, /onClick=\{\(\) => showInspector\?\.\(\)\}/);
   assert.ok(!/toggleInspectorPin|setInspector\(|hideInspector/.test(CRUMB), 'the breadcrumb never pins or hides');
   assert.match(CRUMB, /<strong\b/, 'the unit number in bold');

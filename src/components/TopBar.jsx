@@ -434,6 +434,12 @@ export default function TopBar({
     if (dirty) await save();
     goToJoineryCore();
   };
+  // THE UX TURN, U1: the same gold button, the same road, at the FAR LEFT of the
+  // bar, before the wordmark. The owner: *"zostaje zloty, tylko na lewo"*;
+  // *"serio zawsze back przyciski sa raczej po lewej, taka zasada i
+  // przyzwyczajenie"*. The house set has no arrow-left icon (StudioIcons.jsx),
+  // so the arrow is the single angle quote before the words, hidden from a
+  // screen reader, which reads the words alone.
   const drawBackToJc = () => {
     return (
       <button
@@ -443,8 +449,7 @@ export default function TopBar({
         title="Save this item if it has changes, then go back to Joinery Core"
         onClick={backToJc}
       >
-        {/* The house set has no arrow-left icon (StudioIcons.jsx), so the words alone (F1.2). */}
-        {BACK_TO_JC_LABEL}
+        <span aria-hidden="true">‹</span> {BACK_TO_JC_LABEL}
       </button>
     );
   };
@@ -507,6 +512,8 @@ export default function TopBar({
   // same MenuBar: every leaf, `run`, `disabled` and `checked` of THE CENSUS),
   // then Undo and Redo, Save, Brightness and BOM (T-CC1a F3: Account deleted). Its height is the
   // profile's, through the shell's `--studio-top`.
+  // THE UX TURN, U1: Back to Joinery Core first, at the far left, before the
+  // wordmark (it stood last, after BOM, since T-CC1b F1).
   if (studio) {
     return (
       <header
@@ -514,6 +521,8 @@ export default function TopBar({
         className={`studio-topbar studio-skin flex items-center min-w-0 ${LAYER_CLASS.chrome}`}
         style={{ height: 'var(--studio-top)' }}
       >
+        {drawBackToJc()}
+        <span className="h-5 w-px bg-shell-600 shrink-0" aria-hidden />
         {drawWordmark()}
         <span className="studio-pro-label shrink-0">PRO</span>
         <span className="h-5 w-px bg-shell-600 shrink-0" aria-hidden />
@@ -525,7 +534,6 @@ export default function TopBar({
         {drawSave()}
         {drawBrightness()}
         {drawBom()}
-        {drawBackToJc()}
       </header>
     );
   }

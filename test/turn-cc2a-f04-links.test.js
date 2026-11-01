@@ -21,7 +21,7 @@ globalThis.localStorage = {
 
 const { startFakeJc, SEED_LINKS, FOREIGN_STOCK_ID } = await import('../scripts/t-cc1a-fake-jc.mjs');
 const {
-  LINK_COLUMNS, LINKS_NOT_SET_UP, LINKS_PER_CALL, loadLinks, saveLinks, clearLink,
+  LINK_COLUMNS, LINKS_NOT_SET_UP, LINKS_PER_CALL, LINK_NOT_SAVED, loadLinks, saveLinks, clearLink,
 } = await import('../src/lib/jcLinks.js');
 const { JC_OFFLINE } = await import('../src/lib/jcApi.js');
 const { useMaterialLinkStore } = await import('../src/stores/materialLinkStore.js');
@@ -188,7 +188,10 @@ test('F4.1 · Joinery Core not answering: JC_OFFLINE in words, never a throw', a
     assert.equal(read.status, 'offline');
     assert.equal(read.error, JC_OFFLINE);
     const save = await saveLinks([{ cc_material_id: 'sheet.mdf.18', stock_item_id: stockId(9) }]);
-    assert.equal(save.error, JC_OFFLINE);
+    // INT, after Ewa's check (O4): JC_OFFLINE says the work is kept in this browser; a link is not, so a save says so.
+    assert.equal(save.error, LINK_NOT_SAVED);
+    assert.equal(save.status, 'offline');
+    assert.equal((await clearLink('sheet.mdf.18')).error, LINK_NOT_SAVED);
     const thrown = { cc_material_id: 'x', stock_item_id: 'y' };
     const viaThrow = await saveLinks([thrown], { db: async () => { throw new Error('boom'); } }).catch(() => 'threw');
     assert.notEqual(viaThrow, 'threw');

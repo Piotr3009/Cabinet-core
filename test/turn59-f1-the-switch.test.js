@@ -489,7 +489,7 @@ const EXEMPT = {
   'src/components/studio/RailMenus.jsx':
     'T84 F7 · NEW, the rail\'s popups: Add (the existing Library beside the button) and Materials (the four existing windows). *"Nothing is removed, renamed Advanced or made optional in this stage"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27); *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
     + ' T-CC1b F3, F4, F9.3 · the Materials rows written in place (the Database builder deleted), Stock... opens the Joinery Core stock window (\'jc-stock\'), a soon family is a disabled row with its reason. *"Database niepotrzebne, wszystko jest w JC, Assign materials juz jest po lewej"* (the owner, 01.11.2026)'
-    + ' T-CC2a F8.7 · Link materials... FIRST in the Materials menu, then the four rows as they were. *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na stale"* (the owner, 01.11.2026)',
+    + ' T-CC2a F8.7, F14 · Link materials... FIRST in the Materials menu, then the four rows as they were; the Assign materials... hint says the window is the old one, read only. *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na stale"* (the owner, 01.11.2026)',
   'src/components/studio/lib/studioEscape.js':
     'T84 F7 · NEW, pure: one Escape, one action, in the order of verify/t84/p1-escape.md E; never unpins. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
     + ' Chat fix 30.10.2026 F2 · the refused card value (level 1) left with the quick card; the order is otherwise P1\'s. *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)'
@@ -731,7 +731,7 @@ const FROZEN = {
   'src/components/studio/CameraBar.jsx': '5fc9ef238bc0b9d724c85bde0c35f1cd304679f84b0b92167536654633995ac2',
   'src/components/studio/lib/cameraPresets.js': 'ebca96709d0a5e5c9803980130a4720357e06f724bf56b8bc5d59f0d63ebd6f6',
   // T84 F7 · NEW PRO files (the rail's menus, Escape and the parity gate), frozen at their first hash; EXEMPT above carries the reason.
-  'src/components/studio/RailMenus.jsx': 'c54fd74da7a56a297413ece72da2d1080ea55658ff66a8361aab2f299bee7002',
+  'src/components/studio/RailMenus.jsx': '04288890a3726f2dca033568233119de2f8eef0d3a2ee48253672800fce2d889',
   'src/components/studio/lib/studioEscape.js': '3528ca04e92c37b6091e434fbbd0f9f174dcc36ef21a560e9a27e5b7cf0cfc86',
   'src/components/jc/RefusalScreen.jsx': '33988534189bc6d45b38062445d535c11a0fea2e58d78a7b4adf5e8bcc0a9894',
   // T-CC1a F6 · a NEW PRO file, frozen at its first hash: the import's Joinery Core project picker.
@@ -741,7 +741,7 @@ const FROZEN = {
   // T-CC1b · a NEW PRO file, frozen at its first hash (EXEMPT above carries the reason).
   'src/components/drawings/AiVisualCard.jsx': '565b087bb27673f594857a9efd1caaaba65be57b89b3ae3ce5330626a129a489',
   // T-CC2a · a NEW PRO file, frozen at its first hash (EXEMPT above carries the reason).
-  'src/components/LinkMaterialsModal.jsx': '8d68e3e1389bb096a0167fbd30ca85d685c626eb8d325dee4867fb20e8bbd046',
+  'src/components/LinkMaterialsModal.jsx': 'a99842198889f9ac76f7e26c19c8e26ba59840f3b51d0630d4ff7cacd60667b7',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────

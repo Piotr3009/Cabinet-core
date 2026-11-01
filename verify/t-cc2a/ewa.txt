@@ -1,0 +1,221 @@
+T-CC2a . EWA, THE UX CHECK OF PART C (a joiner who sees these screens the first time)
+HEAD e8f9633e (branch claude/t-cc2a-link-materials). I wrote nothing but this file; I ran no test and no walk.
+Read: CLAUDE.md (THE ORDER, laws 3, 7, 8, 9, PART C F8 to F11, F14); walk.txt; ALL 15 frames opened one by one
+(f11-new-item, f11-new-item-front, f08-window, f09-suggestion, f09-suggestion-form, f09-suggestion-linked,
+f08-link-sheet-form, f08-link-sheet, f08-link-hinge, f08-unlink, f10-bom, f10-toast, f10-bespoke, f08-not-set-up,
+f14-old-window); the code of LinkMaterialsModal.jsx, BomPanel.jsx, MaterialPicker.jsx, SettingsPanel.jsx,
+WizardSettings.jsx, AssignMaterialsModal.jsx, DesignSettingsModal.jsx, RailMenus.jsx, linkSuggest.js,
+materialLinkStore.js, jcLinks.js, bom.js (bespoke), bomInvoice.js, projectSettings.js, thickness.js.
+The frames were taken on build fe173a33, BEFORE Marek's fix c704ec3a (walk.txt NOTE [a] and the commit order).
+A "click" is one mouse press (entering a field counts one); typing is counted apart.
+
+=====================================================================================================
+1. THE THREE TASKS
+=====================================================================================================
+
+T1 "My company has just started: link the carcass board of my project (H3325 18 mm) to my Joinery Core stock."
+  Shortest road, the rail (frames f08-window, f09-suggestion, f09-suggestion-form, f09-suggestion-linked):
+    1 Materials (rail)  2 Link materials...  3 the search box [type H3325]  4 Accept on the 18 mm row
+    5 Sheet width [type]  6 Sheet length [type]  7 Save link  8 Back to project
+    = 8 clicks, 3 typings. Without a suggestion (a stock row whose name lacks "H3325"): click the 18 mm row,
+    search the right list, Link on the stock row = 10 to 11 clicks.
+  The Settings road (Settings, Settings..., Carcasses, Link under the board, Accept, width, length, Save link,
+    Back to project, Update and save) = 10 clicks.
+  Where I got lost:
+    a. The rail's Materials menu offers "Link materials..." AND "Assign materials..."; the old one's hint still
+       says "Which board, which hinge, which runner: per part, per project. What the BOM is built from"
+       (RailMenus.jsx:202). That sentence is false since tonight and it sends me to the wrong window.
+    b. The window opens on Sheets, Egger, All decors, filter "All": 340 rows (walk [c]: rows 340), the header
+       "2 of 589 linked". Nothing says start with "Used in this project" (default filter 'all',
+       LinkMaterialsModal.jsx:112).
+    c. The sheet size. The Settings window already showed me "Sheet width x height, in mm 2790 x 2060" with
+       "Workshop standard: sheet size is shared by all carcass boards, including future projects"
+       (f11-new-item; WizardSettings.jsx:788). Which size do I type now, and is "width" the long side (the wizard's
+       2790) or the short side (the walk typed width 1220)?
+    d. The empty width: Save link is dim and a grey line says why; no field turns red (f09-suggestion-form).
+    e. After Save the gold outline jumps to the 19 mm row ("Linking: ... 19 mm", f09-suggestion-linked) and every
+       Link on the right is live for a row I did not choose (rail road; LinkMaterialsModal.jsx:232).
+    f. Once saved, the size I typed is shown nowhere: the row shows the price only (LinkMaterialsModal.jsx:627-629),
+       the BOM line shows "3 sheets" without "of 1220 x 2440" (BomPanel.jsx PurchaseLines).
+    g. On the Settings road, "Stock board: No stock board..." stands right above the new "Not linked  Link"
+       (f11-new-item): two controls for one question, and the footer asks for the select, not the link.
+
+T2 "My BOM says some lines are not linked: find them and link one hinge."
+  Road (frames f10-bom, f10-toast):
+    1 BOM (top bar)  2 the BOM tab (the panel opens on Parts, BomPanel.jsx:72)  3 Link on the 155 hinge line
+    4 Link on "Blum Clip top 155 hinge" in the right list  5 Back to project
+    = 5 clicks (6 to 7 in a real stock: the Hardware chip or a search first).
+  Where I got lost:
+    a. "BOM" is a button that opens "Bill of materials", which has a tab "BOM" with a red "11" and no words
+       (BomPanel.jsx:170-180). I read "11" as eleven BOMs. Once on the tab, the red banner is clear: "Incomplete
+       total, 11 lines not linked. Press Link on a red line: the link is saved for all projects." (good).
+    b. The line's Link is 10 px ghost text at the far right after two empty columns (BomPanel.jsx:665; f10-bom,
+       x 1164). The main action of a red line is the smallest thing on it.
+    c. The window opens at the hinge, outlined gold and in view (good, walk [g]); the right list is not narrowed to
+       hardware: edging and boards stand between the hinges (f10-toast).
+    d. In the frames, after the Link the outline moved to "155 degree hinge, onyx" (f10-toast). Fixed after the
+       frames (c704ec3a, LinkMaterialsModal.jsx:232); I read the code, I did not see it on a screen.
+    e. "Saved for all projects" lands bottom left over the table (walk: at 124,762), far from my click at the right;
+       the row turning green "Linked" is the proof I actually see.
+    f. "Hinges subtotal" with an empty value (BomPanel.jsx:680): an empty number reads like zero.
+
+T3 "The client supplies their own handles for this job: put six on this job's list, at no cost."
+  Road (frame f10-bespoke):
+    1 BOM  2 the BOM tab  (scroll to the bottom)  3 Add bespoke item  4 the name [type]  5 the quantity [type 6]
+    (pcs is the default, projectStore.js:284)  6 tick "Supplied by client"  7 Save
+    = 7 clicks, 2 typings, 1 scroll.
+  Where I got lost:
+    a. I looked for handles in Link materials, Ironmongery, and in the rail's Materials menu: bespoke has no door
+       there; it lives only at the bottom of the BOM tab.
+    b. The two number boxes of a row have no visible label, only a tooltip (BomPanel.jsx:732 "Quantity",
+       :756 "Unit price"); a new row shows "1" and "0" side by side.
+    c. If I leave the price at 0 and forget the tick, the line costs 0.00 and the total reads complete
+       (bom.js:1328-1329): see my objection O2.
+
+=====================================================================================================
+2. THE HOUSE RULES
+=====================================================================================================
+R1  The way back top left, not gold ............ PASS. "Back to project" is a cc-btn (LinkMaterialsModal.jsx:271),
+    17 x 11 px from the corner (walk [b]). Note: opened from Settings it lands in Settings (popModal, :81), the
+    words say "project".
+R2  The window's close top right ................. PASS. The shell's cross 17 px from the right (walk [b]); the BOM
+    panel's cross top right (f10-bom); the old window's cross (f14-old-window).
+R3  The main action stands out ................... FAIL. Link window: PASS (Save link gold :709, the chosen row
+    outlined gold, "Linking: <name>" in gold :514). BOM: the Link of a red line is 10 px ghost text (BomPanel.jsx:665).
+R4  Every button's words say what will happen .... FAIL. "Connect JoineryCore" in a Joinery Core session answers a
+    toast "lands in a later phase" (BomPanel.jsx:497-511, f10-bom); "Accept all suggestions (4)" counts rows I
+    cannot see (f09-suggestion, search H3325, one suggestion shown); "As today" (SettingsPanel.jsx:1858) is a
+    turn's word, not a joiner's; "Unlink" does not say "for all projects" and has no undo (:648-656).
+R5  Every error or refusal says what to do next and where (a grey hint is not enough for a refusal) ..... FAIL.
+    PASS: the BOM banner (above); "Sheet size missing, add it in Link materials"; "Check the unit of this item in
+    Joinery Core"; the empty stock words with Open Stock (jcStock.js:28); out-of-range sizes in red under the field.
+    FAIL: the empty sheet size is a grey hint and no field is marked (:694, :697, :711-715); the new item's refusal
+    "Choose a stock board for Carcass 1. Generic is also available." is a grey footer line (NewProjectFlow.jsx:303,
+    WizardSettings.jsx:1128-1130) and asks for a control the new model does not need; a link saved offline says
+    "Joinery Core did not answer. Your work is kept in this browser until it does." (jcApi.js:26 via
+    jcLinks.js:40 and :48, on the row by materialLinkStore.js:100): FALSE, the link is not kept anywhere;
+    "Material links are not set up in Joinery Core yet. The list below is read only until it is." (f08-not-set-up)
+    does not say who sets it up or whom to ask.
+R6  No programmer jargon, no internal id ......... FAIL (jargon; ids PASS). No catalogue id on any of the seven tabs
+    (walk [b], seven "none"). Jargon on the same roads: "MaterialStock..." (WizardSettings.jsx:2240), "Generic -
+    geometry only, assign a real board before check-out" (WizardSettings.jsx:653), "owner to confirm (15.08.2026)"
+    on the Order tab (BomPanel.jsx:357), "As today". The older lines are not Julia's, but the joiner reads them.
+R7  One place for one thing ...................... FAIL. (a) "Assign materials..." still claims "What the BOM is
+    built from" (RailMenus.jsx:202). (b) The old window's red header "0 of 14 lines assigned, Not assigned
+    materials: 14 lines" beside the BOM's "3 of 13 lines linked" (f14-old-window vs f10-bespoke): two counts, two
+    words. The gold banner and "Open Link materials" are good. (c) The Settings and new item windows keep
+    "Stock board" under every board (WizardSettings.jsx:633-669) next to the new link line: see O1.
+R8  A list always visible, a search with a clear cross ..... PARTIAL. PASS in the Link window, both columns
+    (:400-420; MaterialPicker.jsx:186-206; the cross seen in f09-suggestion, walk [c]) and the board slot list
+    (SettingsPanel.jsx:1872-1890). FAIL on the Settings road: "Stock board" is a dropdown with no search (WizardSettings.jsx:642-663).
+R9  Images enlarge on click ...................... PARTIAL. By code yes: decor thumbnails (LinkMaterialsModal.jsx:579-585),
+    stock photos (MaterialPicker.jsx:311-316), BOM photos (BomPanel PurchaseLines). Not seen in the frames: every
+    stock row of the fake says "no photo". The board slot list's 28 px thumbnails do not enlarge
+    (SettingsPanel.jsx:1906, no onOpen).
+R10 "employee", never "worker" ................... PASS. 0 "worker" in the added lines of src/ (git diff c3542b9..HEAD,
+    grep); no screen word needs either.
+R11 The numbers a joiner reads are the ones that count ..... FAIL. The wizard shows 2790 x 2060 under the board
+    (f11-new-item, f11-new-item-front) and the sentence "shared by all carcass boards"; the purchase list counts
+    with the LINK's size (1220 x 2440 for MDF 18, the seed), which no screen shows. The BOM panel's Order tab
+    still counts "~N sheets of 2800x2070" (bomInvoice.js:42-47, :79-87): for the H3325 of f10-bom, 6.12 m2 x 1.10 /
+    5.796 = 1.16, so "~2 sheets", while the BOM tab says 3 sheets (computed from code; the Order tab is not framed).
+    Plus "2 of 589 linked" (the whole catalogue) where the project's "3 of 13" is the number that counts.
+R12 First use: does a new joiner know where to start? ..... FAIL. The right column's "Choose a material on the
+    left, then press Link on its row of your stock." (:515) is good, and the BOM banner is the clearest start of
+    all. But the window opens on 340 rows with filter "All", the amber counts stay amber for ever for a company that
+    uses ten decors (85 decors x 4 thicknesses in Egger alone), and the new item's Next stops at section 4 of 9.
+Totals: 3 PASS, 2 PARTIAL, 7 FAIL (of 12).
+
+=====================================================================================================
+3. THE WALKER'S FIVE, JUDGED
+=====================================================================================================
+(1) Next blocked at the carcass step until a Stock board is chosen ..... AGREE, and wider. projectSettings.js:342
+    and :358 call a slot assigned only by `t.material_id` (or the old per-part blob); WizardSettings.jsx:1126-1130
+    blocks Next with "Choose a stock board for Carcass 1. Generic is also available."; the walk's probe (Next only)
+    is stuck at "What was chosen", editor false. The owner's "jak dadza next next next zeby im biale nie wyskoczylo":
+    the next-next-next road does not reach the editor at all. Worse: the select it demands writes a material_id that
+    law 2 says is never written again, and on a new item (no units) a pick of "Generic board 22" sets the project
+    thickness to 22 silently (WizardSettings.jsx:420-429, thickness.js:113-114). The same select is on the editor's
+    Settings... window, which is WizardSettings too (DesignSettingsModal.jsx:155). See O1.
+(2) After a Link from the BOM the window moved on to the next entry ..... AGREE that it happened (f10-toast:
+    "Linking: Blum CLIP top BLUMOTION 155 degree hinge, onyx" after the nickel was linked). Fixed after the frames:
+    c704ec3a, LinkMaterialsModal.jsx:232 `if (advanceFrom && !fromProject)`. I read the code and the commit; I did
+    not see it on a screen. The rail road still moves on by design; with one-click hardware links a second press of
+    the same "Link" links the NEXT entry (proposal P11).
+(3) Two sheet sizes on one wizard screen ................................ AGREE, sharper than said. On
+    f11-new-item-front the visible size (2790 x 2060, the CNC family size, checks.js:444) does not count for the
+    purchase list; the size that counts (the link's 1220 x 2440, "JC: MDF 18 mm" on the same frame) is not shown
+    anywhere. The chips (Jumbo 2070 x 2800, Standard 1220 x 2440, 10 ft 1020 x 3050) add three more. And the
+    wizard's "width" is the long side, the link form's "width" got the short side in the walk.
+(4) "Accept all suggestions (4)" counts the whole tab while a search shows one .... AGREE. The list is made from
+    `tabEntries` (LinkMaterialsModal.jsx:200-207), not from what is shown; f09-suggestion shows one suggestion and
+    "(4)", f09-suggestion-linked shows none and "(3)". It crosses brands: the four are Egger H1145, H3325, W1000 and
+    MDF 22 (the fake's stock), and the panel asks ONE sheet size for every ticked sheet (:763-776), all ticked by
+    default (:441-443). A joiner who types his Egger 2800 x 2070 gives it to the MDF too. The tick list limits the
+    harm; nothing is saved before "Link N ticked" (law 8 holds).
+(5) The empty sheet width refusal is quiet ................................ AGREE. The field error shows only when
+    the field is NOT empty (:694, :697), the hint is text-ink-400 grey (:712), Save link is disabled (:709) so a
+    press does nothing. The words themselves are right ("Type the sheet's width and length: Cabinet Core counts the
+    sheets to buy from them."); the refusal is not marked where the hand is.
+
+=====================================================================================================
+4. MY OBJECTIONS (team rule 13: what, why with evidence, better)
+=====================================================================================================
+O1 What: F11.1 deleted the three MaterialStock selects from SettingsPanel's default export, which NO screen mounts,
+   while the joiner's Settings... and New item windows are WizardSettings and keep "Stock board" and "MaterialStock...".
+   Why: grep of src for "<SettingsPanel" or "import SettingsPanel" = 0 hits; DesignSettingsModal.jsx:155 mounts
+   WizardSettings door="project"; WizardSettings.jsx:633-669 and :2240 hold the selects, f11-new-item and
+   f11-new-item-front show "Stock board: No stock board..." above the new link line. A green "the selects are gone"
+   test beside the live select is the lie the laws name.
+   Better: P1.
+O2 What: a bespoke row left at its default price 0 without "Supplied by client" is priced at zero in a total that
+   reads complete. Why: projectStore.js:2127 starts a row at price 0; bom.js:1329 `price = client ? 0 :
+   (Number(b.price) || 0)`, status 'bespoke' is not in the incomplete count. Law 7's spirit: never priced at zero.
+   Better: P9.
+O3 What: the BOM panel prints two sheet counts for one board. Why: Order tab "~2 sheets of 2800x2070"
+   (bomInvoice.js:79-87, profile.js:5508) against the BOM tab's 3 (f10-bom). Better: P3.
+O4 What: a link save that fails offline promises "Your work is kept in this browser". Why: jcLinks.js:40/:48 return
+   JC_OFFLINE (jcApi.js:26); materialLinkStore.js:96-103 keeps only the row error, no queue. Better: P4.
+
+=====================================================================================================
+5. PROPOSALS, MOST IMPORTANT FIRST (file and change)
+=====================================================================================================
+P1  src/engine/projectSettings.js:342, :358: a slot is "assigned" when its board choice resolves to a catalogue
+    entry (source, decor or colour, thickness), never by material_id. src/components/WizardSettings.jsx:633-669:
+    drop the "Stock board" select (keep the SlotLink line); :2213-2253 the run "MaterialStock..." select the same;
+    :1128-1130 the blocker words go. WizardSettings is in no OWNS cell this turn: Marek decides who writes it.
+P2  src/components/studio/RailMenus.jsx:202: the hint of "Assign materials..." becomes "Read only: replaced by Link
+    materials". src/components/AssignMaterialsModal.jsx: in read-only mode the red header count turns grey (or
+    goes), so only the BOM's count is red.
+P3  Show the numbers that count. LinkMaterialsModal.jsx EntryRow (:606-610): under a sheet link "1220 x 2440 mm,
+    offcut 10 %". BomPanel.jsx PurchaseLines: "3 sheets of 1220 x 2440". WizardSettings.jsx:788 and :810: "This size
+    is for the CNC sheet checks; the sheets to buy are counted from each material's link." BomPanel.jsx Order tab
+    (:337-358): drop the "~N sheets of 2800x2070" column or read the link's size (bomInvoice.js:42-47).
+P4  src/lib/jcLinks.js:40, :48 (link calls only): "Joinery Core did not answer: this link is not saved. Press Link
+    again when Joinery Core answers." The not-set-up line gains who: "...read only until it is. Ask your Joinery
+    Core administrator." (LinkMaterialsModal.jsx:305).
+P5  LinkMaterialsModal.jsx:694-715: Save link stays enabled; pressed with a size empty, that field is outlined red
+    with "Required" under it (sheetFields already returns 'Required'); the hint stays.
+P6  LinkMaterialsModal.jsx:204-207 and :445: build the suggestions from `shown` (brand, family, search, filter);
+    AcceptAllPanel :763-776: ask the sheet size once PER BRAND when sheets of two brands are ticked.
+P7  BomPanel.jsx:665: Link as a real cc-btn at 12 px; :178: the tab count with words ("11 not linked") or open the
+    panel on the BOM tab when lines are not linked (:72); :680: an empty subtotal says "incomplete".
+P8  LinkMaterialsModal.jsx:499: after Unlink a message "Unlinked for all projects" with Undo (notify takes an
+    action, uiStore.js:1249) that saves the old link back with its sizes.
+P9  BomPanel.jsx:715-760: visible labels "Qty", "Unit price" on the bespoke row; bom.js:1328-1330: a row with price 0
+    and no "Supplied by client" says "No price" in red and counts in the incomplete total.
+P10 LinkMaterialsModal.jsx:112: open on "Used in this project" when the project has used entries not linked; beside
+    "<n> of 589 linked" a second count "This project: <n> of <m> linked".
+P11 LinkMaterialsModal.jsx:232: no automatic move after a one-click (hardware) link from the rail; a button "Next not
+    linked" instead.
+P12 LinkMaterialsModal.jsx:523-534: pass MaterialPicker a `kind` by tab (board for Sheets, hardware for Hinges,
+    Runners, Ironmongery, Internal fittings, paint for Paint), switchable; MaterialPicker.jsx:318-321: the thickness
+    column in link mode; the sheet form says in amber when the stock row's thickness is not the entry's.
+P13 Words: "Search by name" on every tab but Sheets (:404); "As today" becomes "Default: <entry name>"
+    (SettingsPanel.jsx:1858); the "Connect JoineryCore" button and its toast go (BomPanel.jsx:497-511);
+    "MaterialStock..." (WizardSettings.jsx:2240) and "owner to confirm (15.08.2026)" (BomPanel.jsx:357) leave the
+    screens; the Status cell nowrap so "Not linked" stays on one line (:630; f08-link-hinge wraps it).
+P14 SettingsPanel.jsx:1906: the board slot thumbnails enlarge on click (onOpen, as LinkMaterialsModal.jsx:584).
+
+I DO NOT KNOW: the words JC sends for 42501 and 22023 on a row (no frame of a refusal); whether a real stock photo
+enlarges (the fake has none); how c704ec3a looks on a screen (code and commit only).

@@ -692,10 +692,10 @@ function LinkForm({
       {sheet ? (
         <>
           <Field label="Sheet width (mm)" error={pending.width !== '' ? check.errors.width : null}>
-            <input className="cc-input w-[120px] text-right" inputMode="numeric" required value={pending.width} data-link-sheet-width="1" onChange={(e) => put({ width: e.target.value })} />
+            <input className={`cc-input w-[120px] text-right ${pending.width === '' ? 'border-status-danger' : ''}`} inputMode="numeric" required value={pending.width} data-link-sheet-width="1" onChange={(e) => put({ width: e.target.value })} />
           </Field>
           <Field label="Sheet length (mm)" error={pending.length !== '' ? check.errors.length : null}>
-            <input className="cc-input w-[120px] text-right" inputMode="numeric" required value={pending.length} data-link-sheet-length="1" onChange={(e) => put({ length: e.target.value })} />
+            <input className={`cc-input w-[120px] text-right ${pending.length === '' ? 'border-status-danger' : ''}`} inputMode="numeric" required value={pending.length} data-link-sheet-length="1" onChange={(e) => put({ length: e.target.value })} />
           </Field>
           <Field label="Offcut allowance (%)" error={check.errors.offcut}>
             <input className="cc-input w-[100px] text-right" inputMode="decimal" value={pending.offcut} data-link-offcut="1" onChange={(e) => put({ offcut: e.target.value })} />
@@ -709,7 +709,7 @@ function LinkForm({
       <button type="button" className="cc-btn-gold" disabled={disabled || !check.ok} data-link-save="1" onClick={submit}>Save link</button>
       <button type="button" className="cc-btn" data-link-cancel="1" onClick={() => onPending(null)}>Cancel</button>
       {sheet && !check.ok && (pending.width === '' || pending.length === '') && (
-        <span className="text-ink-400 basis-full" data-link-form-hint="1">
+        <span className="text-status-danger basis-full" data-link-form-hint="1">
           Type the sheet&apos;s width and length: Cabinet Core counts the sheets to buy from them.
         </span>
       )}

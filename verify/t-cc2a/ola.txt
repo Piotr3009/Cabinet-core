@@ -1,0 +1,144 @@
+OLA . T-CC2a . tests and CI . HEAD e8f9633e (claude/t-cc2a-link-materials) . base origin/main c3542b9a . 01.11.2026
+Read first: CLAUDE.md TESTS AND PROOF (:622), FROZEN (:210), THE NUMBERS (:654). I wrote nothing but this file.
+Working tree clean before and after every run (git status --porcelain: 0 lines). Raw outputs in /tmp/ola/.
+
+VERDICT: 10 of 10 checks PASS. 3 objections at the end (one of them a law 2 finding in a mounted window).
+
+1. FULL SUITE  ........................................................ PASS
+   cmd: npm test > /tmp/ola/final.txt 2>&1   (exit 0, real 5m35s, duration_ms 335362)
+   | count    | base (c3542b9 + spec) | read now | delta |
+   | tests    | 8358                  | 8449     | +91   |
+   | pass     | 8328                  | 8421     | +93   |
+   | fail     | 0                     | 0        | 0     |
+   | skipped  | 26                    | 24       | -2    |
+   | todo     | 4                     | 4        | 0     |
+   | cancelled| 0                     | 0        | 0     |
+   +91 tests = the 14 files test/turn-cc2a-f01..f14 (run alone: 91 tests, 91 pass). 8358 + 91 = 8449 exactly,
+   so the 16 test files this turn modified kept their test count.
+   "not ok" that is not a TODO: 0. The 4 TODO lines are the same 4 as the base (sorted diff empty):
+   CORNER_L_BASE x2 (F9 engine, F9 scene), MIRROR_CABINET and WUD_HOOD_CANOPY (F10.1), all "TODO FINDING".
+   Skipped at the base and RUN now (2, both ok):
+     ok 6671 T78 classify . THE STRICT RUN is green, and its table says what the contract says
+     ok 6672 T78 classify . the --allow-unnamed flag is parsed and printed, and allows nothing it does not match
+   Why: at the base run (13:57) commit 16477df was not in this clone (test/turn78-classify.test.js:29-32);
+   .git/FETCH_HEAD is 14:42 and `git cat-file -t 16477df...` now says commit. Not a code change.
+   Skipped now and not at the base: 0. The other 24 skips are identical (F10.1 x3, F10.2 x21).
+
+2. THE SIX BASE GOLDENS  .............................................. PASS
+   How earlier turns compare (scripts/t64-classify.mjs:286-306; T78 commit 394e8a88: "the six are compared
+   by sha256 against verify/t70/goldens-base.json"): dump, then classify base.json head.json.
+   cmd: node scripts/t64-classify.mjs --dump > /tmp/ola/goldens-head.json
+        node scripts/t64-classify.mjs verify/t70/goldens-base.json /tmp/ola/goldens-head.json   (exit 0)
+   WARDROBE IDENTICAL 5adc6f7f... | BUD IDENTICAL 857c1503... | WUD IDENTICAL 9affdd41...
+   BUDR IDENTICAL 030a307a...     | BUDR4 IDENTICAL 5173a0c4... | PANTRY IDENTICAL 8523f611...
+   Expected IDENTICAL=6 UNNAMED=0; read IDENTICAL=6 UNNAMED=0 NAMED=0.
+   verify/t70/goldens-base.json vs origin/main: git diff --stat empty (not re-pinned by this turn).
+
+3. GOLDEN CHECK SCRIPTS (ls scripts | grep -i golden: t75-golden.mjs, t75-goldens.mjs, t78-goldens.mjs)
+   node scripts/t75-goldens.mjs --check  exit 0, 16 lines, 16 "ok", 0 other ........... PASS
+   node scripts/t78-goldens.mjs --check  exit 0, 52 lines, 52 "ok", 0 other ........... PASS
+   t75-golden.mjs has no --check mode (a helper: goldenOf/writeGolden). Not run.
+
+4. CLASSIFIER STRICT  ................................................. PASS
+   cmd: node scripts/t78-classify.mjs   (no flag; exit 0; 1975 lines; /tmp/ola/classify.txt)
+   SUMMARY: six IDENTICAL=0 RE-PINNED(named)=6 MOVED=0 . engine/lib files changed: 140 . not named: 0
+   (allowed: 0) . named and unspent: 0 . unknown gates: 0 . licences a golden reaches unheld: 0/149 .
+   goldens opening a gate unheld: 0 . every gate live: true (60/60) . T75 goldens: 16/16 . T76 decoration
+   records: 6/6 . T77 proposals: 4/4 . T78 goldens: 52/52 . fixtures moved and not named: 0 . LISP existing
+   amended unlicensed: 0 . LISP unbalanced: 0 . lighting touched: 0 . biscuits frozen: true . fragment
+   COMMITs mismatching: 0
+   Last line: "GREEN: every delta is named, every gate is live, and what a golden reaches a golden holds".
+   FAIL or RED verdict lines: 0 (grep finds "FAIL" 3 times, all commit subjects "... 0 FAIL").
+   Note: the classifier's base is 16477df (T78's), hence 140 files and the six "RE-PINNED" against
+   16477df's copy of goldens-base.json; against origin/main the six are IDENTICAL (item 2).
+   git diff --name-only origin/main -- src/engine src/lib: 14 files, 14 named in f56-t-cc2a-*.mjs, 0 not:
+     engine/bom.js f05,f06 | engine/bomInvoice.js f06 | engine/catalogue.js f01,f02,f13
+     engine/catalogueData.js f01 | engine/companyDefaults.js f11 | engine/design.js f03
+     engine/materials.js f03 | engine/profile.js f06 | engine/spray.js f07 | engine/thickness.js f03
+     lib/exporters.js f05 | lib/jcLinks.js f04 | lib/linkSuggest.js f09 | lib/modalLayer.js f08
+   Note for the PR: engine/design.js (+24, migrateBoards for F11.2) and engine/bomInvoice.js (+12 -1) are
+   named by fragments but are not in TESTS AND PROOF's LICENSED list nor in Bruno's OWNS cell.
+
+5. node scripts/t78-copy.mjs --check  ................................. PASS
+   exit 0, last line "CLEAN . 14 named PRO surface(s) ... nothing written." src/retail vs origin/main: 0 files.
+
+6. CATALOGUE  ......................................................... PASS
+   node scripts/t-cc2a-catalogue.mjs --check: exit 0, "589 entries from the sources; data CLEAN; ledger CLEAN".
+   Second run (write mode) pointed at COPIES through the script's own switch (CC_CATALOGUE_DATA,
+   CC_CATALOGUE_LEDGER, header :41-49), so nothing was written in the repo; run twice:
+     before   data 8bb7a479...56846  ledger e5163d63...c63a
+     run 1    "0 appended; ledger 589 ids", data 8bb7a479...56846  ledger e5163d63...c63a
+     run 2    same text, same two hashes
+   git diff --quiet -- src/engine/catalogueData.js test/fixtures/catalogue-ids.v1.json: exit 0 (unchanged);
+   cmp copy vs repo file: same.
+   Extra: a run from NOTHING writes 589 entries whose sorted lines equal the file's, but not the same bytes:
+   cabineo.insert.8m6 sits at line 525 there and at line 608 (appended last) in the committed file.
+   Consistent with "append only"; it means the file is reproducible by appending, not from scratch.
+
+7. npx vite build  .................................................... PASS
+   exit 0, "built in 28.86s", 0 error lines, 1 warning (chunks over 500 kB; main has the same warning).
+   vite.config.js:29 base: '/cabinet/'; dist/index.html loads /cabinet/assets/main-Cp9OY225.js.
+   Size vs origin/main built from git archive in /tmp: projectStore chunk 1,478.17 kB -> 1,611.75 kB
+   (+133.58 kB; gzip 495.81 -> 516.00 kB). main-*.js 271.14 kB both.
+
+8. NO ENGINE GEOMETRY DELTA  .......................................... PASS
+   git diff --stat origin/main -- src/engine/cabinet.js src/engine/cnc src/engine/machining.js
+     src/engine/lifts.js src/engine/liftSystems.js  -> empty (0 lines).
+   `ls src/engine | grep -i kit` returns NOTHING: no engine file is named kit. Widened by me: 47 engine
+   files cite a KIT_*.lsp; 44 have 0 diff; 3 changed (bom.js, profile.js, spray.js: BOM, numbers, paint;
+   named f05/f06/f07). git diff origin/main -- '*.lsp': empty (30 .lsp files in the tree).
+
+9. GREPS  ............................................................. PASS
+   SettingsPanel.jsx "MaterialStock": 5 lines, all comments, 0 in code:
+     :9 "// The three MaterialStock selects are gone (the Deletion licence)..."
+     :218 "// with the MaterialStock selects (the Deletion licence)..."
+     :632 "The same MaterialStock dropdown a carcass type has had since" (inside {/* */})
+     :638 "{/* T-CC2a F11.1: ... the MaterialStock" (comment)
+     :648 "follow front type 1's board. Unticked = an own MaterialStock" (inside {/* */})
+   main's three (:499, :721, :833 "<option value="">MaterialStock...") are gone. SettingsPanel <select left:
+   :1185 door style type, :1195 door style material ("No material"), :1203 door style finish, :1363 project
+   type (:1463 is a comment). BomPanel.jsx "<select": 0.
+   Added lines (git diff origin/main...HEAD -U0 -- . ':(exclude)CLAUDE.md'
+   ':(exclude)test/fixtures/owner-projects' | grep '^+'): 13467 lines (72 of them "+++" headers).
+     "worker" case-insensitive: 0 (expected 0)
+     em dash U+2014: 0, en dash U+2013: 0 (expected 0; control: the same byte grep finds 17 in
+     thickness.js's older lines). Other non-ASCII in added lines, not a law: U+2500 x742, U+00B2 x362,
+     U+2550 x172, U+00B7 x119, U+00A3 x9, U+2026 x4, U+2192 x4, U+2715 x3, U+00D7 x2, U+00B0 x2.
+   NEW files (--diff-filter=A): 54; .js/.jsx/.mjs: 33; with the 8-line Skylon header byte-identical to
+   src/lib/jcStock.js:1-8: 33 of 33 (13 scripts, 5 src, 14 tests, 1 component). Others: 1 ledger json,
+   4 owner-project fixtures, 15 png, walk.txt. verify/t-cc2a/ewa.txt is not in HEAD; at the end of my run it
+   exists untracked (git status: ?? verify/t-cc2a/ewa.txt), Ewa's, not read by me.
+
+10. PRO FREEZE  ....................................................... PASS
+   node --test test/turn59-f1-the-switch.test.js: 9 tests, 9 pass, 0 fail (exit 0).
+   Manifest FROZEN keys: origin/main 92, HEAD 93 (+ src/components/LinkMaterialsModal.jsx).
+   The count assertion `Object.keys(FROZEN).length === 93` (:1103) runs ONLY when no origin/main/main ref
+   exists, so it is not executed in this clone. I ran the test on `git archive HEAD` unpacked in
+   /tmp/ola/archive.Qwe7 (no .git): 9 of 9 pass, so 93 holds where PR CI runs (:1086-1089).
+
+OBJECTIONS (team rule 13)
+O1. What is wrong: the Project settings window a joiner actually opens is WizardSettings (mounted by
+   DesignSettingsModal.jsx:3 and NewProjectFlow.jsx:13; SettingsPanel's default export is mounted nowhere
+   since T36, test/turn36-f1-one-settings-modal.test.js:70), and it still offers JC stock rows and WRITES
+   material_id: "Stock board" per carcass/front type (WizardSettings.jsx:642-662 -> setCarcassMaterial,
+   projectStore.js:3175-3183) and "MaterialStock..." per run piece (:2234-2247), against law 2 ("is read
+   only to migrate (F13) and is never written again"). The three deleted SettingsPanel selects were in an
+   unmounted component.
+   Why, with a number: thickness.js:104-114 and materials.js:220-235 no longer read it. Probe: a carcass
+   type with source egger and a 22 mm JC stock row picked: slotNominal('carcass1') = 18 at HEAD, 22 on main
+   c3542b9 (generic-22 still 22), while the wizard still runs the 22 mm thickness gate (:591) and labels it
+   "... 22 mm . JC" (:665-668): the control says 22, the cut list cuts 18. CLAUDE.md's grep is scoped to
+   SettingsPanel, so it passes. Same drop applies to any item saved since T-CC1b with a JC uuid whose stock
+   thickness differs from its source (the four owner fixtures carry only old mat_* ids, so F3 cannot see it).
+   Better: name both wizard selects in the PR under RED AT THE END and in T-CC2b's Deletion licence (or make
+   them read only now, if the owner says so); widen the grep to src/components/** (data-stock-board,
+   data-run-material-stock); test/turn36-f1-one-settings-modal.test.js:262 pins data-run-material-stock in
+   the wizard and must be rewritten by name when it goes.
+O2. What is wrong: the door-style material select (SettingsPanel.jsx:1195-1202 and the mounted
+   WizardSettings.jsx:2145-2152) lists materials with category 'front' (:256, :449) and none exists:
+   ccKindOf (src/lib/jcStock.js:76-84) never answers 'front' and the generics are 'board'
+   (materialAssignmentStore.js:53-55). It can only show "No material". Pre-existing on main (:1363).
+   Better: list it with O1 for T-CC2b.
+O3. What is wrong (CI): the manifest count at test/turn59-f1-the-switch.test.js:1103 is asserted only on
+   the no-base-ref branch, so every local and push run skips it; PR #87-#89 went red on it in CI only
+   (:1086-1089). Better: assert the count before the branch, unconditionally, so a local run catches it.

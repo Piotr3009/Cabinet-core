@@ -26,6 +26,9 @@ export const LINK_COLUMNS = 'cc_material_id, stock_item_id, yield, sheet_width_m
 /** The JC half not there yet, in words (fail-open, CLAUDE.md T-CC2a F4). */
 export const LINKS_NOT_SET_UP = 'Material links are not set up in Joinery Core yet.';
 
+/** A save or a clear Joinery Core did not answer: nothing is kept in this browser for a link, so the words say so. */
+export const LINK_NOT_SAVED = 'Joinery Core did not answer. The link was not saved: try again when it answers.';
+
 /** At most this many links in one `cc_save_material_links` call (JC's function: 1 to 500). */
 export const LINKS_PER_CALL = 500;
 
@@ -123,7 +126,7 @@ export async function saveLinks(links = [], { db = withDb } = {}) {
     const res = await ask(db, (c) => c.rpc('cc_save_material_links', { p_links: chunk }), null);
     if (!res || res.mock || res.error) {
       const r = refusal(res);
-      return { saved, calls, status: r.status, error: r.error };
+      return { saved, calls, status: r.status, error: r.status === 'offline' ? LINK_NOT_SAVED : r.error };
     }
     saved += Number(res.data?.saved ?? chunk.length) || 0;
   }
@@ -136,7 +139,7 @@ export async function clearLink(ccMaterialId, { db = withDb } = {}) {
   const res = await ask(db, (c) => c.rpc('cc_clear_material_link', { p_cc_material_id: id }), null);
   if (!res || res.mock || res.error) {
     const r = refusal(res);
-    return { cleared: false, status: r.status, error: r.error };
+    return { cleared: false, status: r.status, error: r.status === 'offline' ? LINK_NOT_SAVED : r.error };
   }
   return { cleared: Boolean(res.data?.cleared ?? res.data === true), status: 'ok', error: null };
 }

@@ -199,7 +199,8 @@ function MaterialsMenu({ onDone }) {
     {
       id: 'assign-materials',
       label: 'Assign materials…',
-      hint: 'Which board, which hinge, which runner: per part, per project. What the BOM is built from',
+      // T-CC2a F14: read only for one turn; the BOM is built from the company's links now (Link materials...).
+      hint: 'The old per-part assignments, read only: Link materials replaces this window',
       // The window the Database menu's entry opened, the same call (T-CC1b F3.2).
       run: (e) => openModal('assign-materials', { anchor: anchorOfEvent(e) }),
     },

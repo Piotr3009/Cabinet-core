@@ -1,0 +1,5 @@
+editor: true
+FRAME 01-one-cabinet.png: right click on one wardrobe
+FRAME 02-three-cabinets.png: right click with three selected
+FRAME 03-door.png: right click on a door of the wardrobe
+FRAME 04-actions-icon.png: the Actions icon at the top of the right panel

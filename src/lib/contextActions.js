@@ -1,540 +1,740 @@
 // ─── Context-menu actions ───
-// The right-click menu is a LIST, not a switch: adding "Duplicate" or "Send to
-// wall 2" later is one more entry here, and the menu component's layout,
-// keyboard handling and dismissal already work (CLAUDE.md phase 5 — "an
-// architecture for the actions to come").
+//
+// THE CONTRACT (the right-click menu turn, 01.11.2026; Bruno produces, Julia's
+// `components/ContextMenu.jsx` renders; nothing else is promised):
+//
+//   menuActions(args) -> Action[]
+//   menuTitle(args)   -> string, the menu's header
+//   groupedActions(actions) -> [{ id, title?, actions }], in MENU_GROUPS order
+//
+//   args: { unit, selection?, panelPart?, panelId?, panelDrawer?, result?,
+//           store?, profile? }   (aliases: `units` for selection, `part` for
+//           panelPart or `{ part, drawer }`, `drawer` for panelDrawer)
+//     unit       the cabinet under the pointer (the PRIMARY)
+//     selection  every selected cabinet; the menu is about all of them only
+//                when the one under the pointer is among them
+//     panelPart  the engine part clicked ('FRONT' is a door, 'DRAWER-FRONT' a
+//                drawer front); anything else is the cabinet itself
+//     panelId    the engine panel id clicked (the door the door menu is about)
+//     panelDrawer which drawer that panel belongs to, or null
+//     result     the cabinet's engine result (`unitResult(unit.id)`): the
+//                door's own hinge, a slope that forces it, a pair
+//     store      the functions the entries call (below)
+//
+//   Action: { id, group, label, hint?, framed?, danger?, disabled?,
+//             disabledReason?, kind: 'command' | 'toggle' | 'choice' |
+//             'submenu', checked?: true | false | 'mixed',
+//             options?: [{ id, label, selected: boolean, run }],
+//             items?: Action[] (submenu), run? }
+//     command  `run` does it
+//     toggle   `checked` says the state; over several cabinets that disagree
+//              it is 'mixed' and the label says "<Label> (<k> of <n>)"; a
+//              click turns it ON for all, the next click OFF for all
+//     choice   one row of `options`; none is `selected` where the cabinets
+//              disagree; an option's `run` sets it on all of them
+//     submenu  `items` is a whole menu (the one cabinet menu)
+//   An action in the Cabinet group of a part menu also carries `groupTitle`,
+//   which `groupedActions` hands on as the group's `title`.
+//
+//   The store functions the entries call, each through `store.<name>?.(...)`
+//   (test/turn26-f9-cornice.test.js holds every one of them supplied):
+//     batch(fn)                      one undo step around a multi act
+//     editCabinet(unitId)            the cabinet editor
+//     editDrawer(unitId, k)          the cabinet editor, scoped to drawer k
+//     editElement(unitId, panelId)   the piece's own window (a door's double click)
+//     addPlinth / removePlinth(unitId)
+//     addTopInfill / removeTopInfill(unitId)
+//     setCornice(unitId, heightMm)   0 is none
+//     addEndPanel(unitId, { side }) / removeEndPanel(unitId, endPanelId)
+//     setSideInfillEnabled(unitId, on)
+//     setSideInfillPinned(unitId, side, pinned)
+//     addBottomMask / removeBottomMask(unitId)
+//     addUpstand / removeUpstand(unitId)
+//     openPanelSection(sectionId)
+//     redistributeShelves(unitId)    Centre shelves
+//     armCentreBetween(unitId)       Centre between, the two pick mode
+//     addDoors(unitIds)              the store's addDoorsBulk
+//     closeAllFronts(unitId)
+//     saveAsTemplate(unitId)         the modal reads the selection (a set with several)
+//     duplicateUnits(unitIds)        projectStore.duplicateUnits
+//     removeUnit(unitId)
+//     updateUnitParams(unitId, patch)  a face door's hinge side
+//     setBayDoor(unitId, bay, patch)   a bay door's hinge side
+//     removeFront(unitId, panelId) and clearElement()  Remove this door, as Backspace
 //
 // Plain JS with no React and no store import: the actions receive the store
 // functions they need, which is also what makes them testable in node.
 //
-// ─── TURN 8 (CLAUDE.md F7): THE ORDER, AND THE TOGGLES ───
+// ─── THE HISTORY, SHORT ───
+// Turn 8: every construction entry is a switch that says its state. Turn 13:
+// the menu acts on the selection, through the store's `batch` (one undo step).
+// Turn 14: the order is DATA (each entry names its group). Turn 20: a drawer's
+// own window from a click on that drawer. Turn 25: the top cornice. Turn 50:
+// Add doors and Show all dimensions left the menu (the owner, 25.08.2026:
+// *"w prawym przycisku myszy menu nie powinno byc Add doors oraz Show
+// dimensions"*). T74 F13: a free panel is one board. T75: the upstand; a set.
 //
-// Two things change, and the second is the one Piotr asked for in as many
-// words: "koniec biegania do menu".
+// ─── THE RIGHT-CLICK MENU TURN (the owner, 01.11.2026, on the mockups) ───
+// *"drawers front usun ... colour i turn tez usunac, save as template narazie
+// zostaw ... rename ... na pole name, juz jest, mniej zmian ... show in cnc tez
+// nie, jak juz to copy czyli duplicate bym tylko zostawil, natomiast center
+// shelves i center between oraz add doors bym dodal"*; *"tak jak teraz na
+// wszystkie dzialaja ktore sa zaznaczone oczywiscie"*; *"wall fillers zostaw
+// jak jest"*; *"zmien pisownie"* (Centre); *"menu i prawy panel tak jak jest, w
+// menu prawego przycisku dodajemy jeszcze center between"*; of the drawer
+// fronts: *"mam przycisk hide all fronts, wiec raczej nie potrzebuje tego
+// przycisku, pamietaj mniej przyciskow lepiej dla wszystkich"*; of a door:
+// *"to doors a nie cala szafka, nie zmieniaj"*.
 //
-// THE ORDER is what a joiner reaches for, in the order he reaches for it: show
-// me this cabinet's numbers, put a panel on that side, close that gap — and
-// only then the things that move or destroy it.
-//
-// THE TOGGLES are ON/OFF in one place. Turn 4's menu could only ADD an end
-// panel; removing one meant opening the panel and finding the row. An entry
-// that can only be used once is an entry that is wrong half the time it is
-// read, so every one of these now says what the state IS (`checked`) and
-// flips it.
+//   OUT of the menu, the acts kept where they live: Rename (the right panel's
+//   NAME field), Colour... (the right panel), Rotate 90, Back to wall, Side to
+//   wall (the right panel), Drawer fronts (the store's acts stay). Never
+//   built: Show in CNC, Size..., Lock, Copy size.
+//   IN: Centre shelves (the spelling), Centre between, Add doors (back after
+//   T50), Duplicate (new, projectStore.duplicateUnits; one cabinet only, its
+//   turn kept: *"duplikujemy po jednej szafce, bedzie latwiej ... ten sam obrot"*).
+//   SEVERAL: every entry acts on ALL selected (today 13 of 21 acted only on
+//   the one clicked, Delete too); a toggle that differs is MIXED. Duplicate
+//   is not offered over several (23:04).
+//   A PART: a door or a drawer front has its own short menu, and the cabinet
+//   it hangs on in one group below it, with the whole cabinet menu one click
+//   away (All cabinet actions).
 
 import { getUnitType } from '../engine/types.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { corniceOption } from '../engine/cornice.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 
-// ─── TURN 14 (CLAUDE.md F6): THE ORDER IS DATA ─────────────────────────────
-//
-// The owner's four verdicts, and the fourth is the one worth writing down.
-//
-//   "EDIT CABINET" FIRST, AND FRAMED. It is where a joiner goes once the
-//   cabinet is standing — to look at what he has made — so it is the first
-//   thing the menu offers and it is drawn as a standout entry rather than as
-//   one line among fifteen.
-//
-//   "SHOW ALL DIMENSIONS" LAST. Turn 8 put it first, on the argument that "show
-//   me this cabinet's numbers" is what a joiner reaches for. Living with it says
-//   otherwise: it is a way of LOOKING, not a thing you do to a cabinet, and it
-//   is the entry you want out of the way of the ones that build.
-//
-//   SECTIONS. [top infill + plinth] | [all end panels] | [the rest], divided by
-//   a delicate gold line. Every entry names its GROUP and the component draws
-//   the rule between them: the order is DATA, so adding an entry is choosing
-//   which group it belongs to and never re-laying-out a component.
-//
-//   THE HINGES TOGGLE IS GONE. The owner: the choice is senseless. The hinges
-//   stay visible exactly as turn 13 left them — `showHinges` still exists,
-//   still defaults from the profile, and REDRAWING them is a parked, separate
-//   topic (BACKLOG) — what goes is the entry that asked a question with only
-//   one sensible answer.
-//
-// ─── TURN 13 (CLAUDE.md F5.3): THE MENU APPLIES TO THE SELECTION ───────────
-//
-// Ctrl+click three cabinets, right-click one of them, choose Add plinth: all
-// three get one — and the turn-12 run logic merges the adjacent ones into a
-// single length itself, so the answer is one plinth and not three.
-//
-// FIVE entries are named by CLAUDE.md and exactly those five are bulk: the
-// plinth, the pinned fillers, the end panels, Add doors and the unit colour.
-// Everything else stays about the cabinet under the pointer, and every bulk
-// entry SAYS SO in its label — a menu where some entries silently do three
-// things and others do one is a menu you have to test on your own project.
-//
-// The mechanism is the store's `batch`, so the whole thing is one undo step
-// (F5.4). Nothing here loops without it.
-
 /**
- * @param {object} args
- *   unit       the unit that was right-clicked — the PRIMARY
- *   selection  every selected unit, this one included. Defaults to just it, so
- *              a caller that has never heard of multi-select is unaffected.
- *   panelPart  which panel of it (so a front can offer front actions)
- *   panelDrawer  which DRAWER that panel belongs to, or null (turn 20, F11.1)
- *   dimensions whether this unit's full dimensions are currently on the scene
- *   hinges     whether the hinge bodies are drawn in Solid (turn 11, F3.5)
- *   store      the store functions the actions call
- * @returns {Array<{id:string,label:string,hint?:string,checked?:boolean,
- *                  danger?:boolean,disabled?:boolean,run:Function}>}
+ * The sections, in the order the menu draws them.
+ *
+ *   part     the door's or the drawer front's own entries (a part menu)
+ *   edit     the cabinet's own window, first and framed
+ *   build    what finishes the cabinet and its run: plinth, infills, cornice,
+ *            end panels, the fillers at the wall, the mask, the upstand
+ *   inside   the shelves, the doors, the fronts
+ *   copy     a template or a set, and Duplicate
+ *   danger   Delete, red, alone, last
+ *   cabinet  under a part menu: the cabinet the part hangs on (titled)
  */
-/**
- * Which section an entry belongs to (F6.3).
- *
- * [top infill + plinth] — the pieces that finish a RUN: what closes the gap to
- * the ceiling, what closes the gap to the floor, and (turn 14) what closes the
- * underside of a hanging one. One group because they are one question asked at
- * three heights.
- *
- * [all end panels] — every masking panel, on its own, because "put a panel on
- * that side" is a decision a joiner makes about a run's ENDS and he makes it
- * three or four times in a row.
- *
- * [the rest] — everything else, in the order turn 8 settled.
- */
-const GROUP_OF = {
-  'top-infill': 'run-pieces',
-  // Turn 25 (CLAUDE.md F12.3): the cornice is a run piece like the infill it
-  // is screwed to, so it sits in the same group rather than at the bottom with
-  // the per-cabinet actions.
-  'cornice-0': 'run-pieces',
-  'cornice-70': 'run-pieces',
-  'cornice-100': 'run-pieces',
-  plinth: 'run-pieces',
-  // T75 F5 · the upstand finishes a run as the plinth does.
-  upstand: 'run-pieces',
-  'bottom-mask': 'run-pieces',
-  'end-panel-L': 'end-panels',
-  'end-panel-R': 'end-panels',
-  'end-panel-B': 'end-panels',
-};
+export const MENU_GROUPS = ['part', 'edit', 'build', 'inside', 'copy', 'danger', 'cabinet'];
 
-/** The sections, in the order the menu draws them. */
-export const MENU_GROUPS = ['edit', 'run-pieces', 'end-panels', 'rest', 'dimensions'];
+/** An entry that names no section of MENU_GROUPS lands here, never nowhere. */
+const DEFAULT_GROUP = 'inside';
 
 /**
- * The entries, grouped and in order — what the component renders (F6.3).
+ * The entries, grouped and in order: what the component renders.
  *
- * The ORDER of the sections is this list and not the order entries happen to be
- * pushed in, so an entry added to "the rest" cannot land above the end panels
- * by accident.
+ * The ORDER of the sections is MENU_GROUPS and not the order entries happen to
+ * be pushed in. A group carries a `title` only where its entries say one (the
+ * Cabinet group of a part menu).
  */
 export function groupedActions(actions) {
   const byGroup = new Map(MENU_GROUPS.map((g) => [g, []]));
   for (const a of actions || []) {
-    const key = byGroup.has(a.group) ? a.group : 'rest';
+    const key = byGroup.has(a.group) ? a.group : DEFAULT_GROUP;
     byGroup.get(key).push(a);
   }
-  return MENU_GROUPS.map((id) => ({ id, actions: byGroup.get(id) })).filter((g) => g.actions.length);
+  return MENU_GROUPS
+    .map((id) => {
+      const list = byGroup.get(id);
+      const title = list.find((a) => a.groupTitle)?.groupTitle;
+      return title ? { id, title, actions: list } : { id, actions: list };
+    })
+    .filter((g) => g.actions.length);
 }
 
-export function menuActions({
-  unit, selection = null, panelPart, panelDrawer = null, dimensions = false, hinges = false, store = {},
-  profile = getCabinetProfile(),
+/**
+ * Who the menu is about, read once for the header and for the entries.
+ *
+ * The cabinets it acts on always include the one under the pointer: a
+ * right-click on a cabinet outside the selection is about that cabinet alone,
+ * because acting on three others would be the menu lying about what it is
+ * about. With several, the menu is the SEVERAL menu whatever part was clicked:
+ * the selection is what the hand set up, and the owner's rule is that every
+ * entry acts on all of them.
+ */
+function contextOf({
+  unit = null, selection = null, units = null, panelPart = null, part = null,
+  panelDrawer = null, drawer = null,
+} = {}) {
+  const list = Array.isArray(selection) ? selection : (Array.isArray(units) ? units : null);
+  const primary = unit || list?.[0] || null;
+  const inList = (list || []).filter((u) => u && u.id);
+  const targets = primary && inList.some((u) => u.id === primary.id) ? inList : (primary ? [primary] : []);
+  const partName = typeof part === 'string' ? part : (part?.part ?? panelPart ?? null);
+  const drawerNo = Number(part?.drawer ?? drawer ?? panelDrawer);
+  const onDrawer = Number.isFinite(drawerNo) && drawerNo > 0 ? drawerNo : null;
+  const many = targets.length > 1;
+  let kind = 'cabinet';
+  if (many) kind = 'several';
+  else if (partName === 'FRONT') kind = 'door';
+  else if (partName === 'DRAWER-FRONT') kind = 'drawer-front';
+  return {
+    unit: primary, targets, many, kind, partName, onDrawer,
+  };
+}
+
+/**
+ * A type's name as the header prints it. A few kit labels carry a dash
+ * ("Drawer unit, 3 drawers" is written with one in engine/types.js); the menu
+ * writes none, so the dash is read as the comma it means.
+ */
+function typeLabel(unit) {
+  const label = unit?.type ? String(getUnitType(unit.type).label || '') : '';
+  return label.replace(/\s*[\u2013\u2014]\s*/g, ', ');
+}
+
+/** "W02 Wardrobe": the cabinet's number and its type, as the canvas names it. */
+function cabinetName(unit) {
+  const num = unit?.params?.unit_num ?? '';
+  return [num, typeLabel(unit)].filter(Boolean).join(' ');
+}
+
+/**
+ * The header: "W02 · Wardrobe", "3 cabinets selected", "Door · W02 Wardrobe",
+ * "Drawer front 2 · W02 Wardrobe".
+ */
+export function menuTitle(args = {}) {
+  const ctx = contextOf(args);
+  const { unit } = ctx;
+  if (!unit) return '';
+  if (ctx.kind === 'several') return `${ctx.targets.length} cabinets selected`;
+  if (ctx.kind === 'door') return `Door · ${cabinetName(unit)}`;
+  if (ctx.kind === 'drawer-front') {
+    return `Drawer front${ctx.onDrawer ? ` ${ctx.onDrawer}` : ''} · ${cabinetName(unit)}`;
+  }
+  return `${unit.params?.unit_num ?? ''} · ${typeLabel(unit)}`;
+}
+
+/** Does this cabinet carry doors now: a face door, or a door in any bay? */
+function hasDoorsFitted(unit) {
+  const p = unit?.params || {};
+  if (p.doors && p.doors !== false) return true;
+  return Array.isArray(p.bay_doors) && p.bay_doors.some((b) => String(b?.door).toLowerCase() === 'one');
+}
+
+/** One cabinet's end panels as the choice row reads them: none, L, R or both. */
+function endPanelValue(unit) {
+  const own = unit?.params?.end_panels || [];
+  const left = own.some((ep) => ep.side === 'L');
+  const right = own.some((ep) => ep.side === 'R');
+  if (left && right) return 'B';
+  if (left) return 'L';
+  if (right) return 'R';
+  return 'none';
+}
+
+export function menuActions(args = {}) {
+  const {
+    store = {}, profile = getCabinetProfile(), result = null, panelId = null,
+  } = args;
+  const ctx = contextOf(args);
+  const { unit } = ctx;
+  if (!unit) return [];
+
+  /**
+   * Every multi act runs inside one batch: one undo step, never one per
+   * cabinet. The batch is asked for EXPLICITLY rather than through `??`: a
+   * batch that returns nothing (which is what a batch normally does) would make
+   * `??` fall through and run the loop a second time.
+   */
+  const batched = (fn) => {
+    if (typeof store.batch === 'function') store.batch(fn);
+    else fn();
+  };
+
+  if (ctx.kind === 'door') return doorMenu({ ...ctx, store, profile, result, panelId, args });
+  if (ctx.kind === 'drawer-front') return drawerFrontMenu({ ...ctx, store, args });
+  return cabinetMenu({ ...ctx, store, profile, batched });
+}
+
+/**
+ * THE CABINET MENU: one cabinet, or several. The one list for both, because
+ * the owner's rule is one rule: an entry acts on every cabinet it is about.
+ */
+function cabinetMenu({
+  unit, targets, many, partName, onDrawer, store, profile, batched,
 }) {
   const type = getUnitType(unit.type);
   const actions = [];
+  const n = targets.length;
+  const fitting = (u) => !getUnitType(u.type).freePanel;
+  const ids = (list) => list.map((u) => u.id);
 
-  // The cabinets a bulk entry acts on, and how many — always including the one
-  // under the pointer, whatever the selection says, because right-clicking a
-  // cabinet that is not in it and getting an action on three others would be
-  // the menu lying about what it is about.
-  const targets = (() => {
-    const ids = (selection || []).map((u) => u.id).filter(Boolean);
-    return ids.includes(unit.id) ? ids : [unit.id];
-  })();
-  const many = targets.length > 1;
-  /** "Add plinth" over three cabinets says "Add plinth (3)". */
-  const forAll = (label) => (many ? `${label} (${targets.length})` : label);
   /**
-   * Every bulk entry runs inside one batch — F5.4, and never per entry.
-   *
-   * The `batch` is asked for EXPLICITLY rather than through `??`: a batch that
-   * returns nothing (which is what a batch normally does) would make `??` fall
-   * through and run the loop a second time.
+   * A switch over the cabinets that can take it. `pool` is the cabinets the
+   * entry is about (a wall unit takes no plinth, so three selected with one
+   * wall unit among them is a plinth over two); its state is read per cabinet
+   * and never copied from the primary. Off when none has it, on when all
+   * have it, mixed between, and the count is said in the label. A click from
+   * off or mixed turns it ON where it is not; from on it turns it OFF.
    */
-  const each = (fn) => {
-    const loop = () => { for (const id of targets) fn(id); };
-    if (typeof store.batch === 'function') store.batch(loop);
-    else loop();
+  const toggle = ({
+    id, label, pool, isOn, on, off, hintOn, hintOff, afterOn = null,
+  }) => {
+    if (!pool.length) return;
+    const k = pool.filter(isOn).length;
+    const checked = k === 0 ? false : (k === pool.length ? true : 'mixed');
+    actions.push({
+      id,
+      group: 'build',
+      kind: 'toggle',
+      label: checked === 'mixed' ? `${label} (${k} of ${pool.length})` : label,
+      checked,
+      hint: checked === true ? hintOn : hintOff,
+      run: () => {
+        const turnOff = checked === true;
+        batched(() => {
+          for (const u of pool) {
+            if (turnOff) { if (isOn(u)) off(u.id); } else if (!isOn(u)) on(u.id);
+          }
+        });
+        if (!turnOff && afterOn) afterOn();
+      },
+    });
   };
 
-  // ── 0. the cabinet's own window — FIRST, and framed (F6.1) ──
-  actions.push({
-    id: 'edit-cabinet',
-    group: 'edit',
-    framed: true,
-    label: 'Edit cabinet…',
-    hint: 'This cabinet on its own — explode it, turn a part over, edit any piece',
-    run: () => store.editCabinet?.(unit.id),
-  });
-
-  // ── 1. …and the DRAWER's own window, where the click was on a drawer ──
-  //
-  // Turn 20 (CLAUDE.md F11.1): "Context menu on any drawer part gains 'Edit
-  // drawer' as the discoverable route." The double-click on a box panel is the
-  // fast way in; this is the one a joiner FINDS. It is only offered where the
-  // right-click actually landed on a drawer, because an entry that opens the
-  // window for "drawer 1" after a click on a side panel would be the menu
-  // guessing.
-  const onDrawer = Number(panelDrawer) > 0 ? Number(panelDrawer) : null;
-  if (onDrawer && !many) {
+  // ── edit: the cabinet's own window, FIRST and framed (turn 14) ──
+  if (!many && !type.freePanel) {
     actions.push({
-      id: 'edit-drawer',
+      id: 'edit-cabinet',
       group: 'edit',
+      kind: 'command',
       framed: true,
-      label: `Edit drawer ${onDrawer}…`,
-      hint: 'This drawer on its own — explode it, turn a part over, look at every piece',
-      run: () => store.editDrawer?.(unit.id, onDrawer),
+      label: 'Edit cabinet…',
+      hint: 'This cabinet on its own: explode it, turn a part over, edit any piece',
+      run: () => store.editCabinet?.(unit.id),
     });
-  }
-
-  // ─── Turn 17 (CLAUDE.md F6.2): RENAME, WHERE THE OWNER LOOKED ────────────
-  //
-  // Turn 16 F6 shipped renaming — inline, in the right panel's header, which is
-  // where the name already is. The owner could not find it, and living with it
-  // says why: a bare input between two other controls reads as decoration, and
-  // the place a joiner reaches for "call this one something else" is the menu he
-  // is already right-clicking the cabinet with.
-  //
-  // So this is NOT a second renaming mechanism — CLAUDE.md says "do NOT rebuild
-  // it" in as many words. It is a way IN to the one that exists: the panel
-  // opens, its Parameters section comes up and the cursor lands in the name box
-  // with the text selected. One name, one field, two doors to it.
-  actions.push({
-    id: 'rename',
-    group: 'edit',
-    label: `Rename “${unit.params.unit_num}”…`,
-    hint: 'What this cabinet is called — it prints on the canvas, the CNC sheet, the BOM and the drawings',
-    run: () => store.renameUnit?.(unit.id),
-  });
-
-  // ── 2. end panels, on and OFF, from here ──
-  // Turn 5 (BACKLOG #31) gave Left / Right / Both; turn 8 makes each of them a
-  // switch. "Both" is still the same act twice and is still done as exactly
-  // that in the store, so a unit with a neighbour hard against one side gets
-  // the panel that fits and hears why the other did not.
-  const endPanels = unit.params.end_panels || [];
-  const fittedOn = (side) => endPanels.some((ep) => ep.side === side);
-  for (const [side, label] of [['L', 'left'], ['R', 'right'], ['B', 'both sides']]) {
-    const fitted = side === 'B' ? (fittedOn('L') && fittedOn('R')) : fittedOn(side);
-    actions.push({
-      id: `end-panel-${side}`,
-      label: forAll(`End panel — ${label}`),
-      checked: fitted,
-      hint: fitted
-        ? 'Fitted. Click to take it off; its options are in the Construction section'
-        : 'A masking panel outside this side, in the BOM like any other piece',
-      // Bulk (F5.3), and the STATE is read per unit rather than copied from the
-      // primary: over a run where one cabinet already has a left panel, "take
-      // it off" has to take off the ones that are there and not fit five more.
-      run: () => {
-        each((id) => {
-          const target = (selection || []).find((u) => u.id === id) || unit;
-          const own = target.params.end_panels || [];
-          if (fitted) {
-            for (const ep of own.filter((e) => side === 'B' || e.side === side)) {
-              store.removeEndPanel?.(id, ep.id);
-            }
-            return;
-          }
-          if (side === 'B') {
-            if (!own.some((e) => e.side === 'L')) store.addEndPanel?.(id, { side: 'L' });
-            if (!own.some((e) => e.side === 'R')) store.addEndPanel?.(id, { side: 'R' });
-            return;
-          }
-          if (!own.some((e) => e.side === side)) store.addEndPanel?.(id, { side });
-        });
-        if (!fitted) store.openPanelSection?.('construction');
-      },
-    });
-  }
-
-  // ── 3. the infills, per unit ──
-  // The TOP infill is not offered to a base unit at all (F2.7): what goes on
-  // top of a base cabinet is a worktop, and the gap above THAT is where the
-  // wall units go.
-  if (type.supports.topInfill) {
-    // Turn 14 (CLAUDE.md F1.2): the RUN's state, not this carcass's. A member
-    // of a run carries no height of its own — the owner holds the geometry —
-    // so reading `top_infill_mm` alone showed "not fitted" under a piece the
-    // joiner was looking at, and the entry then ADDED a second request instead
-    // of taking the piece off.
-    const fitted = hasTopInfill(unit);
-    actions.push({
-      id: 'top-infill',
-      label: 'Top infill',
-      checked: fitted,
-      hint: fitted
-        ? 'Fitted. Click to take it off — the whole run’s piece goes with it'
-        : 'Closes the gap to the ceiling — drag its edge, or double-click it to fill',
-      run: () => {
-        if (fitted) { store.removeTopInfill?.(unit.id); return; }
-        store.addTopInfill?.(unit.id);
-        store.openPanelSection?.('construction');
-      },
-    });
-  }
-  // ─── TURN 25 (CLAUDE.md F12.3): THE TOP CORNICE, IN THE MENU ────────────
-  //
-  // "Top cornice joins the unit's right-click menu (none / 70 / 100). Top
-  // infill is already there." Three entries rather than one toggle, because a
-  // cornice is a CHOICE of moulding and not an on/off — and the two heights are
-  // read off the profile, so a workshop that stocks a third gets a third entry.
-  if (type.supports.cornice) {
-    const fitted = corniceOption(unit.params.cornice, profile);
-    for (const h of [0, ...(profile.autoParts.cornice.heights || [])]) {
+    // Turn 20 (F11.1): a click on a drawer's BOX (a side, the back, the
+    // bottom) still offers that drawer's window. A click on its FRONT is the
+    // drawer front menu.
+    if (onDrawer && partName !== 'DRAWER-FRONT') {
       actions.push({
-        id: `cornice-${h}`,
-        label: h === 0 ? 'Top cornice: none' : `Top cornice ${h} mm`,
-        checked: fitted === h,
-        hint: h === 0
-          ? 'No moulding over this cabinet'
-          : `${profile.autoParts.cornice.projection[h] || 0} mm forward of the doors — bought moulding, one run`,
-        run: () => {
-          store.setCornice?.(unit.id, h);
-          store.openPanelSection?.('construction');
-        },
+        id: 'edit-drawer',
+        group: 'edit',
+        kind: 'command',
+        framed: true,
+        label: `Edit drawer ${onDrawer}…`,
+        hint: 'This drawer on its own: explode it, turn a part over, look at every piece',
+        run: () => store.editDrawer?.(unit.id, onDrawer),
       });
     }
   }
 
-  // The SIDE infill is DERIVED — it is a fact about where the unit is standing
-  // (BACKLOG #15) — so the switch is not "add one", it is "does this cabinet
-  // take one at all". A joiner who is going to scribe the door instead turns it
-  // off here and the piece stops appearing in the cut list.
-  {
-    const off = unit.params.side_infill_off === true;
-    actions.push({
-      id: 'side-infill',
-      label: 'Scribe fillers at the wall',
-      checked: !off,
-      hint: off
-        ? 'Off for this cabinet — the gap beside it stays open, and the unit may be pushed to the wall'
-        : 'On: parking this unit at the wall produces the filler that closes the gap',
-      run: () => store.setSideInfillEnabled?.(unit.id, off),
-    });
+  // ── build ──
+  const carcasses = targets.filter(fitting);
 
-    // ─── Pin a filler (turn 11, CLAUDE.md F5.1) ───
-    // The replacement for "Insets L/P", which the owner has ruled a broken
-    // concept. Automatic until somebody says otherwise: pinned, the piece never
-    // vanishes when the unit drives away from the wall and it stretches to
-    // whatever the gap becomes. Unpinning hands it back to the automatics.
-    //
-    // Not offered at all with the fillers switched off for this cabinet: a
-    // pinned piece on a unit that takes no pieces is a contradiction, and the
-    // switch above is the way out of it.
-    for (const [key, side, label] of [
-      ['side_infill_left_pinned', 'L', 'left'],
-      ['side_infill_right_pinned', 'R', 'right'],
-    ]) {
-      const isPinned = unit.params[key] === true;
-      const width = Number(unit.params[side === 'L' ? 'side_infill_left_mm' : 'side_infill_right_mm']) || 0;
+  toggle({
+    id: 'plinth',
+    label: 'Plinth',
+    pool: carcasses.filter((u) => {
+      const t = getUnitType(u.type);
+      return t.legs && t.mount === 'floor';
+    }),
+    isOn: (u) => u.params?.plinth === true,
+    on: (id) => store.addPlinth?.(id),
+    off: (id) => store.removePlinth?.(id),
+    hintOn: 'Fitted. Click to take it off',
+    hintOff: 'A toe kick under the cabinet; adjacent ones come out as ONE length',
+    afterOn: () => store.openPanelSection?.('construction'),
+  });
+
+  toggle({
+    id: 'top-infill',
+    label: 'Top infill',
+    // Turn 8 (F2.7): never on a base unit; what goes on top of it is a worktop.
+    pool: carcasses.filter((u) => getUnitType(u.type).supports?.topInfill),
+    // Turn 14 (F1.2): the RUN's state, not this carcass's alone.
+    isOn: (u) => hasTopInfill(u),
+    on: (id) => store.addTopInfill?.(id),
+    off: (id) => store.removeTopInfill?.(id),
+    hintOn: 'Fitted. Click to take it off: the whole run’s piece goes with it',
+    hintOff: 'Closes the gap to the ceiling: drag its edge, or double-click it to fill',
+    afterOn: () => store.openPanelSection?.('construction'),
+  });
+
+  // Turn 25 (F12.3): the cornice is a CHOICE of moulding, so it is one row of
+  // options; the heights are the profile's, so a workshop that stocks a third
+  // gets a third option.
+  {
+    const pool = carcasses.filter((u) => getUnitType(u.type).supports?.cornice);
+    if (pool.length) {
+      const heights = [0, ...(profile.autoParts?.cornice?.heights || [])];
+      const values = pool.map((u) => corniceOption(u.params?.cornice, profile));
+      const agreed = values.every((v) => v === values[0]) ? values[0] : null;
+      actions.push({
+        id: 'cornice',
+        group: 'build',
+        kind: 'choice',
+        label: 'Cornice',
+        hint: 'Bought moulding over the doors, one run; the heights are the workshop’s',
+        options: heights.map((h) => ({
+          id: h === 0 ? 'none' : String(h),
+          label: h === 0 ? 'None' : String(h),
+          selected: agreed === h,
+          run: () => {
+            batched(() => {
+              for (const u of pool) {
+                if (corniceOption(u.params?.cornice, profile) !== h) store.setCornice?.(u.id, h);
+              }
+            });
+            store.openPanelSection?.('construction');
+          },
+        })),
+      });
+    }
+  }
+
+  // Turn 5 gave Left / Right / Both, turn 8 made each a switch; tonight they
+  // are one row. Each option is the same acts as before, on and off: the
+  // panels the option does not want come off, the ones it wants and the
+  // cabinet lacks go on, one side at a time, so a cabinet hard against a
+  // neighbour on one side gets the panel that fits and hears why the other
+  // did not.
+  {
+    const pool = carcasses;
+    if (pool.length) {
+      const values = pool.map(endPanelValue);
+      const agreed = values.every((v) => v === values[0]) ? values[0] : null;
+      const OPTIONS = [['none', 'None'], ['L', 'Left'], ['R', 'Right'], ['B', 'Both']];
+      actions.push({
+        id: 'end-panels',
+        group: 'build',
+        kind: 'choice',
+        label: 'End panels',
+        hint: 'A masking panel outside a side, in the BOM like any other piece; its options are in the Construction section',
+        options: OPTIONS.map(([value, label]) => ({
+          id: value,
+          label,
+          selected: agreed === value,
+          run: () => {
+            const wantL = value === 'L' || value === 'B';
+            const wantR = value === 'R' || value === 'B';
+            let added = false;
+            batched(() => {
+              for (const u of pool) {
+                const own = u.params?.end_panels || [];
+                for (const ep of own) {
+                  if ((ep.side === 'L' && !wantL) || (ep.side === 'R' && !wantR)) store.removeEndPanel?.(u.id, ep.id);
+                }
+                if (wantL && !own.some((ep) => ep.side === 'L')) { store.addEndPanel?.(u.id, { side: 'L' }); added = true; }
+                if (wantR && !own.some((ep) => ep.side === 'R')) { store.addEndPanel?.(u.id, { side: 'R' }); added = true; }
+              }
+            });
+            if (added) store.openPanelSection?.('construction');
+          },
+        })),
+      });
+    }
+  }
+
+  // The SIDE infill is DERIVED, a fact about where the cabinet stands
+  // (BACKLOG #15), so the switch is "does this cabinet take one at all".
+  // *"wall fillers zostaw jak jest"*: the three rows and their names as today.
+  toggle({
+    id: 'side-infill',
+    label: 'Scribe fillers at the wall',
+    pool: carcasses,
+    isOn: (u) => u.params?.side_infill_off !== true,
+    on: (id) => store.setSideInfillEnabled?.(id, true),
+    off: (id) => store.setSideInfillEnabled?.(id, false),
+    hintOn: 'On: parking the cabinet at the wall produces the filler that closes the gap',
+    hintOff: 'Off: the gap beside it stays open, and the cabinet may be pushed to the wall',
+  });
+
+  // Turn 11 (F5.1): a pinned filler never vanishes when the cabinet drives
+  // away from the wall and stretches to whatever the gap becomes. A cabinet
+  // with its fillers switched off takes no pin: the switch above is the way
+  // out of that contradiction, and the entry says so in words.
+  for (const [key, side, word, widthKey] of [
+    ['side_infill_left_pinned', 'L', 'left', 'side_infill_left_mm'],
+    ['side_infill_right_pinned', 'R', 'right', 'side_infill_right_mm'],
+  ]) {
+    if (!carcasses.length) break;
+    const pool = carcasses.filter((u) => u.params?.side_infill_off !== true);
+    const label = `Pin infill ${word}`;
+    if (!pool.length) {
+      const reason = many
+        ? 'Scribe fillers at the wall are off for these cabinets: turn them on first'
+        : 'Scribe fillers at the wall are off for this cabinet: turn them on first';
       actions.push({
         id: `pin-infill-${side}`,
-        label: forAll(`Pin infill ${label}`),
-        checked: isPinned,
-        disabled: off,
-        hint: isPinned
-          ? `Pinned${width ? ` at ${Math.round(width)} mm` : ''} — click to unpin and let it come and go with the gap`
-          : 'Keep a filler on this side whatever the gap becomes — it stretches with the unit',
-        // Bulk (F5.3). The primary decides the DIRECTION — the joiner is
-        // pinning or unpinning, and that is one decision — and each cabinet
-        // then produces the filler its own gap calls for, or none.
-        run: () => each((id) => store.setSideInfillPinned?.(id, side, !isPinned)),
+        group: 'build',
+        kind: 'toggle',
+        label,
+        checked: false,
+        disabled: true,
+        disabledReason: reason,
+        hint: reason,
+      });
+      continue;
+    }
+    const width = !many ? Number(unit.params?.[widthKey]) || 0 : 0;
+    toggle({
+      id: `pin-infill-${side}`,
+      label,
+      pool,
+      isOn: (u) => u.params?.[key] === true,
+      on: (id) => store.setSideInfillPinned?.(id, side, true),
+      off: (id) => store.setSideInfillPinned?.(id, side, false),
+      hintOn: `Pinned${width ? ` at ${Math.round(width)} mm` : ''}: click to unpin and let it come and go with the gap`,
+      hintOff: 'Keep a filler on this side whatever the gap becomes: it stretches with the cabinet',
+    });
+  }
+
+  // Turn 14 (F5): the board under a run of hanging cabinets.
+  toggle({
+    id: 'bottom-mask',
+    label: 'Bottom masking panel',
+    pool: carcasses.filter((u) => getUnitType(u.type).mount === 'wall'),
+    isOn: (u) => hasBottomMask(u),
+    on: (id) => store.addBottomMask?.(id),
+    off: (id) => store.removeBottomMask?.(id),
+    hintOn: 'Fitted. Click to take it off: the whole run’s board goes with it',
+    hintOff: 'One board under the run, cabinet depth plus the wall standoff, in the fronts’ material',
+    afterOn: () => store.openPanelSection?.('construction'),
+  });
+
+  // T75 F5: on and off per run like the plinth, only where a worktop lies.
+  toggle({
+    id: 'upstand',
+    label: 'Upstand',
+    pool: carcasses.filter((u) => {
+      const t = getUnitType(u.type);
+      return t.mount === 'floor' && t.supports?.topInfill === false;
+    }),
+    isOn: (u) => u.params?.upstand === true,
+    on: (id) => store.addUpstand?.(id),
+    off: (id) => store.removeUpstand?.(id),
+    hintOn: 'Fitted. Click to take it off the run',
+    hintOff: 'A strip on the worktop against the wall, along the whole run, in the worktop’s material',
+  });
+
+  // ── inside ──
+  {
+    const pool = carcasses.filter((u) => getUnitType(u.type).supports?.shelves);
+    if (pool.length) {
+      actions.push({
+        id: 'center-shelves',
+        group: 'inside',
+        kind: 'command',
+        label: 'Centre shelves',
+        hint: 'Space the shelves evenly in the free height, each bay on its own',
+        run: () => batched(() => { for (const u of pool) store.redistributeShelves?.(u.id); }),
+      });
+    }
+    // The right panel's Center between, on this one cabinet: the two pick
+    // mode (the lower piece, then the upper), as RightPanel's ShelvesHead arms it.
+    if (!many && pool.length) {
+      actions.push({
+        id: 'center-between',
+        group: 'inside',
+        kind: 'command',
+        label: 'Centre between',
+        hint: 'Pick the lower piece, then the upper: the shelves between them are spaced evenly',
+        run: () => store.armCentreBetween?.(unit.id),
       });
     }
   }
-
-  // ─── The bottom masking panel (turn 14, CLAUDE.md F5) ───
-  // The plinth's twin at the other end of the kitchen, so it sits beside it and
-  // in the same group: one board under a RUN of hanging cabinets, hiding the
-  // underside and the ten-millimetre slot behind them. Bulk like the plinth,
-  // and for the same reason — a joiner tick three wall units and asks for the
-  // board under all of them, and the run logic merges the adjacent ones itself.
-  if (type.mount === 'wall') {
-    const fitted = hasBottomMask(unit);
+  // Back in the menu (the owner removed it on 25.08.2026 and wants it now):
+  // the right panel's Add doors, through the store's one answer.
+  {
+    const pool = carcasses.filter((u) => getUnitType(u.type).supports?.doors && !hasDoorsFitted(u));
+    if (pool.length) {
+      actions.push({
+        id: 'add-doors',
+        group: 'inside',
+        kind: 'command',
+        label: 'Add doors',
+        hint: many
+          ? `Hang the doors their widths call for, on the ${pool.length} of ${n} without doors`
+          : 'Hang the doors this width calls for',
+        run: () => store.addDoors?.(ids(pool)),
+      });
+    }
+  }
+  if (!many && (partName === 'FRONT' || partName === 'DRAWER-FRONT')) {
     actions.push({
-      id: 'bottom-mask',
-      label: forAll('Bottom masking panel'),
-      checked: fitted,
-      hint: fitted
-        ? 'Fitted. Click to take it off — the whole run’s board goes with it'
-        : 'One board under the run, unit depth + the wall standoff, in the fronts’ material',
-      run: () => {
-        each((id) => (fitted ? store.removeBottomMask?.(id) : store.addBottomMask?.(id)));
-        if (!fitted) store.openPanelSection?.('construction');
-      },
+      id: 'close-fronts', group: 'inside', kind: 'command', label: 'Close all fronts', run: () => store.closeAllFronts?.(unit.id),
     });
   }
 
-  // ── 4. the plinth ──
-  if (type.legs && type.mount === 'floor') {
-    const fitted = unit.params.plinth === true;
-    actions.push({
-      id: 'plinth',
-      label: forAll('Plinth'),
-      checked: fitted,
-      hint: fitted
-        ? 'Fitted. Click to take it off'
-        : (many
-          ? 'A toe kick under each of them — adjacent ones come out as ONE length (turn 12)'
-          : 'A toe kick under this unit — manual since turn 4'),
-      // Bulk (F5.3), and CLAUDE.md names the reason it needs nothing else:
-      // "the turn-12 run logic merges adjacent ones itself". Three cabinets
-      // side by side get three plinth flags and one plinth.
-      run: () => {
-        each((id) => (fitted ? store.removePlinth?.(id) : store.addPlinth?.(id)));
-        if (!fitted) store.openPanelSection?.('construction');
-      },
-    });
-  }
-
-  // ── 4a. the upstand (T75 F5) ──
-  // *"on and off per run like the plinth (BACKLOG #16's grammar: added by a
-  // decision, visible only then)."*  Offered only where a worktop lies.
-  if (type.mount === 'floor' && type.supports?.topInfill === false) {
-    const fitted = unit.params.upstand === true;
-    actions.push({
-      id: 'upstand',
-      label: forAll('Upstand'),
-      checked: fitted,
-      hint: fitted
-        ? 'Fitted. Click to take it off the run'
-        : 'A strip on the worktop against the wall, along the whole run, in the worktop\'s material',
-      run: () => {
-        each((id) => (fitted ? store.removeUpstand?.(id) : store.addUpstand?.(id)));
-      },
-    });
-  }
-
-  // ── 4b. the colour (turn 13, CLAUDE.md F5.3) ──
-  //
-  // ─── TURN 50 (CLAUDE.md F10): "ADD DOORS" LEAVES THIS MENU ───────────────
-  //
-  // The owner, 25.08.2026: *"w prawym przycisku myszy menu nie powinno być Add
-  // doors oraz Show dimensions."*
-  //
-  // The ENTRY goes; the ACTION does not (iron rule 4). `projectStore.addDoors`
-  // is untouched and is reached from three places, all of them still there:
-  //
-  //   · the RIGHT-HAND PANEL — `components/RightPanel.jsx`, the button this
-  //     entry was added in turn 13 to duplicate;
-  //   · the PLUS MODAL — `components/AddItemsModal.jsx`, "Add doors" beside
-  //     the items, where a cabinet is being fitted out;
-  //   · a MULTI-SELECTION — `components/MultiUnitPanel.jsx addDoorsBulk`,
-  //     which is what `forAll('Add doors')` was reaching for here.
-  //
-  // The colour stays: it had no unit-level control at all before turn 13 and
-  // still has none anywhere else.
-  // ─── Turn 17 (CLAUDE.md F8.1): THE DRAWER FRONTS COME OFF ────────────────
-  // The same idiom as turn 15's Remove doors, on the kit whose fronts ARE its
-  // face — so the boxes can be worked on and their heights edited. Offered only
-  // where there is a stack to strip, and it SAYS which state it is in, like
-  // every other switch in this menu since turn 8.
-  if (type.drawerStyle) {
-    const fitted = unit.params.drawer_fronts !== false;
-    actions.push({
-      id: 'drawer-fronts',
-      label: 'Drawer fronts',
-      checked: fitted,
-      hint: fitted
-        ? 'Fitted. Click to take them off — the boxes, their runners and the carcass stay exactly as they are'
-        : 'Off. The boxes are bare, so a drawer’s height can be edited on the box itself',
-      run: () => (fitted ? store.removeDrawerFronts?.(unit.id) : store.addDrawerFronts?.(unit.id)),
-    });
-  }
-
-  actions.push({
-    id: 'unit-colour',
-    label: forAll('Colour…'),
-    hint: 'This cabinet’s own finish, from the project palette — the project is left alone',
-    run: () => store.unitColour?.(targets),
-  });
-
-  // ── 5. everything else, as before ──
-  //
-  // ─── TURN 11 (CLAUDE.md F5.1): INSETS ARE GONE FROM HERE ───
-  // "Insets L/P: REMOVE from the menu (owner verdict: broken concept)." A
-  // sideways inset asked the joiner to describe a gap in millimetres and then
-  // left the gap empty; what he actually wants is a PIECE in it, which is the
-  // pinned filler two entries up. The BACK inset is a different thing — a unit
-  // stood off the wall for a soil pipe — and it keeps its field in the
-  // Construction section of the right panel, where it is typed rather than
-  // reached through a menu.
-
-  // Save as template (turn 5, BACKLOG #30). Right-clicking the cabinet you have
-  // just finished configuring is where a joiner reaches for this. It asks for a
-  // NAME (the modal), because a library of "Wardrobe", "Wardrobe (2)" and
-  // "Wardrobe (3)" is a library nobody uses.
-  // T75 F20 · over a selection it saves a SET: the units, left to right, and
-  // the gaps between them (`lib/templates.js`, `kind: 'set'`). The modal reads
-  // the same selection this menu is about.
+  // ── copy ──
+  // Turn 5 (BACKLOG #30): it asks for a NAME (the modal). T75 F20: over a
+  // selection it saves a SET; the modal reads the same selection.
   actions.push({
     id: 'save-template',
-    label: many ? forAll('Save as a set') : 'Save as template',
+    group: 'copy',
+    kind: 'command',
+    label: many ? 'Save as a set…' : 'Save as template…',
     hint: many
-      ? 'Keep these units, left to right with the gaps between them, in Library ▸ Sets'
+      ? 'Keep these cabinets, left to right with the gaps between them, in Library ▸ Sets'
       : 'Keep these parameters in Library ▸ Saved sets, ready to insert again',
     run: () => store.saveAsTemplate?.(unit.id),
   });
-
-  if (type.supports.shelves) {
+  // Duplicate is ONE cabinet's (the owner, 01.11.2026, 23:04: *"duplikujemy po
+  // jednej szafce, bedzie latwiej"*): not offered over several, and the menu
+  // sends the one id. The copy keeps the original's turn (*"ten sam obrot"*).
+  if (!many) {
     actions.push({
-      id: 'center-shelves',
-      label: 'Center shelves',
-      hint: 'Space them evenly in the free height',
-      run: () => store.redistributeShelves?.(unit.id),
+      id: 'duplicate',
+      group: 'copy',
+      kind: 'command',
+      label: 'Duplicate',
+      hint: 'A copy beside it: the same type, sizes, turn, colour and contents, the next free number',
+      run: () => store.duplicateUnits?.([unit.id]),
     });
   }
+
+  // ── danger: red, alone, last; over several it says how many ──
   actions.push({
-    id: 'rotate-90',
-    label: 'Rotate 90°',
-    hint: `Now ${Math.round(Number(unit.position?.rotation_deg) || 0)}°`,   // degrees, not mm
-    run: () => store.rotateUnit?.(unit.id, 'step', 90),
+    id: 'delete',
+    group: 'danger',
+    kind: 'command',
+    label: many ? `Delete ${n} cabinets` : 'Delete',
+    danger: true,
+    run: () => batched(() => { for (const u of targets) store.removeUnit?.(u.id); }),
   });
-  actions.push({ id: 'back-to-wall', label: 'Back to wall', run: () => store.rotateUnit?.(unit.id, 'back', 0) });
-  actions.push({ id: 'side-to-wall', label: 'Side to wall', run: () => store.rotateUnit?.(unit.id, 'side', 90) });
-  if (panelPart === 'FRONT' || panelPart === 'DRAWER-FRONT') {
-    actions.push({ id: 'close-fronts', label: 'Close all fronts', run: () => store.closeAllFronts?.(unit.id) });
-  }
-  actions.push({ id: 'delete', label: 'Delete', danger: true, run: () => store.removeUnit?.(unit.id) });
 
-  // ── LAST: the numbers (F6.2) ──
-  //
-  // ─── TURN 50 (CLAUDE.md F10): "SHOW ALL DIMENSIONS" LEAVES THIS MENU ─────
-  //
-  // The owner, and he gives the reason in the same breath: *"dimension już mamy
-  // na górze."*  It is on the TOP BAR (View ▸ Dimensions) and on the canvas
-  // toolbar (Show dimensions), and what those draw is the SAME CHAIN this entry
-  // drew — `engine/dimensions.js dimensionCarriers`, over every cabinet instead
-  // of over one.
-  //
-  // The MECHANISM is not deleted (iron rule 4): `uiStore.unitDimensions`,
-  // `toggleUnitDimensions` and `clearUnitDimensions` are exactly what they
-  // were, and `3d/Scene.jsx` still draws from them. What has gone is this
-  // menu's door onto it, which is what the owner asked for. Named in the PR and
-  // written into BACKLOG, because a mechanism with no door is worth him
-  // knowing about.
-  //
-  // The `dimensions` argument stays in this function's signature for the same
-  // reason: the caller still knows the answer, and a rule that has to be
-  // re-plumbed to come back is a rule that does not come back.
-
-  // The GROUPS, applied last and in one place (F6.3). An entry that has not
-  // named its own belongs to "the rest", which is what makes this a default
-  // rather than a table anybody has to keep in step: a new entry lands
-  // somewhere sensible on the day it is written.
-  //
-  // T74 F13 · a FREE PANEL is one board, not a carcass: nothing is fitted to
-  // it (no end panel, no filler, no mask, no cornice) and it is never turned
-  // in plan (its facing and lean are its own menu). What a board has is its
-  // name, its colour, a template and the bin.
-  const offered = type.freePanel ? actions.filter((a) => FREE_PANEL_MENU.has(a.id)) : actions;
-  return offered.map((a) => ({ ...a, group: a.group || GROUP_OF[a.id] || 'rest' }));
+  // T74 F13: a FREE PANEL is one board, not a carcass. The fitting entries
+  // above already pass it by; on its own it offers a template, a copy, the bin.
+  if (!many && type.freePanel) return actions.filter((a) => FREE_PANEL_MENU.has(a.id));
+  return actions;
 }
 
 /** T74 F13 · what the right-click offers on a free panel. */
-const FREE_PANEL_MENU = new Set(['rename', 'unit-colour', 'save-template', 'delete']);
+const FREE_PANEL_MENU = new Set(['save-template', 'duplicate', 'delete']);
+
+/**
+ * The Cabinet group under a part menu: the cabinet the part hangs on, its
+ * window, and the whole cabinet menu one click away (*"nic nie ginie"*).
+ */
+function cabinetGroup({ unit, store, args }) {
+  const groupTitle = `Cabinet ${unit.params?.unit_num ?? ''}`.trim();
+  const items = menuActions({
+    ...args, unit, selection: [unit], units: null, panelPart: null, part: null, panelDrawer: null, drawer: null, panelId: null,
+  });
+  return [
+    {
+      id: 'edit-cabinet',
+      group: 'cabinet',
+      groupTitle,
+      kind: 'command',
+      label: 'Edit cabinet…',
+      hint: 'This cabinet on its own: explode it, turn a part over, edit any piece',
+      run: () => store.editCabinet?.(unit.id),
+    },
+    {
+      id: 'cabinet-actions',
+      group: 'cabinet',
+      groupTitle,
+      kind: 'submenu',
+      label: 'All cabinet actions',
+      hint: 'Everything the cabinet’s own menu offers',
+      items,
+    },
+  ];
+}
+
+/**
+ * A DOOR clicked: the door's own entries, then its cabinet.
+ *
+ * The hinge side is the right panel's control (RightPanel's Hinge side and the
+ * door window's, `updateUnitParams(unit, { hinge })`); a door in a BAY has its
+ * own hinge, the bay row's `setBayDoor`. Greyed with the reason today's code
+ * gives where it refuses: a leaf cut on the slope opens from the slope, and a
+ * pair hangs one leaf each side.
+ */
+function doorMenu({
+  unit, store, result, panelId, args,
+}) {
+  const panel = panelId ? (result?.panels || []).find((p) => p.id === panelId) || null : null;
+  const meta = panel?.meta || {};
+  const bay = meta.bay != null && meta.bay !== '' && Number.isFinite(Number(meta.bay)) ? Number(meta.bay) : null;
+  const bayRow = bay != null && Array.isArray(unit.params?.bay_doors) ? unit.params.bay_doors[bay] : null;
+
+  let hand = String(meta.hinge || (bayRow ? bayRow.hinge : unit.params?.hinge) || 'L').toUpperCase() === 'R' ? 'R' : 'L';
+  let hingeRefused = null;
+  if (panel && !meta.hinge) hingeRefused = 'This front has no hinge side';
+  else if (meta.hingeForced) {
+    hand = meta.hinge === 'R' ? 'R' : 'L';
+    hingeRefused = 'Cut on the slope: the door opens from the slope';
+  } else if (bay == null && Number(result?.derived?.doors) === 2) {
+    hingeRefused = 'A pair of doors: one leaf hangs on each side';
+  }
+  const setHand = (side) => {
+    if (bay != null) store.setBayDoor?.(unit.id, bay, { hinge: side });
+    else store.updateUnitParams?.(unit.id, { hinge: side });
+  };
+
+  let removeRefused = null;
+  if (!panelId) removeRefused = 'Right-click the door itself to remove it';
+  else if (meta.appliance) removeRefused = 'This is the appliance’s own door: it stays with its housing';
+
+  return [
+    {
+      id: 'edit-door',
+      group: 'part',
+      kind: 'command',
+      framed: true,
+      label: 'Edit this door…',
+      hint: 'This door’s own window, as a double click on it opens',
+      ...(panelId ? {} : { disabled: true, disabledReason: 'Right-click the door itself to edit it' }),
+      run: () => { if (panelId) store.editElement?.(unit.id, panelId); },
+    },
+    {
+      id: 'hinge-side',
+      group: 'part',
+      kind: 'choice',
+      label: 'Hinge side',
+      hint: hingeRefused || 'Which side the hinges are on',
+      ...(hingeRefused ? { disabled: true, disabledReason: hingeRefused } : {}),
+      options: [['L', 'Left'], ['R', 'Right']].map(([side, label]) => ({
+        id: side,
+        label,
+        selected: hand === side,
+        run: () => { if (!hingeRefused && hand !== side) setHand(side); },
+      })),
+    },
+    {
+      id: 'close-fronts', group: 'part', kind: 'command', label: 'Close all fronts', run: () => store.closeAllFronts?.(unit.id),
+    },
+    {
+      id: 'remove-door',
+      group: 'part',
+      kind: 'command',
+      label: 'Remove this door',
+      hint: removeRefused || 'Takes this door off, as Backspace on a selected door does; Undo puts it back',
+      ...(removeRefused ? { disabled: true, disabledReason: removeRefused } : {}),
+      run: () => {
+        if (removeRefused) return;
+        store.removeFront?.(unit.id, panelId);
+        store.clearElement?.();
+      },
+    },
+    ...cabinetGroup({ unit, store, args }),
+  ];
+}
+
+/** A DRAWER FRONT clicked: that drawer's window, the fronts, then its cabinet. */
+function drawerFrontMenu({
+  unit, onDrawer, store, args,
+}) {
+  const actions = [];
+  if (onDrawer) {
+    actions.push({
+      id: 'edit-drawer',
+      group: 'part',
+      kind: 'command',
+      framed: true,
+      label: `Edit drawer ${onDrawer}…`,
+      hint: 'This drawer on its own: explode it, turn a part over, look at every piece',
+      run: () => store.editDrawer?.(unit.id, onDrawer),
+    });
+  }
+  actions.push({
+    id: 'close-fronts', group: 'part', kind: 'command', label: 'Close all fronts', run: () => store.closeAllFronts?.(unit.id),
+  });
+  return [...actions, ...cabinetGroup({ unit, store, args })];
+}

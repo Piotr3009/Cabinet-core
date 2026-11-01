@@ -83,20 +83,34 @@ const menu = (type, over = {}) => menuActions({
   unit: unitOf(type), panelPart: 'BUL', store: {}, profile: P, ...over,
 });
 
-test('F10 · neither entry is in the menu, on any cabinet', () => {
+// REWRITTEN BY the right-click menu turn (01.11.2026): Add doors is BACK (the
+// owner, on the mockups: *"natomiast center shelves i center between oraz add
+// doors bym dodal"*), offered where the cabinet takes doors and has none
+// fitted; Show all dimensions stays out (*"dimension juz mamy na gorze"*).
+test('F10 · Show all dimensions is not in the menu on any cabinet; Add doors is, where doors are missing', () => {
   for (const type of ['WARDROBE', 'BUD', 'WUD', 'BUDTALL', 'SINK', 'PANTRY']) {
     const ids = menu(type).map((a) => a.id);
-    assert.ok(!ids.includes('add-doors'), `${type}: Add doors is gone`);
     assert.ok(!ids.includes('dimensions'), `${type}: Show all dimensions is gone`);
+    const takes = Boolean(getUnitType(type).supports?.doors);
+    assert.equal(ids.includes('add-doors'), takes, `${type}: Add doors ${takes ? 'offered' : 'not offered'}`);
   }
+  const hung = menuActions({
+    unit: { ...unitOf('WARDROBE'), params: { ...unitOf('WARDROBE').params, doors: { count: 2 } } },
+    panelPart: 'BUL', store: {}, profile: P,
+  }).map((a) => a.id);
+  assert.ok(!hung.includes('add-doors'), 'not on a cabinet whose doors are fitted');
 });
 
-test('F10 · …not even on a multi-selection, where "Add doors (3)" used to be', () => {
+test('F10 · over a multi-selection Add doors acts on those without doors, in one call', () => {
   const selection = ['u1', 'u2', 'u3'].map((id) => ({ ...unitOf('WARDROBE'), id }));
-  const ids = menuActions({
-    unit: selection[0], selection, panelPart: 'BUL', store: {}, profile: P,
-  }).map((a) => a.id);
-  assert.ok(!ids.includes('add-doors'));
+  selection[1] = { ...selection[1], params: { ...selection[1].params, doors: { count: 2 } } };
+  const got = [];
+  const entry = menuActions({
+    unit: selection[0], selection, panelPart: 'BUL', store: { addDoors: (ids) => got.push(ids) }, profile: P,
+  }).find((a) => a.id === 'add-doors');
+  assert.equal(entry.label, 'Add doors');
+  entry.run();
+  assert.deepEqual(got, [['u1', 'u3']], 'u2 already has its doors');
 });
 
 test('F10 · the ACTIONS stay, and this is where each one lives now (iron rule 4)', () => {
@@ -121,26 +135,28 @@ test('F10 · the ACTIONS stay, and this is where each one lives now (iron rule 4
   assert.match(read('3d/Scene.jsx'), /wanted: Object\.keys\(unitDimensions\)/);
 });
 
-test('F10 · the group table is untouched — an empty section is simply not drawn', () => {
-  // `MENU_GROUPS` is the ORDER, and it is a table. A group nothing is in is a
-  // group nothing is in, not a group that has been deleted: an entry written
-  // tomorrow with `group: 'dimensions'` lands exactly where it always would.
-  assert.deepEqual(MENU_GROUPS, ['edit', 'run-pieces', 'end-panels', 'rest', 'dimensions']);
+// REWRITTEN BY the right-click menu turn (01.11.2026): the sections are the
+// owner's boards (edit, build, inside, copy, danger; part and cabinet under a
+// part menu). The table is still the ORDER, and an empty section is not drawn.
+test('F10 · the group table is the ORDER, and an empty section is simply not drawn', () => {
+  assert.deepEqual(MENU_GROUPS, ['part', 'edit', 'build', 'inside', 'copy', 'danger', 'cabinet']);
   const groups = groupedActions(menu('WARDROBE'));
-  assert.deepEqual(groups.map((g) => g.id), ['edit', 'run-pieces', 'end-panels', 'rest']);
-  // …and it comes straight back the moment something is in it.
-  const withOne = groupedActions([...menu('WARDROBE'), { id: 'x', group: 'dimensions' }]);
-  assert.equal(withOne[withOne.length - 1].id, 'dimensions');
+  assert.deepEqual(groups.map((g) => g.id), ['edit', 'build', 'inside', 'copy', 'danger']);
+  // …and a section comes straight back the moment something is in it.
+  const withOne = groupedActions([...menu('WARDROBE'), { id: 'x', group: 'cabinet' }]);
+  assert.equal(withOne[withOne.length - 1].id, 'cabinet');
 });
 
+// REWRITTEN BY the right-click menu turn (01.11.2026): the six the owner took
+// out (Rename, Colour, Rotate 90, Back to wall, Side to wall, Drawer fronts)
+// are asserted gone, with their homes, in test/turn14-context-menu.test.js.
 test('F10 · everything else the menu offered is still offered', () => {
   const ids = menu('WARDROBE').map((a) => a.id);
   for (const id of [
-    'edit-cabinet', 'rename', 'end-panel-L', 'end-panel-R', 'end-panel-B',
-    'top-infill', 'side-infill', 'pin-infill-L', 'pin-infill-R', 'plinth',
-    'unit-colour', 'save-template', 'center-shelves', 'rotate-90',
-    'back-to-wall', 'side-to-wall', 'delete',
+    'edit-cabinet', 'end-panels', 'top-infill', 'cornice', 'side-infill', 'pin-infill-L', 'pin-infill-R', 'plinth',
+    'save-template', 'center-shelves', 'delete',
   ]) {
     assert.ok(ids.includes(id), `${id} went missing`);
   }
 });
+

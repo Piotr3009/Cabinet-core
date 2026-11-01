@@ -76,27 +76,28 @@ test('F9.1 — EVERY action the menu can produce has the function it calls', () 
 
 // ─── F9.2 — WALL UNITS JOIN THE RUN ─────────────────────────────────────────
 
-test('F9.2 — a wall unit is a cornice-bearing kit, and its menu offers the three', () => {
+// REWRITTEN BY the right-click menu turn (01.11.2026): the three Top cornice
+// rows are ONE choice row, Cornice: None / 70 / 100, in the build group.
+test('F9.2 · a wall unit is a cornice-bearing kit, and its menu offers the three', () => {
   assert.equal(takesCornice('WUD'), true);
   assert.equal(getUnitType('WUD').supports.cornice, true);
   const unit = {
     id: 'u1', type: 'WUD', params: { ...defaultParamsFor('WUD', P), unit_num: '01' }, position: { x_mm: 0 },
   };
-  const ids = menuActions({ unit, store: {}, profile: P }).map((a) => a.id);
-  for (const h of [0, ...P.autoParts.cornice.heights]) {
-    assert.ok(ids.includes(`cornice-${h}`), `the ${h} entry is offered on a wall unit`);
-  }
+  const row = menuActions({ unit, store: {}, profile: P }).find((a) => a.id === 'cornice');
+  assert.ok(row, 'the cornice row is offered on a wall unit');
+  assert.deepEqual(row.options.map((o) => o.id), ['none', ...P.autoParts.cornice.heights.map(String)],
+    'none and every height of the profile');
   // …and it is a RUN piece, in the same group as the infill it is screwed to.
-  const entry = menuActions({ unit, store: {}, profile: P }).find((a) => a.id === 'cornice-70');
-  assert.equal(entry.group, 'run-pieces');
+  assert.equal(row.group, 'build');
 });
 
-test('F9.2 — a BASE unit still offers none: there is nothing up there to fix it to', () => {
+test('F9.2 · a BASE unit still offers none: there is nothing up there to fix it to', () => {
   const unit = {
     id: 'u1', type: 'BUD', params: { ...defaultParamsFor('BUD', P), unit_num: '01' }, position: { x_mm: 0 },
   };
   const ids = menuActions({ unit, store: {}, profile: P }).map((a) => a.id);
-  assert.ok(!ids.some((id) => id.startsWith('cornice-')));
+  assert.ok(!ids.some((id) => id.startsWith('cornice')));
 });
 
 // ─── F9.3 / F9.4 — THE CORNER, AND THE REFUSAL ──────────────────────────────

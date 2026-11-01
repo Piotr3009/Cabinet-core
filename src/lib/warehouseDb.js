@@ -1,7 +1,7 @@
 // ─── cc_warehouse — THE MATERIALS WAREHOUSE'S OWN TABLE (turn 51, F7) ───────
 //
 // CLAUDE.md F7: *"Own table, not shared with PC."*  It is also not shared with
-// Cabinet Core's own `cc_materials`, which is the six-column stock list the
+// Cabinet Core's own materials table (Joinery Core's `stock_items` since T-CC1b F9), which is the six-column stock list the
 // assignment modal reads (turn 39). Two lists with different jobs and different
 // shapes are two tables, and merging them would have cost one of the two
 // screens fields it needs.

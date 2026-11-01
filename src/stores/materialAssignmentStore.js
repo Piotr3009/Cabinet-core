@@ -2,9 +2,11 @@ import { create } from 'zustand';
 
 import {
   normalizeAssignments, expandAssignments, legacyToCanonical, seedFromDefaults,
-  assignmentFor, unassignedParts, unassignedByGroup, ALL_PARTS, PART_REGISTRY,
+  assignmentFor, unassignedParts, unassignedByGroup, ALL_PARTS, PART_REGISTRY, migrateHardwareKeys,
+  HARDWARE_TO_PART_ID,
 } from '../engine/partRegistry.js';
-import { withDb, isJcOffline } from '../lib/jcApi.js';
+import { hardwareDemand } from '../engine/bom.js';
+import { loadJcStock, toMaterial } from '../lib/jcStock.js';
 
 // ─── Material assignments per BOM role ───
 // Pattern taken from Production Core's materialAssignmentStore: a canonical
@@ -12,10 +14,9 @@ import { withDb, isJcOffline } from '../lib/jcApi.js';
 // view derived from it, plus a `yield` coefficient that models offcut waste.
 //
 // Cabinet Core roles come from SPEC 4.12: side / top / bottom / back / shelf /
-// front / drawer_box. Sources: 'own' (the local list below) or 'jc' (a
-// JoineryCore stock_items UUID — the integration lands in a later phase).
-
-const ASSIGNMENT_SCHEMA = 2;
+// front / drawer_box. T-CC1b F9: the material behind a role is a Joinery Core
+// stock_items uuid (lib/jcStock.js) or one of the three generic placeholders;
+// the blob is schema 3 (engine/partRegistry.js, the hardware keys of F10).
 
 export const BOM_ROLES = [
   { id: 'side',       label: 'Sides',          hint: 'BUL / BUR, drawer panels, fillers' },
@@ -51,43 +52,167 @@ export const HARDWARE_ROLES = [
 ];
 
 
-// Sample workshop material list — this is what "Mock data mode" runs on.
-// `category` is the same vocabulary as cc_materials (board | front | edging |
-// hardware), so a real list loaded from the database drops straight in.
-export const MOCK_MATERIALS = [
-  // ─── Generic boards (owner's soft start, 09.08) ───
-  // A project may BEGIN on one of these — the geometry is pinned, honestly and
-  // visibly, before the real board exists in the stock. They are placeholders
-  // by name and by flag: the yellow warning stays up while one is assigned,
-  // and the future check-out/JC export refuses them (the hard gate).
-  // ─── Turn 19 (CLAUDE.md F5.1): AND WHAT IT WEIGHS ─────────────────────────
-  // `kg_m2` is carried exactly as `thickness` is — a column on the stock record
-  // — because an AVENTOS is chosen on the weight of the front and a workshop
-  // that stocks a heavier board must be able to say so. A board with no figure
-  // falls back to profile.board.kgM2 (engine/lifts.js `boardKgM2`), which is
-  // what the GENERIC placeholders deliberately do: they pin the geometry
-  // honestly and they are not a real board, so they carry no real weight.
-  { id: 'generic-18', code: '—', name: 'Generic board 18 mm', category: 'board', thickness: 18, unit: 'm²', price: 0, placeholder: true },
-  { id: 'generic-22', code: '—', name: 'Generic board 22 mm', category: 'board', thickness: 22, unit: 'm²', price: 0, placeholder: true },
-  { id: 'generic-25', code: '—', name: 'Generic board 25 mm', category: 'board', thickness: 25, unit: 'm²', price: 0, placeholder: true },
-  { id: 'mat_mfc18_white',  code: 'W980 SM', name: 'MFC White W980 18 mm',        category: 'board',  thickness: 18, kg_m2: 12,   board_kind: 'mfc', unit: 'm²', price: 11.4 },
-  { id: 'mat_mfc18_oak',    code: 'H1180 ST37', name: 'MFC Halifax Oak 18 mm',    category: 'board',  thickness: 18, kg_m2: 12,   board_kind: 'mfc', unit: 'm²', price: 14.9 },
-  { id: 'mat_mdf18',        code: 'MDF-18', name: 'MDF 18 mm',                    category: 'board',  thickness: 18, kg_m2: 14,   board_kind: 'mdf_lacquered', unit: 'm²', price: 9.8 },
-  { id: 'mat_ply18_birch',  code: 'BB/BB-18', name: 'Birch Plywood 18 mm',        category: 'board',  thickness: 18, kg_m2: 12.6, board_kind: 'mfc', unit: 'm²', price: 24.5 },
-  { id: 'mat_mfc22_white',  code: 'W980 SM', name: 'MFC White W980 22 mm',        category: 'board',  thickness: 22, kg_m2: 14.5, board_kind: 'mfc', unit: 'm²', price: 13.9 },
-  { id: 'mat_mdf25_shaker', name: 'MDF Shaker blank 25 mm',      category: 'front',  thickness: 25, kg_m2: 19,   board_kind: 'mdf_lacquered', unit: 'm²', price: 27.0 },
-  { id: 'mat_mfc19_front',  name: 'Melamine front 19 mm',        category: 'front',  thickness: 19, kg_m2: 12.6, board_kind: 'mfc', unit: 'm²', price: 16.2 },
-  { id: 'mat_hdf6_back',    name: 'HDF backing 6 mm',            category: 'board',  thickness: 6,  kg_m2: 5.4,  board_kind: 'mfc', unit: 'm²', price: 4.6 },
-  { id: 'mat_edge_abs',     name: 'ABS edging 22 × 1 mm',        category: 'edging', thickness: 1,  unit: 'm',  price: 0.55 },
-  { id: 'hw_hinge_clip',    name: 'Clip-top hinge 110° + plate', category: 'hardware', unit: 'pcs',   price: 2.35 },
-  { id: 'hw_hinge_soft',    name: 'Soft-close hinge 110° + plate', category: 'hardware', unit: 'pcs', price: 3.80 },
-  { id: 'hw_runner_bb',     name: 'Ball-bearing runner, full ext.', category: 'hardware', unit: 'pairs', price: 6.90 },
-  { id: 'hw_runner_soft',   name: 'Soft-close undermount runner', category: 'hardware', unit: 'pairs', price: 14.50 },
-  { id: 'hw_leg_100',       name: 'Adjustable leg 100 mm',       category: 'hardware', unit: 'pcs',   price: 0.95 },
-  { id: 'hw_rail_oval',     name: 'Oval hanging rail 30 × 15',   category: 'hardware', unit: 'm',     price: 4.20 },
-  { id: 'hw_shelf_pin',     name: 'Shelf pin ⌀7.5 nickel',       category: 'hardware', unit: 'pcs',   price: 0.09 },
-  { id: 'hw_hanger_wall',   name: 'Wall unit hanger + rail plate', category: 'hardware', unit: 'pcs', price: 1.85 },
+// ─── T-CC1b F9 · THE STOCK IS JOINERY CORE'S (CLAUDE.md T-CC1b law 6) ──────
+// The owner, 01.11.2026: *"materialy z JC (jego baza), przypisanie w CC"*. A
+// material IS a row of the tenant's `stock_items` (lib/jcStock.js), keyed by
+// JC's uuid; the 19 sample rows that stood here are deleted (kasacja, the
+// Deletion licence). What stays are the three honest placeholders.
+//
+// ─── Generic boards (owner's soft start, 09.08) ───
+// A project may BEGIN on one of these: the geometry is pinned, honestly and
+// visibly, before the real board exists in the stock. They are placeholders
+// by name and by flag: the yellow warning stays up while one is assigned. They
+// carry no `kg_m2`, so a front on one weighs profile.board.kgM2 (engine/lifts.js).
+export const GENERIC_MATERIALS = [
+  { id: 'generic-18', code: '', name: 'Generic board 18 mm', category: 'board', thickness: 18, unit: 'm²', price: 0, placeholder: true },
+  { id: 'generic-22', code: '', name: 'Generic board 22 mm', category: 'board', thickness: 22, unit: 'm²', price: 0, placeholder: true },
+  { id: 'generic-25', code: '', name: 'Generic board 25 mm', category: 'board', thickness: 25, unit: 'm²', price: 0, placeholder: true },
 ];
+
+// ─── T-CC1b F10 · THE SIX GROUPS OF THE ASSIGN WINDOW (law 7) ─────────────
+// The owner, 01.11.2026: *"grupy (plyty, zawiasy, prowadnice, okucia/inne,
+// materialy eksploatacyjne, wyposazenie wewnetrzne) ... kazda funkcja
+// przypisana (10 rodzajow zawiasow, wszystkie przypisane)"*. Groups of CC's
+// ROLES (what the project needs), never of JC's stock. PROPOSED membership;
+// "Consumables" is the fallback, so a role no group names can never vanish.
+export const ASSIGN_GROUPS = [
+  { id: 'sheets', label: 'Sheets', kind: 'board', roles: [
+    'side', 'top', 'bottom', 'back', 'shelf', 'front', 'drawer_box', 'plinth', 'infill', 'end_panel'] },
+  { id: 'hinges', label: 'Hinges', kind: 'hardware', roles: [
+    'hinge', 'hinges', 'bifold_hinges', 'hawa_hinges', 'lift_hinges'] },
+  { id: 'runners', label: 'Runners', kind: 'hardware', roles: ['runner_pairs', 'runner_sync_rods'] },
+  { id: 'internal', label: 'Internal fittings', kind: 'hardware', roles: [
+    'drawer_insert', 'drawer_glass', 'lift_unit', 'led_strip', 'mirror', 'watch_insert', 'space_corner', 'rail',
+    'shelf_pins', 'rail_supports', 'shoe_insert', 'ready_boxes',
+    // PROPOSED beside the list of F10.3: the lift's own parts, the kits, the
+    // mirror cabinet's order lines.
+    'lift_arm', 'lift_caps', 'lift_bracket', 'bin_pullout', 'cargo_frame', 'carousel', 'blind_pullout',
+    'wardrobe_kit_trouser', 'wardrobe_kit_tie_rack', 'wardrobe_kit_pulldown_rail', 'wardrobe_kit_hooks',
+    'wardrobe_kit_valet_rod', 'glass_pane', 'mirror_led_panel', 'mirror_m2', 'mirror_glass_shelf', 'mirror_led_driver'] },
+  { id: 'ironmongery', label: 'Ironmongery and other', kind: 'hardware', roles: [
+    'legs', 'hangers', 'handle', 'cabineo_connector', 'cabineo_cap', 'worktop_bolts', 'hawa_set',
+    'hawa_connector', 'hawa_tracks', 'hawa_stiffener', 'hawa_foot', 'extractor', 'vanity_hangers'] },
+  { id: 'consumables', label: 'Consumables', kind: 'other', roles: ['edging'] },
+];
+
+/** The group a role lands in: the first that names it, else Consumables (the fallback). */
+export function groupOfRole(role) {
+  const r = String(role || '');
+  return (ASSIGN_GROUPS.find((g) => g.roles.includes(r)) || ASSIGN_GROUPS[ASSIGN_GROUPS.length - 1]).id;
+}
+
+/** The BOM's own hardware key (engine/bom.js, the hardware merge): role and specification. */
+export function hardwareKey(row) {
+  return `${row?.role}|${row?.spec_label}`;
+}
+
+// The registry parts the BOM's hardware keys do not stand for (a hinge's
+// plate, a rail's supports, the lighting, the edging, the paint, the screws):
+// the group each lands in. A part this table does not name follows its
+// registry group (board, front, drawer box: Sheets; lighting: Internal
+// fittings; hardware: Ironmongery and other; the rest: Consumables).
+const PART_GROUP_OF = {
+  hinge_plate: 'hinges',
+  rail_support: 'internal',
+  shoe_insert: 'internal',
+  ready_drawer_box: 'internal',
+  handle: 'ironmongery',
+  plinth_clip: 'ironmongery',
+  plinth_clip_connector: 'ironmongery',
+  top_box_connector: 'ironmongery',
+};
+
+/** The Assign window's group of one registry part. */
+function groupOfPart(partId) {
+  const part = PART_REGISTRY[partId];
+  if (PART_GROUP_OF[partId]) return PART_GROUP_OF[partId];
+  const role = Object.keys(HARDWARE_TO_PART_ID).find((r) => HARDWARE_TO_PART_ID[r] === partId);
+  if (role) return groupOfRole(role);
+  if (!part) return 'consumables';
+  if (part.group === 'board' || part.group === 'front' || part.group === 'drawer_box') return 'sheets';
+  if (part.group === 'lighting') return 'internal';
+  if (part.group === 'hardware') return 'ironmongery';
+  return 'consumables';
+}
+
+/** The kind the stock list opens on for a line: boards for Sheets, the line's own kind else. */
+function kindOfLine(group, materialType) {
+  if (group === 'sheets') return 'board';
+  if (materialType === 'edging' || materialType === 'paint') return materialType;
+  return 'hardware';
+}
+
+/**
+ * T-CC1b F10.3 · THE DEMAND OF THE ASSIGN WINDOW, LINE BY LINE (law 7).
+ *
+ * Pure. Every hardware line of the BOM (one line per `${role}|${spec_label}`,
+ * resolved by engine/bom.js hardwareDemand, the same read the BOM PDF makes),
+ * then every registry part the job uses that no hardware key stands for (the
+ * boards with their yield and per-family exceptions, the edging, the lighting,
+ * the paint), then the joiner's own consumables.
+ *
+ * @returns {Array<{ id, type: 'hardware'|'part'|'custom', key?, role?, partId?, group, kind,
+ *   label, spec, qty, unit, material, assigned, families? }>}
+ */
+export function buildAssignLines({
+  bom = null, data = null, materials = [], usage = {}, missingOf = {},
+} = {}) {
+  const d = normalize(data);
+  const flat = expand(d);
+  const byId = new Map((materials || []).map((m) => [m.id, m]));
+  const lines = [];
+  const hw = hardwareDemand(bom || { hardware: [] }, flat, materials);
+  const covered = new Set(hw.map((h) => HARDWARE_TO_PART_ID[h.role]).filter(Boolean));
+  for (const h of hw) {
+    const group = groupOfRole(h.role);
+    lines.push({
+      id: `hw:${h.key}`, type: 'hardware', key: h.key, role: h.role, group, kind: kindOfLine(group, 'hardware'),
+      label: h.label || h.role, spec: h.spec_label || '', qty: h.qty, unit: h.unit || 'pcs',
+      material: h.material, assigned: h.assigned,
+    });
+  }
+  for (const [partId, use] of Object.entries(usage || {})) {
+    const part = PART_REGISTRY[partId];
+    if (!part || covered.has(partId)) continue;
+    const a = assignmentFor(d, partId, null);
+    const material = (a?.material_id ? byId.get(a.material_id) : null) || null;
+    const families = missingOf[partId] || null;
+    const group = groupOfPart(partId);
+    lines.push({
+      id: `part:${partId}`, type: 'part', partId, group, kind: kindOfLine(group, part.materialType),
+      label: part.name, spec: part.note || '', qty: use.qty, unit: use.unit || part.unit,
+      material, yield: a?.yield ?? 1,
+      // A part is assigned when no family that uses it is missing (engine/bom.js unassignedInUse);
+      // the paint is said on the Spraying page and counts by its own row.
+      // A part this job does not use ("Show every part") is assigned when it has a material.
+      assigned: part.materialType === 'paint' || !(use.qty > 0) ? Boolean(material) : !families,
+      families: families || [],
+    });
+  }
+  for (const cp of d.customParts || []) {
+    const a = assignmentFor(d, cp.id, null);
+    const material = (a?.material_id ? byId.get(a.material_id) : null) || null;
+    lines.push({
+      id: `custom:${cp.id}`, type: 'custom', partId: cp.id, group: 'consumables', kind: 'all',
+      label: cp.name, spec: `${cp.qtyPerUnit} ${cp.unit} per cabinet`, qty: null, unit: cp.unit,
+      material, assigned: Boolean(material),
+    });
+  }
+  return lines;
+}
+
+/** "<n> of <m> lines assigned" and the red count beside it (F10.3, F11.1). */
+export function assignCount(lines = []) {
+  const m = lines.length;
+  const n = lines.filter((l) => l.assigned).length;
+  return {
+    assigned: n,
+    total: m,
+    missing: m - n,
+    text: `${n} of ${m} lines assigned`,
+    missingText: m > n ? `Not assigned materials: ${m - n} line${m - n === 1 ? '' : 's'}` : '',
+  };
+}
 
 // ─── TURN 39 (CLAUDE.md F2): AN ASSIGNMENT BELONGS TO A PROJECT ─────────────
 //
@@ -160,40 +285,102 @@ const initial = typeof localStorage !== 'undefined' ? load() : normalize(null);
 export const useMaterialAssignmentStore = create((set, get) => ({
   data: initial,
   assignments: expand(initial),
-  materials: MOCK_MATERIALS,
-  source: 'own',                 // 'own' | 'jc' — JoineryCore stock lands later
+  // T-CC1b F9.2: the three generics, then the tenant's stock rows once read.
+  materials: GENERIC_MATERIALS,
   jcConnected: false,
 
   // ─── TURN 39 (F2) ─────────────────────────────────────────────────────────
-  // Which project these assignments belong to, and whether the stock list on
-  // screen is the workshop's own or the sample list mock mode ships with.
+  // Which project these assignments belong to.
   projectId: null,
-  materialsSource: 'mock',       // 'mock' | 'db'
+  // T-CC1b F9.2: 'jc' once Joinery Core's stock was read, 'offline' until then
+  // or when it did not answer (the words in `stockError`, never an empty list
+  // in silence). `stockCategories` are the tenant's own (JC rule 6.5).
+  materialsSource: 'offline',
+  stockError: null,
+  stockCategories: [],
+  stockLoading: false,
   // Parts the joiner has never touched, that the design has only just started
-  // needing — the modal shows them as NEW (F3).
+  // needing: the modal shows them as NEW (F3).
   seen: {},
 
   setMaterials: (materials) => set({ materials }),
 
   /**
-   * The workshop's own stock list, out of `cc_materials`.
+   * T-CC1b F9.2 · the tenant's stock, out of Joinery Core's `stock_items`
+   * (lib/jcStock.js, two reads). The read of CC's own materials table, which JC does not
+   * have, is deleted (the Deletion licence). The materials are the three
+   * generics followed by every stock row; offline keeps the list that stood
+   * and says JC_OFFLINE in `stockError`.
    *
-   * Turn 3 shipped `setMaterials` and NOTHING EVER CALLED IT — every screen in
-   * this app has been reading MOCK_MATERIALS since. This is the call that was
-   * missing. It degrades exactly as everything else does: mock mode, a dead
-   * network and a table that is not there all leave the sample list standing.
+   * @param {object} [opts] { db } the reader (lib/jcApi.js withDb by default; a test hands a fake)
    */
-  loadMaterials: async () => {
-    if (isJcOffline()) return { rows: MOCK_MATERIALS, mock: true };
-    const { data } = await withDb(
-      (db) => db.from('cc_materials').select('id, name, category, thickness, unit, price, jc_uuid').order('name'),
-      null,
-    );
-    const rows = Array.isArray(data) ? data : null;
-    if (!rows || !rows.length) return { rows: get().materials, mock: true };
-    set({ materials: rows, materialsSource: 'db' });
-    return { rows, mock: false };
+  loadMaterials: async ({ db } = {}) => {
+    set({ stockLoading: true });
+    const res = await loadJcStock(db ? { db } : {});
+    if (res.error) {
+      set({ materialsSource: 'offline', stockError: res.error, stockLoading: false, jcConnected: false });
+      return { rows: get().materials, error: res.error };
+    }
+    const rows = [...GENERIC_MATERIALS, ...res.items.map(toMaterial)];
+    set({
+      materials: rows, materialsSource: 'jc', stockError: null, stockCategories: res.categories,
+      stockLoading: false, jcConnected: true,
+    });
+    return { rows, error: null };
   },
+
+  // ─── T-CC1b F10 · ONE HARDWARE LINE, ONE MATERIAL (law 7) ─────────────────
+  // The owner: *"10 rodzajow zawiasow, wszystkie przypisane"*. A line is the
+  // BOM's own key `${role}|${spec_label}`; its material is JC's uuid and
+  // nothing else (law 6). Clearing writes an EMPTY material so the line reads
+  // "Not assigned" even where a schema 2 role value still stands behind it.
+  setHardwareAssignment: (key, materialId) => set((s) => {
+    const d = normalize(s.data);
+    d.hardware = { ...(d.hardware || {}), [key]: { material_id: materialId || '' } };
+    return project(d, s.projectId);
+  }),
+
+  clearHardwareAssignment: (key) => set((s) => {
+    const d = normalize(s.data);
+    d.hardware = { ...(d.hardware || {}), [key]: { material_id: '' } };
+    return project(d, s.projectId);
+  }),
+
+  /**
+   * The schema 2 migration, at the Assign window's load (engine/partRegistry.js
+   * migrateHardwareKeys): each legacy role value is copied to every key of that
+   * role the CURRENT BOM lists, once (a key that exists is never touched).
+   */
+  adoptHardwareKeys: (rows = []) => {
+    const d = normalize(get().data);
+    const next = migrateHardwareKeys(d, rows);
+    if (JSON.stringify(next.hardware) === JSON.stringify(d.hardware)) return false;
+    set((s) => project(next, s.projectId));
+    return true;
+  },
+
+  /**
+   * The registry part behind a hardware role follows its lines, so the BOM
+   * window (engine/bom.js purchaseBom, one product per part) never calls a role
+   * complete while one of its lines is not: every key of the role assigned
+   * gives the part the first key's material; any key missing clears it.
+   *
+   * @param {string} role   the engine's hardware role
+   * @param {Array}  rows   the BOM's hardware rows
+   */
+  syncHardwarePart: (role, rows = []) => set((s) => {
+    const partId = HARDWARE_TO_PART_ID[role];
+    if (!partId || !PART_REGISTRY[partId]) return {};
+    const d = normalize(s.data);
+    const ids = rows.filter((r) => r.role === role).map((r) => d.hardware?.[hardwareKey(r)]?.material_id || '');
+    if (ids.length && ids.every(Boolean)) {
+      d.base[partId] = { material_id: ids[0], yield: 1.0, category: '', subcategory: '' };
+    } else {
+      delete d.base[partId];
+    }
+    if (d.auto) delete d.auto[partId];
+    return project(d, s.projectId);
+  }),
 
   /**
    * Open a project's assignments.
@@ -305,8 +492,6 @@ export const useMaterialAssignmentStore = create((set, get) => ({
     }
     return project(d, s.projectId);
   }),
-
-  addMaterial: (material) => set((s) => ({ materials: [...s.materials, { id: `mat_${Date.now().toString(36)}`, ...material }] })),
 
   materialFor: (role) => {
     const a = get().assignments[role];

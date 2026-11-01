@@ -741,7 +741,7 @@ const FROZEN = {
   // T-CC1b · a NEW PRO file, frozen at its first hash (EXEMPT above carries the reason).
   'src/components/drawings/AiVisualCard.jsx': '565b087bb27673f594857a9efd1caaaba65be57b89b3ae3ce5330626a129a489',
   // T-CC2a · a NEW PRO file, frozen at its first hash (EXEMPT above carries the reason).
-  'src/components/LinkMaterialsModal.jsx': 'c0d60d2bc8c446ccb6ce4d3d2bb461f85ce2642c5f60cd52d16a15bfcf7c8b8a',
+  'src/components/LinkMaterialsModal.jsx': '8d68e3e1389bb096a0167fbd30ca85d685c626eb8d325dee4867fb20e8bbd046',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────

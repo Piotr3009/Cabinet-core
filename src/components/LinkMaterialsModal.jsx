@@ -227,7 +227,9 @@ export default function LinkMaterialsModal() {
     if (res?.ok) {
       setPending(null);
       if (fromProject) notify('Saved for all projects', 'success');
-      if (advanceFrom) setSelectedId(nextAfter(advanceFrom));
+      // Opened at ONE line (the BOM's or Project settings' Link): the selection stays on it, never moves on by itself
+      // to an entry the joiner did not choose (the walk of 01.11.2026, station g). From the rail, the hand goes on linking.
+      if (advanceFrom && !fromProject) setSelectedId(nextAfter(advanceFrom));
     }
     return res;
   };

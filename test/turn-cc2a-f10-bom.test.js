@@ -202,6 +202,10 @@ test('F10.1 every line: the entry\'s name, the quantity, the red words; Link ope
   await click(one(root, by('data-material-link', 'jc-hinge')));
   assert.deepEqual(calls.link, [[{ cc_material_id: HINGE.id, stock_item_id: 'jc-hinge' }]]);
   assert.deepEqual(toasts, [['Saved for all projects', 'success']], 'the toast after a link made from the BOM');
+  // INT, after the walk (station g): opened at ONE line, the window stays on that line after the link; it never moves
+  // on by itself to an entry the joiner did not choose.
+  const { rowToken } = await import('../src/lib/linkSuggest.js');
+  assert.equal(one(root, by('data-link-target')).props['data-link-target'], rowToken(HINGE.id));
   // Back in the BOM: the line carries the JC material and its cost.
   const linked = lineOf(root, HINGE.name);
   assert.equal(linked.props['data-bom-line-status'], 'linked');

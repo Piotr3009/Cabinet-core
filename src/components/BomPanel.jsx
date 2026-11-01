@@ -468,7 +468,7 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
           <Stat label="Lines linked" value={`${linkedLines} of ${allLines}`} />
           <Stat
             label="Total cost"
-            value={notLinked > 0 ? `${Number(t.cost || 0).toFixed(2)}, ${incompleteWords(notLinked, noPriceLines)}` : Number(t.cost || 0).toFixed(2)}
+            value={notLinked > 0 ? `£${Number(t.cost || 0).toFixed(2)}, ${incompleteWords(notLinked, noPriceLines)}` : `£${Number(t.cost || 0).toFixed(2)}`}
             accent={notLinked === 0}
             danger={notLinked > 0}
           />

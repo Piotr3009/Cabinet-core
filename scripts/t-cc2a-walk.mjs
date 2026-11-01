@@ -438,6 +438,8 @@ async function legC(ctx, page) {
   if (!(await visible(page, '[data-link-materials]'))) await openLinkWindow(page);
   await press(page, `${WIN} [data-link-tab="sheets"]`);
   await press(page, `${WIN} [data-link-brand="egger"]`);
+  // UX turn (Ewa P10): the window may open on "Used in this project", which now stays on across tabs; the search is of the catalogue.
+  await press(page, `${WIN} [data-link-filter="all"]`);
   await typeInto(page, `${WIN} [data-link-search]`, 'H3325');
   await page.waitForTimeout(600);
   const shown = await ask(page, `[...document.querySelectorAll('${WIN} [data-link-table] [data-link-row]')].map((r) => r.dataset.linkRow)`);

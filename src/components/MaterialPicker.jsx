@@ -56,7 +56,7 @@ const KIND_OPTIONS = [
 const PAINT_WORDS = /(^|[^a-z])(paints?|primers?|lacquers?|stains?|solvents?|thinners?|basecoats?|topcoats?)([^a-z]|$)/i;
 
 /** A row the Paint kind shows: a paint row of the warehouse, or a stock row whose words say paint. */
-export function isPaintRow(m) {
+function isPaintRow(m) {
   if (String(m?.category || '').toLowerCase() === 'paint') return true;
   return PAINT_WORDS.test(`${m?.group || ''} ${m?.subgroup || ''} ${m?.name || ''}`);
 }

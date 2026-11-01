@@ -241,7 +241,9 @@ export default function LinkMaterialsModal() {
 
   const switchTab = (id) => {
     chosenByHand.current = true;
-    setTab(id); setFamily(null); setFilterState('all'); setQ(''); setPending(null); setAcceptAll(null);
+    // Ewa's check of the UX frames: "Used in this project" stays on when the joiner moves to another tab (the tabs then
+    // count the project), so he can walk the project's lines tab by tab; the other filters reset to All as before.
+    setTab(id); setFamily(null); setFilterState((f) => (f === 'used' ? 'used' : 'all')); setQ(''); setPending(null); setAcceptAll(null);
     if (selected && selected.department !== id) setSelectedId(null);
   };
 
@@ -311,6 +313,29 @@ export default function LinkMaterialsModal() {
   const loading = status === 'idle' || status === 'loading';
   const stockEmpty = stockOk && !loading && stock.length === 0;
   const pct = totals.total ? Math.round((totals.linked / totals.total) * 100) : 0;
+
+  // Ewa's check of the UX frames: with "Used in this project" the tabs and the sheet brands count THIS project
+  // ("<linked> / <used>"), so the joiner sees where the lines not linked are; with the other filters, the catalogue.
+  const projectTotals = useMemo(() => {
+    const per = {};
+    const brands = {};
+    for (const d of DEPARTMENTS) per[d.id] = { linked: 0, total: 0 };
+    for (const e of live) {
+      if (!usedIds.has(e.id)) continue;
+      const ok = linkStatus(e, links, stock, { stockOk }).status === 'linked';
+      if (!per[e.department]) per[e.department] = { linked: 0, total: 0 };
+      per[e.department].total += 1;
+      if (ok) per[e.department].linked += 1;
+      if (e.department === 'sheets') {
+        const b = sheetBrandOf(e);
+        if (!brands[b]) brands[b] = { linked: 0, total: 0 };
+        brands[b].total += 1;
+        if (ok) brands[b].linked += 1;
+      }
+    }
+    return { per, brands };
+  }, [live, usedIds, links, stock, stockOk]);
+  const byProject = filter === 'used';
 
   // Ewa's P10: the count that matters for the job on the screen, beside the whole catalogue's.
   const projectCount = useMemo(() => {
@@ -395,7 +420,7 @@ export default function LinkMaterialsModal() {
         {/* THE DEPARTMENTS, as tabs with their counts (F8.2): never one scrolled list. */}
         <div className="flex flex-wrap gap-1 border-b border-shell-600 pb-2" role="tablist" data-link-tabs="1">
           {DEPARTMENTS.map((d) => {
-            const c = totals.per[d.id] || { linked: 0, total: 0 };
+            const c = (byProject ? projectTotals.per : totals.per)[d.id] || { linked: 0, total: 0 };
             const tone = toneOf(c.linked, c.total);
             return (
               <button
@@ -406,6 +431,7 @@ export default function LinkMaterialsModal() {
                 className={`cc-btn ${tab === d.id ? 'border-gold text-gold' : ''}`}
                 data-link-tab={d.id}
                 data-link-tab-tone={tone}
+                data-link-tab-scope={byProject ? 'project' : 'catalogue'}
                 onClick={() => switchTab(d.id)}
               >
                 {d.label}
@@ -445,6 +471,18 @@ export default function LinkMaterialsModal() {
                   onClick={() => { chosenByHand.current = true; setBrand(b.id); setFamily(null); }}
                 >
                   {b.label}
+                  {byProject && (() => {
+                    const c = projectTotals.brands[b.id] || { linked: 0, total: 0 };
+                    const tone = toneOf(c.linked, c.total);
+                    return (
+                      <span
+                        className={`ml-1.5 tabular-nums ${tone === 'all' ? 'text-status-ok' : tone === 'some' ? 'text-status-warn' : 'text-ink-400'}`}
+                        data-link-brand-count={`${c.linked}/${c.total}`}
+                      >
+                        {`${c.linked} / ${c.total}`}
+                      </span>
+                    );
+                  })()}
                 </button>
               )))}
             </div>

@@ -371,6 +371,11 @@ test('P9 the bespoke row: visible "Qty" and "Unit price" labels; a row at no pri
   assert.match(said, /not linked or without a price$/);
   assert.ok(textOf(one(root, by('data-bom-header-total'))).includes(said), 'the header');
   assert.ok(textOf(one(root, by('data-bom-incomplete-words', '1'))).includes(said), 'the total');
+  // Ewa's check of the UX frames: the footer's total in the same money format as the header.
+  const footer = all(root, (n) => n.type === 'div' && n.children?.length === 2 && textOf(n).trim().startsWith('Total cost'))[0];
+  assert.ok(footer, 'the footer Total cost');
+  assert.ok(textOf(footer).includes(`£${Number(p.totals.cost || 0).toFixed(2)}, ${said}`), textOf(footer));
+  assert.ok(textOf(one(root, by('data-bom-header-total'))).includes(`£${Number(p.totals.cost || 0).toFixed(2)}`));
   await type(one(block(), by('data-bom-bespoke-client', '1')), true);
   assert.ok(!textOf(one(root, by('data-bom-header-total'))).includes('without a price'), 'supplied by client: no line without a price');
   assert.equal(one(block(), by('data-bom-bespoke-words')), null, 'supplied by client: nothing to buy, complete');

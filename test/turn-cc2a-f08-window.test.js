@@ -669,8 +669,32 @@ test('P10 from the rail, on a project with entries not linked: the window opens 
     const pc = one(m.root, by('data-link-project-count'));
     assert.equal(pc.props['data-link-project-total'], String(used.size));
     assert.equal(textOf(pc).trim(), `This project: 1 of ${used.size} linked`);
+    // Ewa's check of the UX frames: on "Used in this project" the tabs and the brands count THIS project.
+    const usedEntries = [...used].map((id) => entryById(id)).filter(Boolean);
+    const want = (dept) => {
+      const es = usedEntries.filter((e) => e.department === dept);
+      return { linked: es.filter((e) => e.id === leg.id).length, total: es.length };
+    };
+    for (const d of DEPARTMENTS) {
+      const t = one(m.root, by('data-link-tab', d.id));
+      const w = want(d.id);
+      assert.equal(t.props['data-link-tab-scope'], 'project', d.id);
+      assert.equal(textOf(one(t, by('data-link-tab-count'))).trim(), `${w.linked} / ${w.total}`, d.id);
+      assert.equal(t.props['data-link-tab-tone'], w.total === 0 ? 'none' : w.linked === w.total ? 'all' : 'some', d.id);
+    }
+    const genericSheets = usedEntries.filter((e) => e.department === 'sheets' && (e.brand || 'generic') === 'generic').length;
+    assert.equal(textOf(one(one(m.root, by('data-link-brand', 'generic')), by('data-link-brand-count'))).trim(), `0 / ${genericSheets}`);
+    assert.equal(textOf(one(one(m.root, by('data-link-brand', 'egger')), by('data-link-brand-count'))).trim(), '0 / 0');
+    // Moving to another tab keeps the project's view.
+    await click(one(m.root, by('data-link-tab', leg.department)));
+    assert.equal(one(m.root, by('data-link-filter', 'used')).props['aria-pressed'], true, 'the filter stays on Used in this project');
+    assert.ok(all(m.root, by('data-link-row')).every((r) => r.props['data-link-used'] === '1'));
+    assert.ok(all(m.root, by('data-link-row')).some((r) => r.props['data-link-row'] === rowToken(leg.id)));
     await click(one(m.root, by('data-link-filter', 'all')));
     assert.equal(one(m.root, by('data-link-filter', 'all')).props['aria-pressed'], true, 'the joiner\'s own choice stands');
+    assert.equal(one(m.root, by('data-link-tab', 'sheets')).props['data-link-tab-scope'], 'catalogue', 'All: the catalogue\'s counts again');
+    await click(one(m.root, by('data-link-tab', 'sheets')));
+    assert.equal(one(one(m.root, by('data-link-brand', 'generic')), by('data-link-brand-count')), null, 'no project count on the brands');
     await m.unmount();
     // Opened at an entry (the BOM's Link): the filter is All, the entry in view.
     open({ entryId: HINGE.id, from: 'bom' });

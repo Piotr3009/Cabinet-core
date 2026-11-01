@@ -323,7 +323,15 @@ test('F8.4 the right column is MaterialPicker: search with a cross, the tenant\'
   const right = one(root, by('data-link-stock', '1'));
   assert.ok(one(right, by('data-material-list', 'link')), 'the one component the Stock window uses');
   assert.deepEqual(all(right, by('data-material-category-chip')).map((c) => textOf(c).trim()), ['All categories', 'Sheet materials', 'Ironmongery']);
-  assert.equal(all(right, by('data-material-link')).length, STOCK.length, 'a Link button on every row');
+  // REWRITTEN BY Ewa's P12 (the owner approved, 01.11.2026): the list opens on the kind of the tab (Boards on Sheets)
+  // with "All kinds" one click away, as chips (no select in this window). It asserted every stock row at once.
+  const kindChip = (k) => one(right, by('data-material-kind-chip', k));
+  assert.deepEqual(all(right, by('data-material-kind-chip')).map((c) => textOf(c).trim()), ['Boards', 'All kinds']);
+  assert.equal(kindChip('board').props['aria-pressed'], true, 'the Sheets tab preselects Boards');
+  assert.deepEqual(all(right, by('data-material-link')).map((b) => b.props['data-material-link']), ['jc-oak-18', 'jc-mdf-18'], 'the two boards');
+  assert.ok(one(right, by('data-material-thickness', 'jc-oak-18')) && textOf(one(right, by('data-material-thickness', 'jc-oak-18'))).includes('18 mm'), 'the thickness column');
+  await click(kindChip('all'));
+  assert.equal(all(right, by('data-material-link')).length, STOCK.length, 'All kinds: a Link button on every row');
   assert.ok(all(right, by('data-material-link')).every((b) => b.props.disabled), 'nothing to link until a material is chosen on the left');
   await type(one(right, by('data-material-search', '1')), 'hinge');
   assert.equal(all(right, by('data-material-link')).length, 1);
@@ -351,16 +359,31 @@ test('F8.5 a sheet cannot be linked without both sizes; the offcut is prefilled 
   assert.ok(form(), 'the small form opens beside the row');
   assert.equal(one(form(), by('data-link-offcut', '1')).props.value, '10', 'profile.materials.sheetYield 1.10 shows 10');
   const save = () => one(form(), by('data-link-save', '1'));
-  assert.equal(save().props.disabled, true, 'empty, it cannot be saved');
-  await type(one(form(), by('data-link-sheet-width', '1')), '2440');
-  assert.equal(save().props.disabled, true, 'one size is not enough');
+  // REWRITTEN BY Ewa's P5 (the owner approved, 01.11.2026): Save link stays pressable; pressed with a size empty or out
+  // of bounds, that field is outlined red with its words under it and nothing is saved. It asserted a disabled Save.
+  const width = () => one(form(), by('data-link-sheet-width', '1'));
+  const length = () => one(form(), by('data-link-sheet-length', '1'));
+  const fieldWords = () => all(form(), by('data-link-field-error', '1')).map((n) => textOf(n).trim());
+  assert.equal(save().props.disabled, false, 'Save link can be pressed');
+  assert.deepEqual(fieldWords(), [], 'no words before a press');
   await click(save());
-  assert.equal(calls.link.length, 0, 'nothing went to Joinery Core');
-  await type(one(form(), by('data-link-sheet-length', '1')), '50');
-  assert.equal(save().props.disabled, true, 'a sheet of 50 mm is refused in words before the call');
+  assert.equal(calls.link.length, 0, 'empty, nothing went to Joinery Core');
+  assert.deepEqual(fieldWords(), ['Required', 'Required'], 'both sizes say Required under them');
+  assert.match(width().props.className, /border-status-danger/);
+  assert.match(length().props.className, /border-status-danger/);
+  assert.ok(one(form(), by('data-link-form-hint', '1')), 'the hint stays');
+  await type(width(), '2440');
+  await click(save());
+  assert.equal(calls.link.length, 0, 'one size is not enough');
+  assert.deepEqual(fieldWords(), ['Required']);
+  await type(length(), '50');
+  await click(save());
+  assert.equal(calls.link.length, 0, 'a sheet of 50 mm is refused in words before the call');
   assert.ok(textOf(form()).includes('Whole millimetres, 100 to 6000'));
-  await type(one(form(), by('data-link-sheet-length', '1')), '1220');
-  assert.equal(save().props.disabled, false);
+  assert.match(length().props.className, /border-status-danger/);
+  assert.doesNotMatch(width().props.className, /border-status-danger/, 'a good size is not red');
+  await type(length(), '1220');
+  assert.deepEqual(fieldWords(), []);
   await click(save());
   assert.deepEqual(calls.link, [[{
     cc_material_id: OAK18.id, stock_item_id: 'jc-oak-18', sheet_width_mm: 2440, sheet_length_mm: 1220, yield: 1.1,
@@ -492,4 +515,202 @@ test('F9.2 the window: "Suggested: <item>" and Accept in the row; nothing is sav
     cc_material_id: OAK18.id, stock_item_id: 'jc-oak-18', sheet_width_mm: 2800, sheet_length_mm: 2070, yield: 1.1,
   }]]);
   await m.unmount();
+});
+
+// ─── Ewa's proposals P3 to P13, the owner approved them on 01.11.2026 (Julia's second slice) ───────────────────────
+
+test('P3 under a linked sheet the numbers the purchase list counts with: "<w> x <l> mm, offcut <n> %"', async () => {
+  const OAK19 = entryById('sheet.egger.h3325_28.19');
+  stubJc({
+    links: new Map([
+      [OAK18.id, { cc_material_id: OAK18.id, stock_item_id: 'jc-oak-18', sheet_width_mm: 1220, sheet_length_mm: 2440, yield: '1.050' }],
+      [OAK19.id, { cc_material_id: OAK19.id, stock_item_id: 'jc-oak-18', sheet_width_mm: 2800, sheet_length_mm: 2070, yield: null }],
+    ]),
+  });
+  open();
+  const { root, unmount } = await mount(React.createElement(LinkMaterialsModal));
+  assert.equal(textOf(one(rowOf(root, OAK18), by('data-link-sheet-size', '1'))).trim(), '1220 x 2440 mm, offcut 5 %', 'the link\'s own yield');
+  assert.equal(textOf(one(rowOf(root, OAK19), by('data-link-sheet-size', '1'))).trim(), '2800 x 2070 mm, offcut 10 %', 'no yield on the link: the workshop\'s 1.10');
+  assert.equal(one(rowOf(root, entryById('sheet.egger.h3325_28.22')), by('data-link-sheet-size')), null, 'a sheet not linked says no size');
+  await unmount();
+});
+
+test('P4 the not set up line says whom to ask', async () => {
+  stubJc({ status: 'not-set-up' });
+  open();
+  const { root, unmount } = await mount(React.createElement(LinkMaterialsModal));
+  assert.ok(textOf(one(root, by('data-link-not-set-up', '1'))).includes(`${LINKS_NOT_SET_UP} The list below is read only until it is. Ask your Joinery Core administrator.`));
+  await unmount();
+});
+
+test('P6 "Accept all suggestions" counts only the rows shown (brand, family, search, filter)', async () => {
+  stubJc();
+  open();
+  const { root, unmount } = await mount(React.createElement(LinkMaterialsModal));
+  const acceptAll = () => one(root, by('data-link-accept-all', '1'));
+  assert.equal(textOf(acceptAll()).trim(), 'Accept all suggestions (1)', 'Egger: the H3325 18 mm row');
+  await type(one(root, by('data-link-search', '1')), 'U999');
+  assert.equal(acceptAll(), null, 'a search that hides the suggested row hides its Accept all');
+  await click(one(root, by('data-link-search-clear', '1')));
+  await click(one(root, by('data-link-brand', 'mdf')));
+  assert.equal(textOf(acceptAll()).trim(), 'Accept all suggestions (1)', 'MDF: the MDF 18 row, never the Egger one');
+  await click(acceptAll());
+  const panel = one(root, by('data-link-accept-all-panel', '1'));
+  assert.deepEqual(all(panel, by('data-link-accept-tick')).map((t) => t.props['data-link-accept-tick']), [rowToken(MDF18.id)]);
+  assert.deepEqual(all(panel, by('data-link-accept-all-sheet')).map((n) => n.props['data-link-accept-all-sheet']), ['mdf'], 'one size, for the one brand ticked');
+  await unmount();
+});
+
+test('P8 Unlink says "Unlinked for all projects" with Undo, and Undo saves the old link back with its sizes and yield', async () => {
+  stubJc({ links: new Map([[OAK18.id, { cc_material_id: OAK18.id, stock_item_id: 'jc-oak-18', sheet_width_mm: 2800, sheet_length_mm: 2070, yield: '1.100' }]]) });
+  open();
+  const toasts = [];
+  const notify = useUiStore.getState().notify;
+  useUiStore.setState({ notify: (m, tone, opts) => { toasts.push({ m, tone, action: opts?.action || null }); } });
+  const { root, unmount } = await mount(React.createElement(LinkMaterialsModal));
+  await click(one(rowOf(root, OAK18), by('data-link-unlink', '1')));
+  assert.deepEqual(calls.unlink, [OAK18.id]);
+  assert.equal(rowOf(root, OAK18).props['data-link-status'], 'not-linked');
+  assert.equal(toasts.length, 1);
+  assert.equal(toasts[0].m, 'Unlinked for all projects');
+  assert.equal(toasts[0].tone, 'warn', 'the level that carries a button');
+  assert.equal(toasts[0].action.label, 'Undo');
+  await React.act(async () => { toasts[0].action.run(); });
+  assert.deepEqual(calls.link, [[{
+    cc_material_id: OAK18.id, stock_item_id: 'jc-oak-18', yield: 1.1, sheet_width_mm: 2800, sheet_length_mm: 2070,
+  }]], 'the old link, as it stood');
+  assert.equal(rowOf(root, OAK18).props['data-link-status'], 'linked');
+  useUiStore.setState({ notify });
+  await unmount();
+});
+
+test('P11 no automatic move after a one click link; "Next not linked" moves the selection when asked', async () => {
+  stubJc();
+  open();
+  const { root, unmount } = await mount(React.createElement(LinkMaterialsModal));
+  await click(one(root, by('data-link-tab', 'hinges')));
+  await click(rowOf(root, HINGE));
+  await click(one(root, by('data-material-link', 'jc-hinge')));
+  assert.deepEqual(calls.link, [[{ cc_material_id: HINGE.id, stock_item_id: 'jc-hinge' }]]);
+  const target = () => one(root, by('data-link-target')).props['data-link-target'];
+  assert.equal(target(), rowToken(HINGE.id), 'the selection stays on the hinge just linked');
+  const list = entriesOf('hinges');
+  const at = list.findIndex((e) => e.id === HINGE.id);
+  const want = [...list.slice(at + 1), ...list.slice(0, at)].find((e) => e.id !== HINGE.id);
+  await click(one(root, by('data-link-next', '1')));
+  assert.equal(target(), rowToken(want.id), 'Next not linked: the next row of the list that is not linked');
+  await unmount();
+});
+
+test('P12 the right column opens on the tab\'s kind, Paint finds the stock\'s paint; a sheet of another thickness is said in amber', async () => {
+  stubJc();
+  open({ department: 'paint' });
+  const { root, unmount } = await mount(React.createElement(LinkMaterialsModal));
+  const right = () => one(root, by('data-link-stock', '1'));
+  assert.equal(one(right(), by('data-material-kind-chip', 'paint')).props['aria-pressed'], true);
+  assert.deepEqual(all(right(), by('data-material-link')).map((b) => b.props['data-material-link']), ['jc-paint'], 'a stock row that says Paint');
+  await click(one(root, by('data-link-tab', 'hinges')));
+  assert.equal(one(right(), by('data-material-kind-chip', 'hardware')).props['aria-pressed'], true);
+  assert.deepEqual(all(right(), by('data-material-link')).map((b) => b.props['data-material-link']), ['jc-hinge']);
+  await click(one(root, by('data-link-tab', 'consumables')));
+  assert.equal(one(right(), by('data-material-kind-chips')), null, 'Consumables: every kind, no chips');
+  assert.equal(all(right(), by('data-material-link')).length, STOCK.length);
+  await click(one(root, by('data-link-tab', 'sheets')));
+  const OAK19 = entryById('sheet.egger.h3325_28.19');
+  await click(rowOf(root, OAK19));
+  await click(one(root, by('data-material-link', 'jc-oak-18')));
+  const warn = one(one(root, by('data-link-form', 'sheet')), by('data-link-thickness-warn', '1'));
+  assert.equal(textOf(warn).trim(), 'This stock item is 18 mm, the material is 19 mm');
+  assert.match(warn.props.className, /text-status-warn/);
+  assert.equal(one(one(root, by('data-link-form', 'sheet')), by('data-link-save', '1')).props.disabled, false, 'it does not block');
+  await click(rowOf(root, OAK18));
+  await click(one(root, by('data-material-link', 'jc-oak-18')));
+  assert.equal(one(one(root, by('data-link-form', 'sheet')), by('data-link-thickness-warn')), null, 'the same thickness says nothing');
+  await unmount();
+});
+
+test('P13 "Search by name" on every tab but Sheets; "Not linked" stays on one line', async () => {
+  stubJc();
+  open();
+  const { root, unmount } = await mount(React.createElement(LinkMaterialsModal));
+  assert.equal(one(root, by('data-link-search', '1')).props.placeholder, 'Search by name or decor code');
+  assert.match(one(rowOf(root, OAK18), by('data-link-words', '1')).props.className, /whitespace-nowrap/);
+  for (const d of DEPARTMENTS.filter((x) => x.id !== 'sheets')) {
+    await click(one(root, by('data-link-tab', d.id)));
+    assert.equal(one(root, by('data-link-search', '1')).props.placeholder, 'Search by name', d.id);
+  }
+  await unmount();
+});
+
+test('P10 from the rail, on a project with entries not linked: the window opens on "Used in this project", and counts this project', async () => {
+  const { purchaseBom } = await import('../src/engine/bom.js');
+  const { migrateDesign } = await import('../src/engine/design.js');
+  const { useCabinetProfileStore } = await import('../src/stores/cabinetProfileStore.js');
+  useProjectStore.getState().newProject('Used walk', { id: 'it-used', number: '2605' });
+  for (const t of ['BUD', 'BUDTALL']) useProjectStore.getState().addUnit(t, { params: { doors: true } });
+  try {
+    const st = useProjectStore.getState();
+    const used = new Set(purchaseBom(st.allResults(), {
+      links: new Map(), stock: STOCK, profile: useCabinetProfileStore.getState().profile, design: migrateDesign(st.project.design), bespoke: [],
+    }).rows.map((r) => r.catalogueId).filter(Boolean));
+    const leg = entryById('leg.adjustable');
+    assert.ok(used.has(leg.id) && used.has('sheet.generic.18'), 'the job uses the legs and the generic 18 mm board');
+    stubJc({ links: new Map([[leg.id, { cc_material_id: leg.id, stock_item_id: 'jc-hinge' }]]) });
+    open();
+    let m = await mount(React.createElement(LinkMaterialsModal));
+    await flush();
+    assert.equal(one(m.root, by('data-link-filter', 'used')).props['aria-pressed'], true, 'opens on Used in this project');
+    // Sheets, Egger holds nothing this job uses: the window opens where the first one not linked is (Sheets, Generic).
+    assert.equal(one(m.root, by('data-link-tab', 'sheets')).props['aria-selected'], true);
+    assert.equal(one(m.root, by('data-link-brand', 'generic')).props['aria-pressed'], true);
+    const rows = all(m.root, by('data-link-row'));
+    assert.ok(rows.length > 0 && rows.every((r) => r.props['data-link-used'] === '1'), 'the rows this project uses');
+    assert.ok(rows.some((r) => r.props['data-link-status'] !== 'linked'), 'among them one not linked');
+    const pc = one(m.root, by('data-link-project-count'));
+    assert.equal(pc.props['data-link-project-total'], String(used.size));
+    assert.equal(textOf(pc).trim(), `This project: 1 of ${used.size} linked`);
+    // Ewa's check of the UX frames: on "Used in this project" the tabs and the brands count THIS project.
+    const usedEntries = [...used].map((id) => entryById(id)).filter(Boolean);
+    const want = (dept) => {
+      const es = usedEntries.filter((e) => e.department === dept);
+      return { linked: es.filter((e) => e.id === leg.id).length, total: es.length };
+    };
+    for (const d of DEPARTMENTS) {
+      const t = one(m.root, by('data-link-tab', d.id));
+      const w = want(d.id);
+      assert.equal(t.props['data-link-tab-scope'], 'project', d.id);
+      assert.equal(textOf(one(t, by('data-link-tab-count'))).trim(), `${w.linked} / ${w.total}`, d.id);
+      assert.equal(t.props['data-link-tab-tone'], w.total === 0 ? 'none' : w.linked === w.total ? 'all' : 'some', d.id);
+    }
+    const genericSheets = usedEntries.filter((e) => e.department === 'sheets' && (e.brand || 'generic') === 'generic').length;
+    assert.equal(textOf(one(one(m.root, by('data-link-brand', 'generic')), by('data-link-brand-count'))).trim(), `0 / ${genericSheets}`);
+    assert.equal(textOf(one(one(m.root, by('data-link-brand', 'egger')), by('data-link-brand-count'))).trim(), '0 / 0');
+    // Moving to another tab keeps the project's view.
+    await click(one(m.root, by('data-link-tab', leg.department)));
+    assert.equal(one(m.root, by('data-link-filter', 'used')).props['aria-pressed'], true, 'the filter stays on Used in this project');
+    assert.ok(all(m.root, by('data-link-row')).every((r) => r.props['data-link-used'] === '1'));
+    assert.ok(all(m.root, by('data-link-row')).some((r) => r.props['data-link-row'] === rowToken(leg.id)));
+    await click(one(m.root, by('data-link-filter', 'all')));
+    assert.equal(one(m.root, by('data-link-filter', 'all')).props['aria-pressed'], true, 'the joiner\'s own choice stands');
+    assert.equal(one(m.root, by('data-link-tab', 'sheets')).props['data-link-tab-scope'], 'catalogue', 'All: the catalogue\'s counts again');
+    await click(one(m.root, by('data-link-tab', 'sheets')));
+    assert.equal(one(one(m.root, by('data-link-brand', 'generic')), by('data-link-brand-count')), null, 'no project count on the brands');
+    await m.unmount();
+    // Opened at an entry (the BOM's Link): the filter is All, the entry in view.
+    open({ entryId: HINGE.id, from: 'bom' });
+    m = await mount(React.createElement(LinkMaterialsModal));
+    await flush();
+    assert.equal(one(m.root, by('data-link-filter', 'all')).props['aria-pressed'], true);
+    await m.unmount();
+    // Everything the job uses linked: the window opens on All.
+    stubJc({ links: new Map([...used].map((id) => [id, { cc_material_id: id, stock_item_id: 'jc-hinge', sheet_width_mm: 2440, sheet_length_mm: 1220 }])) });
+    open();
+    m = await mount(React.createElement(LinkMaterialsModal));
+    await flush();
+    assert.equal(one(m.root, by('data-link-filter', 'all')).props['aria-pressed'], true);
+    assert.equal(textOf(one(m.root, by('data-link-project-count'))).trim(), `This project: ${used.size} of ${used.size} linked`);
+    await m.unmount();
+  } finally {
+    useProjectStore.getState().newProject?.({ id: 'it-link', name: 'Link walk', number: '2601' });
+  }
 });

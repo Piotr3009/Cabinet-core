@@ -16,6 +16,11 @@
 // by the room's own label, and the unit number. A display of the selection and
 // nothing else: it selects nothing, and the button only shows the inspector
 // again (`showInspector`), never pins it.
+//
+// THE UX TURN, U2: the shell draws no inspector column while nothing is
+// selected and nothing is pinned, so the button stands only where showing the
+// column would show something (`canShowInspector`, the shell's answer); a
+// button that brought back nothing would be a press with nothing after it.
 
 import { Fragment, useMemo } from 'react';
 import { useUiStore } from '../../stores/uiStore.js';
@@ -23,7 +28,7 @@ import { useProjectStore } from '../../stores/projectStore.js';
 import { Icon } from './StudioIcons.jsx';
 import { breadcrumbOf } from './lib/studioFace.js';
 
-export default function SelectionBreadcrumb() {
+export default function SelectionBreadcrumb({ canShowInspector = true } = {}) {
   const projectName = useProjectStore((s) => s.project.name);
   const room = useProjectStore((s) => s.project.room);
   const units = useProjectStore((s) => s.units);
@@ -58,7 +63,7 @@ export default function SelectionBreadcrumb() {
       </nav>
       <span className="flex-1" />
       <span className="studio-selection-scope shrink-0" data-studio="breadcrumb-count">{crumb.words}</span>
-      {inspector === 'none' && (
+      {inspector === 'none' && canShowInspector && (
         <button
           type="button"
           className="cc-btn-ghost studio-icon-btn shrink-0"

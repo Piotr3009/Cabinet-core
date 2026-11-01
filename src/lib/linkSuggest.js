@@ -236,6 +236,61 @@ export function acceptAllLinks(items = [], ticked = new Set(), sheet = {}) {
   return { ok: links.length > 0, links, errors: {} };
 }
 
+/** The sheet brand an entry is sold under ('egger', 'mdf', 'generic'): the Accept all panel asks one size per brand. */
+export function sheetBrandOf(entry) {
+  return String(entry?.brand || 'generic');
+}
+
+/**
+ * Accept all suggestions, the size asked ONCE PER BRAND (Ewa's P6, the owner
+ * approved 01.11.2026): an Egger board and an MDF board are rarely the same
+ * sheet, so a size typed for one is never given to the other. `sizes` is
+ * `{ [brand]: { width, length, offcutPct } }`. Resolves `{ ok, links, errors,
+ * brands }`: `brands` the brands of the ticked sheets, in the order they come;
+ * `errors` the words per brand and field. One brand with a bad size offers
+ * nothing to save.
+ */
+export function acceptAllLinksByBrand(items = [], ticked = new Set(), sizes = {}) {
+  const chosen = (items || []).filter((it) => it?.entry && it?.row && ticked.has(it.entry.id));
+  const brands = [];
+  for (const it of chosen) {
+    const b = sheetBrandOf(it.entry);
+    if (formKindOf(it.entry) === 'sheet' && !brands.includes(b)) brands.push(b);
+  }
+  const values = {};
+  const errors = {};
+  for (const b of brands) {
+    const form = sheetFields(sizes?.[b] || {});
+    if (form.ok) values[b] = form.values; else errors[b] = form.errors;
+  }
+  if (Object.keys(errors).length) return { ok: false, links: [], errors, brands };
+  const links = chosen.map(({ entry, row }) => ({
+    cc_material_id: entry.id,
+    stock_item_id: row.id,
+    ...(formKindOf(entry) === 'sheet' ? values[sheetBrandOf(entry)] : {}),
+  }));
+  return { ok: links.length > 0, links, errors: {}, brands };
+}
+
+/**
+ * The link as it stood, to be saved back (the Undo of an Unlink, Ewa's P8):
+ * the stock row, the sheet's sizes, its yield and the paint's coverage, each
+ * only when the link held it. Numbers as numbers (Joinery Core's read may hand
+ * a numeric back as text).
+ */
+export function linkBack(link, ccMaterialId = link?.cc_material_id) {
+  if (!ccMaterialId || !link?.stock_item_id) return null;
+  const has = (v) => v != null && v !== '' && Number.isFinite(Number(v));
+  return {
+    cc_material_id: String(ccMaterialId),
+    stock_item_id: link.stock_item_id,
+    ...(has(link.yield) ? { yield: Number(link.yield) } : {}),
+    ...(has(link.sheet_width_mm) ? { sheet_width_mm: Number(link.sheet_width_mm) } : {}),
+    ...(has(link.sheet_length_mm) ? { sheet_length_mm: Number(link.sheet_length_mm) } : {}),
+    ...(has(link.coverage_m2_per_l) ? { coverage_m2_per_l: Number(link.coverage_m2_per_l) } : {}),
+  };
+}
+
 /**
  * The search of the left table (F8.3): by the entry's name and its decor code,
  * case folded; "h3325", "H 3325" and "3325" all find "Egger H3325 ST28 ...".

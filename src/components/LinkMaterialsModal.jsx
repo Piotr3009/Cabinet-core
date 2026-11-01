@@ -6,7 +6,7 @@
  * by any means including automated tools and AI systems, is strictly
  * prohibited without prior written permission from Skylon Development Ltd.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import Modal from './Modal.jsx';
 import MaterialPicker, { StockPhoto, PhotoCard } from './MaterialPicker.jsx';
@@ -26,7 +26,8 @@ import { JC_OFFLINE } from '../lib/jcApi.js';
 import { LINKS_NOT_SET_UP } from '../lib/jcLinks.js';
 import { categoryTree, STOCK_EMPTY, STOCK_PAGE } from '../lib/jcStock.js';
 import {
-  acceptAllLinks, formKindOf, linkStatus, matchesEntry, offcutPctOf, paintFields, rowToken, sheetFields, suggestAll,
+  acceptAllLinksByBrand, formKindOf, linkBack, linkStatus, matchesEntry, offcutPctOf, paintFields, rowToken, sheetBrandOf,
+  sheetFields, suggestAll,
 } from '../lib/linkSuggest.js';
 
 /**
@@ -61,6 +62,27 @@ const FILTERS = [
 ];
 
 const LINKED = 'Linked';
+
+/**
+ * Ewa's P12 (the owner approved, 01.11.2026): the right column opens on the kind of the tab, and the joiner can
+ * switch it to All kinds (MaterialPicker's chips). Consumables hold edging and screws: every kind.
+ */
+const KIND_OF_TAB = Object.freeze({
+  sheets: 'board',
+  hinges: 'hardware',
+  runners: 'hardware',
+  ironmongery: 'hardware',
+  internal: 'hardware',
+  paint: 'paint',
+  consumables: 'all',
+});
+
+/** The order an entry is offered in when the window opens on what this project still needs: tab, then brand. */
+const openRank = (e) => {
+  const d = DEPARTMENTS.findIndex((x) => x.id === e.department);
+  const b = SHEET_BRANDS.findIndex((x) => x.id === sheetBrandOf(e));
+  return (d < 0 ? 99 : d) * 100 + (e.department === 'sheets' && b >= 0 ? b : 0);
+};
 
 /** The tone of a tab's count: green when every entry is linked, amber otherwise. */
 const toneOf = (linked, total) => (total === 0 ? 'none' : linked === total ? 'all' : 'some');
@@ -109,10 +131,15 @@ export default function LinkMaterialsModal() {
   const [brand, setBrand] = useState(opened?.brand || 'egger');
   const [family, setFamily] = useState(null);
   const [q, setQ] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilterState] = useState('all');
+  // Ewa's P10: opened from the rail, the window opens on what THIS project still needs (below, once Joinery Core has
+  // answered). Opened at an entry or a department, or once the joiner has chosen a tab, a brand or a filter, it never
+  // moves by itself.
+  const chosenByHand = useRef(Boolean(opened || args.department));
+  const setFilter = (id) => { chosenByHand.current = true; setFilterState(id); };
   const [selectedId, setSelectedId] = useState(opened?.id || null);
-  const [pending, setPending] = useState(null);       // the small form: { entryId, row, kind, width, length, offcut, coverage }
-  const [acceptAll, setAcceptAll] = useState(null);   // { ticked: Set, width, length, offcut }
+  const [pending, setPending] = useState(null);       // the small form: { entryId, row, kind, width, length, offcut, coverage, tried }
+  const [acceptAll, setAcceptAll] = useState(null);   // { ticked: Set, sizes: { [brand]: { width, length, offcut } }, offcut }
   const [enlarged, setEnlarged] = useState(null);     // { url, fill, title, caption, anchor }
   const [decorsReady, setDecorsReady] = useState(0);
 
@@ -196,14 +223,16 @@ export default function LinkMaterialsModal() {
     return familiesInCatalogue([...seen.values()]);
   }, [tab, brand, tabEntries, decorsReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── the suggestions of the tab (law 8: a sentence and an Accept, nothing saved) ──
+  // ── the suggestions of the rows SHOWN (law 8: a sentence and an Accept, nothing saved). Ewa's P6: built from what
+  // the joiner sees after the brand, the family, the search and the filter, so "Accept all suggestions (n)" never
+  // counts a row he cannot see. ──
   const suggestions = useMemo(
-    () => suggestAll(tabEntries, stock, links, { stockOk }),
-    [tabEntries, stock, links, stockOk],
+    () => suggestAll(shown, stock, links, { stockOk }),
+    [shown, stock, links, stockOk],
   );
   const suggestionItems = useMemo(
-    () => tabEntries.filter((e) => suggestions.has(e.id)).map((e) => ({ entry: e, row: suggestions.get(e.id) })),
-    [tabEntries, suggestions],
+    () => shown.filter((e) => suggestions.has(e.id)).map((e) => ({ entry: e, row: suggestions.get(e.id) })),
+    [shown, suggestions],
   );
 
   const selected = selectedId ? entryById(selectedId) : null;
@@ -211,25 +240,47 @@ export default function LinkMaterialsModal() {
   const yieldDefault = offcutPctOf(profile?.materials?.sheetYield);
 
   const switchTab = (id) => {
-    setTab(id); setFamily(null); setFilter('all'); setQ(''); setPending(null); setAcceptAll(null);
+    chosenByHand.current = true;
+    // Ewa's check of the UX frames: "Used in this project" stays on when the joiner moves to another tab (the tabs then
+    // count the project), so he can walk the project's lines tab by tab; the other filters reset to All as before.
+    setTab(id); setFamily(null); setFilterState((f) => (f === 'used' ? 'used' : 'all')); setQ(''); setPending(null); setAcceptAll(null);
     if (selected && selected.department !== id) setSelectedId(null);
   };
 
-  /** The next row of the list that is not linked yet, after `entryId`: the hand goes on linking. */
+  /** The next row of the list that is not linked yet, after `entryId` (the first one when none is chosen). */
   const nextAfter = (entryId) => {
     const at = shown.findIndex((e) => e.id === entryId);
     const rest = [...shown.slice(at + 1), ...shown.slice(0, Math.max(0, at))];
     return rest.find((e) => e.id !== entryId && statusOf(e).status !== 'linked')?.id || null;
   };
+  const nextId = nextAfter(selectedId);
+  // Ewa's P11: the selection never moves by itself after a link (a second press of the same Link linked the NEXT
+  // entry); "Next not linked" moves it, when the joiner asks.
+  const goNext = () => {
+    if (!nextId) return;
+    setSelectedId(nextId);
+    setPending(null);
+    if (typeof document !== 'undefined') {
+      document.querySelector?.(`[data-link-row="${rowToken(nextId)}"]`)?.scrollIntoView?.({ block: 'center' });
+    }
+  };
 
-  const save = async (list, { advanceFrom = null } = {}) => {
+  const save = async (list) => {
     const res = await link(list);
     if (res?.ok) {
       setPending(null);
       if (fromProject) notify('Saved for all projects', 'success');
-      // Opened at ONE line (the BOM's or Project settings' Link): the selection stays on it, never moves on by itself
-      // to an entry the joiner did not choose (the walk of 01.11.2026, station g). From the rail, the hand goes on linking.
-      if (advanceFrom && !fromProject) setSelectedId(nextAfter(advanceFrom));
+    }
+    return res;
+  };
+
+  // Ewa's P8: an Unlink says it is for all projects and can be undone: Undo saves the old link back, with its sheet
+  // sizes, its yield and its coverage. A yellow message, the level that carries a button (engine/messages.js).
+  const unlinkEntry = async (entry) => {
+    const back = linkBack(statusOf(entry).link, entry.id);
+    const res = await unlink(entry.id);
+    if (res?.ok && back) {
+      notify('Unlinked for all projects', 'warn', { action: { label: 'Undo', run: () => { link([back])?.catch?.(() => {}); } } });
     }
     return res;
   };
@@ -238,7 +289,7 @@ export default function LinkMaterialsModal() {
   const startLink = (entry, row) => {
     if (!entry || !row || readOnly) return;
     const kind = formKindOf(entry);
-    if (!kind) { save([{ cc_material_id: entry.id, stock_item_id: row.id }], { advanceFrom: entry.id }); return; }
+    if (!kind) { save([{ cc_material_id: entry.id, stock_item_id: row.id }]); return; }
     const own = statusOf(entry).link;
     setPending({
       entryId: entry.id,
@@ -252,6 +303,7 @@ export default function LinkMaterialsModal() {
   };
 
   const choose = (entry) => {
+    chosenByHand.current = true;
     setSelectedId(entry.id);
     if (pending && pending.entryId !== entry.id) setPending(null);
   };
@@ -261,6 +313,54 @@ export default function LinkMaterialsModal() {
   const loading = status === 'idle' || status === 'loading';
   const stockEmpty = stockOk && !loading && stock.length === 0;
   const pct = totals.total ? Math.round((totals.linked / totals.total) * 100) : 0;
+
+  // Ewa's check of the UX frames: with "Used in this project" the tabs and the sheet brands count THIS project
+  // ("<linked> / <used>"), so the joiner sees where the lines not linked are; with the other filters, the catalogue.
+  const projectTotals = useMemo(() => {
+    const per = {};
+    const brands = {};
+    for (const d of DEPARTMENTS) per[d.id] = { linked: 0, total: 0 };
+    for (const e of live) {
+      if (!usedIds.has(e.id)) continue;
+      const ok = linkStatus(e, links, stock, { stockOk }).status === 'linked';
+      if (!per[e.department]) per[e.department] = { linked: 0, total: 0 };
+      per[e.department].total += 1;
+      if (ok) per[e.department].linked += 1;
+      if (e.department === 'sheets') {
+        const b = sheetBrandOf(e);
+        if (!brands[b]) brands[b] = { linked: 0, total: 0 };
+        brands[b].total += 1;
+        if (ok) brands[b].linked += 1;
+      }
+    }
+    return { per, brands };
+  }, [live, usedIds, links, stock, stockOk]);
+  const byProject = filter === 'used';
+
+  // Ewa's P10: the count that matters for the job on the screen, beside the whole catalogue's.
+  const projectCount = useMemo(() => {
+    let linked = 0;
+    for (const id of usedIds) if (linkStatus({ id }, links, stock, { stockOk }).status === 'linked') linked += 1;
+    return { linked, total: usedIds.size };
+  }, [usedIds, links, stock, stockOk]);
+
+  // Ewa's P10: once Joinery Core has answered, a window opened from the rail on a project with entries not linked
+  // opens on "Used in this project", at the first tab (and sheet brand) that holds one when the Sheets, Egger view
+  // holds none. Decided once; never over the joiner's own choice.
+  useEffect(() => {
+    if (chosenByHand.current || loading) return;
+    chosenByHand.current = true;
+    const waiting = live
+      .filter((e) => usedIds.has(e.id) && linkStatus(e, links, stock, { stockOk }).status !== 'linked')
+      .sort((a, b) => openRank(a) - openRank(b));
+    if (!waiting.length) return;
+    setFilterState('used');
+    const here = waiting.some((e) => e.department === tab && (tab !== 'sheets' || sheetBrandOf(e) === brand));
+    if (here) return;
+    const first = waiting[0];
+    setTab(first.department);
+    if (first.department === 'sheets') setBrand(sheetBrandOf(first));
+  }, [loading, usedIds, links, stock, stockOk]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Modal
@@ -285,6 +385,15 @@ export default function LinkMaterialsModal() {
           <p className="flex-1 text-ink-200" data-link-subline="1">
             {`Every material Cabinet Core uses, linked once to your Joinery Core stock. Saved for ${companyName || 'your company'}.`}
           </p>
+          {projectCount.total > 0 && (
+            <div
+              className={`shrink-0 text-right tabular-nums ${projectCount.linked === projectCount.total ? 'text-status-ok' : 'text-status-warn'}`}
+              data-link-project-count={String(projectCount.linked)}
+              data-link-project-total={String(projectCount.total)}
+            >
+              {`This project: ${projectCount.linked} of ${projectCount.total} linked`}
+            </div>
+          )}
           <div className="w-[260px] shrink-0" data-link-count={String(totals.linked)} data-link-total={String(totals.total)}>
             <div className="text-right text-ink-100 tabular-nums">{`${totals.linked} of ${totals.total} linked`}</div>
             <div className="h-1.5 rounded bg-shell-600 mt-1 overflow-hidden" data-link-bar={String(pct)}>
@@ -302,7 +411,7 @@ export default function LinkMaterialsModal() {
         )}
         {notSetUp && (
           <div className="flex items-center gap-2 rounded px-2 py-1.5 border border-status-warn/60 bg-status-warn/10 text-status-warn" data-link-not-set-up="1">
-            <span className="flex-1">{LINKS_NOT_SET_UP} The list below is read only until it is.</span>
+            <span className="flex-1">{LINKS_NOT_SET_UP} The list below is read only until it is. Ask your Joinery Core administrator.</span>
             <button type="button" className="cc-btn" data-link-retry="1" onClick={() => load?.({ force: true })}>Retry</button>
           </div>
         )}
@@ -311,7 +420,7 @@ export default function LinkMaterialsModal() {
         {/* THE DEPARTMENTS, as tabs with their counts (F8.2): never one scrolled list. */}
         <div className="flex flex-wrap gap-1 border-b border-shell-600 pb-2" role="tablist" data-link-tabs="1">
           {DEPARTMENTS.map((d) => {
-            const c = totals.per[d.id] || { linked: 0, total: 0 };
+            const c = (byProject ? projectTotals.per : totals.per)[d.id] || { linked: 0, total: 0 };
             const tone = toneOf(c.linked, c.total);
             return (
               <button
@@ -322,6 +431,7 @@ export default function LinkMaterialsModal() {
                 className={`cc-btn ${tab === d.id ? 'border-gold text-gold' : ''}`}
                 data-link-tab={d.id}
                 data-link-tab-tone={tone}
+                data-link-tab-scope={byProject ? 'project' : 'catalogue'}
                 onClick={() => switchTab(d.id)}
               >
                 {d.label}
@@ -358,9 +468,21 @@ export default function LinkMaterialsModal() {
                   className={`cc-btn ${brand === b.id ? 'border-gold text-gold' : ''}`}
                   aria-pressed={brand === b.id}
                   data-link-brand={b.id}
-                  onClick={() => { setBrand(b.id); setFamily(null); }}
+                  onClick={() => { chosenByHand.current = true; setBrand(b.id); setFamily(null); }}
                 >
                   {b.label}
+                  {byProject && (() => {
+                    const c = projectTotals.brands[b.id] || { linked: 0, total: 0 };
+                    const tone = toneOf(c.linked, c.total);
+                    return (
+                      <span
+                        className={`ml-1.5 tabular-nums ${tone === 'all' ? 'text-status-ok' : tone === 'some' ? 'text-status-warn' : 'text-ink-400'}`}
+                        data-link-brand-count={`${c.linked}/${c.total}`}
+                      >
+                        {`${c.linked} / ${c.total}`}
+                      </span>
+                    );
+                  })()}
                 </button>
               )))}
             </div>
@@ -401,7 +523,7 @@ export default function LinkMaterialsModal() {
                 <input
                   className="cc-input pr-7"
                   value={q}
-                  placeholder="Search by name or decor code"
+                  placeholder={tab === 'sheets' ? 'Search by name or decor code' : 'Search by name'}
                   data-link-search="1"
                   onChange={(e) => setQ(e.target.value)}
                 />
@@ -439,7 +561,7 @@ export default function LinkMaterialsModal() {
                   disabled={readOnly}
                   data-link-accept-all="1"
                   onClick={() => setAcceptAll({
-                    ticked: new Set(suggestionItems.map((it) => it.entry.id)), width: '', length: '', offcut: yieldDefault,
+                    ticked: new Set(suggestionItems.map((it) => it.entry.id)), sizes: {}, offcut: yieldDefault,
                   })}
                 >
                   {`Accept all suggestions (${suggestionItems.length})`}
@@ -496,9 +618,10 @@ export default function LinkMaterialsModal() {
                         onChoose={() => choose(entry)}
                         onAccept={(row) => { choose(entry); startLink(entry, row); }}
                         onChange={() => choose(entry)}
-                        onUnlink={() => unlink(entry.id)}
-                        onSave={(list) => save(list, { advanceFrom: entry.id })}
+                        onUnlink={() => unlinkEntry(entry)}
+                        onSave={(list) => save(list)}
                         onEnlarge={setEnlarged}
+                        defaultOffcut={yieldDefault}
                       />
                     ))}
                   </tbody>
@@ -509,10 +632,22 @@ export default function LinkMaterialsModal() {
 
           {/* RIGHT: the company's stock, the component the Stock window uses (F8.4). */}
           <div className="flex-[2] min-w-0 flex flex-col gap-2 min-h-0" data-link-stock="1">
-            <div className="text-ink-100" data-link-target={selected ? rowToken(selected.id) : ''}>
-              {selected
-                ? <>Linking: <span className="text-gold">{selected.name}</span></>
-                : <span className="text-ink-400">Choose a material on the left, then press Link on its row of your stock.</span>}
+            <div className="flex items-start gap-2">
+              <div className="flex-1 min-w-0 text-ink-100" data-link-target={selected ? rowToken(selected.id) : ''}>
+                {selected
+                  ? <>Linking: <span className="text-gold">{selected.name}</span></>
+                  : <span className="text-ink-400">Choose a material on the left, then press Link on its row of your stock.</span>}
+              </div>
+              <button
+                type="button"
+                className="cc-btn px-2 py-0.5 shrink-0"
+                disabled={!nextId}
+                data-link-next="1"
+                title="Choose the next material of the list on the left that is not linked yet"
+                onClick={goNext}
+              >
+                Next not linked
+              </button>
             </div>
             {stockEmpty && (
               <div className="flex items-center gap-2 rounded px-2 py-1.5 border border-shell-600" data-link-stock-empty="1">
@@ -525,7 +660,9 @@ export default function LinkMaterialsModal() {
               value={pending?.row?.id || (selected ? statusOf(selected).link?.stock_item_id : null) || null}
               tree={tree}
               testId="link"
+              kind={KIND_OF_TAB[tab] || 'all'}
               showKind={false}
+              kindChips
               categoryChips
               maxHeight="60vh"
               emptyText={stockOk ? STOCK_EMPTY : (error || JC_OFFLINE)}
@@ -556,13 +693,19 @@ export default function LinkMaterialsModal() {
 /** One catalogue entry: what Cabinet Core calls it, what it is linked to, its price, its status. */
 function EntryRow({
   entry, state, used, selected, suggestion, rowError, busy, readOnly, pending,
-  onPending, onChoose, onAccept, onChange, onUnlink, onSave, onEnlarge,
+  onPending, onChoose, onAccept, onChange, onUnlink, onSave, onEnlarge, defaultOffcut = '',
 }) {
   const decor = decorOf(entry);
   const label = decor ? decorLabel(decor) : '';
   const row = state.row;
   const words = state.status === 'linked' ? LINKED : state.status === 'removed' ? LINK_WORDS.removed : LINK_WORDS.notLinked;
   const tone = state.status === 'linked' ? 'text-status-ok' : 'text-status-danger';
+  // Ewa's P3: the numbers the purchase list counts this sheet with, under its link (the link's own, or the workshop's
+  // offcut allowance when the link holds none).
+  const sized = entry.kind === 'sheet' && state.link && Number(state.link.sheet_width_mm) > 0 && Number(state.link.sheet_length_mm) > 0;
+  const sizeWords = sized
+    ? `${Number(state.link.sheet_width_mm)} x ${Number(state.link.sheet_length_mm)} mm, offcut ${offcutPctOf(state.link.yield) || defaultOffcut || 0} %`
+    : '';
   return (
     <>
       <tr
@@ -606,6 +749,7 @@ function EntryRow({
               <div className="min-w-0">
                 <div className="text-ink-400 tabular-nums">{row.item_number || ''}</div>
                 <div className="text-ink-100">{row.name}</div>
+                {sized && <div className="text-ink-400 tabular-nums" data-link-sheet-size="1">{sizeWords}</div>}
               </div>
             </div>
           ) : null}
@@ -628,7 +772,8 @@ function EntryRow({
           {row && money(row.price) ? `${money(row.price)}${row.unit ? ` / ${row.unit}` : ''}` : ''}
         </td>
         <td>
-          <span className={tone} data-link-words="1">{words}</span>
+          {/* Ewa's P13: "Not linked" on one line; only the long "removed" words may wrap. */}
+          <span className={`${tone} ${state.status === 'removed' ? '' : 'whitespace-nowrap'}`} data-link-words="1">{words}</span>
           {busy && <div className="text-ink-400">Saving...</div>}
           {rowError && <div className="text-status-danger" data-link-row-error="1">{rowError}</div>}
         </td>
@@ -650,6 +795,7 @@ function EntryRow({
                 className="cc-btn-ghost text-status-danger"
                 disabled={readOnly || busy}
                 data-link-unlink="1"
+                title="Unlink this material for all projects (Undo is offered)"
                 onClick={(e) => { e.stopPropagation?.(); onUnlink(); }}
               >
                 Unlink
@@ -678,10 +824,20 @@ function LinkForm({
   const check = sheet
     ? sheetFields({ width: pending.width, length: pending.length, offcutPct: pending.offcut })
     : paintFields({ coverage: pending.coverage });
+  // Ewa's P5: Save link stays pressable; pressed with a size empty or out of bounds, that field is outlined red with
+  // its words under it ("Required", "Whole millimetres, 100 to 6000") and nothing is saved.
+  const tried = Boolean(pending.tried);
+  const errorOf = (field, value) => (tried || String(value ?? '') !== '' ? check.errors[field] || null : null);
+  const red = (field, value) => (String(value ?? '') === '' || errorOf(field, value) ? 'border-status-danger' : '');
   const submit = () => {
-    if (!check.ok || disabled) return;
+    if (disabled) return;
+    if (!check.ok) { put({ tried: true }); return; }
     onSave([{ cc_material_id: entry.id, stock_item_id: pending.row.id, ...check.values }]);
   };
+  // Ewa's P12: a stock row of another thickness than the material is said in amber; it does not block.
+  const rowMm = Number(pending.row?.thickness);
+  const entryMm = Number(entry.thickness);
+  const otherThickness = sheet && rowMm > 0 && entryMm > 0 && rowMm !== entryMm;
   return (
     <div className="flex flex-wrap items-end gap-3 rounded border border-gold/60 bg-shell-700/40 p-2" data-link-form={pending.kind}>
       <div className="basis-full text-ink-100">
@@ -691,14 +847,14 @@ function LinkForm({
       </div>
       {sheet ? (
         <>
-          <Field label="Sheet width (mm)" error={pending.width !== '' ? check.errors.width : null}>
-            <input className={`cc-input w-[120px] text-right ${pending.width === '' ? 'border-status-danger' : ''}`} inputMode="numeric" required value={pending.width} data-link-sheet-width="1" onChange={(e) => put({ width: e.target.value })} />
+          <Field label="Sheet width (mm)" error={errorOf('width', pending.width)}>
+            <input className={`cc-input w-[120px] text-right ${red('width', pending.width)}`} inputMode="numeric" required value={pending.width} data-link-sheet-width="1" onChange={(e) => put({ width: e.target.value })} />
           </Field>
-          <Field label="Sheet length (mm)" error={pending.length !== '' ? check.errors.length : null}>
-            <input className={`cc-input w-[120px] text-right ${pending.length === '' ? 'border-status-danger' : ''}`} inputMode="numeric" required value={pending.length} data-link-sheet-length="1" onChange={(e) => put({ length: e.target.value })} />
+          <Field label="Sheet length (mm)" error={errorOf('length', pending.length)}>
+            <input className={`cc-input w-[120px] text-right ${red('length', pending.length)}`} inputMode="numeric" required value={pending.length} data-link-sheet-length="1" onChange={(e) => put({ length: e.target.value })} />
           </Field>
           <Field label="Offcut allowance (%)" error={check.errors.offcut}>
-            <input className="cc-input w-[100px] text-right" inputMode="decimal" value={pending.offcut} data-link-offcut="1" onChange={(e) => put({ offcut: e.target.value })} />
+            <input className={`cc-input w-[100px] text-right ${check.errors.offcut ? 'border-status-danger' : ''}`} inputMode="decimal" value={pending.offcut} data-link-offcut="1" onChange={(e) => put({ offcut: e.target.value })} />
           </Field>
         </>
       ) : (
@@ -706,11 +862,16 @@ function LinkForm({
           <input className="cc-input w-[120px] text-right" inputMode="decimal" value={pending.coverage} placeholder="optional" data-link-coverage="1" onChange={(e) => put({ coverage: e.target.value })} />
         </Field>
       )}
-      <button type="button" className="cc-btn-gold" disabled={disabled || !check.ok} data-link-save="1" onClick={submit}>Save link</button>
+      <button type="button" className="cc-btn-gold" disabled={disabled} data-link-save="1" onClick={submit}>Save link</button>
       <button type="button" className="cc-btn" data-link-cancel="1" onClick={() => onPending(null)}>Cancel</button>
       {sheet && !check.ok && (pending.width === '' || pending.length === '') && (
         <span className="text-status-danger basis-full" data-link-form-hint="1">
           Type the sheet&apos;s width and length: Cabinet Core counts the sheets to buy from them.
+        </span>
+      )}
+      {otherThickness && (
+        <span className="text-status-warn basis-full" data-link-thickness-warn="1">
+          {`This stock item is ${rowMm} mm, the material is ${entryMm} mm`}
         </span>
       )}
     </div>
@@ -727,13 +888,25 @@ function Field({ label, error, children }) {
   );
 }
 
-/** Accept all suggestions of a tab (F9.2): a tick each, the sheet size asked ONCE for the ticked sheets. */
+/**
+ * Accept all suggestions of the rows shown (F9.2, Ewa's P6): a tick each, the sheet size asked ONCE PER BRAND for the
+ * ticked sheets (an Egger board and an MDF board are rarely the same sheet).
+ */
 function AcceptAllPanel({
   items, state, onState, disabled, onCancel, onSave,
 }) {
   const tickedItems = items.filter((it) => state.ticked.has(it.entry.id));
-  const plan = acceptAllLinks(items, state.ticked, { width: state.width, length: state.length, offcutPct: state.offcut });
-  const needsSheet = tickedItems.some((it) => formKindOf(it.entry) === 'sheet');
+  const sizeOf = (b) => state.sizes?.[b] || { width: '', length: '', offcut: state.offcut ?? '' };
+  const sizes = {};
+  for (const it of tickedItems) {
+    const b = sheetBrandOf(it.entry);
+    const z = sizeOf(b);
+    sizes[b] = { width: z.width, length: z.length, offcutPct: z.offcut };
+  }
+  const plan = acceptAllLinksByBrand(items, state.ticked, sizes);
+  const brands = plan.brands || [];
+  const putSize = (b, patch) => onState({ ...state, sizes: { ...(state.sizes || {}), [b]: { ...sizeOf(b), ...patch } } });
+  const brandLabel = (b) => SHEET_BRANDS.find((x) => x.id === b)?.label || b;
   const toggle = (id) => {
     const next = new Set(state.ticked);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -760,20 +933,26 @@ function AcceptAllPanel({
           </li>
         ))}
       </ul>
-      {needsSheet && (
-        <div className="flex flex-wrap items-end gap-3" data-link-accept-all-sheet="1">
-          <span className="basis-full text-ink-200">One sheet size for every ticked sheet:</span>
-          <Field label="Sheet width (mm)" error={state.width !== '' ? plan.errors.width : null}>
-            <input className="cc-input w-[120px] text-right" inputMode="numeric" value={state.width} data-link-sheet-width="1" onChange={(e) => onState({ ...state, width: e.target.value })} />
-          </Field>
-          <Field label="Sheet length (mm)" error={state.length !== '' ? plan.errors.length : null}>
-            <input className="cc-input w-[120px] text-right" inputMode="numeric" value={state.length} data-link-sheet-length="1" onChange={(e) => onState({ ...state, length: e.target.value })} />
-          </Field>
-          <Field label="Offcut allowance (%)" error={plan.errors.offcut}>
-            <input className="cc-input w-[100px] text-right" inputMode="decimal" value={state.offcut} data-link-offcut="1" onChange={(e) => onState({ ...state, offcut: e.target.value })} />
-          </Field>
-        </div>
-      )}
+      {brands.map((b) => {
+        const z = sizeOf(b);
+        const err = plan.errors?.[b] || {};
+        return (
+          <div key={b} className="flex flex-wrap items-end gap-3" data-link-accept-all-sheet={b}>
+            <span className="basis-full text-ink-200">
+              {brands.length > 1 ? `One sheet size for every ticked ${brandLabel(b)} sheet:` : 'One sheet size for every ticked sheet:'}
+            </span>
+            <Field label="Sheet width (mm)" error={z.width !== '' ? err.width : null}>
+              <input className="cc-input w-[120px] text-right" inputMode="numeric" value={z.width} data-link-sheet-width="1" data-link-sheet-brand={b} onChange={(e) => putSize(b, { width: e.target.value })} />
+            </Field>
+            <Field label="Sheet length (mm)" error={z.length !== '' ? err.length : null}>
+              <input className="cc-input w-[120px] text-right" inputMode="numeric" value={z.length} data-link-sheet-length="1" data-link-sheet-brand={b} onChange={(e) => putSize(b, { length: e.target.value })} />
+            </Field>
+            <Field label="Offcut allowance (%)" error={err.offcut}>
+              <input className="cc-input w-[100px] text-right" inputMode="decimal" value={z.offcut} data-link-offcut="1" data-link-sheet-brand={b} onChange={(e) => putSize(b, { offcut: e.target.value })} />
+            </Field>
+          </div>
+        );
+      })}
       <div className="flex gap-2">
         <button
           type="button"

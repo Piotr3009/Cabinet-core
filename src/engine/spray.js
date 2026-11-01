@@ -686,7 +686,7 @@ export function paintPurchaseQtys(entries, { design = null, profile = null, assi
 // 2 of one colour are one tin), all priced through the ONE link of the
 // catalogue's `paint.bespoke`; ONE primer line for the whole sprayed area at
 // `profile.spray.primerCoats`; ONE solvent line at `profile.spray.solventPct`
-// of the colours' litres. The litres are this file's own law (`litresFor`:
+// of the colours' and the primer's litres (UX turn B4, the owner 18:04). The litres are this file's own law (`litresFor`:
 // m2 x coats / coverage, plus the waste); the coverage is the link's
 // `coverage_m2_per_l` where the company typed one, the profile's default
 // otherwise. A faced or raw board is not painted: its group is no paint line.
@@ -763,17 +763,25 @@ export function paintLinesFor(entries, {
   }
   if (!byColour.size) return lines;
   const primerCoats = Number(S.primerCoats) > 0 ? Number(S.primerCoats) : 0;
+  let primerLitres = 0;
   if (primerCoats > 0) {
+    primerLitres = litresFor(sprayedM2, { coats: primerCoats, coverage: primerCov, wastePct: S.wastePct });
     lines.push({
       role: 'primer', colour: null, name: 'Primer or basecoat', m2: r4(sprayedM2),
-      litres: litresFor(sprayedM2, { coats: primerCoats, coverage: primerCov, wastePct: S.wastePct }), coats: primerCoats, coverage: primerCov,
+      litres: primerLitres, coats: primerCoats, coverage: primerCov,
     });
   }
+  // UX turn B4. The owner, 01.11.2026, 18:04, asked whether the 5 percent
+  // solvent applies to the primer too: *"tak"*. The solvent is solventPct of
+  // ALL the litres sprayed: every bespoke colour line plus the primer line.
+  // Kept to 4 places (r4, this file's m2 rounding) and never to 2: a share of
+  // litres already rounded to 2 is linear in them only unrounded, so a job is
+  // the sum of its cabinets (test/t39-bom-engine.test.js) in the solvent too.
   const pct = Number(S.solventPct) > 0 ? Number(S.solventPct) : 0;
   if (pct > 0) {
     lines.push({
       role: 'solvent', colour: null, name: 'Solvent', m2: 0,
-      litres: roundTo((colourLitres * pct) / 100, 2), coats: null, coverage: null, pct,
+      litres: r4(((colourLitres + primerLitres) * pct) / 100), coats: null, coverage: null, pct,
     });
   }
   return lines;

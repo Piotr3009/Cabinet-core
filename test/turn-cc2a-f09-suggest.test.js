@@ -18,7 +18,7 @@ const { entryById, entriesOf } = await import('../src/engine/catalogue.js');
 const { toMaterial } = await import('../src/lib/jcStock.js');
 const {
   suggestFor, suggestAll, acceptAllLinks, sheetFields, paintFields, decorCodeOf, linkStatus, offcutPctOf, yieldOfPct,
-  matchesEntry, rowToken,
+  matchesEntry, rowToken, acceptAllLinksByBrand, sheetBrandOf, linkBack,
 } = await import('../src/lib/linkSuggest.js');
 
 const row = (id, name, extra = {}) => toMaterial({
@@ -112,6 +112,48 @@ test('F9.2 Accept all saves only the ticked; the sheet size is asked once and bo
   // With the sheet unticked, no size is asked at all.
   assert.equal(acceptAllLinks(items, new Set([HINGE.id]), {}).ok, true);
   assert.equal(acceptAllLinks(items, new Set(), {}).ok, false, 'nothing ticked, nothing to save');
+});
+
+test('P6 Accept all asks the sheet size once PER BRAND: an Egger size is never given to an MDF sheet', () => {
+  const items = [
+    { entry: OAK18, row: STOCK[0] },
+    { entry: MDF18, row: STOCK[3] },
+    { entry: HINGE, row: STOCK[5] },
+  ];
+  assert.equal(sheetBrandOf(OAK18), 'egger');
+  assert.equal(sheetBrandOf(MDF18), 'mdf');
+  const ticked = new Set([OAK18.id, MDF18.id, HINGE.id]);
+  const half = acceptAllLinksByBrand(items, ticked, { egger: { width: '2800', length: '2070', offcutPct: '10' } });
+  assert.equal(half.ok, false, 'the MDF size is missing: nothing is offered to save');
+  assert.deepEqual(half.brands, ['egger', 'mdf']);
+  assert.deepEqual(Object.keys(half.errors), ['mdf']);
+  assert.equal(half.errors.mdf.width, 'Required');
+  const plan = acceptAllLinksByBrand(items, ticked, {
+    egger: { width: '2800', length: '2070', offcutPct: '10' },
+    mdf: { width: '1220', length: '2440', offcutPct: '5' },
+  });
+  assert.equal(plan.ok, true);
+  assert.deepEqual(plan.links, [
+    { cc_material_id: OAK18.id, stock_item_id: 'jc-0001', sheet_width_mm: 2800, sheet_length_mm: 2070, yield: 1.1 },
+    { cc_material_id: MDF18.id, stock_item_id: 'jc-0004', sheet_width_mm: 1220, sheet_length_mm: 2440, yield: 1.05 },
+    { cc_material_id: HINGE.id, stock_item_id: 'jc-0006' },
+  ]);
+  const one = acceptAllLinksByBrand(items, new Set([HINGE.id]), {});
+  assert.equal(one.ok, true);
+  assert.deepEqual(one.brands, [], 'no sheet ticked, no size asked');
+  assert.equal(acceptAllLinksByBrand(items, new Set(), {}).ok, false, 'nothing ticked, nothing to save');
+});
+
+test('P8 the Undo of an Unlink: the link as it stood, numbers as numbers, nothing it did not hold', () => {
+  assert.deepEqual(
+    linkBack({ cc_material_id: OAK18.id, stock_item_id: 'jc-0001', yield: '1.100', sheet_width_mm: '2800', sheet_length_mm: 2070, coverage_m2_per_l: null }),
+    { cc_material_id: OAK18.id, stock_item_id: 'jc-0001', yield: 1.1, sheet_width_mm: 2800, sheet_length_mm: 2070 },
+  );
+  assert.deepEqual(linkBack({ stock_item_id: 'jc-paint', coverage_m2_per_l: '12.50' }, 'paint.bespoke'), {
+    cc_material_id: 'paint.bespoke', stock_item_id: 'jc-paint', coverage_m2_per_l: 12.5,
+  });
+  assert.equal(linkBack(null, 'x'), null);
+  assert.equal(linkBack({ cc_material_id: 'x' }), null, 'no stock row, nothing to put back');
 });
 
 test('F8.5 the sheet form: both sizes required, 100 to 6000 whole mm; the offcut is a percentage of the yield', () => {

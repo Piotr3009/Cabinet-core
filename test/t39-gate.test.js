@@ -37,8 +37,9 @@ test('the ORIGINAL case still blocks — no board anywhere, no Start', () => {
   assert.equal(materials.all, false);
   const hit = blockers.find((b) => b.code === 'materials');
   assert.ok(hit, 'the gate is gone');
-  assert.match(hit.message, /Assign a stock board to/);
-  assert.match(hit.message, /Generic counts, a colour or a decor alone does not/);
+  // UX turn B1: the words follow the gate (a decor or a colour on its source is a board since T-CC2a).
+  assert.match(hit.message, /Choose a board for/);
+  assert.match(hit.message, /or a stock board\. Generic counts\./);
 });
 
 test('…and it still blocks with the assignment store present but EMPTY', () => {

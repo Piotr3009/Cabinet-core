@@ -267,6 +267,13 @@
   margin: 0 3px;
 }
 
+/* THE UX TURN, U1: Back to Joinery Core stands first, before the wordmark (the owner: *"zostaje
+   zloty, tylko na lewo"*); the rule after it is the rule after PRO, the same height and margin. */
+.studio-pro .studio-topbar > [data-studio="topbar-back-jc"] + span[aria-hidden] {
+  height: 18px;
+  margin: 0 3px;
+}
+
 /* The item's name truncates when it is long. T-CC1b F1.4: it no longer gives its width to the
    menus (Library and Database are gone from the bar, F3 and F4); it stands in the job block. */
 .studio-pro .studio-project-name {
@@ -539,15 +546,23 @@
   color: theme('colors.ink.100');
 }
 
+/* THE UX TURN, U2, after Ewa's check of the BOM frame: a panel docked at the scene's right edge
+   (the BOM, the Check) narrows the visible scene as the inspector column does. StudioShell
+   measures the docked panel and sets --studio-dock on the scene (0 when nothing is docked); the
+   canvas wrapper and the first-unit plus (ConfiguratorPage.jsx, data-scene-follows-dock) end where
+   the panel begins, so the canvas is resized, never mounted again, and its camera stays; the two
+   bars below centre in what is left. */
+.studio-pro .studio-scene > [data-scene-follows-dock] { right: var(--studio-dock, 0px); }
+
 /* The four toggles, centred on the top edge (her bar style, the one her camera bar wears). Centred
    by its margins, not a transform, so nothing in it becomes a containing block. */
 .studio-pro .studio-scene-toggles {
   position: absolute;
   top: 12px;
   left: 0;
-  right: 0;
+  right: var(--studio-dock, 0px);
   width: max-content;
-  max-width: calc(100% - 28px);
+  max-width: calc(100% - var(--studio-dock, 0px) - 28px);
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -599,9 +614,9 @@
   position: absolute;
   bottom: 18px;
   left: 0;
-  right: 0;
+  right: var(--studio-dock, 0px);
   width: max-content;
-  max-width: calc(100% - 28px);
+  max-width: calc(100% - var(--studio-dock, 0px) - 28px);
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -675,15 +690,9 @@
   overflow-y: auto;
 }
 
-.studio-pro .studio-empty-state {
-  padding: 24px theme('spacing.4');
-  color: theme('colors.ink.200');
-}
-
-.studio-pro .studio-empty-state :is(h1, h2, h3) {
-  margin-bottom: theme('spacing.2');
-  color: theme('colors.ink.50');
-}
+/* THE UX TURN, U2: the empty column's words ("Select a cabinet or part") are deleted with the
+   column they stood in: nothing selected and nothing pinned, the column is not drawn (the owner:
+   *"niech sie zweza, nie chce ustawiac sceny od nowa"*), so `.studio-empty-state` has no element. */
 
 
 /* 9. THE POPUPS (the rail's Materials, the View menu). Fixed: the opener hands a DOMRect, which is

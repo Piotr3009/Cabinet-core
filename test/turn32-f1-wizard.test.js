@@ -153,7 +153,11 @@ test('a facing or a colour does NOT answer a slot — only the board does (T34 F
     fronts: { types: [{ id: 'f1', label: 'Front 1', colour: { hex: '#334455', name: 'Hague Blue' } }] },
   });
   assert.equal(materialsAssigned(faced, P).all, false);
-  assert.deepEqual(materialsAssigned(faced, P).missing.map((s) => s.label), ['Carcass 1', 'Front 1']);
+  // UX turn B1 (CLAUDE.md T-CC2a law 2, "a board is what the design says"): a SPRAY front with its colour IS
+  // a board now (sheet.mdf.18 of the catalogue, via 'catalogue'); a decor that is not an EGGER decor of the
+  // catalogue (`decor:W1000`) still answers nothing, so the carcass stays missing.
+  assert.deepEqual(materialsAssigned(faced, P).missing.map((s) => s.label), ['Carcass 1']);
+  assert.equal(materialsAssigned(faced, P).fronts[0].via, 'catalogue');
   // The carcass's project-wide sprayed colour does not answer for the slot
   // either — it never said what board the box is cut from.
   const sprayed = migrateDesign({

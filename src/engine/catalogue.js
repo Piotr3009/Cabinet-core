@@ -166,6 +166,37 @@ export function normaliseBoardChoice(choice) {
   };
 }
 
+// ─── THE REDUCTION OF A TYPE TO ITS BOARD CHOICE (one place) ────────────────
+// A carcass or front TYPE of the design reduced to the choice this resolver
+// reads. The cut list reads it (engine/materials.js boardChoiceOfPanel) and so
+// does the wizard's gate (engine/projectSettings.js materialsAssigned, UX turn
+// B1): one reduction, so the gate and the cut list never disagree about a
+// board. Moved here unchanged from engine/materials.js (T-CC2a F3).
+
+/** A carcass type's board choice: its source, its decor (or the project's old finish), no colour. */
+export function carcassTypeChoice(type, d) {
+  const finishId = type?.finish_id || d?.finish?.carcass || null;
+  let source = type?.source || null;
+  if (!source && finishId) source = String(finishId).startsWith('egger:') ? 'egger' : 'decor';
+  return { source, finishId: source === 'sprayed' ? null : finishId, colour: source === 'sprayed' ? d?.colour?.carcass || null : null };
+}
+
+/** A front type's board choice: spray, raw, a faced decor, or nothing chosen. */
+export function frontTypeChoice(type, d) {
+  if (!type) {
+    if (d?.colour?.front) return { source: 'spray', colour: d.colour.front };
+    const finishId = d?.finish?.front || null;
+    return { source: finishId ? (String(finishId).startsWith('egger:') ? 'laminate' : 'decor') : null, finishId };
+  }
+  let source = type.source || null;
+  if (!source) {
+    if (type.finish_id) source = String(type.finish_id).startsWith('egger:') ? 'laminate' : 'decor';
+    else if (type.colour || d?.colour?.front) source = 'spray';
+  }
+  const faced = source === 'laminate' || source === 'egger' || source === 'decor';
+  return { source, finishId: faced ? (type.finish_id || null) : null, colour: faced ? null : (type.colour || d?.colour?.front || null) };
+}
+
 /**
  * THE BOARD'S CATALOGUE ENTRY (law 2), from the design alone.
  *

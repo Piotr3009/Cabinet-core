@@ -277,3 +277,70 @@ test('F11.3 a new item starts on EGGER H3325 and sprayed RAL 3005, preselected; 
   assert.equal(old.carcass.types[0].finish_id, 'egger:H3171_12');
   assert.equal(old.fronts.types[0].colour?.name, '9005 Jet Black');
 });
+
+// ─── Ewa's proposals P3, P13 and P14, the owner approved them on 01.11.2026 (Julia's second slice) ─────────────────
+
+test('P13 the board slot\'s default says what the part takes by default: "Default: <entry name>", never "As today"', async () => {
+  job();
+  stubJc();
+  const Slots = () => {
+    const design = useProjectStore((s) => s.project.design);
+    const setDesignBoard = useProjectStore((s) => s.setDesignBoard);
+    return React.createElement(DesignBoardSlots, { design: migrateDesign(design), onChange: setDesignBoard });
+  };
+  const { root, unmount } = await mount(React.createElement(Slots));
+  const back = one(root, by('data-board-slot', 'back'));
+  const today = one(back, by('data-board-slot-today', '1'));
+  const named = textOf(one(back, by('data-slot-link'))).trim();
+  const words = textOf(today).trim();
+  assert.match(words, /^Default: /);
+  assert.ok(named.startsWith(words.slice('Default: '.length)), `the default names the entry the slot shows (${words} / ${named})`);
+  assert.equal(today.props.title, words, 'the whole name on hover when it is cut short');
+  assert.ok(!textOf(root).includes('As today'), 'the turn\'s word is off the screen');
+  await unmount();
+});
+
+test('P14 a board slot\'s thumbnail enlarges on click and does not choose the sheet; no button inside a button', async () => {
+  job();
+  stubJc();
+  const Slots = () => {
+    const design = useProjectStore((s) => s.project.design);
+    const setDesignBoard = useProjectStore((s) => s.setDesignBoard);
+    return React.createElement(DesignBoardSlots, { design: migrateDesign(design), onChange: setDesignBoard });
+  };
+  const { root, unmount } = await mount(React.createElement(Slots));
+  const back = () => one(root, by('data-board-slot', 'back'));
+  await click(one(back(), by('data-board-slot-other', '1')));
+  await type(one(back(), by('data-board-slot-search', '1')), 'U999');
+  const photo = one(back(), by('data-photo', 'board-slot'));
+  assert.ok(photo, 'the thumbnail is a control of its own');
+  assert.equal(photo.type, 'button');
+  assert.equal(photo.props.title, 'Click to enlarge');
+  assert.match(photo.props.className, /hover:outline/);
+  const nested = (n, inside = false) => (n.type === 'button' && inside) || (n.children || []).some((c) => nested(c, inside || n.type === 'button'));
+  assert.equal(nested(back()), false, 'no button nested in a button');
+  await click(photo);
+  assert.equal(migrateDesign(useProjectStore.getState().project.design).boards?.back ?? null, null, 'the click on the picture chose nothing');
+  const card = one(root, by('data-photo-card', '1'));
+  assert.ok(card, 'the enlarged view');
+  assert.ok(textOf(card).includes('U999'), 'with the decor\'s attribution beside it');
+  await unmount();
+});
+
+test('P3 the wizard\'s sheet size rows say they are for the CNC checks, not the sheets to buy', () => {
+  const WIZ = readFileSync(new URL('../src/components/WizardSettings.jsx', import.meta.url), 'utf8');
+  const row = WIZ.slice(WIZ.indexOf('const sheetSizeRow ='), WIZ.indexOf('const slotPicker ='));
+  for (const fam of ['carcasses', 'fronts']) {
+    assert.match(row, new RegExp(`data-sheet-size-cnc-only="${fam}"[^>]*>\\s*This size is for the CNC sheet checks; the sheets to buy are counted from each material&apos;s link\\.`), fam);
+  }
+});
+
+test('B1 words: the wizard says what counts as a board, the same words as the blocker of projectSettings.js', () => {
+  const WIZ = readFileSync(new URL('../src/components/WizardSettings.jsx', import.meta.url), 'utf8');
+  assert.ok(!WIZ.includes('a colour or a decor alone does not'), 'the false words are gone');
+  assert.ok(!WIZ.includes('Generic is also available'));
+  const said = WIZ.split(': an EGGER decor, a sprayed colour, or a stock board. Generic counts.').length - 1;
+  assert.equal(said, 3, 'the Next hint, the carcass line and the fronts line');
+  assert.match(WIZ, /data-carcass-missing="1"[\s\S]{0,200}Choose a board for \$\{carcassMissing/);
+  assert.match(WIZ, /data-fronts-missing="1"[\s\S]{0,200}Choose a board for \$\{frontsMissing/);
+});

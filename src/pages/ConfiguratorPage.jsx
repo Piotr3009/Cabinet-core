@@ -115,7 +115,7 @@ function FirstUnitPlus() {
       notify(`${set.name}: ${ids.length} units in. They are ordinary units now; Ctrl+Z takes the set back.`, 'ok');
     };
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" data-scene-follows-dock="1">
         <button
           type="button"
           className="pointer-events-auto w-28 h-28 rounded-full border-2 border-dashed border-gold/70
@@ -135,7 +135,7 @@ function FirstUnitPlus() {
     );
   }
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" data-scene-follows-dock="1">
       <button
         type="button"
         className="pointer-events-auto w-28 h-28 rounded-full border-2 border-dashed border-gold/70
@@ -618,7 +618,10 @@ export default function ConfiguratorPage({ studio = false } = {}) {
             context the PDF export captures, and re-initialising it on every
             toggle would both lose that and cost a visible stall. CncView is
             opaque, so nothing shows through. */}
-        <div className="absolute inset-0 bg-canvas">
+        {/* THE UX TURN, U2: in the Studio a panel docked at the scene's right edge (the BOM, the
+            Check) ends the canvas where it begins (studio.css, data-scene-follows-dock): the same
+            canvas, resized, its camera kept; the legacy face draws it as before. */}
+        <div className="absolute inset-0 bg-canvas" data-scene-follows-dock="1">
           <Scene onCaptureReady={onCaptureReady} onRenderReady={onRenderReady} />
         </div>
         {/* T-CC1b F5.2: the CNC files leave from the CNC workspace's own "Export CNC / DXF". */}

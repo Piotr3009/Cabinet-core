@@ -37,10 +37,11 @@
 // on one of them goes through the override like any other exception.
 
 import { migrateDesign, paletteEntryByKey, resolveFinishes } from './design.js';
+import { nominalThicknessOfPart } from './thickness.js';
 // T-CC2a F3 (law 2): the board's catalogue entry, read by the SAME resolver the
 // cut list, the purchase list, the 3D finish and the BOM read.
 import {
-  boardChoiceOfOldId, catalogueIdOfBoard, entryById, normaliseBoardChoice,
+  boardChoiceOfOldId, carcassTypeChoice, catalogueIdOfBoard, entryById, frontTypeChoice, normaliseBoardChoice,
 } from './catalogue.js';
 
 /**
@@ -216,41 +217,27 @@ export function boardSlotOfPanel(panel) {
   return null;
 }
 
-/** A carcass type's board choice: its source, its decor (or the project's old finish), no colour. */
-function carcassChoice(type, d) {
-  const finishId = type?.finish_id || d.finish?.carcass || null;
-  let source = type?.source || null;
-  if (!source && finishId) source = String(finishId).startsWith('egger:') ? 'egger' : 'decor';
-  return { source, finishId: source === 'sprayed' ? null : finishId, colour: source === 'sprayed' ? d.colour?.carcass || null : null };
-}
-
-/** A front type's board choice: spray, raw, a faced decor, or nothing chosen. */
-function frontChoice(type, d) {
-  if (!type) {
-    if (d.colour?.front) return { source: 'spray', colour: d.colour.front };
-    const finishId = d.finish?.front || null;
-    return { source: finishId ? (String(finishId).startsWith('egger:') ? 'laminate' : 'decor') : null, finishId };
-  }
-  let source = type.source || null;
-  if (!source) {
-    if (type.finish_id) source = String(type.finish_id).startsWith('egger:') ? 'laminate' : 'decor';
-    else if (type.colour || d.colour?.front) source = 'spray';
-  }
-  const faced = source === 'laminate' || source === 'egger' || source === 'decor';
-  return { source, finishId: faced ? (type.finish_id || null) : null, colour: faced ? null : (type.colour || d.colour?.front || null) };
-}
+// A carcass or front type's board choice: the ONE reduction, engine/catalogue.js
+// (carcassTypeChoice, frontTypeChoice), moved there unchanged so the wizard's
+// gate reads the same one (UX turn B1).
+const carcassChoice = carcassTypeChoice;
+const frontChoice = frontTypeChoice;
 
 /**
  * WHAT BOARD THIS PIECE IS CUT FROM, as the design says it (F2.1's choice):
  * `{ source, finishId, decorId, colour, thickness }`, the thickness the
- * engine cut the piece at. The slot rules are `resolvePanelMaterialBase`'s
+ * NOMINAL of the slot the piece is cut from (UX turn; the cut keeps the
+ * measured number). The slot rules are `resolvePanelMaterialBase`'s
  * own: the slot of `design.boards` first (F11.2, null = as today), then the
  * element override, then the watch insert's spray, then the run switch, the
  * front type and the carcass type.
  */
 export function boardChoiceOfPanel(panel, unit, design, profile) {
   const d = migrateDesign(design);
-  const thickness = Number(panel?.thickness) > 0 ? Number(panel.thickness) : null;
+  // UX turn (the owner, 01.11.2026, 18:46: *"18.5 to tylko ciecie dla CNC, nie
+  // dla zakupow"*): the board BOUGHT is at the slot's NOMINAL, never the
+  // caliper number the piece is cut at (engine/thickness.js nominalThicknessOfPart).
+  const thickness = nominalThicknessOfPart(panel, { design: d, profile });
   const done = (c, from) => ({ ...normaliseBoardChoice({ ...c, thickness }), from });
   const slotKey = boardSlotOfPanel(panel);
   const own = slotKey ? d.boards?.[slotKey] : null;

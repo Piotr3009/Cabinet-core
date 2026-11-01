@@ -143,6 +143,18 @@ test('F14.1 · the banner says the window is replaced and read only, with "Open 
   assert.match(html, /data-assign-materials="1"/);
 });
 
+test('P2 · read only, the old window\'s count is grey: the only red count is the BOM\'s', () => {
+  openJob();
+  const html = renderToStaticMarkup(React.createElement(AssignMaterialsModal));
+  const head = html.match(/<div class="([^"]*)" data-assign-counter="(\d+)"[^>]*data-assign-counter-tone="([a-z]+)"[^>]*>([\s\S]*?)<\/div>/);
+  assert.ok(head, 'the header count is drawn');
+  assert.ok(Number(head[2]) > 0, 'the owner project has lines not assigned');
+  assert.equal(head[3], 'grey');
+  assert.doesNotMatch(head[1], /status-danger/, 'no red box');
+  assert.doesNotMatch(head[4], /status-danger/, 'no red words');
+  assert.match(head[4], /Not assigned materials: \d+ lines?/, 'the words stay, readable');
+});
+
 test('F14.2 · every control of the window pressed: the blob stays as saved; "Open Link materials" opens the new window', async () => {
   openJob();
   const before = blobNow();

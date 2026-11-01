@@ -30,9 +30,18 @@
 //                             (IssueStrip, F5): one quiet row with the counts,
 //                             the list unfolded over it on a press, scrolling
 //                             on its own so the sections above are never covered
-//   nothing, unpinned         "Select a cabinet or part"
+//   nothing, unpinned         no column at all (THE UX TURN, U2, below)
 //   nothing, pinned           RightPanel embedded, its empty branch
 //   'none'                    no column at all
+//
+// THE UX TURN, U2 · THE PANEL THAT HIDES. The owner, over the mockup: with
+// nothing selected the column stood black with "Select a cabinet or part";
+// now it is not drawn and the scene takes the width (*"niech sie zweza, nie
+// chce ustawiac sceny od nowa"*). Whether the column has anything to show is
+// ONE answer, StudioShell.jsx `inspectorHasContent`: the shell sizes the grid
+// by it and this host draws the column by it. The empty words are deleted
+// with the column they stood in; the breadcrumb already says "Nothing
+// selected". The three windows below stay mounted with no column, as ever.
 // One panel, one header (CLAUDE.md T84 LAWS 2): Pin stands INSIDE RightPanel's
 // own header (its `headerActions`), never in a bar over it, and every row of
 // the panel is the panel's own.
@@ -70,6 +79,8 @@ import { anchorOfEvent } from '../../lib/modalAnchor.js';
 import { isFreePanel } from '../../engine/types.js';
 import { Icon } from './StudioIcons.jsx';
 import { studioWidths } from './lib/studioSkin.js';
+// U2: the shell's one answer to "has the column anything to show".
+import { inspectorHasContent } from './StudioShell.jsx';
 
 // The designer's label for Pin (Stage-1, her full head).
 const PIN_WORDS = 'Keep panel open and follow selection';
@@ -209,7 +220,9 @@ export default function InspectorHost({ renderStrip = null }) {
   else if (unitType && several) shows = 'several';
   else if (unitType) shows = 'one';
   const fullOne = shows === 'one';
-  const panel = shows === 'cnc' || shows === 'several' || fullOne || (shows === 'nothing' && pinned);
+  // CNC, several cabinets, one cabinet, or nothing selected while pinned: RightPanel embedded.
+  // U2: the same answer the shell sizes the column by; no panel, no column.
+  const panel = inspectorHasContent({ viewMode, unitType, pinned });
   const width = widths.fullPx;
 
   const rootRef = useRef(null);
@@ -270,7 +283,8 @@ export default function InspectorHost({ renderStrip = null }) {
     if (el) el.addEventListener('scroll', onScroll, true);
   }, [onScroll]);
 
-  const column = mode === 'none' ? null : (
+  // 'none' (the user's own hide) or nothing to show (U2): no column.
+  const column = mode === 'none' || !panel ? null : (
     <div
       ref={setRoot}
       className="studio-inspector flex flex-col min-h-0 min-w-0 h-full shrink-0"
@@ -280,21 +294,13 @@ export default function InspectorHost({ renderStrip = null }) {
       aria-label="Selection settings"
       style={{ width }}
     >
-      {panel ? (
-        <div className="flex-1 min-h-0 flex flex-col">
-          <RightPanel
-            layout="embedded"
-            headerActions={<HostActions pinned={pinned} />}
-          />
-        </div>
-      ) : null}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <RightPanel
+          layout="embedded"
+          headerActions={<HostActions pinned={pinned} />}
+        />
+      </div>
       {fullOne ? <InspectorFoot unitId={unitId} unitType={unitType} renderStrip={renderStrip} /> : null}
-      {!panel ? (
-        <div className="studio-skin studio-empty-state">
-          <h2>Select a cabinet or part</h2>
-          <p>The panel will show the current selection.</p>
-        </div>
-      ) : null}
     </div>
   );
 

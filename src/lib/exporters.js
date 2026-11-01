@@ -206,7 +206,7 @@ export function buildPurchaseBomCsvText(bom, { scope = 'project' } = {}) {
   if (n > 0) {
     lines.push('');
     // T-CC2a F5.3 (law 7): the same words as the BOM window and the BOM PDF; never a complete price.
-    lines.push(`WARNING,${q(`${incompleteWords(n)}. Link them in Cabinet Core, Materials, Link materials.`)}`);
+    lines.push(`WARNING,${q(`${incompleteWords(n, Number(bom?.totals?.noPrice) || 0)}. Link them in Cabinet Core, Materials, Link materials.`)}`);
   }
   return `${lines.join('\n')}\n`;
 }
@@ -296,7 +296,7 @@ export function exportProjectPdf({
   if (notLinked > 0) {
     doc.setFontSize(10);
     doc.setTextColor(200, 30, 30);
-    doc.text(`${incompleteWords(notLinked)}. Link them in Cabinet Core, Materials, Link materials.`, margin, y);
+    doc.text(`${incompleteWords(notLinked, Number(purchase.totals.noPrice) || 0)}. Link them in Cabinet Core, Materials, Link materials.`, margin, y);
     doc.setTextColor(40);
     y += 7;
   }
@@ -429,7 +429,7 @@ export function exportProjectPdf({
   doc.setFontSize(9);
   if (notLinked > 0) {
     doc.setTextColor(200, 30, 30);
-    doc.text(`Total of the linked lines: £${Number(purchase.totals.cost).toFixed(2)}. ${incompleteWords(notLinked)}`, margin, y + 2);
+    doc.text(`Total of the linked lines: £${Number(purchase.totals.cost).toFixed(2)}. ${incompleteWords(notLinked, Number(purchase.totals.noPrice) || 0)}`, margin, y + 2);
   } else {
     doc.setTextColor(...gold);
     doc.text(`Total: £${Number(purchase.totals.cost).toFixed(2)}`, margin, y + 2);

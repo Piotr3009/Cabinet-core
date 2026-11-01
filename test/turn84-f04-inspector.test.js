@@ -193,9 +193,13 @@ test('F4 · the column: its hooks, its width, the panel embedded at once, the fo
   assert.match(src, /className="studio-inspector [^"]*"\n\s+data-studio="inspector"\n\s+data-mode=\{mode\}/);
   assert.doesNotMatch(src.match(/className="studio-inspector [^"]*"/)[0], /studio-skin/,
     'the embedded RightPanel is not inside a .studio-skin (verify/t84/DECISIONS.md 8)');
-  assert.match(src, /const column = mode === 'none' \? null : \(/, '\'none\': no column');
+  // AMENDED BY THE UX TURN, U2: nothing to show (nothing selected, nothing pinned) is no column either.
+  assert.match(src, /const column = mode === 'none' \|\| !panel \? null : \(/, '\'none\' or nothing to show: no column');
   assert.match(src, /const fullOne = shows === 'one';/, 'one cabinet: the full panel at once, no quick step');
-  assert.match(src, /const panel = shows === 'cnc' \|\| shows === 'several' \|\| fullOne \|\| \(shows === 'nothing' && pinned\);/,
+  // AMENDED BY THE UX TURN, U2: the panel is the shell's one answer (StudioShell.jsx inspectorHasContent), the same
+  // truth as the expression it replaces (the U2 test below runs both over every case).
+  assert.match(src, /import \{ inspectorHasContent \} from '\.\/StudioShell\.jsx';/);
+  assert.match(src, /const panel = inspectorHasContent\(\{ viewMode, unitType, pinned \}\);/,
     'CNC, several cabinets, one cabinet, and nothing selected while pinned: RightPanel embedded');
   assert.match(src, /if \(viewMode === 'cnc'\) shows = 'cnc';\n\s+else if \(unitType && several\) shows = 'several';\n\s+else if \(unitType\) shows = 'one';/);
   // The panel, then the FOOT of one cabinet: Open cabinet and under it the strip of F5 (the owner:
@@ -215,7 +219,8 @@ test('F4 · the column: its hooks, its width, the panel embedded at once, the fo
   // the foot hands it the room under Open cabinet and nothing else.
   assert.ok(foot.indexOf('data-studio="open-cabinet"') < foot.indexOf('{renderStrip ? renderStrip(unitId) : null}'), 'Open cabinet first, the findings under it');
   assert.doesNotMatch(foot, /inspector-issues/, 'the list is the strip\'s own, not the host\'s wrapper');
-  assert.match(src, /<h2>Select a cabinet or part<\/h2>/);
+  // REWRITTEN BY THE UX TURN, U2: the empty words are deleted with the empty column (no column is drawn).
+  assert.doesNotMatch(code, /Select a cabinet or part|studio-empty-state/, 'no empty column, no empty words (the head comment names them once)');
   assert.doesNotMatch(src, /<header\b|studio-full-head|<aside\b/, 'one panel, one header: the host draws no header of its own');
   for (const cls of src.match(/className=(?:"[^"]*"|\{`[^`]*`\})/g)) {
     assert.doesNotMatch(cls.replace(/^className=/, ''), TRAPS, `${cls}: no stacking context, no containing block`);

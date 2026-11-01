@@ -120,5 +120,8 @@ test('F11.1 the live BOM window carries the count: the Assign window\'s for the 
   const panel = readFileSync(new URL('../src/components/BomPanel.jsx', import.meta.url), 'utf8');
   assert.doesNotMatch(panel, /assignCount\(buildAssignLines/);
   assert.match(panel, /data-bom-link-count=\{String\(linkedLines\)\}[\s\S]{0,300}`\$\{linkedLines\} of \$\{allLines\} lines linked`/);
-  assert.match(panel, /notLinked > 0 \? `, \$\{incompleteWords\(notLinked\)\}` : ''/);
+  // AMENDED BY the UX turn (B5, Marek's patch 1): the count of lines without a price goes in too, so the words say
+  // "not linked or without a price" only when such a line is among them (bom.js incompleteWords(n, noPrice)).
+  assert.match(panel, /notLinked > 0 \? `, \$\{incompleteWords\(notLinked, noPriceLines\)\}` : ''/);
+  assert.match(panel, /const noPriceLines = Number\(t\.noPrice \?\? 0\) \|\| 0;/);
 });

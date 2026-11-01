@@ -96,20 +96,27 @@ function bindItem({ name = 'Walk wardrobe', number = 'P-1042', jcProjectName = '
   useProjectStore.getState().newProject(name, { id: 'item-1', number, client, jcProjectName });
 }
 
-test('F1 . the Studio bar: the menus, then the job block (item name, number and JC project), then Save, Back to Joinery Core last', () => {
+// REWRITTEN BY THE UX TURN, U1: Back to Joinery Core moves from the last place of the bar to the
+// FIRST, before the wordmark, gold as before (the owner: *"zostaje zloty, tylko na lewo"*; *"serio
+// zawsze back przyciski sa raczej po lewej, taka zasada i przyzwyczajenie"*).
+test('F1 . the Studio bar: Back to Joinery Core first, then the wordmark, the menus, the job block (item name, number and JC project), then Save', () => {
   bindItem();
   const html = draw(TopBar, { variant: 'studio' });
   const at = (needle) => html.indexOf(needle);
+  const back = at('data-studio="topbar-back-jc"');
+  const wordmark = at('class="studio-wordmark"');
   const menus = at('aria-label="Main menu"');
   const job = at('data-studio="topbar-job"');
   const save = at('data-studio="topbar-save"');
-  const back = at('data-studio="topbar-back-jc"');
-  assert.ok(menus > 0 && job > menus && save > job && back > save, `the DOM order: menus ${menus}, job ${job}, save ${save}, back ${back}`);
-  // Back to Joinery Core is the LAST control of the bar.
-  const tail = html.slice(back);
-  assert.equal((tail.match(/<button\b/g) || []).length, 0, 'no control after the way back');
-  assert.match(tail, /^data-studio="topbar-back-jc"[^>]*>Back to Joinery Core<\/button><\/header>$/);
-  assert.match(html.slice(html.lastIndexOf('<button', back), back), /class="cc-btn-gold/, 'a gold button');
+  assert.ok(back > 0 && wordmark > back && menus > wordmark && job > menus && save > job, `the DOM order: back ${back}, wordmark ${wordmark}, menus ${menus}, job ${job}, save ${save}`);
+  // Back to Joinery Core is the FIRST control of the bar.
+  const head = html.slice(0, html.lastIndexOf('<button', back));
+  assert.equal((head.match(/<button\b/g) || []).length, 0, 'no control before the way back');
+  assert.match(head, /^<header data-studio="topbar" class="studio-topbar[^"]*"[^>]*>$/, 'the button opens the header');
+  assert.match(html.slice(back), /^data-studio="topbar-back-jc"[^>]*><span aria-hidden="true">‹<\/span> Back to Joinery Core<\/button>/, 'the arrow (hidden from a screen reader), then the words');
+  assert.match(html.slice(html.lastIndexOf('<button', back), back), /class="cc-btn-gold/, 'a gold button, as before');
+  // Nothing of the way back stands at the end of the bar any more.
+  assert.match(html, /data-studio="topbar-bom"[^>]*>BOM<\/button><\/header>$/, 'BOM ends the bar');
   // The job block: line one the ITEM's name, line two `<number> . <JC project name> . <client>`, read-only.
   const block = html.slice(job, save);
   assert.match(block, /class="studio-project-name"[^>]*>Walk wardrobe</);

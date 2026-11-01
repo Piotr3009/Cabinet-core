@@ -101,7 +101,8 @@ const EXEMPT = {
     + ' Chat fix 28.10.2026 F1 · File gains Open from file... (after Open...) and Save to file... (after Save as...): the job as one .ccproject file through lib/projectFileRoad.js, its questions in components/ProjectFileModal.jsx; before the job on the screen is replaced, the same red word about unsaved work File > Open says (warnIfUnsaved). Every other leaf, run and control as it was. *"ja mowie o pliku z CC zebym mial ten sam na innym kompie"*; *"zrobisz mi pozniej cos co zadziala, czyli export i import projektow"* (28.10.2026)'
     + ' T-CC1a F3 · the Account button (drawAccount, onAuth, topbar-account) and the legacy bar\'s mock badge are deleted with CC\'s own login and mock mode; everything else in the bar is as it was. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)'
     + ' T-CC1a F6 · File > Open from file is the import road: the same openProjectFromFile with the Joinery Core project picker (askJcProject) beside the id-collision question; its hint says import. *"w przyszlosci nie bedzie save to file, po co?"* (the owner, 31.10.2026, 01:06)'
-    + ' T-CC1b F1, F3, F4, F5 · the Studio bar reads [wordmark] [PRO] [menus] [spacer] [the job block: the item name, then <number> · <JC project name> · <client>] [Undo/Redo] [Save] [Brightness] [BOM] [Back to Joinery Core, gold, last; saves when dirty, then /dashboard.html]; the Library and Database menus are deleted, Company defaults... is Settings\' third item, Output takes its four entries\' handlers only. *"wprowadza w blad ... po prawej, z numerem projektu JC i nazwa"* (the owner, 01.11.2026); *"duzy przycisk Return to Joinery Core"* (the owner, 01.11.2026)',
+    + ' T-CC1b F1, F3, F4, F5 · the Studio bar reads [wordmark] [PRO] [menus] [spacer] [the job block: the item name, then <number> · <JC project name> · <client>] [Undo/Redo] [Save] [Brightness] [BOM] [Back to Joinery Core, gold, last; saves when dirty, then /dashboard.html]; the Library and Database menus are deleted, Company defaults... is Settings\' third item, Output takes its four entries\' handlers only. *"wprowadza w blad ... po prawej, z numerem projektu JC i nazwa"* (the owner, 01.11.2026); *"duzy przycisk Return to Joinery Core"* (the owner, 01.11.2026)'
+    + ' UX turn (01.11.2026, chat) · Back to Joinery Core moves to the far left of the Studio bar, before the wordmark, gold as before, the same handler (a dirty item saved first). *"zostaje zloty, tylko na lewo"*; *"serio zawsze back przyciski sa raczej po lewej, taka zasada i przyzwyczajenie"* (the owner, 01.11.2026)',
   // ─── ADDED 15.10.2026 (the evening) · THE RECESS SEEN FROM THE FRONT ──────
   // The owner: *"na setup room jak widze sciane od frontu nie top tylko front
   // to nie widze kresek, gdzie jest komin i gdzie wneka"* and *"reces pionowy
@@ -135,7 +136,8 @@ const EXEMPT = {
     + ' T76 F7 · the walk measured the State column past the 560 px panel (AM strips and their gluing NOTE): the material cell truncates at 160 and the state may wrap. *"Test the way the client clicks."*'
     + ' T78 F21 · the BOM\'s materials are the warehouse\'s rows with the Paints department beside them (withPaints), so the paint lines of the spray schedule reach the Purchase list with the material\'s price, or a missing price said. *"cale sprayowanie jako osobne menu Cabinet Core"*; waste *"10 percent."*'
     + ' T-CC1b F11.1 · the live BOM window shows the Assign window\'s count: <n> of <m> lines assigned, and Not assigned materials: <k> lines in red. *"materialy z JC (jego baza), przypisanie w CC, grupy ... modal duzo wiekszy i czytelny, polaczony na stale, kazda funkcja przypisana (10 rodzajow zawiasow, wszystkie przypisane), inaczej eksport BOM pisze not assigned materials"* (the owner, 01.11.2026)'
-    + ' T-CC2a F10 · every line from the one purchase list (the catalogue entry, the quantity, the JC material, the cost, or the red words of law 7 with Link to the window at that entry and the toast Saved for all projects); the Materials tab\'s board and hardware selects deleted (the Deletion licence); the Bespoke, this project only block; <n> of <m> lines linked and the incomplete total. *"chodzi o robienie listy materialow na dany projekt oraz listy kosztow"*; *"w liscie materialow bedziemy musieli dodac jeszcze add materialy bespoke (od klienta na przyklad inne ironmongery)"* (the owner, 01.11.2026)',
+    + ' T-CC2a F10 · every line from the one purchase list (the catalogue entry, the quantity, the JC material, the cost, or the red words of law 7 with Link to the window at that entry and the toast Saved for all projects); the Materials tab\'s board and hardware selects deleted (the Deletion licence); the Bespoke, this project only block; <n> of <m> lines linked and the incomplete total. *"chodzi o robienie listy materialow na dany projekt oraz listy kosztow"*; *"w liscie materialow bedziemy musieli dodac jeszcze add materialy bespoke (od klienta na przyklad inne ironmongery)"* (the owner, 01.11.2026)'
+    + ' UX turn (01.11.2026, chat) · Ewa P3, P7, P9: "<n> sheets of <w> x <l>" on a sheet line; the Order tab counts from each link (sheets, size, offcut per row); the Link button a real 12 px button; "<n> not linked" on the tab; an incomplete subtotal said; Qty and Unit price labels on a bespoke row; No price in red and in the incomplete words. *"ok to daj wszystkie propozycje, jak co to bedziemy usuwac"*; *"2 - wszystkie"* (the owner, 01.11.2026, 18:04)',
   // ─── ADDED BY TURN 75 · F7, THE CORNER NOTCH ─────────────────────────────
   // CLAUDE.md T75, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file and re-frozen at its new hash in the
@@ -196,7 +198,8 @@ const EXEMPT = {
   'src/components/AssignMaterialsModal.jsx': 'DECOR F4: applied strip stock badges use the same thickness validation as purchasing. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T78 F21 · the sprayed set is assigned its PAINT here, in the same modal every other material is assigned in (withPaints: the Paints department rows beside the boards), not on the Spraying page. *"cale sprayowanie jako osobne menu Cabinet Core."*'
     + ' T-CC1b F10, F12 · 1240 wide with the 13 px floor, two columns: the demand in six groups, one line per role AND spec with its JC material or Not assigned, the header count; the stock list embedded on the right. *"materialy z JC (jego baza), przypisanie w CC, grupy ... modal duzo wiekszy i czytelny, polaczony na stale, kazda funkcja przypisana (10 rodzajow zawiasow, wszystkie przypisane), inaczej eksport BOM pisze not assigned materials"* (the owner, 01.11.2026)'
-    + ' T-CC2a F14 · read only for one turn: the banner Replaced by Link materials with Open Link materials; every assign, clear, automatics and family control disabled, nothing written on open; the lists visible. *"zgadzam sie z Ola i Kamilem"* (the owner, 01.11.2026)',
+    + ' T-CC2a F14 · read only for one turn: the banner Replaced by Link materials with Open Link materials; every assign, clear, automatics and family control disabled, nothing written on open; the lists visible. *"zgadzam sie z Ola i Kamilem"* (the owner, 01.11.2026)'
+    + ' UX turn (01.11.2026, chat) · Ewa P2: in read only mode the header count is grey, so only the BOM\'s count is red. *"ok to daj wszystkie propozycje, jak co to bedziemy usuwac"*; *"2 - wszystkie"* (the owner, 01.11.2026, 18:04)',
   'src/components/CncView.jsx': 'ORNATE, Piotr 10.10.2026: gotowy kod wlacznei z leyersami prosze do cnc. Shows canonical reference layers and relief depth readouts without changing production export approval. ' + 'DECOR F3: explicit front/back machining preview from shared export geometry. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T79 F1 (the sheet) . CHAT FIX 19.10.2026 (re-frozen): the caption and the note stand where engine/cnc/labelAnchor.js puts them (the outline\'s own middle, the note\'s block middle), moved onto the board when the rectangle\'s middle is a window or a cut-out; a rectangle\'s sheet is byte for byte what it was. *"czasami cnc rysuje items jak 3 mm drills czy cos takiego czy litery poza elementami"*.'
     + ' T76 F4 · the readout names a V groove for what it is: V, its width at the mouth, its centre line. *"The V groove is a V ... The DXF layer name and the `front-operations.json` entry say which."*'
@@ -218,13 +221,15 @@ const EXEMPT = {
     + ' T80 F2 · the FRONTS row (InframeRow): Lay-on or In-frame (British), one write setDesign({ inframe }), the hint and its tooltip the engine\'s (inframeHint / inframeTooltip off profile.inframe), no number typed. *"3 per projekt."* (21.10.2026, 22:40)'
     + ' T-CC1a F4 · the Project section\'s Number and Client are read-only (Joinery Core\'s, setProjectInfo no longer writes them); the item name is edited in the top bar. *"automatyczne polaczenie danego projektu do danego pipelinu lub production projektu"* (the owner, 30.10.2026)'
     + ' T-CC1b F14 · the gallery and the door styles\' select offer the tenant\'s styles (lib/tenantFlags.js): the ornate styles for Skylon Joinery only; a style not offered is said in words. *"ornamenty zostaw tylko dla Skylon Joinery"* (the owner, 01.11.2026)'
-    + ' T-CC2a F11 · the three MaterialStock selects deleted (the Deletion licence); each board slot shows its catalogue entry and its company link; SlotLink, DesignBoardSlots and slotChoices for the back panels and the drawer bottoms. *"domyslne, ale mamy mozliwosc zmienic na inne ... wyskoczy mu wybierz material z listy"* (the owner, 01.11.2026, 13:28)',
+    + ' T-CC2a F11 · the three MaterialStock selects deleted (the Deletion licence); each board slot shows its catalogue entry and its company link; SlotLink, DesignBoardSlots and slotChoices for the back panels and the drawer bottoms. *"domyslne, ale mamy mozliwosc zmienic na inne ... wyskoczy mu wybierz material z listy"* (the owner, 01.11.2026, 13:28)'
+    + ' UX turn (01.11.2026, chat) · Ewa P13, P14: "Default: <entry name>" instead of "As today"; the board slot photo beside its choose button, enlarging on click. *"ok to daj wszystkie propozycje, jak co to bedziemy usuwac"*; *"2 - wszystkie"* (the owner, 01.11.2026, 18:04)',
   'src/components/WizardSettings.jsx': 'Setup UI 26.10.2026 F1: approved large project workspace, clearer graphics and navigation. *"zakoduj mi prosze te zmiany"*; *"na 3/4 monitora"*. ' + 'DECOR F1: material-slot and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T80 F2 · the FRONTS row under the Sheen, SettingsPanel\'s own InframeRow imported (one row, two surfaces). *"3 per projekt."* (21.10.2026, 22:40)'
     + ' T86B F7 · ONE row Dimension colour (data-settings-dimension-colour) in the settings.dimensions node: the profile\'s two inks as radio chips at 13 px, reading uiStore.dimensionColour and writing setDimensionColour; Start and Save never touch it (not a project field). *"menu, patrz SS: dimension powinien pojsc do glownego paska, ustawienie koloru wymiarowania powinno byc w settings nie tutaj"* (the owner, 30.10.2026, 21:54)'
     + ' T-CC1a F4 · the edit door\'s Number and Client are read-only (Joinery Core\'s, setProjectInfo no longer writes them); the item name is edited in the top bar. *"automatyczne polaczenie danego projektu do danego pipelinu lub production projektu"* (the owner, 30.10.2026)'
     + ' T-CC1b F14 · the fronts\' style choices offer the tenant\'s styles (lib/tenantFlags.js): the ornate styles for Skylon Joinery only; a style not offered is said in words. *"ornamenty zostaw tylko dla Skylon Joinery"* (the owner, 01.11.2026)'
-    + ' T-CC2a F11 · additive only: under each board slot its catalogue entry and its company link (SettingsPanel\'s SlotLink), and the back panels and drawer bottoms slots (DesignBoardSlots) under the carcass slots; its own stock selects stand (not named by the Deletion licence). *"domyslne, ale mamy mozliwosc zmienic na inne ... wyskoczy mu wybierz material z listy"* (the owner, 01.11.2026, 13:28)',
+    + ' T-CC2a F11 · additive only: under each board slot its catalogue entry and its company link (SettingsPanel\'s SlotLink), and the back panels and drawer bottoms slots (DesignBoardSlots) under the carcass slots; its own stock selects stand (not named by the Deletion licence). *"domyslne, ale mamy mozliwosc zmienic na inne ... wyskoczy mu wybierz material z listy"* (the owner, 01.11.2026, 13:28)'
+    + ' UX turn (01.11.2026, chat) · Ewa P3 and B1: the sheet size row says it is for the CNC sheet checks and that the sheets to buy are counted from each link; the Next words say a decor, a sprayed colour or a stock board answers a slot (Generic counts). The Stock board selects stay: *"stock board nie usuwaj bo jak ktos nie przypisze materialu to cos musi byc prawda? nie teraz jeszcze"*; *"ok to daj wszystkie propozycje, jak co to bedziemy usuwac"*; *"2 - wszystkie"* (the owner, 01.11.2026, 18:04)',
 
   // ─── ADDED BY TURN 74 · THE OWNER'S LIST OF 23.09 ────────────────────────
   // CLAUDE.md T74, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
@@ -307,7 +312,8 @@ const EXEMPT = {
     + ' T82 F20, after the review · the logo is kept once on this computer, and when the browser refuses to keep it the window says so (setTitleBlock answers { remembered }). *"do tego dodawanie loga do rysunkow musze miec dzisiaj profesjonalne rysunki dla klientow"* (25.10.2026, 11:40)'
     + ' T83 F11 · the Drawings window\'s Set tab: a check box per sheet beside its button (all on by default, the window keeping the names left out), All and None, the count of the ticked; Drawing set (PDF) and Wall DXF bind the ticked sheets in the set\'s order (engine/drawings/wallSheets.js pickedSheets), each page\'s SHEET cell counting the pages bound (numberPages); nothing ticked is refused in words; the choice is the window\'s own state, never the project. *"daj mozliwosc exportowania tylko naprzyklad frontow lub cos takiego, nie koniecznie wszystkie strony na raz"* (25.10.2026, 22:41)'
     + ' T-CC1b F6, F7, F8, F13 · one window "Drawings": the walls set alone (the kind row, Card, Front only, All units, Drawing set, Export SVG and the booklet, svg and per-sheet pdf roads deleted), footer Close, Wall DXF, Export PDF; the company logo from Joinery Core by default with Insert other logo and Use company logo; the two angles, the user\'s render and the AI picture as sheets; the AI card mounted. *"usunac przyciski all units i drawing set pdf, tylko export pdf"*; *"logo domyslne z JC albo przycisk wstaw inne logo"*; *"dodac wizualizacje z drugiego kata, render wedlug wyboru"* (the owner, 01.11.2026)'
-    + ' CHAT FIX 01.11.2026 · the two angles kept under profile.visuals.maxKb through lib/keepPicture.js keepAngle (the set\'s PDF was 24 MB, the AI source passed Vercel\'s 4.5 MB wall). The owner, on the audit of PR #96: *"koduj"*.',
+    + ' CHAT FIX 01.11.2026 · the two angles kept under profile.visuals.maxKb through lib/keepPicture.js keepAngle (the set\'s PDF was 24 MB, the AI source passed Vercel\'s 4.5 MB wall). The owner, on the audit of PR #96: *"koduj"*.'
+    + ' UX turn (01.11.2026, chat) · the Drawings window near full screen (maximised, cc-modal-wide): the sheets listed on the left with their ticks, Pictures (Render..., AI visualisation... opening the same AiVisualCard in its own small window), the title block folded, the preview in the remaining height. *"drawing super, ale prosze powieksz modal zeby nie trzeba bylo scrolowac ... lista rysunkow"*; *"2 - tak"* (the owner, 01.11.2026)',
   'src/pages/ConfiguratorPage.jsx':
     'T75 F22 · the Output menu\'s DXF export says the same banner as the CNC view\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."* '
     + 'T75 F20 · a Media wall, Sideboard, Vanity, Utility or Hallway job\'s first plus puts its shipped set on the first wall (insertSet, Room refuses first). *"NEW PROJECT with one of them offers the set first (the first plus point on the first wall)."* '
@@ -332,7 +338,8 @@ const EXEMPT = {
     + ' T-CC1a F3 · the AuthModal import, its onAuth prop and its \'auth\' mount are deleted with CC\'s own login. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)'
     + ' T-CC1a F8 · the four triggers of the one save (lib/saveTriggers.js): Ctrl+S / Cmd+S beside Ctrl+Z, the autosave every profile.save.autosaveMinutes when dirty, the crash buffer flushed and the keepalive save on pagehide; the six export callbacks run after the save settles when the item is dirty (saveFirst); the exports themselves untouched. *"dopiero caly json powinien sie zapisac do DB przy nacisnieciu Zapisz lub co 5 minut automatycznie"* (the owner, 30.10.2026)'
     + ' T-CC1b F2, F5, F9.3 · the scene corner\'s View dropdown (SceneViewMenu) and its mount deleted, the onDrawing road of the deleted Output entries deleted, the CNC view receives onExportDxfZip for its own Export CNC / DXF door, JcStockModal mounted on \'jc-stock\'. *"dwa menu View, jedno wystarczy, menu wystarczy"* (the owner, 01.11.2026)'
-    + ' T-CC2a F8, F5.3 · LinkMaterialsModal mounted on \'link-materials\'; the BOM PDF reads the company\'s links. *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na stale"* (the owner, 01.11.2026)',
+    + ' T-CC2a F8, F5.3 · LinkMaterialsModal mounted on \'link-materials\'; the BOM PDF reads the company\'s links. *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na stale"* (the owner, 01.11.2026)'
+    + ' UX turn (01.11.2026, chat) · the canvas wrapper and the first unit plus follow the dock: the scene narrows for the BOM and the Check panel as it does for the inspector, so the scene bars stay visible (Ewa\'s check of the build). *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -439,7 +446,8 @@ const EXEMPT = {
     + ' T84 F8 · the skin to the designer\'s Stage-1 where the frames of F1 measured a few px apart (verify/t84/f01-skin.md D4, D8, D9): PRO 2 px further off the words and its rule 18 high with 3 px either side, the gold button at her weight 600, her 10 px side padding on the top bar\'s and the scene edge\'s house buttons that name none of their own; no number of THE NUMBERS moves. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)'
     + ' Chat fix 30.10.2026 F2 · the card\'s and the refused field\'s rules are gone; the foot under the panel (.studio-inspector-foot, max 45 percent of the column, the findings scrolling inside .studio-inspector-issues) and the strip edge to edge in the column. *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026); *"open cabinet na samym dole a pod nim wszystkie bledy ktore pokazuje"* (the owner, 30.10.2026)'
     + ' Chat fix 30.10.2026 F3 (the evening) · the strip quiet: the panel\'s dark ground, the level a 3 px hairline at the left edge, the panel\'s small text, Show a ghost; the folded row (.studio-issues-row, a field high, transparent) and the dot (.studio-issue-dot, the house radius); the counters and the marker keep F5\'s 13 px dark on the level\'s ground. *"te zolte alerty moze by jakos skromniej to pokazac i zwiniete, jak bedzie 10 to caly menu mi zabierze, ja uwazam ze powinno byc skromnie gdzies na dole a nie ZOLTE wywalone na wierzch, rozprasza tylko czlowieka"*; *"koduj"* (the owner, 30.10.2026, 19:49 and 19:52)'
-    + ' T-CC1b F1 · .studio-job (the 1 px rule on its left), .studio-job-project; .studio-project-name loses its max-width. *"wprowadza w blad ... po prawej, z numerem projektu JC i nazwa"* (the owner, 01.11.2026); *"srodkowe prawo, wyraznie oddzielone od menu"* (the owner, 01.11.2026)',
+    + ' T-CC1b F1 · .studio-job (the 1 px rule on its left), .studio-job-project; .studio-project-name loses its max-width. *"wprowadza w blad ... po prawej, z numerem projektu JC i nazwa"* (the owner, 01.11.2026); *"srodkowe prawo, wyraznie oddzielone od menu"* (the owner, 01.11.2026)'
+    + ' UX turn (01.11.2026, chat) · the rule after Back to Joinery Core at the left; the empty "Select a cabinet or part" state and its rule go with the empty column. *"zostaje zloty, tylko na lewo"*; *"serio zawsze back przyciski sa raczej po lewej, taka zasada i przyzwyczajenie"* (the owner, 01.11.2026); *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
   'src/components/studio/StudioIcons.jsx':
     'T84 F1 · NEW, the Stage-1 SVG symbols as one hidden sprite, and the Icon that uses it. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)'
     + ' Chat fix 30.10.2026 F3 (the evening) · one symbol more in her stroke style: up, the chevron of the folded findings row. *"te zolte alerty moze by jakos skromniej to pokazac i zwiniete, jak bedzie 10 to caly menu mi zabierze, ja uwazam ze powinno byc skromnie gdzies na dole a nie ZOLTE wywalone na wierzch, rozprasza tylko czlowieka"*; *"koduj"* (the owner, 30.10.2026, 19:49 and 19:52)',
@@ -453,11 +461,14 @@ const EXEMPT = {
   'src/components/studio/StudioShell.jsx':
     'T84 F2 · NEW, the Studio grid of Stage-1 (top bar, context strip, rail, scene, inspector, status bar) round the EXISTING canvas and its overlays; every later part comes in through a slot. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER); *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)'
     + ' T84 F6 · the scene\'s edge is drawn before the scene layer, where the canvas toolbar stands on the legacy face, so the Check, the BOM and the Library drawn after it at the same layer stand over it (the edge had covered the Check\'s head and the BOM\'s export buttons). *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
-    + ' Chat fix 30.10.2026 F2 · the root says full or none (no quick mode). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)',
+    + ' Chat fix 30.10.2026 F2 · the root says full or none (no quick mode). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)'
+    + ' UX turn (01.11.2026, chat) · the inspector column is not shown when nothing is selected, nothing is pinned and the view is not CNC (inspectorHasContent); the scene widens and narrows on the same Canvas, the camera kept. *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)'
+    + ' UX turn (01.11.2026, chat) · the scene narrows for the BOM and the Check panel as it does for the inspector, so the scene bars stay visible (Ewa\'s check of the build). *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
   'src/components/studio/StudioRail.jsx':
     'T84 F2 · NEW, the rail: Select, Add (the existing Library), Room, Materials, Check with its badge; Design and CNC at its foot, the toolbar\'s own calls and guards. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
   'src/components/studio/SelectionBreadcrumb.jsx':
-    'T84 F2 · NEW, the context strip: the room, the wall or island, the unit number, the selection in words, and the button that shows the inspector again. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)',
+    'T84 F2 · NEW, the context strip: the room, the wall or island, the unit number, the selection in words, and the button that shows the inspector again. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)'
+    + ' UX turn (01.11.2026, chat) · the show inspector button only when the hidden column would hold something (canShowInspector). *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
   'src/components/studio/StatusBar.jsx':
     'T84 F2 · NEW, the status bar: the selection in words, the MockModeBadge, the dirty marker, the Changes bar (the same component, re-homed) and the viewport size. *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
     + ' T-CC1a F3 · the mock badge is deleted with mock mode; the bar\'s order is otherwise T84\'s. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)',
@@ -468,7 +479,8 @@ const EXEMPT = {
   'src/components/studio/InspectorHost.jsx':
     'T84 F4 · NEW, the inspector column: the quick card, the full RightPanel embedded with Pin and Back to quick settings inside its own header, or nothing; Pin follows the selection, and a pending edit is committed to its own cabinet before the selection moves. *"Pin keeps inspector open and FOLLOWING SELECTION; it never locks unit ID"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27); *"ok jak juz bedziesz wiedzial dokladnie to tabela porownaj ze mamy wszystko nic nie zgubilismy, teraz daj do tury"* (the owner, 27.10.2026, 22:11 to 22:25)'
     + ' Chat fix 30.10.2026 F2 · the quick card is gone: one cabinet clicked shows the full RightPanel at once; the column\'s FOOT under the panel holds Open cabinet (the editor window beside the press) and under it every finding of the cabinet, scrolling on its own; Pin stays, Back to quick settings goes; the guard blurs the field with the caret and nothing holds the selection (the refused card value is gone). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026); *"open cabinet na samym dole a pod nim wszystkie bledy ktore pokazuje"* (the owner, 30.10.2026); *"ok koduj te poprawki zobaczymy co sie dzieje"* (the owner, 30.10.2026, 18:41)'
-    + ' Chat fix 30.10.2026 F3 (the evening) · the foot hands IssueStrip the room under Open cabinet and draws no list wrapper of its own. *"te zolte alerty moze by jakos skromniej to pokazac i zwiniete, jak bedzie 10 to caly menu mi zabierze, ja uwazam ze powinno byc skromnie gdzies na dole a nie ZOLTE wywalone na wierzch, rozprasza tylko czlowieka"*; *"koduj"* (the owner, 30.10.2026, 19:49 and 19:52)',
+    + ' Chat fix 30.10.2026 F3 (the evening) · the foot hands IssueStrip the room under Open cabinet and draws no list wrapper of its own. *"te zolte alerty moze by jakos skromniej to pokazac i zwiniete, jak bedzie 10 to caly menu mi zabierze, ja uwazam ze powinno byc skromnie gdzies na dole a nie ZOLTE wywalone na wierzch, rozprasza tylko czlowieka"*; *"koduj"* (the owner, 30.10.2026, 19:49 and 19:52)'
+    + ' UX turn (01.11.2026, chat) · the same inspectorHasContent answer as the shell; the empty "Select a cabinet or part" block deleted with the empty column. *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
   'src/components/studio/UnitIssueMarker.jsx':
     'T84 F5 · NEW, the marker beside the unit number in the scene: a red or yellow triangle with the count; a click selects the unit and opens its card. *"napewno naprzyklad wszystkie bledy zolte i czerwone sa totalnie niewidoczne, mala czcionka etc"* (the owner, 27.10.2026, 16:27)'
     + ' Chat fix 30.10.2026 F2 · the marker\'s title says panel, not card; its click is what it was (select, show the inspector). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)',
@@ -507,14 +519,16 @@ const EXEMPT = {
     'T-CC1b F8 · an onResult prop hands the finished render back beside the download (Add to the drawings); the presets and the resolution untouched. *"usunac przyciski all units i drawing set pdf, tylko export pdf"*; *"logo domyslne z JC albo przycisk wstaw inne logo"*; *"dodac wizualizacje z drugiego kata, render wedlug wyboru"* (the owner, 01.11.2026)',
   'src/components/MaterialPicker.jsx':
     'T-CC1b F10 · the Assign and Stock windows\' embedded list (search, category tree, kind filter), never a dropdown only. *"materialy z JC (jego baza), przypisanie w CC, grupy ... modal duzo wiekszy i czytelny, polaczony na stale, kazda funkcja przypisana (10 rodzajow zawiasow, wszystkie przypisane), inaczej eksport BOM pisze not assigned materials"* (the owner, 01.11.2026)'
-    + ' T-CC2a F8.4 · the Link materials window\'s right column: photos (enlarge on click), the tenant\'s categories as chips, a Link button per row; the Stock and Assign windows as before at rest. *"w data base assign material powinnismy miec departamenty podzielone na gorze plyty, ironmongery etc etc, nie scrolowane ... polaczenie A i C plus B"* (the owner, 01.11.2026)',
+    + ' T-CC2a F8.4 · the Link materials window\'s right column: photos (enlarge on click), the tenant\'s categories as chips, a Link button per row; the Stock and Assign windows as before at rest. *"w data base assign material powinnismy miec departamenty podzielone na gorze plyty, ironmongery etc etc, nie scrolowane ... polaczenie A i C plus B"* (the owner, 01.11.2026)'
+    + ' UX turn (01.11.2026, chat) · Ewa P12: in the Link materials window the stock opens on the tab\'s kind (Boards, Hardware, Paint) with All kinds one click away; the thickness column in link mode. *"ok to daj wszystkie propozycje, jak co to bedziemy usuwac"*; *"2 - wszystkie"* (the owner, 01.11.2026, 18:04)',
   'src/components/JcStockModal.jsx':
     'T-CC1b F9.3 · NEW, the Stock window: the tenant\'s Joinery Core stock read-only (name, item number, category, thickness, unit, price, stock, the JC badge), a search and the categories tree, 1240 wide, the 13 px floor. *"materialy z JC (jego baza), przypisanie w CC, grupy ... modal duzo wiekszy i czytelny, polaczony na stale, kazda funkcja przypisana (10 rodzajow zawiasow, wszystkie przypisane), inaczej eksport BOM pisze not assigned materials"* (the owner, 01.11.2026)',
   'src/components/drawings/AiVisualCard.jsx':
     'T-CC1b F13 · NEW, the AI visualisation card: the source, size, quality, Add to the prompt, Generate (at most three pictures through Joinery Core\'s /api/ai/visualise), Use this one, Remove; nothing kept until one is chosen. *"wizualizacja AI z renderu, max 3 proby, wybierasz jedna i dodajesz do rysunkow, tanie API"* (the owner, 01.11.2026)',
   // T-CC2a (01.11.2026): its NEW PRO file.
   'src/components/LinkMaterialsModal.jsx':
-    'T-CC2a F8 · NEW, the Link materials window: the maximised work window, Back to project top left, the seven departments as tabs with their counts, the sheet brands (three coming soon), the CC material beside the linked Joinery Core material (no id shown), the stock on the right with Link, the sheet form that cannot be saved without both sizes, Change link and Unlink, the offline, not set up and empty stock states. *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na stale"*; *"link bedzie lepiej brzmial"* (the owner, 01.11.2026)',
+    'T-CC2a F8 · NEW, the Link materials window: the maximised work window, Back to project top left, the seven departments as tabs with their counts, the sheet brands (three coming soon), the CC material beside the linked Joinery Core material (no id shown), the stock on the right with Link, the sheet form that cannot be saved without both sizes, Change link and Unlink, the offline, not set up and empty stock states. *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na stale"*; *"link bedzie lepiej brzmial"* (the owner, 01.11.2026)'
+    + ' UX turn (01.11.2026, chat) · Ewa P3 to P13: a linked sheet shows its size and offcut; the not set up words name the administrator; Save link stays enabled and says what is missing; suggestions and Accept all from the rows shown, a size per brand; Unlinked for all projects with Undo; opens on Used in this project when it holds rows not linked, with This project: n of m linked; no move after a link, a Next not linked button; the stock by the tab\'s kind; Search by name; the status on one line. *"ok to daj wszystkie propozycje, jak co to bedziemy usuwac"*; *"2 - wszystkie"* (the owner, 01.11.2026, 18:04)',
 };
 
 // ─── KASACJA, CHAT FIX 30.10.2026 · FOUR PRO FILES DELETED, BY NAME ─────────
@@ -561,9 +575,9 @@ const FROZEN = {
   'src/components/AddItems.jsx': '2c1c206173c3ae7260f056b5945b17453a7fffdca8df253cd47db5d7d9303a87',
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/AssignMaterialsModal.jsx': 'da941302d6c1eb28d12f77460d5aaf225bc8872238856070929ad5ef721b0e18',
+  'src/components/AssignMaterialsModal.jsx': 'fdba1f655c1155e9e09c82261eb6c2d6f25a48662f6f21a415d9f2c10ca0a1ec',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/BomPanel.jsx': '777226acb75e49aaaaf8b2f1b9026b9df8f92ec5bc1e1c31baa602211b664708',
+  'src/components/BomPanel.jsx': '830fefd3333ca10cfec1cb45fc350f428182a93de5029d993908615c989ad495',
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/CabinetEditorModal.jsx': '3f080e23b09ce5c5018f89649264e77cb85e5f5594dafecd839673d6db9fd066',
@@ -598,7 +612,7 @@ const FROZEN = {
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T83 F11 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/DrawingModal.jsx': 'ab0167bb8d760ee110758f5113690faf9c3476a5d52ed20ad74f90eb9b77c56c',
+  'src/components/DrawingModal.jsx': 'ab67cebf0a561ad4bee68f6b0dd13b8b4f5c2b906131dbf40c8229dc82843333',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -620,7 +634,7 @@ const FROZEN = {
   'src/components/LibraryPanel.jsx': '2504ab9353aff8f51ada6adfe2a9fff5cecd6a64cdac392a72bbdcd78d0f3f51',
   'src/components/LightingPanel.jsx': '65bf9cbc3cf6fe4b687def6f2d9538d4b363690c3c5d5ad2fddb0f7a77e48d2d',
   'src/components/MaterialChoicePanel.jsx': '16d2ed3171b4756141f21f693123c46bd6b33f772cad58013b2a45ec9a8fcb71',
-  'src/components/MaterialPicker.jsx': '4438dc21a9ac177d84bd521331baa2614fe3b9b05607cdcea6fa34ffa6d76d43',
+  'src/components/MaterialPicker.jsx': '8f772977c05f4ae1b50586a50736a63e90fbad7f94621497b7ac40652e9f6a05',
   'src/components/MenuBar.jsx': '8259c2d7b81f5f176c8c20d6faf98d6c2943667e2dd6354154a85748da1c4581',
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 re-frozen at the new hash, twice (the morning, the afternoon); EXEMPT above carries the reasons.
@@ -664,7 +678,7 @@ const FROZEN = {
   'src/components/SaveTemplateModal.jsx': '5de923d96cd981fd785005716ea84b7288d77c9b4ea044763112e672c6d1ba24',
   'src/components/Section.jsx': 'f3f64ad9f4d024d31a508f469a1f816c2bf1c0ffcf7d9221e95e2ee42d2a1a56',
   // T80 F2 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/SettingsPanel.jsx': 'fc961b8922fb13a5b5dd9ff82ca26244593a1f8aa27d0b541841341f54240b25',
+  'src/components/SettingsPanel.jsx': '78ac94c24571401d7b7e04ce11b787f667c0a3edf5b8ec49ae403593e0e0b193',
   // T78 F21 · a NEW PRO component, frozen the night it is born: Output > Spraying, the spray schedule's one page. `EXEMPT` carries the owner's words.
   'src/components/SprayingPanel.jsx': 'c7f8b924fc0f46ab4c1e77d3a5be839fdc49095de0061862a20e6df15ab429ed',
   'src/components/SheenSlider.jsx': 'ec09e0dd7ad835672e4c024dee3013e649dcfa8ad64a2da5c120ed78d5c94bfb',
@@ -678,7 +692,7 @@ const FROZEN = {
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F2 re-frozen at the new hash; EXEMPT above carries the reason.
   // Chat fix 28.10.2026 F1 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/TopBar.jsx': 'e65a78e5647aa994f898f89265b417279dab4a0767f9ef6f45c1c62ffe97b683',
+  'src/components/TopBar.jsx': 'c8e205fa114fe4cb2ab8b97c581f60e4144f5d532bc775c3708a299347ed7442',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
   // T78 F5 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/UnitSizeModal.jsx': 'e8b94789f07fffaeb5b66a2a8fd160c28d9d4f4b0ed56383ecc18532f7b06c1f',
@@ -692,7 +706,7 @@ const FROZEN = {
   'src/components/WatchLayoutModal.jsx': 'ca2f0acd8e432d5890a185ca15a9b0bdff565827464652e3826668981b0a35ee',
   'src/components/WizardHardware.jsx': 'd0de5ca0c32de92feffef65a1a091cc2d45eaeb02a446a73c5389c2d03c377a8',
   // T80 F2 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/WizardSettings.jsx': '16bb6970707f5c0f4a7544ac248e30cbccdc3af7a91494c2cae6a4aaedd094fb',
+  'src/components/WizardSettings.jsx': '308d9530bef600e0001277622242026c4fa53cfcc76f0d5e478effd26850b957',
   'src/components/WizardSummary.jsx': '989a13f6bff6213a787a2ed78db2533d320c1cd6a99e82e0ca435e4edc60a2e3',
   'src/main.jsx': '7250f492eca41ee07d766942f1f5a663368704e676e89313825c2ebf33fb95d7',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -705,23 +719,23 @@ const FROZEN = {
   // T84 F5 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F7 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': 'cff1753d6329d8ee05e9993b7e753bd1dc45cfe503c88aa19ecde25505e64b32',
+  'src/pages/ConfiguratorPage.jsx': '107661912b6ba8378c5094b2fd0dd1e83bf6566335a70cd5cfb1d5dad96e3dff',
   // T84 F1 · NEW PRO files (the skin), frozen at their first hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F8 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/studio/studio.css': '010b9b298550f78215a33f90425f2a501c0d6ce51f927fe5171520113a5e980a',
+  'src/components/studio/studio.css': '7d886413c1abb3279bfd8f7eb917e19933426453051bf0ccbd83b82ba7da882e',
   'src/components/studio/StudioIcons.jsx': 'f84fdead962263ea0eda756addf80ad801fe81b253b0273ca876562e344ca0ff',
   'src/components/studio/lib/studioSkin.js': '72bd15140c022ca10bd39de4f01c959d50df1f3dd56a0e564729390a4c85b31d',
   // T84 F2 · NEW PRO files (the shell), frozen at their first hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/studio/StudioShell.jsx': '3f0a946d45fc1d9c2b283536ab42f9be46b5cb43e3d3e8cf22e926cdc6fbfec3',
+  'src/components/studio/StudioShell.jsx': 'f273d94d597c66e1b815a38e6af75833d1f512bc23e05a8874762e37870d9613',
   'src/components/studio/StudioRail.jsx': '09a32f77522d130b3d76e3ff8a4a3a17688ba98c434733313fa2ae435854e7ff',
-  'src/components/studio/SelectionBreadcrumb.jsx': '29dfd5f6748b83a8d6b8ac36c778e40c2d6971b7290cf8ff3a8c9c92a86e7dc0',
+  'src/components/studio/SelectionBreadcrumb.jsx': '206b97f4c2280451f035b0fd61dbd695f2577a7eaa1360956284358c733da835',
   'src/components/studio/StatusBar.jsx': 'cbc25914a5ca5369f84c0a986005cd043c5dd9af6ff1afad99b8894eef329abf',
   'src/components/studio/lib/studioFace.js': '550ae67a86068132c172498c49715dba928da790ca7846b799e15d642d647a6a',
   // T84 F3 · the quick cards: DELETED by the chat fix of 30.10.2026 (DELETED below carries the reason).
   // T84 F4 · NEW PRO files (the inspector host), frozen at their first hash; EXEMPT above carries the reason.
-  'src/components/studio/InspectorHost.jsx': '5febfa121dca59dab1939491dba73e1e6986c1093e07c5be8b42da58c648c31d',
+  'src/components/studio/InspectorHost.jsx': 'f2c3b50a433f102f008ab2912bd39c6cdf085bdf97a32e2ff375fa39648a6fc4',
   // T84 F5 · NEW PRO files (the errors you can see), frozen at their first hash; EXEMPT above carries the reason.
   'src/components/studio/UnitIssueMarker.jsx': 'db0654d18de67bdc71741d4cf4d456fa5e5e5fac003c3efc51f0e212413a1fc1',
   'src/components/studio/IssueStrip.jsx': '02363c544450a030bcb34f20643a04852d1d8740a5d656d7452f982ce2047797',
@@ -741,7 +755,7 @@ const FROZEN = {
   // T-CC1b · a NEW PRO file, frozen at its first hash (EXEMPT above carries the reason).
   'src/components/drawings/AiVisualCard.jsx': '565b087bb27673f594857a9efd1caaaba65be57b89b3ae3ce5330626a129a489',
   // T-CC2a · a NEW PRO file, frozen at its first hash (EXEMPT above carries the reason).
-  'src/components/LinkMaterialsModal.jsx': 'a99842198889f9ac76f7e26c19c8e26ba59840f3b51d0630d4ff7cacd60667b7',
+  'src/components/LinkMaterialsModal.jsx': '13d9bfceda7de11c2190bfb3829639dacacb5edc9c633abc4a9d5f6219d074d7',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────

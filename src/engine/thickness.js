@@ -267,23 +267,71 @@ export function thicknessOf(part, thicknesses = {}) {
   return partSlotThickness(part, T) ?? carcass;
 }
 
-/** …the slot half of the answer, for a part that has not been cut yet. */
-function partSlotThickness(part, T) {
+/**
+ * THE SLOT A PART IS CUT FROM, by this file's one rule (UX turn: read by
+ * `partSlotThickness` below and by `nominalThicknessOfPart`, so the cut and the
+ * catalogue name the same slot).
+ */
+function slotOfPart(part) {
   const name = String(part?.part || '');
-  const carcass = num(T.carcass1);
-
   // The pieces that name their own slot. A PARTITION does (F3.3, the owner:
-  // "grubość przegrody się nie zmienia" — its slot is a choice, not a guess),
+  // "grubość przegrody się nie zmienia": its slot is a choice, not a guess),
   // and so may any element somebody has put on carcass 2 or 3.
   const said = part?.meta?.slot || part?.slot || null;
-  if (said && BY_ID.has(said)) return num(T[said]) ?? carcass;
-
-  if (BOX_PARTS.has(name) || part?.role === 'drawer_box') return num(T.box) ?? carcass;
+  if (said && BY_ID.has(said)) return said;
+  if (BOX_PARTS.has(name) || part?.role === 'drawer_box') return DRAWER_BOX_SLOT;
   if (FRONT_PARTS.has(name) || part?.role === 'front') {
-    const which = part?.meta?.frontType === 'f2' || part?.front_type === 'f2' ? 'front2' : 'front1';
-    return num(T[which]) ?? num(T.front1) ?? carcass;
+    return part?.meta?.frontType === 'f2' || part?.front_type === 'f2' ? 'front2' : 'front1';
   }
-  return carcass;
+  return CARCASS_SLOTS[0];
+}
+
+/** …the slot half of the answer, for a part that has not been cut yet. */
+function partSlotThickness(part, T) {
+  const carcass = num(T.carcass1);
+  const id = slotOfPart(part);
+  if (id === 'front2') return num(T.front2) ?? num(T.front1) ?? carcass;
+  return num(T[id]) ?? carcass;
+}
+
+/**
+ * ─── UX TURN · THE BOARD BOUGHT IS THE ONE CHOSEN, NEVER THE CALIPER ───────
+ *
+ * The owner, 01.11.2026, 18:46: *"tak katalogi i BOM biora to co wybral
+ * klient, 18.5 to tylko ciecie dla CNC, nie dla zakupow, to sie nie moze
+ * laczyc"*. The cut list and the CNC cut at the MEASURED number (slotThickness);
+ * the catalogue entry of a board (engine/materials.js boardChoiceOfPanel, so
+ * the BOM, the purchase list and the Order tab) takes the slot's NOMINAL
+ * (slotNominal: the source, the project thickness, the profile).
+ *
+ * A cut piece is mapped back to the slot it is cut from:
+ *   1. its own slot (slotOfPart) when it was cut at that slot's number;
+ *   2. else the slot(s) whose number it was cut at, when they agree on one
+ *      nominal (a run piece or a back cut at a slot's number);
+ *   3. else its OWN thickness: a piece the engine or somebody gave a number
+ *      of its own (a part thickness override, a kit's fixed piece) is bought
+ *      at that number, as T-CC2a did.
+ * The drawer box with no number of its own inherits carcass 1's measured
+ * number (slotThickness, CHAT FIX 15.08.2026), so it is the carcass 1 board.
+ * A piece with no thickness stays null (the resolver's source fallback).
+ * With no measured number anywhere the nominal IS the cut number, so a
+ * project nobody has put a caliper on resolves exactly as before.
+ *
+ * @returns {number|null}
+ */
+export function nominalThicknessOfPart(part, { design, profile } = {}) {
+  const cut = num(part?.thickness);
+  if (cut == null || !profile) return cut;
+  const nominalOf = (id) => {
+    if (id === DRAWER_BOX_SLOT && num(slotRecord(design, id).measured) == null
+      && num(slotRecord(design, 'carcass1').measured) != null) return slotNominal('carcass1', { design, profile });
+    return slotNominal(id, { design, profile });
+  };
+  const own = slotOfPart(part);
+  if (slotThickness(own, { design, profile }) === cut) return nominalOf(own) ?? cut;
+  const hits = THICKNESS_SLOTS.filter((s) => slotThickness(s.id, { design, profile }) === cut).map((s) => nominalOf(s.id));
+  if (hits.length && hits.every((t) => t != null && t === hits[0])) return hits[0];
+  return cut;
 }
 
 /**

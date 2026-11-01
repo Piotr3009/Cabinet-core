@@ -340,7 +340,9 @@ const VOCABULARY = [
   'studio-scene-links', 'studio-inspector',
   // The inspector column (CHAT FIX 30.10.2026: the card's classes left with the card; the foot
   // under the panel holds Open cabinet and the findings)
-  'studio-inspector-foot', 'studio-inspector-issues', 'studio-issues-row', 'studio-issue-dot', 'studio-empty-state',
+  // AMENDED BY THE UX TURN, U2: 'studio-empty-state' left with the empty column it styled (nothing selected and
+  // nothing pinned, no column is drawn: *"niech sie zweza, nie chce ustawiac sceny od nowa"*, the owner).
+  'studio-inspector-foot', 'studio-inspector-issues', 'studio-issues-row', 'studio-issue-dot',
   // Popups
   'studio-popup', 'studio-popup-head', 'studio-menu-item', 'studio-library-item',
   // Issues

@@ -75,7 +75,16 @@ const slot = (over = {}) => migrateDesign({
   ...over,
 });
 
-test('a SPRAY front with a colour and no board is MISSING — and Generic clears it', () => {
+// UX turn B1 (CLAUDE.md T-CC2a law 2): REWRITTEN. Since T-CC2a a board is what the DESIGN says, and a
+// sprayed front IS an MDF board of the catalogue (sheet.mdf.18): with its colour chosen it answers the slot
+// ('catalogue'). WITHOUT a colour it is still missing, and Generic still clears it, exactly as before.
+test('a SPRAY front with no colour and no board is MISSING; with its colour it is a board (UX turn B1); Generic clears it', () => {
+  const blank = slot({
+    fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'spray' }] },
+  });
+  const missing = materialsAssigned(blank, P).fronts.filter((a) => !a.assigned);
+  assert.deepEqual(missing.map((s) => s.label), ['Front 1'],
+    'a spray source with no colour chosen is not yet a board');
   const sprayed = slot({
     fronts: {
       types: [{
@@ -83,9 +92,9 @@ test('a SPRAY front with a colour and no board is MISSING — and Generic clears
       }],
     },
   });
-  const missing = materialsAssigned(sprayed, P).fronts.filter((a) => !a.assigned);
-  assert.deepEqual(missing.map((s) => s.label), ['Front 1'],
-    'a colour is what it LOOKS like, not what it is CUT FROM');
+  const f1 = materialsAssigned(sprayed, P).fronts[0];
+  assert.deepEqual([f1.assigned, f1.via, f1.catalogueId], [true, 'catalogue', 'sheet.mdf.18'],
+    'the colour on its spray source is the MDF board the cut list cuts it from');
 
   const answered = slot({
     fronts: {
@@ -132,17 +141,19 @@ test('the carcass answers the same question on veneer and on spray', () => {
   assert.equal(materialsAssigned(answered, P).all, true);
 });
 
+// UX turn B1: REWRITTEN to the catalogue's law. The front's spray colour is a board now; a carcass on a source
+// the carcass does not offer ('spray', its own is 'sprayed') and a front with no colour are still nothing.
 test('nothing assigned anywhere → Start is blocked, and the message names the board', () => {
   const empty = migrateDesign({
     carcass: { types: [{ id: 'c1', label: 'Carcass 1', source: 'spray' }] },
-    fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'spray', colour: { hex: '#123456' } }] },
+    fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'spray' }] },
   });
   const { blockers } = wizardStartBlockers({
     design: empty, heights: projectHeights(empty, P), roomHeight: 2400, profile: P,
   });
   assert.deepEqual(blockers.map((b) => b.code), ['materials']);
-  assert.match(blockers[0].message, /Assign a stock board to Carcass 1, Front 1/);
-  assert.match(blockers[0].message, /a colour or a decor alone does not/);
+  assert.match(blockers[0].message, /Choose a board for Carcass 1, Front 1/);
+  assert.match(blockers[0].message, /an EGGER decor, a sprayed colour, or a stock board\. Generic counts\./);
 });
 
 test('boards on both containers → nothing blocks', () => {

@@ -20,6 +20,13 @@ import { veneerIdFromFinishId } from './veneers.js';
 // Turn 39 (CLAUDE.md F7): the gate asks the assignment store, so it needs the
 // one reader that knows what an assignment is.
 import { assignmentFor } from './partRegistry.js';
+// UX turn B1: the gate asks the catalogue too, through the cut list's own
+// reduction and thickness (function-level reads only, so the import cycle
+// catalogue.js / thickness.js to this file is safe).
+import {
+  carcassTypeChoice, catalogueIdOfBoard, entryById, frontTypeChoice,
+} from './catalogue.js';
+import { slotNominal } from './thickness.js';
 
 const settingsOf = (profile) => profile?.projectSettings || DEFAULT_CABINET_PROFILE.projectSettings;
 
@@ -328,6 +335,39 @@ function registryBoardFor(kind, assignments) {
   return a?.material_id || null;
 }
 
+/**
+ * ─── UX TURN B1: …AND THE CATALOGUE (CLAUDE.md T-CC2a law 2) ────────────────
+ *
+ * Since T-CC2a a board is what the DESIGN says: a slot set by its board choice
+ * (its source, its decor or colour, its thickness) carries no `material_id`,
+ * and the gate blocked Next on a new item standing on the company's defaults
+ * (EGGER H3325 carcass, sprayed RAL 3005 front). A THIRD way to say yes: the
+ * slot's choice, reduced as the cut list reduces it (engine/catalogue.js
+ * carcassTypeChoice / frontTypeChoice) at the slot's own nominal thickness
+ * (engine/thickness.js slotNominal), resolves to a catalogue entry.
+ *
+ * What still says no: a slot with no source, a source whose picker is a COLOUR
+ * with no colour chosen, a decor source with no decor (the resolver would read
+ * it as the Generic placeholder, and Generic counts only as the stock board it
+ * always was), a veneer or wood board (not in the catalogue yet). The stored
+ * `material_id` and the assignments stay as the first two yes answers.
+ *
+ * @returns {string|null} the catalogue id the slot's choice resolves to
+ */
+function catalogueBoardFor(kind, type, index, design, profile) {
+  const choice = kind === 'front' ? frontTypeChoice(type, design) : carcassTypeChoice(type, design);
+  if (!choice?.source) return null;
+  // A source this side does not offer (a carcass 'spray', a front 'decor') is not a choice made here.
+  const source = sourceById(kind === 'front' ? frontSources(profile) : carcassSources(profile), choice.source);
+  if (!source) return null;
+  if (pickerForSource(source) === 'colour' && !choice.colour) return null;
+  const thickness = slotNominal(`${kind}${index + 1}`, { design, profile: profile || DEFAULT_CABINET_PROFILE });
+  const { id } = catalogueIdOfBoard({ ...choice, thickness, side: kind }, profile || DEFAULT_CABINET_PROFILE);
+  const entry = id ? entryById(id) : null;
+  if (!entry || entry.brand === 'generic') return null;
+  return entry.id;
+}
+
 export function materialsAssigned(design, profile, assignments = null) {
   const d = design || {};
   const carcassBoard = registryBoardFor('carcass', assignments);
@@ -335,15 +375,19 @@ export function materialsAssigned(design, profile, assignments = null) {
   const carcassTypes = d.carcass?.types?.length
     ? d.carcass.types
     : [{ id: 'c1', label: 'Carcass 1' }];
-  const carcass = carcassTypes.map((t) => ({
-    id: t.id,
-    label: t.label || 'Carcass',
-    kind: 'carcass',
-    assigned: Boolean(t.material_id || carcassBoard),
-    // WHERE the yes came from, so the wizard can say "assigned in Assign
-    // materials" rather than leaving a joiner hunting for a select he filled.
-    via: t.material_id ? 'slot' : (carcassBoard ? 'assignments' : null),
-  }));
+  const carcass = carcassTypes.map((t, i) => {
+    const catalogueId = t.material_id || carcassBoard ? null : catalogueBoardFor('carcass', t, i, d, profile);
+    return {
+      id: t.id,
+      label: t.label || 'Carcass',
+      kind: 'carcass',
+      assigned: Boolean(t.material_id || carcassBoard || catalogueId),
+      // WHERE the yes came from, so the wizard can say "assigned in Assign
+      // materials" rather than leaving a joiner hunting for a select he filled.
+      via: t.material_id ? 'slot' : (carcassBoard ? 'assignments' : (catalogueId ? 'catalogue' : null)),
+      ...(catalogueId ? { catalogueId } : {}),
+    };
+  });
   const storedFronts = d.fronts?.types?.length
     ? normaliseFrontTypes(d.fronts.types, profile)
     // A project that never grew front slots still answers through the older
@@ -351,13 +395,17 @@ export function materialsAssigned(design, profile, assignments = null) {
     : [{
       id: 'f1', label: 'Front 1', material_id: null, finish_id: d.finish?.front ?? null, colour: d.colour?.front ?? null,
     }];
-  const fronts = storedFronts.map((t) => ({
-    id: t.id,
-    label: t.label || 'Front',
-    kind: 'front',
-    assigned: Boolean(t.material_id || frontBoard),
-    via: t.material_id ? 'slot' : (frontBoard ? 'assignments' : null),
-  }));
+  const fronts = storedFronts.map((t, i) => {
+    const catalogueId = t.material_id || frontBoard ? null : catalogueBoardFor('front', t, i, d, profile);
+    return {
+      id: t.id,
+      label: t.label || 'Front',
+      kind: 'front',
+      assigned: Boolean(t.material_id || frontBoard || catalogueId),
+      via: t.material_id ? 'slot' : (frontBoard ? 'assignments' : (catalogueId ? 'catalogue' : null)),
+      ...(catalogueId ? { catalogueId } : {}),
+    };
+  });
   const missing = [...carcass, ...fronts].filter((s) => !s.assigned);
   return {
     carcass, fronts, missing, all: missing.length === 0,
@@ -396,7 +444,8 @@ export function wizardStartBlockers({
   if (!materials.all) {
     blockers.push({
       code: 'materials',
-      message: `Assign a stock board to ${materials.missing.map((s) => s.label).join(', ')} — Generic counts, a colour or a decor alone does not.`,
+      // UX turn B1: the words follow the gate. A decor or a colour on its source is a board now (T-CC2a law 2).
+      message: `Choose a board for ${materials.missing.map((s) => s.label).join(', ')}: an EGGER decor, a sprayed colour, or a stock board. Generic counts.`,
     });
   }
   return {

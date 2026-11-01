@@ -461,6 +461,34 @@ test('U2 · the shell sizes only the third column by it; the scene slot and the 
   assert.match(read('src/3d/Scene.jsx'), /camera=\{\{ position: \[/, 'the camera is an options object, made once by @react-three/fiber');
 });
 
+test('U2 · a docked panel (the BOM, the Check) narrows the visible scene as the inspector does (Ewa\'s check of the BOM frame)', () => {
+  const cover = runFunction(SHELL, 'dockedCover');
+  const scene = { left: 112, right: 1600, top: 82, bottom: 870, width: 1488 };
+  const dock = (w, over = {}) => ({ left: scene.right - w, right: scene.right, top: scene.top, bottom: scene.bottom, width: w, ...over });
+  assert.equal(cover(scene, []), 0, 'nothing docked: the whole width');
+  assert.equal(cover(scene, [dock(720)]), 720, 'the BOM tab');
+  assert.equal(cover(scene, [dock(560)]), 560, 'the other BOM tabs');
+  assert.equal(cover(scene, [dock(380), dock(720)]), 720, 'the Check and the BOM: the widest wins');
+  assert.equal(cover(scene, [{ left: 300, right: 548, top: 120, bottom: 600, width: 248 }]), 0, 'a floating panel (the Library) is not docked');
+  assert.equal(cover(scene, [dock(380, { top: 200 })]), 0, 'not the whole height: not docked');
+  assert.equal(cover({ ...scene, width: 0 }, [dock(720)]), 0, 'no scene, nothing to narrow');
+  // The shell keeps the variable on the scene element: re-read on a mount, a width and a resize; no re-render.
+  assert.match(SHELL, /useSceneDock\(sceneRef\);/);
+  assert.match(SHELL, /scene\.style\.setProperty\('--studio-dock', `\$\{px\}px`\);/);
+  assert.match(SHELL, /kids\.observe\(scene, \{ childList: true \}\);/);
+  // The canvas wrapper and the first-unit plus end where the panel begins; the two bars centre in what is left.
+  const css = read('src/components/studio/studio.css');
+  assert.ok(css.includes('.studio-pro .studio-scene > [data-scene-follows-dock] { right: var(--studio-dock, 0px); }'));
+  for (const sel of ['.studio-pro .studio-scene-toggles {', '.studio-pro .studio-scene-links {']) {
+    const rule = css.slice(css.indexOf(sel), css.indexOf('}', css.indexOf(sel)));
+    assert.match(rule, /right: var\(--studio-dock, 0px\);/, `${sel} ends at the docked panel`);
+    assert.match(rule, /max-width: calc\(100% - var\(--studio-dock, 0px\) - 28px\);/, `${sel} fits in what is left`);
+  }
+  const page = read('src/pages/ConfiguratorPage.jsx');
+  assert.match(page, /<div className="absolute inset-0 bg-canvas" data-scene-follows-dock="1">\s*<Scene /, 'the same canvas, resized');
+  assert.equal((page.match(/data-scene-follows-dock="1"/g) || []).length, 3, 'the canvas and the two faces of the first-unit plus');
+});
+
 test('F2 · the shell\'s DOM hooks (CONTRACT section 6)', () => {
   for (const hook of ['shell', 'scene', 'workspace']) assert.ok(SHELL.includes(`data-studio="${hook}"`), hook);
   for (const hook of ['rail', 'rail-select', 'rail-add', 'rail-room', 'rail-materials', 'rail-check', 'rail-design', 'rail-cnc']) {

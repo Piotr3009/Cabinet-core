@@ -73,7 +73,7 @@ test('U3 · the maximised work window: near full screen, restore button, the fon
   assert.match(shell, /\n\s+maximised\n/, 'opens near full screen (Modal.jsx gives it its restore button)');
   assert.match(shell, /className="cc-modal-wide"/, 'the font floor of the big windows');
   assert.match(shell, /width="w-\[880px\]"/, 'restored, the window of before');
-  assert.match(shell, /onEscape=\{aiOpen \? \(\) => setAiOpen\(false\) : null\}/, 'Escape folds the AI window first, then closes as ever');
+  assert.doesNotMatch(code, /onEscape=/, 'Escape is the shell\'s and closes the window, as before (turn 23 F1.3); the AI window folds by its own x');
   const footer = code.slice(code.indexOf('footer={('), code.indexOf(')}\n    >'));
   assert.match(footer, /\{`Export: \$\{wallPicked\.length\} of \$\{wallSheetList\.length\} sheets ticked, bound in the set's order\.`\}/);
   assert.ok(footer.indexOf('Export: ') < footer.indexOf('>Close<'), 'the count first, then Close, Wall DXF, Export PDF');

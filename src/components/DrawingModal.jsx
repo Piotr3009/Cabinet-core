@@ -396,8 +396,6 @@ export default function DrawingModal({ rig = null }) {
       // The font floor of the big windows (index.css .cc-modal-wide, T-CC1b F12).
       className="cc-modal-wide"
       onClose={closeModal}
-      // U3: while the AI visualisation is open, Escape folds it; then Escape closes this window, as ever.
-      onEscape={aiOpen ? () => setAiOpen(false) : null}
       footer={(
         <>
           {wallSheetList.length ? (
@@ -767,7 +765,8 @@ export default function DrawingModal({ rig = null }) {
         {/* ─── U3 · THE AI VISUALISATION, ITS OWN SMALL WINDOW ─────────────
             T-CC1b F13's card as it is (components/drawings/AiVisualCard.jsx,
             untouched); it writes project.visuals.ai itself. Over the preview,
-            beside the sheets; folded by its x, by Escape or by its button. */}
+            beside the sheets; folded by its x or by its button. Escape closes the
+            Drawings window as it always did (the shell owns Escape, turn 23 F1.3). */}
         <div
           className={`${aiOpen ? '' : 'hidden'} absolute left-[276px] bottom-0 w-[720px] max-w-[calc(100%-276px)] max-h-full overflow-y-auto rounded border border-gold/60 bg-shell-800 shadow-panel`}
           role="region"
@@ -780,7 +779,7 @@ export default function DrawingModal({ rig = null }) {
               type="button"
               className="cc-btn-ghost"
               data-drawing-ai-close="1"
-              title="Fold the AI visualisation (Escape)"
+              title="Fold the AI visualisation; its pictures stay while this window is open"
               onClick={() => setAiOpen(false)}
             >
               ×

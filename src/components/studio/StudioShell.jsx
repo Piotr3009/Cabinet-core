@@ -99,6 +99,62 @@ export function inspectorHasContent({ viewMode = '3d', unitType = null, pinned =
   return viewMode === 'cnc' || Boolean(unitType) || Boolean(pinned);
 }
 
+/**
+ * THE UX TURN, U2, after Ewa's check of the BOM frame: how much of the scene's
+ * right edge a DOCKED panel covers. A docked panel is a direct `<aside>` of
+ * the scene standing against its right edge for its whole height (the BOM and
+ * the Check, both `absolute right-0 top-0 bottom-0`); the widest one wins. A
+ * floating panel (the Library) is not docked. The scene then narrows for it as
+ * it narrows for the inspector (studio.css `--studio-dock`): the canvas, the
+ * same one with its camera, ends where the panel begins and the two bars centre
+ * in what is left. Pure: the rectangles are handed in.
+ *
+ * @param {{left:number,right:number,top:number,bottom:number,width:number}} scene
+ * @param {Array<{left:number,right:number,top:number,bottom:number,width:number}>} asides
+ * @returns {number} the px covered, 0 when nothing is docked
+ */
+function dockedCover(scene, asides = []) {
+  if (!scene || !(scene.width > 0)) return 0;
+  let cover = 0;
+  for (const r of asides) {
+    if (!r || !(r.width > 0)) continue;
+    const againstRight = Math.abs(r.right - scene.right) <= 1;
+    const wholeHeight = r.top <= scene.top + 1 && r.bottom >= scene.bottom - 1;
+    if (againstRight && wholeHeight) cover = Math.max(cover, scene.right - r.left);
+  }
+  return Math.max(0, Math.min(scene.width, Math.round(cover)));
+}
+
+/**
+ * The scene's `--studio-dock`, kept up to date: re-read when a panel is mounted
+ * or unmounted in the scene (the BOM, the Check), when a docked panel changes
+ * width (the BOM's tabs) and when the scene itself is resized. Written on the
+ * scene element's own style, so nothing re-renders and the canvas is only
+ * resized, never mounted again.
+ */
+function useSceneDock(sceneRef) {
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene || typeof ResizeObserver !== 'function' || typeof MutationObserver !== 'function') return undefined;
+    const asides = () => [...scene.children].filter((el) => el.tagName === 'ASIDE');
+    const apply = () => {
+      const px = dockedCover(scene.getBoundingClientRect(), asides().map((el) => el.getBoundingClientRect()));
+      scene.style.setProperty('--studio-dock', `${px}px`);
+    };
+    const sizes = new ResizeObserver(apply);
+    const watch = () => {
+      sizes.disconnect();
+      sizes.observe(scene);
+      asides().forEach((el) => sizes.observe(el));
+      apply();
+    };
+    const kids = new MutationObserver(watch);
+    kids.observe(scene, { childList: true });
+    watch();
+    return () => { kids.disconnect(); sizes.disconnect(); };
+  }, [sceneRef]);
+}
+
 export default function StudioShell({
   topBar = null,
   inspector = null,
@@ -128,6 +184,8 @@ export default function StudioShell({
   // layer, lib/modalLayer.js: a menu stands over a window).
   const sceneRef = useRef(null);
   const [popupLayer, setPopupLayer] = useState(null);
+  // U2: a docked panel (the BOM, the Check) narrows the visible scene as the inspector does.
+  useSceneDock(sceneRef);
 
   return (
     <ChangesBarRehomed.Provider value>

@@ -546,15 +546,23 @@
   color: theme('colors.ink.100');
 }
 
+/* THE UX TURN, U2, after Ewa's check of the BOM frame: a panel docked at the scene's right edge
+   (the BOM, the Check) narrows the visible scene as the inspector column does. StudioShell
+   measures the docked panel and sets --studio-dock on the scene (0 when nothing is docked); the
+   canvas wrapper and the first-unit plus (ConfiguratorPage.jsx, data-scene-follows-dock) end where
+   the panel begins, so the canvas is resized, never mounted again, and its camera stays; the two
+   bars below centre in what is left. */
+.studio-pro .studio-scene > [data-scene-follows-dock] { right: var(--studio-dock, 0px); }
+
 /* The four toggles, centred on the top edge (her bar style, the one her camera bar wears). Centred
    by its margins, not a transform, so nothing in it becomes a containing block. */
 .studio-pro .studio-scene-toggles {
   position: absolute;
   top: 12px;
   left: 0;
-  right: 0;
+  right: var(--studio-dock, 0px);
   width: max-content;
-  max-width: calc(100% - 28px);
+  max-width: calc(100% - var(--studio-dock, 0px) - 28px);
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -606,9 +614,9 @@
   position: absolute;
   bottom: 18px;
   left: 0;
-  right: 0;
+  right: var(--studio-dock, 0px);
   width: max-content;
-  max-width: calc(100% - 28px);
+  max-width: calc(100% - var(--studio-dock, 0px) - 28px);
   margin: 0 auto;
   display: flex;
   align-items: center;

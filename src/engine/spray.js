@@ -675,6 +675,110 @@ export function paintPurchaseQtys(entries, { design = null, profile = null, assi
   return out;
 }
 
+// === T-CC2a F7 . PAINT BY COLOUR, PRIMER, SOLVENT (CLAUDE.md T-CC2a laws 4, 7) ===
+//
+// The owner, 01.11.2026, 12:50: *"na farby jeden link z nazwa bespoke kolor
+// (kolor w nazwie), linkowanie kolorow nie ma sensu ... rozpuszczalnik 5
+// procent ilosc farby ... ilosc farby na sqm malowania oraz dodac primer czy
+// basecoat"*; 13:28: *"2 razy zeby bylo widomo ile jednej i drugiej farby"*.
+//
+// ONE line a COLOUR the job sprays (the schedule's groups above, set 1 and set
+// 2 of one colour are one tin), all priced through the ONE link of the
+// catalogue's `paint.bespoke`; ONE primer line for the whole sprayed area at
+// `profile.spray.primerCoats`; ONE solvent line at `profile.spray.solventPct`
+// of the colours' litres. The litres are this file's own law (`litresFor`:
+// m2 x coats / coverage, plus the waste); the coverage is the link's
+// `coverage_m2_per_l` where the company typed one, the profile's default
+// otherwise. A faced or raw board is not painted: its group is no paint line.
+// A VENEERED set 2 is lacquered (*"lakiery tylko piszemy lakier i tyle"*):
+// one lacquer line, the same litres law. Stain has no live source tonight;
+// the catalogue holds it.
+
+/**
+ * Is this schedule group a tin of paint? A SPRAYED colour (`kind: 'spray'`,
+ * engine/design.js sprayFinish), or one of the profile's plain colours (the
+ * broken white a job with no colour chosen is sprayed in, T78's own law). An
+ * Egger unicolour decor is `kind: 'colour'` too and is a BOARD, never paint.
+ */
+function isPaintGroup(g) {
+  if (g.kind === 'spray') return true;
+  return g.kind === 'colour' && !String(g.colourKey || g.key || '').startsWith('egger:');
+}
+
+/** The colour's own name off its group label ("RAL 3005 Wine Red spray" reads "RAL 3005 Wine Red"). */
+function paintColourName(group) {
+  return String(group.label || 'No colour chosen').replace(/\s+spray$/i, '');
+}
+
+/**
+ * THE PAINT LINES OF A JOB (T-CC2a F7).
+ *
+ * @param {Array} entries  [{ unit, result }]
+ * @param {object} args    design, profile; `coverage` / `primerCoverage` the
+ *                         links' own m2 per litre (null: the profile's default)
+ * @returns {Array<{ role:'paint'|'primer'|'solvent', colour:string|null,
+ *   name:string, m2:number, litres:number, coats:number|null,
+ *   coverage:number|null, pct?:number }>}
+ */
+export function paintLinesFor(entries, {
+  design = null, profile = null, coverage = null, primerCoverage = null,
+} = {}) {
+  const S = spraySettings(profile);
+  let schedule;
+  try {
+    schedule = sprayScheduleFor({ entries, design, profile });
+  } catch {
+    return [];
+  }
+  const cov = Number(coverage) > 0 ? Number(coverage) : S.defaults.coverageM2PerL;
+  const primerCov = Number(primerCoverage) > 0 ? Number(primerCoverage) : S.defaults.coverageM2PerL;
+  const coats = S.defaults.coats;
+  const byColour = new Map();
+  let lacquerM2 = 0;
+  for (const g of schedule.groups || []) {
+    if (!(g.m2 > 0)) continue;
+    if (g.kind === 'veneer') { lacquerM2 = r4(lacquerM2 + g.m2); continue; }
+    if (!isPaintGroup(g)) continue;
+    const name = paintColourName(g);
+    const had = byColour.get(name) || { m2: 0, hex: g.hex || null };
+    had.m2 = r4(had.m2 + g.m2);
+    byColour.set(name, had);
+  }
+  const lines = [];
+  let colourLitres = 0;
+  let sprayedM2 = 0;
+  for (const [name, c] of [...byColour.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const litres = litresFor(c.m2, { coats, coverage: cov, wastePct: S.wastePct });
+    colourLitres += litres;
+    sprayedM2 += c.m2;
+    lines.push({
+      role: 'paint', colour: name, hex: c.hex, name: `Paint, bespoke colour: ${name}`, m2: c.m2, litres, coats, coverage: cov,
+    });
+  }
+  if (lacquerM2 > 0) {
+    lines.push({
+      role: 'lacquer', colour: null, name: 'Lacquer', m2: lacquerM2,
+      litres: litresFor(lacquerM2, { coats, coverage: S.defaults.coverageM2PerL, wastePct: S.wastePct }), coats, coverage: S.defaults.coverageM2PerL,
+    });
+  }
+  if (!byColour.size) return lines;
+  const primerCoats = Number(S.primerCoats) > 0 ? Number(S.primerCoats) : 0;
+  if (primerCoats > 0) {
+    lines.push({
+      role: 'primer', colour: null, name: 'Primer or basecoat', m2: r4(sprayedM2),
+      litres: litresFor(sprayedM2, { coats: primerCoats, coverage: primerCov, wastePct: S.wastePct }), coats: primerCoats, coverage: primerCov,
+    });
+  }
+  const pct = Number(S.solventPct) > 0 ? Number(S.solventPct) : 0;
+  if (pct > 0) {
+    lines.push({
+      role: 'solvent', colour: null, name: 'Solvent', m2: 0,
+      litres: roundTo((colourLitres * pct) / 100, 2), coats: null, coverage: null, pct,
+    });
+  }
+  return lines;
+}
+
 // === THE PAINT AS A MATERIAL =================================================
 
 /**

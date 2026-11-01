@@ -425,31 +425,34 @@ test('F21 - the paint as a material: the warehouse\'s Paints department rows rea
   }
 });
 
-test('F21 - the lines go to BOM > Purchase list: an unassigned paint line with the litres, an assigned one priced, and the Assign modal sees the paint parts as used', () => {
+// T-CC2a F7 REWRITES this test by name (CLAUDE.md T-CC2a laws 4, 7): the paint
+// is bought by COLOUR through the ONE `paint.bespoke` link of the company, never
+// by the set's assignment (*"na farby jeden link z nazwa bespoke kolor"*).
+test('F21 - the lines go to BOM > Purchase list: a not linked paint line with the litres, a linked one priced, and the Assign modal sees the paint parts as used', () => {
   const bud = unitOf('BUD', { plinth: true });
   const qtys = paintPurchaseQtys([bud], { design: DEFAULT_DESIGN, profile: P });
   assert.ok(qtys.paint_fronts && qtys.paint_fronts.pcs > 0 && qtys.paint_fronts.unit === 'L');
   assert.equal(qtys.paint_carcass, undefined, 'no set 2 on a board carcass');
-  const bare = purchaseBom([bud], { assignments: null, materials: [], profile: P, design: DEFAULT_DESIGN });
-  const line = bare.rows.find((r) => r.key === 'part:paint_fronts');
-  assert.ok(line, 'apply the T78 F21 bom patch: the paint hook in mergeUnitMaterials');
-  assert.equal(line._assigned, false);
+  const bare = purchaseBom([bud], { profile: P, design: DEFAULT_DESIGN });
+  const line = bare.rows.find((r) => r.key === 'cat:paint.bespoke|Broken white');
+  assert.ok(line, 'the paint of the job\'s one colour, keyed by the colour');
+  assert.equal(line.status, 'not-linked');
   assert.equal(line.unit, 'L');
-  assert.ok(near(line.qty, qtys.paint_fronts.pcs, 1e-6));
-  assert.equal(bare.totals.complete, false, 'a BOM with the paint unassigned is not a confident total');
-  const materials = withPaints([], [PAINT_ROW]);
-  const assignments = { base: { paint_fronts: { material_id: 'wh-paint-1', yield: 1 } } };
-  const priced = purchaseBom([bud], { assignments, materials, profile: P, design: DEFAULT_DESIGN });
-  const mat = priced.rows.find((r) => r.key === 'mat:wh-paint-1');
-  assert.ok(mat, 'the paint line under its material');
-  assert.equal(mat._assigned, true);
-  assert.equal(mat.costPerUnit, 18.5);
-  assert.ok(mat.parts.includes('paint_fronts'));
-  const litres = sprayScheduleFor({ entries: [bud], design: DEFAULT_DESIGN, profile: P, materials, assignments }).paint[0].litres;
-  assert.ok(near(mat.qty, litres, 1e-6), 'the litres read the assigned paint\'s own coverage and coats');
-  assert.ok(near(mat.lineCost, litres * 18.5, 1e-2));
-  const veneer = purchaseBom([bud], { assignments: null, materials: [], profile: P, design: VENEER_DESIGN });
-  assert.ok(veneer.rows.some((r) => r.key === 'part:paint_carcass'), 'a veneer carcass buys set 2 paint');
+  assert.ok(near(line.qty, qtys.paint_fronts.pcs, 1e-6), 'the litres are the spray law\'s');
+  assert.equal(bare.totals.complete, false, 'a BOM with the paint not linked is not a confident total');
+  const stock = [{ id: 'wh-paint-1', name: PAINT_ROW.name, unit: 'L', price: 18.5, item_number: '0042' }];
+  const links = new Map([['paint.bespoke', {
+    cc_material_id: 'paint.bespoke', stock_item_id: 'wh-paint-1', yield: null, sheet_width_mm: null, sheet_length_mm: null, coverage_m2_per_l: 8,
+  }]]);
+  const priced = purchaseBom([bud], { links, stock, profile: P, design: DEFAULT_DESIGN });
+  const mat = priced.rows.find((r) => r.key === 'cat:paint.bespoke|Broken white');
+  assert.equal(mat.status, 'linked');
+  assert.equal(mat.price, 18.5);
+  assert.equal(mat.coverage, 8, 'the litres read the link\'s own coverage');
+  assert.ok(near(mat.qty, litresFor(mat.m2, { coats: P.spray.defaults.coats, coverage: 8, wastePct: P.spray.wastePct }), 1e-6));
+  assert.ok(near(mat.lineCost, mat.qty * 18.5, 1e-2));
+  const veneer = purchaseBom([bud], { profile: P, design: VENEER_DESIGN });
+  assert.ok(veneer.rows.some((r) => r.key === 'cat:paint.bespoke|Broken white'), 'a veneer carcass with no veneer chosen is sprayed with the job');
   const usage = projectPartUsage([bud], { profile: P, design: DEFAULT_DESIGN });
   assert.ok(usage.paint_fronts && usage.paint_fronts.qty > 0, 'the Assign Materials modal lists the paint as used by this job');
 });

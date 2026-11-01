@@ -30,6 +30,7 @@ import { READINESS_LABELS } from '../engine/readiness.js';
 import { migrateDesign, resolveFinishes } from '../engine/design.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
+import { useCheckFindings } from '../lib/checkFindings.js';
 // T78 F21 - the warehouse's paints beside the stock list, so the purchase
 // list prices the paint lines the spray schedule puts on it.
 import { useWarehouseStore } from '../stores/warehouseStore.js';
@@ -70,7 +71,6 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   const profile = useCabinetProfileStore((s) => s.profile);
 
   const [tab, setTab] = useState('parts');
-  const runChecks = useProjectStore((s) => s.runChecks);
   const entries = useMemo(() => allResults(), [units, runElements, allResults]);
   // The design and the profile go in so every row carries the finish it is cut
   // from — a sprayed front says "RAL 3005 Wine Red spray", an overridden shelf
@@ -119,9 +119,14 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
     return applyDriverPlan(lines, driverSummary(strips, ledSpec).plan);
   }, [entries, migrated, profile, ledSpec]);
   // "BOM warns at the top when Check holds a RED on any counted unit."
+  // CNC SPEED J2 (01.11.2026): the reds of the ONE shared Check
+  // (lib/checkFindings.js useCheckFindings, the list the Check panel, the
+  // badge and the markers read), so opening the BOM or changing the job runs
+  // the Check once for the whole app, never a second time for this panel.
+  const checkFindings = useCheckFindings();
   const redFindings = useMemo(
-    () => runChecks().filter((f) => f.level === 'red'),
-    [units, design, runChecks],
+    () => checkFindings.filter((f) => f.level === 'red'),
+    [checkFindings],
   );
   // ─── TURN 39 (CLAUDE.md F6): THE PURCHASE LIST ───────────────────────────
   // Two levels, switchable, and the project one is the SUM of the cabinets by

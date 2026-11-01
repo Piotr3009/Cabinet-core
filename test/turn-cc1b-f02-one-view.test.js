@@ -100,8 +100,10 @@ test('F2 . the dropdown is deleted, file, import and mount', () => {
   assert.equal(existsSync(join(ROOT, 'src/components/studio/SceneViewMenu.jsx')), false);
   const page = read('src/pages/ConfiguratorPage.jsx');
   assert.doesNotMatch(page, /SceneViewMenu/);
-  // SceneToggles and CameraBar (with Drawings...) stay exactly where they were.
-  assert.match(page, /<SceneToggles \/>\s*<CameraBar onDrawings=/);
+  // SceneToggles and CameraBar (with Drawings...) stay exactly where they were. CNC speed J5
+  // (01.11.2026, the owner 21:43): on the CNC sheet the toggles are not mounted and the bar keeps
+  // Drawings... alone (test/cnc-speed-ui.test.js); in Design both stand as before.
+  assert.match(page, /\{viewMode !== 'cnc' && <SceneToggles \/>\}\s*<CameraBar cncSheet=\{viewMode === 'cnc'\} onDrawings=/);
 });
 
 test('F2 . src/ names no SceneViewMenu, not even in a comment', () => {

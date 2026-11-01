@@ -595,10 +595,14 @@ export default function ConfiguratorPage({ studio = false } = {}) {
     // T84 F5 · the counters on the status bar.
     statusExtras: <IssueCounters />,
     // T84 F6 · the four toggles, View, and the camera bar with Drawings... (the PREVIEW).
+    // CNC SPEED J5 (01.11.2026, the owner 21:43): *"nie no po co w widoku cnc nam pasek 3d etc?"*.
+    // On the CNC sheet the toggles are not mounted and the camera bar keeps its Drawings... alone,
+    // in its place with its opener (the only door to the Drawings window); the way back to Design is
+    // the rail's Design and View > 3D. In Design both bars stand exactly as before.
     sceneEdge: (
       <>
-        <SceneToggles />
-        <CameraBar onDrawings={(e) => openModal('drawing', { kind: 'walls', anchor: anchorOfEvent(e) })} />
+        {viewMode !== 'cnc' && <SceneToggles />}
+        <CameraBar cncSheet={viewMode === 'cnc'} onDrawings={(e) => openModal('drawing', { kind: 'walls', anchor: anchorOfEvent(e) })} />
       </>
     ),
     // T84 F7 · Add and Materials open their popups beside the rail.

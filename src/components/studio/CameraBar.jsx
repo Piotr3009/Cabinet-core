@@ -33,6 +33,13 @@
 // selection with no cabinet in the room is greyed with the reason. 3D is never
 // greyed (it is the way back from the CNC sheet), and Drawings... only when the
 // page has not handed it its opener.
+//
+// CNC SPEED J5 (01.11.2026, the owner 21:43): *"nie no po co w widoku cnc nam
+// pasek 3d etc?"*. On the CNC sheet the page hands `cncSheet`: 3D, the
+// places and Frame selection are not drawn, and Drawings... stands alone in
+// its place with its opener (it is the Drawings window's only door). The way
+// back to Design is the rail's Design and View > 3D. Without it the bar is
+// exactly the bar it was.
 
 import { useEffect, useMemo } from 'react';
 import { useUiStore } from '../../stores/uiStore.js';
@@ -59,7 +66,7 @@ function frameUnits(ids, margin) {
   return placeCamera(view, fitBoxes([box], { ...lensOf(view), margin, direction: viewDirection(view) }));
 }
 
-export default function CameraBar({ onDrawings = null }) {
+export default function CameraBar({ onDrawings = null, cncSheet = false }) {
   const viewMode = useUiStore((s) => s.viewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
   const selectedUnitIds = useUiStore((s) => s.selectedUnitIds);
@@ -94,72 +101,77 @@ export default function CameraBar({ onDrawings = null }) {
     <div
       className={`studio-scene-links studio-skin ${LAYER_CLASS.panel}`}
       data-studio="camera-bar"
+      data-cnc-sheet={cncSheet ? '1' : undefined}
       role="toolbar"
       aria-label="Camera"
     >
-      <button
-        type="button"
-        className="cc-btn"
-        data-studio="scene-3d"
-        aria-pressed={viewMode === '3d'}
-        onClick={() => setViewMode('3d')}
-      >
-        <Icon name="cube" />
-        3D
-      </button>
+      {!cncSheet && (
+        <>
+          <button
+            type="button"
+            className="cc-btn"
+            data-studio="scene-3d"
+            aria-pressed={viewMode === '3d'}
+            onClick={() => setViewMode('3d')}
+          >
+            <Icon name="cube" />
+            3D
+          </button>
 
-      <button
-        type="button"
-        className="cc-btn-ghost"
-        data-studio="camera-plan"
-        disabled={flat}
-        title="The room from above, at its centre"
-        onClick={() => go('plan')}
-      >
-        <Icon name="plan" />
-        Plan
-      </button>
-      <button
-        type="button"
-        className="cc-btn-ghost"
-        data-studio="camera-iso"
-        disabled={flat}
-        title="Into the corner of the first run, from above across the room"
-        onClick={() => go('iso')}
-      >
-        <Icon name="iso" />
-        Iso
-      </button>
-      {WALL_VIEWS.map((w) => (
-        <button
-          key={w.id}
-          type="button"
-          className="cc-btn-ghost"
-          data-studio={`camera-${w.id}`}
-          disabled={flat || !walls[w.wall]}
-          title={walls[w.wall]
-            ? `Wall ${w.label}, square on from inside the room`
-            : `This room has no wall ${w.label}`}
-          onClick={() => go(w.id)}
-        >
-          {w.label}
-        </button>
-      ))}
-      <button
-        type="button"
-        className="cc-btn-ghost"
-        data-studio="camera-frame"
-        disabled={flat || !units.length}
-        title={units.length
-          ? (anySelected ? 'Fit the selected cabinets in the view' : 'Fit every cabinet in the view')
-          : 'Nothing to frame: the room has no cabinets yet'}
-        onClick={() => frameUnits(anySelected ? selectedUnitIds : null, margin)}
-      >
-        <Icon name="frame" />
-        Frame selection
-      </button>
+          <button
+            type="button"
+            className="cc-btn-ghost"
+            data-studio="camera-plan"
+            disabled={flat}
+            title="The room from above, at its centre"
+            onClick={() => go('plan')}
+          >
+            <Icon name="plan" />
+            Plan
+          </button>
+          <button
+            type="button"
+            className="cc-btn-ghost"
+            data-studio="camera-iso"
+            disabled={flat}
+            title="Into the corner of the first run, from above across the room"
+            onClick={() => go('iso')}
+          >
+            <Icon name="iso" />
+            Iso
+          </button>
+          {WALL_VIEWS.map((w) => (
+            <button
+              key={w.id}
+              type="button"
+              className="cc-btn-ghost"
+              data-studio={`camera-${w.id}`}
+              disabled={flat || !walls[w.wall]}
+              title={walls[w.wall]
+                ? `Wall ${w.label}, square on from inside the room`
+                : `This room has no wall ${w.label}`}
+              onClick={() => go(w.id)}
+            >
+              {w.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="cc-btn-ghost"
+            data-studio="camera-frame"
+            disabled={flat || !units.length}
+            title={units.length
+              ? (anySelected ? 'Fit the selected cabinets in the view' : 'Fit every cabinet in the view')
+              : 'Nothing to frame: the room has no cabinets yet'}
+            onClick={() => frameUnits(anySelected ? selectedUnitIds : null, margin)}
+          >
+            <Icon name="frame" />
+            Frame selection
+          </button>
 
-      <span className="w-px h-4 bg-shell-600" aria-hidden />
+          <span className="w-px h-4 bg-shell-600" aria-hidden />
+        </>
+      )}
 
       <button
         type="button"

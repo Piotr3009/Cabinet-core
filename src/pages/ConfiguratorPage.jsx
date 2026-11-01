@@ -11,6 +11,8 @@ import JcStockModal from '../components/JcStockModal.jsx';
 import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
 import CompanyDefaultsModal from '../components/CompanyDefaultsModal.jsx';
 import AssignMaterialsModal from '../components/AssignMaterialsModal.jsx';
+// T-CC2a F8: the company's links, every catalogue entry to its Joinery Core stock row (the rail's Link materials...).
+import LinkMaterialsModal from '../components/LinkMaterialsModal.jsx';
 // T78 F21 (CLAUDE.md PART F): the Spraying page, Output > Spraying and the Spraying button.
 import SprayingPanel from '../components/SprayingPanel.jsx';
 import SaveAsModal from '../components/SaveAsModal.jsx';
@@ -497,8 +499,9 @@ export default function ConfiguratorPage({ studio = false } = {}) {
     if (saveFirst(() => onExportPdf())) return;
     if (!guard()) return;
     checkBeforeExport();
+    // T-CC2a F5.3: the BOM PDF reads the company's links (the link store) and the job's bespoke rows.
     exportProjectPdf({
-      entries: allResults(), project, capture: captureRef.current, assignments, materials,
+      entries: allResults(), project, capture: captureRef.current,
     });
     notify('PDF exported.', 'ok');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -673,6 +676,7 @@ export default function ConfiguratorPage({ studio = false } = {}) {
         {/* Turn 39 (CLAUDE.md F3): Assign materials — the layer between the
             engine's part names and the things a joiner buys. */}
         {modal === 'assign-materials' && <AssignMaterialsModal />}
+        {modal === 'link-materials' && <LinkMaterialsModal />}
         {/* T78 F21 (CLAUDE.md PART F): the spray schedule, its cards and the
             paint order, one page on the Production Core pattern. */}
         {modal === 'spraying' && <SprayingPanel />}

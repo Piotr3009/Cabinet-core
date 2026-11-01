@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import Modal from './Modal.jsx';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 import { filterStock } from '../lib/jcStock.js';
 import { materialBadge } from '../stores/materialAssignmentStore.js';
@@ -23,6 +24,16 @@ import { materialBadge } from '../stores/materialAssignmentStore.js';
  *
  * Pure UI. It emits the chosen material through `onSelect(material)` and reads
  * no store and no assignment of its own.
+ *
+ * T-CC2a F8.4: the Link materials window uses the SAME list for its right
+ * column (*"polaczenie A i C plus B"*, the owner, 01.11.2026), with three
+ * opt-in props so the Stock window and the old Assign window draw exactly as
+ * they did: `photos` (a 40 px photo per row, enlarged on click, the
+ * MaterialCard pattern of WarehouseModal), `categoryChips` (the tenant's
+ * categories as chips from `categoryTree`, JC rule 6.5, never typed) and
+ * `onLink` (a "Link" button per row; `afterRow` draws the small link form
+ * under the row it was pressed on). The search carries a clear cross whenever
+ * something is typed, in every window.
  */
 
 const KIND_OPTIONS = [
@@ -49,6 +60,89 @@ function flatTree(tree = [], depth = 0, out = []) {
   return out;
 }
 
+/** The node of the tree with this id, or null. */
+function nodeOf(tree = [], id = null) {
+  for (const n of tree) {
+    if (n.id === id) return n;
+    const hit = nodeOf(n.children || [], id);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/** The top-level node a category id sits under (itself when it is one). */
+function topOf(tree = [], id = null) {
+  return tree.find((n) => n.id === id || nodeOf(n.children || [], id)) || null;
+}
+
+/**
+ * A photo, WHOLE (`object-contain`: a picture is never cropped, the EGGER
+ * licence of engine/decors.js and plain manners for a supplier's photo), or
+ * the space where one would be, so every row stands the same height. Given
+ * `onOpen`, it is a button and a click enlarges it.
+ */
+export function Photo({
+  url, alt = '', size = 40, onOpen = null, testId = null, fill = null,
+}) {
+  const body = url ? (
+    <img
+      src={url}
+      alt={alt}
+      loading="lazy"
+      className="object-contain rounded border border-shell-600 bg-shell-900 block"
+      style={{ width: size, height: size }}
+      onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+    />
+  ) : (
+    <span
+      className="rounded border border-dashed border-shell-600 bg-shell-800/60 flex items-center justify-center text-ink-600"
+      style={{ width: size, height: size, ...(fill ? { background: fill, borderStyle: 'solid' } : {}) }}
+      aria-hidden={fill ? undefined : 'true'}
+    >
+      {fill ? '' : 'no photo'}
+    </span>
+  );
+  if (!onOpen || (!url && !fill)) return <span className="inline-block shrink-0" data-photo={testId || undefined}>{body}</span>;
+  return (
+    <button
+      type="button"
+      className="inline-block shrink-0 rounded hover:outline hover:outline-1 hover:outline-gold"
+      title="Click to enlarge"
+      data-photo={testId || '1'}
+      onClick={(e) => {
+        e.stopPropagation?.();
+        const r = e.currentTarget?.getBoundingClientRect?.();
+        onOpen(r ? { x: r.left, y: r.top, width: r.width, height: r.height } : null);
+      }}
+    >
+      {body}
+    </button>
+  );
+}
+
+/**
+ * ONE picture, enlarged: *"a draggable card on click with the picture
+ * enlarged"* (WarehouseModal's MaterialCard, turn 51). Beside the row it was
+ * opened from; `caption` is the line that must stand next to the picture (an
+ * EGGER decor's `decorLabel()`, a stock row's number and name).
+ */
+export function PhotoCard({
+  url, fill = null, title, caption = '', anchor = null, onClose,
+}) {
+  return (
+    <Modal name="material-card" title={title || 'Picture'} anchor={anchor} onClose={onClose} width="w-[460px]">
+      <figure className="space-y-2" data-photo-card="1">
+        {url ? (
+          <img src={url} alt={caption || title || ''} className="object-contain w-full max-h-[60vh] rounded border border-shell-600 bg-shell-900" />
+        ) : (
+          <div className="w-full h-[240px] rounded border border-shell-600" style={{ background: fill || 'transparent' }} />
+        )}
+        {caption && <figcaption className="text-[13px] text-ink-100" data-photo-caption="1">{caption}</figcaption>}
+      </figure>
+    </Modal>
+  );
+}
+
 export default function MaterialPicker({
   materials = [],
   value = null,
@@ -60,10 +154,19 @@ export default function MaterialPicker({
   maxHeight = '56vh',
   autoFocus = false,
   onClear = null,
+  // T-CC2a F8.4, opt-in: the Link materials window's right column.
+  photos = false,
+  categoryChips = false,
+  showKind = true,
+  onLink = null,
+  linkDisabled = false,
+  linkLabel = 'Link',
+  afterRow = null,
 }) {
   const [q, setQ] = useState('');
   const [kind, setKind] = useState(kindIn || 'all');
   const [category, setCategory] = useState(null);
+  const [enlarged, setEnlarged] = useState(null);       // { material, anchor }
   // The caller's kind follows the selected line (board for Sheets, hardware
   // for the rest); the user can switch it, and a new line resets it.
   useEffect(() => { setKind(kindIn || 'all'); }, [kindIn]);
@@ -73,28 +176,47 @@ export default function MaterialPicker({
     [materials, q, kind, category, tree],
   );
   const cats = useMemo(() => flatTree(tree), [tree]);
+  const top = categoryChips ? topOf(tree, category) : null;
+  const linkMode = Boolean(onLink);
+  const cols = linkMode ? 6 : 7;
 
   return (
     <div className="flex flex-col min-h-0 gap-2" data-material-list={testId || '1'}>
       <div className="flex items-center gap-2">
-        <input
-          autoFocus={autoFocus}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by name, number, colour or size"
-          className="cc-input flex-1"
-          data-material-search="1"
-        />
-        <select
-          className="cc-input w-[130px]"
-          value={kind}
-          onChange={(e) => setKind(e.target.value)}
-          data-material-kind={kind}
-          aria-label="Kind"
-        >
-          {KIND_OPTIONS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
-        </select>
-        {cats.length > 0 && (
+        <span className="relative flex-1 flex items-center">
+          <input
+            autoFocus={autoFocus}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by name, number, colour or size"
+            className="cc-input flex-1 pr-7"
+            data-material-search="1"
+          />
+          {q !== '' && (
+            <button
+              type="button"
+              className="absolute right-1 px-1.5 text-ink-400 hover:text-gold"
+              aria-label="Clear the search"
+              title="Clear the search"
+              data-material-search-clear="1"
+              onClick={() => setQ('')}
+            >
+              ✕
+            </button>
+          )}
+        </span>
+        {showKind && (
+          <select
+            className="cc-input w-[130px]"
+            value={kind}
+            onChange={(e) => setKind(e.target.value)}
+            data-material-kind={kind}
+            aria-label="Kind"
+          >
+            {KIND_OPTIONS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
+          </select>
+        )}
+        {!categoryChips && cats.length > 0 && (
           <select
             className="cc-input w-[170px]"
             value={category ?? ''}
@@ -109,6 +231,51 @@ export default function MaterialPicker({
           </select>
         )}
       </div>
+      {/* T-CC2a F8.4: the tenant's own categories as chips (JC rule 6.5), the top level first and, under a
+          chosen one, its subcategories. */}
+      {categoryChips && tree.length > 0 && (
+        <div className="flex flex-col gap-1" data-material-category-chips="1">
+          <div className="flex flex-wrap gap-1">
+            <button
+              type="button"
+              className={`cc-btn px-2 py-0.5 ${category == null ? 'border-gold text-gold' : ''}`}
+              data-material-category-chip=""
+              aria-pressed={category == null}
+              onClick={() => setCategory(null)}
+            >
+              All categories
+            </button>
+            {tree.map((n) => (
+              <button
+                key={n.id}
+                type="button"
+                className={`cc-btn px-2 py-0.5 ${top?.id === n.id ? 'border-gold text-gold' : ''}`}
+                data-material-category-chip={String(n.id)}
+                aria-pressed={top?.id === n.id}
+                onClick={() => setCategory(n.id)}
+              >
+                {n.name}
+              </button>
+            ))}
+          </div>
+          {top && (top.children || []).length > 0 && (
+            <div className="flex flex-wrap gap-1 pl-3" data-material-subcategory-chips={String(top.id)}>
+              {top.children.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`cc-btn px-2 py-0.5 ${category === c.id ? 'border-gold text-gold' : ''}`}
+                  data-material-category-chip={String(c.id)}
+                  aria-pressed={category === c.id}
+                  onClick={() => setCategory(category === c.id ? top.id : c.id)}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <div className="cc-scroll min-h-0 border border-shell-600 rounded" style={{ maxHeight }}>
         {onClear && value && (
           <button
@@ -131,6 +298,50 @@ export default function MaterialPicker({
               const price = priceOf(m);
               const badge = materialBadge(m);
               const chosen = m.id === value;
+              if (linkMode) {
+                const extra = afterRow ? afterRow(m) : null;
+                return (
+                  <Fragment key={m.id}>
+                    <tr
+                      aria-selected={chosen}
+                      data-material-option={m.id}
+                      className={`border-b border-shell-600/60 ${chosen ? 'bg-gold/10' : ''}`}
+                    >
+                      <td className="w-[52px]">
+                        <Photo
+                          url={m.image_url}
+                          alt={m.name}
+                          testId={`stock:${m.id}`}
+                          onOpen={(anchor) => setEnlarged({ material: m, anchor })}
+                        />
+                      </td>
+                      <td className="text-ink-400 tabular-nums whitespace-nowrap">{m.item_number || ''}</td>
+                      <td className="text-ink-100">{m.name}</td>
+                      <td className="text-ink-400">{m.unit || ''}</td>
+                      <td className="text-right tabular-nums">{price != null ? `£${price.toFixed(2)}` : ''}</td>
+                      <td className="text-right">
+                        <button
+                          type="button"
+                          className="cc-btn px-2 py-0.5"
+                          disabled={linkDisabled}
+                          data-material-link={m.id}
+                          onClick={(e) => {
+                            const r = e.currentTarget?.getBoundingClientRect?.();
+                            onLink(m, r ? { x: r.left, y: r.top, width: r.width, height: r.height } : null);
+                          }}
+                        >
+                          {linkLabel}
+                        </button>
+                      </td>
+                    </tr>
+                    {extra && (
+                      <tr data-material-after={m.id}>
+                        <td colSpan={cols}>{extra}</td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              }
               return (
                 <tr
                   key={m.id}
@@ -139,6 +350,11 @@ export default function MaterialPicker({
                   data-material-option={m.id}
                   className={`border-b border-shell-600/60 ${onSelect ? 'cursor-pointer hover:bg-shell-700' : ''} ${chosen ? 'bg-gold/10' : ''}`}
                 >
+                  {photos && (
+                    <td className="w-[52px]">
+                      <Photo url={m.image_url} alt={m.name} testId={`stock:${m.id}`} onOpen={(anchor) => setEnlarged({ material: m, anchor })} />
+                    </td>
+                  )}
                   <td className="text-ink-100">
                     {m.name}
                     {m.placeholder && <span className="cc-tag ml-1.5">generic</span>}
@@ -156,6 +372,15 @@ export default function MaterialPicker({
           </tbody>
         </table>
       </div>
+      {enlarged && (
+        <PhotoCard
+          url={enlarged.material.image_url}
+          title={enlarged.material.name}
+          caption={[enlarged.material.item_number, enlarged.material.name].filter(Boolean).join(', ')}
+          anchor={enlarged.anchor}
+          onClose={() => setEnlarged(null)}
+        />
+      )}
     </div>
   );
 }

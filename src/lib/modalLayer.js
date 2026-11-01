@@ -146,6 +146,9 @@ export const MODAL_KINDS = Object.freeze({
   'assign-materials': { about: 'project', label: 'Assign materials' },
   // T-CC1b F9.3: the tenant's Joinery Core stock, read-only, the rail's Stock... row. A PROJECT window.
   'jc-stock': { about: 'project', label: 'Stock' },
+  // T-CC2a F8: the company's links, every catalogue entry to one row of its Joinery Core stock. A PROJECT window
+  // (the maximised work window of SprayingPanel); the BOM's and Project settings' Link open it at their entry.
+  'link-materials': { about: 'project', label: 'Link materials' },
   // ─── TURN 44 (CLAUDE.md F1) ────────────────────────────────────────────
   // The wall, seen from the front. It is a step of the new-project flow and
   // it is about the PROJECT's own wall rather than about a thing already on

@@ -173,6 +173,14 @@ function MaterialsMenu({ onDone }) {
 
   const items = [
     {
+      id: 'link-materials',
+      label: 'Link materials…',
+      hint: 'Every material Cabinet Core uses, linked once to your Joinery Core stock, for every project',
+      // T-CC2a F8.7: FIRST in the menu. The owner: *"zebysmy przypisali pewne materialy na stale nie do projektu,
+      // tylko na stale"* (01.11.2026); the BOM's and Project settings' Link open the same window at their entry.
+      run: (e) => openModal('link-materials', { anchor: anchorOfEvent(e) }),
+    },
+    {
       id: 'selected-finishes',
       label: 'Selected finishes…',
       hint: 'The selected cabinets\' own finish, from the project palette; the project is left alone',

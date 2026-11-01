@@ -112,7 +112,8 @@ test('F3 . the rail\'s Materials popup has "Assign materials..." and "Stock...",
   useUiStore.setState({ selectedUnitIds: [] });
   const html = draw(RailMenu, { kind: 'materials', anchor, onClose: () => {} });
   const rows = [...html.matchAll(/data-item="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(rows, ['selected-finishes', 'project-finishes', 'assign-materials', 'stock']);
+  // REWRITTEN by T-CC2a F8.7: "Link materials..." stands FIRST, the four rows of T-CC1b follow it unchanged.
+  assert.deepEqual(rows, ['link-materials', 'selected-finishes', 'project-finishes', 'assign-materials', 'stock']);
   assert.ok(text(html).includes('Assign materials…'));
   assert.ok(text(html).includes('Stock…'));
   const src = code(read('src/components/studio/RailMenus.jsx'));

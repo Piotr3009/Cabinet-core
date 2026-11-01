@@ -47,6 +47,78 @@ import { panelEntities } from './dxf.js';
  */
 export function unitFindings(result, { profile = null, unitId = null, unitNum = null, decorationLayerFindings = null } = {}) {
   const num = unitNum || result?.unitNum || '';
+  const out = rememberedFindings(result, profile, unitId, num);
+  out.push(...(decorationLayerFindings || frontLayerFindings([{ result, unit: { id: unitId } }])));
+  return out;
+}
+
+// ─── CNC SPEED 01.11.2026: ONE ANSWER PER UNCHANGED CABINET ─────────────────
+//
+// The owner, 01.11.2026: "1 - ok, 2 - ok". Measured: the Check runs this gate
+// for EVERY cabinet on every change (`engine/checks.js runChecks`), and the
+// off-board part writes every board's DXF entity list to ask it; one width
+// change ran 2 runChecks and 16 gates while the engine computed 1 cabinet
+// (the owner's Black Kitchen plus six cabinets). The engine's answer
+// for an unchanged cabinet is the SAME result object (`stores/resultCache.js`,
+// which forgets every result the moment the profile or a catalogue is a
+// different object), so the gate's own answer is remembered per result object
+// the same way: a WeakMap keyed by the result, then by the profile object,
+// then by the unit's id and number. A new result, a new profile object or
+// another unit id or number is a new answer; nothing is kept for a result
+// nobody holds any more. The guards are pure on those inputs (no catalogue,
+// no store is read on this road). Each call hands back its OWN copy, so a
+// caller that writes on a finding never writes on the next caller's.
+// The layer findings of the export (`decorationLayerFindings`, read across
+// every entry) are never remembered here: they are added after, as before.
+
+const REMEMBERED = new WeakMap();
+const NO_PROFILE = Object.freeze({});
+
+/** A finding as plain data, copied all the way down (arrays and plain objects). */
+function copyPlain(v) {
+  if (Array.isArray(v)) return v.map(copyPlain);
+  if (v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype) {
+    const out = {};
+    for (const k of Object.keys(v)) out[k] = copyPlain(v[k]);
+    return out;
+  }
+  return v;
+}
+
+/** The four guards on one cabinet, remembered per result object (see above). */
+function rememberedFindings(result, profile, unitId, num) {
+  if (!result || typeof result !== 'object') return ownFindings(result, profile, unitId, num);
+  let byProfile = REMEMBERED.get(result);
+  if (!byProfile) {
+    byProfile = new WeakMap();
+    REMEMBERED.set(result, byProfile);
+  }
+  const profileKey = profile && typeof profile === 'object' ? profile : NO_PROFILE;
+  let byUnit = byProfile.get(profileKey);
+  if (!byUnit) {
+    byUnit = new Map();
+    byProfile.set(profileKey, byUnit);
+  }
+  const key = JSON.stringify([unitId, num]);
+  let found = byUnit.get(key);
+  if (!found) {
+    found = ownFindings(result, profile, unitId, num);
+    byUnit.set(key, found);
+    gateMemo.computed += 1;
+  } else {
+    gateMemo.reused += 1;
+  }
+  return found.map(copyPlain);
+}
+
+/**
+ * How often the gate answered from memory and how often it asked the guards
+ * (read by `test/cnc-speed-engine.test.js`; nothing in the app reads it).
+ */
+export const gateMemo = { computed: 0, reused: 0 };
+
+/** Check #9 (the outline, what is drawn on the board, the front decoration) and #10 (the drilling). */
+function ownFindings(result, profile, unitId, num) {
   const out = resultFindings(result).map((f) => ({
     check: 9,
     level: 'red',
@@ -65,7 +137,6 @@ export function unitFindings(result, { profile = null, unitId = null, unitNum = 
   // on it)? Asked of the writer's own entity list (`offBoardGuard.js`).
   out.push(...offBoardGateFindings(result, { profile, unitId, unitNum: num, panelEntities }));
   out.push(...frontDecorationFindings(result, { unitId, unitNum: num }));
-  out.push(...(decorationLayerFindings || frontLayerFindings([{ result, unit: { id: unitId } }])));
   return out;
 }
 

@@ -12,7 +12,7 @@ import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js
 // and carries a Link that opens the Link materials window at that entry. The
 // per-part blob is not read here any more.
 import {
-  buildBom, purchaseBom, formatQty, LINK_WORDS, incompleteWords,
+  buildBom, purchaseBom, formatQty, LINK_WORDS, incompleteWords, INCOMPLETE_STATUSES,
 } from '../engine/bom.js';
 import { DEPARTMENTS } from '../engine/catalogue.js';
 import { useMaterialLinkStore } from '../stores/materialLinkStore.js';
@@ -86,9 +86,11 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   const bom = useMemo(() => buildBom(entries, {
     design, profile, materials, excludeDrawerBoxes: readyBoxes, room: project.room,
   }), [entries, design, profile, materials, readyBoxes, project.room]);
+  // Ewa's P3: the Order tab counts each board's sheets with the size of its link, the same as the BOM tab.
+  const orderByLinks = Boolean(links);
   const invoiceSummary = useMemo(
-    () => materialsSummary(bom, profile, { excludeDrawerBoxes: readyBoxes }),
-    [bom, profile, readyBoxes],
+    () => materialsSummary(bom, profile, { excludeDrawerBoxes: readyBoxes, links }),
+    [bom, profile, readyBoxes, links],
   );
   const invoiceIron = useMemo(() => [
     ...ironmongerySummary({
@@ -146,6 +148,8 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   const t = purchase.totals || {};
   const notLinked = Number(t.notLinked ?? t.incomplete ?? 0) || 0;
   const linkedLines = Number(t.linked ?? 0) || 0;
+  // UX turn B5: a line with no price is not "not linked"; the words say both when one is among them (bom.js).
+  const noPriceLines = Number(t.noPrice ?? 0) || 0;
   // The lines a link can be made for: a bespoke row is this project's own and is never linked (law 9).
   const allLines = purchase.rows.filter((r) => !r.bespoke).length;
   const openLink = (r) => openModal('link-materials', { entryId: r.catalogueId, department: r.department, from: 'bom' });
@@ -174,8 +178,9 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
           onClick={() => setTab('bom')}
         >
           BOM
+          {/* Ewa's P7: the count says what it counts. */}
           {notLinked > 0 && (
-            <span className="ml-1 text-status-danger tabular-nums">{notLinked}</span>
+            <span className="ml-1 text-status-danger tabular-nums" data-bom-tab-not-linked={String(notLinked)}>{`${notLinked} not linked`}</span>
           )}
         </button>
         <button type="button" className="cc-btn-ghost" onClick={() => setBomOpen(false)}>×</button>
@@ -191,7 +196,7 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
         <span className="flex-1" />
         <span className={`tabular-nums ${notLinked > 0 ? 'text-status-danger' : 'text-gold'}`} data-bom-header-total={notLinked > 0 ? 'incomplete' : 'complete'}>
           {`Total £${Number(t.cost || 0).toFixed(2)}`}
-          {notLinked > 0 ? `, ${incompleteWords(notLinked)}` : ''}
+          {notLinked > 0 ? `, ${incompleteWords(notLinked, noPriceLines)}` : ''}
         </span>
       </div>
 
@@ -264,7 +269,7 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                 className="border border-status-danger/60 bg-status-danger/10 text-status-danger rounded px-2 py-1.5 text-[11px]"
                 data-bom-incomplete={String(notLinked)}
               >
-                {incompleteWords(notLinked)}. Press Link on a red line: the link is saved for all projects.
+                {incompleteWords(notLinked, noPriceLines)}. Press Link on a red line: the link is saved for all projects.
               </p>
             )}
 
@@ -296,7 +301,7 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
               <span className={`tabular-nums ${notLinked > 0 ? 'text-status-danger' : 'text-gold'}`}>
                 {`£${Number(t.cost || 0).toFixed(2)}`}
               </span>
-              {notLinked > 0 && <span className="text-status-danger" data-bom-incomplete-words="1">{incompleteWords(notLinked)}</span>}
+              {notLinked > 0 && <span className="text-status-danger" data-bom-incomplete-words="1">{incompleteWords(notLinked, noPriceLines)}</span>}
             </div>
             <p className="text-[10px] text-ink-600">
               Sheets are counted from the area, the offcut allowance and the sheet size of each link, rounded up.
@@ -330,7 +335,10 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                         <th className="text-left py-0.5">Decor</th>
                         <th className="text-right">mm</th>
                         <th className="text-right">net m²</th>
-                        <th className="text-right">+{rows[0].waste_pct} %</th>
+                        {/* UX turn B6: with the links each board has its own offcut allowance, said on its row. */}
+                        {orderByLinks
+                          ? <><th className="text-right">offcut</th><th className="text-right">order m²</th></>
+                          : <th className="text-right">+{rows[0].waste_pct} %</th>}
                         <th className="text-right">sheets</th>
                         <th className="text-right">edging</th>
                       </tr>
@@ -341,8 +349,12 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                           <td className="py-0.5 pr-2">{g.label}</td>
                           <td className="text-right">{g.thickness}</td>
                           <td className="text-right">{g.net_m2.toFixed(3)}</td>
+                          {orderByLinks && <td className="text-right tabular-nums" data-bom-order-offcut="1">{`+${g.waste_pct} %`}</td>}
                           <td className="text-right">{g.order_m2.toFixed(3)}</td>
-                          <td className="text-right whitespace-nowrap">{g.sheet_label}</td>
+                          <td className="text-right whitespace-nowrap" data-bom-order-sheets="1">
+                            {sheetSizeWords(g.sheets, g.sheetSize)
+                              || <span className={g.words ? 'text-status-danger' : ''}>{g.words ?? g.sheet_label ?? ''}</span>}
+                          </td>
                           <td className="text-right">{g.edging_m.toFixed(2)} m</td>
                         </tr>
                       ))}
@@ -351,10 +363,10 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                 </section>
               );
             })}
-            <p className="text-[10px] text-ink-400">
-              Sheets are a division with a label, never a cutting plan. Waste {invoiceSummary[0]?.waste_pct ?? 15} %
-              and the {profile.bom?.sheet?.width ?? 2800}×{profile.bom?.sheet?.height ?? 2070} sheet are
-              profile numbers — owner to confirm (15.08.2026).
+            <p className="text-[10px] text-ink-400" data-bom-order-note={orderByLinks ? 'links' : 'profile'}>
+              {orderByLinks
+                ? 'Sheets are counted from each material\'s link: its sheet size and its offcut allowance, rounded up. A division, never a cutting plan.'
+                : `Sheets are a division with a label, never a cutting plan. Waste ${invoiceSummary[0]?.waste_pct ?? 10} % and the ${profile.bom?.sheet?.width ?? 2800}×${profile.bom?.sheet?.height ?? 2070} sheet are profile numbers.`}
             </p>
 
             <section data-bom-ironmongery="1">
@@ -456,7 +468,7 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
           <Stat label="Lines linked" value={`${linkedLines} of ${allLines}`} />
           <Stat
             label="Total cost"
-            value={notLinked > 0 ? `${Number(t.cost || 0).toFixed(2)}, ${incompleteWords(notLinked)}` : Number(t.cost || 0).toFixed(2)}
+            value={notLinked > 0 ? `${Number(t.cost || 0).toFixed(2)}, ${incompleteWords(notLinked, noPriceLines)}` : Number(t.cost || 0).toFixed(2)}
             accent={notLinked === 0}
             danger={notLinked > 0}
           />
@@ -578,6 +590,18 @@ function Stat({
   );
 }
 
+/** Ewa's P3: "3 sheets of 1220 x 2440", the size of the link the count was made with; '' without one. */
+function sheetSizeWords(sheets, size) {
+  const n = Number(sheets);
+  const w = Number(size?.width_mm);
+  const l = Number(size?.length_mm);
+  if (!Number.isFinite(n) || sheets == null || !(w > 0) || !(l > 0)) return '';
+  return `${n} sheet${n === 1 ? '' : 's'} of ${w} x ${l}`;
+}
+
+/** A line that does not count in a complete total (law 7): bom.js INCOMPLETE_STATUSES, 'no-price' among them. */
+const incompleteLine = (r) => INCOMPLETE_STATUSES.includes(r.status) || r.status === 'no-price';
+
 /** The quantity of a purchase line as a number and its unit, never a guessed sheet count. */
 function qtyText(r) {
   const qty = Number(r.qty);
@@ -613,6 +637,8 @@ function PurchaseLines({
       <tbody>
         {groups.map((g) => {
           const sub = g.rows.reduce((acc, r) => acc + (Number(r.lineCost) || 0), 0);
+          // Ewa's P7: a subtotal with a hole in it says so; an empty number reads like zero.
+          const holes = g.rows.some(incompleteLine);
           return (
             <Fragment key={g.id}>
               <tr className="bg-shell-700/60" data-bom-group={g.id}>
@@ -625,7 +651,11 @@ function PurchaseLines({
                   <tr key={r.key || i} className="border-b border-shell-600/40" data-bom-line-status={r.status}>
                     <td className="px-1.5 py-1">
                       <span className={linked ? 'text-ink-100' : 'text-status-danger'}>{r.name}</span>
-                      {r.sheets != null && <div className="text-ink-400 tabular-nums">{`${r.sheets} sheet${r.sheets === 1 ? '' : 's'}`}</div>}
+                      {r.sheets != null && (
+                        <div className="text-ink-400 tabular-nums" data-bom-sheets="1">
+                          {sheetSizeWords(r.sheets, r.sheetSize) || `${r.sheets} sheet${r.sheets === 1 ? '' : 's'}`}
+                        </div>
+                      )}
                     </td>
                     <td className="px-1.5 py-1 text-right tabular-nums whitespace-nowrap">{qtyText(r)}</td>
                     <td className="px-1.5 py-1">
@@ -662,7 +692,7 @@ function PurchaseLines({
                       {canLink && (
                         <button
                           type="button"
-                          className="cc-btn-ghost text-[10px] text-gold"
+                          className="cc-btn px-2 py-0.5 text-[12px]"
                           data-bom-link="1"
                           title="Link this material to a row of your Joinery Core stock, for all projects"
                           onClick={() => onLink(r)}
@@ -677,7 +707,14 @@ function PurchaseLines({
               {costs && (
                 <tr className="border-b border-shell-600" data-bom-subtotal={g.id}>
                   <td colSpan={4} className="px-1.5 py-1 text-[10px] text-ink-400 text-right">{`${g.label} subtotal`}</td>
-                  <td className="px-1.5 py-1 text-right tabular-nums text-ink-200">{sub > 0 ? sub.toFixed(2) : ''}</td>
+                  <td
+                    className={`px-1.5 py-1 text-right tabular-nums whitespace-nowrap ${holes ? 'text-status-danger' : 'text-ink-200'}`}
+                    data-bom-subtotal-state={holes ? 'incomplete' : 'complete'}
+                  >
+                    {holes
+                      ? (sub > 0 ? `${sub.toFixed(2)}, incomplete` : 'incomplete')
+                      : (g.rows.some((r) => r.lineCost != null) ? sub.toFixed(2) : '')}
+                  </td>
                   <td />
                 </tr>
               )}
@@ -697,10 +734,17 @@ function PurchaseLines({
 function BespokeBlock({
   rows, purchaseRows, onAdd, onUpdate, onRemove,
 }) {
+  const hitOf = (row) => purchaseRows.find((r) => r.bespoke && (r.key === `bespoke:${row.id}`)) || null;
   const costOf = (row) => {
-    const hit = purchaseRows.find((r) => r.bespoke && (r.key === `bespoke:${row.id}`));
+    const hit = hitOf(row);
     if (hit && hit.lineCost != null) return Number(hit.lineCost);
     return row.suppliedByClient ? 0 : (Number(row.qty) || 0) * (Number(row.price) || 0);
+  };
+  // Ewa's P9: a row left at no price, not supplied by the client, is never priced at zero in silence (bom.js says its
+  // words, LINK_WORDS.noPrice, and counts it in the incomplete total).
+  const holeOf = (row) => {
+    const hit = hitOf(row);
+    return hit && hit.status !== 'bespoke' && incompleteLine(hit) ? (hit.words || LINK_WORDS.noPrice || 'No price') : null;
   };
   return (
     <section className="rounded border border-shell-600 p-2 space-y-1.5" data-bom-bespoke="1">
@@ -723,16 +767,19 @@ function BespokeBlock({
             data-bom-bespoke-name="1"
             onChange={(e) => onUpdate(row.id, { name: e.target.value })}
           />
-          <NumberField
-            className="cc-input w-[70px] text-right"
-            integer={false}
-            decimals={2}
-            min={0}
-            value={row.qty}
-            title="Quantity"
-            data-bom-bespoke-qty="1"
-            onCommit={(v) => onUpdate(row.id, { qty: Number(v) || 0 })}
-          />
+          <label className="flex items-center gap-1" data-bom-bespoke-qty-label="1">
+            <span className="text-[11px] text-ink-400">Qty</span>
+            <NumberField
+              className="cc-input w-[70px] text-right"
+              integer={false}
+              decimals={2}
+              min={0}
+              value={row.qty}
+              title="Quantity"
+              data-bom-bespoke-qty="1"
+              onCommit={(v) => onUpdate(row.id, { qty: Number(v) || 0 })}
+            />
+          </label>
           <span className="flex gap-0.5" data-bom-bespoke-units="1">
             {(BESPOKE_UNITS || []).map((u) => (
               <button
@@ -747,17 +794,20 @@ function BespokeBlock({
               </button>
             ))}
           </span>
-          <NumberField
-            className="cc-input w-[80px] text-right"
-            integer={false}
-            decimals={2}
-            min={0}
-            value={row.suppliedByClient ? 0 : row.price}
-            title="Unit price"
-            disabled={row.suppliedByClient}
-            data-bom-bespoke-price="1"
-            onCommit={(v) => onUpdate(row.id, { price: Number(v) || 0 })}
-          />
+          <label className="flex items-center gap-1" data-bom-bespoke-price-label="1">
+            <span className="text-[11px] text-ink-400">Unit price</span>
+            <NumberField
+              className="cc-input w-[80px] text-right"
+              integer={false}
+              decimals={2}
+              min={0}
+              value={row.suppliedByClient ? 0 : row.price}
+              title="Unit price"
+              disabled={row.suppliedByClient}
+              data-bom-bespoke-price="1"
+              onCommit={(v) => onUpdate(row.id, { price: Number(v) || 0 })}
+            />
+          </label>
           <label className="flex items-center gap-1 text-[11px] text-ink-200">
             <input
               type="checkbox"
@@ -767,7 +817,9 @@ function BespokeBlock({
             />
             Supplied by client
           </label>
-          <span className="w-[64px] text-right tabular-nums text-ink-200" data-bom-bespoke-cost="1">{costOf(row).toFixed(2)}</span>
+          {holeOf(row)
+            ? <span className="min-w-[64px] text-right whitespace-nowrap text-status-danger" data-bom-bespoke-words="1">{holeOf(row)}</span>
+            : <span className="w-[64px] text-right tabular-nums text-ink-200" data-bom-bespoke-cost="1">{costOf(row).toFixed(2)}</span>}
           <button type="button" className="cc-btn-ghost text-status-danger" data-bom-bespoke-remove="1" onClick={() => onRemove(row.id)}>Remove</button>
         </div>
       ))}

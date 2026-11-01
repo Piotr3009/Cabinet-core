@@ -229,17 +229,21 @@ export default function AssignMaterialsModal() {
             Open Link materials
           </button>
         </div>
-        {/* THE HEADER LINE, F10.3: what is assigned, and in red what is not. */}
+        {/* THE HEADER LINE, F10.3: what is assigned, and in red what is not. Ewa's P2 (the owner approved, 01.11.2026):
+            read only, the count is grey, so the only red count is the BOM's (the links). */}
         <div
-          className={count.missing > 0
-            ? 'flex items-center gap-3 rounded px-2 py-1.5 border border-status-danger/60 bg-status-danger/10'
-            : 'flex items-center gap-3 rounded px-2 py-1.5 border border-status-ok/50 bg-status-ok/10 text-status-ok'}
+          className={READ_ONLY
+            ? 'flex items-center gap-3 rounded px-2 py-1.5 border border-shell-600 bg-shell-700/40 text-ink-400'
+            : count.missing > 0
+              ? 'flex items-center gap-3 rounded px-2 py-1.5 border border-status-danger/60 bg-status-danger/10'
+              : 'flex items-center gap-3 rounded px-2 py-1.5 border border-status-ok/50 bg-status-ok/10 text-status-ok'}
           data-assign-counter={String(count.missing)}
           data-assign-total={String(count.total)}
+          data-assign-counter-tone={READ_ONLY ? 'grey' : count.missing > 0 ? 'red' : 'green'}
         >
-          <span className="font-medium tabular-nums text-ink-100">{count.text}</span>
+          <span className={`font-medium tabular-nums ${READ_ONLY ? 'text-ink-400' : 'text-ink-100'}`}>{count.text}</span>
           {count.missing > 0 && (
-            <span className="text-status-danger font-medium" data-assign-missing-words="1">{count.missingText}</span>
+            <span className={`${READ_ONLY ? 'text-ink-400' : 'text-status-danger'} font-medium`} data-assign-missing-words="1">{count.missingText}</span>
           )}
         </div>
 

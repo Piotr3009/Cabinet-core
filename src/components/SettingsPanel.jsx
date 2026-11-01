@@ -17,7 +17,7 @@ import {
 import { LINK_WORDS } from '../engine/bom.js';
 import { decorById, decorLabel } from '../engine/decors.js';
 import { linkStatus, matchesEntry } from '../lib/linkSuggest.js';
-import { StockPhoto } from './MaterialPicker.jsx';
+import { StockPhoto, PhotoCard } from './MaterialPicker.jsx';
 import {
   FRONT_STYLE_OPTIONS, colourLabel, finishById, frontStyleSelection, migrateDesign, projectHeights, resolveJoinery,
   INFRAME_CHOICES, inframeHint, inframeTooltip,
@@ -1837,6 +1837,9 @@ function BoardSlotPicker({
   const profile = useCabinetProfileStore((s) => s.profile);
   const [open, setOpen] = useState(Boolean(value));
   const [q, setQ] = useState('');
+  const [enlarged, setEnlarged] = useState(null);     // { url, fill, title, caption, anchor }
+  // Ewa's P13: the default says WHAT the part takes by default, never the turn's word "As today".
+  const defaultEntry = useMemo(() => (today ? entryOfChoice(today, profile).entry : null), [today, profile]);
   const sheets = useMemo(
     () => entriesOf('sheets').filter((e) => Number(e.thickness) === Number(thickness)),
     [thickness],
@@ -1853,9 +1856,10 @@ function BoardSlotPicker({
           className={`cc-btn px-2 py-0.5 ${!value && !open ? 'border-gold text-gold' : ''}`}
           aria-pressed={!value && !open}
           data-board-slot-today="1"
+          title={defaultEntry ? `Default: ${defaultEntry.name}` : 'The board the engine uses for this part'}
           onClick={() => { setOpen(false); onChange?.(null); }}
         >
-          As today
+          <span className="block max-w-[280px] truncate">{defaultEntry ? `Default: ${defaultEntry.name}` : 'Default'}</span>
         </button>
         <button
           type="button"
@@ -1895,25 +1899,49 @@ function BoardSlotPicker({
               const decor = e.decorId ? decorById(e.decorId) : null;
               const chosen = chosenId === e.id;
               return (
-                <li key={e.id}>
+                <li
+                  key={e.id}
+                  className={`flex items-center gap-2 px-1.5 py-1 rounded ${chosen ? 'outline outline-1 outline-gold bg-gold/10' : 'hover:bg-shell-700'}`}
+                >
+                  {/* Ewa's P14: the picture enlarges on click (the Link materials window's enlarged view), and a click on
+                      it never chooses the sheet: it stands BESIDE the button that chooses, never inside it. */}
+                  {decor && (
+                    <StockPhoto
+                      url={decor.thumb}
+                      fill={decor.hex}
+                      alt={decorLabel(decor)}
+                      size={28}
+                      testId="board-slot"
+                      onOpen={(anchor) => setEnlarged({
+                        url: decor.thumb, fill: decor.hex, title: decorLabel(decor), caption: decorLabel(decor), anchor,
+                      })}
+                    />
+                  )}
                   <button
                     type="button"
-                    className={`w-full flex items-center gap-2 px-1.5 py-1 rounded text-left text-[11px] ${chosen ? 'outline outline-1 outline-gold bg-gold/10' : 'hover:bg-shell-700'}`}
+                    className="flex-1 min-w-0 text-left text-[11px]"
                     aria-pressed={chosen}
                     data-board-slot-option="1"
                     onClick={() => onChange?.(boardChoiceOfEntry(e))}
                   >
-                    {decor && <StockPhoto url={decor.thumb} fill={decor.hex} alt={decorLabel(decor)} size={28} />}
-                    <span className="flex-1 min-w-0">
-                      <span className="block text-ink-100 truncate">{e.name}</span>
-                      {decor && <span className="block text-ink-400 truncate">{decorLabel(decor)}</span>}
-                    </span>
+                    <span className="block text-ink-100 truncate">{e.name}</span>
+                    {decor && <span className="block text-ink-400 truncate">{decorLabel(decor)}</span>}
                   </button>
                 </li>
               );
             })}
           </ul>
         </div>
+      )}
+      {enlarged && (
+        <PhotoCard
+          url={enlarged.url}
+          fill={enlarged.fill}
+          title={enlarged.title}
+          caption={enlarged.caption}
+          anchor={enlarged.anchor}
+          onClose={() => setEnlarged(null)}
+        />
       )}
     </div>
   );

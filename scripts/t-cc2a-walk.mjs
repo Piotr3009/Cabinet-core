@@ -465,12 +465,14 @@ async function legC(ctx, page) {
   await typeInto(page, `${FORM} [data-link-sheet-length]`, '2440');
   await mousePress(page, `${FORM} [data-link-save]`);
   const refused = await ask(page, `(() => { const f = document.querySelector(${j(FORM)}); if (!f) return null;
-    return { disabled: f.querySelector('[data-link-save]')?.disabled ?? null, hint: f.querySelector('[data-link-form-hint]')?.innerText.trim() || null }; })()`);
+    return { disabled: f.querySelector('[data-link-save]')?.disabled ?? null, hint: f.querySelector('[data-link-form-hint]')?.innerText.trim() || null,
+      required: [...f.querySelectorAll('[data-link-field-error]')].map((e) => e.innerText.trim()).join(' | ') || null }; })()`);
   const rpc1 = rpcN(await counters(), 'cc_save_material_links');
   const r18b = await rowState(page, H3325_18);
   check('Save link with the width empty (the mouse on it): refused in words, nothing sent',
-    refused && refused.disabled === true && /width and length/.test(refused.hint || '') && rpc1 === rpc0 && r18b.status === 'not-linked',
-    'Save disabled, "Type the sheet\'s width and length...", 0 calls, Not linked', j({ ...refused, calls: rpc1 - rpc0, status: r18b && r18b.status }));
+    // UX turn (Ewa P5): Save link stays enabled; pressed with a size empty it says what is missing under the field and sends nothing.
+    refused && refused.disabled === false && /Required/.test(refused.required || '') && rpc1 === rpc0 && r18b.status === 'not-linked',
+    'Save enabled, "Required" under the empty width, 0 calls, Not linked', j({ ...refused, calls: rpc1 - rpc0, status: r18b && r18b.status }));
   await shot(page, 'f09-suggestion-form.png');
   await typeInto(page, `${FORM} [data-link-sheet-width]`, '1220');
   await press(page, `${FORM} [data-link-save]`);

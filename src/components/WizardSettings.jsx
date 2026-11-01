@@ -788,6 +788,10 @@ export default function WizardSettings({
             Workshop standard: sheet size is shared by all carcass boards, including future projects.
             Jumbo and custom sizes remain available.
           </p>
+          {/* Ewa's P3 (the owner approved, 01.11.2026): this size is not the one the purchase list counts with. */}
+          <p className="text-[10px] text-ink-200" data-sheet-size-cnc-only="carcasses">
+            This size is for the CNC sheet checks; the sheets to buy are counted from each material&apos;s link.
+          </p>
         </div>
       );
     }
@@ -809,6 +813,10 @@ export default function WizardSettings({
         <p className="text-[10px] text-ink-400">
           Workshop standard: sheet size is shared by all front boards, including future projects.
           Jumbo and custom sizes remain available.
+        </p>
+        {/* Ewa's P3 (the owner approved, 01.11.2026): this size is not the one the purchase list counts with. */}
+        <p className="text-[10px] text-ink-200" data-sheet-size-cnc-only="fronts">
+          This size is for the CNC sheet checks; the sheets to buy are counted from each material&apos;s link.
         </p>
       </div>
     );
@@ -1126,7 +1134,7 @@ export default function WizardSettings({
     nextTarget = nextTab || (onStepNext ? 'step' : null);
     nextLabel = nextTab ? 'Confirm section & continue' : 'Confirm & review project';
     nextHint = missing.length
-      ? `Choose a stock board for ${missing.map((item) => item.label).join(', ')}. Generic is also available.`
+      ? `Choose a board for ${missing.map((item) => item.label).join(', ')}: an EGGER decor, a sprayed colour, or a stock board. Generic counts.`
       : 'Confirm these settings when you are ready to continue.';
     goNext = () => {
       if (nextBlocked || !nextTarget) return;
@@ -1787,8 +1795,7 @@ export default function WizardSettings({
                       <div className="flex items-center gap-2 border-t border-dashed border-shell-600 pt-2">
                         {carcassMissing.length > 0 ? (
                           <span className="flex-1 text-[11px] text-status-warn" data-carcass-missing="1">
-                            {carcassMissing.map((s) => s.label).join(', ')} — no stock board yet. Generic counts as an
-                            assignment; a colour or a decor alone does not.
+                            {`Choose a board for ${carcassMissing.map((s) => s.label).join(', ')}: an EGGER decor, a sprayed colour, or a stock board. Generic counts.`}
                           </span>
                         ) : (
                           <span className="flex-1 text-[11px] text-status-ok" data-carcass-ok="1">
@@ -2282,8 +2289,7 @@ export default function WizardSettings({
                       <div className="flex items-center gap-2 border-t border-dashed border-shell-600 pt-2">
                         {frontsMissing.length > 0 ? (
                           <span className="flex-1 text-[11px] text-status-warn" data-fronts-missing="1">
-                            {frontsMissing.map((s) => s.label).join(', ')} — no stock board yet. Generic counts as an
-                            assignment; a colour or a decor alone does not.
+                            {`Choose a board for ${frontsMissing.map((s) => s.label).join(', ')}: an EGGER decor, a sprayed colour, or a stock board. Generic counts.`}
                           </span>
                         ) : (
                           <span className="flex-1 text-[11px] text-status-ok" data-fronts-ok="1">

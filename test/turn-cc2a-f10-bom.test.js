@@ -282,3 +282,106 @@ test('F10.3 Bespoke, this project only: add, name, unit chips, supplied by clien
   assert.equal(useProjectStore.getState().project.bespoke.length, 0, 'removeBespoke');
   await unmount();
 });
+
+// ─── Ewa's proposals P3, P7, P9 and P13 in the BOM panel, the owner approved them on 01.11.2026 ───────────────────
+
+test('P3 a sheet line says the sheets with the size of its link: "<n> sheets of <w> x <l>"', async () => {
+  job();
+  stubJc(new Map([['sheet.generic.18', { cc_material_id: 'sheet.generic.18', stock_item_id: 'jc-board-18', sheet_width_mm: 1220, sheet_length_mm: 2440 }]]));
+  const board = toMaterial({
+    id: 'jc-board-18', name: 'Board 18 mm', category: 'Sheet materials', subcategory: 'MDF', unit: 'sheet', current_quantity: 4,
+    cost_per_unit: 41.5, size: '', thickness: '18', color: '', item_number: 'B-18', image_url: null, supplier_id: null,
+  });
+  useMaterialLinkStore.setState({ stock: [...STOCK, board] });
+  const { root, unmount } = await mount(React.createElement(Screen));
+  await click(one(root, by('data-bom-purchase-tab', '1')));
+  const line = all(root, by('data-bom-line-status')).find((n) => one(n, by('data-bom-sheets', '1')) && textOf(n).includes('Board 18 mm'));
+  assert.ok(line, 'the generic 18 mm board, linked');
+  const st = useProjectStore.getState();
+  const want = purchaseBom(st.allResults(), {
+    links: useMaterialLinkStore.getState().links, stock: useMaterialLinkStore.getState().stock, profile: useCabinetProfileStore.getState().profile, design: st.project.design, bespoke: [],
+  }).rows.find((r) => r.catalogueId === 'sheet.generic.18');
+  assert.ok(want.sheets > 0);
+  assert.equal(textOf(one(line, by('data-bom-sheets', '1'))).trim(), `${want.sheets} sheet${want.sheets === 1 ? '' : 's'} of 1220 x 2440`);
+  // The Order tab counts the same board with the same link (bomInvoice.js materialsSummary with { links }): one number.
+  await click(one(root, by('data-bom-order-tab', '1')));
+  const cells = all(root, by('data-bom-order-sheets', '1')).map((c) => textOf(c).trim());
+  assert.ok(cells.includes(`${want.sheets} sheet${want.sheets === 1 ? '' : 's'} of 1220 x 2440`), cells.join(' | '));
+  assert.ok(!cells.some((c) => /2800.2070/.test(c)), 'never the profile\'s fixed sheet');
+  const noteEl = one(root, by('data-bom-order-note'));
+  assert.equal(noteEl.props['data-bom-order-note'], 'links');
+  const note = textOf(noteEl);
+  assert.ok(!note.includes('owner to confirm'));
+  assert.ok(note.includes('counted from each material\'s link: its sheet size and its offcut allowance'), note);
+  // Marek's patch 2: each row says its own offcut allowance; no single header number.
+  const offcuts = all(root, by('data-bom-order-offcut', '1')).map((c) => textOf(c).trim());
+  assert.ok(offcuts.length > 0 && offcuts.every((c) => /^\+\d+(\.\d+)? %$/.test(c)), offcuts.join(' | '));
+  assert.ok(offcuts.includes('+10 %'), 'the generic board, linked without a yield: the workshop\'s 1.10');
+  await unmount();
+});
+
+test('P7 the BOM tab says "<n> not linked"; the Link of a red line is a real button at 12 px; an empty subtotal says incomplete', async () => {
+  job();
+  stubJc();
+  const { root, unmount } = await mount(React.createElement(Screen));
+  const st = useProjectStore.getState();
+  const want = purchaseBom(st.allResults(), {
+    links: new Map(), stock: STOCK, profile: useCabinetProfileStore.getState().profile, design: st.project.design, bespoke: [],
+  });
+  const tabCount = one(one(root, by('data-bom-purchase-tab', '1')), by('data-bom-tab-not-linked'));
+  assert.equal(textOf(tabCount).trim(), `${want.totals.notLinked} not linked`);
+  await click(one(root, by('data-bom-purchase-tab', '1')));
+  const link = one(lineOf(root, HINGE.name), by('data-bom-link', '1'));
+  assert.match(link.props.className, /(^|\s)cc-btn(\s|$)/, 'a real button, not ghost text');
+  assert.match(link.props.className, /text-\[12px\]/);
+  assert.doesNotMatch(link.props.className, /cc-btn-ghost|text-\[10px\]/);
+  const sub = one(root, by('data-bom-subtotal', 'hinges'));
+  const cell = one(sub, by('data-bom-subtotal-state'));
+  assert.equal(cell.props['data-bom-subtotal-state'], 'incomplete');
+  assert.equal(textOf(cell).trim(), 'incomplete', 'no line priced: the word, never an empty number');
+  assert.match(cell.props.className, /text-status-danger/);
+  await unmount();
+});
+
+test('P9 the bespoke row: visible "Qty" and "Unit price" labels; a row at no price, not supplied by the client, says "No price" in red', async () => {
+  job();
+  stubJc();
+  const { root, unmount } = await mount(React.createElement(Screen));
+  await click(one(root, by('data-bom-purchase-tab', '1')));
+  const block = () => one(root, by('data-bom-bespoke', '1'));
+  await click(one(block(), by('data-bom-bespoke-add', '1')));
+  const qtyLabel = one(block(), by('data-bom-bespoke-qty-label', '1'));
+  assert.equal(qtyLabel.type, 'label');
+  assert.ok(textOf(qtyLabel).includes('Qty') && one(qtyLabel, by('data-bom-bespoke-qty', '1')), 'the label holds its field');
+  const priceLabel = one(block(), by('data-bom-bespoke-price-label', '1'));
+  assert.equal(priceLabel.type, 'label');
+  assert.ok(textOf(priceLabel).includes('Unit price') && one(priceLabel, by('data-bom-bespoke-price', '1')));
+  // A new row starts at price 0: bom.js says 'no-price' (LINK_WORDS.noPrice), the row says it in red.
+  const words = one(block(), by('data-bom-bespoke-words', '1'));
+  assert.ok(words, 'no cost shown as 0.00 for a row nobody priced');
+  assert.equal(textOf(words).trim(), LINK_WORDS.noPrice || 'No price');
+  assert.match(words.props.className, /text-status-danger/);
+  // Marek's patch 1: a line without a price among them, the totals say both.
+  const st = useProjectStore.getState();
+  const p = purchaseBom(st.allResults(), {
+    links: new Map(), stock: STOCK, profile: useCabinetProfileStore.getState().profile, design: st.project.design, bespoke: st.project.bespoke,
+  });
+  assert.equal(p.totals.noPrice, 1);
+  const said = incompleteWords(p.totals.notLinked, p.totals.noPrice);
+  assert.match(said, /not linked or without a price$/);
+  assert.ok(textOf(one(root, by('data-bom-header-total'))).includes(said), 'the header');
+  assert.ok(textOf(one(root, by('data-bom-incomplete-words', '1'))).includes(said), 'the total');
+  await type(one(block(), by('data-bom-bespoke-client', '1')), true);
+  assert.ok(!textOf(one(root, by('data-bom-header-total'))).includes('without a price'), 'supplied by client: no line without a price');
+  assert.equal(one(block(), by('data-bom-bespoke-words')), null, 'supplied by client: nothing to buy, complete');
+  assert.ok(textOf(one(block(), by('data-bom-bespoke-cost', '1'))).includes('0.00'));
+  await click(one(block(), by('data-bom-bespoke-remove', '1')));
+  await unmount();
+});
+
+test('P3 and P13 the Order tab reads the links\' sizes and the stray "owner to confirm" note is gone', () => {
+  const src = readFileSync(new URL('../src/components/BomPanel.jsx', import.meta.url), 'utf8');
+  assert.match(src, /materialsSummary\(bom, profile, \{ excludeDrawerBoxes: readyBoxes, links \}\)/, 'the links go to the Order tab\'s count');
+  assert.match(src, /sheetSizeWords\(g\.sheets, g\.sheetSize\)/, 'the Order tab prints "<n> sheets of <w> x <l>" when the row carries a size');
+  assert.ok(!src.includes('owner to confirm (15.08.2026)'), 'the stray note is off the screen');
+});

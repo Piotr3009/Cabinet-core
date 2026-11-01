@@ -46,6 +46,21 @@ const KIND_OPTIONS = [
   { id: 'other', label: 'Other' },
 ];
 
+/**
+ * Ewa's P12 (the owner approved, 01.11.2026): the Link materials window
+ * preselects the kind of its tab. A Joinery Core stock row is never 'paint'
+ * by lib/jcStock.js ccKindOf (its words know boards, edging and hardware), so
+ * the Paint kind also reads the row's own words (PROPOSED list): paint,
+ * primer, lacquer, stain, solvent, thinner, basecoat, topcoat.
+ */
+const PAINT_WORDS = /(^|[^a-z])(paints?|primers?|lacquers?|stains?|solvents?|thinners?|basecoats?|topcoats?)([^a-z]|$)/i;
+
+/** A row the Paint kind shows: a paint row of the warehouse, or a stock row whose words say paint. */
+export function isPaintRow(m) {
+  if (String(m?.category || '').toLowerCase() === 'paint') return true;
+  return PAINT_WORDS.test(`${m?.group || ''} ${m?.subgroup || ''} ${m?.name || ''}`);
+}
+
 const priceOf = (m) => {
   const v = m?.cost_per_unit ?? m?.price;
   return Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null;
@@ -162,6 +177,8 @@ export default function MaterialPicker({
   linkDisabled = false,
   linkLabel = 'Link',
   afterRow = null,
+  // Ewa's P12: the caller's kind as two chips ("<kind>", "All kinds") instead of the select: no dropdown in that window.
+  kindChips = false,
 }) {
   const [q, setQ] = useState('');
   const [kind, setKind] = useState(kindIn || 'all');
@@ -171,14 +188,18 @@ export default function MaterialPicker({
   // for the rest); the user can switch it, and a new line resets it.
   useEffect(() => { setKind(kindIn || 'all'); }, [kindIn]);
 
-  const list = useMemo(
-    () => filterStock(materials, { q, kind, category, tree }),
-    [materials, q, kind, category, tree],
-  );
+  const list = useMemo(() => {
+    const paint = kind === 'paint';
+    const rows = filterStock(materials, {
+      q, kind: paint ? 'all' : kind, category, tree,
+    });
+    return paint ? rows.filter(isPaintRow) : rows;
+  }, [materials, q, kind, category, tree]);
   const cats = useMemo(() => flatTree(tree), [tree]);
   const top = categoryChips ? topOf(tree, category) : null;
   const linkMode = Boolean(onLink);
-  const cols = linkMode ? 6 : 7;
+  const cols = 7;
+  const kindLabel = (id) => KIND_OPTIONS.find((k) => k.id === id)?.label || id;
 
   return (
     <div className="flex flex-col min-h-0 gap-2" data-material-list={testId || '1'}>
@@ -205,6 +226,22 @@ export default function MaterialPicker({
             </button>
           )}
         </span>
+        {kindChips && kindIn && kindIn !== 'all' && (
+          <span className="flex gap-1 shrink-0" data-material-kind-chips="1">
+            {[kindIn, 'all'].map((k) => (
+              <button
+                key={k}
+                type="button"
+                className={`cc-btn px-2 py-0.5 ${kind === k ? 'border-gold text-gold' : ''}`}
+                aria-pressed={kind === k}
+                data-material-kind-chip={k}
+                onClick={() => setKind(k)}
+              >
+                {kindLabel(k)}
+              </button>
+            ))}
+          </span>
+        )}
         {showKind && (
           <select
             className="cc-input w-[130px]"
@@ -289,7 +326,9 @@ export default function MaterialPicker({
         )}
         {list.length === 0 && (
           <div className="px-3 py-4 text-ink-400" data-material-empty="1">
-            {materials.length === 0 ? emptyText : 'No material matches.'}
+            {materials.length === 0
+              ? emptyText
+              : kind !== 'all' ? `Nothing under ${kindLabel(kind)} matches. Try All kinds.` : 'No material matches.'}
           </div>
         )}
         <table className="w-full" data-material-rows={String(list.length)}>
@@ -317,6 +356,8 @@ export default function MaterialPicker({
                       </td>
                       <td className="text-ink-400 tabular-nums whitespace-nowrap">{m.item_number || ''}</td>
                       <td className="text-ink-100">{m.name}</td>
+                      {/* Ewa's P12: the thickness beside the name, so a board of the wrong thickness is seen before it is linked. */}
+                      <td className="text-ink-400 tabular-nums whitespace-nowrap" data-material-thickness={m.id}>{m.thickness ? `${m.thickness} mm` : ''}</td>
                       <td className="text-ink-400">{m.unit || ''}</td>
                       <td className="text-right tabular-nums">{price != null ? `£${price.toFixed(2)}` : ''}</td>
                       <td className="text-right">

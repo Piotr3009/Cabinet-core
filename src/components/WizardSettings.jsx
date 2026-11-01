@@ -66,6 +66,8 @@ import {
 } from '../lib/ledSpec.js';
 import { driverSummary } from '../lib/ledDrivers.js';
 import { stripsForUnit } from '../engine/ledStrips.js';
+import { useAuthStore } from '../stores/authStore.js';
+import { STYLE_NOT_OFFERED, frontStylesFor, styleNotOffered } from '../lib/tenantFlags.js';
 
 // ─── TURN 32 (CLAUDE.md F1), RE-SHAPED 15.08.2026 EVENING — THE MOCKUP ──────
 //
@@ -171,6 +173,8 @@ export default function WizardSettings({
   embedded = false, onNavigationChange = null,
   onSectionComplete = null, onSectionDirty = null,
 }) {
+  // T-CC1b F14 . the ornate fronts are Skylon's (*"ornamenty zostaw tylko dla Skylon Joinery"*, the owner, 01.11.2026).
+  const tenantId = useAuthStore((s) => s.tenant?.id);
   // ─── TURN 36 (CLAUDE.md F1): TWO DOORS, ONE FORM ──────────────────────────
   //
   // The owner: "mamy new project i edit project — 2 różne setup modale, a
@@ -1943,6 +1947,9 @@ export default function WizardSettings({
                                   <span className="text-[10px] text-ink-400">mm</span>
                                 </div>
                               )}
+                              {styleNotOffered(tenantId, t.style || design.fronts.style) && (
+                                <p className="text-[11px] text-ink-400" data-style-not-offered>{STYLE_NOT_OFFERED}</p>
+                              )}
                               <FrontDecorationControls
                                 style={t.style || design.fronts.style}
                                 value={t.decoration || (!(t.style && t.style !== design.fronts.style) ? design.fronts.decoration : null)}
@@ -1962,6 +1969,7 @@ export default function WizardSettings({
                           <div className="border border-shell-600 rounded p-2" data-style-gallery-for={t.id}>
                             <FrontStyleGallery
                               value={t.style || design.fronts.style}
+                              styles={frontStylesFor(tenantId, { current: t.style || design.fronts.style })}
                               onPick={(id) => {
                                 touchFronts();
                                 const selected = frontStyleSelection(id, {
@@ -2122,7 +2130,7 @@ export default function WizardSettings({
                                       updateDoorStyle(style.id, { frontType: selected.style, decoration: selected.decoration });
                                     }}
                                   >
-                                    {FRONT_STYLE_OPTIONS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                                    {frontStylesFor(tenantId, { current: style.frontType }).map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
                                   </select>
                                   <select
                                     className="cc-input w-40"
@@ -2158,6 +2166,9 @@ export default function WizardSettings({
                                   </button>
                                   <button type="button" className="cc-btn-ghost text-status-danger" data-door-style-remove={style.id} onClick={() => removeDoorStyle(style.id)}>×</button>
                                 </div>
+                                {styleNotOffered(tenantId, style.frontType) && (
+                                  <p className="text-[11px] text-ink-400" data-style-not-offered>{STYLE_NOT_OFFERED}</p>
+                                )}
                                 <FrontDecorationControls
                                   style={style.frontType}
                                   value={style.decoration}

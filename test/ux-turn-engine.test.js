@@ -7,9 +7,9 @@
  * prohibited without prior written permission from Skylon Development Ltd.
  */
 // THE UX TURN, THE ENGINE'S POINTS (Bruno): B1 the wizard's gate asks the
-// catalogue, B2 an old project's stock board thickness moved once into the
-// settings, B3 the screws as one line, B4 the solvent on the primer too, B5 no
-// price is not a price, B6 the Order tab counts the purchase list's sheets.
+// catalogue, the board bought is the slot's nominal and never the caliper (the
+// owner, 18:46), B3 the screws as one line, B4 the solvent on the primer too,
+// B5 no price is not a price, B6 the Order tab counts the purchase list's sheets.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -27,7 +27,7 @@ const { materialsAssigned, wizardStartBlockers } = await import('../src/engine/p
 const { migrateDesign, projectHeights } = await import('../src/engine/design.js');
 const { newItemBoardDefaults } = await import('../src/engine/companyDefaults.js');
 const {
-  migrateStockThickness, projectThicknesses, slotNominal, slotThickness,
+  projectThicknesses, slotNominal, slotThickness,
 } = await import('../src/engine/thickness.js');
 const { catalogueIdOfLine, entryById } = await import('../src/engine/catalogue.js');
 const { resolvePanelMaterial } = await import('../src/engine/materials.js');
@@ -107,80 +107,79 @@ test('B1 · a slot with no resolvable choice is still missing; the stock board a
   assert.doesNotMatch(gate(blank).blockers[0].message, /[\u2013\u2014]/, 'no em or en dash');
 });
 
-// ─── B2 · A STOCK BOARD'S THICKNESS, MOVED ONCE INTO THE SETTINGS ────────────
+// ─── THE BOARD BOUGHT IS THE ONE CHOSEN, NEVER THE CALIPER (the owner, 18:46) ─
+// *"tak katalogi i BOM biora to co wybral klient, 18.5 to tylko ciecie dla CNC,
+// nie dla zakupow, to sie nie moze laczyc"*. The cut keeps the measured number;
+// the catalogue entry takes the slot's nominal.
 
-const ROW25 = toMaterial({
-  id: 'b6a1f3d2-0001-4c1e-9a10-0000000000a5', name: 'MDF 25 mm', category: 'Sheet materials', subcategory: 'MDF', unit: 'sheet', thickness: '25', cost_per_unit: 31,
-});
-const ROW18 = toMaterial({
-  id: 'b6a1f3d2-0001-4c1e-9a10-0000000000a8', name: 'Egger H3325 18 mm', category: 'Sheet materials', subcategory: 'Melamine', unit: 'sheet', thickness: '18', cost_per_unit: 40,
-});
-const STOCK = [ROW25, ROW18];
-const DESIGN_18 = {
-  carcass: { types: [{ id: 'c1', label: 'Carcass 1', source: 'egger', finish_id: 'egger:H3325_28', material_id: ROW25.id }] },
-  fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'spray', colour: { hex: '#5e2129', name: '3005 Wine Red', system: 'RAL' } }] },
-};
+const H3325 = { id: 'c1', label: 'Carcass 1', source: 'egger', finish_id: 'egger:H3325_28' };
+const WINE = { id: 'f1', label: 'Front 1', source: 'spray', colour: { hex: '#5e2129', name: '3005 Wine Red', system: 'RAL' } };
 
-/** A base unit cut from a design's slots, and its left side's catalogue entry. */
-function cutSide(design) {
-  const params = { ...defaultParamsFor('BUD', P), unit_num: '01', drawers: 0, thickness_slots: projectThicknesses({ design, profile: P, materials: STOCK }) };
-  const result = computeCabinet({ type: 'BUD', ...params }, P);
-  const side = result.panels.find((p) => p.id === 'BUL');
-  return { side, catalogueId: resolvePanelMaterial(side, { id: 'u', type: 'BUD', params }, design, P, STOCK).catalogue_id };
+/** One kit cut from a design's slots: every piece with its cut thickness and its catalogue entry. */
+function cutPieces(design, type = 'BUDR') {
+  const params = { ...defaultParamsFor(type, P), unit_num: '01', thickness_slots: projectThicknesses({ design, profile: P }) };
+  const result = computeCabinet({ type, ...params }, P);
+  const unit = { id: 'u', type, params };
+  return result.panels.map((p) => ({ p, unit, ...resolvePanelMaterial(p, unit, design, P, []) }));
 }
 
-test('B2 · an 18 mm design whose carcass 1 is a 25 mm stock row: 18 as main until migrated, 25 after, and the catalogue follows', () => {
-  // Before: the settings say 18 (the stock row is never read at cut time, the owner 18:04).
-  assert.equal(slotNominal('carcass1', { design: DESIGN_18, profile: P, materials: STOCK }), 18);
-  const before = cutSide(DESIGN_18);
-  assert.deepEqual([before.side.thickness, before.catalogueId], [18, 'sheet.egger.h3325_28.18']);
-  // The one time move.
-  const out = migrateStockThickness(DESIGN_18, STOCK, P);
-  assert.ok(out, 'something moved');
-  assert.deepEqual(out.moved.filter((m) => !m.pinned), [{ slotId: 'carcass1', from: 18, to: 25 }]);
-  assert.equal(out.design.thickness.slots.carcass1.measured, 25, 'written into the settings field the engine reads first');
-  assert.equal(slotThickness('carcass1', { design: out.design, profile: P }), 25, 'no stock needed at cut time any more');
-  const after = cutSide(out.design);
-  assert.deepEqual([after.side.thickness, after.catalogueId], [25, 'sheet.egger.h3325_28.25'], 'the board is the 25 mm entry');
-  assert.equal(entryById(after.catalogueId).thickness, 25);
-  // The drawer box keeps what it cut (it never inherited the stock row on c3542b9).
-  assert.equal(projectThicknesses({ design: DESIGN_18, profile: P }).box, 18);
-  assert.equal(projectThicknesses({ design: out.design, profile: P }).box, 18);
-  // Nothing else in the design changed, and the input is not mutated.
-  assert.equal(out.design.carcass, DESIGN_18.carcass);
-  assert.equal(out.design.fronts, DESIGN_18.fronts);
-  assert.equal(DESIGN_18.thickness, undefined);
-  // Idempotent.
-  assert.equal(migrateStockThickness(out.design, STOCK, P), null, 'a second call moves nothing');
-});
-
-test('B2 · not touched: a slot with its own measured value, a generic or old CC id, a row of the same thickness, no stock', () => {
-  const measured = { ...DESIGN_18, thickness: { slots: { carcass1: { measured: 18.5, confirmed: true } } } };
-  assert.equal(migrateStockThickness(measured, STOCK, P), null, 'the caliper always wins');
-  for (const id of ['generic-25', 'mat_mdf25_shaker', 'mat_mdf18']) {
-    const old = { ...DESIGN_18, carcass: { types: [{ ...DESIGN_18.carcass.types[0], material_id: id }] } };
-    const pinned = [...STOCK, { id, thickness: 30 }];
-    assert.equal(migrateStockThickness(old, pinned, P), null, `${id} pins through the old-id table, never moved`);
+test('nominal · an 18 mm H3325 carcass measured 18.5 cuts at 18.5 and buys sheet.egger.h3325_28.18 (main: "Not in the catalogue yet")', () => {
+  const design = { carcass: { types: [H3325] }, fronts: { types: [WINE] }, thickness: { slots: { carcass1: { measured: 18.5, confirmed: true } } } };
+  assert.equal(slotThickness('carcass1', { design, profile: P }), 18.5, 'the CNC cuts at the caliper');
+  assert.equal(slotNominal('carcass1', { design, profile: P }), 18, 'the client chose 18');
+  const pieces = cutPieces(design);
+  const side = pieces.find((x) => x.p.id === 'BUL');
+  assert.deepEqual([side.p.thickness, side.catalogue_id], [18.5, 'sheet.egger.h3325_28.18']);
+  // The pieces T-CC2a F11 and the box name: the back, the drawer box (it inherits carcass 1's number), the drawer bottom.
+  for (const part of ['BACK', 'DRAWER-SIDE', 'DRAWER-BOX-FRONT', 'DRAWER-BOX-BACK', 'DRAWER-BOTTOM']) {
+    const x = pieces.find((y) => y.p.part === part);
+    assert.ok(x, `the kit has a ${part}`);
+    assert.deepEqual([x.p.thickness, x.catalogue_id], [18.5, 'sheet.egger.h3325_28.18'], part);
   }
-  const same = { ...DESIGN_18, carcass: { types: [{ ...DESIGN_18.carcass.types[0], material_id: ROW18.id }] } };
-  assert.equal(migrateStockThickness(same, STOCK, P), null, 'an 18 mm row on an 18 mm slot');
-  assert.equal(migrateStockThickness(DESIGN_18, [], P), null, 'the stock not loaded');
-  assert.equal(migrateStockThickness(DESIGN_18, null, P), null);
-  const unknown = { ...DESIGN_18, carcass: { types: [{ ...DESIGN_18.carcass.types[0], material_id: 'b6a1f3d2-ffff-4c1e-9a10-000000000000' }] } };
-  assert.equal(migrateStockThickness(unknown, STOCK, P), null, 'a uuid the stock does not hold is never guessed');
+  const front = pieces.find((x) => x.p.part === 'DRAWER-FRONT');
+  assert.equal(front.catalogue_id, 'sheet.mdf.18');
+  // The purchase list and the Order tab read the cut list's ids: one board line, at 18, no "not in the catalogue".
+  const entries = [{ unit: pieces[0].unit, result: computeCabinet({ type: 'BUDR', ...pieces[0].unit.params }, P) }];
+  const rows = purchaseBom(entries, { profile: P, design }).rows.filter((r) => r.kind === 'sheet');
+  assert.deepEqual(rows.map((r) => r.catalogueId).sort(), ['sheet.egger.h3325_28.18', 'sheet.mdf.18']);
+  const order = materialsSummary(buildBom(entries, { design, profile: P }), P, { links: new Map() });
+  assert.ok(order.every((g) => g.words !== 'Not in the catalogue yet'), 'the Order tab finds every board');
 });
 
-test('B2 · a front slot moves the same way, and a box with its own number is not pinned', () => {
-  const design = {
-    ...DESIGN_18,
-    carcass: { types: [{ id: 'c1', label: 'Carcass 1', source: 'egger', finish_id: 'egger:H3325_28' }] },
-    fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'spray', colour: { hex: '#5e2129', name: '3005 Wine Red' }, material_id: ROW25.id }] },
-    thickness: { slots: { box: { measured: 16, confirmed: true } } },
+test('nominal · a front measured 18.3 buys MDF 18; a 25 mm choice stays 25 in the catalogue, measured or not', () => {
+  const front = { carcass: { types: [H3325] }, fronts: { types: [WINE] }, thickness: { slots: { front1: { measured: 18.3, confirmed: true } } } };
+  const door = cutPieces(front, 'BUD').find((x) => x.p.part === 'FRONT');
+  assert.deepEqual([door.p.thickness, door.catalogue_id], [18.3, 'sheet.mdf.18']);
+  // The project's carcass board chosen at 25 (the selector, `thickness.board`), the decor on the type.
+  for (const measured of [null, 25.4]) {
+    const design = {
+      carcass: { types: [{ id: 'c1', label: 'Carcass 1', finish_id: 'egger:H3325_28' }] },
+      fronts: { types: [WINE] },
+      thickness: { board: 25, slots: { carcass1: { measured, confirmed: measured != null } } },
+    };
+    const side = cutPieces(design, 'BUD').find((x) => x.p.id === 'BUL');
+    assert.deepEqual([side.p.thickness, side.catalogue_id], [measured ?? 25, 'sheet.egger.h3325_28.25'], `measured ${measured}`);
+  }
+  // A Generic 25 stock board (its thickness pinned through the old-id table), measured 25.3: Generic 25.
+  const generic = {
+    carcass: { types: [{ id: 'c1', label: 'Carcass 1', material_id: 'generic-25' }] },
+    fronts: { types: [WINE] },
+    thickness: { slots: { carcass1: { measured: 25.3, confirmed: true } } },
   };
-  const out = migrateStockThickness(design, STOCK, P);
-  assert.deepEqual(out.moved, [{ slotId: 'front1', from: 18, to: 25 }]);
-  assert.equal(out.design.thickness.slots.box.measured, 16, 'the box keeps its own');
-  assert.equal(projectThicknesses({ design: out.design, profile: P }).front1, 25);
+  const g = cutPieces(generic, 'BUD').find((x) => x.p.id === 'BUL');
+  assert.deepEqual([g.p.thickness, g.catalogue_id], [25.3, 'sheet.generic.25']);
+});
+
+test('nominal · a piece with a number of its own (a thickness override) is bought at its own number; nothing measured, nothing moves', () => {
+  const design = { carcass: { types: [H3325] }, fronts: { types: [WINE] }, thickness: { slots: { carcass1: { measured: 18.5, confirmed: true } } } };
+  const { unit } = cutPieces(design, 'BUD')[0];
+  const shelf = { id: 'S1', part: 'SHELF', role: 'shelf', material_role: 'board', thickness: 25, w: 500, h: 500 };
+  assert.equal(resolvePanelMaterial(shelf, unit, design, P, []).catalogue_id, 'sheet.egger.h3325_28.25');
+  // With no caliper anywhere the nominal IS the cut number: every piece resolves as it did.
+  const plain = { carcass: { types: [H3325] }, fronts: { types: [WINE] } };
+  for (const x of cutPieces(plain)) {
+    if (x.catalogue_id) assert.equal(entryById(x.catalogue_id).thickness, x.p.thickness, x.p.part);
+  }
 });
 
 // ─── B3 · THE SCREWS, ONE LINE ───────────────────────────────────────────────

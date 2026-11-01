@@ -136,81 +136,6 @@ function slotRecord(design, slotId) {
 }
 
 /**
- * ─── UX TURN B2 · AN OLD PROJECT'S STOCK BOARD THICKNESS, MOVED ONCE INTO THE SETTINGS ─
- *
- * The owner, 01.11.2026, 18:04: *"do silnika do ciecia nie bierzesz ze stocku
- * tylko z ustawien, prawda?"*; *"egger w 90 procentach jest 18 mm, a do
- * produkcji przy ustawieniach dodajesz 18.5"*. The cut thickness comes from the
- * SETTINGS only, never from a stock row at cut time (slotNominal above reads
- * none since T-CC2a F3.3).
- *
- * Before T-CC2a (c3542b9) a slot whose `material_id` was a Joinery Core stock
- * row took that row's thickness at cut time: an MDF 25 row on an 18 mm project
- * cut at 25. Such a project, opened today, cuts at 18. This moves that row's
- * thickness ONCE into the settings field the engine already reads first
- * (`design.thickness.slots[slotId].measured`, slotThickness above), so the
- * project cuts what it cut before, and from then on the settings alone decide.
- *
- * It moves a slot only when ALL hold: the slot is a carcass or front slot; its
- * `material_id` is a row of `stockRows` (a Joinery Core stock row) and NOT an
- * old Cabinet Core id or a generic placeholder (engine/catalogue.js
- * boardChoiceOfOldId: those pin through the old-id table, untouched); the row
- * has a numeric thickness; that thickness differs from slotNominal today; the
- * slot has no `measured` of its own (a caliper reading always wins). Nothing
- * else in the design changes: `confirmed`, the types, the material ids stay;
- * the one addition is the drawer box's pin below (it keeps what it cuts today).
- *
- * Pure and idempotent: the second call finds `measured` set and moves nothing.
- *
- * @param {object} design     the project's design (not mutated)
- * @param {Array}  stockRows  the company's stock as lib/jcStock.js toMaterial rows ({ id, thickness })
- * @param {object} profile
- * @returns {{ design: object, moved: Array<{ slotId: string, from: number|null, to: number, pinned?: true }> } | null}
- *   null when nothing moved (the caller saves nothing); `pinned` marks the box kept at its own number
- */
-export function migrateStockThickness(design, stockRows, profile) {
-  if (!design || typeof design !== 'object' || !profile) return null;
-  const rows = Array.isArray(stockRows) ? stockRows : [];
-  if (!rows.length) return null;
-  const byId = new Map(rows.filter(Boolean).map((m) => [String(m.id), m]));
-  const moved = [];
-  const slots = { ...(design.thickness?.slots || {}) };
-  for (const slot of THICKNESS_SLOTS) {
-    if (slot.kind === 'box') continue;
-    const types = slot.kind === 'front' ? (design.fronts?.types || []) : (design.carcass?.types || []);
-    const id = types[slot.index]?.material_id;
-    if (id == null || id === '') continue;
-    if (boardChoiceOfOldId(id)) continue;
-    const row = byId.get(String(id));
-    const to = num(row?.thickness);
-    if (to == null) continue;
-    if (num(slotRecord(design, slot.id).measured) != null) continue;
-    const from = slotNominal(slot.id, { design, profile });
-    if (from === to) continue;
-    slots[slot.id] = { ...(slots[slot.id] || {}), measured: to };
-    moved.push({ slotId: slot.id, from, to });
-  }
-  if (!moved.length) return null;
-  // The DRAWER BOX inherits carcass 1's `measured` (slotThickness, CHAT FIX
-  // 15.08.2026), and before T-CC2a it never inherited the stock row: c3542b9
-  // cut the box of such a project at its own seed. So when carcass 1 moves and
-  // the box has no number of its own, the box is pinned at what it cuts today,
-  // never silently re-cut at the moved carcass number.
-  const c1 = moved.find((m) => m.slotId === 'carcass1');
-  if (c1 && num(slotRecord(design, DRAWER_BOX_SLOT).measured) == null) {
-    const boxNow = slotThickness(DRAWER_BOX_SLOT, { design, profile });
-    if (boxNow != null && boxNow !== c1.to) {
-      slots[DRAWER_BOX_SLOT] = { ...(slots[DRAWER_BOX_SLOT] || {}), measured: boxNow };
-      moved.push({ slotId: DRAWER_BOX_SLOT, from: boxNow, to: boxNow, pinned: true });
-    }
-  }
-  return {
-    design: { ...design, thickness: { ...(design.thickness || {}), slots } },
-    moved,
-  };
-}
-
-/**
  * THE NUMBER THE ENGINE COMPUTES FROM.
  *
  * The caliper where somebody has used one; the manufacturer's nominal where
@@ -342,23 +267,71 @@ export function thicknessOf(part, thicknesses = {}) {
   return partSlotThickness(part, T) ?? carcass;
 }
 
-/** …the slot half of the answer, for a part that has not been cut yet. */
-function partSlotThickness(part, T) {
+/**
+ * THE SLOT A PART IS CUT FROM, by this file's one rule (UX turn: read by
+ * `partSlotThickness` below and by `nominalThicknessOfPart`, so the cut and the
+ * catalogue name the same slot).
+ */
+function slotOfPart(part) {
   const name = String(part?.part || '');
-  const carcass = num(T.carcass1);
-
   // The pieces that name their own slot. A PARTITION does (F3.3, the owner:
-  // "grubość przegrody się nie zmienia" — its slot is a choice, not a guess),
+  // "grubość przegrody się nie zmienia": its slot is a choice, not a guess),
   // and so may any element somebody has put on carcass 2 or 3.
   const said = part?.meta?.slot || part?.slot || null;
-  if (said && BY_ID.has(said)) return num(T[said]) ?? carcass;
-
-  if (BOX_PARTS.has(name) || part?.role === 'drawer_box') return num(T.box) ?? carcass;
+  if (said && BY_ID.has(said)) return said;
+  if (BOX_PARTS.has(name) || part?.role === 'drawer_box') return DRAWER_BOX_SLOT;
   if (FRONT_PARTS.has(name) || part?.role === 'front') {
-    const which = part?.meta?.frontType === 'f2' || part?.front_type === 'f2' ? 'front2' : 'front1';
-    return num(T[which]) ?? num(T.front1) ?? carcass;
+    return part?.meta?.frontType === 'f2' || part?.front_type === 'f2' ? 'front2' : 'front1';
   }
-  return carcass;
+  return CARCASS_SLOTS[0];
+}
+
+/** …the slot half of the answer, for a part that has not been cut yet. */
+function partSlotThickness(part, T) {
+  const carcass = num(T.carcass1);
+  const id = slotOfPart(part);
+  if (id === 'front2') return num(T.front2) ?? num(T.front1) ?? carcass;
+  return num(T[id]) ?? carcass;
+}
+
+/**
+ * ─── UX TURN · THE BOARD BOUGHT IS THE ONE CHOSEN, NEVER THE CALIPER ───────
+ *
+ * The owner, 01.11.2026, 18:46: *"tak katalogi i BOM biora to co wybral
+ * klient, 18.5 to tylko ciecie dla CNC, nie dla zakupow, to sie nie moze
+ * laczyc"*. The cut list and the CNC cut at the MEASURED number (slotThickness);
+ * the catalogue entry of a board (engine/materials.js boardChoiceOfPanel, so
+ * the BOM, the purchase list and the Order tab) takes the slot's NOMINAL
+ * (slotNominal: the source, the project thickness, the profile).
+ *
+ * A cut piece is mapped back to the slot it is cut from:
+ *   1. its own slot (slotOfPart) when it was cut at that slot's number;
+ *   2. else the slot(s) whose number it was cut at, when they agree on one
+ *      nominal (a run piece or a back cut at a slot's number);
+ *   3. else its OWN thickness: a piece the engine or somebody gave a number
+ *      of its own (a part thickness override, a kit's fixed piece) is bought
+ *      at that number, as T-CC2a did.
+ * The drawer box with no number of its own inherits carcass 1's measured
+ * number (slotThickness, CHAT FIX 15.08.2026), so it is the carcass 1 board.
+ * A piece with no thickness stays null (the resolver's source fallback).
+ * With no measured number anywhere the nominal IS the cut number, so a
+ * project nobody has put a caliper on resolves exactly as before.
+ *
+ * @returns {number|null}
+ */
+export function nominalThicknessOfPart(part, { design, profile } = {}) {
+  const cut = num(part?.thickness);
+  if (cut == null || !profile) return cut;
+  const nominalOf = (id) => {
+    if (id === DRAWER_BOX_SLOT && num(slotRecord(design, id).measured) == null
+      && num(slotRecord(design, 'carcass1').measured) != null) return slotNominal('carcass1', { design, profile });
+    return slotNominal(id, { design, profile });
+  };
+  const own = slotOfPart(part);
+  if (slotThickness(own, { design, profile }) === cut) return nominalOf(own) ?? cut;
+  const hits = THICKNESS_SLOTS.filter((s) => slotThickness(s.id, { design, profile }) === cut).map((s) => nominalOf(s.id));
+  if (hits.length && hits.every((t) => t != null && t === hits[0])) return hits[0];
+  return cut;
 }
 
 /**

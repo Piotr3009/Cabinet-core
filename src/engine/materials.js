@@ -37,6 +37,7 @@
 // on one of them goes through the override like any other exception.
 
 import { migrateDesign, paletteEntryByKey, resolveFinishes } from './design.js';
+import { nominalThicknessOfPart } from './thickness.js';
 // T-CC2a F3 (law 2): the board's catalogue entry, read by the SAME resolver the
 // cut list, the purchase list, the 3D finish and the BOM read.
 import {
@@ -225,14 +226,18 @@ const frontChoice = frontTypeChoice;
 /**
  * WHAT BOARD THIS PIECE IS CUT FROM, as the design says it (F2.1's choice):
  * `{ source, finishId, decorId, colour, thickness }`, the thickness the
- * engine cut the piece at. The slot rules are `resolvePanelMaterialBase`'s
+ * NOMINAL of the slot the piece is cut from (UX turn; the cut keeps the
+ * measured number). The slot rules are `resolvePanelMaterialBase`'s
  * own: the slot of `design.boards` first (F11.2, null = as today), then the
  * element override, then the watch insert's spray, then the run switch, the
  * front type and the carcass type.
  */
 export function boardChoiceOfPanel(panel, unit, design, profile) {
   const d = migrateDesign(design);
-  const thickness = Number(panel?.thickness) > 0 ? Number(panel.thickness) : null;
+  // UX turn (the owner, 01.11.2026, 18:46: *"18.5 to tylko ciecie dla CNC, nie
+  // dla zakupow"*): the board BOUGHT is at the slot's NOMINAL, never the
+  // caliper number the piece is cut at (engine/thickness.js nominalThicknessOfPart).
+  const thickness = nominalThicknessOfPart(panel, { design: d, profile });
   const done = (c, from) => ({ ...normaliseBoardChoice({ ...c, thickness }), from });
   const slotKey = boardSlotOfPanel(panel);
   const own = slotKey ? d.boards?.[slotKey] : null;

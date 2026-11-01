@@ -1,7 +1,10 @@
 import jsPDFDefault from 'jspdf';
 import {
-  buildBom, materialDemand, hardwareDemand, demandCost, purchaseBom,
+  buildBom, purchaseBom, incompleteWords, LINK_WORDS,
 } from '../engine/bom.js';
+// T-CC2a F5 (law 7): the departments the purchase list is grouped by, in the window's order.
+import { DEPARTMENTS } from '../engine/catalogue.js';
+import { useMaterialLinkStore } from '../stores/materialLinkStore.js';
 // Turn 39 (CLAUDE.md F1/F6): the registry the purchase list is grouped by.
 import { PART_GROUPS } from '../engine/partRegistry.js';
 // Turn 32 (CLAUDE.md F5): the invoice blocks and their one CSV.
@@ -54,16 +57,37 @@ export function exportFilename(kind, ext, now = new Date(), project = null) {
   return exportFileName({ project: project || 'cabinetcore', kind, ext, now });
 }
 
-// ─── T-CC1b F11 · "NOT ASSIGNED MATERIALS" IN EVERY EXPORT (law 7) ─────────
-// The owner, 01.11.2026: *"kazda funkcja przypisana (10 rodzajow zawiasow,
-// wszystkie przypisane), inaczej eksport BOM pisze not assigned materials"*.
-// One set of words, written here once, read by the BOM PDF and the CSV.
-export const NOT_ASSIGNED = 'Not assigned materials';
-export const NOT_A_PRICE = 'not a price';
+// ─── T-CC2a F5.3 · "NOT LINKED" IN EVERY EXPORT (law 7, REWRITES T-CC1b F11's words) ───
+// The owner, 01.11.2026: *"jesli CC wybierze MDF 25 a nie mamy przypisanego
+// materialu z JC to bedzie napisane MDF 25 materials not assigned"*; 13:33, the
+// total with "incomplete" when a line is not linked: *"zgoda"*. The words are
+// the engine's (engine/bom.js LINK_WORDS, incompleteWords), read here by the BOM
+// PDF and the purchase CSV; a line without a link is never priced at zero.
 
-/** "Not assigned materials: <n> lines. Assign them in Cabinet Core, Materials, before ordering." */
-export function notAssignedWords(n) {
-  return `${NOT_ASSIGNED}: ${n} line${n === 1 ? '' : 's'}. Assign them in Cabinet Core, Materials, before ordering.`;
+/** The department's label, 'Bespoke' for this project's own rows. */
+function departmentLabel(id) {
+  if (id === 'bespoke') return 'Bespoke';
+  return DEPARTMENTS.find((d) => d.id === id)?.label || 'Other';
+}
+
+/** The departments in the window's order, then bespoke. */
+const DEPARTMENT_IDS = [...DEPARTMENTS.map((d) => d.id), 'bespoke'];
+
+/** A row's status column: yes when linked, Bespoke for the project's own, else the red words of law 7. */
+function statusWords(r) {
+  if (r.status === 'linked') return 'yes';
+  if (r.status === 'bespoke') return r.suppliedByClient ? 'Bespoke (supplied by client)' : 'Bespoke';
+  return r.words || LINK_WORDS.notLinked;
+}
+
+/** The company's links and stock as the link store holds them, for a caller that hands none. */
+function companyLinks() {
+  try {
+    const st = useMaterialLinkStore.getState();
+    return { links: st.links, stock: st.stock };
+  } catch {
+    return { links: null, stock: null };
+  }
 }
 
 /**
@@ -158,42 +182,50 @@ export function buildPurchaseBomCsvText(bom, { scope = 'project' } = {}) {
   };
   const money = (v) => (v == null ? '' : Number(v).toFixed(2));
   const lines = [`SCOPE,${q(scope)}`, ''];
-  // T75 F21 · JC_UUID and CODE after PARTS, so JoineryCore imports the list by identity.
+  // T75 F21 · JC_UUID and CODE after PARTS, so JoineryCore imports the list by identity (the linked stock row's).
+  // T-CC2a F5.3: ASSIGNED says "yes" for a linked line, the red words of law 7 otherwise, "Bespoke" for this job's own.
   lines.push('GROUP,MATERIAL,ASSIGNED,QTY,UNIT,SHEETS,UNIT_COST,LINE_COST,PARTS,JC_UUID,CODE');
-  const groupOf = (id) => PART_GROUPS.find((g) => g.id === id)?.label || 'OTHER';
-  for (const g of [null, ...PART_GROUPS.map((x) => x.id)]) {
-    const rows = bom.rows.filter((r) => (g === null ? !r.group : r.group === g));
-    if (!rows.length) continue;
-    for (const r of rows) {
+  const rows = Array.isArray(bom?.rows) ? bom.rows : [];
+  for (const g of DEPARTMENT_IDS) {
+    const these = rows.filter((r) => (DEPARTMENT_IDS.includes(r.department) ? r.department : 'consumables') === g);
+    if (!these.length) continue;
+    for (const r of these) {
       lines.push([
-        q(g ? groupOf(g) : 'OTHER'), q(r.name), r._assigned ? 'yes' : 'NO',
-        Number(r.qty).toFixed(3), q(r.unit), r.sheets ?? '',
-        money(r._assigned ? r.costPerUnit : null), money(r.lineCost), q(r.parts.join(' + ')),
-        q(r.jc_uuid || ''), q(r.code || ''),
+        q(departmentLabel(g)), q(r.name), q(statusWords(r)),
+        Number(r.qty || 0).toFixed(3), q(r.unit), r.sheets ?? '',
+        money(r.lineCost == null ? null : r.price), money(r.lineCost), q((r.parts || []).join(' + ')),
+        q(r.link?.stock_item_id || ''), q(r.stock?.item_number || r.stock?.code || ''),
       ].join(','));
     }
-    const sub = rows.reduce((s2, r) => s2 + (r.lineCost || 0), 0);
-    lines.push(`,${q(`${g ? groupOf(g) : 'OTHER'} subtotal`)},,,,,,${money(sub)},`);
+    const sub = these.reduce((s2, r) => s2 + (Number(r.lineCost) || 0), 0);
+    lines.push(`,${q(`${departmentLabel(g)} subtotal`)},,,,,,${money(sub)},`);
   }
+  const n = Number(bom?.totals?.notLinked) || 0;
   lines.push('');
-  lines.push(`,TOTAL${bom.totals.complete ? '' : ' (INCOMPLETE)'},,,,${bom.totals.sheets || ''},,${money(bom.totals.cost)},`);
-  if (!bom.totals.complete) {
+  lines.push(`,TOTAL${n > 0 ? ' (INCOMPLETE)' : ''},,,,${bom?.totals?.sheets || ''},,${money(bom?.totals?.cost)},`);
+  if (n > 0) {
     lines.push('');
-    // T-CC1b F11.1: the same words as the BOM PDF and the Assign window (law 7).
-    lines.push(`WARNING,${q(`${notAssignedWords(bom.totals.unassigned)} This total is not the price of the job.`)}`);
+    // T-CC2a F5.3 (law 7): the same words as the BOM window and the BOM PDF; never a complete price.
+    lines.push(`WARNING,${q(`${incompleteWords(n)}. Link them in Cabinet Core, Materials, Link materials.`)}`);
   }
   return `${lines.join('\n')}\n`;
 }
 
-/** The BOM view's export button. Same numbers, written to a file. */
+/** The BOM view's export button. Same numbers, written to a file (T-CC2a: the company's links, the job's bespoke rows). */
 export function exportPurchaseBomCsv({
-  entries, assignments = null, materials = [], profile = getCabinetProfile(),
+  entries, links = undefined, stock = undefined, bespoke = [], profile = getCabinetProfile(),
   design = null, projectName = 'project', scope = 'project',
   // T75 F21 · the prices the job was quoted at, as the panel shows them.
   pricedAt = null,
 }) {
+  const company = links === undefined || stock === undefined ? companyLinks() : null;
   const bom = purchaseBom(entries, {
-    assignments, materials, profile, design: migrateDesign(design), pricedAt,
+    links: links === undefined ? company.links : links,
+    stock: stock === undefined ? company.stock : stock,
+    bespoke,
+    profile,
+    design: migrateDesign(design),
+    pricedAt,
   });
   const csv = buildPurchaseBomCsvText(bom, { scope });
   download(
@@ -214,11 +246,19 @@ export function exportCuttingListCsv(entries, projectName = 'project') {
   return csv;
 }
 
+/** A purchase quantity as the PDF prints it: whole pieces, two decimals otherwise, then its unit. */
+function formatQtyText(qty, unit) {
+  const n = Number(qty) || 0;
+  return `${Number.isInteger(n) ? n : n.toFixed(2)} ${unit || ''}`.trim();
+}
+
 /**
  * Project PDF: the 3D view captured from the live WebGL canvas plus the parts
  * table and totals. `capture` is the function the CaptureRig handed over.
  */
-export function exportProjectPdf({ entries, project, capture, assignments, materials }) {
+export function exportProjectPdf({
+  entries, project, capture, links = undefined, stock = undefined, pricedAt = null,
+}) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -240,16 +280,23 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
   doc.line(margin, y, pageW - margin, y);
   y += 6;
 
-  // T-CC1b F11.1: the demand is read BEFORE the cover is drawn, so the cover
-  // can say, in red, how many lines nobody has chosen a material for.
+  // T-CC2a F5.3: the purchase list (the ONE road, keyed by catalogue id, priced by the company's links) is read
+  // BEFORE the cover is drawn, so the cover can say, in red, how many lines are not linked (law 7).
   const bom = buildBom(entries, { design: project?.design, profile: getCabinetProfile() });
-  const demand = materialDemand(bom, assignments, materials);
-  const hardware = hardwareDemand(bom, assignments, materials);
-  const unassignedLines = demand.filter((d) => !d.material).length + hardware.filter((h) => !h.material).length;
-  if (unassignedLines > 0) {
+  const company = links === undefined || stock === undefined ? companyLinks() : null;
+  const purchase = purchaseBom(entries, {
+    links: links === undefined ? company.links : links,
+    stock: stock === undefined ? company.stock : stock,
+    bespoke: project?.bespoke || [],
+    profile: getCabinetProfile(),
+    design: migrateDesign(project?.design),
+    pricedAt: pricedAt ?? project?.warehouseStamp ?? null,
+  });
+  const notLinked = Number(purchase.totals.notLinked) || 0;
+  if (notLinked > 0) {
     doc.setFontSize(10);
     doc.setTextColor(200, 30, 30);
-    doc.text(notAssignedWords(unassignedLines), margin, y);
+    doc.text(`${incompleteWords(notLinked)}. Link them in Cabinet Core, Materials, Link materials.`, margin, y);
     doc.setTextColor(40);
     y += 7;
   }
@@ -268,9 +315,6 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
     }
   }
 
-  const boardCost = demandCost(demand);
-  const hwCost = demandCost(hardware);
-  const cost = boardCost == null && hwCost == null ? null : (boardCost ?? 0) + (hwCost ?? 0);
 
   doc.setFontSize(9);
   doc.setTextColor(40);
@@ -364,46 +408,31 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
     line(`Fronts — ${finishes.front?.label || 'not set'}${finishes.front?.hex ? ` · ${finishes.front.hex}` : ''}`);
   }
 
-  // Materials. T-CC1b F11.1: every line, the unassigned ones saying so in
-  // their material column (law 7), never dropped in silence.
-  if (demand.length) {
-    section('Materials');
-    for (const d of demand) {
-      line(d.material
-        ? `${d.role}, ${d.material.name} · ${d.area_m2.toFixed(3)} m² × yield ${d.yield} = ${d.required_m2.toFixed(3)} m²`
-          + (d.cost != null ? ` · ${d.cost.toFixed(2)}` : '')
-        : `${d.role}, ${d.area_m2.toFixed(3)} m², ${NOT_ASSIGNED}`);
+  // T-CC2a F5 (laws 4 and 7): ONE product, ONE line, by department: the catalogue entry, its quantity, the linked
+  // Joinery Core material and its cost, or the red words of law 7 with no price. Bespoke rows stand last, marked.
+  const qtyOf = (r) => `${formatQtyText(r.qty, r.unit)}${r.sheets != null ? ` (${r.sheets} sheet${r.sheets === 1 ? '' : 's'})` : ''}`;
+  for (const g of DEPARTMENT_IDS) {
+    const these = purchase.rows.filter((r) => (DEPARTMENT_IDS.includes(r.department) ? r.department : 'consumables') === g);
+    if (!these.length) continue;
+    section(departmentLabel(g));
+    for (const r of these) {
+      const said = r.status === 'linked'
+        ? ` · JC: ${r.stock?.item_number ? `${r.stock.item_number} ` : ''}${r.stock?.name || ''}`.replace(/ · JC: $/, '')
+        : (r.status === 'bespoke' ? ` · ${statusWords(r)}` : `, ${r.words || LINK_WORDS.notLinked}`);
+      line(`${r.name} · ${qtyOf(r)}${said}${r.lineCost != null ? ` · £${Number(r.lineCost).toFixed(2)}` : ''}`);
     }
   }
 
-  // Hardware — quantities from the geometry, product from the assignment.
-  // The cutting-list CSV stays the LISP format and never carries any of this.
-  if (hardware.length) {
-    section('Hardware');
-    for (const h of hardware) {
-      line(`${h.label} — ${h.qty} ${h.unit}${h.spec_label ? ` · ${h.spec_label}` : ''}`
-        + (h.material ? ` · ${h.material.name}` : `, ${NOT_ASSIGNED}`)
-        + (h.cost != null ? ` · ${h.cost.toFixed(2)}` : ''));
-    }
-  }
-
-  // T-CC1b F11.1: a job with any line unassigned prints no total as a price.
-  if (unassignedLines > 0) {
-    if (y > pageH - margin - 10) { doc.addPage(); y = margin + 6; }
-    doc.setFontSize(9);
+  // T-CC2a F5.3 (law 7): the total of the priced lines; with any line not linked it carries the words, never a
+  // complete price (REWRITES T-CC1b F11's "not a price" by name).
+  if (y > pageH - margin - 10) { doc.addPage(); y = margin + 6; }
+  doc.setFontSize(9);
+  if (notLinked > 0) {
     doc.setTextColor(200, 30, 30);
-    doc.text(`Total: ${NOT_A_PRICE}, ${unassignedLines} line${unassignedLines === 1 ? '' : 's'} without a material`, margin, y + 2);
-  } else if (cost != null) {
-    if (y > pageH - margin - 10) { doc.addPage(); y = margin + 6; }
-    doc.setFontSize(9);
+    doc.text(`Total of the linked lines: £${Number(purchase.totals.cost).toFixed(2)}. ${incompleteWords(notLinked)}`, margin, y + 2);
+  } else {
     doc.setTextColor(...gold);
-    doc.text(
-      `Total: £${cost.toFixed(2)}`
-      + (boardCost != null ? `  (materials £${boardCost.toFixed(2)}` : '  (')
-      + (hwCost != null ? `${boardCost != null ? ', ' : ''}hardware £${hwCost.toFixed(2)}` : '')
-      + ')',
-      margin, y + 2,
-    );
+    doc.text(`Total: £${Number(purchase.totals.cost).toFixed(2)}`, margin, y + 2);
   }
 
   doc.save(exportFilename('project', 'pdf', new Date(), project?.name || null));

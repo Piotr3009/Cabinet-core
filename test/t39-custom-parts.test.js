@@ -37,67 +37,61 @@ const row = (rows, key) => rows.find((r) => r.key === key);
 
 const DOWELS = [{ id: 'custom_dowel', name: 'Dowels 8 × 40', unit: 'pcs', qtyPerUnit: 24 }];
 
-test('a custom row reaches the BOM at all', () => {
+// ─── T-CC2a REWRITES the seven purchase-list tests below by name ─────────────
+// CLAUDE.md T-CC2a laws 3 and 9: the purchase list is keyed by the catalogue
+// and priced through the company's links; the per-part assignment blob, where
+// T39's custom rows live, is NOT read by it (CONTRACT B). The blob keeps them
+// as saved (FROZEN 4, the normalisation tests below still hold) and the old
+// Assign window still shows them (F14). What a project buys that Cabinet Core
+// does not know is a BESPOKE row now (`project.bespoke`, the owner 12:50:
+// *"add materialy bespoke (od klienta na przyklad inne ironmongery)"*), and
+// these seven say so about it.
+const BESPOKE = [{ id: 'b_dowel', name: 'Dowels 8 x 40', qty: 24, unit: 'pcs', price: 0.03, suppliedByClient: false }];
+const bespokeRow = (pb, id = 'b_dowel') => pb.rows.find((r) => r.key === `bespoke:${id}`);
+
+test('a custom row of the old blob does not reach the purchase list; a bespoke row does', () => {
   const rows = mergeUnitMaterials([BUD], withCustom(DOWELS));
-  const line = row(rows, 'part:custom_dowel');
+  assert.equal(row(rows, 'part:custom_dowel'), undefined, 'the blob is not read by the purchase list');
+  assert.ok(!rows.some((r) => /Dowels 8 × 40/.test(r.name)));
+  const line = bespokeRow(purchaseBom([BUD], { profile: P, bespoke: BESPOKE }));
   assert.ok(line, 'a row the joiner typed must be on the list');
-  assert.equal(line.qty, 24);
-  assert.equal(line.unit, 'pcs');
-  assert.equal(line.name, 'Dowels 8 × 40');
-  assert.equal(line._assigned, false);
-  assert.equal(line.group, 'consumable');
+  assert.deepEqual([line.qty, line.unit, line.name, line.status, line.catalogueId], [24, 'pcs', 'Dowels 8 x 40', 'bespoke', null]);
 });
 
-test('the quantity is PER CABINET — nine cabinets need nine cabinets’ worth', () => {
-  const one = row(mergeUnitMaterials([BUD], withCustom(DOWELS)), 'part:custom_dowel');
-  const two = row(mergeUnitMaterials([BUD, WARDROBE], withCustom(DOWELS)), 'part:custom_dowel');
+test('a bespoke row is the project\'s own quantity, never multiplied by the cabinets', () => {
+  const one = bespokeRow(purchaseBom([BUD], { profile: P, bespoke: BESPOKE }));
+  const two = bespokeRow(purchaseBom([BUD, WARDROBE], { profile: P, bespoke: BESPOKE }));
   assert.equal(one.qty, 24);
-  assert.equal(two.qty, 48);
+  assert.equal(two.qty, 24);
 });
 
-test('assigned, it costs — and it costs off the same column everything else does', () => {
-  const rows = mergeUnitMaterials([BUD], withCustom(DOWELS, { custom_dowel: { material_id: 'dowel8' } }));
-  const line = row(rows, 'mat:dowel8');
-  assert.ok(line);
-  assert.equal(line.qty, 24);
-  assert.equal(line._assigned, true);
-  assert.equal(line.lineCost, Number((24 * 0.03).toFixed(2)));
+test('a bespoke row costs its own unit price; supplied by the client it costs nothing', () => {
+  assert.equal(bespokeRow(purchaseBom([BUD], { profile: P, bespoke: BESPOKE })).lineCost, 0.72);
+  const client = bespokeRow(purchaseBom([BUD], { profile: P, bespoke: [{ ...BESPOKE[0], suppliedByClient: true }] }));
+  assert.deepEqual([client.price, client.lineCost, client.words], [0, 0, 'Supplied by client']);
 });
 
-test('THE SAME MERGE PATH — a custom row on a board a registry part uses is ONE line', () => {
-  const rows = mergeUnitMaterials([BUD], withCustom(
-    [{ id: 'custom_strip', name: 'Packing strip', unit: 'm²', qtyPerUnit: 0.5 }],
-    { carcase_side: { material_id: 'egger_white' }, custom_strip: { material_id: 'egger_white' } },
-  ));
-  const lines = rows.filter((r) => r.key === 'mat:egger_white');
-  assert.equal(lines.length, 1, 'a second accumulator would have made two');
-  assert.ok(lines[0].parts.includes('custom_strip'));
-  assert.ok(lines[0].parts.includes('carcase_side'));
+test('a bespoke row never merges into a catalogue line (law 9: it never enters the catalogue)', () => {
+  const pb = purchaseBom([BUD], { profile: P, bespoke: [...BESPOKE, { id: 'b2', name: 'Dowels 8 x 40', qty: 4, unit: 'pcs', price: 0.03 }] });
+  assert.equal(pb.rows.filter((r) => r.bespoke).length, 2, 'two rows the joiner typed, two lines');
+  assert.ok(pb.rows.filter((r) => r.bespoke).every((r) => r.catalogueId === null && r.key.startsWith('bespoke:')));
 });
 
-test('the yield applies to a custom row exactly as it does to a registry part', () => {
-  const rows = mergeUnitMaterials([BUD], withCustom(
-    DOWELS, { custom_dowel: { material_id: 'dowel8', yield: 1.5 } },
-  ));
-  assert.equal(row(rows, 'mat:dowel8').qty, 36);
+test('no yield reaches a bespoke row', () => {
+  const pb = purchaseBom([BUD], { profile: P, bespoke: BESPOKE, links: new Map(), assignments: { base: { b_dowel: { yield: 2 } } } });
+  assert.equal(bespokeRow(pb).qty, 24);
 });
 
-test('an unassigned custom row makes the BOM INCOMPLETE, like any other', () => {
-  const bom = purchaseBom([BUD], withCustom(DOWELS));
-  assert.equal(bom.totals.complete, false);
-  assert.ok(bom.unassigned.some((r) => r.key === 'part:custom_dowel'));
+test('a bespoke row never makes the total incomplete', () => {
+  const pb = purchaseBom([BUD], { profile: P, bespoke: BESPOKE });
+  const without = purchaseBom([BUD], { profile: P });
+  assert.equal(pb.totals.incomplete, without.totals.incomplete);
+  assert.equal(pb.totals.lines, without.totals.lines + 1);
 });
 
-test('a quantity nobody can parse becomes ONE, not zero and not NaN', () => {
-  // Production Core's own answer (`Number(cp.qtyPerWindow) || 1`), copied
-  // deliberately: CLAUDE.md says where the spec is silent, copy Production
-  // Core rather than invent. A row somebody typed and left blank is one per
-  // cabinet, which is the likeliest thing they meant — and it is never a NaN
-  // multiplying a purchase order. The field itself cannot go below 0.01, so
-  // "none" is expressed by deleting the row, which is one click.
-  for (const q of [0, -1, null, undefined, 'x', NaN]) {
-    const rows = mergeUnitMaterials([BUD], withCustom([{ id: 'c1', name: 'Nothing', unit: 'pcs', qtyPerUnit: q }]));
-    assert.equal(row(rows, 'part:c1').qty, 1, `qtyPerUnit ${String(q)}`);
+test('a bespoke quantity nobody can parse is ONE, not zero and not NaN (Production Core\'s answer, kept)', () => {
+  for (const q of [null, undefined, 'x', NaN, -1]) {
+    assert.equal(bespokeRow(purchaseBom([BUD], { profile: P, bespoke: [{ ...BESPOKE[0], qty: q }] })).qty, 1, `qty ${String(q)}`);
   }
 });
 

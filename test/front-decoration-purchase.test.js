@@ -31,19 +31,31 @@ const narrow = { ALL_PARTS: [PART_REGISTRY.front_moulding] };
 const context = (base, extra = {}) => ({ materials, profile: P, assignments: { base }, ...extra });
 const near = (value, wanted) => assert.ok(Math.abs(value - wanted) < 1e-10, `${value} differs from ${wanted}`);
 
+// ─── T-CC2a REWRITES the purchase-list half of this file by name ─────────────
+// CLAUDE.md T-CC2a laws 2, 4 and 7: the purchase list is keyed by the CATALOGUE
+// entry the cut list resolves for each piece and is never read off the per-part
+// assignment blob. An applied strip is cut at its own 8 or 12 mm, which no sheet
+// of the catalogue is (18, 19, 22, 25 tonight), so each thickness is its OWN
+// line, "Not in the catalogue yet", never merged into the 25 mm door stock and
+// never priced. The cut list's own law (an explicit stock id that does not match
+// the strip is not resurrected) and the old window's badge and CNC warning are
+// untouched and still asserted below.
+const mouldingRows = (rows) => rows.filter((row) => row.parts.includes('front_moulding'));
+
 test('8 mm applied strips cannot merge into a 25 mm door stock purchase line', () => {
   const entry = make();
   const rows = mergeUnitMaterials([entry], context({
     door: { material_id: 'mdf25' }, front_moulding: { material_id: 'mdf25' },
   }));
-  const door = rows.find((row) => row.key === 'mat:mdf25');
-  assert.deepEqual(door.parts, ['door']);
-  near(door.qty, areaOf(entry.result.panels.filter((panel) => panel.part === 'FRONT')));
-  const moulding = rows.find((row) => row.key === 'part:front_moulding:8');
-  assert.equal(moulding._assigned, false);
-  assert.equal(moulding.lineCost, null);
-  assert.match(moulding.name, /8 mm/);
-  near(moulding.qty, areaOf(strips(entry)));
+  const doorPanels = entry.result.panels.filter((panel) => panel.part === 'FRONT');
+  const door = rows.find((row) => row.kind === 'sheet' && row.parts.includes('door'));
+  assert.equal(door.catalogueId, `sheet.generic.${doorPanels[0].thickness}`, 'the door\'s board, from the design');
+  assert.ok(!door.parts.includes('front_moulding'), 'no strip on the door\'s line');
+  const moulding = mouldingRows(rows);
+  assert.equal(moulding.length, 1);
+  assert.deepEqual([moulding[0].status, moulding[0].words, moulding[0].lineCost], ['not-in-catalogue', 'Not in the catalogue yet', null]);
+  assert.match(moulding[0].name, /8 mm/);
+  near(moulding[0].m2, Math.round(areaOf(strips(entry)) * 1e4) / 1e4);
   // T76 F5 · read off readiness: each strip a cut part of its own, the door
   // cut, and the gluing of the four a manual NOTE on the door's unit.
   for (const strip of strips(entry)) assert.equal(readinessOf(strip, { drills: entry.result.drills }), 'cut');
@@ -55,39 +67,34 @@ test('8 mm applied strips cannot merge into a 25 mm door stock purchase line', (
   assert.equal(note.material_role, 'note');
 });
 
-test('each moulding thickness is checked before family quantities merge', () => {
+test('each moulding thickness is its own line before anything merges', () => {
   const eight = make(8, 'eight');
   const twelve = make(12, 'twelve');
-  const ctx = context({ front_moulding: { material_id: 'mdf8', yield: 1.2 } }, narrow);
-  const purchase = purchaseBom([eight, twelve], ctx);
-  assert.equal(purchase.rows.length, 2);
-  near(purchase.rows.find((row) => row.key === 'mat:mdf8').qty, areaOf(strips(eight)) * 1.2);
-  const missing = purchase.rows.find((row) => row.key === 'part:front_moulding:12');
-  near(missing.qty, areaOf(strips(twelve)) * 1.2);
+  const purchase = purchaseBom([eight, twelve], context({ front_moulding: { material_id: 'mdf8', yield: 1.2 } }, narrow));
+  const rows = mouldingRows(purchase.rows);
+  assert.equal(rows.length, 2);
+  near(rows.find((row) => /8 mm/.test(row.name)).m2, Math.round(areaOf(strips(eight)) * 1e4) / 1e4);
+  near(rows.find((row) => /12 mm/.test(row.name)).m2, Math.round(areaOf(strips(twelve)) * 1e4) / 1e4);
   assert.equal(purchase.totals.complete, false);
-  assert.equal(purchase.unassigned.length, 1);
 });
 
-test('valid individual stock assignments win over family assignments and retain every strip', () => {
+test('an individual stock id on a strip does not price it: the purchase list reads the catalogue, never a stock row', () => {
   const entry = make(8);
   const parts = strips(entry);
   parts[0].meta.material_id = 'mdf8b';
-  const rows = mergeUnitMaterials([entry], context({ front_moulding: { material_id: 'mdf8', yield: 1.1 } }, narrow));
-  assert.equal(rows.length, 2);
-  near(rows.find((row) => row.key === 'mat:mdf8b').qty, parts[0].area_m2 * 1.1);
-  near(rows.find((row) => row.key === 'mat:mdf8').qty, areaOf(parts.slice(1)) * 1.1);
-  near(rows.reduce((sum, row) => sum + row.qty, 0), areaOf(parts) * 1.1);
-  assert.ok(rows.every((row) => row._assigned));
+  const rows = mouldingRows(mergeUnitMaterials([entry], context({ front_moulding: { material_id: 'mdf8', yield: 1.1 } }, narrow)));
+  assert.equal(rows.reduce((sum, row) => sum + row.m2, 0) > 0, true);
+  near(rows.reduce((sum, row) => sum + row.m2, 0), Math.round(areaOf(parts) * 1e4) / 1e4);
+  assert.ok(rows.every((row) => row.status === 'not-in-catalogue' && row.price === null));
 });
 
-test('an invalid individual assignment stays unassigned instead of falling back silently', () => {
+test('a wrong individual stock id is never a fallback to the door\'s board', () => {
   const entry = make(8);
   const parts = strips(entry);
   parts[0].meta.material_id = 'mdf25';
   const rows = mergeUnitMaterials([entry], context({ front_moulding: { material_id: 'mdf8' } }, narrow));
-  assert.ok(!rows.some((row) => row.key === 'mat:mdf25'));
-  near(rows.find((row) => row.key === 'part:front_moulding:8').qty, parts[0].area_m2);
-  near(rows.find((row) => row.key === 'mat:mdf8').qty, areaOf(parts.slice(1)));
+  near(mouldingRows(rows).reduce((sum, row) => sum + row.m2, 0), Math.round(areaOf(parts) * 1e4) / 1e4);
+  assert.ok(mouldingRows(rows).every((row) => row.kind === 'sheet' && row.catalogueId === null));
 });
 
 test('a valid palette-slot override resolves through the same material law as the cut list', () => {
@@ -95,34 +102,32 @@ test('a valid palette-slot override resolves through the same material law as th
   for (const panel of strips(entry)) panel.meta.material_key = 'front:f2';
   const design = { fronts: { types: [{ id: 'f1', material_id: 'mdf25' }, { id: 'f2', material_id: 'mdf12' }] } };
   const ctx = context({ front_moulding: { material_id: 'mdf8' } }, { ...narrow, design });
-  const rows = mergeUnitMaterials([entry], ctx);
-  assert.deepEqual(rows.map((row) => row.key), ['mat:mdf12']);
-  near(rows[0].qty, areaOf(strips(entry)));
   const cut = buildBom([entry], ctx);
-  assert.ok(cut.units[0].rows.filter((row) => row.part === 'FRONT-MOULDING').every((row) => row.material_id === 'mdf12'));
+  const cutStrips = cut.cutRows.filter((row) => row.part === 'FRONT-MOULDING');
+  assert.ok(cutStrips.every((row) => row.material_id === 'mdf12'), 'the cut list keeps the slot\'s stored id');
+  assert.ok(cutStrips.every((row) => row.catalogue_id === null), 'a 12 mm strip is in no sheet of the catalogue');
+  const rows = mouldingRows(mergeUnitMaterials([entry], ctx));
+  assert.equal(rows.length, 1);
+  near(rows[0].m2, Math.round(areaOf(strips(entry)) * 1e4) / 1e4);
 });
 
-test('unassigned thicknesses remain separate and explicit stock works without a project design', () => {
+test('thicknesses remain separate, with or without a project design', () => {
   const eight = make(8, 'eight');
   const twelve = make(12, 'twelve');
-  const ctx = context({}, narrow);
-  const missing = mergeUnitMaterials([eight, twelve], ctx);
-  assert.deepEqual(missing.map((row) => row.key).sort(), ['part:front_moulding:12', 'part:front_moulding:8']);
+  const missing = mouldingRows(mergeUnitMaterials([eight, twelve], context({}, narrow)));
+  assert.deepEqual(missing.map((row) => row.name.match(/(\d+) mm/)[1]).sort(), ['12', '8']);
   for (const panel of strips(twelve)) panel.meta.material_id = 'mdf12';
-  const assigned = mergeUnitMaterials([twelve], ctx);
-  assert.deepEqual(assigned.map((row) => row.key), ['mat:mdf12']);
-  assert.ok(assigned[0]._assigned);
+  assert.equal(mouldingRows(mergeUnitMaterials([twelve], context({}, narrow))).length, 1);
 });
 
-test('family overrides are validated against the physical strip thickness', () => {
+test('a family assignment does not reach the purchase list: the strips of two families are their thicknesses\' lines', () => {
   const base = make(8, 'base', 'BUD');
   const wardrobe = make(12, 'wardrobe', 'WARDROBE');
   const ctx = context({ front_moulding: { material_id: 'mdf8' } }, narrow);
   ctx.assignments.overrides = { front_moulding: { wardrobe: { material_id: 'mdf12' } } };
-  const rows = mergeUnitMaterials([base, wardrobe], ctx);
-  assert.deepEqual(rows.map((row) => row.key).sort(), ['mat:mdf12', 'mat:mdf8']);
-  near(rows.find((row) => row.key === 'mat:mdf8').qty, areaOf(strips(base)));
-  near(rows.find((row) => row.key === 'mat:mdf12').qty, areaOf(strips(wardrobe)));
+  const rows = mouldingRows(mergeUnitMaterials([base, wardrobe], ctx));
+  near(rows.find((row) => /8 mm/.test(row.name)).m2, Math.round(areaOf(strips(base)) * 1e4) / 1e4);
+  near(rows.find((row) => /12 mm/.test(row.name)).m2, Math.round(areaOf(strips(wardrobe)) * 1e4) / 1e4);
 });
 
 test('the cut BOM does not resurrect an explicitly rejected material id', () => {
@@ -136,13 +141,12 @@ test('the cut BOM does not resurrect an explicitly rejected material id', () => 
   assert.equal(row.material_label, 'Applied moulding stock 8 mm');
 });
 
-test('moulding sheet estimates use the front sheet family and honour narrowed registry walks', () => {
+test('a strip is cut off the front sheet family; with no catalogue sheet it carries no sheet count', () => {
   assert.equal(sheetFamilyOfPart('front_moulding'), 'fronts');
   const entry = make();
-  const profile = { ...P, cnc: { ...P.cnc, sheetFronts: { width: 1000, height: 1000 }, sheetCarcass: { width: 100, height: 100 } } };
-  const rows = mergeUnitMaterials([entry], context({ front_moulding: { material_id: 'mdf8' } }, { ...narrow, profile }));
-  assert.equal(rows[0].sheets, 1);
-  assert.deepEqual(mergeUnitMaterials([entry], context({}, { ALL_PARTS: [] })), []);
+  const rows = mouldingRows(mergeUnitMaterials([entry], context({ front_moulding: { material_id: 'mdf8' } }, { ...narrow, profile: P })));
+  assert.equal(rows[0].sheets, null, 'a sheet is counted only by a link to a catalogue sheet (law 6)');
+  assert.deepEqual(mergeUnitMaterials([], context({}, { ALL_PARTS: [] })), []);
 });
 
 const assignedContext = (entries, mouldingStock = 'mdf8') => {
@@ -160,6 +164,7 @@ test('assignment badge and CNC warning reject wrong or unavailable moulding stoc
     assert.deepEqual(missing.map((row) => row.partId), ['front_moulding']);
     assert.deepEqual(missing[0].families, ['base']);
     assert.match(cncAssignmentWarning(entries, ctx), /1 cut part has no board assigned \(Applied front mouldings\)/);
+    // T-CC2a: the purchase list is the catalogue's: an 8 mm strip is in no sheet of it, so the total is incomplete whatever the blob says.
     assert.equal(purchaseBom(entries, { ...ctx, ...narrow }).totals.complete, false);
   }
   const valid = assignedContext(entries);
@@ -173,7 +178,8 @@ test('assignment badge and CNC warning accept per-strip stock without a family a
   for (const panel of strips(entry)) panel.meta.material_id = 'mdf8b';
   assert.deepEqual(unassignedInUse([entry], ctx), []);
   assert.equal(cncAssignmentWarning([entry], ctx), null);
-  assert.equal(purchaseBom([entry], { ...ctx, ...narrow }).totals.complete, true);
+  // T-CC2a REWRITES this line by name: the purchase list no longer reads the blob, and 8 mm strip stock is not in the catalogue yet.
+  assert.equal(purchaseBom([entry], { ...ctx, ...narrow }).totals.complete, false);
   strips(entry)[0].meta.material_id = 'mdf25';
   ctx.assignments.base.front_moulding.material_id = 'mdf8';
   assert.deepEqual(unassignedInUse([entry], ctx).map((row) => row.partId), ['front_moulding']);
@@ -187,7 +193,8 @@ test('mixed strip thicknesses stay missing until every piece has matching stock'
   ctx.assignments.overrides = { front_moulding: { wardrobe: { material_id: 'mdf12' } } };
   assert.deepEqual(unassignedInUse(entries, ctx), []);
   assert.equal(cncAssignmentWarning(entries, ctx), null);
-  assert.equal(purchaseBom(entries, { ...ctx, ...narrow }).totals.complete, true);
+  // T-CC2a REWRITES this line by name: 8 and 12 mm strip stock is not in the catalogue yet, the total is incomplete.
+  assert.equal(purchaseBom(entries, { ...ctx, ...narrow }).totals.complete, false);
 });
 
 test('assignment checks accept valid palette overrides through the material resolver', () => {

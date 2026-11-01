@@ -22,14 +22,20 @@
 // the yellow lines do the honest talking.
 
 import { roundTo } from './format.js';
+import { DEFAULT_CABINET_PROFILE } from './profile.js';
 import { hingeAutomat, plateFamily } from './hinges.js';
 import { frontLegCount } from './legs.js';
 import { hardwareVariant, projectFrontThickness } from './projectSettings.js';
 
-/** The waste allowance, as the owner's percentage (15 until he says). */
+/**
+ * The waste allowance as a percentage: T-CC2a's ONE offcut number,
+ * `profile.materials.sheetYield` (1.10 is 10 percent; the owner, 01.11.2026,
+ * 13:28: *"dajmy 10 procent na offcuts"*). The second number this block kept
+ * (`profile.bom.wastePct` 15) is deleted by T-CC2a's Deletion licence.
+ */
 export function bomWastePct(profile) {
-  const n = Number(profile?.bom?.wastePct);
-  return Number.isFinite(n) && n >= 0 ? n : 15;
+  const y = Number(profile?.materials?.sheetYield ?? DEFAULT_CABINET_PROFILE.materials.sheetYield);
+  return Number.isFinite(y) && y >= 1 ? roundTo((y - 1) * 100, 2) : 0;
 }
 
 /** The PURCHASE sheet (2800×2070 until he says) — never the CNC bed. */

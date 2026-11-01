@@ -10,6 +10,10 @@
 // (10 rodzajow zawiasow, wszystkie przypisane), inaczej eksport BOM pisze not assigned materials"*. The BOM PDF is
 // WRITTEN (jsPDF's node build saves to the working directory, so the test stands in a directory of its own) and its
 // page streams are read back; the CSV is the purchase list's own text.
+// REWRITTEN BY T-CC2a F5.3 (CLAUDE.md T-CC2a law 7, *"this REWRITES T-CC1b F11's 'Not assigned materials' and 'not a
+// price' by name"*; the owner, 13:33, the total with "incomplete" when a line is not linked: *"zgoda"*): the words are
+// "Not linked" on the line and "Incomplete total, <n> lines not linked" beside the total; a line is linked through the
+// COMPANY'S links (the catalogue entry to a stock row), never assigned in the per-part blob.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -18,13 +22,13 @@ import { join } from 'node:path';
 
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
-import { buildBom, purchaseBom } from '../src/engine/bom.js';
-import { expandAssignments, normalizeAssignments } from '../src/engine/partRegistry.js';
-import {
-  exportProjectPdf, buildPurchaseBomCsvText, notAssignedWords, NOT_ASSIGNED,
-} from '../src/lib/exporters.js';
+import { buildBom, purchaseBom, incompleteWords, LINK_WORDS } from '../src/engine/bom.js';
+import { exportProjectPdf, buildPurchaseBomCsvText } from '../src/lib/exporters.js';
 import { hardwareKey } from '../src/stores/materialAssignmentStore.js';
-import { STOCK_MATERIALS, stock } from './fixtures/jc-stock.js';
+import { loadHardwareCatalogues } from '../src/lib/hardwareCatalogue.js';
+import { STOCK_MATERIALS } from './fixtures/jc-stock.js';
+
+loadHardwareCatalogues();
 
 const e = (id, params) => ({ unit: { id, type: params.type, params }, result: computeCabinet(params, P) });
 const JOB = [
@@ -33,54 +37,65 @@ const JOB = [
 ];
 const BOM = buildBom(JOB, { profile: P });
 const HINGES = BOM.hardware.filter((h) => h.role === 'hinges');
+const DESIGN = {
+  carcass: { types: [{ id: 'c1', label: 'Carcass 1', source: 'egger', finish_id: 'egger:W1000_9' }] },
+  fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'spray', colour: { hex: '#5e2129', name: '3005 Wine Red', system: 'RAL' } }] },
+};
+const STOCK = [
+  { id: 's-sheet', name: 'Egger W1000 18 mm', unit: 'sheet', price: 41, item_number: 'EG-1' },
+  { id: 's-any', name: 'A stock row', unit: 'pcs', price: 1.5, item_number: 'ANY-1' },
+];
 
-/** Every board role and every hardware line assigned, but the lines `leave` names. */
-function assigned({ leave = [] } = {}) {
-  const base = {};
-  for (const r of BOM.roles) base[r.role] = { material_id: stock('Egger W980').id };
-  const hardware = {};
-  for (const h of BOM.hardware) {
-    const key = hardwareKey(h);
-    hardware[key] = { material_id: leave.includes(key) ? '' : stock(h.role === 'hinges' ? 'Blum Clip top Blumotion' : 'Adjustable leg').id };
-  }
-  return { ...expandAssignments(normalizeAssignments({ ...base })), ...base, hardware };
+/** Every catalogue id the job buys linked, but the ids `leave` names. */
+function links({ leave = [] } = {}) {
+  const ids = purchaseBom(JOB, { links: new Map(), stock: STOCK, profile: P, design: DESIGN }).rows.map((r) => r.catalogueId).filter(Boolean);
+  return new Map(ids.filter((id) => !leave.includes(id)).map((id) => [id, {
+    cc_material_id: id, stock_item_id: id.startsWith('sheet.') ? 's-sheet' : 's-any', sheet_width_mm: 2800, sheet_length_mm: 2070,
+  }]));
 }
+const hingeIds = () => purchaseBom(JOB, { links: new Map(), stock: STOCK, profile: P, design: DESIGN }).rows
+  .filter((r) => (r.roles || []).includes('hinges') && r.catalogueId).map((r) => r.catalogueId);
 
 const pageTexts = (doc) => doc.internal.pages.slice(1).map((pg) => pg.join('\n')).join('\n');
 const count = (hay, needle) => hay.split(needle).length - 1;
-function pdfText(assignments) {
+function pdfText(map) {
   const was = process.cwd();
   const dir = mkdtempSync(join(tmpdir(), 'cc1b-f11-'));
   process.chdir(dir);
   try {
     return pageTexts(exportProjectPdf({
-      entries: JOB, project: { name: 'Words job', design: {} }, capture: null, assignments, materials: STOCK_MATERIALS,
+      entries: JOB, project: { name: 'Words job', design: DESIGN }, capture: null, links: map, stock: STOCK,
     }));
   } finally { process.chdir(was); rmSync(dir, { recursive: true, force: true }); }
 }
 
-test('F11.1 one unassigned hinge line: the words twice (the line and the cover), and no total as a price', () => {
+test('F11.1 one hinge line not linked: "Not linked" on the line, the incomplete words on the cover and beside the total', () => {
   assert.equal(HINGES.length, 2, 'the job buys two hinge specs');
-  const txt = pdfText(assigned({ leave: [hardwareKey(HINGES[0])] }));
-  assert.equal(count(txt, NOT_ASSIGNED), 2, txt);
-  assert.ok(txt.includes('Not assigned materials: 1 line. Assign them in Cabinet Core, Materials, before ordering.'));
-  assert.ok(!txt.includes('£'), 'no total is printed as a price');
-  assert.ok(txt.includes('Total: not a price'));
+  const [first] = hingeIds();
+  assert.ok(first, 'the hinge lines resolve to catalogue entries');
+  const txt = pdfText(links({ leave: [first] }));
+  assert.ok(count(txt, LINK_WORDS.notLinked) >= 1, txt);
+  assert.equal(count(txt, incompleteWords(1)), 2, 'the cover and the total');
+  assert.ok(txt.includes(`${incompleteWords(1)}. Link them in Cabinet Core, Materials, Link materials.`));
+  assert.match(txt, /Total of the linked lines: £\d+\.\d\d\. Incomplete total, 1 line not linked/);
+  assert.doesNotMatch(txt, /Not assigned materials|not a price/, 'T-CC1b\'s words are rewritten by name');
 });
 
-test('F11.1 the same job fully assigned prints the total and not the words', () => {
-  const txt = pdfText(assigned());
-  assert.equal(count(txt, NOT_ASSIGNED), 0);
+test('F11.1 the same job fully linked prints the total and not the words', () => {
+  const txt = pdfText(links());
+  assert.equal(count(txt, LINK_WORDS.notLinked), 0, txt);
+  assert.equal(count(txt, 'Incomplete total'), 0);
   assert.match(txt, /Total: £\d+\.\d\d/);
 });
 
 test('F11.1 the purchase list CSV keeps its WARNING row, with the same words', () => {
-  const bom = purchaseBom(JOB, { assignments: {}, materials: STOCK_MATERIALS, profile: P });
-  assert.ok(bom.totals.unassigned > 0);
+  const bom = purchaseBom(JOB, { links: new Map(), stock: STOCK, profile: P, design: DESIGN });
+  assert.ok(bom.totals.notLinked > 0);
   const csv = buildPurchaseBomCsvText(bom, {});
   const warning = csv.split('\n').find((l) => l.startsWith('WARNING,'));
-  assert.ok(warning.includes(notAssignedWords(bom.totals.unassigned)), warning);
+  assert.ok(warning.includes(incompleteWords(bom.totals.notLinked)), warning);
   assert.match(csv, /TOTAL \(INCOMPLETE\)/);
+  assert.ok(csv.includes(',Not linked,'));
 });
 
 // INT (F11.1, "the live BOM window shows the same header count as F10"): the window draws the Assign window's own
@@ -88,7 +103,8 @@ test('F11.1 the purchase list CSV keeps its WARNING row, with the same words', (
 test('F11.1 the live BOM window carries the count: the Assign window\'s for the old window, the links\' in the BOM (T-CC2a F10.4)', async () => {
   const { buildAssignLines, assignCount } = await import('../src/stores/materialAssignmentStore.js');
   const { readFileSync } = await import('node:fs');
-  const data = assigned({ leave: [hardwareKey(HINGES[0])] });
+  const hardware = Object.fromEntries(BOM.hardware.map((h) => [hardwareKey(h), { material_id: h === HINGES[0] ? '' : STOCK_MATERIALS[0].id }]));
+  const data = { hardware };
   const lines = buildAssignLines({ bom: BOM, data, materials: STOCK_MATERIALS });
   const hingeLines = lines.filter((l) => l.type === 'hardware' && l.role === 'hinges');
   assert.equal(hingeLines.length, 2, 'two hinge specs are two lines');

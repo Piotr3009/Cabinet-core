@@ -85,7 +85,7 @@ test('F11.1 the purchase list CSV keeps its WARNING row, with the same words', (
 
 // INT (F11.1, "the live BOM window shows the same header count as F10"): the window draws the Assign window's own
 // count, built by the same two functions; the count is asserted here and the window is shown to bind it.
-test('F11.1 the live BOM window carries the Assign window count: one unassigned hinge line is said in red', async () => {
+test('F11.1 the live BOM window carries the count: the Assign window\'s for the old window, the links\' in the BOM (T-CC2a F10.4)', async () => {
   const { buildAssignLines, assignCount } = await import('../src/stores/materialAssignmentStore.js');
   const { readFileSync } = await import('node:fs');
   const data = assigned({ leave: [hardwareKey(HINGES[0])] });
@@ -96,7 +96,13 @@ test('F11.1 the live BOM window carries the Assign window count: one unassigned 
   const c = assignCount(lines.filter((l) => l.qty !== 0 || l.type !== 'part'));
   assert.ok(c.missing >= 1);
   assert.match(c.missingText, /^Not assigned materials: \d+ lines?$/);
+  // REWRITTEN BY T-CC2a F10.4 (CLAUDE.md T-CC2a F5.3: *"this REWRITES T-CC1b F11's 'Not assigned materials' and
+  // 'not a price' by name"*, law 7, the owner 13:33 *"zgoda"*). It asserted the BOM window drew the Assign window's
+  // count (`assignCount(buildAssignLines(...))`, "Not assigned materials: <n> lines"); the BOM window now draws the
+  // purchase list's own: "<n> of <m> lines linked" and "Incomplete total, <n> lines not linked" (bom.js
+  // incompleteWords). The Assign window's count above stands for the old window, read only until T-CC2b (F14).
   const panel = readFileSync(new URL('../src/components/BomPanel.jsx', import.meta.url), 'utf8');
-  assert.match(panel, /assignCount\(buildAssignLines\(\{ bom, data: assignmentData, materials \}\)/);
-  assert.match(panel, /data-bom-assign-count="1"[\s\S]{0,200}lineCount\.text[\s\S]{0,200}lineCount\.missingText/);
+  assert.doesNotMatch(panel, /assignCount\(buildAssignLines/);
+  assert.match(panel, /data-bom-link-count=\{String\(linkedLines\)\}[\s\S]{0,300}`\$\{linkedLines\} of \$\{allLines\} lines linked`/);
+  assert.match(panel, /notLinked > 0 \? `, \$\{incompleteWords\(notLinked\)\}` : ''/);
 });

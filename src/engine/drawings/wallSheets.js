@@ -44,7 +44,7 @@ import { shakerFrameMm } from '../shaker.js';
 //
 // The sheet law (`setSheet.js`) lays every one of them; the builders draw the
 // engine's own boxes; this file only binds them in order and numbers them.
-// The unit card and the booklet are untouched (iron rule 4).
+// The unit card and the bound book of units are untouched (iron rule 4).
 //
 // ─── T81 F2 · THE OWNER'S ORDER ─────────────────────────────────────────────
 //
@@ -70,12 +70,14 @@ import { decorById, decorIdFromFinishId, decorLabel } from '../decors.js';
 import { worktopsFor } from '../worktop.js';
 
 /** The title strip's words, from the project and its title block. */
-export function titleFor({ project = {}, profile, no, name, date = '' }) {
+export function titleFor({ project = {}, profile, no, name, date = '', companyLogo = null }) {
   const tb = project.titleBlock || {};
   const S = profile.drawings.set;
   const job = String(project.number ?? project.project_number ?? '');
   return {
-    company: { ...S.company, ...(tb.company || {}) },
+    // T-CC1b F7 · the company's logo from Joinery Core rides beside the item's own; setSheet's logoOf takes the
+    // item's first. *"logo domyslne z JC albo przycisk wstaw inne logo"* (the owner, 01.11.2026).
+    company: { ...S.company, ...(tb.company || {}), ...(companyLogo ? { companyLogo } : {}) },
     client: project.client || '',
     address: tb.address || project.address || '',
     project: project.name || 'Untitled project',
@@ -129,7 +131,9 @@ export function finishesOf(design) {
  *   profile
  *   date          already formatted; the engine owns no clock
  *   sectionUnitId a cabinet the owner pointed at for one more section, or null
- *   renderImage   a data URL of the scene's render for the visualisation, or null
+ *   visuals       T-CC1b F8: { isoLeft, isoRight, render, ai }, each a data URL (or { dataUrl }) or null:
+ *                 the two angles the window captures, the user's own render and the chosen AI picture
+ *   companyLogo   T-CC1b F7: the company's logo from Joinery Core (a data URL logo), used where the item has none
  * @returns {Array<{no:string, name:string, wall:number|null, variant:string, sheet:object}>}
  */
 /** T75 F9 · the wall groups that stand against plaster: an island face's are left out. */
@@ -139,7 +143,7 @@ function onPlaster(groups) {
 
 export function wallDrawingSheets({
   entries = [], project = {}, room = null, worktops = [], frontTypeOf = null, profile,
-  date = '', design = null, sectionUnitId = null, renderImage = null,
+  date = '', design = null, sectionUnitId = null, visuals = null, companyLogo = null,
 }) {
   // T75 F9 · *"A face is NOT plaster ... not dimensioned as walls ... not
   // elevated"*, and wall elevations of island faces are NOT this turn: a
@@ -193,7 +197,7 @@ export function wallDrawingSheets({
       },
       caption: { title: `${no} · ${label.toUpperCase()} · ${name.toUpperCase()}`, sub },
       column: { room: theRoom, highlight: group.wall, arrow: true, notes: SET_NOTES },
-      title: titleFor({ project, profile, no, name: `${label} · ${name}`, date }),
+      title: titleFor({ project, profile, companyLogo, no, name: `${label} · ${name}`, date }),
     }));
   };
   for (const group of groups) {
@@ -211,14 +215,14 @@ export function wallDrawingSheets({
       drawing: { measure: () => measurePlan({ room: theRoom, profile }), build: (ctx) => buildPlan(entries, { which: 'base', room: theRoom, worktops: slabs, profile, ctx, frontTypeOf, shakerFrame }) },
       caption: { title: `${no} · PLAN · BASE UNITS`, sub: `Horizontal section at ${profile.drawings.set.planCut.base} above FFL, looking down. Wall units not shown.` },
       column: { room: theRoom, highlight: null, arrow: false, notes: SET_NOTES },
-      title: titleFor({ project, profile, no, name: 'Plan · base units', date }),
+      title: titleFor({ project, profile, companyLogo, no, name: 'Plan · base units', date }),
     }));
     push('Plan · wall units', 'plan-wall', null, (no) => layoutSetSheet({
       profile,
       drawing: { measure: () => measurePlan({ room: theRoom, profile }), build: (ctx) => buildPlan(entries, { which: 'wall', room: theRoom, worktops: slabs, profile, ctx, frontTypeOf, shakerFrame }) },
       caption: { title: `${no} · PLAN · WALL UNITS`, sub: `Horizontal section at ${profile.drawings.set.planCut.wall} above FFL, looking down. The worktop is seen below the cut.` },
       column: { room: theRoom, highlight: null, arrow: false, notes: SET_NOTES },
-      title: titleFor({ project, profile, no, name: 'Plan · wall units', date }),
+      title: titleFor({ project, profile, companyLogo, no, name: 'Plan · wall units', date }),
     }));
   }
   for (const group of groups) {
@@ -232,17 +236,25 @@ export function wallDrawingSheets({
       drawing: stationSet(group, stations, { room: theRoom, worktops: onWall, profile }),
       caption: { title: `${no} · ${label.toUpperCase()} · SECTIONS ${letters.toUpperCase()}`, sub: 'Vertical sections marked on the plans. One cut shows plinth, base unit, worktop, wall unit, wall and ceiling together.' },
       column: { room: theRoom, highlight: group.wall, arrow: false, notes: SET_NOTES },
-      title: titleFor({ project, profile, no, name: `${label} · Sections ${letters}`, date }),
+      title: titleFor({ project, profile, companyLogo, no, name: `${label} · Sections ${letters}`, date }),
     }));
   }
   if (entries.length) {
-    push('Visualisation', 'visual', null, (no) => layoutSetSheet({
-      profile,
-      drawing: { paper: true, build: (zones) => buildVisual(zones, { image: renderImage, finishes: finishesOf(design ?? project?.design), note: 'Colours are screen approximations; confirm against physical samples.' }) },
-      caption: { title: `${no} · VISUALISATION`, sub: 'Rendered from the 3D scene with the fixed export lighting rig, the same rig on every sheet, so two decors compare.' },
-      column: { room: theRoom, highlight: null, arrow: false, legend: false, notes: ['Worktop, sink, taps and appliances are indicative, supplied by others.'] },
-      title: { ...titleFor({ project, profile, no, name: 'Visualisation', date }), scale: 'NTS' },
-    }));
+    // ── T-CC1b F8.2 · TWO ANGLES AND THE RENDER AS SHEETS (law 8) ──
+    // The owner, 01.11.2026: *"dodac wizualizacje z drugiego kata, render wedlug wyboru, wizualizacja AI z
+    // renderu, max 3 proby, wybierasz jedna i dodajesz do rysunkow"*. In place of the one visualisation sheet,
+    // up to four, after the sections and before the cut list: the left and the right angle always, the user's
+    // own render and the chosen AI picture when the item carries them. Each is a sheet with its tick.
+    const finishes = finishesOf(design ?? project?.design);
+    for (const v of visualSheetsOf(visuals)) {
+      push(v.name, 'visual', null, (no) => layoutSetSheet({
+        profile,
+        drawing: { paper: true, build: (zones) => buildVisual(zones, { image: v.image, finishes, note: 'Colours are screen approximations; confirm against physical samples.' }) },
+        caption: { title: `${no} · ${v.name.toUpperCase()}`, sub: v.sub },
+        column: { room: theRoom, highlight: null, arrow: false, legend: false, notes: ['Worktop, sink, taps and appliances are indicative, supplied by others.'] },
+        title: { ...titleFor({ project, profile, companyLogo, no, name: v.name, date }), scale: 'NTS' },
+      }));
+    }
     // As many cut-list sheets as the job's units need; the totals on the last.
     const pages = cutListPages(setZones(profile, { column: false, caption: true }), entries);
     pages.forEach((page, i) => {
@@ -252,7 +264,7 @@ export function wallDrawingSheets({
         drawing: { paper: true, build: (zones) => buildCutList(zones, { entries, page, showTotals: i === pages.length - 1 }) },
         caption: { title: `${no} · ${name.toUpperCase()}`, sub: 'Every panel per unit from the engine, the same numbers the CNC sheets and the BOM carry. Fronts in magenta.' },
         column: false,
-        title: { ...titleFor({ project, profile, no, name, date }), scale: 'n/a' },
+        title: { ...titleFor({ project, profile, companyLogo, no, name, date }), scale: 'n/a' },
       }));
     });
   }
@@ -269,7 +281,7 @@ export function wallDrawingSheets({
   const first = out[0];
   if (first && first.make === null) {
     const index = out.map((sh) => ({ no: sh.no, name: sh.name, scale: sh.sheet ? sh.sheet.scaleLabel : 'NTS' }));
-    const t = titleFor({ project, profile, no: first.no, name: '3D', date });
+    const t = titleFor({ project, profile, companyLogo, no: first.no, name: '3D', date });
     first.sheet = layoutSetSheet({
       profile,
       drawing: { nts: true, build: (ctx) => buildRoom3d(groups, { room: theRoom, worktops: slabs, profile, ctx, frontTypeOf, shakerFrame }) },
@@ -280,6 +292,30 @@ export function wallDrawingSheets({
     delete first.make;
     stamp(first.sheet, first.no, of);
   }
+  return out;
+}
+
+/** A visual's picture: a data URL, or the `{ dataUrl }` a project keeps (`project.visuals.render`, `.ai`). */
+function pictureOf(v) {
+  const href = typeof v === 'string' ? v : v?.dataUrl;
+  return typeof href === 'string' && /^data:image\//i.test(href) ? href : null;
+}
+
+/**
+ * T-CC1b F8.2 · the visualisation sheets a set carries, in order: `[{ name, image, sub }]`. The two angles
+ * always (a frame that waits for its render says so); the render and the AI picture only when present.
+ */
+export function visualSheetsOf(visuals = null) {
+  const vs = visuals || {};
+  const rig = 'Rendered from the 3D scene with the fixed export lighting rig, the same rig on every sheet, so two decors compare.';
+  const out = [
+    { name: 'Visualisation, left', image: pictureOf(vs.isoLeft), sub: `From the three-quarter left. ${rig}` },
+    { name: 'Visualisation, right', image: pictureOf(vs.isoRight), sub: `From the three-quarter right. ${rig}` },
+  ];
+  const render = pictureOf(vs.render);
+  if (render) out.push({ name: 'Visualisation, render', image: render, sub: 'The render chosen in the Drawings window: the camera and the resolution of its own choosing.' });
+  const ai = pictureOf(vs.ai);
+  if (ai) out.push({ name: 'Visualisation, AI', image: ai, sub: 'An AI picture made from a render of this design: an impression for the client, never a dimension.' });
   return out;
 }
 

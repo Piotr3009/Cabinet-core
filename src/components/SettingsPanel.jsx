@@ -36,6 +36,8 @@ import ColourPicker from './ColourPicker.jsx';
 import FrontStyleGallery, { FrontStyleArt } from './FrontStyleGallery.jsx';
 import NumberField from './NumberField.jsx';
 import { shakerFrameMm } from '../engine/shaker.js';
+import { useAuthStore } from '../stores/authStore.js';
+import { STYLE_NOT_OFFERED, frontStylesFor, styleNotOffered } from '../lib/tenantFlags.js';
 
 // ─── THE SETTINGS SURFACE (turn 12, CLAUDE.md F1) ───────────────────────────
 //
@@ -75,6 +77,8 @@ import { shakerFrameMm } from '../engine/shaker.js';
  *                is two clicks behind it.
  */
 export default function SettingsPanel({ onRoomSetup = null }) {
+  // T-CC1b F14 . the ornate fronts are Skylon's (*"ornamenty zostaw tylko dla Skylon Joinery"*, the owner, 01.11.2026).
+  const tenantId = useAuthStore((s) => s.tenant?.id);
   // Select the STORED value and migrate in a memo: a selector that builds a new
   // object every call makes zustand's snapshot change on every render, which
   // React reports as "Maximum update depth exceeded".
@@ -1276,9 +1280,13 @@ export default function SettingsPanel({ onRoomSetup = null }) {
             two data entries and no component work (F4.2). */}
         <FrontStyleGallery
           value={design.fronts.style}
+          styles={frontStylesFor(tenantId, { current: design.fronts.style })}
           onPick={(id) => setDesign({ fronts: { ...design.fronts, ...frontStyleSelection(id, design.fronts) } })}
         />
 
+        {styleNotOffered(tenantId, design.fronts.style) && (
+          <p className="text-[11px] text-ink-400" data-style-not-offered>{STYLE_NOT_OFFERED}</p>
+        )}
         <FrontDecorationControls
           style={design.fronts.style}
           value={design.fronts.decoration}
@@ -1344,7 +1352,7 @@ export default function SettingsPanel({ onRoomSetup = null }) {
                     updateDoorStyle(style.id, { frontType: selected.style, decoration: selected.decoration });
                   }}
                 >
-                  {FRONT_STYLE_OPTIONS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  {frontStylesFor(tenantId, { current: style.frontType }).map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
                 </select>
                 <select
                   className="cc-input w-40"
@@ -1380,6 +1388,9 @@ export default function SettingsPanel({ onRoomSetup = null }) {
                 </button>
                 <button type="button" className="cc-btn-ghost text-status-danger" onClick={() => removeDoorStyle(style.id)}>×</button>
               </div>
+              {styleNotOffered(tenantId, style.frontType) && (
+                <p className="text-[11px] text-ink-400" data-style-not-offered>{STYLE_NOT_OFFERED}</p>
+              )}
               <FrontDecorationControls
                 style={style.frontType}
                 value={style.decoration}

@@ -1,0 +1,65 @@
+T-CC1b F16 . THE WALK (scripts/t-cc1b-walk.mjs)
+HEAD f882ed80 . 2026-11-01T03:24:52.182Z . the built app (vite preview 4173) behind the fake Joinery Core (http://127.0.0.1:4381)
+Every line PASS or FAIL with the number expected and the number read; a FAIL is written down, never patched.
+
+
+== station a ==
+PASS  [a] sign in as admin (a real click on the fake's login): the list of Joinery Core | expect: projects listed | read: 3
+NOTE  [a] THE STAGE (T-CC1a's New item flow by hand, a WARDROBE through the store, Ctrl+S) | Confirm project & continue > Confirm space & continue > Confirm section & continue > Next - Carcass 1 - board and sheet > carcass:c1=generic-18 > Next - What was chosen > Confirm section & continue > Next - Front 1 - colour, board and sheet > front:f1=generic-18 > Next - Shape, opening and shine > Confirm section & continue > Confirm section & continue > Confirm section & continue > Confirm & review project > Start designing | item itm-walk-1 | units WARDROBE
+PASS  [a] open the item "Walk wardrobe" of the fake (Open, a real click): the editor shows it | expect: project.id itm-walk-1 | read: itm-walk-1
+PASS  [a] the header: the item's name, and under it the JC number and project name | expect: "Walk wardrobe", then "Q-2001 ... Loft wardrobes" below it | read: {"text":"Walk wardrobe Q-2001 . Loft wardrobes . Smith Family","project":"Q-2001 . Loft wardrobes . Smith Family","left":838,"navRight":548,"lineBelow":true}
+PASS  [a] the job block stands to the RIGHT of the menus | expect: job.left > menus.right | read: {"left":838,"navRight":548}
+PASS  [a] the bar lists File, View, Settings, Spraying, Lighting, Output | expect: ["File","View","Settings","Spraying","Lighting","Output"] | read: ["File","View","Settings","Spraying","Lighting","Output"]
+PASS  [a] no Library and no Database on the bar | expect: neither | read: ["File","View","Settings","Spraying","Lighting","Output"]
+PASS  [a] ONE "View" on the screen (the scene corner's dropdown is gone) | expect: 1 | read: 1
+FRAME [a] f16-a-header.png
+
+== station b ==
+PASS  [b] click "Back to Joinery Core" (a real click): the browser lands on /dashboard.html | expect: /dashboard.html | read: /dashboard.html
+NOTE  [b] the fake's dashboard page answers | "Joinery Core /dashboard.html (fake)"
+PASS  [b] back: on /cabinet/ again | expect: /cabinet/ | read: /cabinet/ (was /cabinet/)
+NOTE  [b] the item opened again from the list for the next stations | true
+
+== station c ==
+PASS  [c] the rail's Add lists every family in the owner's order | expect: ["Kitchen","Wardrobes","Bathroom","Sets","Saved sets","Media wall","Hallway","Office"] | read: ["Kitchen","Wardrobes","Bathroom","Sets","Saved sets","Media wall","Hallway","Office"]
+PASS  [c] Media wall, Hallway, Office held open (soon) | expect: Media wall, Hallway, Office | read: ["Media wall","Hallway","Office"]
+PASS  [c] open Bathroom: four kits | expect: 4 | read: 4 ["vanity-2","vanity-3","vanity-4","mirror-cabinet"]
+PASS  [c] open Kitchen, Wall units, AVENTOS lift-up: four rows | expect: 4 | read: [{"id":"wud-hk","label":"AVENTOS HK top . lift up"},{"id":"wud-hs","label":"AVENTOS HS top . up and over"},{"id":"wud-hl","label":"AVENTOS HL top . lift parallel"},{"id":"wud-hf","label":"AVENTOS HF top . bi-fold up"}]
+PASS  [c] add the HK row (a real click): a WUD whose front_system is hk | expect: a WUD, front_system hk | read: [{"id":"u_h0equee","system":"hk"}]
+NOTE  [c] THE STAGE (the store's addDoors on every unit) | [1,1]
+FRAME [c] f16-c-aventos.png
+
+== station d ==
+PASS  [d] Output shows four entries | expect: 4 | read: 4 ["Cutting list CSV","BOM PDF","Part labels . 21 per sheet (Avery L7160)","Part labels . 44 per sheet"]
+FRAME [d] f16-d-output.png
+
+== station e ==
+PASS  [e] Drawings: no Card, no Front only | expect: neither | read: ["02 . Wall A . Fronts","03 . Wall A . Without fronts"]
+PASS  [e] the sheet list holds "Visualisation, left" and "Visualisation, right" | expect: both | read: ["3D","Wall A . Fronts","Wall A . Without fronts","Wall A . X-ray","Plan . base units","Plan . wall units","Wall A . Sections A-A","Visualisation, left","Visualisation, right","Cut list and materials"]
+PASS  [e] the company logo in the title block (company_settings.logo_url, fetched from the fake) | expect: data-title-block-logo="company", an image | read: {"kind":"company","src":"/fake/logo.png","logoFetches":2}
+FRAME [e] f16-e-drawings.png
+PASS  [e] press Generate on the AI card (a real click): three pictures arrive, three calls to /api/ai/visualise | expect: pictures 3, calls 3 | read: pictures 3, calls 3 {"fake-token-admin-1793503492791":3} {"200":3}
+PASS  [e] "Use this one" on the second: "Visualisation, AI" appears ticked | expect: listed and ticked | read: {"checked":true}
+PASS  [e] Export PDF (a real click): one download whose page count equals the ticked sheets | expect: 11 pages | read: 11 pages (Walk-wardrobe-wall-drawings-0111-0326.pdf, 24732140 bytes)
+FRAME [e] f16-e-ai.png
+
+== station f ==
+PASS  [f] Assign materials...: the six groups | expect: 6 | read: ["sheets","hinges","runners","internal","ironmongery","consumables"]
+PASS  [f] the hinge lines: a line per specification | expect: >= 1 (one per spec) | read: 2 ["hinges|6 per door \u00d7 1 . 155\u00b0 . CLIP top BLUMOTION . nickel . 45588965","hinge_plate"]
+PASS  [f] every chip "Not assigned" | expect: chips = lines, assigned 0 | read: {"lines":17,"chips":17,"assigned":0}
+PASS  [f] assign the 110 hinge from the right list (real clicks): the chip turns | expect: data-assign-assigned 1 | read: {"line":"hinges|6 per door \u00d7 1 . 155\u00b0 . CLIP top BLUMOTION . nickel . 45588965","turned":"1"}
+PASS  [f] the header says "<n> of <m> lines assigned" | expect: <n> of <m> lines assigned | read: {"text":"1 of 17 lines assigned Not assigned materials: 16 lines","missing":"16","total":"17"}
+FRAME [f] f16-f-assign.png
+PASS  [f] Output, BOM PDF (a real click): the PDF text holds "Not assigned materials" | expect: Not assigned materials | read: Walk-wardrobe-project-0111-0326.pdf, 44266 bytes, 11 times
+FRAME [f] f16-f-bom.png
+
+== station g ==
+PASS  [g] as Skylon Joinery: the front's styles offer the four ornate ones | expect: 4 | read: ["ORNATE_A_1","ORNATE_A_2","ORNATE_A_3","ORNATE_A_4"]
+NOTE  [g] the fake's tenant switched to another uuid, reload, the item opened | {"opened":true,"tenant":null}
+PASS  [g] another tenant: select a front: no ornate style offered | expect: styles listed, 0 ornate | read: 11 styles, ornate []
+FRAME [g] f16-g-other-tenant.png
+NOTE  [end] page errors the walk saw (uncaught) | none
+NOTE  [end] the fake's counters at the end (since the last reset) | {"me":1,"me401":0,"query":14,"queryByTable":{"company_settings":1,"stock_items":1,"stock_categories":1,"pipeline_projects":1,"projects":1,"clients":1,"cc_items":2,"cc_hardware":3,"cc_settings_sets":1,"cc_company_defaults":1,"cc_hardware_register":1},"queryRefused":6,"writesRefused":0,"starOnItems":0,"designReads":1,"rpc":{"cc_save_item":1},"rpcKeepalive":{},"rpcRefused":0,"getSession":0,"proxied":25,"ai":{"fake-token-admin-1793503492791":3},"aiStatus":{"200":3},"logo":2}
+
+RESULT: 29 PASS, 0 FAIL
+FRAMES: f16-a-header.png, f16-c-aventos.png, f16-d-output.png, f16-e-drawings.png, f16-e-ai.png, f16-f-assign.png, f16-f-bom.png, f16-g-other-tenant.png

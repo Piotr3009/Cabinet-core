@@ -83,7 +83,9 @@ test('PROBE · collision.js:816: a set unit stands at EXACTLY the x asked, or no
 });
 
 test('PROBE · library: `media` is the sets shelf now, `soon` deleted; `sets` is unchanged', () => {
-  assert.deepEqual(UNIT_CATEGORIES.map((c) => c.id), ['kitchen', 'wardrobe', 'sets', 'media']);
+  // AMENDED BY T-CC1b F4.2: Bathroom joins, Sets stand before Saved sets, three families held open
+  // (*"wszystkie rodzaje po lewej, czesc coming soon"*, the owner, 01.11.2026); `media` and `sets` unchanged.
+  assert.deepEqual(UNIT_CATEGORIES.map((c) => c.id), ['kitchen', 'wardrobe', 'bathroom', 'media', 'sets', 'media_wall', 'hallway', 'office']);
   const media = getCategory('media');
   assert.equal(media.soon, undefined);
   assert.equal(media.sets, true);

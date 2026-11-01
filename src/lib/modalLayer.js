@@ -144,6 +144,8 @@ export const MODAL_KINDS = Object.freeze({
   // joiner buys. A PROJECT window — it is about the whole job, so a centred
   // dialog is honest when the gesture that opened it had no anchor.
   'assign-materials': { about: 'project', label: 'Assign materials' },
+  // T-CC1b F9.3: the tenant's Joinery Core stock, read-only, the rail's Stock... row. A PROJECT window.
+  'jc-stock': { about: 'project', label: 'Stock' },
   // ─── TURN 44 (CLAUDE.md F1) ────────────────────────────────────────────
   // The wall, seen from the front. It is a step of the new-project flow and
   // it is about the PROJECT's own wall rather than about a thing already on

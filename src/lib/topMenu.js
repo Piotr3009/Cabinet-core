@@ -20,7 +20,11 @@
 // placed BEFORE Output." It is a BUTTON and not a dropdown — it opens the
 // Lighting panel beside itself — which MenuBar's data grammar carries as a
 // top-level entry with `run` and no `items`.
-export const MENU_ORDER = ['File', 'View', 'Library', 'Settings', 'Database', 'Spraying', 'Lighting', 'Output'];
+// ─── T-CC1b F3 and F4: LIBRARY AND DATABASE LEAVE THE BAR ────────────────────
+// The owner, 01.11.2026: *"Database niepotrzebne, wszystko jest w JC, Assign
+// materials juz jest po lewej"*; *"Library powinno byc po lewej"*. The rail's
+// Add is the Library's one door; Company defaults is a Settings entry.
+export const MENU_ORDER = ['File', 'View', 'Settings', 'Spraying', 'Lighting', 'Output'];
 
 /**
  * Put the menus in the owner's order.
@@ -45,69 +49,28 @@ export function orderMenus(menus = []) {
     .map(({ m }) => m);
 }
 
+// T-CC1b F3 · the Database menu's builder is deleted: *"Database niepotrzebne, wszystko jest w JC"* (the owner, 01.11.2026).
+// Its homes: Company defaults in Settings; Assign materials and Stock on the rail's Materials.
+
+// ─── T-CC1b F1 · THE WORDS OF THE JOB BLOCK AND THE WAY BACK ───────────────
+/** The label of the way back, the same on the Studio bar and the start screen. */
+export const BACK_TO_JC_LABEL = 'Back to Joinery Core';
+/** Where the way back goes: Joinery Core's dashboard. */
+export const JC_DASHBOARD = '/dashboard.html';
+
 /**
- * The Database menu (turn 11, CLAUDE.md F7).
- *
- * Three entries, and each one is enabled only where there is something behind
- * it. `Materials` is real — the assignment store is what Design Settings and the
- * BOM already read — and `Clients` and `Projects` are the JoineryCore halves,
- * held open with a "soon" badge in exactly the state the rest of the app's mock
- * mode is in. A menu entry that opened a half-answer would be worse than one
- * that says "not yet" (turn 4's reasoning, unchanged).
- *
- * @param {object} handlers  { onMaterials, onClients, onProjects }
+ * Line two of the job block (CLAUDE.md T-CC1b F1.1): `<number> · <JC project name> · <client>`.
+ * When the project's name is unknown (F1.3) the block shows the number alone.
  */
-export function buildDatabaseMenu({
-  onMaterials = null, onClients = null, onProjects = null, onCompanyDefaults = null,
-  onAssignMaterials = null,
-} = {}) {
-  return {
-    label: 'Database',
-    items: [
-      {
-        label: 'Materials…',
-        hint: 'The boards and hardware this workshop buys — what a cut list is costed against',
-        disabled: !onMaterials,
-        soon: !onMaterials,
-        run: (e) => onMaterials?.(e),
-      },
-      // ─── Turn 39 (CLAUDE.md F3) ───
-      // The owner: *"musi być Assign materials i później BOM"*. Reachable from
-      // the project ALWAYS, not only at creation — which is why it is a menu
-      // entry and not a step in the new-project wizard.
-      {
-        label: 'Assign materials…',
-        hint: 'Which board, which hinge, which runner — per part, per project. What the BOM is built from',
-        disabled: !onAssignMaterials,
-        soon: !onAssignMaterials,
-        run: (e) => onAssignMaterials?.(e),
-      },
-      // ─── Turn 22 (CLAUDE.md F2b.2 / F3) ───
-      // The storey between the code and the project: what this workshop fits
-      // when nobody has said otherwise, and — at the bottom of the same screen
-      // — what the app is actually working from (the hardware health line, so
-      // the owner never opens DevTools for it again).
-      {
-        label: 'Company defaults…',
-        hint: 'Hinges, plates, runners and boards this workshop fits — every new project starts here',
-        disabled: !onCompanyDefaults,
-        soon: !onCompanyDefaults,
-        run: (e) => onCompanyDefaults?.(e),
-      },
-      {
-        label: 'Clients…',
-        hint: 'JoineryCore clients — a later phase',
-        disabled: !onClients,
-        soon: !onClients,
-        run: (e) => onClients?.(e),
-      },
-      {
-        label: 'Projects…',
-        hint: 'Everything saved, and the recent jobs',
-        disabled: !onProjects,
-        soon: !onProjects,
-        run: (e) => onProjects?.(e),
-      },
-    ],
-  };
+export function jobProjectLine(project) {
+  const said = (v) => (v == null ? '' : String(v).trim());
+  const number = said(project?.number);
+  const name = said(project?.jcProjectName);
+  if (!name) return number;
+  return [number, name, said(project?.client)].filter(Boolean).join(' · ');
+}
+
+/** The browser leaves Cabinet Core for Joinery Core's dashboard. */
+export function goToJoineryCore(location = globalThis.location) {
+  location?.assign?.(JC_DASHBOARD);
 }

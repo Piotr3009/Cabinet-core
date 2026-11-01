@@ -210,6 +210,8 @@ export async function startItem({ name, project, newProject, db = withDb } = {})
   if (error) return { ok: false, row: null, error };
   newProject(row.name || name, {
     id: row.id, number: String(row.jc_project_number ?? project?.number ?? ''), client: project?.client || '',
+    // T-CC1b F1.3: the bound project's own name, for the header's second line (the store's only).
+    jcProjectName: project?.name || '',
   });
   return { ok: true, row, error: null };
 }

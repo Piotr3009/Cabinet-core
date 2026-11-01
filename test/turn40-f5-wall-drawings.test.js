@@ -88,6 +88,9 @@ test('F5 — the sheet list is HIS: /1, /2 per wall, and one horizontal section'
   // cover folded into its column), every wall's fronts, every wall without
   // fronts, every wall in X-ray, the plans, every wall's sections, the
   // visualisation, the cut list; numbered from 01.
+  // ─── AMENDED 01.11.2026 (T-CC1b F8.2): TWO ANGLES ───────────────────────
+  // *"dodac wizualizacje z drugiego kata"* (the owner, 01.11.2026): the one
+  // visualisation sheet became the left and the right angle.
   const sheets = sheetsOf(kitchen());
   assert.deepEqual(sheets.map((s) => s.name), [
     '3D',
@@ -96,13 +99,13 @@ test('F5 — the sheet list is HIS: /1, /2 per wall, and one horizontal section'
     'Wall A · X-ray', 'Wall B · X-ray',
     'Plan · base units', 'Plan · wall units',
     'Wall A · Sections A-A', 'Wall B · Sections A-A',
-    'Visualisation', 'Cut list and materials',
+    'Visualisation, left', 'Visualisation, right', 'Cut list and materials',
   ]);
   assert.deepEqual(sheets.map((s) => s.variant), [
     '3d', 'fronts', 'fronts', 'no-fronts', 'no-fronts', 'xray', 'xray',
-    'plan-base', 'plan-wall', 'sections', 'sections', 'visual', 'cutlist',
+    'plan-base', 'plan-wall', 'sections', 'sections', 'visual', 'visual', 'cutlist',
   ]);
-  assert.deepEqual(sheets.map((s) => s.no), ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13']);
+  assert.deepEqual(sheets.map((s) => s.no), ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14']);
   assert.equal(wallLabel(0), 'A');
   assert.equal(wallLabel(1), 'B');
   assert.equal(wallLabel(25), 'Z');
@@ -171,7 +174,8 @@ test('F5 — a WALL WITH NO CABINETS produces NO SHEET rather than an empty one'
   assert.deepEqual(lonely.map((s) => s.name), [
     '3D', 'Wall D · Fronts', 'Wall D · Without fronts', 'Wall D · X-ray',
     'Plan · base units', 'Plan · wall units', 'Wall D · Sections A-A',
-    'Visualisation', 'Cut list and materials',
+    // T-CC1b F8.2: the two angles in place of the one visualisation.
+    'Visualisation, left', 'Visualisation, right', 'Cut list and materials',
   ]);
   assert.ok(lonely.every((s) => s.wall == null || s.wall === 3));
 });
@@ -312,7 +316,8 @@ test('F5 — his title block: Client, Address, Project, Drawing, Job No, Scale, 
     assert.ok(texts.includes(label), `the block carries a ${label} cell`);
   }
   // T81 F2: the fronts sheet is 02 of 13 now, named as the owner orders the set.
-  for (const value of ['Mr Anderson', '14 Anderson Way', 'Anderson Kitchen', '02 · Wall A · Fronts', 'J-1042', 'B', '18/08/2026', 'PT', '02 / 13']) {
+  // T-CC1b F8.2: 02 of 14, the visualisation is the left and the right angle.
+  for (const value of ['Mr Anderson', '14 Anderson Way', 'Anderson Kitchen', '02 · Wall A · Fronts', 'J-1042', 'B', '18/08/2026', 'PT', '02 / 14']) {
     assert.ok(texts.some((t) => t.includes(value)), `…and its value: ${value}`);
   }
 });

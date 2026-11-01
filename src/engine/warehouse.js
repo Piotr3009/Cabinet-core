@@ -15,7 +15,7 @@
 // ─── ITS OWN TABLE ──────────────────────────────────────────────────────────
 //
 // *"Own table, not shared with PC."*  It is also not shared with Cabinet Core's
-// OWN `cc_materials`, which is the short stock list the assignment modal reads
+// OWN stock list (T-CC1b F9: Joinery Core's `stock_items`), which is the short stock list the assignment modal reads
 // (turn 39) and which has six columns to this one's twelve. Two lists with
 // different jobs and different shapes are two tables; merging them would have
 // meant one of the two screens losing fields it needs.

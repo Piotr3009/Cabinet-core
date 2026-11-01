@@ -215,10 +215,13 @@ test('F8 . an export on a dirty item awaits one save first; a failed save says s
   dirty = false;
   onExport();
   assert.deepEqual(order, ['save', 'export', 'export'], 'a clean item exports at once, no save');
-  // The six export callbacks of the page each run behind it.
+  // The export callbacks of the page each run behind it. AMENDED BY T-CC1b F5: `onDrawing` left with
+  // the Output entries it served (*"Output tylko: cutting list, BOM PDF, labels 21 i 44"*, the owner,
+  // 01.11.2026); the drawings leave from the Drawings window. Five callbacks remain, each behind the save.
   const page = code(read('src/pages/ConfiguratorPage.jsx'));
+  assert.equal(page.includes('const onDrawing = useCallback('), false, 'the Output drawings road is gone');
   for (const [name, call] of [['onExportCsv', 'onExportCsv()'], ['onExportBom', 'onExportBom()'], ['onExportPdf', 'onExportPdf()'],
-    ['onExportLabels', 'onExportLabels(opts)'], ['onExportDxfZip', 'onExportDxfZip(opts)'], ['onDrawing', 'onDrawing(kind, e)']]) {
+    ['onExportLabels', 'onExportLabels(opts)'], ['onExportDxfZip', 'onExportDxfZip(opts)']]) {
     const at = page.indexOf(`const ${name} = useCallback(`);
     assert.ok(at > 0, name);
     const body = page.slice(at, page.indexOf('}, [', at));

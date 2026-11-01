@@ -17,7 +17,7 @@
 // ─── WHY THE TABLES ARE EMPTY ───────────────────────────────────────────────
 //
 // Every rule below resolves to a MATERIAL ID — a row in this workshop's own
-// `cc_materials` list — and this app does not invent workshop numbers. So the
+// stock list (Joinery Core's `stock_items` since T-CC1b F9), and this app does not invent workshop numbers. So the
 // ladders live in `profile.materials.*Rules`, they ship empty, and a rule with
 // nothing to choose from returns a REASON rather than a guess:
 //

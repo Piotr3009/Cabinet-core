@@ -225,7 +225,11 @@ test('normalize is idempotent on every shape it accepts', () => {
 
 test('a blob stamped schema 1 — CLAUDE.md’s own code block — is read, not refused', () => {
   const d = normalizeAssignments({ schema: 1, base: { shelf: { material_id: 'A', yield: 1.15 } } });
-  assert.equal(d.schema, 2);
+  // REWRITTEN BY T-CC1b F10: the blob is schema 3 now (the hardware keys, *"10 rodzajow zawiasow, wszystkie
+  // przypisane"*, the owner, 01.11.2026); a schema 1 stamp is still read and lands on the current schema.
+  assert.equal(d.schema, ASSIGNMENT_SCHEMA);
+  assert.equal(ASSIGNMENT_SCHEMA, 3);
+  assert.deepEqual(d.hardware, {});
   assert.equal(d.base.shelf.material_id, 'A');
   assert.equal(d.base.shelf.yield, 1.15);
 });

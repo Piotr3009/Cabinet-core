@@ -123,7 +123,7 @@ import { browserStorage, companyWithLogo, companyWithLogoRef, projectWithLogo, p
 import { JC_OFFLINE, withDb } from '../lib/jcApi.js';
 import { PROJECT_FILE_FORMAT, PROJECT_FILE_VERSION } from '../lib/projectFile.js';
 // T-CC1a F9: the crash buffer, keyed by tenant and item (lib/crashBuffer.js), and the tenant it is keyed by.
-import { bufferKey, bufferOffWords, writeBuffer } from '../lib/crashBuffer.js';
+import { bufferDesignOf, bufferKey, bufferOffWords, writeBuffer } from '../lib/crashBuffer.js';
 import { saveNumbers } from '../lib/saveNumbers.js';
 import { onSignedOutFlush, useAuthStore } from './authStore.js';
 // T51 (CLAUDE.md F6 · decision 1): the light rig lives WITH THE PROJECT — *"a
@@ -1971,7 +1971,8 @@ export function flushCrashBuffer() {
   const { bufferMaxMb } = saveNumbers(getCabinetProfile());
   let res;
   try {
-    const design = st.projectForSave({ stamp: false, storage: localStorage });
+    // CHAT FIX 01.11.2026: the pictures ride the row, never the buffer (lib/crashBuffer.js bufferDesignOf).
+    const design = bufferDesignOf(st.projectForSave({ stamp: false, storage: localStorage }), { pending: st.project.visualsPending });
     res = writeBuffer(localStorage, bufferKey(tenantId, st.project.id), {
       savedAt: st.project.savedAt || null, dirty: Boolean(st.dirty), at: Date.now(), design,
     }, { maxMb: bufferMaxMb });
@@ -2052,6 +2053,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * company's name, tagline and address lines are typed once and REMEMBERED
    * on this computer (`titleBlockCompany`), so the next job opens with them.
    */
+  /**
+   * T-CC1b F8.1 / F13 · THE PICTURES FOR THE CLIENT, KEPT WITH THE ITEM. `project.visuals = { render: { dataUrl,
+   * preset, at }, ai: { dataUrl, prompt, at } }`: the user's own render (the Drawings window's Render...) and the
+   * one AI picture the user chose (components/drawings/AiVisualCard.jsx "Use this one"). Each is a JPEG data URL
+   * already kept under profile.visuals.maxKb by its caller; `null` removes it. Saved with the item (projectForSave
+   * carries the project whole); marks the job changed. *"wizualizacja AI z renderu, max 3 proby, wybierasz jedna
+   * i dodajesz do rysunkow"* (the owner, 01.11.2026).
+   */
+  setVisual: (slot, value) => {
+    if (slot !== 'render' && slot !== 'ai') return;
+    set((s) => {
+      const prev = s.project.visuals && typeof s.project.visuals === 'object' ? s.project.visuals : {};
+      const next = { ...prev };
+      if (value && typeof value === 'object' && value.dataUrl) next[slot] = { ...value };
+      else delete next[slot];
+      return { project: { ...s.project, visuals: next } };
+    });
+  },
+
   setTitleBlock: (patch) => {
     const prev = get().project.titleBlock || {};
     const next = { ...prev, ...(patch || {}) };
@@ -2060,7 +2080,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     let remembered = null;
     if (patch?.company) {
       next.company = { ...(prev.company || {}), ...patch.company };
-      remembered = rememberTitleBlockCompany(next.company);
+      // T-CC1b F7.2: an inserted logo (or 'none') is THIS item's only; the computer remembers the company
+      // without it, so the next item opens on the company's logo from Joinery Core (lib/jcLogo.js).
+      const { logo: _logo, ...company } = next.company;
+      remembered = rememberTitleBlockCompany(company);
     }
     set((s) => ({ project: { ...s.project, titleBlock: next } }));
     return { remembered };
@@ -2659,14 +2682,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   // T-CC1a F5 (law 4): an item is born bound. Its `id` is the one Joinery Core's `cc_create_item` returned,
   // its `number` the row's jc_project_number and its `client` the bound project's; CC mints no id of its own.
+  // T-CC1b F1.3: `jcProjectName`, the bound Joinery Core project's own name, rides the store ONLY (the header's
+  // second line); projectForSave never writes it, the binding lives in the row's columns.
   newProject: (name = 'Untitled project', {
-    id = null, number = '', client = '', room = null, design = null, company = undefined,
+    id = null, number = '', client = '', jcProjectName = '', room = null, design = null, company = undefined,
   } = {}) => set({
     project: {
       id: id || null,
       name: name || 'Untitled project',
       number: String(number || ''),
       client: String(client || ''),
+      jcProjectName: String(jcProjectName || ''),
       room: room ? migrateRoom(room) : DEFAULT_ROOM,
       // ─── Turn 22 (CLAUDE.md F2b.3): PREFILLED FROM THE COMPANY ROW ───────
       //
@@ -2708,7 +2734,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * An item never saved yet (design `{}`) opens as a fresh job bound to its row. Resolves `{ ok, error }`.
    * *"w cc musimy zapisywac na glownej stronie; projekty dzielimy na itemy"* (the owner, 30.10.2026).
    */
-  openItem: async (itemId, { client = '', db = withDb, storage = browserStorage() } = {}) => {
+  openItem: async (itemId, { client = '', jcProjectName = '', db = withDb, storage = browserStorage() } = {}) => {
     const res = await db((c) => c.from('cc_items')
       .select('id, name, revision, design, jc_pipeline_id, jc_project_id, jc_project_number, updated_at')
       .eq('id', itemId).single(), null);
@@ -2716,7 +2742,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (res?.error || !res?.data) {
       return { ok: false, error: String(res?.error?.message || res?.error || 'That item is not in Joinery Core any more.') };
     }
-    return get().openItemDesign(res.data, res.data.design, { client, storage });
+    return get().openItemDesign(res.data, res.data.design, { client, jcProjectName, storage });
   },
 
   /**
@@ -2726,7 +2752,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * (components/StartScreen.jsx) hands it the crash buffer's design and `dirty` set: the item opens unsaved,
    * never saved in silence. Resolves `{ ok, error }`.
    */
-  openItemDesign: (row, rowDesign, { client = '', storage = browserStorage(), dirty = false } = {}) => {
+  openItemDesign: (row, rowDesign, { client = '', jcProjectName = '', storage = browserStorage(), dirty = false } = {}) => {
     const design = rowDesign && typeof rowDesign === 'object' ? rowDesign : {};
     const version = Number(design.version);
     if (Number.isFinite(version) && version > PROJECT_FILE_VERSION) {
@@ -2741,11 +2767,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       name: row.name || 'Untitled item',
       number: String(row.jc_project_number ?? ''),
       client: String(client || ''),
+      jcProjectName: String(jcProjectName || ''),
       savedAt: row.updated_at || null,
       revision: row.revision ?? null,
     };
     if (!design.project || typeof design.project !== 'object') {
-      get().newProject(bound.name, { id: bound.id, number: bound.number, client: bound.client });
+      get().newProject(bound.name, { id: bound.id, number: bound.number, client: bound.client, jcProjectName: bound.jcProjectName });
       set((s) => ({ project: { ...s.project, savedAt: bound.savedAt, revision: bound.revision }, dirty: Boolean(dirty) }));
       return { ok: true, error: null };
     }
@@ -2755,6 +2782,36 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     get().loadProject(project, Array.isArray(design.units) ? design.units : []);
     if (dirty) set({ dirty: Boolean(dirty) });
     else get().markSaved();
+    // CHAT FIX 01.11.2026: a crash buffer keeps no pictures (lib/crashBuffer.js bufferDesignOf); a Restore reads
+    // them back from the row now, and the save waits for them (lib/persist.js), so a restored item never saves
+    // its row's render and AI picture away.
+    if (design.visualsOnRow) {
+      set((s) => ({ project: { ...s.project, visualsPending: true } }));
+      get().fetchRowVisuals().catch(() => {});
+    }
+    return { ok: true, error: null };
+  },
+
+  /**
+   * CHAT FIX 01.11.2026 · the item's pictures read back from its row after a Restore: ONE read of `cc_items` by
+   * id, its design's `project.visuals` merged UNDER any picture kept since the Restore. Resolves `{ ok, error }`;
+   * nothing to do when no read is pending.
+   */
+  fetchRowVisuals: async ({ db = withDb } = {}) => {
+    const id = get().project?.id;
+    if (!id || !get().project?.visualsPending) return { ok: true, error: null };
+    const res = await db((c) => c.from('cc_items').select('design').eq('id', id).maybeSingle(), null);
+    if (res?.mock) return { ok: false, error: JC_OFFLINE };
+    if (res?.error) return { ok: false, error: String(res.error?.message || res.error) };
+    const rowVisuals = res?.data?.design?.project?.visuals;
+    set((s) => {
+      if (s.project?.id !== id || !s.project.visualsPending) return {};
+      const { visualsPending: _p, ...project } = s.project;
+      const mine = project.visuals && typeof project.visuals === 'object' ? project.visuals : {};
+      const theirs = rowVisuals && typeof rowVisuals === 'object' ? rowVisuals : {};
+      const visuals = { ...theirs, ...mine };
+      return { project: Object.keys(visuals).length ? { ...project, visuals } : project };
+    });
     return { ok: true, error: null };
   },
 
@@ -12924,7 +12981,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       project = s.project;
     }
     // The binding lives in the row's columns (T-CC1a F4.3), never in the design.
-    const { jc_tenant_id: _t, jc_project_id: _p, jc_pipeline_id: _l, ...inner } = project || {};
+    // T-CC1b F1.3: the bound project's name (`jcProjectName`) is the store's only, never the design's.
+    // CHAT FIX 01.11.2026: `visualsPending` (the pictures being read back after a Restore) is the store's only.
+    const { jc_tenant_id: _t, jc_project_id: _p, jc_pipeline_id: _l, jcProjectName: _n, visualsPending: _v, ...inner } = project || {};
     const kept = projectWithLogoRef(storage, inner);
     return {
       format: PROJECT_FILE_FORMAT,

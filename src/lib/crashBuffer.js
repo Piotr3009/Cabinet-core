@@ -66,6 +66,21 @@ export function writeBuffer(storage, key, { savedAt = null, dirty = false, at = 
   return { ok: true, error: null };
 }
 
+/**
+ * CHAT FIX 01.11.2026 (the audit of T-CC1b): the design a buffer keeps, WITHOUT the item's pictures.
+ * `project.visuals` (the render and the AI picture, up to profile.visuals.maxKb each) are saved with the item
+ * on its row; carried here as well they took a two-picture item over profile.save.bufferMaxMb and the crash
+ * buffer went off for good. The buffer marks `visualsOnRow` instead, so a Restore reads them back from the row
+ * (projectStore fetchRowVisuals) before anything is saved. `pending`: the open item's pictures are still being
+ * read back after a Restore, so the mark stays.
+ */
+export function bufferDesignOf(design, { pending = false } = {}) {
+  if (!design || typeof design !== 'object' || !design.project || typeof design.project !== 'object') return design;
+  const { visuals, visualsPending: _p, ...project } = design.project;
+  const had = Boolean(visuals && typeof visuals === 'object' && Object.keys(visuals).length) || Boolean(pending);
+  return had ? { ...design, project, visualsOnRow: true } : { ...design, project };
+}
+
 /** One buffer read back, or null (absent or unreadable). */
 export function readBuffer(storage, key) {
   try {

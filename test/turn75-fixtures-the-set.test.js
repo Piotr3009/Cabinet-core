@@ -224,7 +224,8 @@ test('T75 set · Herbal Hill through the store: his nine sheets, his slab on the
   assert.deepEqual(set.map((s) => `${s.no} ${s.name}`), [
     '01 3D', '02 Wall A · Fronts', '03 Wall A · Without fronts', '04 Wall A · X-ray',
     '05 Plan · base units', '06 Plan · wall units', '07 Wall A · Sections A-A and B-B',
-    '08 Visualisation', '09 Cut list and materials',
+    // AMENDED 01.11.2026 (T-CC1b F8.2): *"dodac wizualizacje z drugiego kata"*, the two angles in place of the one visualisation.
+    '08 Visualisation, left', '09 Visualisation, right', '10 Cut list and materials',
   ]);
   const fronts = sheetOf(set, 'fronts');
   // AMENDED 22.10.2026 (T81 F8): the legend's WORKTOP swatch wears the slab's tint (`meta: 'legend'`) and is not a slab.

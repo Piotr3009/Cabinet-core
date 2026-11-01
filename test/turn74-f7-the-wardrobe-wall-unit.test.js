@@ -96,7 +96,7 @@ test('T74 F7 · filed with the wardrobes: the library\'s wardrobe category, its 
   // AMENDED BY T75 F18: …and the low unit.
   // AMENDED BY T82 F2: + the HAWA pocket, *"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2).
   // AMENDED BY T82 F9: + the Bathroom group's three vanity units, *"new library group "Bathroom" in the Kitchen library and in the wardrobe library"* (CLAUDE.md T82 F9).
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET', 'VANITY2', 'VANITY3', 'VANITY4', 'MIRROR_CABINET'] /* AMENDED BY T75 F4: + the Corner L wardrobe; AMENDED BY T83 F5: + the mirror cabinet under Bathroom, CLAUDE.md T83 F5 */);
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET'] /* AMENDED BY T-CC1b F4.2: the Bathroom's four left for their own family, *"lazienki w kuchniach itd."* (the owner, 01.11.2026) */ /* AMENDED BY T75 F4: + the Corner L wardrobe; AMENDED BY T83 F5: + the mirror cabinet under Bathroom, CLAUDE.md T83 F5 */);
   assert.ok(UNIT_TYPE_ORDER.includes('WARDROBE_WALL'));
   assert.equal(UNIT_NUM_PREFIX.WARDROBE_WALL, 'WW');
   assert.deepEqual(P.wardrobeWallUnit.defaults, { width: 600, height: 720, depth: 568, mountHeight: 1500 });

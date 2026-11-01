@@ -23,7 +23,9 @@ import {
 } from '../src/engine/lifts.js';
 import { AVENTOS_CATALOGUE, loadHardwareCatalogues } from '../src/lib/hardwareCatalogue.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
-import { MOCK_MATERIALS } from '../src/stores/materialAssignmentStore.js';
+// REWRITTEN BY T-CC1b F9: the sample rows are deleted (*"materialy z JC (jego baza)"*, the owner, 01.11.2026);
+// two JC stock rows of the fixture, read through toMaterial, carry the board's weight as a stock record would.
+import { STOCK_MATERIALS, stock } from './fixtures/jc-stock.js';
 
 loadHardwareCatalogues();
 
@@ -134,14 +136,15 @@ test('a front’s weight is its area times that, in kilogrammes', () => {
 
 test('a panel weighs what the board it is CUT FROM weighs (turn 16’s resolver)', () => {
   const panel = { w: 600, h: 720, thickness: 18 };
-  const mfc = MOCK_MATERIALS.find((m) => m.id === 'mat_mfc18_white');
-  const mdf = MOCK_MATERIALS.find((m) => m.id === 'mat_mdf18');
+  const mfc = { ...stock('Egger W980'), kg_m2: 12 };
+  const mdf = { ...stock('MDF 18'), kg_m2: 14 };
+  const materials = STOCK_MATERIALS.map((m) => (m.id === mfc.id ? mfc : m.id === mdf.id ? mdf : m));
 
   const onMfc = panelWeight({
-    panel, material: { material_id: mfc.id }, materials: MOCK_MATERIALS, profile: P,
+    panel, material: { material_id: mfc.id }, materials, profile: P,
   });
   const onMdf = panelWeight({
-    panel, material: { material_id: mdf.id }, materials: MOCK_MATERIALS, profile: P,
+    panel, material: { material_id: mdf.id }, materials, profile: P,
   });
   assert.equal(onMfc.kgM2, 12);
   assert.equal(onMdf.kgM2, 14);

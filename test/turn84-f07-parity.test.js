@@ -38,9 +38,11 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 import { UNIT_CATEGORIES, UNIT_TYPES } from '../src/engine/types.js';
-import { KITCHEN_LIBRARY, WARDROBE_LIBRARY, flattenLibrary } from '../src/engine/library.js';
+import {
+  BATHROOM_LIBRARY, KITCHEN_LIBRARY, WARDROBE_LIBRARY, flattenLibrary,
+} from '../src/engine/library.js';
 import { SHIPPED_SETS } from '../src/engine/sets.js';
-import { buildDatabaseMenu } from '../src/lib/topMenu.js';
+// AMENDED BY T-CC1b F3: `buildDatabaseMenu` is deleted (*"Database niepotrzebne, wszystko jest w JC, Assign materials juz jest po lewej"*, the owner, 01.11.2026).
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -161,20 +163,40 @@ const PRO = proFiles();
 
 // === 1 · THE TOP MENU: 48 LEAVES, BY LABEL AND HANDLER, THROUGH ONE ARRAY ====
 
-test('F7 parity · the census of this tree, static half, is GREEN against census-main.json', () => {
+// AMENDED BY T-CC1b F3, F4, F5, F9.3 (the Deletion licence, by name): the census's static half is RED
+// only on the rows those deletions move, each smaller and each named here; nothing else is RED.
+// The owner, 01.11.2026: *"Database niepotrzebne"*; *"Library powinno byc po lewej"*; *"Output tylko:
+// cutting list, BOM PDF, labels 21 i 44"*; *"lazienki w kuchniach itd."*; *"materialy z JC (jego baza)"*.
+const LICENSED_RED = new Set([
+  'static.topMenu.leaves', 'static.topMenu.Output', 'static.modalKinds',
+  'static.library.kitchen', 'static.library.wardrobe', 'static.library.typeSlots', 'static.library.registryLeaves',
+  'static.topMenu.Library', 'static.topMenu.Database', 'static.topMenu.pathsMissing',
+  'static.modalKinds.missing', 'static.library.typesMissing',
+]);
+test('F7 parity · the census of this tree, static half, is RED only on the rows T-CC1b licensed', () => {
   assert.ok(NOW.json, `the census did not run:\n${NOW.stdout}\n${NOW.stderr}`);
-  assert.equal(NOW.status, 0, `the census found RED rows:\n${NOW.stdout}`);
-  assert.match(NOW.stdout, /\bGREEN\b/);
   const red = (NOW.json.comparison?.rows || []).filter((r) => /^RED/.test(r.status));
-  assert.deepEqual(red.map((r) => `${r.key}: ${r.was} -> ${r.value} ${r.status}`), []);
+  assert.deepEqual(red.filter((r) => !LICENSED_RED.has(r.key)).map((r) => `${r.key}: ${r.was} -> ${r.value} ${r.status}`), []);
+  const row = (key) => red.find((r) => r.key === key);
+  // Library 4 + Database 5 + Output 10 leaves, by name; the Bathroom's 4 kits out of Kitchen and of Wardrobes.
+  if (row('static.topMenu.pathsMissing')) assert.equal(row('static.topMenu.pathsMissing').value, 19);
+  if (row('static.library.typesMissing')) assert.equal(row('static.library.typesMissing').value, 8);
+  // The warehouse window (replaced by the stock window, F9.3) and the render window (opened inside the Drawings window, F8.1).
+  if (row('static.modalKinds.missing')) assert.equal(row('static.modalKinds.missing').value, 2);
 });
 
 test('F7 parity · every top-menu leaf of the census, by label and by the SAME handler and call', () => {
   const was = MAIN.static.topMenu.leaves;
   const now = new Map((NOW.json?.static?.topMenu?.leaves || []).map((l) => [l.path, l]));
   assert.equal(was.length, 48);
+  // AMENDED BY T-CC1b F3, F4, F5: the Library and Database menus and ten Output leaves are deleted by
+  // name (the Deletion licence); their doors are found by test/turn-cc1b-f05-output.test.js and
+  // test/turn-cc1b-f03-database.test.js. Every other leaf keeps its label, handler and call.
+  const OUTPUT_KEPT = ['Output > Cutting list CSV', 'Output > BOM PDF', 'Output > Part labels · 21 per sheet (Avery L7160)', 'Output > Part labels · 44 per sheet'];
+  const licensed = (path) => /^(?:Library|Database) > /.test(path) || (/^Output > /.test(path) && !OUTPUT_KEPT.includes(path));
   for (const leaf of was) {
     const mine = now.get(leaf.path);
+    if (licensed(leaf.path)) { assert.equal(mine, undefined, `${leaf.path} is licensed to go and is still there`); continue; }
     assert.ok(mine, `GONE: ${leaf.path}`);
     assert.equal(mine.label, leaf.label, `${leaf.path}: label`);
     assert.equal(mine.handler, leaf.handler, `${leaf.path}: handler`);
@@ -182,7 +204,8 @@ test('F7 parity · every top-menu leaf of the census, by label and by the SAME h
     assert.equal(mine.bound, leaf.bound, `${leaf.path}: what TopBar hands the builder`);
     assert.equal(mine.page, leaf.page, `${leaf.path}: what the page hands TopBar`);
   }
-  assert.deepEqual(NOW.json.static.topMenu.order, MAIN.static.topMenu.order, 'the owner\'s menu order moved');
+  assert.deepEqual(NOW.json.static.topMenu.order, MAIN.static.topMenu.order.filter((m) => m !== 'Library' && m !== 'Database'),
+    'the owner\'s menu order, less the two menus T-CC1b deleted');
 });
 
 test('F7 parity · ONE menus array, TopBar\'s own, drawn by the same MenuBar in both faces', () => {
@@ -225,7 +248,9 @@ test('F7 parity · the Output is the legacy Output, whole, and nothing in the St
   const builders = PRO.filter((f) => /\bbuildOutputMenu\(/.test(code(read(f))));
   assert.deepEqual(builders.filter((f) => f !== 'src/lib/outputMenu.js'), ['src/components/TopBar.jsx']);
   assert.equal(MAIN.static.topMenu.perMenu.Output, 14);
-  assert.equal(NOW.json?.static?.topMenu?.perMenu?.Output, 14);
+  // AMENDED BY T-CC1b F5: *"Output tylko: cutting list, BOM PDF, labels 21 i 44"* (the owner, 01.11.2026);
+  // the ten that left are found at their new doors by test/turn-cc1b-f05-output.test.js.
+  assert.equal(NOW.json?.static?.topMenu?.perMenu?.Output, 4);
 });
 
 // === 2 · THE 14 SCENE-TOOLBAR CONTROLS, EACH AT ITS STUDIO HOME ==============
@@ -237,17 +262,20 @@ test('F7 parity · the Output is the legacy Output, whole, and nothing in the St
 // handler as that home calls it. The handler must stand in the same function
 // as the hook: the control's own, not somewhere else in the file.
 
+// AMENDED BY T-CC1b F2: the View dropdown (SceneViewMenu.jsx) is DELETED (*"dwa menu View, jedno
+// wystarczy"*, the owner, 01.11.2026); its three toolbar switches live on the quick toggles (*"tak te
+// przyciski zostaja sa mega przydatne"*).
 const TOOLBAR_HOMES = [
   ['Undo', 'undo', 'src/components/TopBar.jsx', 'topbar-undo', /\bundo\b/],
   ['Redo', 'redo', 'src/components/TopBar.jsx', 'topbar-redo', /\bredo\b/],
   // T86B F7: *"dimension powinien pojsc do glownego paska"* (the owner, 30.10.2026, 21:54).
   ['Show dimensions', 'toggleDimensions', 'src/components/studio/SceneToggles.jsx', 'toggle-dimensions', /\btoggleDimensions\b/],
-  ['Front dimensions', 'toggleFrontDimensions', 'src/components/studio/SceneViewMenu.jsx', 'view-menu', /\btoggleFrontDimensions\b/],
+  ['Front dimensions', 'toggleFrontDimensions', 'src/components/studio/SceneToggles.jsx', 'toggle-front-dimensions', /\btoggleFrontDimensions\b/],
   ['Outlines', 'toggleOutlines', 'src/components/studio/SceneToggles.jsx', 'toggle-outlines', /\btoggleOutlines\b/],
   ['X-ray', 'toggleXray', 'src/components/studio/SceneToggles.jsx', 'toggle-xray', /\btoggleXray\b/],
-  ['Props', 'toggleProps', 'src/components/studio/SceneViewMenu.jsx', 'view-menu', /\btoggleProps\b/],
+  ['Props', 'toggleProps', 'src/components/studio/SceneToggles.jsx', 'toggle-props', /\btoggleProps\b/],
   ['Hide fronts', 'toggleHideFronts', 'src/components/studio/SceneToggles.jsx', 'toggle-hide-fronts', /\btoggleHideFronts\b/],
-  ['Measure', 'toggleRuler', 'src/components/studio/SceneViewMenu.jsx', 'view-menu', /\btoggleRuler\b/],
+  ['Measure', 'toggleRuler', 'src/components/studio/SceneToggles.jsx', 'toggle-measure', /\btoggleRuler\b/],
   ['Open all / Close all', 'toggleAllFronts(doorEntries)', 'src/components/studio/SceneToggles.jsx', 'toggle-open-all', /toggleAllFronts\(doorEntries\)/],
   ['BOM', 'setBomOpen(!bomOpen)', 'src/components/TopBar.jsx', 'topbar-bom', /setBomOpen\(!bomOpen\)/],
   ['Check . N', 'toggleCheck', 'src/components/studio/StudioRail.jsx', 'rail-check', /\btoggleCheck\b/],
@@ -283,17 +311,16 @@ for (const [name, handler, file, hook, pattern] of TOOLBAR_HOMES) {
   });
 }
 
-// T86B F7: Dimensions left the View menu for the bar (*"dimension powinien pojsc
-// do glownego paska"*, the owner, 30.10.2026, 21:54): the menu re-homes three.
-test('F7 parity · the View menu holds the three toolbar switches it re-homes, by their ids', () => {
-  const view = code(read('src/components/studio/SceneViewMenu.jsx'));
-  assert.doesNotMatch(view, /toggleDimensions/, 'Dimensions lives on the bar now');
-  for (const [id, pattern] of [['frontDimensions', /run: toggleFrontDimensions/],
-    ['props', /run: toggleProps/], ['measure', /run: toggleRuler/]]) {
-    assert.match(view, new RegExp(`'${id}'`), `View lists no ${id}`);
-    const at = view.search(new RegExp(`\\n\\s+${id}: \\{`));
-    assert.ok(at >= 0, `View has no entry for ${id}`);
-    assert.match(view.slice(at, closeBrace(view, view.indexOf('{', at)) + 1), pattern, `View's ${id} calls something else`);
+// REWRITTEN BY T-CC1b F2: the View dropdown is gone (*"dwa menu View, jedno wystarczy"*, the owner,
+// 01.11.2026); the quick toggles hold the three switches it re-homed, by their ids.
+test('F7 parity · the quick toggles hold the three toolbar switches the deleted View dropdown re-homed, by their ids', () => {
+  assert.equal(existsSync(join(ROOT, 'src/components/studio/SceneViewMenu.jsx')), false, 'the dropdown is deleted');
+  const toggles = code(read('src/components/studio/SceneToggles.jsx'));
+  for (const [id, pattern] of [['frontDimensions', /toggleFrontDimensions/],
+    ['props', /toggleProps/], ['measure', /toggleRuler/]]) {
+    const at = toggles.search(new RegExp(`\\n\\s+${id}: \\{`));
+    assert.ok(at >= 0, `the toggles have no entry for ${id}`);
+    assert.match(toggles.slice(at, closeBrace(toggles, toggles.indexOf('{', at)) + 1), pattern, `the toggles' ${id} calls something else`);
   }
 });
 
@@ -357,26 +384,36 @@ test('F7 parity · the 26 window kinds less the deleted auth window are each sti
     }
   }
   const gone = MAIN.static.modalKinds.kinds.map((k) => k.kind).filter((k) => !opened.has(k));
-  assert.deepEqual(gone, ['auth'], `no PRO file opens: ${gone.join(', ')}`);
+  // AMENDED BY T-CC1b F9.3: the rail's Stock... opens Joinery Core's stock (`jc-stock`), which replaces
+  // the local warehouse window it opened (*"materialy z JC (jego baza)"*, the owner, 01.11.2026); the
+  // Database menu's Materials... died with the menu (F3). The warehouse window stays mounted (FROZEN 4).
+  // AMENDED BY T-CC1b F8.1: the Render window is opened from inside the Drawings window (its own mount,
+  // *"render wedlug wyboru"*, the owner, 01.11.2026), so no file opens the kind 'render' by name.
+  assert.deepEqual([...gone].sort(), ['auth', 'render', 'warehouse'], `no PRO file opens: ${gone.join(', ')}`);
+  assert.ok(opened.has('jc-stock'), 'the stock window is opened');
 });
 
 // === 5 · THE LIBRARY ==========================================================
 
-test('F7 parity · the library: the same categories, labels, type slots and types; the same registry and sets', () => {
+// REWRITTEN BY T-CC1b F4.2 and F15: the owner, 01.11.2026: *"wszystkie rodzaje po lewej, czesc coming
+// soon"*; *"lazienki w kuchniach itd."*; *"szafki AVENTOS musza byc zrobione"*. The Bathroom's four kits
+// leave Kitchen and Wardrobes for their own family; three families are held open; the Kitchen's wall
+// units gain the four AVENTOS rows. Not one kit is lost: every type main reached is reached.
+test('F7 parity · the library: every type main reached is reached, Bathroom its own family, the same sets', () => {
   const was = MAIN.static.library;
-  assert.deepEqual(
-    UNIT_CATEGORIES.map((c) => ({
-      id: c.id, label: c.label, count: c.types.length, types: [...c.types],
-    })),
-    was.categories.map((c) => ({
-      id: c.id, label: c.label, count: c.count, types: c.types,
-    })),
-  );
-  assert.equal(UNIT_CATEGORIES.reduce((s, c) => s + c.types.length, 0), was.typeSlots);
-  assert.equal(new Set(UNIT_CATEGORIES.flatMap((c) => c.types)).size, was.distinctTypes);
+  const BATH = ['VANITY2', 'VANITY3', 'VANITY4', 'MIRROR_CABINET'];
+  const wasOf = (id) => was.categories.find((c) => c.id === id);
+  for (const id of ['kitchen', 'wardrobe']) {
+    assert.deepEqual(UNIT_CATEGORIES.find((c) => c.id === id).types, wasOf(id).types.filter((t) => !BATH.includes(t)), id);
+  }
+  assert.deepEqual(UNIT_CATEGORIES.find((c) => c.id === 'bathroom').types, BATH);
+  assert.deepEqual(UNIT_CATEGORIES.map((c) => c.id), ['kitchen', 'wardrobe', 'bathroom', 'media', 'sets', 'media_wall', 'hallway', 'office']);
+  assert.equal(new Set(UNIT_CATEGORIES.flatMap((c) => c.types)).size, was.distinctTypes, 'every distinct type is still reached');
   assert.equal(Object.keys(UNIT_TYPES).length, was.unitTypes);
+  // Kitchen: four bathroom leaves out, four AVENTOS leaves in; Wardrobes: four out.
   assert.equal(flattenLibrary(KITCHEN_LIBRARY).length, was.registryLeafCount.kitchen);
-  assert.equal(flattenLibrary(WARDROBE_LIBRARY).length, was.registryLeafCount.wardrobe);
+  assert.equal(flattenLibrary(WARDROBE_LIBRARY).length, was.registryLeafCount.wardrobe - 4);
+  assert.equal(flattenLibrary(BATHROOM_LIBRARY).length, 4);
   assert.deepEqual(SHIPPED_SETS.map((s) => s.id), was.shippedSets.map((s) => s.id));
 });
 
@@ -387,7 +424,7 @@ const RAIL = code(read('src/components/studio/RailMenus.jsx'));
 test('F7 parity · Add lists UNIT_CATEGORIES as the Library menu does, and calls what it calls', () => {
   assert.match(RAIL, /import \{ UNIT_CATEGORIES \} from '\.\.\/\.\.\/engine\/types\.js'/);
   assert.match(RAIL, /UNIT_CATEGORIES\.map\(/, 'the categories are typed, not read');
-  assert.match(RAIL, /disabled=\{c\.soon\}/);
+  assert.match(RAIL, /disabled=\{Boolean\(c\.soon\)\}/);
   assert.match(RAIL, /\{c\.soon && <span className="cc-tag">soon<\/span>\}/);
   // The Library menu's own call (census: Library > X is `setLibraryCategory(c.id)`) and the panel's own position.
   const library = MAIN.static.topMenu.leaves.filter((l) => l.menu === 'Library');
@@ -405,18 +442,16 @@ test('F7 parity · Add lists UNIT_CATEGORIES as the Library menu does, and calls
   assert.match(RAIL, /studio\?\.libraryGapPx/);
 });
 
-test('F7 parity · Add\'s hints are the Library menu\'s own, word for word (a dash written as a colon)', () => {
+// REWRITTEN BY T-CC1b F4: the Library menu is deleted from the bar (*"Library powinno byc po lewej"*,
+// the owner, 01.11.2026); the rail's Add is its one door and keeps the menu's words, a held-open family
+// saying its own reason.
+test('F7 parity · Add\'s hints are the Library menu\'s own words, and a held-open family says its reason', () => {
   const top = read('src/components/TopBar.jsx');
-  const at = top.indexOf('UNIT_CATEGORIES.map((c) => ({');
-  assert.ok(at >= 0, 'TopBar no longer maps UNIT_CATEGORIES for its Library menu');
-  const region = code(top.slice(at, top.indexOf('run: () => setLibraryCategory(c.id)', at)));
-  const words = (text) => [...text.matchAll(/'([^']{6,})'/g)].map((m) => m[1].split(EM_DASH).map((s) => s.trim()).join(': '));
-  const legacy = words(region);
-  assert.equal(legacy.length, 3, `the Library menu's hints: ${legacy.join(' | ')}`);
-  const hintFn = RAIL.slice(RAIL.indexOf('function categoryHint'), RAIL.indexOf('function databaseEntry'));
-  assert.deepEqual(words(hintFn), legacy);
-  // ...and the count, the same template.
-  assert.match(region, /`\$\{c\.types\.length\} type\$\{c\.types\.length === 1 \? '' : 's'\}`/);
+  assert.equal(top.indexOf('UNIT_CATEGORIES.map((c) => ({'), -1, 'TopBar maps no Library menu now');
+  const hintFn = RAIL.slice(RAIL.indexOf('function categoryHint'), RAIL.indexOf('function rectOf'));
+  assert.match(hintFn, /if \(c\.soon\) return c\.reason \|\| 'Coming soon';/);
+  assert.match(hintFn, /'Units you have saved: right-click a unit to add one'/);
+  assert.match(hintFn, /'Media wall, sideboard, vanity, utility, hallway, and the sets you have saved'/);
   assert.match(hintFn, /`\$\{c\.types\.length\} type\$\{c\.types\.length === 1 \? '' : 's'\}`/);
 });
 
@@ -427,29 +462,27 @@ test('F7 parity · Materials opens the four existing windows, each as its first 
   assert.match(menu, /openModal\('unit-finish', \{ unitIds: ids, anchor: menuAnchor\(\) \}\)/);
   assert.match(RAIL, /openModal\('unit-finish', \{ unitIds: \[\.\.\.chosen\], anchor: anchorOfEvent\(e\) \}\)/);
   assert.match(RAIL, /disabled: chosen\.length === 0/);
-  // Project finishes, Assign materials, Stock: Settings..., Database > Assign materials..., Database > Materials...
-  for (const kind of ['design', 'assign-materials', 'warehouse']) {
-    assert.match(top, new RegExp(`openModal\\('${kind}', \\{ anchor: anchorOfEvent\\(e\\) \\}\\)`), `TopBar no longer opens ${kind}`);
+  // Project finishes: Settings..., the same window.
+  assert.match(top, /openModal\('design', \{ anchor: anchorOfEvent\(e\) \}\)/, 'TopBar no longer opens design');
+  // AMENDED BY T-CC1b F3 and F9.3: Assign materials is the rail's alone (the Database menu died,
+  // *"Database niepotrzebne, wszystko jest w JC, Assign materials juz jest po lewej"*); Stock opens Joinery Core's stock.
+  for (const kind of ['design', 'assign-materials', 'jc-stock']) {
     assert.match(RAIL, new RegExp(`openModal\\('${kind}', \\{ anchor: anchorOfEvent\\(e\\) \\}\\)`), `Materials does not open ${kind}`);
   }
+  assert.doesNotMatch(top, /openModal\('assign-materials'|openModal\('warehouse'/, 'the Database menu is gone from the bar');
   // Nothing else: four windows, by the CONTRACT's popup hooks.
   assert.deepEqual([...RAIL.matchAll(/\bid: '([a-z-]+)'/g)].map((m) => m[1]),
     ['selected-finishes', 'project-finishes', 'assign-materials', 'stock']);
   assert.equal((RAIL.match(/openModal\('/g) || []).length, 4);
 });
 
-test('F7 parity · Materials reads the Database menu\'s own words for the two windows it shares', () => {
-  const noop = () => {};
-  const only = (handlers) => buildDatabaseMenu(handlers).items.filter((i) => !i.disabled);
-  const stock = only({ onMaterials: noop });
-  const assign = only({ onAssignMaterials: noop });
-  assert.equal(stock.length, 1);
-  assert.equal(assign.length, 1);
-  assert.equal(stock[0].label, MAIN.static.topMenu.leaves.find((l) => l.bound === 'openModal(\'warehouse\')').label);
-  assert.equal(assign[0].label, MAIN.static.topMenu.leaves.find((l) => l.bound === 'openModal(\'assign-materials\')').label);
-  assert.match(RAIL, /databaseEntry\(\{ onMaterials: noop \}\)/);
-  assert.match(RAIL, /databaseEntry\(\{ onAssignMaterials: noop \}\)/);
-  assert.match(RAIL, /label: assign\.label/);
+// REWRITTEN BY T-CC1b F3.2: `databaseEntry` read the deleted Database menu; the rows are written in
+// place with main's labels (*"Database niepotrzebne, wszystko jest w JC, Assign materials juz jest po lewej"*, the owner, 01.11.2026).
+test('F7 parity · Materials keeps main\'s labels for the two windows the Database menu shared', () => {
+  assert.doesNotMatch(RAIL, /databaseEntry|buildDatabaseMenu/);
+  const assignLabel = MAIN.static.topMenu.leaves.find((l) => l.bound === "openModal('assign-materials')").label;
+  assert.ok(RAIL.includes(`label: '${assignLabel}'`), `the rail lost main's label ${assignLabel}`);
+  assert.match(RAIL, /label: 'Stock\u2026'/);
 });
 
 test('F7 parity · the rail popups are Studio popups: hooked, closed outside, closed by the one Escape owner', () => {

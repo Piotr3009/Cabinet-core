@@ -674,11 +674,19 @@ export function materialDemand(bom, assignments, materials) {
 export function hardwareDemand(bom, assignments, materials) {
   const byId = new Map((materials || []).map((m) => [m.id, m]));
   return (bom.hardware || []).map((row) => {
-    const a = assignments?.[row.role];
-    const material = a?.material_id ? byId.get(a.material_id) : null;
+    // T-CC1b F10 (LICENSED, the key only): *"10 rodzajow zawiasow, wszystkie
+    // przypisane"*, the owner, 01.11.2026. The line's own key FIRST (schema 3,
+    // engine/partRegistry.js), the legacy role second; a key that is present
+    // wins even when it was cleared on purpose.
+    const key = `${row.role}|${row.spec_label}`;
+    const own = assignments?.hardware?.[key];
+    const a = own || assignments?.[row.role];
+    const material = (a?.material_id ? byId.get(a.material_id) : null) || null;
     return {
       ...row,
+      key,
       material,
+      assigned: Boolean(material),
       cost: material?.price != null ? roundTo(row.qty * material.price, 2) : null,
     };
   });
@@ -939,7 +947,7 @@ function resolveMouldingMaterial(panel, unit, assignment, { design, profile, mat
  * @param {Array<{unit:object, result:object}>} units
  * @param {object} ctx
  *   assignments      the schema-2 blob (any shape `normalizeAssignments` eats)
- *   materials        the workshop's stock list (`cc_materials` rows)
+ *   materials        the workshop's stock list (Joinery Core `stock_items` rows since T-CC1b F9)
  *   ALL_PARTS        injectable, so a caller can narrow the walk; defaults to
  *                    the whole registry — and iterating THIS is what makes a
  *                    missing row a dropped line, which is why F1 has the test
@@ -989,7 +997,7 @@ export function mergeUnitMaterials(unitsIn = [], {
     // owner's decision"*.
     const quoted = pricedAt?.prices?.[mat?.id];
     if (quoted && quoted.price != null) return Number(quoted.price) || 0;
-    // CLAUDE.md F5 says `cc_materials.cost_per_unit`; Cabinet Core's own table
+    // CLAUDE.md F5 says the materials row's `cost_per_unit`; Cabinet Core's own table
     // (sql/001_init.sql) calls the column `price`. Both are read, so the spec's
     // name works the day somebody adds it and today's column works now.
     const v = mat?.cost_per_unit ?? mat?.price;

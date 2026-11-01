@@ -112,3 +112,18 @@
   height: auto;
   max-height: 46vh;
 }
+
+/* ─── T-CC1b F12 · THE FONT FLOOR OF THE BIG WINDOWS ───────────────────────
+   The owner, 01.11.2026: *"Spraying: okno duze a fonty male i duzo pustego
+   miejsca"*. A wide window (Spraying, Assign materials, Stock) reads at 13 px
+   at the least: its body, every table cell, and the `.text-xs` and the small
+   arbitrary sizes inside it (the floor, PROPOSED 13 px). Its tables take the
+   window's width with automatic columns, so no right margin stands empty. */
+.cc-modal-wide { font-size: 13px; }
+.cc-modal-wide th,
+.cc-modal-wide td { font-size: 13px; padding: 6px 8px; }
+.cc-modal-wide .text-xs,
+.cc-modal-wide .text-\[10px\],
+.cc-modal-wide .text-\[11px\],
+.cc-modal-wide .text-\[12px\] { font-size: 13px; }
+.cc-modal-wide table { width: 100%; table-layout: auto; }

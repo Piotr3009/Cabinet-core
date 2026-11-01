@@ -81,8 +81,8 @@ export const SHELL_ACTIONS = Object.freeze([
 // A Studio popup that wants its Escape answered by this owner registers its
 // close while it is open (components/studio/RailMenus.jsx does, for Add and
 // Materials): the topmost registered popup is closed by one press, and the
-// press goes no further. A Studio popup that answers its own Escape (the View
-// popup, components/studio/SceneViewMenu.jsx) does not register; it is seen in
+// press goes no further. A Studio popup that answers its own Escape (the scene
+// corner's View popup until T-CC1b F2 deleted it) does not register; it is seen in
 // the document (`[data-studio="popup"]`) and the shell leaves it alone.
 
 const popups = [];

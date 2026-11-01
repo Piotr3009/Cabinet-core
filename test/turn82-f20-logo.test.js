@@ -242,7 +242,11 @@ test('F20 · Choose image: an SVG keeps its text and gains its PNG; a file of no
 
 // ═══ 4. KEPT WITH THE COMPANY, ON THIS COMPUTER ════════════════════════════
 
-test('F20 · the logo is kept with the company and recalled with it on the next job; Remove takes it off', async () => {
+// REWRITTEN BY T-CC1b F7 (01.11.2026) to the new law: the company's logo is Joinery Core's (company_settings
+// logo_url, lib/jcLogo.js) and "Insert other logo" replaces it for THIS item only, so this computer remembers the
+// company's name and lines WITHOUT the logo, and the next item opens with no logo of its own (the company's shows).
+// *"logo domyslne z JC albo przycisk wstaw inne logo"* (the owner, 01.11.2026).
+test('F20 · the logo is kept with the item; the next item opens on the company logo; Remove takes it off this item', async () => {
   // The store reads localStorage through its persistence gate; node has none, so a Map stands in.
   const mem = new Map();
   globalThis.localStorage = {
@@ -260,15 +264,14 @@ test('F20 · the logo is kept with the company and recalled with it on the next 
     assert.deepEqual(useProjectStore.getState().project.titleBlock.company, { name: 'SKYLON JOINERY', logo }, 'beside the name, in the same company');
     // AMENDED after the review: the memory names the picture by its ref, kept once beside it.
     const remembered = JSON.parse(mem.get('cabinet-core.titleBlock.company'));
-    assert.deepEqual(remembered.logo, { ref: logoId(logo) }, 'remembered where the company name is, as a reference');
-    assert.deepEqual(JSON.parse(mem.get(LOGO_KEY))[logoId(logo)], logo, 'the picture itself, once, under its own key');
+    assert.equal(remembered.logo, undefined, 'this computer remembers the company without the item\'s own logo');
+    assert.equal(remembered.name, 'SKYLON JOINERY', 'the name is remembered');
+    useProjectStore.getState().setTitleBlock({ company: { logo: null } });
+    assert.equal(logoOf(useProjectStore.getState().project.titleBlock.company.logo), null, 'Remove, on this item');
     useProjectStore.getState().newProject('Next job');
     const next = useProjectStore.getState().project.titleBlock.company;
-    assert.equal(next.name, 'SKYLON JOINERY');
-    assert.deepEqual(next.logo, logo, 'the next job opens with the logo');
-    useProjectStore.getState().setTitleBlock({ company: { logo: null } });
-    assert.equal(logoOf(useProjectStore.getState().project.titleBlock.company.logo), null, 'Remove');
-    assert.equal(JSON.parse(mem.get('cabinet-core.titleBlock.company')).logo, null, 'and forgotten on this computer');
+    assert.equal(next.name, 'SKYLON JOINERY', 'the next item opens with the company name');
+    assert.equal(next.logo, undefined, 'and no logo of its own: the company logo from Joinery Core shows');
     assert.equal(JSON.parse(mem.get('cabinet-core.titleBlock.company')).name, 'SKYLON JOINERY', 'the name stays');
   } finally { delete globalThis.localStorage; }
 });
@@ -419,7 +422,9 @@ test('F20 after the review · the sheet still draws the logo of a job read back,
   assert.equal(logoOf({ ref: 'logo-gone' }), null);
 });
 
-test('F20 after the review · the company memory and the cache keep a ref; a refused memory is said', async () => {
+// REWRITTEN BY T-CC1b F7 (01.11.2026): the company memory keeps no logo (the item's own is the item's only); the
+// crash buffer keeps an item's logo as its ref as before. *"logo domyslne z JC albo przycisk wstaw inne logo"*.
+test('F20 after the review · the company memory keeps no logo, the cache keeps a ref; a refused memory is said', async () => {
   const mem = quotaStorage();
   globalThis.localStorage = mem;
   try {
@@ -429,9 +434,10 @@ test('F20 after the review · the company memory and the cache keep a ref; a ref
     s.setTitleBlock({ company: { name: 'SKYLON JOINERY', logo: BIG } });
     for (let i = 1; i <= 25; i += 1) {
       useProjectStore.getState().newProject(`Job ${i}`);
-      assert.deepEqual(useProjectStore.getState().project.titleBlock.company.logo, BIG, `job ${i} opens with the logo`);
+      assert.equal(useProjectStore.getState().project.titleBlock.company.logo, undefined, `job ${i} opens on the company logo`);
     }
-    assert.ok(!mem.getItem('cabinet-core.titleBlock.company').includes(BIG.href), 'the memory names it by ref');
+    assert.ok(!mem.getItem('cabinet-core.titleBlock.company').includes(BIG.href), 'the memory holds no picture');
+    assert.ok(!mem.getItem('cabinet-core.titleBlock.company').includes(logoId(BIG)), 'nor its ref');
     // The current-job cache is written 250 ms after a change, with the ref.
     // AMENDED BY T-CC1a F9 (31.10.2026): the cache is the crash buffer of the open item, keyed by tenant and item
     // (lib/crashBuffer.js); it keeps the logo as its ref as the cache did. *"moje zdanie to powinno sie wszystko
@@ -439,6 +445,7 @@ test('F20 after the review · the company memory and the cache keep a ref; a ref
     const { useAuthStore } = await import('../src/stores/authStore.js');
     useAuthStore.setState({ tenant: { id: 'tenant-f20', name: 'Skylon' } });
     useProjectStore.getState().newProject('Cached', { id: 'srv-cached' });
+    useProjectStore.getState().setTitleBlock({ company: { logo: BIG } });
     useProjectStore.getState().setProjectName('Cached job');
     await new Promise((r) => setTimeout(r, 400));
     const cache = mem.getItem('cc.tenant-f20.item.srv-cached.buffer.v1') || '';

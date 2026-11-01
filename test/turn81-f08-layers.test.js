@@ -133,7 +133,8 @@ test('F8 · the PDF of the walk\'s set: bytes, nine pages, one named layer per i
   const sheets = wallDrawingSheets(setArgs());
   const doc = bookletDoc(sheets.map((s) => s.sheet));
   const bytes = pdfBytes(doc);
-  assertPdfBytes(bytes, { pages: 9, sheets: sheets.length });
+  // T-CC1b F8.2: ten sheets, the visualisation is the left and the right angle.
+  assertPdfBytes(bytes, { pages: 10, sheets: sheets.length });
   const pdf = Buffer.from(bytes).toString('latin1');
   assert.match(pdf, /\/OCProperties << \/OCGs \[/);
   const used = new Set(sheets.flatMap((s) => s.sheet.entities.map((e) => e.layer)));

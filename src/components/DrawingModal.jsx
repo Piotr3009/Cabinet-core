@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal.jsx';
+import RenderModal from './RenderModal.jsx';
+// T-CC1b F13 · A4's card, mounted here under the sheet list (one line, CLAUDE.md T-CC1b PART D).
+import AiVisualCard from './drawings/AiVisualCard.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
+import { useAuthStore } from '../stores/authStore.js';
 import { resolveUnitDesign } from '../engine/design.js';
-import { buildFrontElevation } from '../engine/drawings/frontElevation.js';
-import { shakerFrameMm } from '../engine/shaker.js';
-import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
+// T-CC1b F7 · the company's logo from Joinery Core; F8 · a picture kept with the item is kept small.
+import { companyLogo as loadCompanyMark } from '../lib/jcLogo.js';
+import { keepAngle, keepPicture } from '../lib/keepPicture.js';
+import { visualNumbers } from '../lib/visualNumbers.js';
 // ─── TURN 40 (CLAUDE.md F5): A SHEET IS A WALL ─────────────────────────────
 // The owner: *"nie mamy drawingu całościowego — pokazuje nam tylko pojedyncze
 // szafki."* The set is his own — Wall A /1 with the fronts, Wall A /2 the
@@ -37,13 +42,12 @@ import {
 // the plans, the sections, the visualisation, the cut list. The buttons walk
 // the list the engine returns, so they follow it with no list of their own.
 import { renderJob } from '../engine/render.js';
-import { PAGE_FORMATS, layoutSheet, scaleLabel } from '../engine/drawings/sheet.js';
+import { scaleLabel } from '../engine/drawings/sheet.js';
 import { sheetToSvg } from '../engine/drawings/svg.js';
 // T82 F20 · the logo beside the company (*"dodawanie loga do rysunkow"*).
 import { logoOf } from '../engine/drawings/setSheet.js';
 import {
   drawingErrorText,
-  exportBookletPdf, exportDrawingPdf, exportDrawingSvg,
   exportWallDrawingsDxf, exportWallDrawingsPdf,
   readLogoFile,
 } from '../lib/drawingExport.js';
@@ -52,7 +56,7 @@ import {
 //
 // Turn 6 drew a single front elevation as a STYLE PROBE, so that this turn had
 // a calibrated look to build the rest of the set on. This is the rest: three
-// views on one sheet, dimensioned the way a bench measures, plus the booklet
+// views on one sheet, dimensioned the way a bench measures, plus the bound book
 // that carries the whole project.
 //
 // Everything except the preview frame is engine code (src/engine/drawings/):
@@ -61,13 +65,17 @@ import {
 // IS THE EXPORT, the same SVG string either way, so what is on screen cannot
 // differ from what lands in the file.
 
+// ─── T-CC1b F6 · ONE WINDOW, ONE EXPORT ─────────────────────────────────────
+// The owner, 01.11.2026: *"usunac card 3D view i front only"* and *"usunac
+// przyciski all units i drawing set pdf, tylko export pdf"*. The window is the
+// set and nothing else: the unit card, the single front elevation, their kind
+// row and their paper choice, the all-units book, the SVG and the per-sheet PDF are
+// gone; Export PDF binds the ticked sheets, Wall DXF stays (PROPOSED: the
+// AutoCAD road has no other door).
 const KINDS = {
-  preview: { title: 'Unit card', view: 'unit-card' },
-  'unit-card': { title: 'Unit card', view: 'unit-card' },
-  'front-elevation': { title: 'Front elevation', view: 'front-elevation' },
   // TURN 40 (F5): the whole run, not one cabinet.
   // T71: the whole set, not the walls alone.
-  walls: { title: 'Drawing set', view: 'wall-elevation' },
+  walls: { title: 'Drawings', view: 'wall-elevation' },
 };
 
 export default function DrawingModal({ rig = null }) {
@@ -77,19 +85,20 @@ export default function DrawingModal({ rig = null }) {
   const anchor = useUiStore((s) => s.modalArgs?.anchor) || null;
   const notify = useUiStore((s) => s.notify);
   const modalArgs = useUiStore((s) => s.modalArgs);
-  const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const units = useProjectStore((s) => s.units);
   const project = useProjectStore((s) => s.project);
-  const unitResult = useProjectStore((s) => s.unitResult);
   const allResults = useProjectStore((s) => s.allResults);
   // T71: the design layer's worktops go on the sheets, and the title block's
   // words live on the project.
   const worktopsOf = useProjectStore((s) => s.worktopsOf);
   const setTitleBlock = useProjectStore((s) => s.setTitleBlock);
+  const setVisual = useProjectStore((s) => s.setVisual);
   const profile = useCabinetProfileStore((s) => s.profile);
+  const tenantId = useAuthStore((s) => s.tenant?.id || null);
 
-  const requested = KINDS[modalArgs?.kind] ? modalArgs.kind : 'unit-card';
-  const [kind, setKind] = useState(requested === 'preview' ? 'unit-card' : requested);
+  // T-CC1b F6 · one kind, the set; `modalArgs` still says where the window opened from.
+  void modalArgs;
+  const kind = 'walls';
   // TURN 40 (F5): which sheet of the wall SET is on screen. A set has as many
   // sheets as the job has walls, twice, plus the section — so the window walks
   // them rather than showing the first one and calling that a preview.
@@ -108,13 +117,6 @@ export default function DrawingModal({ rig = null }) {
   // the window is open is ticked as every sheet starts. A drawing choice, not
   // a design decision: never in the project, gone when the window closes.
   const [leftOut, setLeftOut] = useState(() => new Set());
-  // 'auto' is the default and it is not laziness: a card chooses between two
-  // arrangements AND two paper sizes to draw the cabinet as big as it will go
-  // (engine/drawings/card.js). Forcing A4 here would throw that away and hand a
-  // base unit back at 1:20 when A3 draws it at 1:10.
-  const [format, setFormat] = useState('auto');
-
-  const unit = units.find((u) => u.id === selectedUnitId) || units[0] || null;
   const date = useMemo(() => new Date().toLocaleDateString(), []);
 
   // ─── THE WALL SET ─────────────────────────────────────────────────────────
@@ -143,34 +145,79 @@ export default function DrawingModal({ rig = null }) {
   // from the three-quarter left and shaped to the sheet's picture frame. A
   // window with no scene behind it (tests, a page without the 3D view) binds
   // the sheet with its frame empty, and the sheet says what it is waiting for.
-  const [renderImage, setRenderImage] = useState(null);
+  // ─── T-CC1b F8 · TWO ANGLES AND THE RENDER AS SHEETS (law 8) ──────────────
+  // The owner, 01.11.2026: *"dodac wizualizacje z drugiego kata, render wedlug
+  // wyboru, wizualizacja AI z renderu, max 3 proby, wybierasz jedna i dodajesz
+  // do rysunkow"*. The one render became `visuals = { isoLeft, isoRight,
+  // render, ai }`: the two angles captured here as the one was (presets
+  // 'iso-left' and 'iso-right', engine/render.js), the user's own render and
+  // the chosen AI picture read off the item (`project.visuals`, INT's field).
+  const [angles, setAngles] = useState({ isoLeft: null, isoRight: null });
   useEffect(() => {
-    if (kind !== 'walls' || !rig || !units.length) { setRenderImage(null); return undefined; }
+    if (kind !== 'walls' || !rig || !units.length) { setAngles({ isoLeft: null, isoRight: null }); return undefined; }
     let cancelled = false;
     const frame = requestAnimationFrame(() => {
       if (cancelled) return;
-      try {
-        const job = renderJob({
-          resolution: 'preview',
-          preset: 'iso-left',
-          shadows: profile.render.defaultShadows,
-          aspect: visualAspect(profile),
-          bounds: rig.bounds(null),
-          project: project?.name,
-          subject: 'set',
-        }, profile);
-        const out = rig.capture(job);
-        if (!cancelled) setRenderImage(out?.dataUrl || null);
-      } catch (e) {
-        // T42-F0's law: a catch REPORTS. The set still binds without the picture.
-        // eslint-disable-next-line no-console
-        console.error('[wall drawings] the visualisation render failed', e);
-        if (!cancelled) setRenderImage(null);
-      }
+      const shoot = (preset) => {
+        try {
+          const job = renderJob({
+            resolution: 'preview',
+            preset,
+            shadows: profile.render.defaultShadows,
+            aspect: visualAspect(profile),
+            bounds: rig.bounds(null),
+            project: project?.name,
+            subject: 'set',
+          }, profile);
+          return rig.capture(job)?.dataUrl || null;
+        } catch (e) {
+          // T42-F0's law: a catch REPORTS. The set still binds without the picture.
+          // eslint-disable-next-line no-console
+          console.error(`[wall drawings] the visualisation render (${preset}) failed`, e);
+          return null;
+        }
+      };
+      const raw = { isoLeft: shoot('iso-left'), isoRight: shoot('iso-right') };
+      // CHAT FIX 01.11.2026: the two angles kept under profile.visuals.maxKb as the render is (lib/keepPicture.js
+      // keepAngle): the set's PDF was 24 MB and the AI source passed Vercel's 4.5 MB wall.
+      const { maxKb } = visualNumbers(profile);
+      Promise.all([keepAngle(raw.isoLeft, { maxKb }), keepAngle(raw.isoRight, { maxKb })])
+        .then(([isoLeft, isoRight]) => { if (!cancelled) setAngles({ isoLeft, isoRight }); });
     });
     return () => { cancelled = true; cancelAnimationFrame(frame); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, rig, units, project?.design, project?.name, profile]);
+  const visuals = useMemo(() => ({
+    isoLeft: angles.isoLeft,
+    isoRight: angles.isoRight,
+    render: project?.visuals?.render || null,
+    ai: project?.visuals?.ai || null,
+  }), [angles, project?.visuals]);
+
+  // ─── T-CC1b F7 · THE LOGO IS THE COMPANY'S ────────────────────────────────
+  // *"logo domyslne z JC albo przycisk wstaw inne logo"* (the owner, 01.11.2026).
+  // ONE read of Joinery Core's company_settings per session (lib/jcLogo.js);
+  // a file the browser refuses leaves no logo and one line of words.
+  const [companyMark, setCompanyMark] = useState({ href: null, logo: null, error: null });
+  useEffect(() => {
+    let live = true;
+    loadCompanyMark({ tenantId, profile }).then((got) => { if (live) setCompanyMark(got); });
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId]);
+  // F8.1 · the Render window opened over this one; its picture kept under profile.visuals.maxKb (PROPOSED 400).
+  const [renderOpen, setRenderOpen] = useState(false);
+  const keepRender = async ({ dataUrl, preset }) => {
+    const { maxKb } = visualNumbers(profile);
+    const kept = await keepPicture(dataUrl, { maxKb });
+    if (!kept.dataUrl) { notify(kept.error, 'warn'); return; }
+    setVisual('render', { dataUrl: kept.dataUrl, preset, at: new Date().toISOString() });
+    setRenderOpen(false);
+    notify(`The render is on the sheet Visualisation, render (${Math.ceil(kept.bytes / 1024)} KB, kept with the item).`, 'ok');
+  };
+  const ownLogoRaw = project?.titleBlock?.company?.logo;
+  const logoRemoved = ownLogoRaw === 'none';
+  const sheetCompanyLogo = logoRemoved ? null : companyMark.logo;
 
   const wallSet = useMemo(() => {
     if (kind !== 'walls') return { sheets: [], error: null, report: null };
@@ -181,7 +228,8 @@ export default function DrawingModal({ rig = null }) {
         room: project?.room,
         // T71: the slabs the design layer carries, resolved by the store.
         worktops: worktopsOf(),
-        renderImage,
+        visuals,
+        companyLogo: sheetCompanyLogo,
         frontTypeOf: (u) => resolveUnitDesign(u, project?.design).frontType,
         // ─── TURN 43 (CLAUDE.md F2) ─────────────────────────────────────
         // *"Shaker prawdziwy — ile mam mm, tyle powinno być pokazane."* The
@@ -207,7 +255,7 @@ export default function DrawingModal({ rig = null }) {
       return { sheets: [], error: e, report: null };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, units, project, profile, date, allResults, sectionUnitId, renderImage]);
+  }, [kind, units, project, profile, date, allResults, sectionUnitId, visuals, sheetCompanyLogo]);
 
   // The cabinets the dropdown may offer — the same census the set uses, asked
   // once, and never a second list of its own.
@@ -232,7 +280,7 @@ export default function DrawingModal({ rig = null }) {
   const wallAt = wallSheetList.length
     ? wallSheetList[Math.min(wallPage, wallSheetList.length - 1)]
     : null;
-  // T83 F11 · what Drawing set (PDF) and Wall DXF bind: the ticked sheets, in the set's order.
+  // T83 F11 · what Export PDF and Wall DXF bind: the ticked sheets, in the set's order.
   const wallPicked = useMemo(() => pickedSheets(wallSheetList, (s) => !leftOut.has(s.name)), [wallSheetList, leftOut]);
   const tickSheet = (name, on) => setLeftOut((was) => {
     const next = new Set(was);
@@ -240,39 +288,13 @@ export default function DrawingModal({ rig = null }) {
     return next;
   });
 
-  const sheet = useMemo(() => {
-    if (kind === 'walls') return wallAt?.sheet || null;
-    if (!unit) return null;
-    const result = unitResult(unit.id);
-    if (!result) return null;
-    if (kind === 'front-elevation') {
-      const drawing = buildFrontElevation(result, {
-        unitNum: unit.params.unit_num,
-        frontType: resolveUnitDesign(unit, project?.design).frontType,
-        profile,
-        // T43-F2: the third drawing path in the app, and it told the same lie
-        // as the other two. One resolution, from the same module.
-        shakerFrame: shakerFrameMm(project?.design, profile),
-      });
-      return layoutSheet({
-        drawing,
-        // The single elevation has no arrangement to choose, so 'auto' means
-        // the smaller sheet: A4 unless the drawing will not fit on it.
-        format: format === 'auto' ? 'A4' : format,
-        title: { project: project?.name, unit: unit.params.unit_num, view: 'Front elevation', date },
-        profile,
-      });
-    }
-    return unitCardSheet({ result, unit, project, profile, format, date });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unit, kind, format, profile, project?.name, project?.design, unitResult, date, wallAt]);
+  // T-CC1b F6 · the sheet on screen is the set's; there is no other kind.
+  const sheet = wallAt?.sheet || null;
 
   const svg = useMemo(
-    () => (sheet ? sheetToSvg(sheet, { kind: KINDS[kind]?.view || 'unit-card' }) : null),
-    [sheet, kind],
+    () => (sheet ? sheetToSvg(sheet, { kind: KINDS.walls.view }) : null),
+    [sheet],
   );
-
-  const view = KINDS[kind]?.view || 'unit-card';
 
   // ─── T82 F20 · THE LOGO BESIDE THE COMPANY ────────────────────────────────
   // The owner, 25.10.2026, 11:40: *"do tego dodawanie loga do rysunkow musze
@@ -281,7 +303,13 @@ export default function DrawingModal({ rig = null }) {
   // given its PNG for the PDF) and keeps it WITH the company, so it is
   // remembered on this computer where the company's name is (`setTitleBlock`
   // remembers the company whole); "Remove" takes it off every sheet.
-  const logo = logoOf(project?.titleBlock?.company?.logo);
+  // T-CC1b F7.2 · the row shows the item's own logo, else the company's; "Insert other logo" is the Choose
+  // image road above (unchanged inside), "Use company logo" clears the item's own so the company's shows again,
+  // "Remove" takes every logo off this item's sheets ('none').
+  const logo = logoOf(ownLogoRaw);
+  const [screenLogoBroken, setScreenLogoBroken] = useState(false);
+  const shownLogoHref = logo ? logo.href : (!logoRemoved && companyMark.logo ? companyMark.href : null);
+  useEffect(() => { setScreenLogoBroken(false); }, [shownLogoHref]);
   const chooseLogo = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -338,81 +366,48 @@ export default function DrawingModal({ rig = null }) {
       }
       return;
     }
-    if (target === 'booklet') {
-      try {
-        const sheets = projectBookletSheets({
-          entries: allResults(), project, profile, format, date,
-        });
-        const { filename, pages } = exportBookletPdf(sheets, { project: project?.name });
-        notify(`Saved ${filename} — ${pages} pages.`, 'ok');
-      } catch (e) {
-        // T42-F0: the same law on the booklet path — an error is reported as an
-        // error, never relabelled as emptiness.
-        // eslint-disable-next-line no-console
-        console.error('[booklet] export', e);
-        notify(drawingErrorText(e), 'warn');
-      }
-      return;
-    }
-    if (!sheet) return;
-    const args = { project: project?.name, unit: unit.params.unit_num, view };
-    const { filename } = target === 'pdf'
-      ? exportDrawingPdf(sheet, args)
-      : exportDrawingSvg(sheet, args);
-    notify(`Saved ${filename}.`, 'ok');
+    // T-CC1b F6 · the all-units book, the SVG and the per-sheet PDF roads are deleted with their buttons.
   };
 
   return (
     <Modal
       name="drawing"
       anchor={anchor}
-      title={KINDS[kind]?.title || 'Unit card'}
+      title={KINDS.walls.title}
       width="w-[880px]"
       onClose={closeModal}
       footer={(
         <>
           <button type="button" className="cc-btn" onClick={closeModal}>Close</button>
-          <button
-            type="button"
-            className="cc-btn"
-            disabled={!units.length}
-            title="A cover and a page per unit"
-            onClick={() => save('booklet')}
-          >
-            All units (PDF)
-          </button>
           {/* ─── TURN 40 (CLAUDE.md F5): THE WALL SET ─────────────────────
-              PDF beside the Unit Card, and the DXF as a SEPARATE output that
-              says on the button what it says on every sheet in it. */}
-          <button
-            type="button"
-            className="cc-btn"
-            data-wall-drawings-pdf="1"
-            data-wall-drawings-pages={wallPicked.length}
-            disabled={!wallSheetList.length}
-            title="The ticked sheets of the set, in its order: the 3D, every wall's fronts, every wall without fronts, every wall in X-ray, the plans, the sections, the visualisation, the cut list"
-            onClick={() => save('walls-pdf')}
-          >
-            Drawing set (PDF)
-          </button>
+              The DXF as a SEPARATE output that says on the button what it
+              says on every sheet in it. T-CC1b F6: kept, secondary (PROPOSED). */}
           <button
             type="button"
             className="cc-btn"
             data-wall-drawings-dxf="1"
             disabled={!wallSheetList.length}
-            title="AutoCAD only — do NOT open in VCarve"
+            title="AutoCAD only: do NOT open in VCarve"
             onClick={() => save('walls-dxf')}
           >
             Wall DXF
           </button>
-          <button type="button" className="cc-btn" disabled={!sheet} onClick={() => save('svg')}>Export SVG</button>
-          <button type="button" className="cc-btn-gold" disabled={!sheet} onClick={() => save('pdf')}>Export PDF</button>
+          {/* T-CC1b F6 · *"tylko export pdf"*: the ticked sheets, in the set's order; nothing ticked, nothing to press. */}
+          <button
+            type="button"
+            className="cc-btn-gold"
+            data-wall-drawings-pdf="1"
+            data-wall-drawings-pages={wallPicked.length}
+            disabled={!wallPicked.length}
+            title="The ticked sheets of the set, in its order"
+            onClick={() => save('walls-pdf')}
+          >
+            Export PDF
+          </button>
         </>
       )}
     >
-      {!unit && kind !== 'walls' ? (
-        <p className="text-sm text-ink-400">Select a unit first — a drawing is of one unit.</p>
-      ) : (
+      {(
         <div className="space-y-3" data-drawing-kind={kind}>
           <div className="cc-row">
             <div className="flex flex-col">
@@ -420,54 +415,35 @@ export default function DrawingModal({ rig = null }) {
                 {/* T42-F0: and the HEADING stops lying too. "No wall has a
                     cabinet on it" over a red failure box is the same untruth
                     the footer used to tell, said one line higher up. */}
-                {kind === 'walls'
-                  ? (wallAt?.name
-                    || (wallError ? 'The wall set could not be built' : 'No wall has a cabinet on it'))
-                  : unit.params.unit_num}
+                {wallAt?.name
+                  || (wallError ? 'The wall set could not be built' : 'No wall has a cabinet on it')}
               </span>
               <span className="text-[11px] text-ink-400">
-                {kind === 'walls'
-                  // T71: the set prints its scale in the title block ("1:20 @
-                  // A3", or NTS for a picture); the window repeats it.
-                  ? (sheet
-                    ? `${sheet.format.id} ${sheet.format.orientation} · ${sheet.scaleLabel || scaleLabel(sheet.scale)}`
-                      + (wallSheetList.length ? ` · sheet ${sheet.sheetNo} of ${sheet.sheetOf}` : '')
-                    : '—')
-                  : (sheet
-                    ? `${sheet.format.id} ${sheet.format.orientation}, drawn at ${scaleLabel(sheet.scale)}`
-                      + ' — the largest standard scale that fits'
-                    : '—')}
+                {/* T71: the set prints its scale in the title block ("1:20 @
+                    A3", or NTS for a picture); the window repeats it. */}
+                {sheet
+                  ? `${sheet.format.id} ${sheet.format.orientation} · ${sheet.scaleLabel || scaleLabel(sheet.scale)}`
+                    + (wallSheetList.length ? ` · sheet ${sheet.sheetNo} of ${sheet.sheetOf}` : '')
+                  : 'no sheet'}
               </span>
             </div>
-            <div className="flex gap-1">
-              {[['unit-card', 'Card (3 views)'], ['front-elevation', 'Front only'], ['walls', 'Set']].map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  data-drawing-kind-tab={id}
-                  className={`cc-btn px-2 ${kind === id ? 'border-gold text-gold' : ''}`}
-                  onClick={() => { setKind(id); setWallPage(0); }}
-                >
-                  {label}
+            {/* T-CC1b F8.1 · the user's own render, through the same Render window (its shots and its
+                resolution untouched), kept with the item as a sheet of the set. */}
+            <div className="flex gap-1 items-center">
+              <button
+                type="button"
+                className="cc-btn px-2"
+                data-drawing-render="1"
+                disabled={!rig || !units.length}
+                title="Render the scene with a camera and a resolution of your choosing; the picture becomes the sheet Visualisation, render"
+                onClick={() => setRenderOpen(true)}
+              >
+                Render...
+              </button>
+              {project?.visuals?.render ? (
+                <button type="button" className="cc-btn px-2" data-drawing-render-remove="1" onClick={() => setVisual('render', null)}>
+                  Remove render
                 </button>
-              ))}
-              {/* T71: the set is A3 landscape by its own law; the paper choice
-                  belongs to the unit card and the single elevation. */}
-              {kind !== 'walls' ? (
-                <>
-                  <span className="w-px bg-shell-600 mx-1" />
-                  {[{ id: 'auto', label: 'Auto' }, ...Object.values(PAGE_FORMATS)].map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      title={f.id === 'auto' ? 'The smaller sheet, unless the bigger one draws it bigger' : ''}
-                      className={`cc-btn px-2 ${format === f.id ? 'border-gold text-gold' : ''}`}
-                      onClick={() => setFormat(f.id)}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </>
               ) : null}
             </div>
           </div>
@@ -485,7 +461,7 @@ export default function DrawingModal({ rig = null }) {
                     type="checkbox"
                     data-wall-sheet-pick={page.name}
                     aria-label={`Export ${page.name}`}
-                    title="Export this sheet with Drawing set (PDF) and Wall DXF"
+                    title="Export this sheet with Export PDF and Wall DXF"
                     checked={!leftOut.has(page.name)}
                     onChange={(ev) => tickSheet(page.name, ev.target.checked)}
                   />
@@ -508,6 +484,11 @@ export default function DrawingModal({ rig = null }) {
               <button type="button" className="cc-btn px-2 text-[11px]" data-wall-sheets-all="1" onClick={() => setLeftOut(new Set())}>All</button>
               <button type="button" className="cc-btn px-2 text-[11px]" data-wall-sheets-none="1" onClick={() => setLeftOut(new Set(wallSheetList.map((p) => p.name)))}>None</button>
             </div>
+          ) : null}
+          {/* T-CC1b F13 · the AI visualisation card, under the sheet list; it writes project.visuals.ai itself. */}
+          <AiVisualCard project={project} visuals={visuals} />
+          {renderOpen ? (
+            <RenderModal rig={rig} onResult={keepRender} onClose={() => setRenderOpen(false)} />
           ) : null}
 
           {/* ─── T71: THE TITLE BLOCK'S WORDS ──────────────────────────────
@@ -553,16 +534,18 @@ export default function DrawingModal({ rig = null }) {
                     <div key="company.logo" className="block" data-title-block-field="company.logo">
                       <span className="cc-label">Logo (PNG, JPG or SVG)</span>
                       <div className="flex items-center gap-1">
-                        {logo ? (
+                        {shownLogoHref && !screenLogoBroken ? (
                           <img
-                            src={logo.href}
-                            alt="Logo"
+                            src={shownLogoHref}
+                            alt={logo ? 'Logo' : 'Company logo from Joinery Core'}
+                            title={logo ? 'This item\'s own logo' : 'The company logo from Joinery Core'}
                             className="h-7 w-7 object-contain bg-white rounded border border-shell-600"
-                            data-title-block-logo="1"
+                            data-title-block-logo={logo ? 'own' : 'company'}
+                            onError={() => setScreenLogoBroken(true)}
                           />
                         ) : null}
                         <label className="cc-btn px-2 cursor-pointer" data-title-block-logo-choose="1">
-                          Choose image
+                          Insert other logo
                           <input
                             type="file"
                             accept="image/png,image/jpeg,image/svg+xml,.png,.jpg,.jpeg,.svg"
@@ -574,13 +557,27 @@ export default function DrawingModal({ rig = null }) {
                         <button
                           type="button"
                           className="cc-btn px-2"
-                          data-title-block-logo-remove="1"
-                          disabled={!logo}
+                          data-title-block-logo-company="1"
+                          disabled={!companyMark.logo || (!logo && !logoRemoved)}
+                          title="Clear this item's own logo, so the company's from Joinery Core shows again"
                           onClick={() => setTitleBlock({ company: { logo: null } })}
+                        >
+                          Use company logo
+                        </button>
+                        <button
+                          type="button"
+                          className="cc-btn px-2"
+                          data-title-block-logo-remove="1"
+                          disabled={!logo && (logoRemoved || !companyMark.logo)}
+                          title="No logo on this item's sheets"
+                          onClick={() => setTitleBlock({ company: { logo: 'none' } })}
                         >
                           Remove
                         </button>
                       </div>
+                      {companyMark.error && !logo && !logoRemoved ? (
+                        <span className="block text-[11px] text-status-warn" data-title-block-logo-refused="1">{companyMark.error}</span>
+                      ) : null}
                     </div>
                   )];
                 })}
@@ -688,11 +685,11 @@ export default function DrawingModal({ rig = null }) {
               room in <b>3D</b> with the index and the revisions, then every wall&apos;s <b>fronts</b> (only what the eye
               sees), every wall <b>without fronts</b> (the fronts lifted off), every wall in <b>X-ray</b>, the two
               <b> plans</b> cut through the base and the wall units, every wall&apos;s <b>sections</b>, the
-              <b> visualisation</b> rendered from the scene, and the <b>cut list</b>. Every sheet is drawn from the
-              boards and the hardware the room draws, and every unit carries its number. Every dimension appears once,
-              in its own band. Fronts are magenta, handles green, the building fabric red. The DXF carries
-              text and is <b>AutoCAD only, do NOT open it in VCarve</b>; the CNC export is a separate path
-              and still ships no text of any kind.
+              <b> visualisations</b> (the left and the right angle, your own render and the chosen AI picture when
+              the item has them), and the <b>cut list</b>. Tick the sheets you want and press <b>Export PDF</b>.
+              Every dimension appears once, in its own band. Fronts are magenta, handles green, the building fabric
+              red. The DXF carries text and is <b>AutoCAD only, do NOT open it in VCarve</b>; the CNC export is a
+              separate path and still ships no text of any kind.
             </p>
           ) : null}
         </div>

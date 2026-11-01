@@ -37,8 +37,9 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   // not a list anybody reads.
   // AMENDED BY T82 F9: *"new library group "Bathroom" in the Kitchen library and in the wardrobe library"* (CLAUDE.md T82 F9): the fifth group, before
   // Extras (the pieces that finish a run stay last).
+  // AMENDED BY T-CC1b F4.2: the Bathroom group leaves for its own family, *"Add po lewej dobre, ale uporzadkowac: lazienki w kuchniach itd."* (the owner, 01.11.2026).
   assert.deepEqual(KITCHEN_LIBRARY.map((e) => e.id), [
-    'base-units', 'tall-units', 'wall-units', 'bathroom', 'extras',
+    'base-units', 'tall-units', 'wall-units', 'extras',
   ]);
   for (const g of KITCHEN_LIBRARY) assert.equal(g.kind, 'group');
 
@@ -71,7 +72,8 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   // T75 F3: the blind corner wall unit.
   // AMENDED BY T75 F4: the held-open 'l-shape-wall' opens as 'corner-l-wall'.
   // AMENDED BY T78 F17: the canopy hood and the short hood join the hood unit.
-  assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'hood-unit', 'hood-canopy', 'hood-unit-short', 'blind-corner-wall', 'corner-l-wall']);
+  // AMENDED BY T-CC1b F15: the AVENTOS lift-up sub-group, last, *"szafki AVENTOS musza byc zrobione"* (the owner, 01.11.2026).
+  assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'hood-unit', 'hood-canopy', 'hood-unit-short', 'blind-corner-wall', 'corner-l-wall', 'aventos']);
   // The new group (F5.2): not cabinets — the pieces that finish a run.
   assert.deepEqual(idsOf('extras'), ['free-standing-panels', 'cornice-pelmet']);
 });
@@ -95,10 +97,7 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // AMENDED BY T78 F17: the canopy hood and the short hood, beside the hood unit.
     // AMENDED BY T82 F2: the HAWA pocket in Tall units, after Standard (*"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2)).
     'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDR2_HOB', 'BUDR_HOB', 'BUD_INT', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'HAWA_POCKET', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'BLIND_WALL', 'CORNER_L_WALL',
-    // AMENDED BY T82 F9: the Bathroom group's three vanity units, before Extras.
-    'VANITY2', 'VANITY3', 'VANITY4',
-    // AMENDED BY T83 F5: the Bathroom group's mirror cabinet, beside the vanity, *"`MIRROR_CABINET`, family bathroom, library group Bathroom (beside the vanity), row "Mirror cabinet""* (CLAUDE.md T83 F2); *"Library rows in PRO's Kitchen and Wardrobe libraries under Bathroom"* (CLAUDE.md T83 F5).
-    'MIRROR_CABINET',
+    // AMENDED BY T-CC1b F4.2: the Bathroom's four (T82 F9, T83 F5) left for their own family, *"Add po lewej dobre, ale uporzadkowac: lazienki w kuchniach itd."* (the owner, 01.11.2026).
     // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
     'FREE_PANEL',
   ]);
@@ -113,7 +112,8 @@ test('a group says how much of it can be placed today', () => {
   // T75 F3: four of five, the blind corner wall unit joins them.
   // AMENDED BY T75 F4: five of five, the held-open L row opened as the Corner L wall.
   // AMENDED BY T78 F17: seven of seven, the canopy hood and the short hood join them.
-  assert.deepEqual(groupCounts(wall, P), { total: 7, enabled: 7 });
+  // AMENDED BY T-CC1b F15: + the four AVENTOS rows, every one placeable, *"szafki AVENTOS musza byc zrobione"* (the owner, 01.11.2026).
+  assert.deepEqual(groupCounts(wall, P), { total: 11, enabled: 11 });
   const extras = KITCHEN_LIBRARY.find((g) => g.id === 'extras');
   // T74 F13 · one of the two can be placed now: the free-standing panel.
   // AMENDED BY T75 F15: both now, *"The held-open row `cornice-pelmet` opens as
@@ -157,7 +157,9 @@ test('the Kitchen category carries the list, and the others are untouched', () =
   // AMENDED BY T82 F2: + the HAWA pocket, *"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2).
   // AMENDED BY T82 F9: + the Bathroom group's three vanity units, *"new library group "Bathroom" in the Kitchen library and in the wardrobe library"* (CLAUDE.md T82 F9).
   // AMENDED BY T83 F5: + the Bathroom group's mirror cabinet, *"`MIRROR_CABINET`, family bathroom, library group Bathroom (beside the vanity), row "Mirror cabinet""* (CLAUDE.md T83 F2); *"Library rows in PRO's Kitchen and Wardrobe libraries under Bathroom"* (CLAUDE.md T83 F5).
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET', 'VANITY2', 'VANITY3', 'VANITY4', 'MIRROR_CABINET'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
+  // AMENDED BY T-CC1b F4.2: the Bathroom's four left for their own family, *"Add po lewej dobre, ale uporzadkowac: lazienki w kuchniach itd."* (the owner, 01.11.2026).
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
+  assert.deepEqual(getCategory('bathroom').types, ['VANITY2', 'VANITY3', 'VANITY4', 'MIRROR_CABINET']);
   // Nothing was lost in the restructure: every kit is still reachable.
   const reachable = new Set(UNIT_CATEGORIES.flatMap((c) => c.types));
   for (const id of UNIT_TYPE_ORDER) assert.ok(reachable.has(id), `${id} is in no category`);

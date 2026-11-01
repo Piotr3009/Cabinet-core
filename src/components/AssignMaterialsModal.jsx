@@ -1,42 +1,48 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import Modal from './Modal.jsx';
-import MaterialPicker from './MaterialPicker.jsx';
+import MaterialPicker, { MaterialPickerMenu } from './MaterialPicker.jsx';
 import NumberField from './NumberField.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
+import {
+  ASSIGN_GROUPS, assignCount, buildAssignLines, useMaterialAssignmentStore,
+} from '../stores/materialAssignmentStore.js';
 // T78 F21 - the warehouse's Paints department reaches the picker as stock rows.
 import { useWarehouseStore } from '../stores/warehouseStore.js';
 import { withPaints } from '../engine/spray.js';
 import {
-  PART_GROUPS, partsInGroup, assignmentFor, familyLabel, VARIANT_ORDER,
+  ALL_PARTS, assignmentFor, familyLabel, VARIANT_ORDER,
 } from '../engine/partRegistry.js';
-import { projectPartUsage, unassignedInUse, formatQty } from '../engine/bom.js';
+import {
+  buildBom, projectPartUsage, unassignedInUse, formatQty,
+} from '../engine/bom.js';
 // ─── Turn 39 (CLAUDE.md F4): the rules that fill a part in without being asked.
 import { autoAssignments, applicable, refusals } from '../engine/autoAssign.js';
+import { JC_OFFLINE } from '../lib/jcApi.js';
+import { categoryTree, STOCK_EMPTY, STOCK_PAGE } from '../lib/jcStock.js';
 
 /**
- * ─── ASSIGN MATERIALS (turn 39, CLAUDE.md F3) ───────────────────────────────
+ * ─── ASSIGN MATERIALS (turn 39, CLAUDE.md F3; T-CC1b F10) ───────────────────
  *
- * The owner, 18.08.2026: *"musi być Assign materials i później BOM"*, and
- * *"każdy jeden projekt powinien mieć Assign materials"*.
+ * The owner, 01.11.2026: *"materialy z JC (jego baza), przypisanie w CC, grupy
+ * (plyty, zawiasy, prowadnice, okucia/inne, materialy eksploatacyjne,
+ * wyposazenie wewnetrzne), modal duzo wiekszy i czytelny, polaczony na stale,
+ * kazda funkcja przypisana (10 rodzajow zawiasow, wszystkie przypisane),
+ * inaczej eksport BOM pisze not assigned materials"*.
  *
- * The layer this app never had, between the ENGINE's part names and the things
- * a joiner BUYS. Left: the seven registry groups, each with the count of what
- * is still missing beside it. Right: the parts of the chosen group, one row
- * each — name · what it is cut from · yield · a per-family override.
+ * Width 1240 (as Spraying's), the font floor of F12, two columns. LEFT, the
+ * project's demand in the SIX GROUPS of CC's roles: each LINE is one BOM key
+ * (`${role}|${spec_label}` for hardware, the registry part for the boards),
+ * with its spec, quantity and unit, then the assigned Joinery Core material
+ * or a red "Not assigned" chip. RIGHT, the stock, embedded and visible at once
+ * (MaterialPicker): a click assigns the row to the selected line. The header
+ * counts what is left, because "how much is left" is the question this window
+ * exists to answer.
  *
- * THE MARKING IS THE FEATURE. The owner: *"podkreślone nowe materiały
- * nieprzypisane"*. An unassigned row is underlined, coloured and dotted; a part
- * that has only just started existing — the first drawer in the job, the first
- * LED strip — reads NEW until somebody has looked at it. A running counter sits
- * in the header, because "how much is left" is the question this screen exists
- * to answer.
- *
- * Opens BESIDE its menu entry and drags by its header — permanent rule 15, and
- * it is the shared `Modal` shell that gives both.
+ * Opens BESIDE its menu entry and drags by its header (rule 15, the shared
+ * `Modal` shell).
  */
 export default function AssignMaterialsModal() {
   const closeModal = useUiStore((s) => s.closeModal);
@@ -51,86 +57,57 @@ export default function AssignMaterialsModal() {
 
   const data = useMaterialAssignmentStore((s) => s.data);
   const ownMaterials = useMaterialAssignmentStore((s) => s.materials);
-  // T78 F21 - THE PAINT AS A MATERIAL (CLAUDE.md PART F): the warehouse's
-  // Paints rows stand beside the stock list with `category: 'paint'`, so the
-  // two paint parts of the Consumable group (set 1, set 2) pick a tin the way a
-  // shelf picks a board. The schedule's litres and tins read the chosen row's
-  // own coverage, coats and tin sizes (engine/spray.js withPaints).
+  // T78 F21 - THE PAINT AS A MATERIAL: the warehouse's Paints rows stand beside
+  // the stock list with `category: 'paint'`, so the two paint parts pick a tin
+  // the way a shelf picks a board (engine/spray.js withPaints).
   const warehouseRows = useWarehouseStore((s) => s.rows);
   const materials = useMemo(() => withPaints(ownMaterials, warehouseRows), [ownMaterials, warehouseRows]);
   const materialsSource = useMaterialAssignmentStore((s) => s.materialsSource);
+  const stockError = useMaterialAssignmentStore((s) => s.stockError);
+  const stockCategories = useMaterialAssignmentStore((s) => s.stockCategories);
   const setAssignment = useMaterialAssignmentStore((s) => s.setAssignment);
   const setYield = useMaterialAssignmentStore((s) => s.setYield);
   const removeAssignment = useMaterialAssignmentStore((s) => s.removeAssignment);
+  const setHardwareAssignment = useMaterialAssignmentStore((s) => s.setHardwareAssignment);
+  const clearHardwareAssignment = useMaterialAssignmentStore((s) => s.clearHardwareAssignment);
+  const syncHardwarePart = useMaterialAssignmentStore((s) => s.syncHardwarePart);
+  const adoptHardwareKeys = useMaterialAssignmentStore((s) => s.adoptHardwareKeys);
   const loadMaterials = useMaterialAssignmentStore((s) => s.loadMaterials);
-  const markSeen = useMaterialAssignmentStore((s) => s.markSeen);
-  const seen = useMaterialAssignmentStore((s) => s.seen);
   const setAutoAssignment = useMaterialAssignmentStore((s) => s.setAutoAssignment);
   const addCustomPart = useMaterialAssignmentStore((s) => s.addCustomPart);
-  const updateCustomPart = useMaterialAssignmentStore((s) => s.updateCustomPart);
   const removeCustomPart = useMaterialAssignmentStore((s) => s.removeCustomPart);
 
-  const [group, setGroup] = useState(PART_GROUPS[0].id);
   const [showAll, setShowAll] = useState(false);
-  const [openOverride, setOpenOverride] = useState(null);
+  const [selected, setSelected] = useState(null);       // a line id
+  const [family, setFamily] = useState(null);            // a Sheets line's family exception, when chosen
   // F8: the row a joiner is typing, before it exists.
   const [draft, setDraft] = useState({ name: '', unit: 'pcs', qtyPerUnit: 1 });
 
-  // The workshop's own stock list, once. Mock mode, a dead network and a table
-  // that is not there all leave the sample list standing (iron rule 6).
-  useEffect(() => { loadMaterials?.().catch(() => {}); }, [loadMaterials]);
+  // T-CC1b F9.2: the tenant's stock, read from Joinery Core on open.
+  useEffect(() => { loadMaterials?.()?.catch?.(() => {}); }, [loadMaterials]);
 
   const entries = useMemo(() => allResults(), [units, runElements, allResults]);
-  const usage = useMemo(
-    () => projectPartUsage(entries, { profile, design }),
-    [entries, profile, design],
-  );
+  const bom = useMemo(() => buildBom(entries, { design, profile }), [entries, design, profile]);
+  const usage = useMemo(() => projectPartUsage(entries, { profile, design }), [entries, profile, design]);
+  const shownUsage = useMemo(() => {
+    if (!showAll) return usage;
+    const out = { ...usage };
+    for (const p of ALL_PARTS) if (!out[p.id]) out[p.id] = { qty: 0, unit: p.unit, families: [] };
+    return out;
+  }, [usage, showAll]);
 
-  // A part is MISSING when a family that uses it has nothing behind it. Parts
-  // this design does not contain are not counted — a joiner who has assigned
-  // everything his kitchen holds must not be told 41 things are outstanding.
   const missingOf = useMemo(() => {
     const out = {};
-    for (const missing of unassignedInUse(entries, { assignments: data, profile, design, materials })) {
-      out[missing.partId] = missing.families;
+    for (const m of unassignedInUse(entries, { assignments: data, profile, design, materials })) {
+      out[m.partId] = m.families.length ? m.families : [null];
     }
     return out;
   }, [entries, data, profile, design, materials]);
 
-  const counts = useMemo(() => {
-    const out = {};
-    for (const g of PART_GROUPS) out[g.id] = 0;
-    for (const partId of Object.keys(missingOf)) {
-      const g = PART_GROUPS.find((x) => partsInGroup(x.id).some((p) => p.id === partId));
-      if (g) out[g.id] += 1;
-    }
-    return out;
-  }, [missingOf]);
-
-  const totalMissing = Object.keys(missingOf).length;
-
-  // A part the design has only just started needing reads NEW until it has been
-  // shown once. Marking happens on the way OUT of the render, so the badge
-  // survives the frame it appears on.
-  const rows = useMemo(() => {
-    const all = partsInGroup(group);
-    return showAll ? all : all.filter((p) => usage[p.id] || missingOf[p.id]);
-  }, [group, showAll, usage, missingOf]);
-
-  useEffect(() => {
-    const ids = rows.map((p) => p.id);
-    const t = setTimeout(() => markSeen?.(ids), 1200);
-    return () => clearTimeout(t);
-  }, [rows, markSeen]);
-
   // ─── TURN 39 (CLAUDE.md F4): THE AUTOMATICS ──────────────────────────────
-  //
   // *"zawiasy automatycznie po wyborze koloru, nóżki też automatycznie w
-  // zależności od wysokości."*
-  //
-  // The rules PROPOSE; `setAutoAssignment` decides, and it refuses to touch a
-  // part a hand has set. So running this on open is safe by construction and
-  // running it twice changes nothing the second time.
+  // zależności od wysokości."* The rules PROPOSE; `setAutoAssignment` refuses
+  // to touch a part a hand has set, so running this on open is safe.
   const proposals = useMemo(
     () => autoAssignments({ entries, design, profile, usage }),
     [entries, design, profile, usage],
@@ -140,32 +117,59 @@ export default function AssignMaterialsModal() {
     for (const r of refusals(proposals)) out[r.partId] = r.why;
     return out;
   }, [proposals]);
-
   const runAutomatics = useMemo(() => () => {
-    for (const p of applicable(proposals)) {
-      setAutoAssignment(p.partId, p.material_id, { variant: null });
-    }
+    for (const p of applicable(proposals)) setAutoAssignment(p.partId, p.material_id, { variant: null });
   }, [proposals, setAutoAssignment]);
-
   useEffect(() => { runAutomatics(); }, [runAutomatics]);
-
   const autoCount = useMemo(
     () => applicable(proposals).filter((p) => assignmentFor(data, p.partId, null)?.material_id === p.material_id).length,
     [proposals, data],
   );
 
-  // Opened from a BOM line's "assign this" button: jump straight to its group.
-  useEffect(() => {
-    if (!openPart) return;
-    const g = PART_GROUPS.find((x) => partsInGroup(x.id).some((p) => p.id === openPart));
-    if (g) setGroup(g.id);
-  }, [openPart]);
+  // T-CC1b F10.1: the schema 2 migration, once, at load: a legacy role value
+  // reaches every key of that role the current BOM lists.
+  useEffect(() => { adoptHardwareKeys?.(bom.hardware || []); }, [bom, adoptHardwareKeys]);
 
-  const pick = (partId, material, family = null) => {
-    if (!material) { removeAssignment(partId, family); return; }
-    const prev = assignmentFor(data, partId, family);
-    setAssignment(partId, material.id, prev?.yield ?? 1.0, family);
+  const lines = useMemo(
+    () => buildAssignLines({ bom, data, materials, usage: shownUsage, missingOf }),
+    [bom, data, materials, shownUsage, missingOf],
+  );
+  const count = assignCount(lines.filter((l) => l.qty !== 0 || l.type !== 'part'));
+  const byGroup = useMemo(() => {
+    const out = Object.fromEntries(ASSIGN_GROUPS.map((g) => [g.id, []]));
+    for (const l of lines) (out[l.group] || out.consumables).push(l);
+    return out;
+  }, [lines]);
+
+  // The line being assigned: the one clicked, else the BOM line's part this
+  // window was opened from, else the first that is not assigned.
+  const current = lines.find((l) => l.id === selected)
+    || (openPart ? lines.find((l) => l.partId === openPart) : null)
+    || lines.find((l) => !l.assigned)
+    || lines[0]
+    || null;
+  const choose = (line, fam = null) => { setSelected(line.id); setFamily(fam); };
+
+  const assign = (line, material, fam = null) => {
+    if (!line) return;
+    if (line.type === 'hardware') {
+      if (material) setHardwareAssignment(line.key, material.id);
+      else clearHardwareAssignment(line.key);
+      syncHardwarePart(line.role, bom.hardware || []);
+      return;
+    }
+    if (!material) { removeAssignment(line.partId, fam); return; }
+    const prev = assignmentFor(data, line.partId, fam);
+    setAssignment(line.partId, material.id, prev?.yield ?? 1.0, fam);
   };
+
+  const tree = useMemo(() => categoryTree(stockCategories), [stockCategories]);
+  const stockRows = ownMaterials.filter((m) => !m.placeholder).length;
+  const currentValue = current
+    ? (current.type === 'part' && family
+      ? data?.overrides?.[current.partId]?.[family]?.material_id || null
+      : current.material?.id || null)
+    : null;
 
   return (
     <Modal
@@ -173,13 +177,14 @@ export default function AssignMaterialsModal() {
       anchor={anchor}
       title="Assign materials"
       onClose={closeModal}
-      width="w-[860px]"
+      width="w-[1240px]"
+      className="cc-modal-wide"
       footer={(
         <>
-          <span className="text-[11px] text-ink-400 mr-auto">
-            {materialsSource === 'db'
-              ? `${ownMaterials.length} materials from this workshop’s stock list`
-              : `${ownMaterials.length} sample materials — Database ▸ Materials has not been loaded`}
+          <span className="text-ink-400 mr-auto" data-assign-source={materialsSource}>
+            {materialsSource === 'jc'
+              ? `${stockRows} materials from your Joinery Core stock, and the three generic boards`
+              : (stockError || JC_OFFLINE)}
           </span>
           <button
             type="button"
@@ -204,285 +209,244 @@ export default function AssignMaterialsModal() {
       )}
     >
       <div className="flex flex-col gap-2" data-assign-materials="1">
-        {/* THE RUNNING COUNTER — CLAUDE.md F3 asks for it by name. */}
+        {/* THE HEADER LINE, F10.3: what is assigned, and in red what is not. */}
         <div
-          className={totalMissing > 0
-            ? 'flex items-center gap-2 rounded px-2 py-1.5 border border-status-warn/60 bg-status-warn/10 text-status-warn text-xs'
-            : 'flex items-center gap-2 rounded px-2 py-1.5 border border-status-ok/50 bg-status-ok/10 text-status-ok text-xs'}
-          data-assign-counter={String(totalMissing)}
+          className={count.missing > 0
+            ? 'flex items-center gap-3 rounded px-2 py-1.5 border border-status-danger/60 bg-status-danger/10'
+            : 'flex items-center gap-3 rounded px-2 py-1.5 border border-status-ok/50 bg-status-ok/10 text-status-ok'}
+          data-assign-counter={String(count.missing)}
+          data-assign-total={String(count.total)}
         >
-          <span className="font-medium tabular-nums">
-            {totalMissing === 0
-              ? 'Every part this job uses has a material'
-              : `${totalMissing} part${totalMissing === 1 ? '' : 's'} unassigned`}
-          </span>
-          <span className="text-ink-400">
-            {totalMissing > 0 ? '— a BOM with these in it cannot be costed' : '— the BOM is complete'}
-          </span>
+          <span className="font-medium tabular-nums text-ink-100">{count.text}</span>
+          {count.missing > 0 && (
+            <span className="text-status-danger font-medium" data-assign-missing-words="1">{count.missingText}</span>
+          )}
         </div>
 
-        <div className="flex gap-3 min-h-[420px]">
-          {/* LEFT: the seven groups, with what is missing beside each. */}
-          <div className="w-[190px] shrink-0 flex flex-col gap-1">
-            {PART_GROUPS.map((g) => {
-              const missing = counts[g.id] || 0;
-              const active = g.id === group;
+        <div className="flex gap-4 min-h-[460px]">
+          {/* LEFT: the demand, in the six groups. */}
+          <div className="w-[600px] shrink-0 cc-scroll max-h-[64vh] pr-1" data-assign-demand="1">
+            {ASSIGN_GROUPS.map((g) => {
+              const rows = byGroup[g.id] || [];
+              const missing = rows.filter((l) => !l.assigned).length;
               return (
-                <button
-                  key={g.id}
-                  type="button"
-                  onClick={() => setGroup(g.id)}
-                  title={g.hint}
-                  data-assign-group={g.id}
-                  data-assign-group-missing={String(missing)}
-                  className={`cc-btn text-left flex items-center gap-2 ${active ? 'border-gold text-gold' : ''}`}
-                >
-                  {/* The dot. It is the group-level half of the owner's
-                      "podkreślone … nieprzypisane": you can see which drawer of
-                      the cabinet has something missing in it without opening it. */}
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${missing > 0 ? 'bg-status-warn' : 'bg-shell-600'}`}
-                    aria-hidden="true"
-                  />
-                  <span className="flex-1 truncate text-[12px]">{g.label}</span>
-                  {missing > 0 && (
-                    <span className="text-[10px] tabular-nums text-status-warn">{missing}</span>
+                <section key={g.id} className="mb-3" data-assign-group={g.id} data-assign-group-lines={String(rows.length)} data-assign-group-missing={String(missing)}>
+                  <div className="flex items-center gap-2 text-gold uppercase tracking-wide mb-1">
+                    <span>{g.label}</span>
+                    <span className="text-ink-400 normal-case tracking-normal tabular-nums">
+                      {rows.length} line{rows.length === 1 ? '' : 's'}{missing ? `, ${missing} not assigned` : ''}
+                    </span>
+                  </div>
+                  {rows.length === 0 && <p className="text-ink-400 px-2">Nothing in this group in this job.</p>}
+                  {rows.length > 0 && (
+                    <table className="w-full">
+                      <tbody>
+                        {rows.map((line) => (
+                          <LineRow
+                            key={line.id}
+                            line={line}
+                            active={current?.id === line.id}
+                            family={current?.id === line.id ? family : null}
+                            data={data}
+                            materials={materials}
+                            tree={tree}
+                            refused={line.partId ? refusedBy[line.partId] : null}
+                            onChoose={(fam) => choose(line, fam)}
+                            onAssign={(m, fam) => assign(line, m, fam)}
+                            onYield={(v) => setYield(line.partId, Number(v) || 1)}
+                            onRemoveCustom={() => removeCustomPart(line.partId)}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
                   )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* RIGHT: the parts of the chosen group. */}
-          <div className="flex-1 min-w-0 cc-scroll max-h-[460px] pr-1">
-            {rows.length === 0 && (
-              <p className="text-[11px] text-ink-400 p-3">
-                Nothing in this group is used by this job yet — “Show every part” lists them all.
-              </p>
-            )}
-            {/* ─── TURN 39 (CLAUDE.md F8): THE JOINER'S OWN ROWS ─────────────
-                Production Core's `customParts`. A line the user types, with a
-                quantity per cabinet, assigned like any registry part and merged
-                down the SAME path — so a dowel on the same board as a shelf
-                lands on the same purchase line. */}
-            {group === 'consumable' && (
-              <div className="mb-2 rounded border border-shell-600 bg-shell-700/30 p-2" data-custom-parts="1">
-                <div className="cc-label mb-1">Your own consumables — a quantity per cabinet</div>
-                {(data?.customParts || []).map((cp) => {
-                  const own = assignmentFor(data, cp.id, null);
-                  return (
-                    <div key={cp.id} className="flex items-center gap-1.5 mb-1" data-custom-part={cp.id}>
+                  {/* TURN 39 (CLAUDE.md F8): THE JOINER'S OWN ROWS, a quantity per cabinet. */}
+                  {g.id === 'consumables' && (
+                    <div className="flex items-center gap-1.5 mt-1" data-custom-parts="1">
                       <input
-                        className="cc-input flex-1 text-xs"
-                        value={cp.name}
-                        onChange={(e) => updateCustomPart(cp.id, { name: e.target.value })}
-                        aria-label="Name"
+                        className="cc-input flex-1"
+                        placeholder="Your own consumable, e.g. Dowels 8 x 40"
+                        value={draft.name}
+                        data-custom-draft-name="1"
+                        onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
                       />
                       <NumberField
-                        value={cp.qtyPerUnit}
+                        value={draft.qtyPerUnit}
                         min={0.01}
                         max={9999}
                         integer={false}
                         decimals={2}
-                        onCommit={(v) => updateCustomPart(cp.id, { qtyPerUnit: Number(v) || 1 })}
+                        onCommit={(v) => setDraft((d) => ({ ...d, qtyPerUnit: Number(v) || 1 }))}
                         className="cc-input w-[70px] text-right"
                       />
                       <select
-                        className="cc-input w-[70px] text-xs"
-                        value={cp.unit}
-                        onChange={(e) => updateCustomPart(cp.id, { unit: e.target.value })}
-                        aria-label="Unit"
+                        className="cc-input w-[80px]"
+                        value={draft.unit}
+                        data-custom-draft-unit="1"
+                        onChange={(e) => setDraft((d) => ({ ...d, unit: e.target.value }))}
                       >
                         {['pcs', 'm', 'm²', 'L', 'kg', 'tubes'].map((u) => <option key={u} value={u}>{u}</option>)}
                       </select>
-                      <div className="w-[200px]">
-                        <MaterialPicker
-                          materials={materials}
-                          materialType={null}
-                          value={own?.material_id || null}
-                          testId={cp.id}
-                          onSelect={(m) => pick(cp.id, m, null)}
-                        />
-                      </div>
                       <button
                         type="button"
-                        className="cc-btn-ghost text-status-danger"
-                        title="Remove this line"
-                        data-custom-remove={cp.id}
-                        onClick={() => removeCustomPart(cp.id)}
+                        className="cc-btn"
+                        data-custom-add="1"
+                        disabled={!draft.name.trim()}
+                        onClick={() => {
+                          addCustomPart(draft);
+                          setDraft({ name: '', unit: 'pcs', qtyPerUnit: 1 });
+                        }}
                       >
-                        ×
+                        Add
                       </button>
                     </div>
-                  );
-                })}
-                <div className="flex items-center gap-1.5">
-                  <input
-                    className="cc-input flex-1 text-xs"
-                    placeholder="Dowels 8 × 40…"
-                    value={draft.name}
-                    data-custom-draft-name="1"
-                    onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-                  />
-                  <NumberField
-                    value={draft.qtyPerUnit}
-                    min={0.01}
-                    max={9999}
-                    integer={false}
-                    decimals={2}
-                    onCommit={(v) => setDraft((d) => ({ ...d, qtyPerUnit: Number(v) || 1 }))}
-                    className="cc-input w-[70px] text-right"
-                  />
-                  <select
-                    className="cc-input w-[70px] text-xs"
-                    value={draft.unit}
-                    data-custom-draft-unit="1"
-                    onChange={(e) => setDraft((d) => ({ ...d, unit: e.target.value }))}
-                  >
-                    {['pcs', 'm', 'm²', 'L', 'kg', 'tubes'].map((u) => <option key={u} value={u}>{u}</option>)}
-                  </select>
-                  <button
-                    type="button"
-                    className="cc-btn"
-                    data-custom-add="1"
-                    disabled={!draft.name.trim()}
-                    onClick={() => {
-                      addCustomPart(draft);
-                      setDraft({ name: '', unit: 'pcs', qtyPerUnit: 1 });
-                    }}
-                  >
-                    Add
-                  </button>
-                </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+
+          {/* RIGHT: the stock, embedded and visible at once. */}
+          <div className="flex-1 min-w-0 flex flex-col gap-2" data-assign-stock="1">
+            <div className="text-ink-100" data-assign-target={current?.id || ''}>
+              {current
+                ? <>Assigning: <span className="text-gold">{current.label}</span>{current.spec ? <span className="text-ink-400">{` ${current.spec}`}</span> : null}{family ? <span className="text-ink-400">{`, ${familyLabel(family)} only`}</span> : null}</>
+                : 'This job has no line to assign yet.'}
+            </div>
+            {stockError && (
+              <div className="flex items-center gap-2 rounded px-2 py-1.5 border border-status-warn/60 bg-status-warn/10 text-status-warn" data-stock-offline="1">
+                <span className="flex-1">{stockError}</span>
+                <button type="button" className="cc-btn" onClick={() => loadMaterials()} data-stock-retry="1">Retry</button>
               </div>
             )}
-
-            <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-shell-800 text-ink-400 text-[10px] uppercase tracking-wide">
-                <tr>
-                  <th className="text-left font-normal py-1 w-[34%]">Part</th>
-                  <th className="text-left font-normal py-1">Material</th>
-                  <th className="text-right font-normal py-1 w-[70px]">Yield</th>
-                  <th className="text-right font-normal py-1 w-[92px]">This job</th>
-                  <th className="w-[30px]" />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((part) => {
-                  const use = usage[part.id] || null;
-                  const missing = missingOf[part.id] || null;
-                  const base = assignmentFor(data, part.id, null);
-                  const isAuto = Boolean(base?.auto);
-                  const isNew = use && !seen[part.id] && !base?.material_id;
-                  const overrides = VARIANT_ORDER
-                    .map((f) => [f, data?.overrides?.[part.id]?.[f] || null])
-                    .filter(([, v]) => v);
-                  const expanded = openOverride === part.id;
-                  return (
-                    <Fragment key={part.id}>
-                      <tr
-                        data-assign-part={part.id}
-                        data-assign-missing={missing ? '1' : '0'}
-                        className={`border-t border-shell-600/50 ${use ? '' : 'opacity-50'}`}
-                      >
-                        <td className="py-1.5 pr-2 align-top">
-                          <div className="flex items-center gap-1.5">
-                            {/* THE MARK. Underline + colour, exactly as asked. */}
-                            <span
-                              className={missing
-                                ? 'text-status-warn underline decoration-status-warn decoration-2 underline-offset-2'
-                                : 'text-ink-100'}
-                            >
-                              {part.name}
-                            </span>
-                            {isNew && <span className="cc-tag border-status-warn/60 text-status-warn" data-assign-new="1">new</span>}
-                            {isAuto && <span className="cc-tag" data-assign-auto={part.id}>auto</span>}
-                          </div>
-                          <div className="text-[10px] text-ink-400 leading-tight">{part.note}</div>
-                          {/* F4: an automatic that could NOT be made says why,
-                              here, beside the part it is about. "Out of range →
-                              leaves it unassigned and says why." */}
-                          {refusedBy[part.id] && !base?.material_id && (
-                            <div className="text-[10px] text-status-warn/80 leading-tight" data-assign-why={part.id}>
-                              auto: {refusedBy[part.id]}
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-1.5 pr-2 align-top">
-                          <MaterialPicker
-                            materials={materials}
-                            materialType={part.materialType}
-                            value={base?.material_id || null}
-                            testId={part.id}
-                            onSelect={(m) => pick(part.id, m, null)}
-                          />
-                        </td>
-                        <td className="py-1.5 pr-1 align-top">
-                          <NumberField
-                            value={base?.yield ?? 1}
-                            min={1}
-                            max={3}
-                            step={0.01}
-                            integer={false}
-                            decimals={2}
-                            onCommit={(v) => setYield(part.id, Number(v) || 1)}
-                            className="cc-input w-[64px] text-right"
-                            data-assign-yield={part.id}
-                          />
-                        </td>
-                        <td className="py-1.5 pr-1 align-top text-right tabular-nums text-ink-200">
-                          {use ? formatQty(use.qty, use.unit) : '—'}
-                        </td>
-                        <td className="py-1.5 align-top text-right">
-                          <button
-                            type="button"
-                            className={overrides.length || expanded ? 'cc-btn-ghost text-gold' : 'cc-btn-ghost'}
-                            title="Per cabinet family — a different board in the wardrobes from the kitchen bases"
-                            data-assign-override={part.id}
-                            onClick={() => setOpenOverride(expanded ? null : part.id)}
-                          >
-                            {overrides.length ? `⋮${overrides.length}` : '⋮'}
-                          </button>
-                        </td>
-                      </tr>
-                      {expanded && (
-                        <tr className="bg-shell-700/30">
-                          <td colSpan={5} className="px-2 py-2">
-                            <div className="text-[10px] uppercase tracking-wide text-ink-400 mb-1">
-                              Per cabinet family — blank inherits the project’s board above
-                            </div>
-                            <div className="grid grid-cols-5 gap-1.5">
-                              {VARIANT_ORDER.map((family) => {
-                                const own = data?.overrides?.[part.id]?.[family] || null;
-                                const missingHere = missing?.includes(family);
-                                return (
-                                  <div key={family}>
-                                    <div className={`cc-label mb-0.5 ${missingHere ? 'text-status-warn' : ''}`}>
-                                      {familyLabel(family)}
-                                    </div>
-                                    <MaterialPicker
-                                      materials={materials}
-                                      materialType={part.materialType}
-                                      value={own?.material_id || null}
-                                      placeholder="— inherit —"
-                                      testId={`${part.id}@${family}`}
-                                      onSelect={(m) => pick(part.id, m, family)}
-                                    />
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+            {!stockError && materialsSource === 'jc' && stockRows === 0 && (
+              <div className="flex items-center gap-2 rounded px-2 py-1.5 border border-shell-600" data-stock-empty="1">
+                <span className="flex-1">{STOCK_EMPTY}</span>
+                <a className="cc-btn" href={STOCK_PAGE} target="_blank" rel="noreferrer" data-stock-open="1">Open Stock</a>
+              </div>
+            )}
+            <MaterialPicker
+              materials={materials}
+              value={currentValue}
+              kind={current?.kind || 'all'}
+              tree={tree}
+              testId="assign"
+              onSelect={current ? (m) => assign(current, m, current.type === 'part' ? family : null) : null}
+              onClear={current ? () => assign(current, null, current.type === 'part' ? family : null) : null}
+            />
           </div>
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** One line of the demand: label and spec, quantity, then the material or the red chip. */
+function LineRow({
+  line, active, family, data, materials, tree, refused, onChoose, onAssign, onYield, onRemoveCustom,
+}) {
+  const [openFamilies, setOpenFamilies] = useState(false);
+  const isSheet = line.type === 'part' && line.group === 'sheets';
+  const m = line.material;
+  return (
+    <>
+      <tr
+        className={`border-t border-shell-600/50 cursor-pointer ${active ? 'bg-gold/10' : 'hover:bg-shell-700/40'}`}
+        onClick={() => onChoose(null)}
+        data-assign-line={line.type === 'hardware' ? line.key : line.partId}
+        data-assign-line-type={line.type}
+        data-assign-assigned={line.assigned ? '1' : '0'}
+      >
+        <td className="align-top">
+          <div className="text-ink-100">{line.label}</div>
+          {line.spec && <div className="text-ink-400 leading-tight" data-assign-spec="1">{line.spec}</div>}
+          {refused && !line.assigned && <div className="text-status-warn/80 leading-tight" data-assign-why={line.partId}>auto: {refused}</div>}
+        </td>
+        <td className="align-top text-right tabular-nums text-ink-200 whitespace-nowrap">
+          {line.qty == null ? '' : formatQty(line.qty, line.unit)}
+        </td>
+        <td className="align-top">
+          {m ? (
+            <div data-assign-material={m.id}>
+              <span className="text-ink-50">{m.name}</span>
+              {m.jc_uuid && <span className="cc-tag ml-1.5">JC</span>}
+              {m.placeholder && <span className="cc-tag ml-1.5">generic</span>}
+              <div className="text-ink-400 tabular-nums">
+                {[m.item_number || m.code, Number(m.price) > 0 ? `£${Number(m.price).toFixed(2)}${m.unit ? `/${m.unit}` : ''}` : null].filter(Boolean).join(', ')}
+              </div>
+            </div>
+          ) : null}
+          {!line.assigned && (
+            <span className="inline-block rounded px-1.5 py-0.5 border border-status-danger text-status-danger mt-0.5" data-assign-chip="not-assigned">
+              {line.families?.filter(Boolean).length && m
+                ? `Not assigned for ${line.families.filter(Boolean).map(familyLabel).join(', ')}`
+                : 'Not assigned'}
+            </span>
+          )}
+        </td>
+        <td className="align-top text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+          {isSheet && (
+            <NumberField
+              value={line.yield ?? 1}
+              min={1}
+              max={3}
+              step={0.01}
+              integer={false}
+              decimals={2}
+              onCommit={onYield}
+              className="cc-input w-[64px] text-right"
+              data-assign-yield={line.partId}
+              title="Yield: the offcut waste on this board"
+            />
+          )}
+          {isSheet && (
+            <button
+              type="button"
+              className={openFamilies ? 'cc-btn-ghost text-gold ml-1' : 'cc-btn-ghost ml-1'}
+              title="Per cabinet family: a different board in the wardrobes from the kitchen bases"
+              data-assign-override={line.partId}
+              onClick={() => setOpenFamilies((v) => !v)}
+            >
+              Families
+            </button>
+          )}
+          {line.material && (
+            <button type="button" className="cc-btn-ghost ml-1" data-assign-clear={line.id} onClick={() => onAssign(null, null)}>Clear</button>
+          )}
+          {line.type === 'custom' && (
+            <button type="button" className="cc-btn-ghost text-status-danger ml-1" title="Remove this line" data-custom-remove={line.partId} onClick={onRemoveCustom}>Remove</button>
+          )}
+        </td>
+      </tr>
+      {isSheet && openFamilies && (
+        <tr className="bg-shell-700/30">
+          <td colSpan={4}>
+            <div className="text-ink-400 mb-1">Per cabinet family: blank inherits the project's board above</div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {VARIANT_ORDER.map((fam) => {
+                const own = data?.overrides?.[line.partId]?.[fam] || null;
+                const missingHere = line.families?.includes(fam);
+                return (
+                  <div key={fam} className={family === fam ? 'outline outline-1 outline-gold rounded' : ''}>
+                    <button type="button" className={`cc-label mb-0.5 ${missingHere ? 'text-status-danger' : ''}`} onClick={() => onChoose(fam)}>
+                      {familyLabel(fam)}
+                    </button>
+                    <MaterialPickerMenu
+                      materials={materials}
+                      kind="board"
+                      tree={tree}
+                      value={own?.material_id || null}
+                      placeholder="inherit"
+                      testId={`${line.partId}@${fam}`}
+                      onSelect={(mat) => onAssign(mat, fam)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

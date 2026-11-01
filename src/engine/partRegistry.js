@@ -922,7 +922,16 @@ export function legacyToCanonical(id) {
 // Cabinet Core has already been writing under `cc.assignments.v2` since turn 3.
 // A blob stamped `schema: 1` is read here without complaint, so neither reading
 // loses data.
-export const ASSIGNMENT_SCHEMA = 2;
+//
+// ─── T-CC1b F10 · SCHEMA 3: ONE HARDWARE LINE, ONE MATERIAL ─────────────────
+// The owner, 01.11.2026: *"kazda funkcja przypisana (10 rodzajow zawiasow,
+// wszystkie przypisane), inaczej eksport BOM pisze not assigned materials"*.
+// Beside the panel roles and the per-part exceptions of schema 2, the blob
+// carries `hardware: { [key]: { material_id } }` where `key` is the BOM's own
+// hardware key `${role}|${spec_label}` (engine/bom.js, the hardware merge).
+// A schema 2 blob is read without complaint and stamped 3; its legacy role
+// values reach the keys through `migrateHardwareKeys`, once, at load.
+export const ASSIGNMENT_SCHEMA = 3;
 
 const isObj = (v) => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
 
@@ -948,16 +957,16 @@ function cleanValue(val) {
  *   • Production Core's `{ base, overrides }` without a stamp.
  */
 export function normalizeAssignments(raw) {
-  if (!isObj(raw)) return { schema: ASSIGNMENT_SCHEMA, base: {}, overrides: {}, customParts: [], auto: {} };
+  if (!isObj(raw)) return { schema: ASSIGNMENT_SCHEMA, base: {}, overrides: {}, customParts: [], auto: {}, hardware: {} };
 
   // A blob that carries ANY canonical key is canonical. `customParts` and
   // `auto` count: a project whose only assignment is one custom consumable has
   // no `base` yet, and reading it as turn 3's flat role map would drop the row
   // on the floor.
   const hasCanonicalShape = isObj(raw.base) || isObj(raw.overrides)
-    || Array.isArray(raw.customParts) || isObj(raw.auto) || raw.schema != null;
+    || Array.isArray(raw.customParts) || isObj(raw.auto) || isObj(raw.hardware) || raw.schema != null;
   const out = {
-    schema: ASSIGNMENT_SCHEMA, base: {}, overrides: {}, customParts: [], auto: {},
+    schema: ASSIGNMENT_SCHEMA, base: {}, overrides: {}, customParts: [], auto: {}, hardware: {},
   };
 
   if (hasCanonicalShape) {
@@ -992,6 +1001,11 @@ export function normalizeAssignments(raw) {
       .filter((cp) => cp.id);
     for (const [id, on] of Object.entries(isObj(raw.auto) ? raw.auto : {})) {
       if (on) out.auto[legacyToCanonical(id).key] = true;
+    }
+    // T-CC1b F10: the hardware lines, by the BOM's key; the material only (law 6).
+    for (const [key, val] of Object.entries(isObj(raw.hardware) ? raw.hardware : {})) {
+      if (!isObj(val) || !key.includes('|')) continue;
+      out.hardware[key] = { material_id: String(val.material_id ?? '') };
     }
     return out;
   }
@@ -1052,7 +1066,35 @@ export function expandAssignments(data) {
     if (flat[legacyId]) continue;              // a real part id of that name wins
     if (flat[partId]) flat[legacyId] = { ...flat[partId] };
   }
+  // T-CC1b F10: the hardware lines ride the flat view under their own name,
+  // so `hardwareDemand` reads `assignments.hardware[key]` from either shape.
+  flat.hardware = { ...d.hardware };
   return flat;
+}
+
+/**
+ * T-CC1b F10 · THE SCHEMA 2 MIGRATION. Each legacy role value of a HARDWARE
+ * role (`base[hinge]`, written by a hand or by the automatics) is copied to
+ * every key of that role the current BOM lists, so nothing a joiner assigned
+ * is lost. A key that already exists (assigned, or cleared on purpose) is
+ * never touched, which is what makes it happen once. Pure.
+ *
+ * @param {object} data   the blob (any shape)
+ * @param {Array}  rows   the BOM's hardware rows ({ role, spec_label })
+ */
+export function migrateHardwareKeys(data, rows = []) {
+  const d = normalizeAssignments(data);
+  const flat = expandAssignments(d);
+  const hardware = { ...d.hardware };
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (!row?.role) continue;
+    const key = `${row.role}|${row.spec_label}`;
+    if (hardware[key]) continue;
+    const partId = HARDWARE_TO_PART_ID[row.role] || INVOICE_TO_PART_ID[row.role] || row.role;
+    const legacy = flat[row.role]?.material_id || flat[partId]?.material_id || '';
+    if (legacy) hardware[key] = { material_id: legacy };
+  }
+  return { ...d, hardware };
 }
 
 /**

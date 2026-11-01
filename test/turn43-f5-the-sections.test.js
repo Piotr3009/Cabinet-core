@@ -56,7 +56,8 @@ const SET_NAMES = [
   '3D', 'Wall A · Fronts', 'Wall B · Fronts', 'Wall A · Without fronts', 'Wall B · Without fronts',
   'Wall A · X-ray', 'Wall B · X-ray', 'Plan · base units', 'Plan · wall units',
   'Wall A · Sections A-A', 'Wall B · Sections A-A',
-  'Visualisation', 'Cut list and materials',
+  // AMENDED 01.11.2026 (T-CC1b F8.2): *"dodac wizualizacje z drugiego kata"*, the two angles.
+  'Visualisation, left', 'Visualisation, right', 'Cut list and materials',
 ];
 
 test('F5 — the set is exactly the seven sheets CLAUDE.md names', () => {

@@ -21,6 +21,8 @@ import {
 // T-CC1a F9: the crash buffer's boot question (law 7) and the one save for "Save as new item".
 import { bootOffers, clearBuffer, offerQuestion, RESTORED_WORDS } from '../lib/crashBuffer.js';
 import { persistProject } from '../lib/persist.js';
+// T-CC1b F1.2: the same way back to Joinery Core as the Studio bar's.
+import { BACK_TO_JC_LABEL, goToJoineryCore } from '../lib/topMenu.js';
 
 // ─── Start screen (BACKLOG #7; turn 7, BACKLOG #41) ───
 // The AutoCAD arrangement, because that is what Piotr opens every morning:
@@ -80,7 +82,11 @@ export default function StartScreen() {
   const onRestore = (offer) => {
     useHistoryStore.getState().clear();
     const res = useProjectStore.getState().openItemDesign(offer.item, offer.design, {
-      client: projectOfItem(list, offer.item)?.client || '', storage, dirty: true,
+      client: projectOfItem(list, offer.item)?.client || '',
+      // T-CC1b F1.3: a buffer restore fills the bound project's name from the loaded list.
+      jcProjectName: projectOfItem(list, offer.item)?.name || '',
+      storage,
+      dirty: true,
     });
     if (!res.ok) { notify(res.error, 'error'); return; }
     dropOffer(offer);
@@ -102,7 +108,9 @@ export default function StartScreen() {
       const made = await createItem({ name: offer.name, project });
       if (made.error) { notify(`${offer.name}: not saved as a new item. ${made.error}`, 'error'); return; }
       useHistoryStore.getState().clear();
-      const res = useProjectStore.getState().openItemDesign(made.row, offer.design, { client: project.client || '', storage, dirty: true });
+      const res = useProjectStore.getState().openItemDesign(made.row, offer.design, {
+        client: project.client || '', jcProjectName: project.name || '', storage, dirty: true,
+      });
       if (!res.ok) { notify(res.error, 'error'); return; }
       const saved = await persistProject({});
       notify(saved.message, saved.tone);
@@ -146,7 +154,8 @@ export default function StartScreen() {
     setBusy(true);
     try {
       useHistoryStore.getState().clear();
-      const res = await openItem(item.id, { client: project?.client || '' });
+      // T-CC1b F1.3: the bound project's name rides into the store for the header's job block.
+      const res = await openItem(item.id, { client: project?.client || '', jcProjectName: project?.name || '' });
       if (!res.ok) { notify(res.error, 'error'); return; }
       const design = migrateDesign(useProjectStore.getState().project.design);
       if (design.projectType) setLibraryCategory(getProjectType(design.projectType).category);
@@ -213,6 +222,10 @@ export default function StartScreen() {
           {/* T-CC1a F4.2: the company and the signed-in name, from Joinery Core's /me (PROPOSED). */}
           <span className="text-xs text-ink-200" data-jc-company="1">{tenant?.name || ''}</span>
           <span className="text-xs text-ink-400" data-jc-user="1">{user?.full_name || user?.email || ''}</span>
+          {/* T-CC1b F1.2: *"duzy przycisk Return to Joinery Core"*, so a user who never opens an item can leave. */}
+          <button type="button" className="cc-btn-gold self-center" data-start-back-jc="1" onClick={() => goToJoineryCore()}>
+            {BACK_TO_JC_LABEL}
+          </button>
         </header>
 
         <div className="cc-divider" />

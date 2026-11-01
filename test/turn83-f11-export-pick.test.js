@@ -34,7 +34,7 @@ import { bookletDoc, exportWallDrawingsDxf, exportWallDrawingsPdf } from '../src
 
 const THREE = ['Cut list and materials', 'Wall A · Fronts', 'Plan · base units'];
 
-/** The T81 kitchen's set: nine sheets. */
+/** The T81 kitchen's set: ten sheets (T-CC1b F8.2: the visualisation is the left and the right angle). */
 function theSet() {
   t81Kitchen({ inframe: false });
   return wallDrawingSheets(setArgs());
@@ -54,12 +54,12 @@ function inTempDir(fn) {
   try { return fn(dir); } finally { process.chdir(was); rmSync(dir, { recursive: true, force: true }); }
 }
 
-test('T83 F11 · the T81 kitchen\'s set has nine sheets, and three of them are picked in the SET\'s order', () => {
+test('T83 F11 · the T81 kitchen\'s set has ten sheets (T-CC1b F8.2), and three of them are picked in the SET\'s order', () => {
   const set = theSet();
-  assert.equal(set.length, 9, set.map((s) => s.name).join(', '));
+  assert.equal(set.length, 10, set.map((s) => s.name).join(', '));
   const three = pickedSheets(set, THREE);
   assert.deepEqual(three.map((s) => s.name), ['Wall A · Fronts', 'Plan · base units', 'Cut list and materials'], 'the set\'s order, not the order ticked');
-  assert.deepEqual(three.map((s) => s.no), ['02', '05', '09']);
+  assert.deepEqual(three.map((s) => s.no), ['02', '05', '10']);
   // The same entries, not copies: the window keeps showing the set.
   assert.ok(three.every((s) => set.includes(s)));
   // null is every sheet; a predicate is asked of each; nothing ticked is nothing.
@@ -78,7 +78,7 @@ test('T83 F11 · numberPages: each bound page counts the pages bound; the set it
   assert.deepEqual(pages.map((p) => [p.pageNo, p.pageOf]), [['01', '03'], ['02', '03'], ['03', '03']]);
   // The sheets the window shows still say their place in the set.
   assert.deepEqual(three.map((s) => sheetCell(s.sheet)), before);
-  assert.deepEqual(before, [['02 / 09'], ['05 / 09'], ['09 / 09']]);
+  assert.deepEqual(before, [['02 / 10'], ['05 / 10'], ['10 / 10']]);
   // A drawing keeps its number: only the SHEET cell counts the pages.
   for (const [i, p] of pages.entries()) {
     const words = p.entities.filter((e) => e.kind === 'text').map((e) => e.text);
@@ -106,10 +106,10 @@ test('T83 F11 · exportWallDrawingsPdf given three of nine sheets writes three p
     // Page by page, the set's order: the fronts, the plan, the cut list.
     const texts = pageTexts(out.doc);
     assert.equal(texts.length, 3);
-    ['02 · Wall A · Fronts', '05 · Plan · base units', '09 · Cut list and materials'].forEach((name, i) => {
+    ['02 · Wall A · Fronts', '05 · Plan · base units', '10 · Cut list and materials'].forEach((name, i) => {
       assert.ok(texts[i].includes(`(${name}) Tj`), `page ${i + 1} is ${name}`);
       assert.ok(texts[i].includes(`(0${i + 1} / 03) Tj`), `page ${i + 1} reads 0${i + 1} / 03`);
-      assert.ok(!/\/ 09\) Tj/.test(texts[i]), `page ${i + 1} does not count the whole set`);
+      assert.ok(!/\/ 10\) Tj/.test(texts[i]), `page ${i + 1} does not count the whole set`);
     });
   });
 });
@@ -122,9 +122,9 @@ test('T83 F11 · one sheet (Fronts only) is a one-page PDF; the whole set prints
     assert.ok(pageTexts(one.doc)[0].includes('(01 / 01) Tj'));
     // Every sheet ticked (the default): the pages the set always bound, stream for stream.
     const all = exportWallDrawingsPdf(set.map((s) => s.sheet), { project: 'T83 F11' });
-    assert.equal(all.pages, 9);
+    assert.equal(all.pages, 10);
     assert.deepEqual(pageTexts(all.doc), pageTexts(bookletDoc(set.map((s) => s.sheet))), 'the whole set unchanged');
-    assert.deepEqual(pageTexts(all.doc).map((t) => (t.match(/\((\d\d \/ \d\d)\) Tj/) || [])[1]), set.map((s) => `${s.no} / 09`));
+    assert.deepEqual(pageTexts(all.doc).map((t) => (t.match(/\((\d\d \/ \d\d)\) Tj/) || [])[1]), set.map((s) => `${s.no} / 10`));
   });
 });
 
@@ -147,7 +147,7 @@ test('T83 F11 · the Wall DXF binds the same ticked sheets, each strip counting 
     for (const [i, name] of out.files.entries()) {
       const body = await zip.file(name).async('string');
       assert.ok(body.includes(`0${i + 1} / 03`), `${name} reads 0${i + 1} / 03`);
-      assert.ok(!body.includes(' / 09'), `${name} does not count the whole set`);
+      assert.ok(!body.includes(' / 10'), `${name} does not count the whole set`);
     }
     assert.ok(out.files[0].startsWith('wall-a'), out.files[0]);
   } finally {

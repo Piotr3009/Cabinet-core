@@ -473,9 +473,10 @@ test('F21 - the CNC part label carries the paint code beside the part number, co
 });
 
 test('F21 - Output > Spraying... and the Spraying button open one registered window; the note is typed per line key and rides the project', () => {
-  const menu = buildOutputMenu({ onOpenSpraying: () => {} });
-  const item = menu.items.find((i) => i.label === 'Spraying\u2026');
-  assert.ok(item && typeof item.run === 'function', 'Output carries Spraying...');
+  // AMENDED BY T-CC1b F5: Output > Spraying... is deleted (*"Output tylko: cutting list, BOM PDF, labels 21 i 44"*,
+  // the owner, 01.11.2026); the Spraying menu's own button is the one door to the page.
+  const menu = buildOutputMenu({});
+  assert.equal(menu.items.find((i) => i.label === 'Spraying\u2026'), undefined, 'Output carries no Spraying...');
   assert.ok(MODAL_KINDS.spraying, 'the registry knows the window');
   assert.equal(MODAL_KINDS.spraying.about, 'project');
   const top = read('src/components/TopBar.jsx');

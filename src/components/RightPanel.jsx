@@ -49,6 +49,8 @@ import CncTree from './CncTree.jsx';
 import UnitWarnings from './UnitWarnings.jsx';
 import ShelfHingeClash from './ShelfHingeClash.jsx';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
+import { useAuthStore } from '../stores/authStore.js';
+import { STYLE_NOT_OFFERED, frontStylesFor, styleNotOffered } from '../lib/tenantFlags.js';
 
 // T84 F4 (CLAUDE.md T84 PART B; verify/t84/p1-host.md C): WHERE THE PANEL STANDS.
 // 'overlay' is the panel as it has always stood, laid over the canvas's right
@@ -72,6 +74,8 @@ const PANEL_ASIDE = {
 // item is placed where it cannot collide, and adding internal drawers swings the
 // doors open so you can see what you just asked for.
 export default function RightPanel({ layout = 'overlay', headerActions = null } = {}) {
+  // T-CC1b F14 . the ornate fronts are Skylon's (*"ornamenty zostaw tylko dla Skylon Joinery"*, the owner, 01.11.2026).
+  const tenantId = useAuthStore((s) => s.tenant?.id);
   // T84 F4 · the host's two props, honoured by every branch below: where the
   // aside stands, and what the host adds INSIDE the one header (one panel, one
   // header: CLAUDE.md T84 LAWS 2).
@@ -580,7 +584,7 @@ export default function RightPanel({ layout = 'overlay', headerActions = null } 
                 <option value="">
                   Project default ({profile.front.types[projectFrontStyle]?.label || projectFrontStyle})
                 </option>
-                {FRONT_STYLE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                {frontStylesFor(tenantId, { current: unit.params.front_type }).map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
                 {unit.params.front_type === 'H' && <option value="H">Legacy handleless</option>}
               </select>
             </div>
@@ -739,6 +743,9 @@ export default function RightPanel({ layout = 'overlay', headerActions = null } 
             );
           })()}
 
+          {styleNotOffered(tenantId, resolvedDesign?.frontType) && (
+            <p className="text-[11px] text-ink-400" data-style-not-offered>{STYLE_NOT_OFFERED}</p>
+          )}
           <FrontDecorationControls
             style={resolvedDesign?.frontType}
             value={resolvedDesign?.frontDecoration}

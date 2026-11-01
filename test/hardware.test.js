@@ -12,7 +12,10 @@ import assert from 'node:assert/strict';
 import { computeCabinet, hingeCentres } from '../src/engine/cabinet.js';
 import { DEFAULT_CABINET_PROFILE, migrateCabinetProfile } from '../src/engine/profile.js';
 import { buildBom, hardwareDemand, demandCost } from '../src/engine/bom.js';
-import { HARDWARE_ROLES, MOCK_MATERIALS } from '../src/stores/materialAssignmentStore.js';
+import { HARDWARE_ROLES } from '../src/stores/materialAssignmentStore.js';
+// REWRITTEN BY T-CC1b F9: the 19 sample rows are deleted; the stock is Joinery Core's rows (*"materialy z JC
+// (jego baza)"*, the owner, 01.11.2026), read here through lib/jcStock.js toMaterial from fixture rows.
+import { STOCK_MATERIALS, stock } from './fixtures/jc-stock.js';
 
 const P = DEFAULT_CABINET_PROFILE;
 const WARDROBE = {
@@ -150,17 +153,18 @@ test('two runner lengths in one project stay two lines to buy', () => {
 test('assignment prices hardware by the piece, with no yield applied', () => {
   const bom = buildBom([entryFor('u1', { unit_num: 'W01', drawers: 2, shelves: 2, rail: true, rail_offset: 1400 })]);
   const assignments = {
-    hinges: { material_id: 'hw_hinge_soft' },
-    runner_pairs: { material_id: 'hw_runner_bb', yield: 1.5 },   // ignored on purpose
-    shelf_pins: { material_id: 'hw_shelf_pin' },
+    hinges: { material_id: stock('Blum Clip top Blumotion').id },
+    runner_pairs: { material_id: stock('Blum Movento').id, yield: 1.5 },   // ignored on purpose
+    shelf_pins: { material_id: stock('Shelf pin').id },
   };
-  const demand = hardwareDemand(bom, assignments, MOCK_MATERIALS);
+  const demand = hardwareDemand(bom, assignments, STOCK_MATERIALS);
 
   // Costs are rounded to the penny by the engine, like every other money value.
   const money = (v) => Number(v.toFixed(2));
 
   const hinges = demand.find((d) => d.role === 'hinges');
-  assert.equal(hinges.material.id, 'hw_hinge_soft');
+  assert.equal(hinges.material.id, stock('Blum Clip top Blumotion').id);
+  assert.equal(hinges.material.jc_uuid, hinges.material.id, 'the material IS the JC stock row (law 6)');
   assert.equal(hinges.cost, money(6 * 3.8));
 
   const runners = demand.find((d) => d.role === 'runner_pairs');
@@ -173,7 +177,7 @@ test('assignment prices hardware by the piece, with no yield applied', () => {
   assert.equal(legs.qty, 4);
 
   assert.equal(demandCost(demand), money(money(6 * 3.8) + money(2 * 6.9) + money(8 * 0.09)));
-  assert.equal(demandCost(hardwareDemand(bom, {}, MOCK_MATERIALS)), null, 'nothing priced → no total');
+  assert.equal(demandCost(hardwareDemand(bom, {}, STOCK_MATERIALS)), null, 'nothing priced → no total');
 });
 
 test('every hardware role is offered in the UI, and only hardware materials fit it', () => {
@@ -186,9 +190,10 @@ test('every hardware role is offered in the UI, and only hardware materials fit 
   for (const role of HARDWARE_ROLES) {
     assert.ok(bom.hardware.some((h) => h.role === role.id), `${role.id} must be reachable from a real unit`);
   }
-  const hardwareMaterials = MOCK_MATERIALS.filter((m) => m.category === 'hardware');
-  assert.ok(hardwareMaterials.length >= HARDWARE_ROLES.length, 'the mock list must cover every role');
-  for (const m of hardwareMaterials) assert.ok(m.price > 0 && m.unit, `${m.id} needs a unit and a price`);
+  // REWRITTEN BY T-CC1b F9: a JC stock row read as hardware fits a hardware role (lib/jcStock.js ccKindOf).
+  const hardwareMaterials = STOCK_MATERIALS.filter((m) => m.category === 'hardware');
+  assert.ok(hardwareMaterials.length >= HARDWARE_ROLES.length, 'the fixture stock covers every role');
+  for (const m of hardwareMaterials) assert.ok(m.price > 0 && m.unit && m.jc_uuid, `${m.id} needs a unit, a price and its JC uuid`);
 });
 
 // ─── what hardware must NOT touch ───

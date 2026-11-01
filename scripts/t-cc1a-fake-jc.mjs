@@ -33,10 +33,26 @@
 // the admin again, the counters to zero), GET /__fake/user?as=admin|employee (who
 // /api/auth/me says the token is), GET /__fake/reset (the counters to zero).
 //
-//   node scripts/t-cc1a-fake-jc.mjs [--port 4380] [--upstream 4173]
+// T-CC1b F16.1 (CLAUDE.md T-CC1b PART E): THE FAKE GROWS AND LOSES NOTHING.
+// The owner, 01.11.2026: *"materialy z JC (jego baza)"*, *"logo domyslne z JC"*,
+// *"przyjmiemy GPT, open AI, zaprojektuj polaczenie"*. Three more reads
+// (`stock_categories`: Sheets with Melamine and MDF, Hardware with Hinges and
+// Runners, Consumables; `stock_items`: eight rows; `company_settings.logo_url`
+// pointing at a PNG served here at /fake/logo.png) and ONE endpoint, `POST
+// /api/ai/visualise`: 401 without a token, 403 for the employee, 503 when the
+// fake runs with `--no-ai-key`, else one PNG (a 64 by 64 tinted square written
+// here, no file) after `--ai-delay-ms` (300), every call counted per token
+// (`counters.ai`). Two more handles: GET /__fake/tenant?id=<uuid> (the uuid
+// /api/auth/me names as the organisation; the rows of the old uuid move with
+// it, so the same items stay listed) and GET /__fake/ai?key=0|1&delay=<ms>.
+// The tenant is T-CC1a's `ten-skylon` unless `--tenant <uuid>` (or
+// `startFakeJc({ tenantId })`) says otherwise; T-CC1a's walk is unchanged.
+//
+//   node scripts/t-cc1a-fake-jc.mjs [--port 4380] [--upstream 4173] [--tenant <uuid>] [--no-ai-key] [--ai-delay-ms 300]
 //   or: import { startFakeJc } from './t-cc1a-fake-jc.mjs'
 
 import http from 'node:http';
+import { deflateSync } from 'node:zlib';
 
 // === THE SEED ===============================================================
 const TENANT = { id: 'ten-skylon', name: 'Skylon Development Ltd' };
@@ -53,7 +69,92 @@ const USERS = {
 const ALLOWED_ROLES = new Set(['owner', 'admin', 'manager']);
 const READABLE = new Set([
   'pipeline_projects', 'projects', 'clients', 'company_settings', 'cc_items', 'cc_item_revisions', 'cc_company_profile',
+  // T-CC1b: the tenant's stock (CLAUDE.md T-CC1b, WHAT JOINERY CORE GIVES).
+  'stock_items', 'stock_categories',
 ]);
+
+/** T-CC1b F16.1 . the company's logo, served by the fake (company_settings.logo_url). */
+const LOGO_PATH = '/fake/logo.png';
+
+// === A PNG WRITTEN HERE (no file, no dependency) ============================
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+const crc32 = (buf) => {
+  let c = 0xffffffff;
+  for (const b of buf) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+};
+const chunk = (type, data) => {
+  const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+  const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(body));
+  return Buffer.concat([len, body, crc]);
+};
+/** A w by h RGB PNG: `paint(x, y) -> [r, g, b]`. */
+function png(w, h, paint) {
+  const raw = Buffer.alloc((w * 3 + 1) * h);
+  for (let y = 0; y < h; y += 1) {
+    const row = y * (w * 3 + 1);
+    raw[row] = 0;
+    for (let x = 0; x < w; x += 1) raw.set(paint(x, y), row + 1 + x * 3);
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4);
+  ihdr[8] = 8; ihdr[9] = 2; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+}
+/** The logo: a dark square with a gold bar, 64 by 64. */
+const LOGO_PNG = png(64, 64, (x, y) => (y > 24 && y < 40 && x > 8 && x < 56 ? [201, 162, 74] : [32, 36, 44]));
+/** The AI picture: a 64 by 64 square, tinted by the call (three calls, three tints, so a pick is seen). */
+const TINTS = [[176, 132, 92], [96, 140, 120], [110, 120, 168]];
+const aiPicture = (n) => {
+  const [r, g, b] = TINTS[(n - 1) % TINTS.length];
+  return `data:image/png;base64,${png(64, 64, (x, y) => {
+    const shade = 0.75 + 0.25 * ((x + y) / 126);
+    return [Math.round(r * shade), Math.round(g * shade), Math.round(b * shade)];
+  }).toString('base64')}`;
+};
+
+// === THE TENANT'S STOCK (T-CC1b F16.1) ======================================
+function stockSeed() {
+  const cat = (id, name, type, parent, order) => ({ id, name, type, parent_category_id: parent, display_order: order });
+  const row = (n, name, category, subcategory, unit, cost, extra = {}) => ({
+    id: `5e0c4b1a-7f2d-4c3e-9a8b-00000000000${n}`, name, category, subcategory, unit,
+    current_quantity: 20, min_quantity: 2, cost_per_unit: cost, size: '', thickness: null, color: '',
+    item_number: '', image_url: null, supplier_id: null, notes: '', ...extra,
+  });
+  return {
+    stock_categories: [
+      cat('sc-sheets', 'Sheets', 'category', null, 1),
+      cat('sc-melamine', 'Melamine', 'subcategory', 'sc-sheets', 1),
+      cat('sc-mdf', 'MDF', 'subcategory', 'sc-sheets', 2),
+      cat('sc-hardware', 'Hardware', 'category', null, 2),
+      cat('sc-hinges', 'Hinges', 'subcategory', 'sc-hardware', 1),
+      cat('sc-runners', 'Runners', 'subcategory', 'sc-hardware', 2),
+      cat('sc-consumables', 'Consumables', 'category', null, 3),
+    ],
+    stock_items: [
+      row(1, 'Egger W1000 Premium White melamine 18 mm', 'Sheets', 'Melamine', 'sheet', 38.5,
+        { thickness: '18', color: 'White', size: '2800 x 2070', item_number: 'EG-W1000-18' }),
+      row(2, 'Egger H1145 Natural Bardolino Oak melamine 18 mm', 'Sheets', 'Melamine', 'sheet', 52,
+        { thickness: '18', color: 'Oak', size: '2800 x 2070', item_number: 'EG-H1145-18' }),
+      row(3, 'MDF 22 mm', 'Sheets', 'MDF', 'sheet', 34.9, { thickness: '22', size: '2440 x 1220', item_number: 'MDF-22' }),
+      row(4, 'ABS edging white 22 x 1', 'Consumables', null, 'm', 0.55, { thickness: '1', color: 'White', item_number: 'ABS-22-1' }),
+      row(5, 'Blum Clip top Blumotion 110 hinge', 'Hardware', 'Hinges', 'pcs', 3.8, { item_number: '71B3550' }),
+      row(6, 'Blum Clip top 155 hinge', 'Hardware', 'Hinges', 'pcs', 5.1, { item_number: '71T6550' }),
+      row(7, 'Blum Movento runner pair 500', 'Hardware', 'Runners', 'pairs', 6.9, { size: '500', item_number: '760H5000S' }),
+      row(8, 'Paint, Hague Blue 2.5 L', 'Consumables', null, 'tin', 42, { color: 'Hague Blue' }),
+    ],
+  };
+}
 
 function seed(now = Date.now()) {
   const iso = (minsAgo) => new Date(now - minsAgo * 60000).toISOString();
@@ -62,7 +163,7 @@ function seed(now = Date.now()) {
       { id: 'cli-1', company_name: 'Harbour Homes', contact_person: 'J. Harbour', address: '1 Quay Road' },
       { id: 'cli-2', company_name: 'Smith Family', contact_person: 'A. Smith', address: '2 Elm Close' },
     ],
-    company_settings: [{ company_name: TENANT.name, company_address: '3 Mill Lane', logo_url: null }],
+    company_settings: [{ company_name: TENANT.name, company_address: '3 Mill Lane', logo_url: LOGO_PATH }],
     projects: [
       { id: 'prj-1001', project_number: 'P-1001', name: 'Hall wardrobes', client_id: 'cli-1', site_address: '1 Quay Road', status: 'active', pipeline_id: null },
       { id: 'prj-1002', project_number: 'P-1002', name: 'Smith kitchen', client_id: 'cli-2', site_address: '2 Elm Close', status: 'active', pipeline_id: null },
@@ -82,6 +183,7 @@ function seed(now = Date.now()) {
     ],
     cc_item_revisions: [],
     cc_company_profile: [],
+    ...stockSeed(),
   };
 }
 
@@ -166,13 +268,33 @@ document.getElementById('signin').addEventListener('click', function () {
 </script></body></html>`;
 
 // === THE SERVER =============================================================
-export async function startFakeJc({ port = 4380, upstream = 4173, host = '127.0.0.1' } = {}) {
+export async function startFakeJc({
+  port = 4380, upstream = 4173, host = '127.0.0.1', tenantId = TENANT.id, aiKey = true, aiDelayMs = 300,
+} = {}) {
+  // T-CC1b F16.1 . the tenant's uuid is the fake's to switch (walk station g); T-CC1a's stays the default.
+  let tenant = TENANT.id;
+  const ai = { key: aiKey !== false, delayMs: Math.max(0, Number(aiDelayMs) || 0) };
+  const seeded = () => {
+    const fresh = seed();
+    for (const r of fresh.cc_items) r.tenant_id = tenant;
+    return fresh;
+  };
+  const setTenant = (id) => {
+    const next = String(id || '').trim();
+    if (!next) return tenant;
+    for (const r of db.cc_items) if (r.tenant_id === tenant) r.tenant_id = next;
+    tenant = next;
+    return tenant;
+  };
   let db = seed();
+  setTenant(tenantId);
   let as = 'admin';
   let seq = 0;
   const counters = {
     me: 0, me401: 0, query: 0, queryByTable: {}, queryRefused: 0, writesRefused: 0, starOnItems: 0, designReads: 0,
     rpc: {}, rpcKeepalive: {}, rpcRefused: 0, getSession: 0, proxied: 0,
+    // T-CC1b: the AI calls per token, their answers by status, and the logo fetches.
+    ai: {}, aiStatus: {}, logo: 0,
   };
   const log = [];
   const bump = (obj, k) => { obj[k] = (obj[k] || 0) + 1; };
@@ -207,6 +329,7 @@ export async function startFakeJc({ port = 4380, upstream = 4173, host = '127.0.
     for (const c of cols.split(',').map((s) => s.trim()).filter(Boolean)) out[c] = row[c] === undefined ? null : row[c];
     return out;
   };
+  const sleepMs = (ms) => new Promise((r) => { setTimeout(r, ms); });
   const cmp = (a, b) => (a == null ? -1 : b == null ? 1 : a < b ? -1 : a > b ? 1 : 0);
 
   function query(q) {
@@ -217,7 +340,7 @@ export async function startFakeJc({ port = 4380, upstream = 4173, host = '127.0.
     if (table === 'cc_items' && String(q.select || '*').trim() === '*') counters.starOnItems += 1;
     if (table === 'cc_items' && /\bdesign\b/.test(String(q.select || ''))) counters.designReads += 1;
     let rows = (db[table] || []).slice();
-    if (table === 'cc_items') rows = rows.filter((r) => r.tenant_id === TENANT.id);
+    if (table === 'cc_items') rows = rows.filter((r) => r.tenant_id === tenant);
     for (const f of q.filters || []) {
       if (f.op === 'eq') rows = rows.filter((r) => r[f.col] === f.val);
       else if (f.op === 'neq') rows = rows.filter((r) => r[f.col] !== f.val);
@@ -243,7 +366,7 @@ export async function startFakeJc({ port = 4380, upstream = 4173, host = '127.0.
       seq += 1;
       const name = String(p.p_name || '').trim() || 'Untitled item';
       const row = {
-        id: `itm-walk-${seq}`, tenant_id: TENANT.id, name, revision: 'A', updated_at: new Date().toISOString(), archived_at: null,
+        id: `itm-walk-${seq}`, tenant_id: tenant, name, revision: 'A', updated_at: new Date().toISOString(), archived_at: null,
         jc_pipeline_id: p.p_pipeline_id || null, jc_project_id: p.p_project_id || null, jc_project_number: proj.project_number,
         folder_name: `${proj.project_number} ${name}`, design: {},
       };
@@ -281,6 +404,8 @@ export async function startFakeJc({ port = 4380, upstream = 4173, host = '127.0.
   };
   const state = () => ({
     as,
+    tenant,
+    ai: { ...ai },
     counters: JSON.parse(JSON.stringify(counters)),
     items: db.cc_items.map((r) => ({ ...strip(r), design: designSummary(r.design) })),
     log: log.slice(),
@@ -305,7 +430,22 @@ export async function startFakeJc({ port = 4380, upstream = 4173, host = '127.0.
       if (path === '/dashboard.html' || path === '/cabinet-core.html') return send(res, 200, `<!doctype html><h1>Joinery Core ${path} (fake)</h1>`, 'text/html');
       if (path === '/__fake/state') return send(res, 200, state());
       if (path === '/__fake/reset') { reset(); return send(res, 200, { ok: true }); }
-      if (path === '/__fake/reseed') { db = seed(); seq = 0; as = 'admin'; reset(); return send(res, 200, { ok: true }); }
+      if (path === '/__fake/reseed') { db = seeded(); seq = 0; as = 'admin'; reset(); return send(res, 200, { ok: true }); }
+      if (path === LOGO_PATH) {
+        counters.logo += 1;
+        res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-store', 'Content-Length': LOGO_PNG.length });
+        return res.end(LOGO_PNG);
+      }
+      if (path === '/__fake/tenant') {
+        const id = url.searchParams.get('id');
+        if (!id) return send(res, 400, { error: 'id=<tenant uuid>' });
+        return send(res, 200, { tenant: setTenant(id) });
+      }
+      if (path === '/__fake/ai') {
+        if (url.searchParams.has('key')) ai.key = url.searchParams.get('key') !== '0';
+        if (url.searchParams.has('delay')) ai.delayMs = Math.max(0, Number(url.searchParams.get('delay')) || 0);
+        return send(res, 200, { ...ai });
+      }
       if (path === '/__fake/user') {
         const want = url.searchParams.get('as');
         if (!USERS[want]) return send(res, 400, { error: 'as=admin|employee' });
@@ -317,7 +457,7 @@ export async function startFakeJc({ port = 4380, upstream = 4173, host = '127.0.
         counters.me += 1;
         if (!bearer(req)) { counters.me401 += 1; return send(res, 401, { error: 'Not signed in' }); }
         log.push({ at: Date.now(), path, as });
-        return send(res, 200, { user: { ...user() }, organization: { id: TENANT.id, name: TENANT.name } });
+        return send(res, 200, { user: { ...user(), tenant_id: tenant }, organization: { id: tenant, name: TENANT.name } });
       }
       if (path === '/api/db/query' && req.method === 'POST') {
         const q = await readBody(req);
@@ -339,6 +479,20 @@ export async function startFakeJc({ port = 4380, upstream = 4173, host = '127.0.
         const [status, out] = rpcCall(name, body.params || {});
         return send(res, status, out);
       }
+      if (path === '/api/ai/visualise' && req.method === 'POST') {
+        // T-CC1b F13 and F16.1: the AI picture through Joinery Core (T-JC2a's endpoint, the fake's lines only).
+        const body = await readBody(req);
+        const who = bearer(req);
+        bump(counters.ai, who || '(no token)');
+        log.push({ at: Date.now(), path, as, bytes: String(body.image || '').length, size: body.size, quality: body.quality });
+        const answer = (status, out) => { bump(counters.aiStatus, String(status)); return send(res, status, out); };
+        if (!who) return answer(401, { error: 'Not signed in' });
+        if (!allowed()) return answer(403, { error: 'AI visualisation opens for owners, admins and managers of a listed company.' });
+        if (!ai.key) return answer(503, { error: 'AI visualisation is not configured for this server yet.' });
+        const started = Date.now();
+        await sleepMs(ai.delayMs);
+        return answer(200, { image: aiPicture(counters.ai[who]), model: 'fake-image-model', seconds: (Date.now() - started) / 1000 });
+      }
       if (path.startsWith('/api/')) return send(res, 404, { error: `fake JC: no ${path}` });
       return proxy(req, res);
     } catch (err) {
@@ -351,7 +505,13 @@ export async function startFakeJc({ port = 4380, upstream = 4173, host = '127.0.
     state,
     reset,
     setUser: (who) => { as = who; },
-    reseed: () => { db = seed(); seq = 0; reset(); },
+    setTenant,
+    setAi: ({ key, delayMs } = {}) => {
+      if (key !== undefined) ai.key = key !== false;
+      if (delayMs !== undefined) ai.delayMs = Math.max(0, Number(delayMs) || 0);
+      return { ...ai };
+    },
+    reseed: () => { db = seeded(); seq = 0; reset(); },
     close: () => new Promise((resolve) => { server.closeAllConnections?.(); server.close(() => resolve()); }),
   };
 }
@@ -360,6 +520,10 @@ export async function startFakeJc({ port = 4380, upstream = 4173, host = '127.0.
 if (import.meta.url === `file://${process.argv[1]}`) {
   const argv = process.argv.slice(2);
   const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? Number(argv[i + 1]) : d; };
-  const fake = await startFakeJc({ port: opt('port', 4380), upstream: opt('upstream', 4173) });
+  const word = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 && argv[i + 1] ? argv[i + 1] : d; };
+  const fake = await startFakeJc({
+    port: opt('port', 4380), upstream: opt('upstream', 4173), tenantId: word('tenant', TENANT.id),
+    aiKey: !argv.includes('--no-ai-key'), aiDelayMs: opt('ai-delay-ms', 300),
+  });
   process.stdout.write(`fake Joinery Core at ${fake.origin} (proxying to 127.0.0.1:${opt('upstream', 4173)})\n`);
 }

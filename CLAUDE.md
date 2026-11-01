@@ -1,571 +1,720 @@
-# CLAUDE.md, TURN CC1a · THE DOOR, THE LIST, THE SAVE: CABINET CORE ENTERS JOINERY CORE
+# CLAUDE.md, TURN CC1b · THE FRAME, THE DRAWINGS, THE MATERIALS: CABINET CORE WEARS JOINERY CORE
 
 Run autonomously. Zero questions, zero stops: every decision below is the
-owner's own (18.10, 30.10 and 31.10.2026, in chat; his words are quoted where
-they decide), so nothing here is asked again. Where a number or a name is
-marked PROPOSED it is the turn's best reading and is used as written; the
-owner confirms or changes it after the merge, never during the run. If a point
+owner's own (31.10.2026, 23:00 to 01.11.2026, 01:40, in chat, over his
+screenshot of `joinerycore.com/cabinet`; his words are quoted where they
+decide), so nothing here is asked again. Where a number or a name is marked
+PROPOSED it is the turn's best reading and is used as written; the owner
+confirms or changes it after the merge, never during the run. If a point
 cannot be done, skip it WHOLE, write why in the PR, and go on to the next.
-Full suite, never `--silent`. Frames under `verify/t-cc1a/`. Branch
-`claude/t-cc1a-the-door`, cut from `origin/main` (the merge of PR #91, T86B),
-with THIS file taken from `origin/chat/t-cc1a-spec`; one commit per F; PR
-against main at the end; the owner merges. Nothing lands in Petros from this
-session. The owner's name for this turn is "T-CC1a"; it is the first Cabinet
-Core turn of the merger with Joinery Core (JC) and runs on the same day as
-T-JC1 in the JC repository. The two meet only on Vercel after both merges: this
-turn never calls a live JC; every proof here is a test with a fake JC.
+Full suite, never `--silent`. Frames under `verify/t-cc1b/`. Branch
+`claude/t-cc1b-the-frame`, cut from `origin/main` (the merge of PR #95), with
+THIS file taken from `origin/chat/t-cc1b-spec`; one commit per F; PR against
+main at the end; the owner merges. Nothing lands in Petros from this session.
+The owner's name for this turn is "T-CC1b". It stands on T-CC1a (the door, the
+list, the save: CC runs only behind a Joinery Core session), merged.
 
-THIS TURN STANDS ON T86B AND T85, both merged. Nothing of theirs is re-audited
-or re-touched; a T85 or T86B test that goes red is a defect of THIS turn, fixed
-in this turn's own code, never by editing their tests. THE ENGINE IS NOT
-TOUCHED: `src/engine/**` has no delta in this turn (the six base goldens and
-every later golden are IDENTICAL by definition; the turn still runs the
-checks). The list of Cabinet Core features is CLOSED (the owner, 30.10, 22:42):
-this turn adds no feature to the design tool; it changes where the work lives.
+THE OWNER'S FRAME FOR THE NIGHT (01.11, 00:5x): *"to nie sa wielkie zmiany,
+tylko wyglad menu, nie robimy 3d nie dodajemy mnostwa funkcji"*. This turn
+moves doors and changes what the user SEES; it adds one connection (the stock
+of Joinery Core), one card (the AI visualisation) and two rows in the library.
+THE ENGINE'S GEOMETRY IS NOT TOUCHED: `src/engine/cabinet.js`, every kit,
+every `cnc/*`, `machining.js`, `lifts.js`, `liftSystems.js` have no delta; the
+six base goldens and every later golden are IDENTICAL by definition and the
+checks run anyway. The three engine files this turn edits are DATA and BOOK
+files, named in LICENSED: `src/engine/library.js` (rows), `src/engine/types.js`
+(the categories list) and `src/engine/bom.js` (the hardware key the Assign
+window reads). The list of Cabinet Core features stays CLOSED (30.10, 22:42).
 
-## THE COST OF THE DAY (the law of T83 to T86B, kept)
-THREE agents and one integrator, never ten. NO review wave: a slice is
-reviewed ONCE by INT when its patch lands; the morning audit is the owner's.
-Targeted tests while writing; the full suite ONCE per PART when it lands and
-ONCE at the end. Every agent reads this file and its PART, never the whole
-repo: INT hands each agent the files it OWNS and the ones it must read. A
-report is twenty lines, the six stations of DONE. Agents and parallel mode ON.
+## THE COST OF THE NIGHT
+FIVE agents and one integrator, all five in parallel from the first minute,
+never ten. One writer per file: a file is in exactly one OWNS cell below, and
+every other agent that needs a line in it hands a patch to its owner (INT for
+the five shared files). NO review wave: a slice is reviewed ONCE by INT when
+its patch lands; the morning audit is the owner's. Targeted tests while
+writing; the full suite ONCE per PART when it lands and ONCE at the end. Every
+agent reads this file and its PART, never the whole repo: INT hands each agent
+the files it OWNS and the ones it must read. A report is twenty lines, the six
+stations of DONE. Agents and parallel mode ON.
 
-## THE AGENTS (3 slices and one integrator)
+## THE AGENTS (5 slices and one integrator)
 | Agent | Slice | OWNS (writes) | Hands patches to |
 | - | - | - | - |
-| INT | the only writer of `src/stores/projectStore.js`, `src/main.jsx`, `src/App.jsx`, `index.html`, `vite.config.js`; applies patches in F order; the freeze test's EXEMPT rows, deletions and re-hashes; NEW_FILES; `scripts/t78-classify.d/f51-t-cc1a-f*.mjs`; the full suite once per PART and at the end; classifier strict, copy check, walk; the PR | the five files, the manifest, `test/turn59-f1-the-switch.test.js` | nobody |
-| A1 | PART A, the door: F1 one client, JC's; F2 the session and the refusal screen; F3 the kasacja of the login, the mock mode and the cloud road | `src/lib/jcApi.js` (NEW), `src/stores/authStore.js`, `src/components/jc/RefusalScreen.jsx` (NEW), `src/lib/storageBase.js`, `src/lib/cloudSync.js`, `src/stores/materialAssignmentStore.js`, `src/stores/warehouseStore.js`, `.env.example`, the 12 files with `isMockMode` branches EXCEPT those owned by A2 and A3 (patches to them), `test/turn-cc1a-f01-client.test.js`, `test/turn-cc1a-f02-session.test.js`, `test/turn-cc1a-f03-kasacja.test.js`; deletions: `src/lib/supabase.js`, `src/components/AuthModal.jsx`, `src/components/MockModeBadge.jsx` | INT (main.jsx, App.jsx, index.html, vite.config.js, the manifest), A2 (StartScreen, TopBar, StatusBar mounts), A3 (persist.js) |
-| A2 | PART B, the list and the binding: F4 the start screen is JC's project list; F5 New item binds to a JC project; F6 Open from file is the import road | `src/components/StartScreen.jsx`, `src/components/NewProjectFlow.jsx`, `src/components/TopBar.jsx`, `src/components/StatusBar.jsx`, `src/lib/jcList.js` (NEW, pure: the list built from four reads), `src/lib/projectLibrary.js` (reduced), `src/lib/projectFileRoad.js`, `src/lib/topMenu.js`, `test/turn-cc1a-f04-list.test.js`, `test/turn-cc1a-f05-new-item.test.js`, `test/turn-cc1a-f06-import.test.js` | INT (projectStore.js: openItem, newProject's binding fields) |
-| A3 | PART C, the save: F7 one save, one request; F8 the triggers; F9 the crash buffer | `src/lib/persist.js`, `src/lib/saveTriggers.js` (NEW), `src/lib/crashBuffer.js` (NEW), `src/pages/ConfiguratorPage.jsx` (Ctrl+S, the exports await the save), `src/components/DesignSettingsModal.jsx` (its save call), `test/turn-cc1a-f07-save.test.js`, `test/turn-cc1a-f08-triggers.test.js`, `test/turn-cc1a-f09-crash-buffer.test.js` | INT (projectStore.js: projectForSave merged, the cache key and subscriber), A2 (the boot question in StartScreen) |
-| A1 | PART D, F10 the walk (after A2 and A3 land) | `scripts/t-cc1a-walk.mjs`, `scripts/t-cc1a-fake-jc.mjs` (NEW: the fake Joinery Core for the walk), `verify/t-cc1a/walk.txt`, `verify/t-cc1a/f*-*.png` | INT |
+| INT | the only writer of `src/components/TopBar.jsx`, `src/lib/topMenu.js`, `src/lib/outputMenu.js`, `src/pages/ConfiguratorPage.jsx`, `src/stores/projectStore.js`; applies patches in F order; the freeze test's EXEMPT rows, deletions and re-hashes; NEW_FILES; `scripts/t78-classify.d/f55-t-cc1b-f*.mjs`; the full suite once per PART and at the end; classifier strict, copy check, walk; the PR | the five files, the manifest, `test/turn59-f1-the-switch.test.js` | nobody |
+| A1 | PART A, the frame: F1 the header; F2 one View; F3 the Database menu dies; F4 the Library on the rail, every family; F5 Output shrinks | `src/components/studio/studio.css`, `src/components/studio/StudioRail.jsx`, `src/components/studio/RailMenus.jsx`, `src/components/LibraryPanel.jsx`, `src/engine/library.js`, `src/engine/types.js` (UNIT_CATEGORIES only), `src/components/NewProjectFlow.jsx`, `src/components/StartScreen.jsx` (the header line of F1 only), deletion `src/components/studio/SceneViewMenu.jsx`, `test/turn-cc1b-f01-header.test.js` to `test/turn-cc1b-f05-output.test.js` | INT (TopBar, topMenu, outputMenu, ConfiguratorPage) |
+| A2 | PART B, the drawings window: F6 one window, one export; F7 the logo is the company's; F8 two angles and the render as sheets | `src/components/DrawingModal.jsx`, `src/components/RenderModal.jsx`, `src/engine/drawings/wallSheets.js`, `src/engine/drawings/setSheet.js`, `src/lib/jcLogo.js` (NEW), `test/turn-cc1b-f06-window.test.js` to `test/turn-cc1b-f08-angles.test.js` | INT (projectStore: `project.visuals`), A5 (the fake's `company_settings.logo_url`) |
+| A3 | PART C, the materials: F9 the stock is Joinery Core's; F10 Assign materials, every line; F11 "Not assigned materials" in every export; F12 the font floor of the big windows | `src/stores/materialAssignmentStore.js`, `src/lib/jcStock.js` (NEW, pure), `src/components/AssignMaterialsModal.jsx`, `src/components/MaterialPicker.jsx`, `src/engine/bom.js` (the hardware key only), `src/engine/partRegistry.js` (the blob's schema 3), `src/lib/exporters.js`, `src/lib/bomPdf.js` if it exists (grep), `src/components/SprayingPanel.jsx`, `src/index.css` (the floor), `test/turn-cc1b-f09-stock.test.js` to `test/turn-cc1b-f12-floor.test.js` | INT (projectStore: nothing expected; name it if needed), A5 (the fake's `stock_items`, `stock_categories`) |
+| A4 | PART D, the AI visualisation: F13 the card and the call to Joinery Core | `src/lib/aiVisualise.js` (NEW, pure: the prompt, the request, the size guard), `src/components/drawings/AiVisualCard.jsx` (NEW), `test/turn-cc1b-f13-ai.test.js` | A2 (one mount line in DrawingModal.jsx and the `ai` slot of F8), A5 (the fake's `/api/ai/visualise`), INT (projectStore: `project.visuals.ai`) |
+| A5 | PART E, the fronts and the walk: F14 ornate fronts for Skylon only; F15 AVENTOS rows in the library; F16 the fake Joinery Core grows and the walk | `src/lib/tenantFlags.js` (NEW), `src/components/FrontDecorationControls.jsx`, `src/components/FrontStyleGallery.jsx` (if it lists ORNATE_STYLE_IDS; grep), `scripts/t-cc1a-fake-jc.mjs` (extended, the only fake), `scripts/t-cc1b-walk.mjs` (NEW), `verify/t-cc1b/walk.txt`, `verify/t-cc1b/f*-*.png`, `test/turn-cc1b-f14-skylon.test.js`, `test/turn-cc1b-f15-aventos.test.js` | A1 (the four rows in `engine/library.js`, the `params` pass in LibraryPanel/RailMenus) |
 
-## THE ORDER (the owner's words that frame this turn)
-- 18.10: *"ja chce zrobic cabinet core jako dodatek do joinery core ... chce
-  zmusic klientow do korzystania z joinery core"*; *"czy moze to byc jedna
-  baza danych ale dwa osobne programy?"* (yes).
-- 30.10, 22:0x: *"oczywiscie do CC laczysz sie tylko przez JC"*.
-- 30.10, 22:1x: *"moje zdanie to powinno sie wszystko zapisywac na pamiec
-  podreczna, dopiero caly json powinien sie zapisac do DB przy nacisnieciu
-  Zapisz lub co 5 minut automatycznie"*.
-- 30.10, 22:42: *"robimy tylko testowe polaczenie tylko z naszym JC, czyli
-  tylko Skylon"*; 22:45: *"przygotujmy nasze menu i cala reszte magazyn pod
-  fuzje z JC"*.
-- 30.10, 22:5x: *"w cc musimy zapisywac na glownej stronie; projekty dzielimy
-  na itemy; kazdy projekt dodany to folder w JC ... ale materialy jedne dla
-  calego projektu"*; *"automatyczne polaczenie danego projektu do danego
-  pipelinu lub production projektu"*.
-- 31.10, 01:06 (answer 10): *"w przyszlosci nie bedzie save to file, po co?"*:
-  Save to file / Open from file stay ONLY as the one-time import of the owner's
-  old jobs and die in T-CC2.
-- 31.10, 09:08: *"warunek: tylko przez JC po zalogowaniu, nie dziala skopiowany
-  url wklejony przez byle kogo"*.
+## THE ORDER (the owner's words that frame this turn, 31.10 to 01.11.2026)
+- The screenshot, 23:0x: the project name standing before the File menu
+  *"wprowadza w blad"*; it belongs *"po prawej, z numerem projektu JC i
+  nazwa"*; 01:0x, answer 6: *"srodkowe prawo, wyraznie oddzielone od menu"*.
+- *"duzy przycisk Return to Joinery Core"*.
+- *"dwa menu View, jedno wystarczy, menu wystarczy"* (the top bar's View stays,
+  the scene corner's dropdown goes); answer 3: *"tak te przyciski zostaja sa
+  mega przydatne"* (the quick toggles at the scene's edge stay).
+- *"Database: Company defaults do Settings, Database niepotrzebne, wszystko
+  jest w JC, Assign materials juz jest po lewej"*.
+- *"Library powinno byc po lewej, w menu kitchen, rozwijac prawy panel"*; the
+  project type at New item questioned: *"po co blokowac wyspe w pokoju albo
+  mala szafe w kuchni"*, *"wszystkie rodzaje po lewej, czesc coming soon"*;
+  *"Add po lewej dobre, ale uporzadkowac: lazienki w kuchniach itd."*.
+- *"Spraying: okno duze a fonty male i duzo pustego miejsca, jak ty to zawsze
+  robisz"*.
+- *"na dole Drawings dobre, ale myli sie z Output; Output zmniejszyc"*; answer
+  2: the Output buttons *"zostaja"*; answer 3: *"BOM pdf to export listy
+  materialow w pdf (malo potrzebny ale niech U maja)"*.
+- Drawings: *"logo domyslne z JC albo przycisk wstaw inne logo"*; *"usunac
+  card 3D view i front only"*; *"usunac przyciski all units i drawing set
+  pdf, tylko export pdf"*; *"dodac wizualizacje z drugiego kata, render wedlug
+  wyboru, wizualizacja AI z renderu, max 3 proby, wybierasz jedna i dodajesz
+  do rysunkow, tanie API"*; answer 5: *"przyjmiemy GPT, open AI, zaprojektuj
+  polaczenie a jutro zrobie klucz"*.
+- *"Output tylko: cutting list, BOM PDF, labels 21 i 44"*.
+- The most important: *"materialy z JC (jego baza), przypisanie w CC, grupy
+  (plyty, zawiasy, prowadnice, okucia/inne, materialy eksploatacyjne, wyposazenie
+  wewnetrzne), modal duzo wiekszy i czytelny, polaczony na stale, kazda funkcja
+  przypisana (10 rodzajow zawiasow, wszystkie przypisane), inaczej eksport BOM
+  pisze not assigned materials"*; 01:2x: *"materials w JC ma wlasny UUID, i to
+  samo musimy zrobic: przypisac UUID z JC do naszego materialu, za kazdym razem
+  bedzie wybierac material do projektu, U wiec bedzie widzial czy jest
+  przypisany czy nie"*.
+- *"szafki AVENTOS musza byc zrobione"*; fronts: *"bez ornamentow"*, answer
+  12 and 7: *"ornamenty zostaw tylko dla Skylon Joinery"*, *"tylko dla innych
+  UI, dla Skylon Joinery zostaje"*; *"kolory i rodzaje galek"*; the fabric
+  inside the shakers: later.
 
-## WHAT THE OTHER SIDE GIVES (T-JC1, the JC repository, same day; read, do not assume more)
-- The address: `joinerycore.com/cabinet`. JC's `vercel.json` routes `^/cabinet/?$`
-  to CC's deployment `index.html` and `^/cabinet/(.+)$` to the same path on CC's
-  deployment; `/cabinet/retail.html` and `/cabinet/start.html` answer 404 there.
-  CC is therefore built with `base: '/cabinet/'` and every asset URL starts
-  with it.
-- The session: JC's `/js/api-client.js?v=9`, a classic script, puts on the
-  window `apiFetch(endpoint, options) -> { data, error }`, `rpc(name, params) ->
-  { data, error }` and `supabaseClient = { auth, from, storage, rpc, channel }`,
-  a supabase-js look-alike whose `from(table).select(cols).eq(...).order(...)
-  .limit(...).single()/.maybeSingle()` is thenable and goes to `POST
-  /api/db/query`; `rpc` goes to `POST /api/rpc`; `storage` is the three-request
-  signed upload (a later turn). The token is `localStorage.authToken`; a 401 is
-  refreshed once; a failed refresh clears the three keys (`authToken`,
-  `currentSession`, `currentUser`) and goes to `/login.html?expired=1&next=
-  <path>`; JC's login returns to `next`. `supabaseClient.auth.getSession()` signs
-  the user OUT on ANY error of `/me`, so CC never calls it: CC calls
-  `apiFetch('/api/auth/me')` itself.
-- `/api/auth/me` answers `{ user: { id, email, full_name, role, tenant_id,
-  cabinet_core, cabinet_core_company, ... }, organization: { id, name, ... } }`.
-  `cabinet_core` is true for owner, admin and manager of a listed company
-  (Skylon only today); `cabinet_core_company` says whether the company is
-  listed. The roles in the database are owner, admin, manager, worker, viewer;
-  the word a user reads for worker is EMPLOYEE, never worker (JC rule 6.1).
-- The reads CC may make through `/api/db/query` (owner, admin, manager):
-  `pipeline_projects` (id, project_number, name, client_id, site_address,
-  status), `projects` (id, project_number, name, client_id, site_address,
-  status, pipeline_id), `clients` (id, company_name, contact_person, address),
-  `company_settings` (company_name, company_address, logo_url), `cc_items`
-  (id, name, revision, updated_at, archived_at, jc_pipeline_id, jc_project_id,
-  jc_project_number, folder_name, design; NEVER `select('*')` on cc_items in a
-  list: the design is the big column), `cc_item_revisions`,
-  `cc_company_profile`. Every write to a `cc_*` table is refused there.
-- The writes, through `rpc` (p_tenant_id and p_user_id are injected by JC; the
-  client sends the rest): `cc_create_item(p_name, p_pipeline_id, p_project_id)`
-  returns the row without design (exactly one of the two ids);
-  `cc_save_item(p_item_id, p_name, p_design)` returns `{ id, updated_at,
-  revision }`; `cc_cut_revision(p_item_id, p_reason)` (not called this turn);
-  `cc_archive_item(p_item_id, p_restore)`; `cc_register_item_files` (not this
-  turn); `cc_save_company_profile` (T-CC1b). An unlisted company or a role
-  outside the three gets 403 with `{ error }` in words.
-- The fake JC of this turn's tests and walk (`scripts/t-cc1a-fake-jc.mjs` and
-  the test doubles) implements exactly the lines above and nothing more; where
-  the real JC differs, T-JC1's PR is the truth and the owner's live walk after
-  both merges finds it.
+## WHAT JOINERY CORE GIVES (read, do not assume more)
+- Everything T-CC1a's CLAUDE.md lists (the session, `/api/auth/me`, the four
+  reads, the seven `cc_*` functions) holds unchanged.
+- THREE MORE READS through `/api/db/query` (ALLOWED_TABLES of
+  `api/routes/db.js`: `stock_items`, `stock_categories`, `company_settings`),
+  owner, admin, manager: `stock_items` (id, name, category, subcategory, unit,
+  current_quantity, min_quantity, cost_per_unit, size, thickness, color,
+  item_number, image_url, supplier_id, notes); `stock_categories` (id, name,
+  type 'category' | 'subcategory', parent_category_id, display_order);
+  `company_settings` (company_name, company_address, logo_url). Every row is
+  the tenant's (JC scopes the query); CC never writes any of the three.
+- `stock_categories` are THE TENANT'S OWN (JC rule 6.5: a category list is
+  never hardcoded). CC shows them as they are; CC's six groups below are groups
+  of CC's ROLES (what the project needs), never of JC's stock.
+- ONE NEW ENDPOINT, built tonight in the JC repository by T-JC2a (its brief is
+  on `chat/t-jc2a-spec` there; the fake of this turn implements exactly these
+  lines): `POST /api/ai/visualise` with the JC bearer token, body `{ image:
+  <data URL, PNG or JPEG, at most 4 MB>, prompt: <string, at most 2000 chars>,
+  size: '1536x1024' | '1024x1024' | '1024x1536', quality: 'low' | 'medium' |
+  'high' }`, answers `{ image: <data URL, PNG>, model, seconds }` (ONE image per
+  call; the client calls up to three times); errors in words: 401 (no
+  session), 403 `{ error }` (role or company), 429 `{ error }` (the tenant's
+  daily allowance spent), 503 `{ error: 'AI visualisation is not configured
+  for this server yet.' }` (no key on the server), 504 `{ error }` (the image
+  model did not answer in time). The model is OpenAI's image model behind JC's
+  key; CC never holds a key and never calls OpenAI.
 
 ## LAWS
-Every law of T75 to T86B holds in full: LISP IS LAW (no engine delta at all);
-the fossil six untouchable (`scripts/t64-classify.mjs --dump` vs
-`verify/t70/goldens-base.json` IDENTICAL); material never enters material;
-the room refuses in words and never clamps in silence; one law one path;
-numbers in the profile, none typed; 1:1 = COPY (`scripts/t78-copy.mjs --check`
-CLEAN); the Skylon header on every new file; no em or en dash in anything
-written; test the way the client clicks; a new function has a visible entry in
-the same package; a green test beside old broken code is a lie; "usun" and
-"kasacja" are physical deletions, never gates. Eight laws are this turn's own:
-1. **THE DOOR IS JOINERY CORE'S.** CC runs only with a Joinery Core session on
-   the Joinery Core host. No token: CC sends the browser to JC's login with
-   `next=/cabinet/` and makes no other request. A token whose `/me` says the
-   role is employee or viewer, or the company is not listed: one refusal screen
-   in words, no other request, no sign out. The owner: *"tylko przez JC po
-   zalogowaniu, nie dziala skopiowany url wklejony przez byle kogo"*.
-2. **ONE CLIENT, AND IT IS JC'S.** CC creates NO supabase-js client and holds
-   no key of its own (two clients refreshing one rotating token sign the user
-   out). The one door is `window.supabaseClient` and `window.apiFetch` from
-   JC's script; `withDb` keeps its `{ data, error, mock }` contract for every
-   call site, and `mock: true` now means "Joinery Core did not answer", said in
-   words where the user sees it. There is no mock mode, no demo mode, no local
-   app: the owner, 30.10: *"oczywiscie do CC laczysz sie tylko przez JC"*.
-3. **THE LIST IS JC'S.** The start screen shows the company's pipeline and
-   production projects from Joinery Core, each with its Cabinet Core items; a
-   project number is JC's and is never typed or invented in CC.
-4. **AN ITEM IS BORN BOUND.** An item is one piece of furniture; it is bound to
-   ONE JC project when it is made (`cc_create_item`) and never asks again; its
-   id is minted by the server; CC's `loc_` ids are over.
-5. **A CHANGE IS MEMORY, A SAVE IS ONE REQUEST.** Editing touches the network
-   never; Save is one `cc_save_item` carrying the whole item JSON (the
-   `.ccproject` shape without `profile`, logo as `{ ref }`), built in ONE place.
-   The owner: *"dopiero caly json powinien sie zapisac do DB przy nacisnieciu
-   Zapisz lub co 5 minut automatycznie"*.
-6. **FOUR TRIGGERS, ONE SAVE.** Ctrl+S; autosave every 5 minutes when dirty;
-   leaving the page (the local buffer flushed, the network save only when the
-   body is under 64 KiB); before every export. Autosave writes the working
-   revision only and never cuts a letter.
-7. **NOTHING IS LOST IN A CRASH.** The browser keeps the open item as a crash
-   buffer keyed by tenant and item; on boot a dirty buffer newer than the saved
-   row is OFFERED back in words ("Restore unsaved changes to <item>?"), never
-   applied in silence, never dropped in silence.
-8. **ARCHIVED, NEVER DESTROYED.** Delete becomes Archive (`cc_archive_item`);
-   archived items hide behind "Show archived" and come back with Restore.
+Every law of T75 to T-CC1a holds in full: LISP IS LAW (no engine geometry
+delta at all); the fossil six untouchable; material never enters material; the
+room refuses in words and never clamps in silence; one law one path; numbers
+in the profile, none typed; 1:1 = COPY (`scripts/t78-copy.mjs --check` CLEAN);
+the Skylon header on every new file; no em or en dash in anything written;
+test the way the client clicks; a new function has a visible entry in the same
+package; a green test beside old broken code is a lie; "usun" and "kasacja"
+are physical deletions, never gates; the door is Joinery Core's; one client,
+JC's; a change is memory, a save is one request. Nine laws are this turn's own:
+1. **SAME DOORS.** Every window, export and toggle reachable before this turn
+   is reachable after it, from a place this file names; a test lists the doors
+   by label and finds each one (`test/turn-cc1b-f05-output.test.js`). What is
+   DELETED is deleted by name in the Deletion licence and nowhere else.
+2. **THE FRAME SAYS WHOSE JOB IT IS.** The header shows the ITEM's name and the
+   JOINERY CORE project it belongs to (number and name), apart from the menus
+   and to their right; the way back to Joinery Core is one big button, never a
+   hunt. The owner: *"wprowadza w blad"*.
+3. **ONE VIEW.** The scene's edge keeps its quick toggles; the dropdown
+   duplicating the View menu is gone; nothing a toggle or the View menu did is
+   lost.
+4. **THE LIBRARY IS THE RAIL'S.** Every family (Kitchen, Wardrobes, Bathroom,
+   Sets, Saved sets, and the families held open as coming soon) is on the left
+   rail, always, for every item: the project type never hides a family again
+   (*"po co blokowac wyspe w pokoju"*).
+5. **OUTPUT IS WHAT LEAVES FOR THE WORKSHOP.** Output holds the cutting list,
+   the BOM PDF and the two label sheets; the drawings, the renders and the
+   pictures live in the Drawings window; the CNC files leave from the CNC
+   workspace.
+6. **THE STOCK IS JOINERY CORE'S.** A material in Cabinet Core IS a row of the
+   tenant's `stock_items`, keyed by JC's uuid; an assignment stores that uuid
+   and nothing else; CC keeps no material list of its own but the three
+   honest placeholders (Generic board 18, 22, 25).
+7. **EVERY LINE ASSIGNED, OR THE EXPORT SAYS SO.** The BOM's demand is lines by
+   role AND specification (ten hinge kinds are ten lines); each line carries
+   one assigned JC material or the words "Not assigned materials", in the
+   window, in the BOM PDF, in the cutting list CSV; a job with any line
+   unassigned prints no total as a price.
+8. **A PICTURE FOR THE CLIENT IS A SHEET OF THE SET.** The two angles, the
+   render of the user's choice and the chosen AI picture are sheets in the
+   drawing set, ticked like any other, exported by the one Export PDF; an AI
+   picture is made at most three times per click of "Generate", the user
+   picks ONE, and nothing is kept until he does.
+9. **SKYLON'S OWN STAYS SKYLON'S.** The ornate fronts (ORNATE_STYLE_IDS) are
+   offered to the Skylon Joinery tenant only; every other tenant's gallery
+   shows the plain and the machined styles; a saved item of another tenant
+   that carries an ornate style is not touched by this turn (it draws as
+   today; the gallery just does not offer the style).
 
 ## FROZEN
-1. The six base goldens and every T75 to T86B golden IDENTICAL (no engine
-   delta; the checks run anyway and the PR pastes them).
-2. T85's and T86B's code, tests and goldens: as they left them.
-3. The editor: every panel, the Section, the scene, the exports (CNC, DXF,
-   labels, PDF, CSV until T-CC2), the title block, the Studio shell: untouched
-   except the two lines the save triggers need (Ctrl+S beside Ctrl+Z; the six
-   export callbacks awaiting the save).
-4. The profile and its store (`cabinetProfileStore.js`, `cc.profile.v1`), the
-   company defaults store, the hardware register, settings sets, templates, the
-   warehouse rows: they stay LOCAL in this turn and move to the tenant's row in
-   T-CC1b and T-CC2. A call of theirs that reaches a table JC does not have
-   gets `withDb`'s `{ mock: true }` and falls back to local as today; nothing
-   crashes; the PR lists these calls by file and line as "pending T-CC1b /
-   T-CC2".
+1. The six base goldens and every T75 to T-CC1a golden IDENTICAL (no engine
+   geometry delta; the checks run anyway and the PR pastes them).
+2. T-CC1a's code, tests and the fake's contract: as they left them; the fake
+   GROWS (F16) and loses nothing.
+3. The editor: every panel, the Section, the scene, the exports' CONTENT
+   (CNC, DXF, labels, PDF pages, CSV columns), the title block's fields, the
+   Studio shell: untouched except the lines this file names.
+4. The profile store, the company defaults store, the hardware register,
+   settings sets, templates, the warehouse rows: LOCAL as T-CC1a left them;
+   the company defaults window moves house (F3) and does not change inside.
 5. PRO freeze: every PRO file edited is licensed in EXEMPT with the owner's
-   words from this file and re-frozen in the same commit; the two deleted PRO
-   files leave the manifest with the owner's words beside the deletion; the
-   new `src/components/jc/RefusalScreen.jsx` enters it at its first hash; the
-   count assertion at `test/turn59-f1-the-switch.test.js:1001` is amended by
-   INT with the new count and the words. Retail copies NOT edited: `t78-copy
-   --check` CLEAN. If `src/retail/**` imports `src/lib/supabase.js`, the import
-   is re-pointed to `jcApi.js` (a one-line change, named in the PR) and nothing
-   else of retail moves.
+   words from this file and re-frozen in the same commit; the deleted PRO file
+   leaves the manifest with the owner's words beside the deletion; the new
+   files enter it at their first hash; the count assertion at
+   `test/turn59-f1-the-switch.test.js:1001` is amended by INT. Retail copies
+   NOT edited: `t78-copy --check` CLEAN.
 6. The suite is green at the start (the count on main at the start of the run,
    written in the PR) and at the end, plus this turn's tests, minus the tests
-   this turn REWRITES by name (F3).
+   this turn REWRITES by name (each named in the PR with what it now asserts).
 
-## PART A · THE DOOR (F1 to F3; A1 and INT)
+## PART A · THE FRAME (F1 to F5; A1 and INT)
 
-### F1 · One client, JC's (law 2)
-1. `src/lib/jcApi.js` (NEW, Skylon header): `jcClient()` returns
-   `globalThis.supabaseClient` or `null`; `jcFetch(endpoint, options)` returns
-   `globalThis.apiFetch(endpoint, options)` or `{ data: null, error: { message:
-   JC_OFFLINE } }`; `hasToken()` reads `localStorage.authToken`; `withDb(fn,
-   mockValue)` with TODAY'S body and contract (`src/lib/supabase.js:21-32`),
-   where "no client" gives `{ data: mockValue, error: null, mock: true }`;
-   `JC_OFFLINE = 'Joinery Core did not answer. Your work is kept in this
-   browser until it does.'` (PROPOSED words); `isJcOffline()` = no client or
-   no token. NO `createClient`, NO `@supabase/supabase-js` import anywhere in
-   `src/` after this turn (the package may stay in package.json for retail if
-   retail needs it; the PR says which).
-2. `src/lib/supabase.js` DELETED (kasacja); its 23 `withDb` call sites in 7
-   modules import `withDb` from `jcApi.js`; `isMockMode` is gone from the
-   codebase: of its 29 references in 12 files, those that drew a badge or a
-   login die with F3, those that chose "local only" become `isJcOffline()`
-   where a local fallback still makes sense this turn (FROZEN 4) and are
-   deleted where the road itself dies (the cloud list, the direct save). The
-   PR lists all 29 with their fate.
-3. `index.html` (INT; frozen, EXEMPT with *"do CC laczysz sie tylko przez
-   JC"*): `<script src="/js/api-client.js?v=9"></script>` BEFORE the module
-   script, so JC's globals exist when `main.jsx` runs; the tag must survive the
-   build unchanged in `dist/index.html` (Vite leaves an unresolvable absolute
-   `src` alone and warns; the PR pastes the built tag). `vite.config.js`
-   (INT): `base: '/cabinet/'`; `server.open` becomes `'/cabinet/start.html'`
-   (a dev convenience, nothing else); the three inputs stay.
-4. `src/lib/storageBase.js`: the configured storage root reads
-   `VITE_HARDWARE_STORAGE_URL` first and `VITE_SUPABASE_URL` second (so the
-   current Vercel setting keeps the hinge and runner models until the owner
-   renames the variable), the derived host when both are unset; `.env.example`
-   names `VITE_HARDWARE_STORAGE_URL` and drops the anon key line.
-5. `test/turn-cc1a-f01-client.test.js`: with a fake `globalThis.supabaseClient`
-   a `withDb` call reaches it and returns its data; without it `{ mock: true }`
-   and the mock value; `grep` of `src/` finds no `createClient`, no
-   `isMockMode`, no `VITE_SUPABASE_ANON_KEY`; `vite.config.js` has `base:
-   '/cabinet/'`; `index.html` carries the JC script tag before the module tag.
+### F1 · The header (law 2)
+1. `TopBar.jsx` (INT; frozen, EXEMPT with *"wprowadza w blad ... po prawej, z
+   numerem projektu JC i nazwa"*), the Studio bar (`drawStudio`, about :505 to
+   :521): the order becomes [wordmark] [PRO] [menus] [spacer] [the job block]
+   [Save] [Brightness] [BOM] [Back to Joinery Core]. The JOB BLOCK
+   (`drawJobBlock`, NEW in TopBar, PROPOSED layout) is `<div
+   class="studio-job" data-studio="topbar-job">` with a 1 px vertical rule on
+   its left (`.studio-job::before`, `theme('colors.shell.600')`, 24 px tall,
+   12 px margins), then two lines: line one the ITEM NAME (today's
+   `drawProjectName`, editable on click as today, the dirty dot as today,
+   `studio-project-name`); line two, smaller and muted (`studio-job-project`,
+   11 px, `colors.ink.400`), `<number> · <JC project name> · <client>` from
+   `project.number`, `project.jcProjectName` (F1.3) and `project.client`,
+   `title="Joinery Core project: read-only here"`. No line of the legacy bar
+   (`variant` absent) changes.
+2. "Back to Joinery Core": a gold button (`cc-btn-gold`, `data-studio=
+   "topbar-back-jc"`, the house `Icon name="arrow-left"` if the set has one,
+   else the text alone), label "Back to Joinery Core", the LAST control on the
+   right; click: `await persistProject()` when `dirty` (today's save road; the
+   pagehide flush of T-CC1a F8 covers a refused save), then
+   `location.assign('/dashboard.html')`. The wordmark keeps today's click (the
+   start screen) and its title. The start screen's header (A1,
+   `StartScreen.jsx`) gets the same button at its right, same words, same
+   target, so a user who never opens an item can also leave.
+3. `projectStore.js` (INT): `openItem` and `newProject` accept and keep
+   `jcProjectName` (the bound project's `name` from the list row the start
+   screen already holds; `NewProjectFlow` passes `jcProject.name`); it rides
+   `project.jcProjectName` in the store ONLY: `projectForSave` does not write
+   it (the binding lives in the row's columns, T-CC1a F4.3), and a buffer
+   restore (T-CC1a F9) fills it from the loaded list by `jc_project_id` or
+   `jc_pipeline_id`; when the name is unknown the block shows the number alone.
+4. `studio.css` (A1; frozen, EXEMPT): `.studio-job`, `.studio-job-project`,
+   `.studio-job::before`; `.studio-project-name` keeps its rules (:271 to :288)
+   and loses the width that made it give way to the menus (the menus have
+   their own room now: Library and Database are gone, F3 and F4).
+5. `test/turn-cc1b-f01-header.test.js`: the rendered Studio bar holds, in DOM
+   order, the menu bar, then `[data-studio="topbar-job"]` with the item name
+   and a line containing the number and the JC project name, then Save, then
+   `[data-studio="topbar-back-jc"]` last; the legacy bar is byte-identical to
+   main's render for the same store (a snapshot of its `outerHTML`); the Back
+   button on a dirty item calls the save before `location.assign`; the start
+   screen shows the same button.
 
-### F2 · The session and the refusal screen (law 1)
-1. `src/stores/authStore.js` REWRITTEN: state `{ status: 'booting' | 'ready' |
-   'refused' | 'offline', refusal: null | 'role' | 'company', user: { id, email,
-   full_name, role }, tenant: { id, name }, flags: { cabinetCore,
-   cabinetCoreCompany } }`; `init()`: (a) `!hasToken()` →
-   `location.replace('/login.html?next=' + encodeURIComponent('/cabinet/'))`
-   and NO request (law 1); (b) `jcFetch('/api/auth/me')`; an `error` with
-   status 401 → the same redirect (JC's script already cleared the keys); any
-   other error → `offline` with the words and a Retry; (c) `user.cabinet_core
-   === true` → `ready`; else `cabinet_core_company === true` → `refused:
-   'role'`; else `refused: 'company'`. `signIn`, `signUp`, `signOut`, the
-   `projects` list and the company-defaults hook at `:26, :31` are deleted
-   (the company defaults load moves to `companyDefaultsStore` itself, called
-   from App after `ready`, FROZEN 4).
-2. `src/components/jc/RefusalScreen.jsx` (NEW, Skylon header, EXEMPT at its
-   first hash): one centred card at the house scale. `refused: 'role'`: title
-   "Cabinet Core opens for owners, admins and managers", line "Your Joinery
-   Core account is an employee account. Ask an admin of <company> if you need
-   the design tool.", button "Back to Joinery Core" → `/dashboard.html`.
-   `refused: 'company'`: title "Cabinet Core is coming soon for <company>",
-   line "It is in testing with one workshop today.", buttons "What is Cabinet
-   Core" → `/cabinet-core.html` and "Back to Joinery Core". `offline`: title
-   "Joinery Core did not answer", the JC_OFFLINE words, button "Try again" →
-   `init()`. PROPOSED words; never the word "worker".
-3. `src/main.jsx` and `src/App.jsx` (INT; frozen, EXEMPT with *"tylko przez
-   JC po zalogowaniu"*): the boot order becomes session FIRST, then the app:
-   `main.jsx` awaits `useAuthStore.getState().init()`, renders
-   `RefusalScreen` when the status is not `ready`, and only on `ready`
-   dynamically imports `./App.jsx` (the stores load with it, the order the
-   retail entry already uses, `src/stores/persistence.js:26-34`,
-   `src/retail/main-retail.jsx:35`). The build stamp, the `beforeunload`
-   question (App.jsx:96-103, replaced by F8's save on leaving) and the two
-   screens stay. A `storage` event that removes `authToken` while CC is open
-   (another tab signed out): CC flushes the crash buffer (F9) and shows the
-   `offline` card with "You were signed out of Joinery Core" (PROPOSED).
-4. `test/turn-cc1a-f02-session.test.js`: no token → `location.replace`
-   called with `/login.html?next=%2Fcabinet%2F` and `apiFetch` never called;
-   `/me` with role worker and company listed → `refused: 'role'`, the card's
-   words contain "employee" and not "worker"; `/me` with company unlisted →
-   `refused: 'company'` with the Coming soon link; `/me` network error →
-   `offline` and no sign-out call on the fake client; `/me` with admin and
-   listed → `ready`, `tenant.id` and `user.role` set; `supabaseClient.auth.
-   getSession` is never called by CC (the fake throws if it is).
+### F2 · One View (law 3)
+1. DELETED, physically: `src/components/studio/SceneViewMenu.jsx` (266 lines)
+   and its two lines in `ConfiguratorPage.jsx` (:50 the import, :717 the
+   mount); the manifest row leaves with the owner's words *"dwa menu View,
+   jedno wystarczy"*. `SceneToggles` (the quick toggles) and `CameraBar` (with
+   Drawings...) stay exactly as they are (*"te przyciski zostaja"*).
+2. SAME DOORS check, written in the test: every VIEW_ITEM the deleted menu had
+   (Dimensions, Front dimensions, Dimension colour, Props, Measure, Contour
+   view, Brightness, Realistic lighting, Turn on the light) is reachable after
+   the deletion: Dimensions, Front dimensions, Props and Measure on
+   `SceneToggles`; Dimension colour, Contour view, Brightness, Realistic
+   lighting and Turn on the light in TopBar's View menu (:179 to :287). Nothing
+   is added to either.
+3. `test/turn-cc1b-f02-one-view.test.js`: the file does not exist; `src/`
+   contains no `SceneViewMenu`; the nine labels above are found on the two
+   surviving surfaces; the Studio frame renders ONE element whose text is
+   "View" with `aria-haspopup`.
 
-### F3 · The kasacja of the login, the mock mode and the cloud road (law 2)
-1. DELETED, physically: `src/components/AuthModal.jsx` and
-   `src/components/MockModeBadge.jsx` (manifest rows removed with the owner's
-   words *"oczywiscie do CC laczysz sie tylko przez JC"*); their mounts and
-   imports: `ConfiguratorPage.jsx:10, :696, :754` (A3's file, patch),
-   `TopBar.jsx:9, :488-491` the Account button (A2's file, patch),
-   `StartScreen.jsx:4, :152` and `StatusBar.jsx:30, :104` (A2's files,
-   patches); `src/lib/cloudSync.js`: the auth block (:164-208), the
-   cc_projects and cc_units road (:8-76: listProjects, saveProject,
-   loadProject, deleteProject) and `MOCK_REASON`; the company-defaults
-   functions (:129-160) STAY in the file until T-CC1b (named in the PR).
-   `src/stores/materialAssignmentStore.js`: `scheduleCloudSave` (:164-172) and
-   its 8 calls, the cloud-wins read (:226-235): deleted; assignments ride
-   `project.assignments` alone. `src/stores/warehouseStore.js`: the 6 network
-   writes (:82, :91, :111, :117, :124, :139) deleted; rows stay local until
-   T-CC2. Tombstones two lines at most. Deletions outnumber additions in this
-   F's commit (the kasacja law); the PR prints the two counts.
-2. The tests that asserted the mock badge, the Account window, the cloud list,
-   the direct save or the assignments' cloud write are REWRITTEN to the new law
-   by name (grep the suite for `MockModeBadge`, `AuthModal`, `isMockMode`,
-   `listProjects`, `scheduleCloudSave`, `cloudSync`); never kept green beside a
-   deleted road; the PR lists each test file and what it now asserts.
-3. `test/turn-cc1a-f03-kasacja.test.js`: the two files do not exist; `src/`
-   contains no `AuthModal`, `MockModeBadge`, `isMockMode`, `scheduleCloudSave`,
-   `listProjects` from cloudSync; the manifest has no row for the two files;
-   `materialAssignmentStore` changes write no network call on a fake client
-   (the fake counts calls: 0 after ten assignment changes); `warehouseStore`
-   the same.
+### F3 · The Database menu dies
+1. `topMenu.js` (INT): `MENU_ORDER` becomes `['File', 'View', 'Settings',
+   'Spraying', 'Lighting', 'Output']`; `buildDatabaseMenu` is DELETED
+   (tombstone two lines: *"Database niepotrzebne, wszystko jest w JC"*); its
+   five entries find their homes: "Company defaults..." becomes the third item
+   of the Settings menu (after Settings... and Room setup..., before Snap;
+   `TopBar.jsx` :306 to :325, same `openModal` call as today); "Materials..."
+   and "Assign materials..." are the rail's already (RailMenus.jsx 'materials':
+   Selected finishes..., Project finishes..., Assign materials..., Stock...;
+   the "Stock..." entry opens the stock window of F9); "Clients..." and
+   "Projects..." are DELETED: they were "soon" badges for what Joinery Core is.
+2. `RailMenus.jsx` (A1): `databaseEntry` (:181) no longer imports from the
+   deleted builder; the four items are written in place with the same labels,
+   hints and `openModal` calls.
+3. `test/turn-cc1b-f03-database.test.js`: `MENU_ORDER` has no 'Database' and
+   no 'Library'; the Settings menu has "Company defaults..."; the rail's
+   materials popup has "Assign materials..." and "Stock..."; `src/` has no
+   `buildDatabaseMenu`; no element with text "Clients..." or "Projects..."
+   renders anywhere in the Studio frame.
 
-## PART B · THE LIST AND THE BINDING (F4 to F6; A2 and INT)
+### F4 · The Library is the rail's, every family (law 4)
+1. `TopBar.jsx` (INT): the Library menu (:289 to :305) is DELETED from the bar
+   (the rail's Add is the one door; `MENU_ORDER` already lost it in F3).
+2. `engine/library.js` (A1; LICENSED, data rows only): `BATHROOM_GROUP` leaves
+   `KITCHEN_LIBRARY` (:297) and `WARDROBE_LIBRARY` (:375) and becomes the
+   entries of its OWN category; `engine/types.js` `UNIT_CATEGORIES` (:1863 to
+   :1898) becomes, in this order: `kitchen` "Kitchen", `wardrobe` "Wardrobes",
+   `bathroom` "Bathroom" (entries `BATHROOM_LIBRARY`, types derived), `media`
+   "Sets", `sets` "Saved sets", then the families held open: `{ id:
+   'media_wall', label: 'Media wall', soon: true, reason: 'Coming soon' }`,
+   `hallway` "Hallway", `office` "Office" (PROPOSED three; a `soon` category
+   renders as a greyed rail row with its reason and opens nothing;
+   `test/library-categories.test.js` learns that a `soon` category has no
+   types by design). `categoryOf` keeps answering for every kit (the Bathroom
+   kits answer 'bathroom' now; the test says so).
+3. The project-type GATE dies: `LibraryPanel.jsx` (A1) loses `projectCategory`
+   (:53), `showAllTypes` (:54) and the `filterLibraryByProject` branch (:254 to
+   :278): every category shows all its entries, always. `filterLibraryByProject`
+   itself, if nothing else calls it (grep), is deleted with its test rewritten
+   to assert the rail shows every family for a kitchen item AND for a wardrobe
+   item.
+4. `NewProjectFlow.jsx` (A1): the type tiles (:346 to :378) STAY as what they
+   truly do, a heights preset (`heightsForProjectType`, :209): the section's
+   heading becomes "Start from" with the help line "Only the starting heights.
+   Every family of units is in the library whatever you pick." (PROPOSED
+   words); nothing else of the flow changes.
+5. `RailMenus.jsx` 'add' (A1): the categories come from the new
+   `UNIT_CATEGORIES`; a `soon` category is a disabled row with its reason; the
+   library flyout opens the right panel as today (*"rozwijac prawy panel"*).
+6. `test/turn-cc1b-f04-library.test.js`: the Studio bar has no "Library" menu;
+   the rail's Add lists Kitchen, Wardrobes, Bathroom, Sets, Saved sets and the
+   three `soon` rows in order; Bathroom holds the four bathroom kits and
+   Kitchen and Wardrobes hold none of them; a kitchen item and a wardrobe item
+   both see every family; `NewProjectFlow` shows "Start from".
 
-### F4 · The start screen is JC's project list (law 3)
-1. `src/lib/jcList.js` (NEW, pure, Skylon header): `loadJcList(client) ->
-   { pipeline: [...], production: [...], items: [...], clients: Map, error }`
-   from FOUR reads through `withDb`: `pipeline_projects` (id, project_number,
-   name, client_id, site_address, status; `status` 'active' only, PROPOSED),
-   `projects` (id, project_number, name, client_id, site_address, status,
-   pipeline_id; 'active' only, PROPOSED), `clients` (id, company_name),
-   `cc_items` (id, name, revision, updated_at, archived_at, jc_pipeline_id,
-   jc_project_id, jc_project_number; NEVER design), ordered by project_number
-   desc; `groupItems(list) -> Map<projectKey, items[]>` where the key is
-   `'p:' + jc_project_id` or `'pl:' + jc_pipeline_id`. Tested as written with
-   fixture rows.
-2. `StartScreen.jsx` (frozen, EXEMPT with *"w cc musimy zapisywac na glownej
-   stronie; projekty dzielimy na itemy"*): the list has two groups, "Production"
-   and "Pipeline" (PROPOSED order), each project row `<number> <name> ·
-   <client>` with its items under it (name, revision letter, updated, Open,
-   Archive); a project without items shows "No items yet" and the "New item"
-   button; "Show archived" (off by default) reveals archived items with
-   Restore; a search box narrows by number, name, client or item name
-   (JC rule 6.3: embedded list plus a search, never search-only); Recent
-   stays as the last 5 opened ITEM ids per tenant, key `cc.<tenantId>.recent.v1`
-   (PROPOSED); the shelf list (`cc.library.v1`) is NO LONGER shown (the code
-   survives only for F6 and the logo helpers); `nextProjectNumber` and the
-   delete-local-row road are deleted (`projectLibrary.js:241-260, :295-300`).
-   "Open from file" stays as F6's import. The header shows the company name
-   from `/me` and the signed-in name (PROPOSED). An `error` from the reads
-   shows the JC_OFFLINE words and a Retry, never an empty list in silence.
-3. Open: `projectStore.openItem(itemId)` (INT): ONE read of `cc_items` by id
-   with `select('id, name, revision, design, jc_pipeline_id, jc_project_id,
-   jc_project_number, updated_at')`; the design is the `.ccproject` shape
-   without profile (`{ format, version, project, units, assignments }`); a
-   `version` newer than the app's is refused in words (R16); `project.id` is
-   the item id; `project.number` = `jc_project_number` and `project.client` =
-   the client's company_name from the list (read-only in the UI: `setProjectInfo`
-   no longer edits them; the item NAME is the editable field); then today's
-   `loadProject` (migrations, healing, recompute) and `markSaved` with the
-   row's `updated_at` remembered in the store (`project.savedAt`, PROPOSED).
-   The design's `jc_tenant_id` / `jc_project_id` fields, if any, are ignored on
-   load and not written on save: the binding lives in the row's columns.
-4. `test/turn-cc1a-f04-list.test.js`: the four reads named with their columns
-   (the fake client records every `select` string; none on cc_items contains
-   `*` or `design` in the LIST read); grouping puts two items under their
-   production project and one under a pipeline project; an archived item is
-   hidden until "Show archived"; the search narrows by client name; the JC
-   error path shows the words; `openItem` reads design by id and `loadProject`
-   receives the inner `project` and `units`; a newer `version` is refused in
-   words and nothing loads.
+### F5 · Output shrinks (law 5; SAME DOORS proven here)
+1. `outputMenu.js` (INT): `buildOutputMenu` returns Output with exactly:
+   "Cutting list CSV", "BOM PDF" (hint "The materials list of the job as a
+   PDF: parts, materials, hardware"), "Part labels · 21 per sheet (Avery
+   L7160)", "Part labels · 44 per sheet". DELETED from the menu: Preview...,
+   Unit card (PDF), Unit card (SVG), All units (PDF), Drawing set (PDF),
+   Drawing set (DXF), Render..., CNC / DXF, Bill of materials..., Spraying....
+2. Their doors after this turn (the test finds each): the drawings and the
+   renders: the CameraBar's "Drawings..." button (the window of PART B holds
+   the set, the two angles, the render and the AI card); "Bill of
+   materials...": TopBar's `drawBom` button (stays); "Spraying...": the
+   Spraying menu (stays); "CNC / DXF": the CNC workspace's own export control
+   (grep `CncView.jsx` and the CNC rail for the button that calls
+   `onExportDxfZip`; if none exists, ADD one `cc-btn` "Export CNC / DXF" to the
+   CNC view's toolbar calling today's `onExportDxfZip`, so the door exists
+   before the menu entry dies; name it in the PR). Unit card (PDF/SVG), All
+   units (PDF) and Preview... are the owner's deletions (*"usunac card 3D view
+   i front only ... all units"*): they leave with F6.
+3. `test/turn-cc1b-f05-output.test.js`: the Output menu has the four labels and
+   no other; the doors list (Drawings..., Bill of materials, Spraying, Export
+   CNC / DXF) is found in the rendered Studio frame; `buildOutputMenu` is
+   called with the four handlers only.
 
-### F5 · New item binds to a JC project (law 4)
-1. `NewProjectFlow.jsx` (frozen, EXEMPT with *"automatyczne polaczenie danego
-   projektu do danego pipelinu lub production projektu"*) becomes "New item":
-   its first section shows the project it was opened from, READ-ONLY: number,
-   name, client; the one typed field is the item name (required, the
-   placeholder "Kitchen, Wardrobe bedroom 2 ..."); the room and design
-   settings stay as today. `commitProject` (:168-191) calls
-   `rpc('cc_create_item', { p_name, p_pipeline_id | p_project_id })` through
-   `withDb`, takes the returned row (id, jc_project_number, revision), builds
-   the record with `newProject` (INT: `newProject` accepts `{ id, name, number,
-   client }` and writes no `loc_` id), and opens the editor; a refusal from JC
-   (403, offline) stays on the flow with the words and nothing is created
-   locally. The first save (F7) writes the design; until then the row's design
-   is `{}` and the crash buffer (F9) holds the work.
-2. The item name is also editable in the editor where the project name was
-   (TopBar's title field or the Design settings modal, whichever edits
-   `project.name` today), and travels to `cc_save_item` as `p_name`.
-3. `test/turn-cc1a-f05-new-item.test.js`: the flow opened from a pipeline
-   project calls `cc_create_item` with `p_pipeline_id` and no `p_project_id`;
-   from a production project the reverse; the record's `id` is the server's
-   uuid, `number` the returned `jc_project_number`, `client` the project's
-   client; a 403 leaves no record and shows the words; `grep` of `src/` finds
-   no `loc_` id minting.
+## PART B · THE DRAWINGS WINDOW (F6 to F8; A2 and INT)
 
-### F6 · Open from file is the import road (the owner's answer 10)
-1. `projectFileRoad.js` and the StartScreen entry: "Open from file" parses as
-   today (`projectFile.js` keeps its version gate and its id-collision
-   question), then ASKS which JC project the imported job belongs to (the F4
-   list in a small picker, embedded list plus search), then calls
-   `cc_create_item` with the file's `project.name` and that binding, replaces
-   `project.id` with the server's id (`projectForOpen` 'copy' road,
-   `projectFile.js:249-255`), loads it, and runs ONE `cc_save_item` at once
-   so the row holds the design. The file's `profile` block is NOT applied to
-   this browser any more by default: the "take the file's settings" question
-   (`projectFileRoad.js:94-96`) becomes read-only text "This file carries
-   workshop settings; they are not imported (the company numbers live in
-   Joinery Core from T-CC1b)" (PROPOSED). "Save to file" stays as today (it
-   dies in T-CC2 with this road).
-2. `test/turn-cc1a-f06-import.test.js`: the owner's `verify/t86b/owner.
-   ccproject` imported against a fake JC: `cc_create_item` then `cc_save_item`
-   called once each, the saved design has no `profile` key, the unit's params
-   are byte-identical to the file's unit, the local profile (`cc.profile.v1`)
-   is unchanged by the import.
+### F6 · One window, one export
+1. `DrawingModal.jsx` (A2; frozen, EXEMPT with *"usunac przyciski all units i
+   drawing set pdf, tylko export pdf"*): `KINDS` keeps `walls` only; the state
+   `kind` is the constant 'walls'; the selector row (:443, "Card (3 views)",
+   "Front only", "Set") is DELETED; the footer (:370 to :410) becomes [Close]
+   [Wall DXF, secondary, PROPOSED kept: the AutoCAD road has no other door]
+   [Export PDF, gold]: "Export PDF" writes today's `save('walls-pdf')` (the
+   ticked sheets, in the set's order); `save('booklet')`, `save('svg')` and
+   the per-sheet `save('pdf')` are DELETED with the buttons; the sheet list
+   with its ticks stays; the window's width stays 880 (PROPOSED).
+2. The window's title becomes "Drawings" and its one paragraph of help says
+   what the set is (today's :682 to :695 text, trimmed to the sheets that
+   exist after F8).
+3. `test/turn-cc1b-f06-window.test.js`: the window renders no "Card (3
+   views)", "Front only", "All units (PDF)", "Drawing set (PDF)" or "Export
+   SVG"; "Export PDF" is disabled with no ticked sheet and calls the set's PDF
+   road with the ticked sheets; `src/components/DrawingModal.jsx` contains no
+   `booklet`.
 
-## PART C · THE SAVE (F7 to F9; A3 and INT)
+### F7 · The logo is the company's
+1. `src/lib/jcLogo.js` (NEW, Skylon header): `loadCompanyLogo() -> { href:
+   <string> | null, error }` from ONE read through `withDb`:
+   `company_settings` select `logo_url` (`.maybeSingle()`); the href is used
+   as given (JC's storage URL) for the screen; for the PDF (the title block
+   draws an image) the file is fetched once into a data URL with
+   `readLogoFile`'s own sizing and cached per session (`cc.<tenant>.logo.v1`
+   in sessionStorage, PROPOSED); a fetch the browser refuses (CORS, 404) leaves
+   the title block without a logo and the window says so in one line, never a
+   broken image.
+2. `DrawingModal.jsx` (A2): the title block's logo field (:553 to :575): the
+   default is the company's logo from F7.1 when `project.titleBlock.company.
+   logo` is empty; the row shows the logo, then two buttons: "Insert other
+   logo" (today's Choose image road, unchanged inside) and "Use company logo"
+   (clears the per-project logo so the company's shows again); "Remove" stays.
+3. `setSheet.js` `logoOf` (A2): accepts the company href as the fallback source
+   when the project has none; nothing else moves.
+4. `test/turn-cc1b-f07-logo.test.js`: with a fake client whose
+   `company_settings` row has `logo_url`, the title block shows it and the PDF
+   road receives it; with `logo_url: null`, no logo and no error; "Insert other
+   logo" replaces it for THIS item only; "Use company logo" restores it.
 
-### F7 · One save, one request (law 5)
-1. `projectStore.projectForSave()` (INT, :12433-12456) becomes the ONE
-   builder of the item JSON: `{ format: 'cabinet-core-project', version: <the
-   file's current version>, saved_at, app: { name, build }, project, units,
-   assignments }` with the assignments folded (`persist.js:32-34`), the
-   `warehouseStamp`, the logo as `{ ref }` (`projectLibrary.js:157-162`), and
-   NO `profile`; `persist.js`'s `persistProject(opts)` loses the shelf write
-   and the cloud branch and does: build → `withDb(c => c.rpc('cc_save_item',
-   { p_item_id: project.id, p_name: project.name, p_design }))` → on `data`:
-   `markSaved`, `project.savedAt = data.updated_at`, the status words "Saved
-   <time>"; on `error` or `mock`: `markUnsaved`, the words (JC_OFFLINE or the
-   server's message) and the crash buffer already holds the work. Returns `{
-   project, message, tone, stored }` as today for its three callers. "Save as"
-   (`ConfiguratorPage.jsx:657-663`) becomes "Save as new item" in the same JC
-   project: `cc_create_item` with the typed name, then the same save
-   (PROPOSED). The direct save of AuthModal is gone with F3.
-2. A size guard before the request: a body over 3.5 MB (Vercel's 4.5 MB wall
-   with room, PROPOSED `profile.save.maxBodyMb: 3.5`) is refused in words
-   ("This item is too large to save: <n> MB. A logo or a picture is riding in
-   it.") and never sent.
-3. `test/turn-cc1a-f07-save.test.js`: a 10-unit store job saved against the
-   fake client makes exactly ONE `rpc` call named `cc_save_item` with
-   `p_item_id` = the item id and a `p_design` that has `project`, `units`,
-   `assignments`, `format`, `version` and NO `profile`; the design parses back
-   through `loadProject` to the same units (JSON byte identity of `units`);
-   `markSaved` after success and `dirty` false; a refused save leaves `dirty`
-   true and the words; the size guard refuses a 4 MB body without a call.
+### F8 · Two angles and the render as sheets (law 8)
+1. `DrawingModal.jsx` (A2): the one `renderImage` (:146 to :174, preset
+   'iso-left') becomes `visuals = { isoLeft, isoRight, render, ai }`: `isoLeft`
+   and `isoRight` are captured as today with presets 'iso-left' and
+   'iso-right' (`engine/render.js` :76 and :77, both exist); `render` is the
+   user's own: a "Render..." button in the window (the same `RenderModal`,
+   its CAMERA_PRESETS and resolution untouched) whose result lands in
+   `project.visuals.render` (INT: `project.visuals = { render: { dataUrl,
+   preset, at }, ai: { dataUrl, prompt, at } }`, saved with the item as JPEG
+   data URLs, each under `profile.visuals.maxKb` 400, PROPOSED; a bigger one is
+   re-encoded at a lower quality before it is kept); `ai` is F13's.
+2. `wallSheets.js` (A2): `renderImage` becomes `visuals`; the set gains, in
+   place of the one visualisation sheet, up to FOUR sheets after the sections
+   and before the cut list: "Visualisation, left" (isoLeft), "Visualisation,
+   right" (isoRight), "Visualisation, render" (when `visuals.render`),
+   "Visualisation, AI" (when `visuals.ai`); each a sheet with its tick like
+   any other; the first two ticked by default, the other two ticked when
+   present (PROPOSED).
+3. `RenderModal.jsx` (A2): gains an `onResult` prop; when given, the finished
+   render is handed back instead of (or beside, PROPOSED: beside) the download;
+   nothing else changes.
+4. `test/turn-cc1b-f08-angles.test.js`: with a fake rig the set lists
+   "Visualisation, left" and "Visualisation, right" and no "Visualisation"
+   alone; a `project.visuals.render` adds the third; a 2 MB render is kept
+   under 400 KB; the sheets export through the one PDF road in the set's order.
 
-### F8 · The triggers (law 6)
-1. `src/lib/saveTriggers.js` (NEW, Skylon header): `installSaveTriggers({
-   save, isDirty, hasItem, buffer, now })` returns `uninstall()`; Ctrl+S (and
-   Cmd+S) with `preventDefault` → `save()` when an item is open
-   (`ConfiguratorPage.jsx:246-250`, beside Ctrl+Z, A3's file, EXEMPT with the
-   owner's words of law 5); the autosave timer every `profile.save.
-   autosaveMinutes` (5, CONFIRMED by the owner's words) → `save()` only when
-   `isDirty()` and an item is open, never while a save is in flight; on
-   `pagehide` and on `visibilitychange` to hidden: `buffer.flush()`
-   synchronously (F9), then, when `isDirty()` and the body is under 64 KiB
-   (the keepalive quota; `profile.save.keepaliveMaxKb: 64`, PROPOSED), ONE
-   `fetch('/api/rpc', { method: 'POST', keepalive: true, headers: {
-   Authorization: 'Bearer ' + localStorage.authToken, 'Content-Type':
-   'application/json' }, body })` with the same payload as F7 (JC's `apiFetch`
-   has no keepalive, so this one road is written here, once); a body over the
-   quota relies on the boot question (F9). The six export callbacks
-   (`ConfiguratorPage.jsx:445, 456, 475, 494, 512, 554`) `await` the same
-   `persistProject` before they export when dirty and read `stored`; a failed
-   save does not stop a local export (CNC, DXF, PDF are local), it says so.
-2. `App.jsx`'s `beforeunload` question (:96-103) is replaced (INT) by the
-   pagehide road above: no question when the buffer flushed; the browser's own
-   question only if the flush itself failed (a full quota).
-3. `test/turn-cc1a-f08-triggers.test.js`: with fake timers, a dirty item and a
-   5-minute tick: one save; a clean item: none; two ticks with a save in
-   flight: one; Ctrl+S on a dirty item: one save and the default prevented;
-   `pagehide` with a 10 KB dirty body: the buffer written and one keepalive
-   fetch to `/api/rpc` with `keepalive: true`; with a 100 KB body: the buffer
-   written and NO fetch; an export callback on a dirty item awaits one save
-   first; the three numbers come from the profile (none typed in the UI).
+## PART C · THE MATERIALS (F9 to F12; A3 and INT)
 
-### F9 · The crash buffer (law 7)
-1. `src/lib/crashBuffer.js` (NEW, Skylon header): `bufferKey(tenantId, itemId)
-   = 'cc.' + tenantId + '.item.' + itemId + '.buffer.v1'` (PROPOSED), `write(
-   key, { savedAt, dirty, at, design })`, `read(key)`, `clear(key)`, `list(
-   tenantId)` (every buffer of the tenant), a size guard (a design over 1 MB is
-   not buffered and the status bar says "Crash buffer off: the item is over 1
-   MB", PROPOSED `profile.save.bufferMaxMb: 1`), and the browser's refusal
-   returned in words (`projectLibrary.js:53-56` is the model). The store's
-   cache (`projectStore.js:248`, the subscriber `:1861-1883`, INT) writes THIS
-   key instead of `cc.project.cache.v1` (deleted), still at most once per 250
-   ms, with `dirty` and `savedAt` beside the design; `markSaved` writes it
-   once more with `dirty: false`. The read at module load (`:1883-1922`) is
-   deleted: the app opens on the start screen and the buffer is OFFERED, never
-   applied in silence.
-2. The boot question (A2's StartScreen, A3's patch): after the list loads, for
-   every buffer of the tenant with `dirty: true` whose `at` is newer than the
-   item row's `updated_at`: "Restore unsaved changes to <item name> (<time>)?"
-   with Restore (opens the item from the buffer's design, dirty, and says "Not
-   saved yet: press Ctrl+S") and Discard (clears the buffer); an item that no
-   longer exists in the list (archived or gone) is offered with "Save as new
-   item" instead (PROPOSED). Buffers of another tenant are never shown and are
-   cleared when `/me` names a different tenant than the buffer's key (CC-1 R6).
-3. `test/turn-cc1a-f09-crash-buffer.test.js`: an edit writes the buffer under
-   the tenant and item key within 250 ms; a save marks it `dirty: false`; a
-   dirty buffer newer than the row is offered at boot and Restore reproduces
-   the edited units byte for byte; an older buffer is not offered; Discard
-   clears it; a 2 MB design is not buffered and the words appear; a buffer of
-   tenant A is not listed for tenant B and is cleared.
+### F9 · The stock is Joinery Core's (law 6)
+1. `src/lib/jcStock.js` (NEW, pure, Skylon header): `loadJcStock(client) ->
+   { items, categories, error }` from TWO reads through `withDb`:
+   `stock_items` select `id, name, category, subcategory, unit,
+   current_quantity, cost_per_unit, size, thickness, color, item_number,
+   image_url, supplier_id` ordered by name; `stock_categories` select `id,
+   name, type, parent_category_id, display_order` ordered by display_order;
+   `toMaterial(row) -> { id: row.id, jc_uuid: row.id, name, category:
+   ccKindOf(row), group: row.category, subgroup: row.subcategory, thickness:
+   Number(row.thickness) || null, unit, price: Number(row.cost_per_unit) || 0,
+   color, size, item_number, image_url, stock: Number(row.current_quantity) }`
+   where `ccKindOf` reads the row's thickness and category/subcategory WORDS
+   to answer the vocabulary the BOM already knows ('board' | 'front' | 'edging'
+   | 'hardware' | 'other'; PROPOSED: a numeric thickness over 3 mm and a word
+   among sheet, board, mdf, mfc, ply, plywood, melamine, veneer, worktop gives
+   'board'; edging, abs, pvc gives 'edging'; hinge, runner, drawer, handle,
+   knob, leg, bracket, screw, cabineo, dowel, lift, aventos, rail, fitting,
+   ironmongery gives 'hardware'; the rest 'other'); `categoryTree(categories)
+   -> [{ id, name, children: [...] }]` from `parent_category_id`. Tested as
+   written with fixture rows (a melamine board 18 mm, an ABS edging, a Blum
+   hinge, a tin of paint).
+2. `materialAssignmentStore.js` (A3): `loadMaterials` reads JC's stock
+   through `loadJcStock` (the `cc_materials` read, a table JC does not have,
+   is DELETED); `materials` = the three generic placeholders (`generic-18`,
+   `generic-22`, `generic-25`, kept, they pin geometry honestly) followed by
+   `items.map(toMaterial)`; `materialsSource` 'jc' | 'offline'; the rest of
+   `MOCK_MATERIALS` (:57 to :103, the 19 sample rows) is DELETED (kasacja; the
+   tests that read them are rewritten by name to fixture rows of
+   `jcStock.js`); `isJcMaterial` and `materialBadge` keep their contract (every
+   stock row is JC's; the badge shows "JC" as today). An empty stock is said
+   in words in the Assign window: "No materials in your Joinery Core stock yet.
+   Add them in Joinery Core, Stock." with a button "Open Stock" to
+   `/stock.html` in a new tab (PROPOSED). Offline: the JC_OFFLINE words and
+   Retry, never an empty list in silence.
+3. The "Stock..." window of the rail (RailMenus 'materials' row 4): the
+   read-only list of the tenant's stock as CC sees it (name, item number,
+   category, thickness, unit, price, stock, the JC badge), with a search box
+   that narrows and the categories tree as a filter (JC rule 6.3), width
+   1240, the floor of F12. It replaces whatever the row opened before (grep;
+   name it in the PR).
+4. `test/turn-cc1b-f09-stock.test.js`: the two reads named with their columns
+   (the fake client records every `select`); `toMaterial` maps the fixture
+   rows to the four kinds; the store holds the three generics plus the rows;
+   `src/` has no `cc_materials` and no row of the deleted samples (grep
+   `hw_hinge_clip`, `mat_mfc18_white`); offline shows the words.
 
-## PART D · THE WALK (F10; A1, after PART B and PART C land)
-`scripts/t-cc1a-fake-jc.mjs` (NEW): a Node `http` server (no new dependency)
-that serves `/js/api-client.js` as a MINIMAL shim written here (apiFetch,
-rpc, supabaseClient.from with select/eq/order/limit/single/maybeSingle and
-thenable, rpc, auth.getSession that THROWS if called), `/login.html` (a page
-with one button that sets `authToken`, `currentSession`, `currentUser` in
-localStorage and follows `next`), `/api/auth/me`, `/api/db/query` and
-`/api/rpc` over an in-memory store seeded with one company, one admin, one
-employee, two production projects, one pipeline project and two items; it
-proxies every other path to `vite preview` at 4173 under `/cabinet/`, so the
-page runs on ONE origin as it will behind JC. `scripts/t-cc1a-walk.mjs`
-drives it with the real mouse through `scripts/t74-harness.mjs` (BASE =
-the fake's origin + `/cabinet/`), Playwright's clock API for the 5 minutes:
-(a) open `/cabinet/` with no token: the browser lands on `/login.html?next=
-%2Fcabinet%2F`; press Sign in: back on `/cabinet/`, the list shows two
-production projects and one pipeline project with their items (frame);
-(b) switch the fake's user to the employee, reload: the refusal card with
-"employee" and no list request made (the fake counts requests; frame);
-(c) as admin, New item on the pipeline project, name "Walk wardrobe", Start:
-the editor opens, the fake has one `cc_create_item`; add a WARDROBE, Ctrl+S:
-one `cc_save_item` with a design that has no profile (the fake stores it);
-(d) move a shelf, advance the clock 5 minutes: one more `cc_save_item`;
-advance 5 more with no change: none; (e) add a drawer, close the tab (no
-save): reopen `/cabinet/`: "Restore unsaved changes to Walk wardrobe?",
-Restore: the drawer is there and the status says not saved; (f) Archive the
-item from the list: it disappears, "Show archived" lists it, Restore brings
-it back; (g) Open from file `verify/t86b/owner.ccproject`, bind to the
-production project: one create, one save, the list shows it (frame). Every
-line PASS or FAIL with the number expected and the number read; never patched
-in the walk. `verify/t-cc1a/walk.txt` and the frames.
+### F10 · Assign materials, every line (law 7)
+1. `engine/partRegistry.js` (A3; LICENSED, the blob's shape): the assignment
+   blob's schema becomes 3: beside the panel roles and the per-part
+   exceptions of today, `hardware: { [key]: { material_id } }` where `key` is
+   the BOM's own hardware key `${role}|${spec_label}` (bom.js :441); a schema 2
+   blob migrates by copying each legacy `assignments[role].material_id` of a
+   HARDWARE role to every key of that role the current BOM lists (so nothing a
+   joiner assigned is lost), once, at load.
+2. `engine/bom.js` (A3; LICENSED, the key only): `hardwareDemand(bom,
+   assignments, materials)` (:674) reads `assignments.hardware[key]` FIRST and
+   the legacy `assignments[role]` second; a line with neither is `{ material:
+   null, assigned: false }` as today. No quantity, no spec label, no geometry
+   changes.
+3. `AssignMaterialsModal.jsx` (A3; frozen, EXEMPT with the owner's words of
+   law 7): width 1240 (as Spraying's), the F12 floor, two columns. LEFT, the
+   project's demand in SIX GROUPS of CC's roles (PROPOSED grouping; every
+   hardware role the engine emits is in exactly one group, the test asserts
+   the cover): "Sheets" (side, top, bottom, back, shelf, front, drawer_box,
+   plinth, infill, end_panel and the per-part exceptions as today); "Hinges"
+   (hinge | hinges, bifold_hinges, hawa_hinges); "Runners" (runner_pairs,
+   runner_sync_rods); "Internal fittings" (drawer_insert, drawer_glass,
+   lift_unit, led_strip, mirror, watch_insert, space_corner, rail, shelf_pins,
+   rail_supports, shoe_insert, ready_boxes); "Ironmongery and other" (legs,
+   hangers, handle, cabineo_connector, cabineo_cap, worktop_bolts, hawa_set,
+   hawa_connector, hawa_tracks, hawa_stiffener, hawa_foot, extractor);
+   "Consumables" (edging and whatever role the engine emits that no other
+   group names, so a new role can never vanish: the test asserts the
+   fallback). Each LINE is one BOM key: label, the spec (`spec_label`), the
+   quantity and unit from the BOM, then the assigned material (name, item
+   number, price) with the JC badge, or a red chip "Not assigned" and the
+   line is the one being assigned when clicked. RIGHT, the stock: the F9 list
+   embedded and visible at once, a search box that narrows by name, number,
+   colour, size, a category filter from the tree, the kind filter preselected
+   to the line's kind (board for Sheets, hardware for the rest, switchable);
+   click a row assigns it to the selected line and the chip turns to the name;
+   "Clear" on a line unassigns. A header line counts: "<n> of <m> lines
+   assigned" and, when m > n, "Not assigned materials: <m minus n> lines" in
+   red. The yield field of a Sheets line stays where it is today.
+4. `MaterialPicker.jsx` (A3): becomes the RIGHT column's list (one component,
+   used by the Assign window and the Stock window), never a dropdown-only.
+5. `test/turn-cc1b-f10-assign.test.js`: a job with two hinge specs and one
+   runner spec shows three lines under Hinges and Runners, each assignable
+   separately, the key written as `${role}|${spec_label}`; a schema 2 blob
+   with `hinges: { material_id }` migrates to both hinge keys; the group cover
+   test: every role in `HARDWARE_ROLES` and every role the engine emits in
+   `test/fixtures` jobs lands in one group; the search narrows by colour; the
+   header counts; `src/` has no second material list.
+
+### F11 · "Not assigned materials" in every export (law 7)
+1. `exporters.js` (A3): the BOM PDF: each unassigned line prints "Not
+   assigned materials" in its material column (today's ' · not assigned',
+   :354, becomes these words); the cover of the PDF carries, when any line is
+   unassigned, a red line "Not assigned materials: <n> lines. Assign them in
+   Cabinet Core, Materials, before ordering." and the totals row prints "not
+   a price" instead of a sum; the cutting list CSV keeps its WARNING row
+   (:165) with the same words; the live BOM window shows the same header
+   count as F10.
+2. `test/turn-cc1b-f11-words.test.js`: a job with one unassigned hinge line
+   exports a PDF whose text contains "Not assigned materials" twice (the line
+   and the cover) and no "£" total; the same job fully assigned prints the
+   total and not the words; the CSV WARNING row carries the words.
+
+### F12 · The font floor of the big windows
+1. `src/index.css` (A3): `.cc-modal-wide` (NEW class, PROPOSED) sets `font-
+   size: 13px` on the window's body and `th, td { font-size: 13px; padding:
+   6px 8px }`; `.text-xs` inside it is overridden to 13 px (the floor; the
+   owner: *"fonty male i duzo pustego miejsca"*). `SprayingPanel.jsx` (A3):
+   gets the class, its table `w-full` with `table-layout: auto` so the
+   columns take the 1240 (today's :208 fixed widths go), the empty right
+   margin disappears; `AssignMaterialsModal.jsx` and the Stock window of F9
+   get the class. No other window changes (named in the PR as "later, by
+   name").
+2. `test/turn-cc1b-f12-floor.test.js`: the three windows carry `cc-modal-
+   wide`; the computed font size of a table cell in each is at least 13 px
+   (jsdom with the stylesheet, or the rule read from `index.css` and the class
+   found on the element, whichever the suite's house pattern is); the Spraying
+   table's width equals its window's content width.
+
+## PART D · THE AI VISUALISATION (F13; A4)
+
+### F13 · The card and the call to Joinery Core (law 8)
+1. `src/lib/aiVisualise.js` (NEW, pure, Skylon header): `buildPrompt({
+   project, design, finishes, room }) -> string` (at most 2000 chars; the
+   words: a photorealistic interior photograph of this exact furniture, the
+   layout and proportions unchanged, the fronts in the named colours and
+   materials, the worktop and handles as named, natural daylight, no people,
+   no text; PROPOSED); `visualise({ image, prompt, size, quality }) ->
+   { image, model, seconds, error }` through `jcFetch('/api/ai/visualise', {
+   method: 'POST', body })` (one call, one picture); a size guard: an `image`
+   over `profile.visuals.aiInputMaxMb` 4 is downscaled to the long side
+   `profile.visuals.aiInputLongPx` 1536 as JPEG 0.85 before it is sent
+   (PROPOSED numbers, in the profile); the 401/403/429/503/504 words shown as
+   JC gives them.
+2. `src/components/drawings/AiVisualCard.jsx` (NEW, Skylon header; A2 mounts
+   it in the Drawings window under the sheet list, one line): "AI
+   visualisation" with: the source (a radio: the left angle, the right angle,
+   the user's render when present); the size (the three; default
+   '1536x1024'); the quality (default 'medium', PROPOSED); a text field "Add
+   to the prompt" (optional, appended); the button "Generate" that runs
+   `visualise` up to THREE times in sequence for one click (the owner: *"max 3
+   proby"*), showing each result as it arrives with "Use this one" under it,
+   a spinner and "Picture <k> of 3" meanwhile, and "Stop" between calls; a
+   refused call shows its words on the card and the pictures already made
+   stay; "Use this one" writes `project.visuals.ai = { dataUrl (JPEG under
+   400 KB), prompt, at }` (INT's field of F8.1) and the set shows
+   "Visualisation, AI" ticked; "Remove" clears it. Nothing is kept until "Use
+   this one" is pressed. Never the word "worker".
+3. `test/turn-cc1b-f13-ai.test.js`: with a fake `apiFetch`, one click of
+   Generate makes at most three POSTs to `/api/ai/visualise` with the body's
+   keys `image, prompt, size, quality` and a prompt under 2000 chars that
+   names the fronts' colour from the fixture design; a 503 after the first
+   picture leaves one picture shown and the words; "Use this one" writes
+   `project.visuals.ai` under 400 KB and the set lists "Visualisation, AI";
+   nothing is written before it; a 5 MB input is downscaled before the POST.
+
+## PART E · THE FRONTS AND THE WALK (F14 to F16; A5)
+
+### F14 · Ornate fronts for Skylon only (law 9)
+1. `src/lib/tenantFlags.js` (NEW, Skylon header): `SKYLON_TENANT_ID =
+   'b663e012-1ae6-45d8-b720-7bcc26baffc2'` (Skylon Joinery LTD, as JC's
+   `sql/2026-10-28-site-app-tenants.sql` names it); `isSkylon(tenantId)`;
+   `ornateFrontsFor(tenantId) -> string[]` = `ORNATE_STYLE_IDS` for Skylon,
+   `[]` for everyone else.
+2. `FrontDecorationControls.jsx` (and `FrontStyleGallery.jsx` if it lists the
+   styles; grep `ORNATE_STYLE_IDS` in `src/components`): the ornate styles are
+   offered only when `isSkylon(useAuthStore.getState().tenant?.id)`; a unit
+   that already carries an ornate style keeps drawing it (the engine is not
+   touched) and the control shows its current style read-only with the line
+   "This style is not offered to your workshop." (PROPOSED). The machined
+   styles (`DECORATIVE_FRONT_STYLES`) and the plain fronts stay for everyone.
+3. `test/turn-cc1b-f14-skylon.test.js`: with the tenant set to Skylon's id the
+   gallery lists the four ornate styles; with another uuid it lists none of
+   them and every other style; a unit with `ORNATE_A_1` under another tenant
+   still computes (the engine result equals main's).
+
+### F15 · AVENTOS rows in the library
+1. `engine/library.js` (A1 applies A5's patch; data rows only): the Wall
+   units group gains a sub-group `{ kind: 'group', id: 'aventos', label:
+   'AVENTOS lift-up', hint: 'A wall unit with a Blum AVENTOS lift instead of
+   hinges: the engine chooses the unit from the front\'s weight', items: [
+   { kind: 'type', id: 'wud-hk', typeId: 'WUD', label: 'HK, stay lift',
+   params: { front_system: 'hk' } }, { ... 'hs', 'HS, up and over' }, { ...
+   'hl', 'HL, lift up' }, { ... 'hf', 'HF, bi-fold' } ] }` (the labels from
+   `liftSystems.js` LIFT_LABELS, read, not retyped). The entry grammar gains
+   `params?`; `LibraryPanel.jsx` :419 passes `entry.params` to `onAdd(typeId,
+   { params })` (`addUnit` takes `params` already, projectStore :6054);
+   RailMenus' flyout the same. `liftTakesKit` is not touched: a WUD takes a
+   lift today (RightPanel :664 to :676 chooses one per unit); these rows
+   choose it at insertion.
+2. `test/turn-cc1b-f15-aventos.test.js`: the Wall units group lists the four
+   rows with LIFT_LABELS' words; adding "HK, stay lift" creates a WUD whose
+   `params.front_system` is 'hk' and whose result carries a lift unit line in
+   the BOM hardware (`lift_unit|...`), assignable in F10's Internal fittings.
+
+### F16 · The fake Joinery Core grows and the walk
+1. `scripts/t-cc1a-fake-jc.mjs` (A5): the in-memory store gains
+   `stock_categories` (Sheets with subcategories Melamine and MDF; Hardware
+   with Hinges and Runners; Consumables) and `stock_items` (eight rows: two
+   boards 18 mm, one MDF 22, one edging, two hinges 110 and 155, one runner,
+   one paint), `company_settings.logo_url` set to a PNG the fake serves at
+   `/fake/logo.png`, and `POST /api/ai/visualise`: 401 without a token, 403
+   for the employee, 503 when the fake is started with `--no-ai-key`, else a
+   fixed PNG (a 64 by 64 tinted square written in the script, no file) after
+   `--ai-delay-ms` (default 300), counting calls per token; nothing of
+   T-CC1a's contract changes.
+2. `scripts/t-cc1b-walk.mjs` (A5, the real mouse through
+   `scripts/t74-harness.mjs`, BASE = the fake's origin + `/cabinet/`): (a)
+   sign in as admin, open the item "Walk wardrobe" of the fake: the header
+   shows the item name and under it the JC number and project name to the
+   RIGHT of the menus; the bar lists File, View, Settings, Spraying,
+   Lighting, Output and no Library, no Database; ONE "View" (frame); (b) click
+   "Back to Joinery Core": the browser lands on `/dashboard.html` (the fake
+   answers a page); back; (c) the rail's Add lists Kitchen, Wardrobes,
+   Bathroom, Sets, Saved sets, Media wall (soon), Hallway (soon), Office
+   (soon); open Bathroom: four kits; open Kitchen, Wall units, AVENTOS
+   lift-up: four rows; add "HK, stay lift" (frame); (d) Output shows four
+   entries (frame); (e) Drawings: no Card, no Front only, the sheet list with
+   "Visualisation, left" and "Visualisation, right", the company logo in the
+   title block (frame); press Generate on the AI card: three pictures arrive,
+   "Use this one" on the second: "Visualisation, AI" appears ticked; Export
+   PDF: one download whose page count equals the ticked sheets (read with the
+   suite's PDF reader; frame); (f) rail Materials, Assign materials...: the
+   six groups, the hinge lines (two specs after the AVENTOS unit joined),
+   every chip "Not assigned"; assign the 110 hinge from the right list: the
+   chip turns; the header says "<n> of <m> lines assigned" (frame); Output,
+   BOM PDF: the PDF text holds "Not assigned materials" (frame); (g) switch
+   the fake's tenant to another uuid, reload, open the item, select a front:
+   the gallery has no ornate style (frame). Every line PASS or FAIL with the
+   number expected and the number read; never patched in the walk.
+   `verify/t-cc1b/walk.txt` and the frames.
 
 ## NOT THIS TURN
-- The profile in the tenant's row, the company defaults, the title block's
-  client and address from JC, the materials picker on JC stock: T-CC1b.
-- The drawings into the project's folder, `cc_register_item_files`, the
-  storage road, `cc_cut_revision` on export: T-CC1c.
-- The materials export, the estimate hint report, the CSV kasacja, the death
-  of Save to file / Open from file: T-CC2. The picture: T-CC3.
-- A live call to joinerycore.com: the owner's walk after both merges.
-- `TopBar.jsx`'s legacy menu beyond the Account button's deletion (FROZEN 5 of
-  T86B); the editor, the Section, the scene, the exports.
-- Retail (`src/retail/**`, `retail.html`): not edited beyond FROZEN 5's
-  one-line re-point if needed; its deployment under `/cabinet/` is out of
-  reach by T-JC1's route (404), which the PR states as a consequence for the
-  owner, not a defect.
+- The fabric inside the shakers (the owner: later); the fronts' colour and
+  handle KINDS beyond what exists (the colours are Spraying's, a handle is a
+  stock row assigned in F10); a page of its own for the materials; the
+  materials export and the estimate hint: T-CC2.
+- The profile in the tenant's row, the company defaults in JC, the title
+  block's client and address from JC: the rest of T-CC1b's original list,
+  moved to T-CC1c by this turn's size.
+- The drawings into the project's folder, the storage road, the AI picture
+  in storage instead of the design: T-CC1c.
+- The 3D (*"nie robimy 3d"*); any engine geometry; any new kit; the
+  Cabineo in 3D from the milled face only (Petros, later).
+- A live call to joinerycore.com: the owner's walk after both merges (this
+  turn and T-JC2a).
+- Retail (`src/retail/**`): not edited.
+
+## IF THE NIGHT RUNS SHORT (the order things fall, whole)
+F15 (the AVENTOS rows) falls first, then F12 (the floor), then F8's render
+sheet (the two angles stay), then F7 (the logo), then F13 (the AI card; its
+JC side still lands in T-JC2a and the card comes the next turn). F1 to F6,
+F9, F10, F11 and F14 never fall.
+
+## DELETION LICENCE (BY NAME, nothing else)
+`src/components/studio/SceneViewMenu.jsx` (whole file) and its import and
+mount in `ConfiguratorPage.jsx`; `buildDatabaseMenu` in `topMenu.js` and the
+Database menu's five entries (two of them, Clients... and Projects..., die
+for good); the Library menu of `TopBar.jsx`; `projectCategory`,
+`showAllTypes` and the `filterLibraryByProject` branch in `LibraryPanel.jsx`
+(and the function itself if unused); the six Output entries named in F5.1;
+`KINDS.preview`, `KINDS['unit-card']`, `KINDS['front-elevation']`, the kind
+selector row, the "All units (PDF)", "Drawing set (PDF)", "Export SVG"
+buttons and the `booklet`, `svg` and per-sheet `pdf` roads of
+`DrawingModal.jsx`; the `cc_materials` read and the 19 sample rows of
+`MOCK_MATERIALS` (the three generics stay). Nothing else.
 
 ## LINEAGE (one line a test reads from this file)
 T79's horizontal notch stays as built and its owner's words stay here
 because `test/turn79-f05-edge-notch.test.js` reads them from CLAUDE.md:
 *"cut the corner działa idealnie, ale możesz zrobić mi też poziome cut?
 wszystkich 4 rogów?"* (18.10.2026). T85 (PR #89), T86B (PR #91), the chat
-fixes of 28.10 to 30.10 (PR #84 to #86, #90) and main at the merge of #91 are
-the base of this turn; their numbers hold untouched.
+fixes of 28.10 to 31.10 (PR #84 to #86, #90, #93 to #95), T-CC1a and main at
+the merge of #95 are the base of this turn; their numbers hold untouched.
 
 ## TESTS AND PROOF
 Full suite once per PART and at the end (never `--silent`); the classifier
-strict with `f51-t-cc1a-f*.mjs` naming every lib delta (persist.js,
-projectLibrary.js, projectFileRoad.js, cloudSync.js, storageBase.js, topMenu.js
-and the three new lib files; NO engine delta: the classifier's engine set is
-empty and the PR says so); the six base goldens IDENTICAL (`scripts/
-t64-classify.mjs --dump` vs `verify/t70/goldens-base.json`); `t75-goldens
---check`, `t78-goldens --check` and every later golden check as T86B's list
-names them; `t78-copy --check` CLEAN; `vite build` green with `base:
-'/cabinet/'` and the built `dist/index.html` quoted (the JC script tag, the
-`/cabinet/assets/` URLs); `t-cc1a-walk.mjs`; NEW_FILES; the Skylon header; no
-em or en dash; the kasacja counts of F3; `grep` of `src/` for `createClient`,
-`isMockMode`, `AuthModal`, `MockModeBadge`, `loc_`, `cc.project.cache.v1`:
-all 0; every F the six stations of DONE in twenty lines.
+strict with `f55-t-cc1b-f*.mjs` naming every lib delta and the three LICENSED
+engine files with the owner's words (library.js rows, types.js categories,
+bom.js the key; partRegistry.js the blob) and NO geometry delta (the
+classifier's engine set names those three and `partRegistry.js` only; the PR
+says so); the six base goldens IDENTICAL (`scripts/t64-classify.mjs --dump`
+vs `verify/t70/goldens-base.json`); `t75-goldens --check`, `t78-goldens
+--check` and every later golden check as T-CC1a's list names them;
+`t78-copy --check` CLEAN; `vite build` green with `base: '/cabinet/'`;
+`t-cc1b-walk.mjs`; NEW_FILES; the Skylon header; no em or en dash; `grep` of
+`src/` for `SceneViewMenu`, `buildDatabaseMenu`, `cc_materials`,
+`hw_hinge_clip`, `booklet`: all 0; grep "worker" in added lines: 0; every F
+the six stations of DONE in twenty lines.
 
 ## PR BODY
-First line: "Stands on main at the merge of PR #91 (<sha>); meets T-JC1 of the
-Joinery Core repository on Vercel; no live JC was called." Then files and
-lines per F; the 29 `isMockMode` references with their fate; the kasacja
-counts of F3; the tests rewritten by name; the four reads of F4 with their
-column lists; the one request of F7 quoted (the payload's keys); the three
-profile numbers of F8 and F9; the EXEMPT rows and the manifest count before
-and after; the built `index.html` tag; the test count before and after; the
-walk result; the "pending T-CC1b / T-CC2" list of FROZEN 4; the consequence
-for retail; DECISIONS TAKEN; SKIPPED AND WHY; RED AT THE END; THE NUMBERS
-below.
+First line: "Stands on main at the merge of PR #95 (e7a38ad1); meets T-JC2a of
+the Joinery Core repository on Vercel (the AI endpoint); no live JC was
+called." Then files and lines per F; the doors table of F2 and F5 (every
+deleted entry and where it lives now); the two reads of F9 with their column
+lists and the `ccKindOf` word lists; the six groups of F10 with every role
+under its group and the fallback; the words of F11 quoted; the request of
+F13 quoted (the body's keys, the three calls, the cap); the EXEMPT rows and
+the manifest count before and after; the tests rewritten by name; the test
+count before and after; the walk result; DECISIONS TAKEN; the PROPOSED points
+for the owner (the job block's two-line layout, Wall DXF kept, the three
+`soon` families, "Start from", the six groups' membership, the AI card's
+defaults 1536x1024 medium, the 400 KB picture cap, the 13 px floor); SKIPPED
+AND WHY; RED AT THE END; THE NUMBERS below.
 
 ## THE NUMBERS (in the profile; none typed in the UI)
 | Number | Where | Value | Status |
 | - | - | - | - |
-| the autosave period | `profile.save.autosaveMinutes` | 5 | CONFIRMED ("co 5 minut automatycznie", 30.10) |
-| the keepalive ceiling | `profile.save.keepaliveMaxKb` | 64 | PROPOSED (the Fetch standard's in-flight quota) |
-| the body ceiling | `profile.save.maxBodyMb` | 3.5 | PROPOSED (Vercel's 4.5 MB wall, with room) |
-| the crash buffer ceiling | `profile.save.bufferMaxMb` | 1 | PROPOSED |
-| the cache throttle | the store subscriber | 250 ms | as today |
-| Recent | `cc.<tenant>.recent.v1` | 5 items | as today's 5, per tenant |
-| the list's filter | `status = 'active'` on both project tables | | PROPOSED |
-| the refusal words | `RefusalScreen.jsx` | three cards | PROPOSED words; "employee", never "worker" |
-| the login return | `/login.html?next=%2Fcabinet%2F` | | CONFIRMED (31.10, 09:08) |
-| the item JSON | `projectForSave` | the .ccproject shape without `profile`, logo `{ ref }` | CONFIRMED (PLAN 2.5) |
+| the kept picture's size | `profile.visuals.maxKb` | 400 | PROPOSED |
+| the AI input's size | `profile.visuals.aiInputMaxMb` | 4 | PROPOSED (JC's body wall) |
+| the AI input's long side | `profile.visuals.aiInputLongPx` | 1536 | PROPOSED |
+| the AI pictures per click | `profile.visuals.aiTries` | 3 | CONFIRMED (*"max 3 proby"*) |
+| the AI default size and quality | the card | 1536x1024, medium | PROPOSED |
+| the font floor of the wide windows | `index.css .cc-modal-wide` | 13 px | PROPOSED |
+| the wide window's width | the three windows | 1240 | as Spraying's today |
+| the Skylon tenant | `tenantFlags.js` | b663e012-1ae6-45d8-b720-7bcc26baffc2 | CONFIRMED (JC sql 2026-10-28) |
+| the assignment blob | `partRegistry.js` | schema 3, key `role|spec_label` | CONFIRMED (*"10 rodzajow zawiasow, wszystkie przypisane"*) |
+| the material's key | `assignments.*.material_id` | JC's `stock_items.id` | CONFIRMED (01.11, 01:2x) |

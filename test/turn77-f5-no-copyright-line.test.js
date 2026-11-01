@@ -601,6 +601,11 @@ export const NEW_FILES = [
   'test/cnc-speed-engine.test.js',
   'test/cnc-speed-ui.test.js',
   'scripts/t78-classify.d/f58-cnc-speed.mjs',
+  // Right-click menu (01.11.2026, in chat): the menu on the approved mockups (*"4 koduj"*, the owner, 22:05).
+  'src/lib/platform.js',
+  'test/menu-store.test.js',
+  'test/menu-ui.test.js',
+  'scripts/t78-classify.d/f59-right-click-menu.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

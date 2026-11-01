@@ -39,6 +39,7 @@ import { useCabinetProfileStore } from '../../stores/cabinetProfileStore.js';
 import { useCheckFindings } from '../../lib/checkFindings.js';
 import { anchorOfEvent } from '../../lib/modalAnchor.js';
 import { Icon } from './StudioIcons.jsx';
+import { isTouchLike } from '../../lib/platform.js';
 import { libraryBesideAdd, projectLibraryCategory, railCheckBadge } from './lib/studioFace.js';
 
 /** One rail button: its icon, and its word when the rail is wide (else its title and aria-label say it). */
@@ -74,6 +75,9 @@ export default function StudioRail({
   const setLibraryCategory = useUiStore((s) => s.setLibraryCategory);
   const setLibraryPos = useUiStore((s) => s.setLibraryPos);
   const openModal = useUiStore((s) => s.openModal);
+  // The menu turn (01.11.2026): on a touch screen the next taps add a cabinet or take it out (the owner: "9 - ok").
+  const selectSeveral = useUiStore((s) => s.selectSeveral);
+  const toggleSelectSeveral = useUiStore((s) => s.toggleSelectSeveral);
   const checkOpen = useUiStore((s) => s.checkOpen);
   const toggleCheck = useUiStore((s) => s.toggleCheck);
   const viewMode = useUiStore((s) => s.viewMode);
@@ -141,6 +145,17 @@ export default function StudioRail({
         pressed={!libraryCategory}
         onClick={onSelect}
       />
+      {isTouchLike() && (
+        <RailButton
+          icon="select"
+          label="Select several"
+          labels={labels}
+          hook="rail-select-several"
+          pressed={selectSeveral}
+          title="On: every tap adds a cabinet or takes it out"
+          onClick={toggleSelectSeveral}
+        />
+      )}
       <RailButton
         icon="plus"
         label="Add"

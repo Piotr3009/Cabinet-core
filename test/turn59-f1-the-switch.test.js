@@ -126,7 +126,8 @@ const EXEMPT = {
     + ' T-CC1b F4, F15 · the project-type gate (projectCategory, showAllTypes, the filterLibraryByProject branch) deleted: every family shows all its entries; a row with params (the AVENTOS rows) hands them to onAdd. *"po co blokowac wyspe w pokoju albo mala szafe w kuchni"*, *"wszystkie rodzaje po lewej, czesc coming soon"* (the owner, 01.11.2026); *"szafki AVENTOS musza byc zrobione"* (the owner, 01.11.2026)',
   // ─── ADDED BY TURN 75 · THE BIG TURN ───────────────────────────────────
   'src/components/ContextMenu.jsx':
-    'T75 F5 · the right-click offers the UPSTAND beside the plinth, on and off per run, and the menu is handed the two store calls it needs (addUpstand, removeUpstand). *"UPSTAND: an auto-part along the wall behind every base run that has a worktop ... on and off per run like the plinth (BACKLOG #16\'s grammar: added by a decision, visible only then)."*',
+    'T75 F5 · the right-click offers the UPSTAND beside the plinth, on and off per run, and the menu is handed the two store calls it needs (addUpstand, removeUpstand). *"UPSTAND: an auto-part along the wall behind every base run that has a worktop ... on and off per run like the plinth (BACKLOG #16\'s grammar: added by a decision, visible only then)."*'
+    + ' Right-click menu (01.11.2026, chat) · the menu rebuilt on the approved mockups: 280 px, a 13 px header with the menu title, one tick column, squares for switches (on, off, mixed) and circles for one choice rows, submenus, Delete alone in red; the Actions icon that opens the same menu; the entries the owner kept, added and removed (Rename, Colour, the three turns, Drawer fronts, Show in CNC, Size out; Centre shelves, Centre between, Add doors, Duplicate in). *"tak jak teraz na wszystkie dzialaja ktore sa zaznaczone oczywiscie"*; *"na gorze prawego panelu"*; *"4 koduj"* (the owner, 01.11.2026, 22:05)',
   'src/components/BomPanel.jsx':
     'T75 F22 · the cut list shows each part\'s state (Cut, Outline only, Fit on site, Bought) in a State column, and every ironmongery line says Bought. *"The cut list, the BOM and the CNC export show the state on every line."* '
     + 'T75 F21 · the purchase list is priced at what the job was quoted at (project.warehouseStamp), the file carries it, and Accept today\'s prices is the owner\'s decision to re-price. *"stock połączony z joinery core, na razie export import za pomocą csv coś jak production core, później api"*; *"prices change a quote only by the owner\'s decision"*. '
@@ -471,7 +472,8 @@ const EXEMPT = {
     + ' UX turn (01.11.2026, chat) · the scene narrows for the BOM and the Check panel as it does for the inspector, so the scene bars stay visible (Ewa\'s check of the build). *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)'
     + ' Panel overlay (01.11.2026, chat) · the panels lie OVER the scene: in 3D the canvas keeps the whole width when the inspector, the BOM or the Check opens or closes; the bars centre in the visible part (the U2 narrowing reversed). *"miales racje, przy chowaniu sie i otwieraniu panelu zmniejszanie sie widoku szafy to masakra, powinno sie nakladac a nie ruszac scena"* (the owner, 01.11.2026, 22:08)',
   'src/components/studio/StudioRail.jsx':
-    'T84 F2 · NEW, the rail: Select, Add (the existing Library), Room, Materials, Check with its badge; Design and CNC at its foot, the toolbar\'s own calls and guards. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
+    'T84 F2 · NEW, the rail: Select, Add (the existing Library), Room, Materials, Check with its badge; Design and CNC at its foot, the toolbar\'s own calls and guards. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)'
+    + ' Right-click menu (01.11.2026, chat) · on a touch screen a Select several switch under Select: the next taps add a cabinet or take it out. *"9 - ok"* (the owner, 01.11.2026)',
   'src/components/studio/SelectionBreadcrumb.jsx':
     'T84 F2 · NEW, the context strip: the room, the wall or island, the unit number, the selection in words, and the button that shows the inspector again. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)'
     + ' UX turn (01.11.2026, chat) · the show inspector button only when the hidden column would hold something (canShowInspector). *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
@@ -486,7 +488,8 @@ const EXEMPT = {
     'T84 F4 · NEW, the inspector column: the quick card, the full RightPanel embedded with Pin and Back to quick settings inside its own header, or nothing; Pin follows the selection, and a pending edit is committed to its own cabinet before the selection moves. *"Pin keeps inspector open and FOLLOWING SELECTION; it never locks unit ID"* (the designer\'s contract, adopted by the owner, 27.10.2026, 16:27); *"ok jak juz bedziesz wiedzial dokladnie to tabela porownaj ze mamy wszystko nic nie zgubilismy, teraz daj do tury"* (the owner, 27.10.2026, 22:11 to 22:25)'
     + ' Chat fix 30.10.2026 F2 · the quick card is gone: one cabinet clicked shows the full RightPanel at once; the column\'s FOOT under the panel holds Open cabinet (the editor window beside the press) and under it every finding of the cabinet, scrolling on its own; Pin stays, Back to quick settings goes; the guard blurs the field with the caret and nothing holds the selection (the refused card value is gone). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026); *"open cabinet na samym dole a pod nim wszystkie bledy ktore pokazuje"* (the owner, 30.10.2026); *"ok koduj te poprawki zobaczymy co sie dzieje"* (the owner, 30.10.2026, 18:41)'
     + ' Chat fix 30.10.2026 F3 (the evening) · the foot hands IssueStrip the room under Open cabinet and draws no list wrapper of its own. *"te zolte alerty moze by jakos skromniej to pokazac i zwiniete, jak bedzie 10 to caly menu mi zabierze, ja uwazam ze powinno byc skromnie gdzies na dole a nie ZOLTE wywalone na wierzch, rozprasza tylko czlowieka"*; *"koduj"* (the owner, 30.10.2026, 19:49 and 19:52)'
-    + ' UX turn (01.11.2026, chat) · the same inspectorHasContent answer as the shell; the empty "Select a cabinet or part" block deleted with the empty column. *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
+    + ' UX turn (01.11.2026, chat) · the same inspectorHasContent answer as the shell; the empty "Select a cabinet or part" block deleted with the empty column. *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)'
+    + ' Right-click menu (01.11.2026, chat) · the Actions icon (...) at the top of the right panel opens the same menu for the selection, never in CNC. *"tak jak teraz na wszystkie dzialaja ktore sa zaznaczone oczywiscie"*; *"na gorze prawego panelu"*; *"4 koduj"* (the owner, 01.11.2026, 22:05)',
   'src/components/studio/UnitIssueMarker.jsx':
     'T84 F5 · NEW, the marker beside the unit number in the scene: a red or yellow triangle with the count; a click selects the unit and opens its card. *"napewno naprzyklad wszystkie bledy zolte i czerwone sa totalnie niewidoczne, mala czcionka etc"* (the owner, 27.10.2026, 16:27)'
     + ' Chat fix 30.10.2026 F2 · the marker\'s title says panel, not card; its click is what it was (select, show the inspector). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)'
@@ -608,7 +611,7 @@ const FROZEN = {
   // T78 F19 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/CompanyDefaultsModal.jsx': 'e365305d290ab32057544e05f83b068f1ef9414642fe00f429cfbedb84dbc917',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/ContextMenu.jsx': '9ecd6083c1808257a9c4f53ec9ff654304cfae671c1b923e9910ab5a55ca524c',
+  'src/components/ContextMenu.jsx': 'c9f4a893ae58144ab61011d569346eb3c9f90061c0e9ada6016b56646f352775',
   'src/components/DecorPicker.jsx': '3ed5d2c75e1c7eb48b364f3b86cf9ec30fdad43acae9f1b30879f65f14e82e6a',
   'src/components/DecorPickerModal.jsx': 'eff9e583740f2381cfa8e796339f5b664f88ddf010e427a61cd450ed2ad44411',
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -737,13 +740,13 @@ const FROZEN = {
   // T84 F2 · NEW PRO files (the shell), frozen at their first hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/studio/StudioShell.jsx': '26eccda960862d240f998fb4f67e5025ce39e6cbb35213309b6e9070023c0814',
-  'src/components/studio/StudioRail.jsx': '09a32f77522d130b3d76e3ff8a4a3a17688ba98c434733313fa2ae435854e7ff',
+  'src/components/studio/StudioRail.jsx': '72044467975f9f823fee87b10f712a042e6d5aacaaf517ddd3d5d193bf37f482',
   'src/components/studio/SelectionBreadcrumb.jsx': '206b97f4c2280451f035b0fd61dbd695f2577a7eaa1360956284358c733da835',
   'src/components/studio/StatusBar.jsx': 'cbc25914a5ca5369f84c0a986005cd043c5dd9af6ff1afad99b8894eef329abf',
   'src/components/studio/lib/studioFace.js': '550ae67a86068132c172498c49715dba928da790ca7846b799e15d642d647a6a',
   // T84 F3 · the quick cards: DELETED by the chat fix of 30.10.2026 (DELETED below carries the reason).
   // T84 F4 · NEW PRO files (the inspector host), frozen at their first hash; EXEMPT above carries the reason.
-  'src/components/studio/InspectorHost.jsx': 'f2c3b50a433f102f008ab2912bd39c6cdf085bdf97a32e2ff375fa39648a6fc4',
+  'src/components/studio/InspectorHost.jsx': '1d461e35726223cdf7bf36f8e724abd731924d0b2194cbaecd034ff1e30f13a5',
   // T84 F5 · NEW PRO files (the errors you can see), frozen at their first hash; EXEMPT above carries the reason.
   'src/components/studio/UnitIssueMarker.jsx': 'dee8ec475a7a55179865d8aa9855eb5fe3fda778dad9f669352ffd9900da6cbc',
   'src/components/studio/IssueStrip.jsx': '02363c544450a030bcb34f20643a04852d1d8740a5d656d7452f982ce2047797',

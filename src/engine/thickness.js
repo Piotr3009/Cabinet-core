@@ -33,6 +33,8 @@
 // Pure functions and pure data. No React, no store, no three.js.
 
 import { thicknessForSource } from './projectSettings.js';
+// T-CC2a F3.3: the old-id table (F13), the one bridge to what an old id meant.
+import { boardChoiceOfOldId } from './catalogue.js';
 
 /**
  * The six slots, in the order the setup asks for them.
@@ -101,8 +103,15 @@ export function slotNominal(slotId, { design, profile, materials = [] } = {}) {
     ? (design?.fronts?.types || [])
     : (design?.carcass?.types || []);
   const type = types[slot.index] || null;
-  const board = type?.material_id ? (materials || []).find((m) => m.id === type.material_id) : null;
-  if (num(board?.thickness)) return num(board.thickness);
+  // ─── T-CC2a F3.3 (CLAUDE.md T-CC2a law 2): NOT A STOCK ROW ANY MORE ───────
+  // The slot's thickness no longer comes from a Joinery Core stock row
+  // (`materials.find(type.material_id)`, deleted): a board is what the design
+  // says. The one old id that still pins a thickness is a generic placeholder
+  // the store holds (engine/catalogue.js OLD_CC_IDS `pinsThickness`), read
+  // through the old-id table, so the owner's four projects cut what main cut.
+  void materials;
+  const board = boardChoiceOfOldId(type?.material_id);
+  if (board?.pinsThickness && num(board.thickness)) return num(board.thickness);
   if (type?.source) {
     const fromSource = thicknessForSource(profile, slot.kind === 'front' ? 'front' : 'carcass', type.source);
     if (num(fromSource)) return num(fromSource);

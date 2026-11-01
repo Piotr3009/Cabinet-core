@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+import jsPDFDefault from 'jspdf';
 import {
   buildBom, materialDemand, hardwareDemand, demandCost, purchaseBom,
 } from '../engine/bom.js';
@@ -17,6 +17,11 @@ import { registerLookup } from './hardwareRegister.js';
 import { formatMm } from '../engine/format.js';
 import { exportFileName } from '../engine/naming.js';
 import { migrateDesign, resolveFinishes } from '../engine/design.js';
+
+// T-CC1b F11: jsPDF ships CJS; Vite's interop hands back the constructor as the default and node's
+// hands back the module, so the BOM PDF reads it the way lib/drawingExport.js already does (one law,
+// and the export can be tested the way it is written).
+const jsPDF = jsPDFDefault?.jsPDF || jsPDFDefault;
 
 // ─── Exports ───
 // An export is a SNAPSHOT of the always-live engine state (SPEC 4.11), so the
@@ -47,6 +52,18 @@ export function download(filename, blob) {
  */
 export function exportFilename(kind, ext, now = new Date(), project = null) {
   return exportFileName({ project: project || 'cabinetcore', kind, ext, now });
+}
+
+// ─── T-CC1b F11 · "NOT ASSIGNED MATERIALS" IN EVERY EXPORT (law 7) ─────────
+// The owner, 01.11.2026: *"kazda funkcja przypisana (10 rodzajow zawiasow,
+// wszystkie przypisane), inaczej eksport BOM pisze not assigned materials"*.
+// One set of words, written here once, read by the BOM PDF and the CSV.
+export const NOT_ASSIGNED = 'Not assigned materials';
+export const NOT_A_PRICE = 'not a price';
+
+/** "Not assigned materials: <n> lines. Assign them in Cabinet Core, Materials, before ordering." */
+export function notAssignedWords(n) {
+  return `${NOT_ASSIGNED}: ${n} line${n === 1 ? '' : 's'}. Assign them in Cabinet Core, Materials, before ordering.`;
 }
 
 /**
@@ -162,7 +179,8 @@ export function buildPurchaseBomCsvText(bom, { scope = 'project' } = {}) {
   lines.push(`,TOTAL${bom.totals.complete ? '' : ' (INCOMPLETE)'},,,,${bom.totals.sheets || ''},,${money(bom.totals.cost)},`);
   if (!bom.totals.complete) {
     lines.push('');
-    lines.push(`WARNING,${q(`${bom.totals.unassigned} line(s) have no material assigned — this total is not the price of the job`)}`);
+    // T-CC1b F11.1: the same words as the BOM PDF and the Assign window (law 7).
+    lines.push(`WARNING,${q(`${notAssignedWords(bom.totals.unassigned)} This total is not the price of the job.`)}`);
   }
   return `${lines.join('\n')}\n`;
 }
@@ -222,6 +240,20 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
   doc.line(margin, y, pageW - margin, y);
   y += 6;
 
+  // T-CC1b F11.1: the demand is read BEFORE the cover is drawn, so the cover
+  // can say, in red, how many lines nobody has chosen a material for.
+  const bom = buildBom(entries, { design: project?.design, profile: getCabinetProfile() });
+  const demand = materialDemand(bom, assignments, materials);
+  const hardware = hardwareDemand(bom, assignments, materials);
+  const unassignedLines = demand.filter((d) => !d.material).length + hardware.filter((h) => !h.material).length;
+  if (unassignedLines > 0) {
+    doc.setFontSize(10);
+    doc.setTextColor(200, 30, 30);
+    doc.text(notAssignedWords(unassignedLines), margin, y);
+    doc.setTextColor(40);
+    y += 7;
+  }
+
   // 3D snapshot
   const shot = typeof capture === 'function' ? capture() : null;
   if (shot?.dataUrl) {
@@ -236,9 +268,6 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
     }
   }
 
-  const bom = buildBom(entries, { design: project?.design, profile: getCabinetProfile() });
-  const demand = materialDemand(bom, assignments, materials);
-  const hardware = hardwareDemand(bom, assignments, materials);
   const boardCost = demandCost(demand);
   const hwCost = demandCost(hardware);
   const cost = boardCost == null && hwCost == null ? null : (boardCost ?? 0) + (hwCost ?? 0);
@@ -335,13 +364,15 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
     line(`Fronts — ${finishes.front?.label || 'not set'}${finishes.front?.hex ? ` · ${finishes.front.hex}` : ''}`);
   }
 
-  // Materials
-  const assigned = demand.filter((d) => d.material);
-  if (assigned.length) {
+  // Materials. T-CC1b F11.1: every line, the unassigned ones saying so in
+  // their material column (law 7), never dropped in silence.
+  if (demand.length) {
     section('Materials');
-    for (const d of assigned) {
-      line(`${d.role} — ${d.material.name} · ${d.area_m2.toFixed(3)} m² × yield ${d.yield} = ${d.required_m2.toFixed(3)} m²`
-        + (d.cost != null ? ` · ${d.cost.toFixed(2)}` : ''));
+    for (const d of demand) {
+      line(d.material
+        ? `${d.role}, ${d.material.name} · ${d.area_m2.toFixed(3)} m² × yield ${d.yield} = ${d.required_m2.toFixed(3)} m²`
+          + (d.cost != null ? ` · ${d.cost.toFixed(2)}` : '')
+        : `${d.role}, ${d.area_m2.toFixed(3)} m², ${NOT_ASSIGNED}`);
     }
   }
 
@@ -351,19 +382,25 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
     section('Hardware');
     for (const h of hardware) {
       line(`${h.label} — ${h.qty} ${h.unit}${h.spec_label ? ` · ${h.spec_label}` : ''}`
-        + (h.material ? ` · ${h.material.name}` : ' · not assigned')
+        + (h.material ? ` · ${h.material.name}` : `, ${NOT_ASSIGNED}`)
         + (h.cost != null ? ` · ${h.cost.toFixed(2)}` : ''));
     }
   }
 
-  if (cost != null) {
+  // T-CC1b F11.1: a job with any line unassigned prints no total as a price.
+  if (unassignedLines > 0) {
+    if (y > pageH - margin - 10) { doc.addPage(); y = margin + 6; }
+    doc.setFontSize(9);
+    doc.setTextColor(200, 30, 30);
+    doc.text(`Total: ${NOT_A_PRICE}, ${unassignedLines} line${unassignedLines === 1 ? '' : 's'} without a material`, margin, y + 2);
+  } else if (cost != null) {
     if (y > pageH - margin - 10) { doc.addPage(); y = margin + 6; }
     doc.setFontSize(9);
     doc.setTextColor(...gold);
     doc.text(
-      `Total: ${cost.toFixed(2)}`
-      + (boardCost != null ? `  (materials ${boardCost.toFixed(2)}` : '  (')
-      + (hwCost != null ? `${boardCost != null ? ', ' : ''}hardware ${hwCost.toFixed(2)}` : '')
+      `Total: £${cost.toFixed(2)}`
+      + (boardCost != null ? `  (materials £${boardCost.toFixed(2)}` : '  (')
+      + (hwCost != null ? `${boardCost != null ? ', ' : ''}hardware £${hwCost.toFixed(2)}` : '')
       + ')',
       margin, y + 2,
     );

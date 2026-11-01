@@ -56,7 +56,10 @@ test('the total says INCOMPLETE, and carries a WARNING row explaining why', () =
   const csv = buildPurchaseBomCsvText(bom, {});
   assert.match(csv, /TOTAL \(INCOMPLETE\)/);
   assert.match(csv, /WARNING,/);
-  assert.match(csv, /this total is not the price of the job/);
+  // REWRITTEN BY T-CC1b F11: the WARNING row carries the words of every export (*"inaczej eksport BOM pisze
+  // not assigned materials"*, the owner, 01.11.2026), then says the total is not the price.
+  assert.match(csv, /WARNING,"?Not assigned materials: \d+ lines?\. Assign them in Cabinet Core, Materials, before ordering\./);
+  assert.match(csv, /This total is not the price of the job/);
 });
 
 test('…and a complete BOM says TOTAL, with no warning at all', () => {

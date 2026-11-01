@@ -2,7 +2,9 @@ import { Fragment, useMemo, useState } from 'react';
 import NumberField from './NumberField.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
-import { useMaterialAssignmentStore, BOM_ROLES, HARDWARE_ROLES } from '../stores/materialAssignmentStore.js';
+import {
+  useMaterialAssignmentStore, BOM_ROLES, HARDWARE_ROLES, assignCount, buildAssignLines,
+} from '../stores/materialAssignmentStore.js';
 import {
   buildBom, materialDemand, hardwareDemand, demandCost, purchaseBom, formatQty,
 } from '../engine/bom.js';
@@ -131,6 +133,11 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
 
   const demand = useMemo(() => materialDemand(bom, assignments, materials), [bom, assignments, materials]);
   const hardware = useMemo(() => hardwareDemand(bom, assignments, materials), [bom, assignments, materials]);
+  // T-CC1b F11.1: the live BOM window shows the Assign window's own count (one line per role AND spec).
+  const lineCount = useMemo(
+    () => assignCount(buildAssignLines({ bom, data: assignmentData, materials }).filter((l) => l.qty !== 0 || l.type !== 'part')),
+    [bom, assignmentData, materials],
+  );
   const boardCost = demandCost(demand);
   const hwCost = demandCost(hardware);
   const cost = boardCost == null && hwCost == null ? null : (boardCost ?? 0) + (hwCost ?? 0);
@@ -170,6 +177,11 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
           )}
         </button>
         <button type="button" className="cc-btn-ghost" onClick={() => setBomOpen(false)}>×</button>
+      </div>
+
+      <div className="px-3 py-1.5 border-b border-shell-600 text-[12px] flex gap-3" data-bom-assign-count="1">
+        <span className="text-ink-200 tabular-nums">{lineCount.text}</span>
+        {lineCount.missing > 0 && <span className="text-status-danger tabular-nums">{lineCount.missingText}</span>}
       </div>
 
       <div className="flex-1 overflow-y-auto">

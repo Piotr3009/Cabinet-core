@@ -338,7 +338,8 @@ const EXEMPT = {
     + ' T-CC1a F3 · the AuthModal import, its onAuth prop and its \'auth\' mount are deleted with CC\'s own login. *"oczywiscie do CC laczysz sie tylko przez JC"* (the owner, 30.10.2026)'
     + ' T-CC1a F8 · the four triggers of the one save (lib/saveTriggers.js): Ctrl+S / Cmd+S beside Ctrl+Z, the autosave every profile.save.autosaveMinutes when dirty, the crash buffer flushed and the keepalive save on pagehide; the six export callbacks run after the save settles when the item is dirty (saveFirst); the exports themselves untouched. *"dopiero caly json powinien sie zapisac do DB przy nacisnieciu Zapisz lub co 5 minut automatycznie"* (the owner, 30.10.2026)'
     + ' T-CC1b F2, F5, F9.3 · the scene corner\'s View dropdown (SceneViewMenu) and its mount deleted, the onDrawing road of the deleted Output entries deleted, the CNC view receives onExportDxfZip for its own Export CNC / DXF door, JcStockModal mounted on \'jc-stock\'. *"dwa menu View, jedno wystarczy, menu wystarczy"* (the owner, 01.11.2026)'
-    + ' T-CC2a F8, F5.3 · LinkMaterialsModal mounted on \'link-materials\'; the BOM PDF reads the company\'s links. *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na stale"* (the owner, 01.11.2026)',
+    + ' T-CC2a F8, F5.3 · LinkMaterialsModal mounted on \'link-materials\'; the BOM PDF reads the company\'s links. *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na stale"* (the owner, 01.11.2026)'
+    + ' UX turn (01.11.2026, chat) · the canvas wrapper and the first unit plus follow the dock: the scene narrows for the BOM and the Check panel as it does for the inspector, so the scene bars stay visible (Ewa\'s check of the build). *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -461,7 +462,8 @@ const EXEMPT = {
     'T84 F2 · NEW, the Studio grid of Stage-1 (top bar, context strip, rail, scene, inspector, status bar) round the EXISTING canvas and its overlays; every later part comes in through a slot. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER); *"nie, juz jest przy wyborze"* (the owner, 27.10.2026, 16:27)'
     + ' T84 F6 · the scene\'s edge is drawn before the scene layer, where the canvas toolbar stands on the legacy face, so the Check, the BOM and the Library drawn after it at the same layer stand over it (the edge had covered the Check\'s head and the BOM\'s export buttons). *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
     + ' Chat fix 30.10.2026 F2 · the root says full or none (no quick mode). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)'
-    + ' UX turn (01.11.2026, chat) · the inspector column is not shown when nothing is selected, nothing is pinned and the view is not CNC (inspectorHasContent); the scene widens and narrows on the same Canvas, the camera kept. *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
+    + ' UX turn (01.11.2026, chat) · the inspector column is not shown when nothing is selected, nothing is pinned and the view is not CNC (inspectorHasContent); the scene widens and narrows on the same Canvas, the camera kept. *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)'
+    + ' UX turn (01.11.2026, chat) · the scene narrows for the BOM and the Check panel as it does for the inspector, so the scene bars stay visible (Ewa\'s check of the build). *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
   'src/components/studio/StudioRail.jsx':
     'T84 F2 · NEW, the rail: Select, Add (the existing Library), Room, Materials, Check with its badge; Design and CNC at its foot, the toolbar\'s own calls and guards. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
   'src/components/studio/SelectionBreadcrumb.jsx':
@@ -575,7 +577,7 @@ const FROZEN = {
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/AssignMaterialsModal.jsx': 'fdba1f655c1155e9e09c82261eb6c2d6f25a48662f6f21a415d9f2c10ca0a1ec',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/BomPanel.jsx': 'a4254f2ef979a6242ff7d7b88fb04ea961ca038c929f3bef6bad6e1fedc131d0',
+  'src/components/BomPanel.jsx': '830fefd3333ca10cfec1cb45fc350f428182a93de5029d993908615c989ad495',
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/CabinetEditorModal.jsx': '3f080e23b09ce5c5018f89649264e77cb85e5f5594dafecd839673d6db9fd066',
@@ -610,7 +612,7 @@ const FROZEN = {
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F20 re-frozen at the new hash; EXEMPT above carries the reason.
   // T83 F11 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/DrawingModal.jsx': '3ab172e19fbf64e14cbffff5ca79a467202791cf0741277d2ba8f72647623852',
+  'src/components/DrawingModal.jsx': 'ab67cebf0a561ad4bee68f6b0dd13b8b4f5c2b906131dbf40c8229dc82843333',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // T79 F13 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -632,7 +634,7 @@ const FROZEN = {
   'src/components/LibraryPanel.jsx': '2504ab9353aff8f51ada6adfe2a9fff5cecd6a64cdac392a72bbdcd78d0f3f51',
   'src/components/LightingPanel.jsx': '65bf9cbc3cf6fe4b687def6f2d9538d4b363690c3c5d5ad2fddb0f7a77e48d2d',
   'src/components/MaterialChoicePanel.jsx': '16d2ed3171b4756141f21f693123c46bd6b33f772cad58013b2a45ec9a8fcb71',
-  'src/components/MaterialPicker.jsx': '98e0a6678be741bdde9612bc2966ce9fde2292ec79ecf9aa8add1d2fa220a2bb',
+  'src/components/MaterialPicker.jsx': '8f772977c05f4ae1b50586a50736a63e90fbad7f94621497b7ac40652e9f6a05',
   'src/components/MenuBar.jsx': '8259c2d7b81f5f176c8c20d6faf98d6c2943667e2dd6354154a85748da1c4581',
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 re-frozen at the new hash, twice (the morning, the afternoon); EXEMPT above carries the reasons.
@@ -717,16 +719,16 @@ const FROZEN = {
   // T84 F5 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F7 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': 'cff1753d6329d8ee05e9993b7e753bd1dc45cfe503c88aa19ecde25505e64b32',
+  'src/pages/ConfiguratorPage.jsx': '107661912b6ba8378c5094b2fd0dd1e83bf6566335a70cd5cfb1d5dad96e3dff',
   // T84 F1 · NEW PRO files (the skin), frozen at their first hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F8 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/studio/studio.css': 'b2e1beb57f5e2f031301fbe9f219f3bd9cf7ba4af4dc9908651c4573cebb5bb9',
+  'src/components/studio/studio.css': '7d886413c1abb3279bfd8f7eb917e19933426453051bf0ccbd83b82ba7da882e',
   'src/components/studio/StudioIcons.jsx': 'f84fdead962263ea0eda756addf80ad801fe81b253b0273ca876562e344ca0ff',
   'src/components/studio/lib/studioSkin.js': '72bd15140c022ca10bd39de4f01c959d50df1f3dd56a0e564729390a4c85b31d',
   // T84 F2 · NEW PRO files (the shell), frozen at their first hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/studio/StudioShell.jsx': 'c1037bceff6c37991aae288cc1611b629cf2caf8526580bf3324b0e2b82eafd6',
+  'src/components/studio/StudioShell.jsx': 'f273d94d597c66e1b815a38e6af75833d1f512bc23e05a8874762e37870d9613',
   'src/components/studio/StudioRail.jsx': '09a32f77522d130b3d76e3ff8a4a3a17688ba98c434733313fa2ae435854e7ff',
   'src/components/studio/SelectionBreadcrumb.jsx': '206b97f4c2280451f035b0fd61dbd695f2577a7eaa1360956284358c733da835',
   'src/components/studio/StatusBar.jsx': 'cbc25914a5ca5369f84c0a986005cd043c5dd9af6ff1afad99b8894eef329abf',
@@ -753,7 +755,7 @@ const FROZEN = {
   // T-CC1b · a NEW PRO file, frozen at its first hash (EXEMPT above carries the reason).
   'src/components/drawings/AiVisualCard.jsx': '565b087bb27673f594857a9efd1caaaba65be57b89b3ae3ce5330626a129a489',
   // T-CC2a · a NEW PRO file, frozen at its first hash (EXEMPT above carries the reason).
-  'src/components/LinkMaterialsModal.jsx': '7afccf42618cadc577a21fe3dde6657fc5897b592883ac03cee238e224b0954c',
+  'src/components/LinkMaterialsModal.jsx': '13d9bfceda7de11c2190bfb3829639dacacb5edc9c633abc4a9d5f6219d074d7',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────

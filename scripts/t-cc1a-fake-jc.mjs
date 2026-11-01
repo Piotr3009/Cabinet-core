@@ -212,7 +212,7 @@ function seed(now = Date.now()) {
 /** The two seed links: catalogue ids of src/engine/catalogueData.js, stock rows of the seed above. */
 export const SEED_LINKS = {
   mdf18: { cc_material_id: 'sheet.mdf.18', stock_item_id: '5e0c4b1a-7f2d-4c3e-9a8b-000000000009', sheet_width_mm: 1220, sheet_length_mm: 2440 },
-  hinge: { cc_material_id: 'hinge.blum.clip-top-blumotion.110', stock_item_id: '5e0c4b1a-7f2d-4c3e-9a8b-000000000005' },
+  hinge: { cc_material_id: 'hinge.blum.clip-top.110.nickel', stock_item_id: '5e0c4b1a-7f2d-4c3e-9a8b-000000000005' },
 };
 /** A stock row of ANOTHER company: never readable here; linking it is refused 42501. */
 export const FOREIGN_STOCK_ID = 'f0f0f0f0-0000-4000-8000-0000000000aa';

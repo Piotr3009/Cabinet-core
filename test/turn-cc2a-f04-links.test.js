@@ -196,3 +196,16 @@ test('F4.1 · Joinery Core not answering: JC_OFFLINE in words, never a throw', a
     globalThis.supabaseClient = keep;
   }
 });
+
+test('F4.3 · the fake\'s two seed links name entries of the catalogue and rows of the fake\'s stock', async () => {
+  const { entryById } = await import('../src/engine/catalogue.js');
+  fake.reseed();
+  const rows = fake.state().links.rows;
+  assert.equal(rows.length, 2);
+  for (const l of Object.values(SEED_LINKS)) {
+    assert.ok(entryById(l.cc_material_id), `${l.cc_material_id} is a catalogue entry`);
+    assert.ok(rows.some((r) => r.cc_material_id === l.cc_material_id && r.stock_item_id === l.stock_item_id));
+  }
+  assert.equal(entryById(SEED_LINKS.mdf18.cc_material_id).department, 'sheets');
+  assert.equal(entryById(SEED_LINKS.hinge.cc_material_id).department, 'hinges');
+});

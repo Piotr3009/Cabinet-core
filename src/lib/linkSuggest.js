@@ -32,7 +32,7 @@
  * WHAT JOINERY CORE GIVES: 22023). Mirrored here so the form says it in words
  * before the call, never instead of the call.
  */
-export const LINK_RULES = Object.freeze({
+const LINK_RULES = Object.freeze({
   sheetMm: Object.freeze({ min: 100, max: 6000 }),
   yield: Object.freeze({ min: 1, max: 3 }),
   coverage: Object.freeze({ min: 0.1, max: 100 }),

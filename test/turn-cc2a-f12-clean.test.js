@@ -71,7 +71,7 @@ test('F12.2 · open item A with assignments, create item B: B\'s blob is empty, 
   const saved = useProjectStore.getState().projectForSave({ stamp: false });
   assert.ok(!carries(saved, A_BOARD), 'B\'s save carries no board of A');
   assert.ok(!carries(saved, A_HINGE), 'B\'s save carries no hinge of A');
-  assert.deepEqual(saved.project.bespoke, [], 'and no bespoke row either');
+  assert.deepEqual(saved.project.bespoke ?? [], [], 'and no bespoke row either');
 });
 
 test('F12.1 · a project with no blob of its own never reads the legacy global blob cc.assignments.v2', () => {

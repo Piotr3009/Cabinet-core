@@ -45,7 +45,7 @@ const { renderToStaticMarkup } = await import('react-dom/server');
 const { default: createReconciler } = await import('react-reconciler');
 const { ConcurrentRoot, DefaultEventPriority, NoEventPriority } = await import('react-reconciler/constants.js');
 const {
-  DEPARTMENTS, SHEET_BRANDS, catalogue, entriesOf, entryById,
+  DEPARTMENTS, SHEET_BRANDS, catalogueEntries, entriesOf, entryById,
 } = await import('../src/engine/catalogue.js');
 const { LINK_WORDS } = await import('../src/engine/bom.js');
 const { parseDecorCatalogue, setDecorCatalogue, decorLabel, decorById } = await import('../src/engine/decors.js');
@@ -199,7 +199,7 @@ test('F8.1 the maximised work window: Back to project top left, the title, whose
   const words = textOf(root);
   assert.ok(words.includes('Link materials'));
   assert.ok(words.includes('Every material Cabinet Core uses, linked once to your Joinery Core stock. Saved for Skylon Joinery LTD.'));
-  const live = catalogue().filter((e) => !e.retired).length;
+  const live = catalogueEntries().filter((e) => !e.retired).length;
   const count = one(root, by('data-link-count'));
   assert.equal(count.props['data-link-total'], String(live));
   assert.ok(textOf(count).includes(`0 of ${live} linked`));

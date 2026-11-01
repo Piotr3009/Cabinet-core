@@ -66,7 +66,7 @@ function numOrNull(v) {
 }
 
 /** One row of `cc_material_links` as the store keeps it. */
-export function toLink(row) {
+function toLink(row) {
   return {
     cc_material_id: String(row?.cc_material_id || ''),
     stock_item_id: row?.stock_item_id ? String(row.stock_item_id) : null,

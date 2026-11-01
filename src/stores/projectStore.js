@@ -274,7 +274,7 @@ const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
 export const BESPOKE_UNITS = ['pcs', 'm', 'm²', 'sheets', 'litres', 'set'];
 
 /** One bespoke row, normalised: a name, a quantity, a unit of BESPOKE_UNITS, a unit price, supplied by the client or not. */
-export function normaliseBespokeRow(row = {}) {
+function normaliseBespokeRow(row = {}) {
   const qty = Number(row?.qty);
   const price = Number(row?.price);
   return {
@@ -288,7 +288,7 @@ export function normaliseBespokeRow(row = {}) {
 }
 
 /** A saved job's bespoke rows; none before this turn. */
-export function migrateBespoke(rows) {
+function migrateBespoke(rows) {
   return Array.isArray(rows) ? rows.filter((r) => r && typeof r === 'object').map(normaliseBespokeRow) : [];
 }
 
@@ -2125,7 +2125,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // ─── T-CC2a F10.3 · the bespoke rows of THIS project (law 9) ────────────────
   addBespoke: (row = {}) => {
     const next = normaliseBespokeRow({ name: '', qty: 1, unit: 'pcs', price: 0, ...row, id: uid('bsp') });
-    set((s) => ({ project: { ...s.project, bespoke: [...migrateBespoke(s.project.bespoke), next] }, dirty: true }));
+    set((s) => ({ project: { ...s.project, bespoke: [...migrateBespoke(s.project.bespoke), next] } }));
     return next.id;
   },
   updateBespoke: (id, patch = {}) => {
@@ -2134,11 +2134,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ...s.project,
         bespoke: migrateBespoke(s.project.bespoke).map((r) => (r.id === id ? normaliseBespokeRow({ ...r, ...patch, id }) : r)),
       },
-      dirty: true,
     }));
   },
   removeBespoke: (id) => {
-    set((s) => ({ project: { ...s.project, bespoke: migrateBespoke(s.project.bespoke).filter((r) => r.id !== id) }, dirty: true }));
+    set((s) => ({ project: { ...s.project, bespoke: migrateBespoke(s.project.bespoke).filter((r) => r.id !== id) } }));
   },
 
   // ─── T-CC2a F11.2 · the back panels, the drawer bottoms and the run pieces on a sheet of their own ───
@@ -2697,8 +2696,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ...project,
         room: migrateRoom(project?.room),
         design: withBoardChoices(pin ? { ...migrated, ...pin } : migrated),
-        // T-CC2a F10.3: its bespoke rows, normalised on the way in; none before this turn.
-        bespoke: migrateBespoke(project?.bespoke),
+        // T-CC2a F10.3: its bespoke rows, normalised on the way in; a job with none keeps no key (its save the bytes it was).
+        ...(Array.isArray(project?.bespoke) ? { bespoke: migrateBespoke(project.bespoke) } : {}),
         // Turn 44 (CLAUDE.md F1): a saved job's slopes, normalised on the way
         // in exactly as its room and its design are. A project saved before
         // tonight has none and opens on a straight wall.
@@ -2797,8 +2796,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // computer last typed, and nothing else; `setTitleBlock` fills the rest.
       titleBlock: (() => { const c = recallTitleBlockCompany(); return c ? { company: c } : {}; })(),
       // T-CC1a F4.3: the binding lives in the row's columns (jc_pipeline_id / jc_project_id), never in the design.
-      // T-CC2a F10.3: a new job has no bespoke rows of its own yet.
-      bespoke: [],
+      // T-CC2a F10.3: a new job has no bespoke rows of its own yet (no key until the first is added).
     },
     units: [],
     runElements: {},

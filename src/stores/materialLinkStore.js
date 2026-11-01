@@ -146,14 +146,3 @@ export const useMaterialLinkStore = create((set, get) => ({
     return { ok: true, error: null };
   },
 }));
-
-/** The company's link for one catalogue id, or null. */
-export function linkOf(ccMaterialId) {
-  return useMaterialLinkStore.getState().links.get(String(ccMaterialId || '')) || null;
-}
-
-/** One row of the company's stock by JC's uuid, or null. */
-export function stockOf(stockItemId) {
-  if (!stockItemId) return null;
-  return useMaterialLinkStore.getState().stock.find((m) => m.id === stockItemId) || null;
-}

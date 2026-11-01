@@ -9,13 +9,13 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import Modal from './Modal.jsx';
-import MaterialPicker, { Photo, PhotoCard } from './MaterialPicker.jsx';
+import MaterialPicker, { StockPhoto, PhotoCard } from './MaterialPicker.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialLinkStore } from '../stores/materialLinkStore.js';
 import {
-  DEPARTMENTS, SHEET_BRANDS, catalogue, entriesOf, entryById,
+  DEPARTMENTS, SHEET_BRANDS, catalogueEntries, entriesOf, entryById,
 } from '../engine/catalogue.js';
 import { LINK_WORDS, purchaseBom } from '../engine/bom.js';
 import { migrateDesign } from '../engine/design.js';
@@ -151,7 +151,7 @@ export default function LinkMaterialsModal() {
   const statusOf = (entry) => linkStatus(entry, links, stock, { stockOk });
 
   // ── the counts: the whole catalogue, and each department ──
-  const live = useMemo(() => catalogue().filter((e) => !e.retired), []);
+  const live = useMemo(() => catalogueEntries().filter((e) => !e.retired), []);
   const totals = useMemo(() => {
     const per = {};
     let linked = 0;
@@ -574,7 +574,7 @@ function EntryRow({
         <td>
           <div className="flex items-center gap-2">
             {decor && (
-              <Photo
+              <StockPhoto
                 url={decor.thumb}
                 fill={decor.hex}
                 alt={label}
@@ -593,7 +593,7 @@ function EntryRow({
         <td>
           {row ? (
             <div className="flex items-center gap-2" data-link-jc="1">
-              <Photo
+              <StockPhoto
                 url={row.image_url}
                 alt={row.name}
                 testId="jc"

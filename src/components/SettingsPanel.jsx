@@ -17,7 +17,7 @@ import {
 import { LINK_WORDS } from '../engine/bom.js';
 import { decorById, decorLabel } from '../engine/decors.js';
 import { linkStatus, matchesEntry } from '../lib/linkSuggest.js';
-import { Photo } from './MaterialPicker.jsx';
+import { StockPhoto } from './MaterialPicker.jsx';
 import {
   FRONT_STYLE_OPTIONS, colourLabel, finishById, frontStyleSelection, migrateDesign, projectHeights, resolveJoinery,
   INFRAME_CHOICES, inframeHint, inframeTooltip,
@@ -1831,7 +1831,7 @@ export function SlotLink({ choice, testId = null, from = 'settings' }) {
  * this turn, so another thickness is never offered). The choice is a board
  * choice (engine/catalogue.js boardChoiceOfEntry), never an id typed by hand.
  */
-export function BoardSlotPicker({
+function BoardSlotPicker({
   slot, label, thickness, value = null, today = null, onChange,
 }) {
   const profile = useCabinetProfileStore((s) => s.profile);
@@ -1903,7 +1903,7 @@ export function BoardSlotPicker({
                     data-board-slot-option="1"
                     onClick={() => onChange?.(boardChoiceOfEntry(e))}
                   >
-                    {decor && <Photo url={decor.thumb} fill={decor.hex} alt={decorLabel(decor)} size={28} />}
+                    {decor && <StockPhoto url={decor.thumb} fill={decor.hex} alt={decorLabel(decor)} size={28} />}
                     <span className="flex-1 min-w-0">
                       <span className="block text-ink-100 truncate">{e.name}</span>
                       {decor && <span className="block text-ink-400 truncate">{decorLabel(decor)}</span>}

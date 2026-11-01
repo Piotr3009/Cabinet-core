@@ -81,7 +81,7 @@ function topOf(tree = [], id = null) {
  * the space where one would be, so every row stands the same height. Given
  * `onOpen`, it is a button and a click enlarges it.
  */
-export function Photo({
+export function StockPhoto({
   url, alt = '', size = 40, onOpen = null, testId = null, fill = null,
 }) {
   const body = url ? (
@@ -308,7 +308,7 @@ export default function MaterialPicker({
                       className={`border-b border-shell-600/60 ${chosen ? 'bg-gold/10' : ''}`}
                     >
                       <td className="w-[52px]">
-                        <Photo
+                        <StockPhoto
                           url={m.image_url}
                           alt={m.name}
                           testId={`stock:${m.id}`}
@@ -352,7 +352,7 @@ export default function MaterialPicker({
                 >
                   {photos && (
                     <td className="w-[52px]">
-                      <Photo url={m.image_url} alt={m.name} testId={`stock:${m.id}`} onOpen={(anchor) => setEnlarged({ material: m, anchor })} />
+                      <StockPhoto url={m.image_url} alt={m.name} testId={`stock:${m.id}`} onOpen={(anchor) => setEnlarged({ material: m, anchor })} />
                     </td>
                   )}
                   <td className="text-ink-100">

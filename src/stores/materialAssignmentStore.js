@@ -18,21 +18,7 @@ import { loadJcStock, toMaterial } from '../lib/jcStock.js';
 // stock_items uuid (lib/jcStock.js) or one of the three generic placeholders;
 // the blob is schema 3 (engine/partRegistry.js, the hardware keys of F10).
 
-export const BOM_ROLES = [
-  { id: 'side',       label: 'Sides',          hint: 'BUL / BUR, drawer panels, fillers' },
-  { id: 'top',        label: 'Top',            hint: 'Top panel' },
-  { id: 'bottom',     label: 'Bottom',         hint: 'Bottom panel' },
-  { id: 'back',       label: 'Back',           hint: 'Back panel' },
-  { id: 'shelf',      label: 'Shelves',        hint: 'Shelves, partition, rail partition' },
-  { id: 'front',      label: 'Fronts',         hint: 'Doors and drawer fronts' },
-  { id: 'drawer_box', label: 'Drawer boxes',   hint: 'Drawer sides, front/back, bottoms' },
-  // Turn 3: the automatics are cut pieces, so they get their own material.
-  { id: 'plinth',     label: 'Plinth',         hint: 'Toe kick under standing units' },
-  { id: 'infill',     label: 'Infill / scribe', hint: 'Fillers at the wall and up to the ceiling' },
-  // Turn 4: a masking panel over the outside of a carcass side — usually cut
-  // from the FRONT material, which is why it is its own role and not "sides".
-  { id: 'end_panel',  label: 'End panels',     hint: 'Masking panels on the outside of a run' },
-];
+// T-CC2a F10.2: BOM_ROLES, the list of the BOM Materials tab's board select alone, left with that select (the Deletion licence).
 
 // Hardware roles. The ENGINE decides the quantities from the geometry
 // (result.hardware); this list only says which roles exist and what they are

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import NumberField from './NumberField.jsx';
-import { Photo, PhotoCard } from './MaterialPicker.jsx';
+import { StockPhoto, PhotoCard } from './MaterialPicker.jsx';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore, BESPOKE_UNITS } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
@@ -631,7 +631,7 @@ function PurchaseLines({
                     <td className="px-1.5 py-1">
                       {r.stock ? (
                         <div className="flex items-center gap-2" data-bom-jc="1">
-                          <Photo
+                          <StockPhoto
                             url={r.stock.image_url}
                             alt={r.stock.name}
                             size={32}

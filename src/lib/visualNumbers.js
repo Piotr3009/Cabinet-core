@@ -19,7 +19,7 @@
  * The defaults: a kept picture at most 400 KB (PROPOSED), the AI input at most 4 MB (JC's body wall) with its
  * long side 1536 px when it is downscaled (PROPOSED), three AI pictures per click (CONFIRMED, *"max 3 proby"*).
  */
-export const VISUAL_DEFAULTS = Object.freeze({
+const VISUAL_DEFAULTS = Object.freeze({
   maxKb: 400,
   aiInputMaxMb: 4,
   aiInputLongPx: 1536,

@@ -91,18 +91,21 @@ test('F0 — THE PAGE COUNT EQUALS THE SHEET COUNT, on a seven-sheet set', () =>
   // Thirteen still, in the owner's order: *"najpierw chce widziec 3d ...
   // pozniej ... wszystkie fronty ... bez frontow ... przekroj z gory ...
   // przekroje pionowe, a na koncu wizualizacja"*, and the X-ray per wall.
+  // ─── AMENDED 01.11.2026 (T-CC1b F8.2) ───────────────────────────────────
+  // Fourteen: the visualisation is the left and the right angle (*"dodac
+  // wizualizacje z drugiego kata"*). The law is still a page per sheet.
   const sheets = sheetsOf(kitchen());
   assert.deepEqual(sheets.map((s) => s.name), [
     '3D', 'Wall A · Fronts', 'Wall B · Fronts', 'Wall A · Without fronts', 'Wall B · Without fronts',
     'Wall A · X-ray', 'Wall B · X-ray', 'Plan · base units', 'Plan · wall units',
-    'Wall A · Sections A-A', 'Wall B · Sections A-A', 'Visualisation', 'Cut list and materials',
+    'Wall A · Sections A-A', 'Wall B · Sections A-A', 'Visualisation, left', 'Visualisation, right', 'Cut list and materials',
   ]);
   const doc = bookletDoc(sheets.map((s) => s.sheet));
   assert.equal(doc.getNumberOfPages(), sheets.length, 'a page per sheet, in the order they were built');
   // …and the export itself asks the same question, which is what turns the word
   // "Saved" from a claim into a measurement.
   const measured = assertPdfBytes(pdfBytes(doc), { pages: doc.getNumberOfPages(), sheets: sheets.length });
-  assert.equal(measured.pages, 13);
+  assert.equal(measured.pages, 14);
   assert.ok(measured.bytes > 1000);
 });
 
@@ -172,7 +175,11 @@ test('F0 — NEITHER PATH still carries the `|| Nothing to draw yet.` relabellin
 });
 
 test('F0 — every drawing catch in both files REPORTS: console.error, then a sentence', () => {
-  for (const [name, src] of [['DrawingModal.jsx', MODAL], ['ConfiguratorPage.jsx', PAGE]]) {
+  // AMENDED BY T-CC1b F5: the page's Output drawing road (`onDrawing`) is deleted with its menu
+  // entries (*"Output tylko: cutting list, BOM PDF, labels 21 i 44"*, the owner, 01.11.2026); the
+  // drawing catches live in the Drawings window alone, and the page binds no drawing.
+  assert.equal(PAGE.includes('const onDrawing = useCallback('), false, 'the page draws nothing itself');
+  for (const [name, src] of [['DrawingModal.jsx', MODAL]]) {
     const catches = src.match(/catch\s*\([a-z]+\)\s*\{/g) || [];
     assert.ok(catches.length >= 2, `${name} has the drawing catches`);
     assert.ok(src.includes('console.error'), `${name} puts the whole error where a diagnosis can reach it`);
@@ -204,8 +211,13 @@ test('F0 — CRASHED and EMPTY are two different things on screen, forever after
 });
 
 test('F0 — the buttons stay disabled in BOTH refusing states', () => {
+  // T-CC1b F6 (*"tylko export pdf"*): Export PDF is disabled with no ticked
+  // sheet, and a crash or an empty job ticks none, so both refusing states
+  // still disable both buttons: the DXF by the list, the PDF by the ticks.
   const disabled = MODAL.match(/disabled=\{!wallSheetList\.length\}/g) || [];
-  assert.equal(disabled.length, 2, 'the wall PDF button and the wall DXF button');
+  assert.equal(disabled.length, 1, 'the wall DXF button');
+  assert.equal((MODAL.match(/disabled=\{!wallPicked\.length\}/g) || []).length, 1, 'Export PDF');
+  assert.match(MODAL, /pickedSheets\(wallSheetList, /, 'the ticks are picked from the list, so an empty list ticks nothing');
   // A crash empties the sheet list, so the same one expression disables both in
   // both states — which is what makes "the buttons stay disabled" true by
   // construction rather than by a second guard somebody has to remember.
@@ -279,7 +291,8 @@ test('F0 — `wallSetReport` is a READER: the sheet list is what it always was',
     ['Wall A · X-ray', 'xray', 0], ['Wall B · X-ray', 'xray', 1],
     ['Plan · base units', 'plan-base', null], ['Plan · wall units', 'plan-wall', null],
     ['Wall A · Sections A-A', 'sections', 0], ['Wall B · Sections A-A', 'sections', 1],
-    ['Visualisation', 'visual', null], ['Cut list and materials', 'cutlist', null],
+    // T-CC1b F8.2: the two angles in place of the one visualisation.
+    ['Visualisation, left', 'visual', null], ['Visualisation, right', 'visual', null], ['Cut list and materials', 'cutlist', null],
   ]);
 });
 
@@ -295,5 +308,7 @@ test('F0 — `guard()` never returns false in silence', () => {
     assert.ok(chunk.includes('notify('), 'a refusal that says nothing is the fault F0 is about');
   }
   assert.ok(body.includes('subject'), 'and it says WHICH refusal — "export" or "draw"');
-  assert.ok(PAGE.includes("guard('draw')"), 'the drawing paths ask in the drawing’s own words');
+  // AMENDED BY T-CC1b F5: the page's drawing road left with Output's drawing entries; the exports
+  // still ask the guard, and it keeps its 'draw' words for whoever asks about a drawing.
+  assert.ok(PAGE.includes('if (!guard()) return;'), 'the export paths ask it');
 });

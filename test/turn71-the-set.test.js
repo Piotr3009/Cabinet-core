@@ -441,12 +441,13 @@ test('T71 · the order and the numbering of his set, the cover last with the ind
   assert.deepEqual(set.map((s) => `${s.no} ${s.name}`), [
     '01 3D', '02 Wall A · Fronts', '03 Wall A · Without fronts', '04 Wall A · X-ray',
     '05 Plan · base units', '06 Plan · wall units', '07 Wall A · Sections A-A and B-B',
-    '08 Visualisation', '09 Cut list and materials',
+    // AMENDED 01.11.2026 (T-CC1b F8.2): *"dodac wizualizacje z drugiego kata"*, the two angles.
+    '08 Visualisation, left', '09 Visualisation, right', '10 Cut list and materials',
   ]);
   for (const s of set) {
     assert.equal(s.sheet.sheetNo, s.no);
-    assert.equal(s.sheet.sheetOf, '09');
-    assert.ok(textsOf(s.sheet).includes(`${s.no} / 09`), `${s.name} is numbered on its strip`);
+    assert.equal(s.sheet.sheetOf, '10');
+    assert.ok(textsOf(s.sheet).includes(`${s.no} / 10`), `${s.name} is numbered on its strip`);
     assert.ok(textsOf(s.sheet).includes(`032-2026-${s.no}`), `${s.name} carries its drawing number`);
   }
   const index = textsOf(set[0].sheet);
@@ -499,9 +500,11 @@ test('T71 · the visualisation frames the render at the picture\'s own aspect, a
   const withImage = buildVisual(zones, { image: png });
   const img = withImage.find((e) => e.kind === 'image');
   assert.ok(img && img.href === png && img.w < pic.w && img.h < pic.h);
-  const set = setOf({ renderImage: png });
+  // T-CC1b F8.2: the one render became `visuals`; each angle's sheet frames the render it is handed.
+  const set = setOf({ visuals: { isoLeft: png, isoRight: png } });
   const visual = set.find((s) => s.variant === 'visual');
-  assert.ok(visual.sheet.entities.some((e) => e.kind === 'image'), 'the set frames the render it is handed');
+  assert.equal(visual.name, 'Visualisation, left');
+  assert.ok(set.filter((s) => s.variant === 'visual').every((v) => v.sheet.entities.some((e) => e.kind === 'image')), 'the set frames the render it is handed');
   assert.match(sheetToSvg(visual.sheet, { kind: 'visual' }), /<image [^>]*href="data:image\/png/);
   assert.ok(sheetToDxf(visual.sheet).includes('FRAME_LIGHT'), 'the DXF draws the frame and skips the pixels');
   assert.equal(bookletDoc([visual.sheet]).getNumberOfPages(), 1, 'and the PDF binds it');
@@ -543,9 +546,11 @@ test('T71 · poly, image, right-aligned, masked and bold text reach the SVG, the
 test('T71 · the window hands the set the worktops and the render, carries the title block, and the menu says "set"', () => {
   const modal = readFileSync(new URL('../src/components/DrawingModal.jsx', import.meta.url), 'utf8');
   assert.match(modal, /worktops: worktopsOf\(\)/, 'the design layer\'s slabs go on the sheets');
-  assert.match(modal, /renderImage,/, 'and the render');
+  // T-CC1b F8.1: the one render became the two angles, the user's render and the AI picture (`visuals`).
+  assert.match(modal, /visuals,\n/, 'and the visuals');
   assert.match(modal, /rig\.capture\(job\)/, 'captured through the same rig as Output ▸ Render');
-  assert.match(modal, /preset: 'iso-left'/, 'from the three-quarter left');
+  assert.match(modal, /shoot\('iso-left'\)/, 'from the three-quarter left');
+  assert.match(modal, /shoot\('iso-right'\)/, 'and from the three-quarter right');
   assert.match(modal, /aspect: visualAspect\(profile\)/, 'shaped to the sheet\'s frame');
   assert.match(modal, /data-title-block="1"/, 'the title block\'s words are typed here');
   assert.match(modal, /setTitleBlock\(\{ company: \{ name: v \} \}\)/);
@@ -553,10 +558,13 @@ test('T71 · the window hands the set the worktops and the render, carries the t
   assert.ok(!/format,\n\s+date,\n\s+\}\);\n\s+\/\/ The census/.test(modal), 'the set takes no paper choice');
   const page = readFileSync(new URL('../src/pages/ConfiguratorPage.jsx', import.meta.url), 'utf8');
   assert.match(page, /<DrawingModal rig=\{renderRig\} \/>/, 'the page hands the window the rig');
-  assert.match(page, /worktops: worktopsOf\(\),\s+renderImage,/, 'the menu path binds the same set');
+  // AMENDED BY T-CC1b F5: *"Output tylko: cutting list, BOM PDF, labels 21 i 44"* (the owner,
+  // 01.11.2026): the menu path that bound the same set is deleted with its two Output entries; the
+  // set leaves from the Drawings window alone, so there is one road to it.
+  assert.doesNotMatch(page, /worktops: worktopsOf\(\),\s+renderImage,/, 'the menu path is gone');
   const menu = readFileSync(new URL('../src/lib/outputMenu.js', import.meta.url), 'utf8');
-  assert.match(menu, /label: 'Drawing set \(PDF\)'/);
-  assert.match(menu, /label: 'Drawing set \(DXF\)'/);
+  assert.doesNotMatch(menu, /label: 'Drawing set \(PDF\)'/);
+  assert.doesNotMatch(menu, /label: 'Drawing set \(DXF\)'/);
 });
 
 test('T71 · the store: `setTitleBlock` merges, the company is remembered for the next job', async () => {

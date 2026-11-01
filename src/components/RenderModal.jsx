@@ -19,8 +19,13 @@ import { savePng } from '../3d/renderCapture.js';
 // The render is of the SELECTED unit when one is selected and of the whole
 // scene otherwise, which is also what the filename says.
 
-export default function RenderModal({ rig }) {
-  const closeModal = useUiStore((s) => s.closeModal);
+// T-CC1b F8.3 · *"render wedlug wyboru"* (the owner, 01.11.2026): opened from the Drawings window, the
+// finished render is handed back through `onResult({ dataUrl, preset, width, height, filename })`, BESIDE the
+// download (PROPOSED: beside); `onClose` closes this window alone, the Drawings window stays under it. The
+// shots, the resolutions and the shadows are untouched.
+export default function RenderModal({ rig, onResult = null, onClose = null }) {
+  const storeClose = useUiStore((s) => s.closeModal);
+  const closeModal = onClose || storeClose;
   // Where this modal opens (turn 12, rule 15): beside whatever asked for it.
   // Nothing to work out here — the opener said, and the shell places it.
   const anchor = useUiStore((s) => s.modalArgs?.anchor) || null;
@@ -79,6 +84,11 @@ export default function RenderModal({ rig }) {
     notify(`Saved ${shot.filename}.`, 'ok');
   }, [shot, notify]);
 
+  const hand = useCallback(() => {
+    if (!shot || !onResult) return;
+    onResult({ dataUrl: shot.dataUrl, preset, width: shot.width, height: shot.height, filename: shot.filename });
+  }, [shot, onResult, preset]);
+
   const presets = useMemo(() => CAMERA_PRESETS, []);
 
   return (
@@ -92,6 +102,11 @@ export default function RenderModal({ rig }) {
         <>
           <button type="button" className="cc-btn" onClick={closeModal}>Close</button>
           <button type="button" className="cc-btn" disabled={!shot} onClick={save}>Save PNG</button>
+          {onResult ? (
+            <button type="button" className="cc-btn" data-render-to-drawings="1" disabled={!shot} onClick={hand}>
+              Add to the drawings
+            </button>
+          ) : null}
           <button type="button" className="cc-btn-gold" disabled={busy} onClick={run}>
             {busy ? 'Rendering…' : 'Render'}
           </button>

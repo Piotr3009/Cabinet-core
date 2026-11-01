@@ -44,15 +44,17 @@ test('F2 · one wall: 3D, fronts, without fronts, X-ray, the two plans, the sect
     '05 Plan · base units',
     '06 Plan · wall units',
     '07 Wall A · Sections A-A',
-    '08 Visualisation',
-    '09 Cut list and materials',
+    // AMENDED 01.11.2026 (T-CC1b F8.2): *"dodac wizualizacje z drugiego kata"*, the two angles in place of the one visualisation.
+    '08 Visualisation, left',
+    '09 Visualisation, right',
+    '10 Cut list and materials',
   ]);
-  assert.deepEqual(sheets.map((s) => s.variant), ['3d', 'fronts', 'no-fronts', 'xray', 'plan-base', 'plan-wall', 'sections', 'visual', 'cutlist']);
+  assert.deepEqual(sheets.map((s) => s.variant), ['3d', 'fronts', 'no-fronts', 'xray', 'plan-base', 'plan-wall', 'sections', 'visual', 'visual', 'cutlist']);
   // Numbered from 01, of the whole set, in every title strip.
   for (const s of sheets) {
     assert.equal(s.sheet.sheetNo, s.no);
-    assert.equal(s.sheet.sheetOf, '09');
-    assert.ok(s.sheet.entities.some((e) => e.kind === 'text' && e.text === `${s.no} / 09`), `${s.no} stamped`);
+    assert.equal(s.sheet.sheetOf, '10');
+    assert.ok(s.sheet.entities.some((e) => e.kind === 'text' && e.text === `${s.no} / 10`), `${s.no} stamped`);
   }
   // No cover as a page of its own: it is folded into the 3D's column.
   assert.ok(!sheets.some((s) => /Cover/.test(s.name)));
@@ -98,7 +100,9 @@ test('F2 · two walls: every wall\'s fronts, without fronts and X-ray sheets com
   }
   const sections = sheets.filter((s) => s.variant === 'sections');
   assert.ok(sections.length >= 1 && sections.every((s) => sheets.indexOf(s) > plans), 'the sections after the plans');
+  // T-CC1b F8.2: the two angles, then the cut list.
   assert.equal(sheets[sheets.length - 2].variant, 'visual');
+  assert.equal(sheets[sheets.length - 3].variant, 'visual');
   assert.equal(sheets[sheets.length - 1].variant, 'cutlist');
 });
 
@@ -123,6 +127,8 @@ test('F2 · the window: the sheet buttons walk the engine\'s list, and its words
   assert.match(src, /every wall <b>without fronts<\/b>/);
   assert.match(src, /every wall in <b>X-ray<\/b>/);
   assert.ok(!/<b>00<\/b> cover/.test(src), 'no cover sheet in the words');
-  // The kind tabs stay.
-  assert.match(src, /\['unit-card', 'Card \(3 views\)'\], \['front-elevation', 'Front only'\], \['walls', 'Set'\]/);
+  // T-CC1b F6 (*"usunac card 3D view i front only"*, the owner, 01.11.2026): the kind tabs are deleted; the
+  // window is the set alone.
+  assert.ok(!/'Card \(3 views\)'|'Front only'|data-drawing-kind-tab/.test(src), 'the kind row is gone');
+  assert.match(src, /const kind = 'walls';/);
 });

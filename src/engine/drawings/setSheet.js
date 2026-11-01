@@ -267,7 +267,7 @@ export function titleStrip(zones, title, profile) {
   // drawing's own dashed lines can leave it out by name.
   // T82 F20: a chosen logo stands in the box instead, fitted and centred
   // (`fitLogo`), named `logo` as the box was; no logo, the box as T71 drew it.
-  const logo = logoOf(company.logo);
+  const logo = logoOf(company.logo, company.companyLogo);
   const logoBox = { x: c + 2.5, y: t.y + 4, w: 24, h: 24 };
   if (logo) {
     out.push({
@@ -407,7 +407,16 @@ export function imageSizeOf(href) {
  * or null. Only a data URL of a PNG, a JPG or an SVG is a logo; a web address
  * the paper cannot fetch, or a stray word, is no logo and the box stays.
  */
-export function logoOf(raw) {
+export function logoOf(raw, fallback = null) {
+  // T-CC1b F7.3 · *"logo domyslne z JC albo przycisk wstaw inne logo"* (the owner, 01.11.2026): the item's own
+  // logo first; when it has none, the company's from Joinery Core (lib/jcLogo.js, already a data URL logo).
+  // 'none' is the item's own choice of NO logo (the window's Remove): the company's is not put back.
+  if (raw === 'none') return null;
+  const own = logoOfOne(raw);
+  return own || (fallback ? logoOfOne(fallback) : null);
+}
+
+function logoOfOne(raw) {
   const href = typeof raw === 'string' ? raw : raw?.href;
   if (!LOGO_TYPES.includes(dataUrlType(href))) return null;
   const said = typeof raw === 'object' && Number(raw.width) > 0 && Number(raw.height) > 0

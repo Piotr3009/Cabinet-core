@@ -86,3 +86,19 @@ export async function keepPicture(dataUrl, { maxKb, doc = null, encode = null } 
   }
   return { dataUrl: null, bytes, error: `The picture is ${Math.ceil(bytes / 1024)} KB and would not come under ${Math.round(cap / 1024)} KB, so it is not kept.` };
 }
+
+/**
+ * CHAT FIX 01.11.2026 (the audit of T-CC1b): one of the drawing set's two angles, kept under `maxKb` as the
+ * render is. The angles were full 1920 px PNGs: the set's PDF reached 24 MB and, as the AI picture's source,
+ * a PNG in base64 passed Vercel's 4.5 MB wall. A picture that cannot be made smaller stays as it was (the set
+ * still binds); `null` stays `null`.
+ */
+export async function keepAngle(dataUrl, { maxKb, doc = null, encode = null } = {}) {
+  if (!dataUrl) return null;
+  try {
+    const kept = await keepPicture(dataUrl, { maxKb, doc, encode });
+    return kept.dataUrl || dataUrl;
+  } catch {
+    return dataUrl;
+  }
+}

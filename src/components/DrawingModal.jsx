@@ -10,7 +10,7 @@ import { useAuthStore } from '../stores/authStore.js';
 import { resolveUnitDesign } from '../engine/design.js';
 // T-CC1b F7 · the company's logo from Joinery Core; F8 · a picture kept with the item is kept small.
 import { companyLogo as loadCompanyMark } from '../lib/jcLogo.js';
-import { keepPicture } from '../lib/keepPicture.js';
+import { keepAngle, keepPicture } from '../lib/keepPicture.js';
 import { visualNumbers } from '../lib/visualNumbers.js';
 // ─── TURN 40 (CLAUDE.md F5): A SHEET IS A WALL ─────────────────────────────
 // The owner: *"nie mamy drawingu całościowego — pokazuje nam tylko pojedyncze
@@ -177,8 +177,12 @@ export default function DrawingModal({ rig = null }) {
           return null;
         }
       };
-      const next = { isoLeft: shoot('iso-left'), isoRight: shoot('iso-right') };
-      if (!cancelled) setAngles(next);
+      const raw = { isoLeft: shoot('iso-left'), isoRight: shoot('iso-right') };
+      // CHAT FIX 01.11.2026: the two angles kept under profile.visuals.maxKb as the render is (lib/keepPicture.js
+      // keepAngle): the set's PDF was 24 MB and the AI source passed Vercel's 4.5 MB wall.
+      const { maxKb } = visualNumbers(profile);
+      Promise.all([keepAngle(raw.isoLeft, { maxKb }), keepAngle(raw.isoRight, { maxKb })])
+        .then(([isoLeft, isoRight]) => { if (!cancelled) setAngles({ isoLeft, isoRight }); });
     });
     return () => { cancelled = true; cancelAnimationFrame(frame); };
     // eslint-disable-next-line react-hooks/exhaustive-deps

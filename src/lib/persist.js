@@ -42,6 +42,9 @@ function savedWords(at) {
  */
 export function itemPayload({ storage = browserStorage(), at = Date.now(), stamp = true } = {}) {
   const st = useProjectStore.getState();
+  // CHAT FIX 01.11.2026: while a Restore's pictures are being read back from the row, nothing is sent (the
+  // keepalive on leaving skips; saveOnce reads them first), so the row's pictures are never saved away.
+  if (st.project?.visualsPending) return null;
   const p_design = st.projectForSave({ stamp, storage, at });
   return { p_item_id: st.project?.id || null, p_name: st.project?.name || '', p_design };
 }
@@ -108,7 +111,12 @@ async function saveOnce({ asName, at, storage, db, numbers }) {
     }));
   }
 
+  if (useProjectStore.getState().project?.visualsPending) {
+    const back = await useProjectStore.getState().fetchRowVisuals({ db });
+    if (!back.ok) return refused(useProjectStore.getState().project, `${back.error} The item's pictures are read back from Joinery Core first, so they are not lost.`);
+  }
   const params = itemPayload({ storage, at });
+  if (!params) return refused(useProjectStore.getState().project, 'the item\'s pictures are still being read back from Joinery Core. Try again in a moment.');
   const body = JSON.stringify(params);
   const bytes = byteSize(body);
   if (bytes > Number(numbers.maxBodyMb) * 1024 * 1024) {

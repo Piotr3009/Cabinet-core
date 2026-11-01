@@ -555,6 +555,8 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f55-t-cc1b-f13.mjs',
   'scripts/t78-classify.d/f55-t-cc1b-f14.mjs',
   'scripts/t78-classify.d/f55-t-cc1b-f15.mjs',
+  // CHAT FIX 01.11.2026, the audit of T-CC1b: the pictures leave the crash buffer, the angles are kept small.
+  'test/chatfix-0111-pictures.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

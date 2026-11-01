@@ -123,7 +123,7 @@ import { browserStorage, companyWithLogo, companyWithLogoRef, projectWithLogo, p
 import { JC_OFFLINE, withDb } from '../lib/jcApi.js';
 import { PROJECT_FILE_FORMAT, PROJECT_FILE_VERSION } from '../lib/projectFile.js';
 // T-CC1a F9: the crash buffer, keyed by tenant and item (lib/crashBuffer.js), and the tenant it is keyed by.
-import { bufferKey, bufferOffWords, writeBuffer } from '../lib/crashBuffer.js';
+import { bufferDesignOf, bufferKey, bufferOffWords, writeBuffer } from '../lib/crashBuffer.js';
 import { saveNumbers } from '../lib/saveNumbers.js';
 import { onSignedOutFlush, useAuthStore } from './authStore.js';
 // T51 (CLAUDE.md F6 · decision 1): the light rig lives WITH THE PROJECT — *"a
@@ -1971,7 +1971,8 @@ export function flushCrashBuffer() {
   const { bufferMaxMb } = saveNumbers(getCabinetProfile());
   let res;
   try {
-    const design = st.projectForSave({ stamp: false, storage: localStorage });
+    // CHAT FIX 01.11.2026: the pictures ride the row, never the buffer (lib/crashBuffer.js bufferDesignOf).
+    const design = bufferDesignOf(st.projectForSave({ stamp: false, storage: localStorage }), { pending: st.project.visualsPending });
     res = writeBuffer(localStorage, bufferKey(tenantId, st.project.id), {
       savedAt: st.project.savedAt || null, dirty: Boolean(st.dirty), at: Date.now(), design,
     }, { maxMb: bufferMaxMb });
@@ -2781,6 +2782,36 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     get().loadProject(project, Array.isArray(design.units) ? design.units : []);
     if (dirty) set({ dirty: Boolean(dirty) });
     else get().markSaved();
+    // CHAT FIX 01.11.2026: a crash buffer keeps no pictures (lib/crashBuffer.js bufferDesignOf); a Restore reads
+    // them back from the row now, and the save waits for them (lib/persist.js), so a restored item never saves
+    // its row's render and AI picture away.
+    if (design.visualsOnRow) {
+      set((s) => ({ project: { ...s.project, visualsPending: true } }));
+      get().fetchRowVisuals().catch(() => {});
+    }
+    return { ok: true, error: null };
+  },
+
+  /**
+   * CHAT FIX 01.11.2026 · the item's pictures read back from its row after a Restore: ONE read of `cc_items` by
+   * id, its design's `project.visuals` merged UNDER any picture kept since the Restore. Resolves `{ ok, error }`;
+   * nothing to do when no read is pending.
+   */
+  fetchRowVisuals: async ({ db = withDb } = {}) => {
+    const id = get().project?.id;
+    if (!id || !get().project?.visualsPending) return { ok: true, error: null };
+    const res = await db((c) => c.from('cc_items').select('design').eq('id', id).maybeSingle(), null);
+    if (res?.mock) return { ok: false, error: JC_OFFLINE };
+    if (res?.error) return { ok: false, error: String(res.error?.message || res.error) };
+    const rowVisuals = res?.data?.design?.project?.visuals;
+    set((s) => {
+      if (s.project?.id !== id || !s.project.visualsPending) return {};
+      const { visualsPending: _p, ...project } = s.project;
+      const mine = project.visuals && typeof project.visuals === 'object' ? project.visuals : {};
+      const theirs = rowVisuals && typeof rowVisuals === 'object' ? rowVisuals : {};
+      const visuals = { ...theirs, ...mine };
+      return { project: Object.keys(visuals).length ? { ...project, visuals } : project };
+    });
     return { ok: true, error: null };
   },
 
@@ -12951,7 +12982,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }
     // The binding lives in the row's columns (T-CC1a F4.3), never in the design.
     // T-CC1b F1.3: the bound project's name (`jcProjectName`) is the store's only, never the design's.
-    const { jc_tenant_id: _t, jc_project_id: _p, jc_pipeline_id: _l, jcProjectName: _n, ...inner } = project || {};
+    // CHAT FIX 01.11.2026: `visualsPending` (the pictures being read back after a Restore) is the store's only.
+    const { jc_tenant_id: _t, jc_project_id: _p, jc_pipeline_id: _l, jcProjectName: _n, visualsPending: _v, ...inner } = project || {};
     const kept = projectWithLogoRef(storage, inner);
     return {
       format: PROJECT_FILE_FORMAT,

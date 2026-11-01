@@ -21,7 +21,8 @@
  */
 const VISUAL_DEFAULTS = Object.freeze({
   maxKb: 400,
-  aiInputMaxMb: 4,
+  // CHAT FIX 01.11.2026: 3, not 4: base64 of 3 MB is 4 MB, under Vercel's 4.5 MB request wall in front of JC.
+  aiInputMaxMb: 3,
   aiInputLongPx: 1536,
   aiTries: 3,
 });

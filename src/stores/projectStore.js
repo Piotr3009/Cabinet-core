@@ -49,7 +49,7 @@ import {
   EDGE_NOTCH_EDGES,
 } from '../engine/notch.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
-// MAREK-PENDING-IMPORT-F13
+import { BOARD_SLOTS, migrateBoardChoices } from '../engine/catalogue.js';
 import { formatMm, roundTo, snap as snapTo } from '../engine/format.js';
 // T78 F17 . the hood's clearance over the hob: the one measure Check #34 reads too.
 import { hoodClearanceMessage, hoodClearanceRows, hoodRaiseTo } from '../engine/hoodClearance.js';
@@ -298,7 +298,7 @@ export function migrateBespoke(rows) {
  */
 function withBoardChoices(design) {
   try {
-    return design; // MAREK-PENDING-F13 migrateBoardChoices(design, getCabinetProfile())
+    return migrateBoardChoices(design, getCabinetProfile()) || design;
   } catch {
     return design;
   }
@@ -2141,11 +2141,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     set((s) => ({ project: { ...s.project, bespoke: migrateBespoke(s.project.bespoke).filter((r) => r.id !== id) }, dirty: true }));
   },
 
-  // ─── T-CC2a F11.2 · the back panels and the drawer bottoms on a sheet of their own ───
+  // ─── T-CC2a F11.2 · the back panels, the drawer bottoms and the run pieces on a sheet of their own ───
   // `choice` a board choice of engine/catalogue.js (boardChoiceOfEntry), or null: "As today". The cut list and the
   // purchase list read it through the one resolver; a different thickness is never offered (geometry is not this turn).
   setDesignBoard: (slot, choice = null) => {
-    if (slot !== 'back' && slot !== 'drawerBottom') return;
+    if (!BOARD_SLOTS.includes(slot)) return;
     const boards = migrateDesign(get().project.design).boards || {};
     get().setDesign({ boards: { ...boards, [slot]: choice && typeof choice === 'object' ? { ...choice } : null } });
   },

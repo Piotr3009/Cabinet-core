@@ -1,0 +1,10 @@
+NEW ITEM FLOW (primary only, no Stock board): Confirm project & continue > Confirm space & continue > Confirm section & continue > Next — Carcass 1 — board and sheet > Next — What was chosen > Confirm section & continue > Next — Front 1 — colour, board and sheet > Next — Shape, opening and shine > Confirm section & continue > Confirm section & continue > Confirm section & continue > Confirm & review project > Start designing
+editor reached: true
+FRAME 01-nothing-selected.png: nothing selected: no right panel, Back to Joinery Core gold at the top left
+FRAME 02-cabinet-selected.png: a cabinet selected: the panel appears, the scene narrows
+FRAME 02b-deselected.png: deselected again: the panel goes, the camera is where it was
+FRAME 03-drawings.png: Drawings near full screen: sheets left, preview right
+FRAME 04-ai-card.png: AI visualisation opens the same card
+Link materials opened: true
+FRAME 05-link-materials.png: Link materials on open (P10 filter, P13 words)
+FRAME 06-bom.png: the BOM: sheets with their size, Link buttons, incomplete total

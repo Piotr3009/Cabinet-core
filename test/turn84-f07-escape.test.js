@@ -345,7 +345,7 @@ test('F7 Escape · every hook the reader looks for is drawn by the component it 
     ['src/components/Modal.jsx', /data-modal-shell="1"/, /data-modal-name=/, /data-modal-covered=/, /data-modal-workspace=/],
     ['src/components/DoorModal.jsx', /data-door-modal-sections=\{isDoor \? 'B,A' : 'A'\}/],
     ['src/components/studio/RailMenus.jsx', /data-studio="popup"/, /registerStudioPopup\(/],
-    ['src/components/studio/SceneViewMenu.jsx', /data-studio="popup"/],
+    // AMENDED BY T-CC1b F2: SceneViewMenu.jsx is deleted (*"dwa menu View, jedno wystarczy"*, the owner, 01.11.2026).
   ];
   for (const [file, ...patterns] of HOOKS) {
     const text = read(file);

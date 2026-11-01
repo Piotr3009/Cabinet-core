@@ -24,7 +24,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import * as THREE from 'three';
 
 import {
@@ -42,7 +42,7 @@ const read = (rel) => readFileSync(new URL(rel, ROOT), 'utf8');
 const code = (text) => text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
 
 const TOGGLES = read('src/components/studio/SceneToggles.jsx');
-const VIEW = read('src/components/studio/SceneViewMenu.jsx');
+// AMENDED BY T-CC1b F2: SceneViewMenu.jsx is DELETED (*"dwa menu View, jedno wystarczy"*, the owner, 01.11.2026).
 const BAR = read('src/components/studio/CameraBar.jsx');
 const LIB = read('src/components/studio/lib/cameraPresets.js');
 const TOPBAR = read('src/components/TopBar.jsx');
@@ -263,7 +263,9 @@ test('F6 · the live view: the units\' groups found by ccUnitId, never a helper;
 
 test('F6 · the four toggles call the four toolbar handlers by name, with the toolbar\'s guards and pressed states', () => {
   // REWRITTEN BY T86B F7: *"menu, patrz SS: dimension powinien pojsc do glownego paska, ustawienie koloru wymiarowania powinno byc w settings nie tutaj"* (the owner, 30.10.2026, 21:54). Dimensions joins the bar, first (the order PROPOSED).
-  assert.deepEqual(P.ui.studio.sceneToggles, ['dimensions', 'xray', 'hideFronts', 'outlines', 'openAll'], 'THE NUMBERS: Dimensions and the designer\'s four');
+  // AMENDED BY T-CC1b F2 (law 3): the View dropdown's three (Front dimensions, Props, Measure) stand after the five
+  // (*"dwa menu View, jedno wystarczy"*; *"tak te przyciski zostaja sa mega przydatne"*, the owner, 01.11.2026).
+  assert.deepEqual(P.ui.studio.sceneToggles, ['dimensions', 'xray', 'hideFronts', 'outlines', 'openAll', 'frontDimensions', 'props', 'measure'], 'THE NUMBERS: Dimensions, the designer\'s four, the dropdown\'s three');
   assert.match(TOGGLES, /useCabinetProfileStore\(\(s\) => s\.profile\?\.ui\?\.studio\?\.sceneToggles\)/, 'the list is the profile\'s');
   // Every switch the registry holds is a CanvasToolbar button, field for field.
   const HANDLER = {
@@ -313,56 +315,34 @@ test('F6 · the four toggles call the four toolbar handlers by name, with the to
 // Dimensions went to the bar, Dimension colour to Settings; the other seven
 // keep their guards, labels, sentences and store actions.
 
-test('F6 · the View menu lists exactly the seven, each through its own store action, with the guard it has today', () => {
-  assert.match(VIEW, /\nconst VIEW_ITEMS = Object\.freeze\(\[\s*'frontDimensions', 'props', 'measure',\s*'contourView', 'brightness', 'realisticLighting', 'light',\s*\]\)/);
-  assert.match(VIEW, /\{VIEW_ITEMS\.map\(item\)\}/, 'the popup renders the seven and nothing else');
-  for (const label of ['Front dimensions', 'Props', 'Measure', 'Contour view', 'Brightness', 'Realistic lighting', 'Turn on the light']) {
-    assert.ok(VIEW.includes(`'${label}'`) || VIEW.includes(`>${label}<`), `no "${label}"`);
+// REWRITTEN BY T-CC1b F2 (law 3, ONE VIEW): the owner, 01.11.2026: *"dwa menu View, jedno
+// wystarczy, menu wystarczy"*; *"tak te przyciski zostaja sa mega przydatne"*. The scene's dropdown
+// is deleted; each of its seven lives on: Front dimensions, Props and Measure on the quick toggles,
+// Contour view, Brightness, Realistic lighting and Turn on the light in the top bar's View menu,
+// each with the handler and the guard it has today.
+test('F6 · the View dropdown is gone; its seven live on the toggles and in the top bar\'s View, each through its own store action', () => {
+  assert.equal(existsSync(new URL('src/components/studio/SceneViewMenu.jsx', ROOT)), false, 'the dropdown is deleted');
+  // The three the toolbar had: on the quick toggles, the TOOLBAR's handler and guard.
+  for (const [id, label, handler] of [['frontDimensions', 'Front dimensions', 'toggleFrontDimensions'], ['props', 'Props', 'toggleProps'], ['measure', 'Measure', 'toggleRuler']]) {
+    const mine = entry(TOGGLES, id);
+    assert.ok(mine.includes(label), `${id}: the toggles say "${label}"`);
+    assert.ok(mine.includes(handler), `${id}: not ${handler}`);
   }
-  assert.doesNotMatch(code(VIEW), /dimensionColour|toggleDimensions|'Dimension colour'/, 'the ink is in Settings, Dimensions on the bar');
-  // The three the toolbar had: the TOOLBAR's handler and guard (p1-registry.md row 5, never widened, never narrowed).
-  for (const [id, handler] of [['frontDimensions', 'toggleFrontDimensions'], ['props', 'toggleProps'], ['measure', 'toggleRuler']]) {
-    const mine = entry(VIEW, id);
-    assert.ok(mine.includes(`run: ${handler},`), `${id}: not ${handler}`);
-    assert.ok(mine.includes(`disabled: ${TOOLBAR[handler].disabled},`), `${id}: not the toolbar's guard`);
-    assert.ok(mine.includes(`checked: ${TOOLBAR[handler].pressed},`), `${id}: not the toolbar's state`);
-  }
-  assert.ok(entry(VIEW, 'props').includes(': propsReason(propsPack),'), 'Props greyed WITH its reason');
-  // The five only TopBar's View menu had: TopBar's handler and guard, read off TopBar.jsx.
+  // The four of TopBar's View menu: TopBar's handler and guard, read off TopBar.jsx.
   const topGuard = (label) => {
     const at = TOPBAR.indexOf(`label: '${label}'`);
     assert.ok(at > 0, `TopBar has no ${label}`);
     return TOPBAR.slice(at, at + 700).match(/disabled: ([^,\n]+),/)[1];
   };
-  for (const [id, label, run] of [
-    ['contourView', 'Contour view', 'toggleContourView'],
-    ['realisticLighting', 'Realistic lighting', 'toggleRealisticLighting'],
-    ['light', 'Turn on the light', '() => setLighting({ on: !lightOn })'],
-  ]) {
-    const mine = entry(VIEW, id);
-    assert.ok(mine.includes(`run: ${run},`), `${id}: not ${run}`);
-    assert.ok(mine.includes(`disabled: ${topGuard(label)},`), `${id}: not TopBar's guard`);
-  }
-  assert.match(TOPBAR, /run: \(\) => setLighting\(\{ on: !lightOn \}\)/, 'TopBar\'s own switch is the one copied');
-  assert.match(VIEW, /const lightOn = useMemo\(\(\) => migrateDesign\(storedDesign\)\.lighting\.on, \[storedDesign\]\);/, 'the light read as TopBar reads it');
-  // Dimension colour: REWRITTEN BY T86B F7, it lives in Settings now (test/turn86b-f07-view.test.js); TopBar's legacy submenu is untouched (FROZEN 5).
-  assert.equal(topGuard('Dimension colour'), "viewMode !== '3d' || contourView");
-  // Brightness: the SAME slider as TopBar's: one value, one setter, the profile's three numbers, shown as TopBar shows it.
+  assert.equal(topGuard('Contour view'), "viewMode !== '3d'");
+  assert.equal(topGuard('Realistic lighting'), "viewMode !== '3d'");
+  assert.equal(topGuard('Turn on the light'), "viewMode !== '3d'");
   assert.equal(topGuard('Brightness'), "viewMode !== '3d'");
-  assert.match(VIEW, /const range = profile\.appearance\.studio\.brightness;/);
-  assert.match(VIEW, /min=\{range\.min\}\s*max=\{range\.max\}\s*step=\{range\.step\}\s*value=\{brightness\}\s*disabled=\{viewMode !== '3d'\}/);
-  assert.match(VIEW, /onChange=\{\(e\) => setBrightness\(Number\(e\.target\.value\)\)\}/);
-  assert.match(VIEW, /\{`\$\{Math\.round\(brightness \* 100\)\} %`\}/);
-  // FROZEN 3 (T80 FROZEN 4): Brightness, Realistic lighting and Turn on the light stay three controls, three states.
-  const lighting = code(VIEW);
-  assert.equal((lighting.match(/setBrightness\(/g) || []).length, 1);
-  assert.equal((lighting.match(/run: toggleRealisticLighting,/g) || []).length, 1);
-  assert.equal((lighting.match(/setLighting\(\{ on: !lightOn \}\)/g) || []).length, 1);
-  // A Studio popup the Escape map can see, closing on Escape in the capture phase.
-  assert.match(VIEW, /data-studio="popup"\s*data-kind="view"/);
-  assert.match(VIEW, /data-studio="view-menu"/);
-  assert.match(VIEW, /window\.addEventListener\('keydown', onKey, true\);/);
-  assert.doesNotMatch(code(VIEW), /toggleInspectorPin/, 'Escape never unpins');
+  assert.equal(topGuard('Dimension colour'), "viewMode !== '3d' || contourView");
+  assert.match(TOPBAR, /run: \(\) => setLighting\(\{ on: !lightOn \}\)/, 'TopBar\'s own switch');
+  assert.match(TOPBAR, /run: toggleContourView,/);
+  assert.match(TOPBAR, /run: toggleRealisticLighting,/);
+  assert.match(TOPBAR, /run: setBrightness,/);
 });
 
 // ═══ THE CAMERA BAR ═════════════════════════════════════════════════════════
@@ -394,7 +374,7 @@ test('F6 · the camera bar: 3D, Plan, Iso, A to D, Frame selection, then Drawing
 });
 
 test('F6 · nothing of the Studio\'s scene edge reaches T59\'s camera presets, or touches src/3d', () => {
-  for (const [name, text] of [['SceneToggles.jsx', TOGGLES], ['SceneViewMenu.jsx', VIEW], ['CameraBar.jsx', BAR], ['lib/cameraPresets.js', LIB]]) {
+  for (const [name, text] of [['SceneToggles.jsx', TOGGLES], ['CameraBar.jsx', BAR], ['lib/cameraPresets.js', LIB]]) {
     assert.doesNotMatch(code(text), /from '[^']*3d\/cameraPresets/, `${name} imports src/3d/cameraPresets.js`);
     // scripts/t59-classify.mjs: "PRO calls it: nowhere" greps these two names through src/components.
     assert.doesNotMatch(text, /parkCamera|presetPlacement/, `${name} names T59's preset functions`);
@@ -426,7 +406,7 @@ test('F6 · CanvasToolbar exports its door entries and keeps every button (after
 test('F6 · every file of the slice: the Skylon header, no em or en dash, no curly quote, no z-order of its own', () => {
   const header = read('scripts/t83-walk.mjs').split('\n').slice(0, 8).join('\n');
   for (const rel of [
-    'src/components/studio/SceneToggles.jsx', 'src/components/studio/SceneViewMenu.jsx',
+    'src/components/studio/SceneToggles.jsx',
     'src/components/studio/CameraBar.jsx', 'src/components/studio/lib/cameraPresets.js',
     'test/turn84-f06-scene.test.js',
   ]) {

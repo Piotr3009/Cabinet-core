@@ -6,6 +6,8 @@ import RoomModal from '../components/RoomModal.jsx';
 import DrawRoomModal from '../components/DrawRoomModal.jsx';
 // T51 (CLAUDE.md F7): Database ▸ Materials opens the WAREHOUSE.
 import WarehouseModal from '../components/WarehouseModal.jsx';
+// T-CC1b F9.3: the stock is Joinery Core's (*"materialy z JC (jego baza)"*).
+import JcStockModal from '../components/JcStockModal.jsx';
 import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
 import CompanyDefaultsModal from '../components/CompanyDefaultsModal.jsx';
 import AssignMaterialsModal from '../components/AssignMaterialsModal.jsx';
@@ -47,7 +49,6 @@ import IssueStrip, { IssueCounters } from '../components/studio/IssueStrip.jsx';
 import UnitIssueMarker from '../components/studio/UnitIssueMarker.jsx';
 // T84 F6 (CLAUDE.md PART D): the scene's edge.
 import SceneToggles from '../components/studio/SceneToggles.jsx';
-import SceneViewMenu from '../components/studio/SceneViewMenu.jsx';
 import CameraBar from '../components/studio/CameraBar.jsx';
 // T84 F7 (CLAUDE.md PART E): the rail's menus and the one Escape owner.
 import RailMenu from '../components/studio/RailMenus.jsx';
@@ -58,7 +59,7 @@ import { createDimensionSleep, dimensionsIdleMs } from '../lib/dimensionSleep.js
 import { getProjectType } from '../engine/projectTypes.js';
 // T75 F20 · a set job's first plus puts its set.
 import { shippedSet } from '../engine/sets.js';
-import { migrateDesign, resolveUnitDesign } from '../engine/design.js';
+import { migrateDesign } from '../engine/design.js';
 import { elementLabel } from '../engine/elements.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 import { flushCrashBuffer, useProjectStore } from '../stores/projectStore.js';
@@ -77,19 +78,7 @@ import { cncAssignmentWarning } from '../engine/bom.js';
 // T82 F12, after the review · a note is never a thing to look at before an export.
 import { findingsToAct } from '../engine/checks.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
-// TURN 40 (CLAUDE.md F5): a sheet is a WALL — the whole run, not one cabinet.
-// T71: the set (cover, plans, views per wall, perspective, visualisation, cut
-// list); the menu path binds it with the worktops and the scene's render too.
-import { visualAspect, wallDrawingSheets } from '../engine/drawings/wallSheets.js';
-import { renderJob } from '../engine/render.js';
-// TURN 42 (CLAUDE.md F0): `drawingErrorText` is the one sentence that is never
-// allowed to become the emptiness sentence — see drawingExport.js for why.
-import {
-  drawingErrorText,
-  exportBookletPdf, exportDrawingPdf, exportDrawingSvg,
-  exportWallDrawingsDxf, exportWallDrawingsPdf,
-} from '../lib/drawingExport.js';
+// T-CC1b F5 · the drawing roads of the deleted Output entries (the card, all units, the set) left with `onDrawing`.
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 // Turn 34 (CLAUDE.md F8): when Delete is the delete key, and not a character.
 import { isDeleteKey } from '../lib/deleteKey.js';
@@ -198,7 +187,6 @@ export default function ConfiguratorPage({ studio = false } = {}) {
   const units = useProjectStore((s) => s.units);
   const project = useProjectStore((s) => s.project);
   const allResults = useProjectStore((s) => s.allResults);
-  const worktopsOf = useProjectStore((s) => s.worktopsOf);
   const unitResult = useProjectStore((s) => s.unitResult);
   // CHAT FIX 17.10.2026: the CNC answer (the grooves cut in) for the part
   // numbers, the same one the sheet and the CNC tree read.
@@ -579,117 +567,10 @@ export default function ConfiguratorPage({ studio = false } = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [units, selectedUnitId, unitResult]);
 
-  /**
-   * Output ▸ Drawings (turn 7, CLAUDE.md F1).
-   *
-   * An entry that says "(PDF)" writes a PDF; the preview has its own entry and
-   * is the only one that opens a window. The SHEETS come from the engine
-   * (engine/drawings/card.js), which is the same code the preview renders, so
-   * the file and the screen cannot drift apart.
-   */
-  const onDrawing = useCallback((kind, e = null) => {
-    const anchor = anchorOfEvent(e);
-    if (kind === 'preview' || kind === 'front-elevation') { openModal('drawing', { kind, anchor }); return; }
-    // T-CC1a F8: a file leaves the app only after the one save (when the item is dirty).
-    if (saveFirst(() => onDrawing(kind, e))) return;
-    const date = new Date().toLocaleDateString();
-
-    if (kind === 'booklet') {
-      if (!guard('draw')) return;
-      try {
-        const sheets = projectBookletSheets({ entries: allResults(), project, profile, date });
-        const { filename, pages } = exportBookletPdf(sheets, { project: project.name });
-        notify(`Saved ${filename} — ${pages} pages.`, 'ok');
-      } catch (e) {
-        // T42-F0: an error is an error on every drawing path in this file.
-        // eslint-disable-next-line no-console
-        console.error('[booklet] export', e);
-        notify(drawingErrorText(e), 'warn');
-      }
-      return;
-    }
-
-    // ─── TURN 40 (CLAUDE.md F5): THE WALL SET ──────────────────────────────
-    //
-    // Not "of one unit": a wall drawing is of a WALL, so it needs no selection
-    // and it refuses only when the job is empty. The SHEETS are built once by
-    // the engine and bound twice — PDF here, DXF below — which is what "same
-    // geometry" means and is what stops the two files disagreeing about a wall
-    // after a correction.
-    // ─── TURN 42 (CLAUDE.md F0): AND THIS PATH STOPS RELABELLING TOO ───────
-    //
-    // The menu path DID catch and notify — but with `err.message || 'Nothing to
-    // draw yet.'`, so an error whose message is empty was reported to the
-    // joiner as an empty job. `drawingErrorText` has no such fallback: an error
-    // with no message is reported by its NAME, and the console carries the
-    // whole thing with its stack.
-    if (kind === 'walls' || kind === 'walls-dxf') {
-      if (!guard('draw')) return;
-      try {
-        // T71: the visualisation sheet's render, from the same rig as Output
-        // ▸ Render, when the scene is there to ask; without it the sheet binds
-        // with its frame empty and says so.
-        let renderImage = null;
-        if (renderRig && kind === 'walls') {
-          try {
-            const job = renderJob({
-              resolution: 'preview', preset: 'iso-left', shadows: profile.render.defaultShadows,
-              aspect: visualAspect(profile), bounds: renderRig.bounds(null), project: project.name, subject: 'set',
-            }, profile);
-            renderImage = renderRig.capture(job)?.dataUrl || null;
-          } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error('[wall drawings] the visualisation render failed', err);
-          }
-        }
-        const sheets = wallDrawingSheets({
-          entries: allResults(),
-          project,
-          room: project.room,
-          worktops: worktopsOf(),
-          renderImage,
-          frontTypeOf: (u) => resolveUnitDesign(u, project.design).frontType,
-          // T43-F2: the project's own shaker frame, on the menu path too — two
-          // callers, one number, or the PDF and the preview disagree about a
-          // door.
-          design: project.design,
-          profile,
-          date,
-        });
-        if (!sheets.length) { notify('No cabinet is standing against a wall yet.', 'warn'); return; }
-        if (kind === 'walls') {
-          const { filename, pages } = exportWallDrawingsPdf(sheets.map((x) => x.sheet), {
-            project: project.name,
-          });
-          notify(`Saved ${filename} — ${pages} sheets: ${sheets.map((x) => x.name).join(', ')}.`, 'ok');
-          return;
-        }
-        exportWallDrawingsDxf(sheets, { project: project.name })
-          .then(({ filename, files }) => notify(
-            `Saved ${filename} — ${files.length} DXF. AutoCAD only: do NOT open these in VCarve.`, 'ok',
-          ))
-          // eslint-disable-next-line no-console
-          .catch((err) => { console.error('[wall drawings] DXF', err); notify(drawingErrorText(err), 'warn'); });
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[wall drawings] export', err);
-        notify(drawingErrorText(err), 'warn');
-      }
-      return;
-    }
-
-    const unit = units.find((u) => u.id === selectedUnitId) || units[0] || null;
-    if (!unit) { notify('Select a unit first — a card is of one unit.', 'warn'); return; }
-    const result = unitResult(unit.id);
-    if (!result) { notify('This unit has nothing to draw yet.', 'warn'); return; }
-    const sheet = unitCardSheet({ result, unit, project, profile, date });
-    const args = { project: project.name, unit: unit.params.unit_num, view: 'unit-card' };
-    const { filename } = kind === 'unit-card-svg'
-      ? exportDrawingSvg(sheet, args)
-      : exportDrawingPdf(sheet, args);
-    notify(`Saved ${filename}.`, 'ok');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [units, selectedUnitId, unitResult, allResults, worktopsOf, renderRig, project, profile, openModal, notify]);
+  // T-CC1b F5 · the Output ▸ Drawings road (`onDrawing`: the unit card, its SVG, all units,
+  // the drawing set PDF and DXF) is deleted with its menu entries (*"usunac card 3D view i front
+  // only ... all units"*; *"Output tylko: cutting list, BOM PDF, labels 21 i 44"*, the owner,
+  // 01.11.2026): the set and its DXF leave from the Drawings window (DrawingModal.jsx).
 
   /** File ▸ Save as… — a copy under a new name. */
   const onSaveAs = useCallback(async (name) => {
@@ -714,7 +595,6 @@ export default function ConfiguratorPage({ studio = false } = {}) {
     sceneEdge: (
       <>
         <SceneToggles />
-        <SceneViewMenu />
         <CameraBar onDrawings={(e) => openModal('drawing', { kind: 'walls', anchor: anchorOfEvent(e) })} />
       </>
     ),
@@ -728,9 +608,6 @@ export default function ConfiguratorPage({ studio = false } = {}) {
         onExportCsv={onExportCsv}
         onExportPdf={onExportPdf}
         onExportLabels={onExportLabels}
-        onExportDxfZip={onExportDxfZip}
-        onRender={(e) => openModal('render', { anchor: anchorOfEvent(e) })}
-        onDrawing={onDrawing}
       />
     )}>
       <SceneSlot studio={studio}>
@@ -741,7 +618,8 @@ export default function ConfiguratorPage({ studio = false } = {}) {
         <div className="absolute inset-0 bg-canvas">
           <Scene onCaptureReady={onCaptureReady} onRenderReady={onRenderReady} />
         </div>
-        {viewMode === 'cnc' && <CncView />}
+        {/* T-CC1b F5.2: the CNC files leave from the CNC workspace's own "Export CNC / DXF". */}
+        {viewMode === 'cnc' && <CncView onExportDxfZip={onExportDxfZip} />}
         {!studio && <CanvasToolbar />}
 
         {/* ─── An empty room asks ONE question (turn 11, CLAUDE.md F4.2) ───
@@ -787,6 +665,8 @@ export default function ConfiguratorPage({ studio = false } = {}) {
             width/height path it stands next to is untouched. */}
         {modal === 'draw-room' && <DrawRoomModal />}
         {modal === 'warehouse' && <WarehouseModal />}
+        {/* T-CC1b F9.3: the rail's Materials > Stock... opens Joinery Core's stock, read-only. */}
+        {modal === 'jc-stock' && <JcStockModal />}
         {modal === 'design' && <DesignSettingsModal />}
         {/* Turn 22 (CLAUDE.md F2b.2 / F3): Database ▸ Company defaults. */}
         {modal === 'company-defaults' && <CompanyDefaultsModal />}

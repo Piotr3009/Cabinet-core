@@ -5562,7 +5562,7 @@ export const DEFAULT_CABINET_PROFILE = {
   // *"A project that has never been assigned opens with the defaults already in
   // place, not empty."*
   materials: {
-    // partId → material id (a `cc_materials` row), or { material_id, yield }.
+    // partId → material id (a Joinery Core `stock_items` row since T-CC1b F9), or { material_id, yield }.
     // Keys are `engine/partRegistry.js` ids; `seedFromDefaults()` ignores any
     // key the registry does not know, so a stale profile cannot inject a row.
     //
@@ -6023,7 +6023,9 @@ export const DEFAULT_CABINET_PROFILE = {
       // edge, by their ids in components/studio/SceneToggles.jsx; the owner may
       // swap one here. T86B F7: Dimensions FIRST, *"dimension powinien pojsc do
       // glownego paska"* (the owner, 30.10.2026, 21:54); the order PROPOSED.
-      sceneToggles: ['dimensions', 'xray', 'hideFronts', 'outlines', 'openAll'],
+      // T-CC1b F2 (*"dwa menu View, jedno wystarczy"*, the owner, 01.11.2026): the scene corner's dropdown is
+      // deleted, so the three it alone carried (Front dimensions, Props, Measure) stand on the quick toggles.
+      sceneToggles: ['dimensions', 'xray', 'hideFronts', 'outlines', 'openAll', 'frontDimensions', 'props', 'measure'],
       // The door window's conduct: 'dock-left' is T37's (sticky, the leaf it
       // follows, Escape off), and it is what the app does tonight. 'beside' is
       // the designer's recommendation (PROPOSED in CLAUDE.md THE NUMBERS) and

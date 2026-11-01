@@ -22,7 +22,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 
@@ -30,7 +30,8 @@ const ROOT = new URL('../', import.meta.url);
 const read = (rel) => readFileSync(new URL(rel, ROOT), 'utf8');
 const code = (text) => text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ').replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ');
 
-const VIEW = read('src/components/studio/SceneViewMenu.jsx');
+// AMENDED BY T-CC1b F2: SceneViewMenu.jsx is DELETED (*"dwa menu View, jedno wystarczy"*, the owner, 01.11.2026).
+const TOPBAR = read('src/components/TopBar.jsx');
 const TOGGLES = read('src/components/studio/SceneToggles.jsx');
 const WIZARD = read('src/components/WizardSettings.jsx');
 
@@ -41,8 +42,11 @@ function entry(source, id) {
   return m[1];
 }
 
-test('T86B F7 · five on the bar, Dimensions first, each a toggle the bar already knows', () => {
-  assert.deepEqual(P.ui.studio.sceneToggles, ['dimensions', 'xray', 'hideFronts', 'outlines', 'openAll']);
+// AMENDED BY T-CC1b F2 (law 3, SAME DOORS): the View dropdown is deleted; the three switches it alone
+// carried in the Studio (Front dimensions, Props, Measure) stand on the bar after the five, so nothing a
+// toggle or the View menu did is lost (*"tak te przyciski zostaja sa mega przydatne"*, the owner, 01.11.2026).
+test('T86B F7 · five on the bar, Dimensions first, each a toggle the bar already knows; T-CC1b F2 adds the dropdown\'s three after them', () => {
+  assert.deepEqual(P.ui.studio.sceneToggles, ['dimensions', 'xray', 'hideFronts', 'outlines', 'openAll', 'frontDimensions', 'props', 'measure']);
   const dims = entry(TOGGLES, 'dimensions');
   // The guard, label and hook it has (T84 F6), unchanged.
   assert.ok(dims.includes("hook: 'toggle-dimensions',"));
@@ -52,70 +56,53 @@ test('T86B F7 · five on the bar, Dimensions first, each a toggle the bar alread
   for (const id of P.ui.studio.sceneToggles) entry(TOGGLES, id);
 });
 
-test('T86B F7 · seven in the View popup and nothing else; no ink, no Dimensions there', () => {
-  assert.match(VIEW, /\nconst VIEW_ITEMS = Object\.freeze\(\[\s*'frontDimensions', 'props', 'measure',\s*'contourView', 'brightness', 'realisticLighting', 'light',\s*\]\)/);
-  assert.match(VIEW, /\{VIEW_ITEMS\.map\(item\)\}/);
-  assert.doesNotMatch(VIEW, /dimensionColour/, 'the ink left the popup whole');
-  assert.doesNotMatch(code(VIEW), /colourDisabled|colours|toggleDimensions|showDimensions/);
-  assert.doesNotMatch(code(VIEW), /\n {4}dimensions: \{/);
+// REWRITTEN BY T-CC1b F2: the popup is gone; its seven keep T84's guards, labels and sentences where
+// they live now: three on the quick toggles, four in the top bar's View menu.
+test('T86B F7 · the View popup is gone, no ink and no Dimensions anywhere but where T86B put them', () => {
+  assert.equal(existsSync(new URL('src/components/studio/SceneViewMenu.jsx', ROOT)), false);
 });
 
-test('T86B F7 · the seven keep T84\'s guards, labels and sentences byte for byte', () => {
-  const T84 = {
+test('T86B F7 · the seven keep T84\'s guards and sentences at their homes after T-CC1b F2', () => {
+  const ON_TOGGLES = {
     frontDimensions: [
-      "label: 'Front dimensions',",
-      'checked: showFrontDimensions,',
+      'pressed: showFrontDimensions,',
       "disabled: viewMode !== '3d',",
-      'run: toggleFrontDimensions,',
+      'onClick: toggleFrontDimensions,',
       "? 'Hide front dimensions: sizes, gaps and the merged run figure'",
       ": 'Show front dimensions: sizes, gaps and the merged run figure',",
     ],
     props: [
       "label: 'Props',",
-      'checked: props && propsReady,',
+      'pressed: props && propsReady,',
       "disabled: viewMode !== '3d' || contourView || !propsReady,",
-      'run: toggleProps,',
-      "? (props ? 'Take the props out of the drawers' : 'Dress the drawers: watches, belt rolls, folded ties')",
+      'onClick: toggleProps,',
       ': propsReason(propsPack),',
     ],
     measure: [
       "label: 'Measure',",
-      'checked: rulerOn,',
+      'pressed: rulerOn,',
       "disabled: viewMode !== '3d',",
-      'run: toggleRuler,',
+      'onClick: toggleRuler,',
       "? 'Measuring: click two points to read the distance. Escape clears, then closes.'",
-      ": 'Measure between two points on the drawing',",
-    ],
-    contourView: [
-      "label: 'Contour view',",
-      'checked: contourView,',
-      "disabled: viewMode !== '3d',",
-      'run: toggleContourView,',
-      "title: 'Presentation mode: outlines only. Changes nothing in the BOM.',",
-    ],
-    realisticLighting: [
-      "label: 'Realistic lighting',",
-      'checked: realisticLighting,',
-      "disabled: viewMode !== '3d',",
-      'run: toggleRealisticLighting,',
-      "title: 'Environment reflections and contact shadows. Turn it off if the view feels heavy: a render is unaffected.',",
-    ],
-    light: [
-      "label: 'Turn on the light',",
-      'checked: lightOn,',
-      "disabled: viewMode !== '3d',",
-      'run: () => setLighting({ on: !lightOn }),',
-      "title: \"Internal lights ON: the room dims and the placed LEDs shine. The same switch as the Lighting panel's ON / OFF.\",",
     ],
   };
-  for (const [id, lines] of Object.entries(T84)) {
-    const mine = entry(VIEW, id);
+  for (const [id, lines] of Object.entries(ON_TOGGLES)) {
+    const mine = entry(TOGGLES, id);
     for (const line of lines) assert.ok(mine.includes(line), `${id}: "${line}" changed`);
   }
-  // Brightness: the slider as T84 left it.
-  assert.match(VIEW, /title="Scales every light in the room together\. The balance between them does not move\."/);
-  assert.match(VIEW, /min=\{range\.min\}\s*max=\{range\.max\}\s*step=\{range\.step\}\s*value=\{brightness\}\s*disabled=\{viewMode !== '3d'\}/);
-  assert.match(VIEW, /onChange=\{\(e\) => setBrightness\(Number\(e\.target\.value\)\)\}/);
+  // The four of the top bar's View menu, with the guard each had there.
+  for (const [label, guard, run] of [
+    ['Contour view', "viewMode !== '3d'", 'toggleContourView'],
+    ['Realistic lighting', "viewMode !== '3d'", 'toggleRealisticLighting'],
+    ['Turn on the light', "viewMode !== '3d'", '() => setLighting({ on: !lightOn })'],
+    ['Brightness', "viewMode !== '3d'", 'setBrightness'],
+  ]) {
+    const at = TOPBAR.indexOf(`label: '${label}'`);
+    assert.ok(at > 0, `TopBar has no ${label}`);
+    const body = TOPBAR.slice(at, at + 900);
+    assert.ok(body.includes(`disabled: ${guard},`), `${label}: its guard`);
+    assert.ok(body.includes(`run: ${run},`), `${label}: its run`);
+  }
 });
 
 test('T86B F7 · Settings holds ONE Dimension colour row under settings.dimensions, through the store\'s action', () => {

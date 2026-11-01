@@ -309,7 +309,9 @@ test('T79 F14 LISP: D.2c sits after D.2b and before D.3, with every routine the 
   assert.equal(min, 0);
 });
 
-test('T79 F14 LISP: the owner\'s words, the four joints, the outside face, the flush that is not, the bottom left alone', () => {
+// CHAT FIX 31.10.2026: THE TOPS ARE FLUSH (D.2c amended; the owner, 31.10.2026: *"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa"*): the wall stands on the groove's upper edge, its top edge
+// the side's, dTop = 0. "THE TOPS ARE NOT FLUSH" and "- dTop" were the file's words until that day.
+test('T79 F14 LISP: the owner\'s words, the four joints, the outside face, the flush tops, the bottom left alone', () => {
   assert.match(flat, /jak mamy wybrane jakakolwiek funkcje laczenia czy dog bones czy inne zawsze projektuj cabineo na szuflady/);
   assert.match(flat, /cabineo musi byc na frontowej i tylnej sciance, czyli nawiercanie w bokach bedzie liczone od gory boxa/);
   assert.match(flat, /przy wysokich nie rozsuwaj/);
@@ -317,8 +319,11 @@ test('T79 F14 LISP: the owner\'s words, the four joints, the outside face, the f
   assert.match(flat, /FOUR JOINTS PER BOX: SL-BF, SR-BF, SL-BB, SR-BB/);
   for (const name of ['SL-BF', 'SR-BF', 'SL-BB', 'SR-BB']) assert.equal((text.match(new RegExp(`\\(cabineo-box-joint "${name}"`, 'g')) || []).length, 2, `${name} in both frames`);
   assert.match(text, /\(cons "face" "outside"\)/);
-  assert.match(flat, /THE TOPS ARE NOT FLUSH/);
-  assert.match(flat, /boxWallY \+ hw = boxY \+ sideH - dTop/);
+  assert.match(flat, /THE TOPS ARE FLUSH/);
+  assert.doesNotMatch(flat, /THE TOPS ARE NOT FLUSH/);
+  assert.match(flat, /boxWallY \+ hw = boxY \+ sideH \(dTop = 0\)/);
+  assert.match(flat, /powinny byc przesuniete o 1 mm do gory boxa/);
+  assert.match(text, /\(setq hw \(- sideH 15\.0 GB 1\.0\) dTop 0\.0\)/, 'the command measures dTop 0');
   assert.match(flat, /The BOTTOM slides into the sides' groove and carries nothing of this section/);
   assert.match(flat, /so the box keeps no Cabineo/);
   assert.match(text, /under the owner's minimum/);
@@ -329,19 +334,19 @@ test('T79 F14 LISP: the owner\'s words, the four joints, the outside face, the f
 test('T79 F14 LISP: H.1 re-computed by the D.2c rule, to the decimal (the BUDR default and a wardrobe wall of 90)', () => {
   const s = text.slice(text.indexOf(';;; H.1 THE DRAWER BOX'));
   const f = s.replace(/\n;;;+\s*/g, ' ').replace(/\s+/g, ' ');
-  // The kits' arithmetic: hw = side - 15 - 18 - 1, the wall's top 1 under the side's.
+  // The kits' arithmetic: hw = side - 15 - 18 - 1; 31.10.2026: the wall's top IS the side's top (the 1 is the bottom's play).
   const BUDR = [[237, 203], [178, 144], [118, 84]];
   for (const [side, hw] of BUDR) assert.equal(side - 15 - 18 - 1, hw);
-  assert.match(f, /boxY 31\.5, the wall's lower edge 64\.5 \(= 31\.5 \+ 15 \+ 18\), the wall's top 267\.5, the side's top 268\.5: boxWallY \+ hw = boxY \+ sideH - 1/);
-  assert.equal(31.5 + 15 + 18 + 203, 267.5);
+  assert.match(f, /boxY 31\.5, the wall's lower edge 65\.5 \(= 31\.5 \+ 15 \+ 18 \+ 1, the groove's upper edge\), the wall's top 268\.5 = the side's top: boxWallY \+ hw = boxY \+ sideH/);
+  assert.equal(31.5 + 15 + 18 + 1 + 203, 268.5);
   assert.equal(31.5 + 237, 268.5);
-  // D1: two per joint at 25 and 178; the pockets at hw - off, the holes at (side - 1) - off.
+  // D1: two per joint at 25 and 178; the pockets at hw - off, the holes at side - off (the owner, 31.10.2026: *"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa"*).
   assert.deepEqual(boxPositions(203), [25, 178]);
   assert.match(f, /TWO per joint, at 25 and 178 from the wall's top/);
   assert.deepEqual(boxPositions(203).map((o) => 203 - o), [178, 25]);
   assert.match(f, /pocket axes x = 203 - 25 = 178 and 203 - 178 = 25/);
-  assert.deepEqual(boxPositions(203).map((o) => 236 - o), [211, 58]);
-  assert.match(f, /x = 236 - 25 = 211 and 236 - 178 = 58/);
+  assert.deepEqual(boxPositions(203).map((o) => 237 - o), [212, 59]);
+  assert.match(f, /x = 237 - 25 = 212 and 237 - 178 = 59/);
   for (const c of [3.6, 14.8, 26]) assert.ok(f.includes(String(+(518 - c).toFixed(1))), `SR end lobe ${518 - c}`);
   assert.match(f, /skims x 169\.65 \.\. 186\.35 and 16\.65 \.\. 33\.35, y 0 \.\. 34\.35/);
   assert.equal(+(178 - 8.35).toFixed(2), 169.65);
@@ -351,24 +356,24 @@ test('T79 F14 LISP: H.1 re-computed by the D.2c rule, to the decimal (the BUDR d
   assert.equal(490 - 5.5, 484.5);
   // D2 and D3: 25 and 119; ONE at 42.
   assert.deepEqual(boxPositions(144), [25, 119]);
-  assert.match(f, /holes x 177 - 25 = 152 and 177 - 119 = 58/);
+  assert.match(f, /holes x 178 - 25 = 153 and 178 - 119 = 59/);
   assert.deepEqual(boxPositions(84), [42]);
   assert.match(f, /ONE per joint at 42; pocket axis x 42 \(EXPORT x' = 84 - 42 = 42\)/);
-  assert.match(f, /holes x 117 - 42 = 75/);
+  assert.match(f, /holes x 118 - 42 = 76/);
   // The counts: 8 + 8 + 4.
   const n = BUDR.reduce((sum, [, hw]) => sum + 4 * boxPositions(hw).length, 0);
   assert.equal(n, 20);
   assert.match(f, /12 joints, 20 pockets \(60 dia 15 holes, 20 skims\), 20 dia 5 holes, 20 x Cabineo 12/);
-  // The wardrobe wall of 90 (a 160 front): one at 45; the holes at 123 - 45 = 78.
+  // The wardrobe wall of 90 (a 160 front): one at 45; the holes at 124 - 45 = 79 (flush, 31.10.2026).
   assert.equal(160 - 36, 124);
   assert.equal(124 - 15 - 18 - 1, 90);
   assert.deepEqual(boxPositions(90), [45]);
   assert.match(f, /hw 90 <= 100: ONE per joint at 45 from the wall's top/);
-  assert.match(f, /holes at y = 123 - 45 = 78/);
+  assert.match(f, /holes at y = 124 - 45 = 79/);
   assert.match(f, /\(1018\.4, 45\) \(1007\.2, 45\) \(996, 45\)/);
-  // The default 200 front: wall 130, 25 and 105, holes 138 and 58.
+  // The default 200 front: wall 130, 25 and 105, holes 139 and 59.
   assert.deepEqual(boxPositions(130), [25, 105]);
-  assert.match(f, /holes y 163 - 25 = 138 and 163 - 105 = 58/);
+  assert.match(f, /holes y 164 - 25 = 139 and 164 - 105 = 59/);
   // The thresholds.
   assert.deepEqual(boxPositions(100), [50]);
   assert.deepEqual(boxPositions(101), [25, 76]);

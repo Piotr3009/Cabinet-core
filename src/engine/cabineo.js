@@ -1728,8 +1728,11 @@ export function cabineoOperationsManifest(entries = [], { files = [] } = {}) {
 // face (machinedFace 'outside', OUTSIDE FACE UP) and the side the dia 5 hole
 // in its inside face; four joints a box; one connector a joint to a 100 wall,
 // two above at 25 from the wall's top and bottom edges, measured from the
-// TOP, the side's holes at the same heights (the kits leave the wall 1 mm
-// under the side's top, `dTop`, and the holes add it).
+// TOP, the side's holes at the same heights. CHAT FIX 31.10.2026: the wall's
+// top edge IS the side's top edge (`dTop` measures 0 off the boxes; it
+// measured 1 while engine/cabinet.js stood the wall on the bottom board, and
+// the holes sat 1 low: the owner, *"dziurki 5 mm ... powinny byc przesuniete
+// o 1 mm do gory boxa"*); the kit's 1 is the bottom's play in its groove.
 //
 // THE GATE is the unit NAMING a joint system (`boxCabineoAsked`): every unit
 // a person builds names one (`projectStore.js paramsForEngine` hands the
@@ -1790,8 +1793,9 @@ export function isBoxJoint(jt) {
  * cabineo-box-table: the four joints of one box (SL-BF, SR-BF, SL-BB, SR-BB),
  * in the frames the kits draw the boards in: `rotated` (KIT_BUDR_FULL: x up
  * every board) or not (KIT_WARDROBE_FULL: x along every board). `dTop` is the
- * side's top above the wall's top, `ax` the screw axis inside the wall's
- * outside face; the side's holes stand ax from its end.
+ * side's top above the wall's top (0 since 31.10.2026, the tops flush; read off
+ * the boxes, never typed), `ax` the screw axis inside the wall's outside face;
+ * the side's holes stand ax from its end.
  */
 export function cabineoBoxJointTable(sideL, sideH, wallL, hw, dTop, GB, ax, rotated) {
   const L = Number(sideL); const H = Number(sideH); const WL = Number(wallL); const h = Number(hw);

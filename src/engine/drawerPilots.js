@@ -31,6 +31,13 @@
 // self-consistent; the engine anchored the box on the SCREW row and hung every
 // drawer in the app 38 mm high.
 //
+// CHAT FIX 31.10.2026: the box front stands on the upper edge of the bottom's
+// groove, 1 above the bottom board (the owner, putting a side and a wall
+// together: *"dziurki 5 mm byly za nisko ... powinny byc przesuniete o 1 mm do
+// gory boxa"*), so the chain reads 13.5 + 15 + 18 + 1 + 50 = 97.5 (94.5 on the
+// wardrobe's first drawer); both kits were amended the same night and the
+// quotations above record the numbers they carried until then.
+//
 // WHERE THE ENGINE DRILLS, THIS READS THE DRILLING. The BUDR family's façades
 // and box fronts carry real holes and their real coordinates are what comes
 // back. The wardrobe's internal drawer front and box front are drilled by the

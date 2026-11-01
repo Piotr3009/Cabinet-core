@@ -6,7 +6,8 @@
     "source": "KIT_WUD_FULL.lsp (the carcass, hole for hole) and KIT_BUDR_FULL.lsp (one drawer) at 1000 x 160 x 568",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "31.10.2026: the drawer box walls stand on the upper edge of the bottom's groove, FLUSH with the sides' top (the kit's 1 is the bottom's play); every DRAWER-BOX-FRONT and DRAWER-BOX-BACK box.y + 1, no cut, no hole, no row moved (the two Cabineo box goldens: the sides' dia 5 holes 1 higher as well, 25 under the side's top and 25 above the groove). The owner, 31.10.2026: \"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa\"; 18.10.2026: \"nawiercanie w bokach bedzie liczone od gory boxa\""
   },
   "params": {
     "type": "WARDROBE_DESK",
@@ -189,7 +190,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 525,
           "w": 918,
           "h": 71.5,
@@ -209,7 +210,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 53,
           "w": 918,
           "h": 71.5,

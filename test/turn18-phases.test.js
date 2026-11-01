@@ -271,7 +271,14 @@ test('F3.3 — the arithmetic closes: the bottom enters each side 6.5 mm', () =>
   }
 });
 
-test('F3.4 — the front and the back of the box STAND ON the bottom', () => {
+// CHAT FIX 31.10.2026: the front and the back stand on the upper edge of the
+// bottom's GROOVE, flush with the sides' top; the bottom slides in under them on
+// the kit's 1 mm of play. The owner, putting a side and a wall together:
+// *"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo
+// mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa"*. Until
+// that day this test held them ON the bottom board with the millimetre of air
+// at the top.
+test('F3.4 — the front and the back of the box stand on the groove\'s upper edge, flush with the sides\' top', () => {
   for (const [kit, extra] of [['BUDR', {}], ['WARDROBE', { drawers: 2 }]]) {
     const r = unit(kit, extra);
     const of = (suffix) => r.panels.find((p) => p.id === `D1-${suffix}`);
@@ -280,13 +287,13 @@ test('F3.4 — the front and the back of the box STAND ON the bottom', () => {
     const boxFront = of('BF');
     assert.equal(bottom.box.y, side.box.y + P.baseDrawerUnit.runnerPocketWidth,
       `${kit}: the bottom stands IN the groove, 15 above the side’s bottom edge`);
-    assert.equal(boxFront.box.y, bottom.box.y + bottom.box.h,
-      `${kit}: and the front stands ON the bottom`);
-    // …which is exactly what `side − 15 − G − 1` has always meant.
+    assert.equal(boxFront.box.y, bottom.box.y + bottom.box.h + P.baseDrawerUnit.boxFrontHeightExtra,
+      `${kit}: and the front stands on the groove's upper edge, the bottom's play under it`);
+    // …which is exactly what `side − 15 − G − 1` has always meant: flush at the top.
     assert.equal(
       side.box.y + side.box.h - (boxFront.box.y + boxFront.box.h),
-      P.baseDrawerUnit.boxFrontHeightExtra,
-      `${kit}: one millimetre of air at the top`,
+      0,
+      `${kit}: the wall's top edge is the side's`,
     );
   }
 });

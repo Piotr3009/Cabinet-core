@@ -6,7 +6,8 @@
     "source": "T83 F7 (V2). KIT_VANITY.lsp D28 THE TRAP'S GAP on VANITY3 900 x 600 x 500, columns 2, one basin: the gap 350..550 centred on the waste at 450; Z1D3 at x 23 and Z2D3 at x 550, 327 wide, walls 291, bottoms 304; the fronts 447 at x 1.5 and 451.5 unchanged; the SHORT DIVIDER at x 441, 18 x 382 x 482, to the top row's runner underside at 400; no U; #39 RUNNERS. The owner, 25.10.2026 (22:41): *\"zmniejszmy szuflady na szerokosc, tylko fronty zostawmy szerokie i pomiedzy szufladami zrobi sie miejsce na syfon (tylko gorna row)\"*.",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "31.10.2026: the drawer box walls stand on the upper edge of the bottom's groove, FLUSH with the sides' top (the kit's 1 is the bottom's play); every DRAWER-BOX-FRONT and DRAWER-BOX-BACK box.y + 1, no cut, no hole, no row moved (the two Cabineo box goldens: the sides' dia 5 holes 1 higher as well, 25 under the side's top and 25 above the groove). The owner, 31.10.2026: \"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa\"; 18.10.2026: \"nawiercanie w bokach bedzie liczone od gory boxa\""
   },
   "params": {
     "type": "VANITY3",
@@ -464,7 +465,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 457,
           "w": 377,
           "h": 104,
@@ -484,7 +485,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 85,
           "w": 377,
           "h": 104,
@@ -504,7 +505,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 246.5,
+          "y": 247.5,
           "z": 457,
           "w": 377,
           "h": 104,
@@ -524,7 +525,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 246.5,
+          "y": 247.5,
           "z": 85,
           "w": 377,
           "h": 104,
@@ -544,7 +545,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 446.5,
+          "y": 447.5,
           "z": 457,
           "w": 291,
           "h": 104,
@@ -564,7 +565,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 446.5,
+          "y": 447.5,
           "z": 85,
           "w": 291,
           "h": 104,
@@ -584,7 +585,7 @@
         "thickness": 18,
         "box": {
           "x": 482,
-          "y": 64.5,
+          "y": 65.5,
           "z": 457,
           "w": 377,
           "h": 104,
@@ -604,7 +605,7 @@
         "thickness": 18,
         "box": {
           "x": 482,
-          "y": 64.5,
+          "y": 65.5,
           "z": 85,
           "w": 377,
           "h": 104,
@@ -624,7 +625,7 @@
         "thickness": 18,
         "box": {
           "x": 482,
-          "y": 246.5,
+          "y": 247.5,
           "z": 457,
           "w": 377,
           "h": 104,
@@ -644,7 +645,7 @@
         "thickness": 18,
         "box": {
           "x": 482,
-          "y": 246.5,
+          "y": 247.5,
           "z": 85,
           "w": 377,
           "h": 104,
@@ -664,7 +665,7 @@
         "thickness": 18,
         "box": {
           "x": 568,
-          "y": 446.5,
+          "y": 447.5,
           "z": 457,
           "w": 291,
           "h": 104,
@@ -684,7 +685,7 @@
         "thickness": 18,
         "box": {
           "x": 568,
-          "y": 446.5,
+          "y": 447.5,
           "z": 85,
           "w": 291,
           "h": 104,

@@ -523,9 +523,10 @@
   (drawRect "DRAWER_FRONT_OUTLINE" x0 y0 (+ x0 szer) (+ y0 wys))
   (setq holeX1 (+ x0 50.0 (* 2.0 G) 3.5))
   (setq holeX2 (- (+ x0 szer) 50.0 (* 2.0 G) 3.5))
+  ;; CHAT FIX 31.10.2026: 97.5 (96.5 until that day): 31.10.2026, the owner, putting a side and a wall together: "dziurki 5 mm byly za nisko ... powinny byc przesuniete o 1 mm do gory boxa"; the wall stands on the groove's upper edge, flush with the sides' top, so its pilots at 50 above its lower edge stand 1 higher too.
   (if (= drawerNum 1)
-    (setq holeY (+ y0 96.5 G))
-    (setq holeY (+ y0 96.5)))
+    (setq holeY (+ y0 97.5 G))
+    (setq holeY (+ y0 97.5)))
   (drawCircle "FRONT_HINGES_3MM" holeX1 holeY 1.5)
   (drawCircle "FRONT_HINGES_3MM" holeX2 holeY 1.5)
   (drawText "UNIT_NUMBER" midX midY 40.0 (strcat unitNum "-F" (itoa drawerNum))))

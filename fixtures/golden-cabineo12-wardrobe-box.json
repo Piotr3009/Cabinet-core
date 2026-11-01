@@ -6,7 +6,8 @@
     "source": "SKYLON_JOINTS_CABINEO.lsp D.2c (H.1, the wardrobe at its default 200 front: walls 130, two a joint at 25 and 105, 24 x Cabineo 12) and D.2 / D.2b (the carcass on Cabineo 12) on KIT_WARDROBE_FULL.lsp, WARDROBE 1200, three internal drawers",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "31.10.2026: the drawer box walls stand on the upper edge of the bottom's groove, FLUSH with the sides' top (the kit's 1 is the bottom's play); every DRAWER-BOX-FRONT and DRAWER-BOX-BACK box.y + 1, no cut, no hole, no row moved (the two Cabineo box goldens: the sides' dia 5 holes 1 higher as well, 25 under the side's top and 25 above the groove). The owner, 31.10.2026: \"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa\"; 18.10.2026: \"nawiercanie w bokach bedzie liczone od gory boxa\""
   },
   "params": {
     "type": "WARDROBE",
@@ -364,7 +365,7 @@
         "thickness": 18,
         "box": {
           "x": 89,
-          "y": 64.5,
+          "y": 65.5,
           "z": 475,
           "w": 1022,
           "h": 130,
@@ -384,7 +385,7 @@
         "thickness": 18,
         "box": {
           "x": 89,
-          "y": 64.5,
+          "y": 65.5,
           "z": 53,
           "w": 1022,
           "h": 130,
@@ -464,7 +465,7 @@
         "thickness": 18,
         "box": {
           "x": 89,
-          "y": 267.5,
+          "y": 268.5,
           "z": 475,
           "w": 1022,
           "h": 130,
@@ -484,7 +485,7 @@
         "thickness": 18,
         "box": {
           "x": 89,
-          "y": 267.5,
+          "y": 268.5,
           "z": 53,
           "w": 1022,
           "h": 130,
@@ -564,7 +565,7 @@
         "thickness": 18,
         "box": {
           "x": 89,
-          "y": 470.5,
+          "y": 471.5,
           "z": 475,
           "w": 1022,
           "h": 130,
@@ -584,7 +585,7 @@
         "thickness": 18,
         "box": {
           "x": 89,
-          "y": 470.5,
+          "y": 471.5,
           "z": 53,
           "w": 1022,
           "h": 130,

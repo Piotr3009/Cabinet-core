@@ -66,14 +66,24 @@ const unitText = (i, labels) => buildUnitDxfFiles(results[i], P, labels ? { labe
 // WARDROBE 0ff434a1 / 978637bc, BUD 7dfd770b / aa9ae6f6, WUD 736e9170 / 6bd81c86,
 // BUDR 4e1c176f / f2de53f7, BUDR4 3d7ecad5 / d5f12948, PANTRY a5a5e3ed / 6c59ed23,
 // SHEET ae6690f0 / 5ecdd099.
+// CHAT FIX 31.10.2026 (the same night, the box): THE FACADE PILOTS FOLLOW THE
+// BOX WALL (the owner, putting a side and a wall together: *"dziurki 5 mm byly
+// za nisko ... powinny byc przesuniete o 1 mm do gory boxa"*): the wall stands
+// on the groove's upper edge, flush with the sides' top, and the drawer fronts'
+// FRONT_HINGES_3MM circles stand 97.5 (115.5 on drawer 1) instead of 96.5
+// (114.5): BUDR (six circles), BUDR4 (eight) and the material sheet move, each
+// circle exactly 1 up and no other entity (verify/chatfix-3110/box-flush.md);
+// WARDROBE, BUD, WUD and PANTRY (inner fronts, no facade pilots) hold. The
+// values until then: BUDR 4ba30eba / bc218000, BUDR4 4e3146bc / f8893c2e,
+// SHEET 8f498c0e / 95d3bc16.
 const BEFORE = {
   WARDROBE: { plain: '5325178ccdbaf1d76a18b4e6d18f79a81143c0d249fa6d5c0804314011a7c15b', plan: '52acee84fe54b0a7f3f5b26b2ceae6a9f206091d9b3aac21709588db2230745e' },
   BUD: { plain: '8825fbd7279d9759c61d06b191eb84ec25dbc25081ed994e35f58932ef377636', plan: 'd8269135faf02d837c4588ba43ac792f5c2242bab4c4a7be19a3effed677c3ce' },
   WUD: { plain: 'fe391c4d7d6997195656feb9a958c7b33d58caa10d9c2f6edceeba5e7d2209e3', plan: 'e608d3859eb9c5931bd932c34a0ddeda985e7a7da463d6c265c89bf6ee335a55' },
-  BUDR: { plain: '4ba30eba5da915af3ca7285f7e0f04ae1284bc65c15c5d38f007ab795f01095d', plan: 'bc218000781c360086adfdadef4d10064217769480b93fd723ac9717005e0885' },
-  BUDR4: { plain: '4e3146bcedae4bd16bb9fedecf02b3ae4420826adebab6569f05baa81f64dafe', plan: 'f8893c2ee40b95b89fe3038fe7bf4396cd5532ade432d9668d003fa1c3f4ee1c' },
+  BUDR: { plain: 'd8623ce078693bab4344b801c457f67f3367ecd6e6f4f37127a8c9baca696c22', plan: '56dd37d38ef46cdf52eeb5f04e476610e2fc1ff63ce0c13eaefab948aadeee30' },
+  BUDR4: { plain: '796a57e5430a27f92328f746eab6b00386d6440353c8c4a0cde5d5143680b57a', plan: '1bb3d6c8894536514b1111436bb4e4605aa1ac22d5924f2d936be090706808d5' },
   PANTRY: { plain: 'd9b0686ef9e952ef0449deeaa929cc94bc96835cfd7c46553b7cd0038f08e2ed', plan: 'dea72766b4d4a6b885deb5bb696c01d3cc06a2e60701dce448ffbc1fa431ec05' },
-  SHEET: { plain: '8f498c0eb3fe2b6d00383f49f2403ef6e03437182e19871efbe16a16f4b5adbe', plan: '95d3bc166aa31983569c611909ce060541e5d9847d07ce78c28547d1dda7f5d2' },
+  SHEET: { plain: '3498f025d35812f913b65b21c68c15cab9bc8a429474f89a57d49e1294323970', plan: '7168087302da61dc58758475c876d1164f5e92972a46c06e31a8b9d8d3594a4d' },
 };
 
 /** The file's group pairs, as written (the writer pads no code). */

@@ -6,7 +6,8 @@
     "source": "A WARDROBE_CHEST3 1200 x 600 x 900 on a plinth 100, standing on face A of a chest island, variant B (a second chest back to back on face C): PLINTH 1100 at z 532, PLINTH-L and PLINTH-R 532 long 50 inside the sides, to the carcass back; no back board. *\"chest powinna byc mozliwosc odsuniecia od sciany ale nie na zasadzie back move tylko powinna byc mozliwosc na srodku pokoju cos jak wyspa ale przez grab i move; i dodanie panela z tylu lub polaczenie szuflad z 2 stron\"* (22:52); *\"nie koniecznie nawis, nawis jako opcja prosze; 1 - oba\"* (22:56) (the owner, 30.10.2026)",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "31.10.2026: the drawer box walls stand on the upper edge of the bottom's groove, FLUSH with the sides' top (the kit's 1 is the bottom's play); every DRAWER-BOX-FRONT and DRAWER-BOX-BACK box.y + 1, no cut, no hole, no row moved (the two Cabineo box goldens: the sides' dia 5 holes 1 higher as well, 25 under the side's top and 25 above the groove). The owner, 31.10.2026: \"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa\"; 18.10.2026: \"nawiercanie w bokach bedzie liczone od gory boxa\""
   },
   "params": {
     "type": "WARDROBE_CHEST3",
@@ -290,7 +291,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 557,
           "w": 1118,
           "h": 243,
@@ -310,7 +311,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 35,
           "w": 1118,
           "h": 243,
@@ -330,7 +331,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 445.5,
+          "y": 446.5,
           "z": 557,
           "w": 1118,
           "h": 174,
@@ -350,7 +351,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 445.5,
+          "y": 446.5,
           "z": 35,
           "w": 1118,
           "h": 174,
@@ -370,7 +371,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 745.5,
+          "y": 746.5,
           "z": 557,
           "w": 1118,
           "h": 105,
@@ -390,7 +391,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 745.5,
+          "y": 746.5,
           "z": 35,
           "w": 1118,
           "h": 105,

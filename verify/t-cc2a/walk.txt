@@ -1,11 +1,11 @@
 T-CC2a . THE WALK (scripts/t-cc2a-walk.mjs)
-HEAD e414ac5c . 2026-11-01T15:18:15.803Z . the built app (vite preview 4173) behind the fake Joinery Core (http://127.0.0.1:4391)
+HEAD 960fa83e . 2026-11-01T15:37:39.886Z . the built app (vite preview 4173) behind the fake Joinery Core (http://127.0.0.1:4391)
 Every line PASS or FAIL with the number expected and the number read; a FAIL is written down, never patched.
 
 
 == station a ==
 PASS  [a] sign in as admin (a real click on the fake's login): the list of Joinery Core | expect: projects listed | read: 3
-NOTE  [a] the build walked (data-build-stamp) and the app files changed between it and HEAD | {"stamp":"#1236 . 2026-11-01 14:56 UTC . fe173a33","head":"e414ac5c","srcDelta":"none"}
+NOTE  [a] the build walked (data-build-stamp) and the app files changed between it and HEAD | {"stamp":"#1240 . 2026-11-01 15:36 UTC . e8f9633e","head":"960fa83e","srcDelta":"src/components/LinkMaterialsModal.jsx | 6 +++---\n src/components/studio/RailMenus.jsx   | 3 ++-\n src/lib/jcLinks.js                    | 7 +++++--\n 3 files changed, 10 insertions(+), 6 deletions(-)"}
 FRAME [a] f11-new-item.png
 FRAME [a] f11-new-item-front.png
 NOTE  [a] the New item flow by hand (T-CC1a's, the primary pressed, an empty Stock board select given its first option) | Confirm project & continue > Confirm space & continue > Confirm section & continue > Next - Carcass 1 - board and sheet > carcass:c1=generic-18 > Next - What was chosen > Confirm section & continue > Next - Front 1 - colour, board and sheet > front:f1=generic-18 > Next - Shape, opening and shine > Confirm section & continue > Confirm section & continue > Confirm section & continue > Confirm & review project > Start designing
@@ -41,7 +41,7 @@ PASS  [c] nothing saved on Accept alone (law 8) | expect: 0 | read: 0
 PASS  [c] Save link with the width empty (the mouse on it): refused in words, nothing sent | expect: Save disabled, "Type the sheet's width and length...", 0 calls, Not linked | read: {"disabled":true,"hint":"Type the sheet's width and length: Cabinet Core counts the sheets to buy from them.","calls":0,"status":"not-linked"}
 FRAME [c] f09-suggestion-form.png
 PASS  [c] type 1220 and 2440, Save link: the row reads "Linked" | expect: linked, Linked | read: {"status":"linked","words":"Linked"}
-PASS  [c] the fake holds the link: sheet.egger.h3325_28.18 to row 10, 1220 x 2440 | expect: 5e0c4b1a-7f2d-4c3e-9a8b-000000000010, 1220, 2440 | read: {"cc_material_id":"sheet.egger.h3325_28.18","stock_item_id":"5e0c4b1a-7f2d-4c3e-9a8b-000000000010","yield":1.1,"sheet_width_mm":1220,"sheet_length_mm":2440,"coverage_m2_per_l":null,"updated_by":"usr-admin","updated_at":"2026-11-01T15:19:38.510Z"}
+PASS  [c] the fake holds the link: sheet.egger.h3325_28.18 to row 10, 1220 x 2440 | expect: 5e0c4b1a-7f2d-4c3e-9a8b-000000000010, 1220, 2440 | read: {"cc_material_id":"sheet.egger.h3325_28.18","stock_item_id":"5e0c4b1a-7f2d-4c3e-9a8b-000000000010","yield":1.1,"sheet_width_mm":1220,"sheet_length_mm":2440,"coverage_m2_per_l":null,"updated_by":"usr-admin","updated_at":"2026-11-01T15:38:59.451Z"}
 NOTE  [c] the yield the form sent with the prefilled offcut (10 %) | 1.1
 FRAME [c] f09-suggestion-linked.png
 PASS  [c] the clear cross (a real click) empties the search and the list comes back whole | expect: q "", rows > 4, cross gone | read: {"q":"","rows":340,"cross":false}
@@ -51,14 +51,14 @@ PASS  [d] the MDF brand, the 22 mm row chosen (a real click): selected, "Linking
 PASS  [d] Link on the stock row "MDF 22 mm" (row 3): the sheet form, to MDF 22 mm | expect: sheet, MDF 22 mm | read: {"kind":"sheet","to":"MDF 22 mm"}
 FRAME [d] f08-link-sheet-form.png
 PASS  [d] 1220 x 2440, offcut 10 %, Save link: the row reads "Linked" | expect: linked, Linked | read: {"status":"linked","words":"Linked"}
-PASS  [d] the fake holds sheet.mdf.22 to row 3, 1220 x 2440, yield 1.1 | expect: 5e0c4b1a-7f2d-4c3e-9a8b-000000000003, 1220, 2440, yield 1.1 | read: {"cc_material_id":"sheet.mdf.22","stock_item_id":"5e0c4b1a-7f2d-4c3e-9a8b-000000000003","yield":1.1,"sheet_width_mm":1220,"sheet_length_mm":2440,"coverage_m2_per_l":null,"updated_by":"usr-admin","updated_at":"2026-11-01T15:20:10.663Z"}
+PASS  [d] the fake holds sheet.mdf.22 to row 3, 1220 x 2440, yield 1.1 | expect: 5e0c4b1a-7f2d-4c3e-9a8b-000000000003, 1220, 2440, yield 1.1 | read: {"cc_material_id":"sheet.mdf.22","stock_item_id":"5e0c4b1a-7f2d-4c3e-9a8b-000000000003","yield":1.1,"sheet_width_mm":1220,"sheet_length_mm":2440,"coverage_m2_per_l":null,"updated_by":"usr-admin","updated_at":"2026-11-01T15:39:30.176Z"}
 FRAME [d] f08-link-sheet.png
 
 == station e ==
 PASS  [e] the Hinges tab lists "Blum CLIP top BLUMOTION 155 degree hinge, nickel" | expect: the row | read: true
 PASS  [e] Link on row 6 "Blum Clip top 155 hinge" (one real click): Linked, no form | expect: linked, Linked, 0 forms | read: {"status":"linked","words":"Linked","selected":"0","suggested":null,"error":null,"forms":0}
 PASS  [e] the fake counts one more cc_save_material_links call | expect: 3 | read: 3
-PASS  [e] the fake holds the hinge link to row 6, no sheet size | expect: 5e0c4b1a-7f2d-4c3e-9a8b-000000000006 | read: {"cc_material_id":"hinge.blum.clip-top.155.nickel","stock_item_id":"5e0c4b1a-7f2d-4c3e-9a8b-000000000006","yield":null,"sheet_width_mm":null,"sheet_length_mm":null,"coverage_m2_per_l":null,"updated_by":"usr-admin","updated_at":"2026-11-01T15:20:17.996Z"}
+PASS  [e] the fake holds the hinge link to row 6, no sheet size | expect: 5e0c4b1a-7f2d-4c3e-9a8b-000000000006 | read: {"cc_material_id":"hinge.blum.clip-top.155.nickel","stock_item_id":"5e0c4b1a-7f2d-4c3e-9a8b-000000000006","yield":null,"sheet_width_mm":null,"sheet_length_mm":null,"coverage_m2_per_l":null,"updated_by":"usr-admin","updated_at":"2026-11-01T15:39:37.237Z"}
 FRAME [e] f08-link-hinge.png
 
 == station f ==
@@ -76,7 +76,7 @@ FRAME [g] f10-bom.png
 PASS  [g] the line to Link: the 155 hinge unlinked in (f) | expect: Blum CLIP top BLUMOTION 155 degree hinge, nickel | read: {"group":"hinges","name":"Blum CLIP top BLUMOTION 155 degree hinge, nickel"}
 PASS  [g] Link on that line (a real click): the window opens at that entry (the selected row's token is the line's) | expect: row r1jpinqt (Blum CLIP top BLUMOTION 155 degree hinge, nickel), tab hinges | read: {"row":"r1jpinqt","name":"Blum CLIP top BLUMOTION 155 degree hinge, nickel","tab":"hinges","outline":"solid 2px rgb(170, 142, 104)","inView":true,"target":"r1jpinqt"}
 PASS  [g] the selected row is outlined gold and in view | expect: outline solid, the house gold rgb(170, 142, 104), in view | read: {"outline":"solid 2px rgb(170, 142, 104)","inView":true}
-NOTE  [g] after the link made from the BOM, what the window holds chosen for the next Link | "Linking: Blum CLIP top BLUMOTION 155 degree hinge, onyx"
+NOTE  [g] after the link made from the BOM, what the window holds chosen for the next Link | "Linking: Blum CLIP top BLUMOTION 155 degree hinge, nickel"
 PASS  [g] link it there (row 6, a real click): the toast "Saved for all projects" appears | expect: Saved for all projects | read: {"text":"Saved for all projects","level":"grey","onTop":true,"at":[124,762]}
 PASS  [g] the toast stands on top of the window (not under it) | expect: on top at its centre | read: {"onTop":true,"at":[124,762]}
 PASS  [g] one cc_save_material_links call for that link | expect: 4 | read: 4
@@ -106,7 +106,7 @@ NOTE  [probe] PROBE: a second new item, the primary button ONLY (Next, Next, Nex
 NOTE  [probe] PROBE: where it ended and on which boards | {"editor":false,"carcass":{"id":"c1","label":"Carcass 1","source":"egger","finish_id":"egger:H3325_28"},"front":{"id":"f1","label":"Front 1","source":"spray","colour":"RAL 3005 Wine Red","thickness":null}}
 NOTE  [end] page errors the walk saw (uncaught) | none
 NOTE  [end] the fake's link rows at the end | ["sheet.mdf.18 -> 09 1220x2440","hinge.blum.clip-top.110.nickel -> 05","sheet.egger.h3325_28.18 -> 10 1220x2440 y1.1","sheet.mdf.22 -> 03 1220x2440 y1.1","hinge.blum.clip-top.155.nickel -> 06"]
-NOTE  [end] the fake's counters at the end (since the reseed) | {"me":4,"me401":0,"query":60,"queryByTable":{"pipeline_projects":4,"projects":4,"clients":4,"cc_items":7,"cc_hardware":12,"cc_settings_sets":4,"cc_company_defaults":4,"cc_hardware_register":4,"stock_items":6,"stock_categories":6,"cc_material_links":5},"queryRefused":25,"writesRefused":0,"starOnItems":0,"designReads":3,"rpc":{"cc_create_item":2,"cc_save_item":2,"cc_save_material_links":4,"cc_clear_material_link":1},"rpcKeepalive":{"cc_save_item":2},"rpcRefused":0,"getSession":0,"proxied":234,"ai":{},"aiStatus":{},"logo":0,"linksSaved":4,"linksCleared":1,"linkRefused":{}}
+NOTE  [end] the fake's counters at the end (since the reseed) | {"me":4,"me401":0,"query":60,"queryByTable":{"pipeline_projects":4,"projects":4,"clients":4,"cc_items":7,"cc_hardware":12,"cc_hardware_register":4,"cc_settings_sets":4,"cc_company_defaults":4,"stock_items":6,"stock_categories":6,"cc_material_links":5},"queryRefused":25,"writesRefused":0,"starOnItems":0,"designReads":3,"rpc":{"cc_create_item":2,"cc_save_item":2,"cc_save_material_links":4,"cc_clear_material_link":1},"rpcKeepalive":{"cc_save_item":2},"rpcRefused":0,"getSession":0,"proxied":243,"ai":{},"aiStatus":{},"logo":0,"linksSaved":4,"linksCleared":1,"linkRefused":{}}
 
 RESULT: 58 PASS, 0 FAIL
 FRAMES: f11-new-item.png, f11-new-item-front.png, f08-window.png, f09-suggestion.png, f09-suggestion-form.png, f09-suggestion-linked.png, f08-link-sheet-form.png, f08-link-sheet.png, f08-link-hinge.png, f08-unlink.png, f10-bom.png, f10-toast.png, f10-bespoke.png, f08-not-set-up.png, f14-old-window.png

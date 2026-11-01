@@ -260,13 +260,8 @@ function readLocal(projectId) {
   try {
     const raw = localStorage.getItem(keyFor(projectId));
     if (raw) return normalize(JSON.parse(raw));
-    // Nothing under this project's own key: fall back to turn 3's global blob,
-    // so the first project a joiner opens on this build arrives wearing the
-    // boards he assigned two turns ago.
-    if (projectId) {
-      const legacy = localStorage.getItem(KEY);
-      if (legacy) return normalize(JSON.parse(legacy));
-    }
+    // T-CC2a F12 (the Deletion licence): a project with no blob of its own starts EMPTY; the legacy global blob is
+    // never read for it again (*"nowy projekt przestaje dziedziczyc materialy z poprzedniego"*, the owner, 01.11.2026).
     return normalize(null);
   } catch {
     return normalize(null);
@@ -387,7 +382,7 @@ export const useMaterialAssignmentStore = create((set, get) => ({
    *
    * The order is deliberate and it is the owner's: the project's own blob
    * (T-CC1a F3: the cloud row that won over it is deleted), then what this
-   * browser cached for this project, then turn 3's global blob,
+   * browser cached for this project (T-CC2a F12: never turn 3's global blob),
    * and whatever comes out of that, the workshop's DEFAULTS fill in the parts
    * it is silent about, never overwriting a choice somebody made by hand.
    *
@@ -403,6 +398,14 @@ export const useMaterialAssignmentStore = create((set, get) => ({
     set({ projectId: projectId || null, ...project(d, projectId) });
     return d;
   },
+
+  /** T-CC2a F12 · a NEW item's blob: empty, never the previous project's, never read from this browser. */
+  // An item with no id yet caches nothing: the legacy global blob is never overwritten with empty (FROZEN 4).
+  startEmpty: (projectId = null) => set(() => {
+    const d = normalize(null);
+    if (projectId) cacheLocally(projectId, d);
+    return { projectId: projectId || null, seen: {}, data: d, assignments: expand(d) };
+  }),
 
   /** Synchronous half of the same act, for callers that cannot await. */
   setProject: (projectId, { blob = null, defaults = null } = {}) => set(() => {

@@ -49,6 +49,7 @@ import {
   EDGE_NOTCH_EDGES,
 } from '../engine/notch.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
+// MAREK-PENDING-IMPORT-F13
 import { formatMm, roundTo, snap as snapTo } from '../engine/format.js';
 // T78 F17 . the hood's clearance over the hob: the one measure Check #34 reads too.
 import { hoodClearanceMessage, hoodClearanceRows, hoodRaiseTo } from '../engine/hoodClearance.js';
@@ -264,6 +265,55 @@ import { CHEST_ISLAND_BACK_FACE, chestIslandPlinthSides } from '../lib/chestIsla
 // (lib/crashBuffer.js bufferKey); the one job-wide cache key of the shelf days is deleted with its read.
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
+
+// ─── T-CC2a F10.3 · BESPOKE, THIS PROJECT ONLY (CLAUDE.md T-CC2a law 9) ──────
+// The owner, 01.11.2026: *"nie trafia do katalogu ale dodaje do listy zakupow pod
+// bespoke, bespoke nigdy nie idzie do stocku"*. A row typed in ONE project, saved
+// with it (`project.bespoke`), on its purchase list marked Bespoke; never in the
+// catalogue, never in Joinery Core's stock.
+export const BESPOKE_UNITS = ['pcs', 'm', 'm²', 'sheets', 'litres', 'set'];
+
+/** One bespoke row, normalised: a name, a quantity, a unit of BESPOKE_UNITS, a unit price, supplied by the client or not. */
+export function normaliseBespokeRow(row = {}) {
+  const qty = Number(row?.qty);
+  const price = Number(row?.price);
+  return {
+    id: String(row?.id || uid('bsp')),
+    name: String(row?.name ?? ''),
+    qty: Number.isFinite(qty) && qty >= 0 ? qty : 1,
+    unit: BESPOKE_UNITS.includes(row?.unit) ? row.unit : 'pcs',
+    price: Number.isFinite(price) && price >= 0 ? price : 0,
+    suppliedByClient: row?.suppliedByClient === true,
+  };
+}
+
+/** A saved job's bespoke rows; none before this turn. */
+export function migrateBespoke(rows) {
+  return Array.isArray(rows) ? rows.filter((r) => r && typeof r === 'object').map(normaliseBespokeRow) : [];
+}
+
+/**
+ * T-CC2a F13 · an old project's board choices, filled once at load from its stored material ids (engine/catalogue.js,
+ * the one table of the old CC ids); the stored field stays as saved. A failure leaves the design as it came.
+ */
+function withBoardChoices(design) {
+  try {
+    return design; // MAREK-PENDING-F13 migrateBoardChoices(design, getCabinetProfile())
+  } catch {
+    return design;
+  }
+}
+
+/**
+ * T-CC2a F12 · a NEW item inherits nothing: its assignment blob starts empty, never the previous project's and
+ * never the legacy global blob (the owner's decision 4 of 01.11.2026: *"nowy projekt przestaje dziedziczyc
+ * materialy z poprzedniego"*).
+ */
+function startEmptyAssignments(projectId) {
+  try {
+    useMaterialAssignmentStore.getState().startEmpty(projectId || null);
+  } catch { /* a store that is not ready must never stop a project starting */ }
+}
 
 // T86B F5 . a chest island's footprint about its core: the core is the line the chest's back stands on, face A out to
 // -v, face B out to +v, so the footprint's centre sits at v = (depth on B - depth on A) / 2 off the core.
@@ -2072,6 +2122,34 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     });
   },
 
+  // ─── T-CC2a F10.3 · the bespoke rows of THIS project (law 9) ────────────────
+  addBespoke: (row = {}) => {
+    const next = normaliseBespokeRow({ name: '', qty: 1, unit: 'pcs', price: 0, ...row, id: uid('bsp') });
+    set((s) => ({ project: { ...s.project, bespoke: [...migrateBespoke(s.project.bespoke), next] }, dirty: true }));
+    return next.id;
+  },
+  updateBespoke: (id, patch = {}) => {
+    set((s) => ({
+      project: {
+        ...s.project,
+        bespoke: migrateBespoke(s.project.bespoke).map((r) => (r.id === id ? normaliseBespokeRow({ ...r, ...patch, id }) : r)),
+      },
+      dirty: true,
+    }));
+  },
+  removeBespoke: (id) => {
+    set((s) => ({ project: { ...s.project, bespoke: migrateBespoke(s.project.bespoke).filter((r) => r.id !== id) }, dirty: true }));
+  },
+
+  // ─── T-CC2a F11.2 · the back panels and the drawer bottoms on a sheet of their own ───
+  // `choice` a board choice of engine/catalogue.js (boardChoiceOfEntry), or null: "As today". The cut list and the
+  // purchase list read it through the one resolver; a different thickness is never offered (geometry is not this turn).
+  setDesignBoard: (slot, choice = null) => {
+    if (slot !== 'back' && slot !== 'drawerBottom') return;
+    const boards = migrateDesign(get().project.design).boards || {};
+    get().setDesign({ boards: { ...boards, [slot]: choice && typeof choice === 'object' ? { ...choice } : null } });
+  },
+
   setTitleBlock: (patch) => {
     const prev = get().project.titleBlock || {};
     const next = { ...prev, ...(patch || {}) };
@@ -2618,7 +2696,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       project: {
         ...project,
         room: migrateRoom(project?.room),
-        design: pin ? { ...migrated, ...pin } : migrated,
+        design: withBoardChoices(pin ? { ...migrated, ...pin } : migrated),
+        // T-CC2a F10.3: its bespoke rows, normalised on the way in; none before this turn.
+        bespoke: migrateBespoke(project?.bespoke),
         // Turn 44 (CLAUDE.md F1): a saved job's slopes, normalised on the way
         // in exactly as its room and its design are. A project saved before
         // tonight has none and opens on a straight wall.
@@ -2686,7 +2766,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // second line); projectForSave never writes it, the binding lives in the row's columns.
   newProject: (name = 'Untitled project', {
     id = null, number = '', client = '', jcProjectName = '', room = null, design = null, company = undefined,
-  } = {}) => set({
+  } = {}) => { set({
     project: {
       id: id || null,
       name: name || 'Untitled project',
@@ -2717,11 +2797,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // computer last typed, and nothing else; `setTitleBlock` fills the rest.
       titleBlock: (() => { const c = recallTitleBlockCompany(); return c ? { company: c } : {}; })(),
       // T-CC1a F4.3: the binding lives in the row's columns (jc_pipeline_id / jc_project_id), never in the design.
+      // T-CC2a F10.3: a new job has no bespoke rows of its own yet.
+      bespoke: [],
     },
     units: [],
     runElements: {},
     dirty: false,
-  }),
+  });
+  // T-CC2a F12: and an EMPTY assignment blob, never the previous project's.
+  startEmptyAssignments(id);
+  },
 
   /**
    * T-CC1a F4.3 · OPEN AN ITEM FROM JOINERY CORE. ONE read of `cc_items` by id (the design is read here and

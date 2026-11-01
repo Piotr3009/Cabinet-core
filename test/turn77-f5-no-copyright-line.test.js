@@ -562,6 +562,7 @@ export const NEW_FILES = [
   'src/engine/catalogue.js',
   'src/engine/catalogueData.js',
   'scripts/t-cc2a-catalogue.mjs',
+  'scripts/t-cc2a-walk.mjs',
   'src/lib/jcLinks.js',
   'src/stores/materialLinkStore.js',
   'src/components/LinkMaterialsModal.jsx',

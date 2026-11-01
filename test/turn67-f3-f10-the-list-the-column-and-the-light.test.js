@@ -103,9 +103,17 @@ test('F4 · the retail source chip reads DECOR — and PRO still says EGGER', ()
 test('F5 · the default carcass decor is H3325, named in the PROFILE', () => {
   assert.equal(getCabinetProfile().projectSettings.defaultCarcassDecorId, 'H3325_28');
   // Keys and defaults only: nothing on the cut path reads it.
-  const engine = filesUnder('src/engine').filter((rel) => rel !== 'src/engine/profile.js');
+  // REWRITTEN BY T-CC2a F11.3 (*"jak dadza next next next to zeby im biale nie wyskoczylo"*; *"domyslny h3325 tabaco
+  // gladstone oak"*, the owner, 01.11.2026): a NEW PRO item is preselected on this decor too, through
+  // engine/companyDefaults.js newItemBoardDefaults, the wizard's preselection and never the cut path. Every other
+  // engine file still reads nothing of it.
+  const engine = filesUnder('src/engine').filter((rel) => rel !== 'src/engine/profile.js' && rel !== 'src/engine/companyDefaults.js');
   const readers = engine.filter((rel) => /defaultCarcassDecorId/.test(code(rel)));
   assert.deepEqual(readers, [], `the engine reads the retail default: ${readers.join(', ')}`);
+  const defaults = code('src/engine/companyDefaults.js');
+  const at = defaults.indexOf('export function newItemBoardDefaults');
+  assert.ok(at >= 0, 'the new item\'s preselection');
+  assert.ok(defaults.indexOf('defaultCarcassDecorId') > at, 'read inside newItemBoardDefaults only');
   // The one surface that reads it is the lazy client's, and it never
   // overwrites a design that has already said something.
   const adapter = code('src/retail/design/adapter.js');

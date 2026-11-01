@@ -234,6 +234,8 @@ import { interiorFloor } from '../engine/shelfHeights.js';
 import { railDatumFor, railSupportTops } from '../engine/railDatum.js';
 // T37-F1: a piece selection spans cabinets — each member carries its own unit.
 import { membersOf, parseMember } from '../lib/selection.js';
+// The right-click menu turn (01.11.2026): Duplicate copies what a template keeps.
+import { templateParams } from '../lib/templates.js';
 // T37-F2: a saved rail may ride a FIX SHELF; the link and the drop,
 // `engine/railAssembly.js` (T79 F11: a new rod is added alone).
 import {
@@ -781,6 +783,43 @@ function applyTemplateParams(unit, params) {
     sections: sections.length ? sections : unit.params.sections,
   };
   return unit;
+}
+
+/**
+ * The right-click menu turn (01.11.2026) · what a DUPLICATE is born with: what
+ * a template keeps (`templateParams`: no unit number, no scribe filler widths,
+ * no front edge trims), less what names another cabinet. A top box's host is
+ * worked out by `addUnit` where the copy lands; a pocket's covers are its
+ * neighbours', so the copy's are worked out where it stands.
+ */
+const DUPLICATE_DROPS = ['rides_on', 'rides_offset_mm'];
+function duplicateParamsOf(unit) {
+  const params = templateParams(unit);
+  for (const key of DUPLICATE_DROPS) delete params[key];
+  if (params.pocket && typeof params.pocket === 'object') params.pocket = { ...params.pocket, covers: [] };
+  return params;
+}
+
+/**
+ * The parameter maps keyed by the ENGINE's panel id. A carcass board is `BUL`
+ * in every cabinet, but a front carries the cabinet's number (`B07-F`,
+ * `B07-DF2`), so a copy numbered B08 re-keys `B07-...` to `B08-...` and keeps
+ * every other key. A named list, as `applyTemplateParams`' CROSS_REFS is: the
+ * next map keyed by a panel id is added here.
+ */
+const PANEL_KEYED_PARAMS = ['element_overrides', 'split_hinge_rows', 'door_hinges', 'door_mirrors', 'front_handles', 'front_jpull'];
+function rekeyPanelMaps(params, fromNum, toNum) {
+  const patch = {};
+  if (!fromNum || !toNum || fromNum === toNum) return patch;
+  const from = `${fromNum}-`;
+  for (const key of PANEL_KEYED_PARAMS) {
+    const map = params?.[key];
+    if (!map || typeof map !== 'object' || Array.isArray(map)) continue;
+    const keys = Object.keys(map);
+    if (!keys.some((k) => k.startsWith(from))) continue;
+    patch[key] = Object.fromEntries(keys.map((k) => [k.startsWith(from) ? `${toNum}-${k.slice(from.length)}` : k, map[k]]));
+  }
+  return patch;
 }
 
 /**
@@ -7840,6 +7879,83 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // panel that finished it has nothing left to finish. There is no unit to
     // focus, so the standing share-out offer is dropped with it.
     get().settleLayout(null);
+  }),
+
+  /**
+   * ─── THE RIGHT-CLICK MENU TURN (01.11.2026): DUPLICATE ───────────────────
+   *
+   * The owner, on the mockups: *"jak juz to copy czyli duplicate bym tylko
+   * zostawil"*; board 1: *"kopia obok, te same ustawienia, kolejny wolny
+   * numer"*; board 2: *"na 3: trzy kopie obok, te same ustawienia"*.
+   *
+   * A copy of each cabinet: the same type, parameters, colour (the palette
+   * pointers are parameters) and contents. IT IS NOT A SECOND PLACEMENT LAW.
+   * Each copy goes in through `addUnit` with what a template keeps
+   * (`lib/templates.js templateParams`), beside its original and on the
+   * original's wall only: the same free slot, the same collision clamp, the
+   * same scribe fillers, the next number nobody is wearing, and fresh ids for
+   * every item and end panel (`applyTemplateParams`, with its cross
+   * references). What names ANOTHER cabinet is not copied (a top box's host:
+   * a copy of a top box rides beside it, or on the copy of its host when that
+   * is duplicated too; a pocket's covers are worked out again where it lands).
+   * The piece maps keyed by the engine's panel id carry the cabinet's number
+   * in a front's id (`B07-F`), so they are re-keyed to the copy's number, or a
+   * door's own hinge, handle or material would stay behind.
+   *
+   * ALL OR NOTHING. A copy that finds no room is refused in `addUnit`'s own
+   * words, the room goes back exactly as it was and nothing is added. One
+   * runBatch, so one Ctrl+Z takes every copy; the copies are selected after.
+   *
+   * @param {string[]|string} unitIds
+   * @returns {{ok: true, ids: string[]} | {ok: false, error: string}}
+   */
+  duplicateUnits: (unitIds) => runBatch(() => {
+    const before = get();
+    const wanted = new Set((Array.isArray(unitIds) ? unitIds : [unitIds]).filter(Boolean));
+    const sources = before.units.filter((u) => wanted.has(u.id));
+    if (!sources.length) return { ok: false, error: 'Nothing to duplicate: no cabinet is selected.' };
+    const rides = (u) => Boolean(getUnitType(u.type).ridesOn && u.params?.rides_on);
+    const along = (a, b) => ((a.position?.wall ?? 0) - (b.position?.wall ?? 0))
+      || ((Number(a.position?.x_mm) || 0) - (Number(b.position?.x_mm) || 0));
+    // Left to right, and every top box after the mains, so a box whose host is
+    // copied too can stand on that host's copy.
+    const order = [...sources.filter((u) => !rides(u)).sort(along), ...sources.filter(rides).sort(along)];
+    const copyOf = new Map();
+    for (const src of order) {
+      const params = duplicateParamsOf(src);
+      const hostCopy = rides(src) ? copyOf.get(src.params.rides_on) : null;
+      const res = hostCopy
+        ? get().addUnit(src.type, { params, near: hostCopy })
+        : get().addUnit(src.type, { params, near: src.id, wall: src.position?.wall ?? 0 });
+      if (!res?.id) {
+        set({ units: before.units, project: before.project });
+        return {
+          ok: false,
+          error: `Nothing was duplicated. ${src.params?.unit_num || 'A cabinet'}: ${res?.error || 'there is no room beside it.'}`,
+        };
+      }
+      copyOf.set(src.id, res.id);
+      const copy = get().units.find((u) => u.id === res.id);
+      // A hung cabinet keeps its original's height (the set's `after`).
+      const type = getUnitType(src.type);
+      if (type.mount === 'wall' && !type.freePanel && !rides(src) && src.params?.mount_height != null
+        && Number(copy?.params?.mount_height) !== Number(src.params.mount_height)) {
+        get().updateUnitParams(res.id, { mount_height: Number(src.params.mount_height) });
+      }
+      const rekeyed = rekeyPanelMaps(params, src.params?.unit_num, copy?.params?.unit_num);
+      if (Object.keys(rekeyed).length) {
+        set((s) => ({
+          units: s.units.map((u) => (u.id === res.id ? { ...u, params: { ...u.params, ...rekeyed } } : u)),
+        }));
+        get().healFrontGaps();
+      }
+    }
+    const ids = order.map((u) => copyOf.get(u.id));
+    try {
+      const ui = useUiStore.getState();
+      ids.forEach((id, i) => ui.selectUnit(id, { additive: i > 0 }));
+    } catch { /* the selection is a courtesy; the copies stand */ }
+    return { ok: true, ids };
   }),
 
   /**

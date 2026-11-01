@@ -342,8 +342,11 @@ test('the context menu says "Save as a set" over a selection, "Save as template"
   const units = ids.map(unitOf);
   const one = menuActions({ unit: units[0], selection: [units[0]] }).find((a) => a.id === 'save-template');
   const many = menuActions({ unit: units[0], selection: units }).find((a) => a.id === 'save-template');
-  assert.equal(one.label, 'Save as template');
-  assert.equal(many.label, 'Save as a set (3)');
+  // AMENDED BY the right-click menu turn (01.11.2026): both open a window for
+  // the name, so both say so (board 1, *"Dopisane ..., bo otwiera okno na
+  // nazwe"*); the count is said once, in the header ("3 cabinets selected").
+  assert.equal(one.label, 'Save as template…');
+  assert.equal(many.label, 'Save as a set…');
 });
 
 // ─── SAVE AND RELOAD ──────────────────────────────────────────────────────

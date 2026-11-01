@@ -366,11 +366,15 @@ test('T74 F13 · the audit: a board is not a carcass: no end panel, no mask, no 
   aRoom();
   const id = S().addUnit('FREE_PANEL').id;
   const ids = menuActions({ unit: unit(id), store: {} }).map((a) => a.id).sort();
-  assert.deepEqual(ids, ['delete', 'rename', 'save-template', 'unit-colour']);
-  // A wardrobe's menu is as it was.
+  // AMENDED BY the right-click menu turn (01.11.2026): Rename and Colour left
+  // every menu (*"rename ... na pole name, juz jest"*, *"colour i turn tez
+  // usunac"*); Duplicate joined it (*"copy czyli duplicate bym tylko zostawil"*).
+  assert.deepEqual(ids, ['delete', 'duplicate', 'save-template']);
+  // A wardrobe's menu still fits a carcass (the end panels' one row, the cabinet's window).
   const w = S().addUnit('WARDROBE').id;
   const wardrobe = menuActions({ unit: unit(w), store: {} }).map((a) => a.id);
-  for (const want of ['end-panel-L', 'rotate-90', 'edit-cabinet']) assert.ok(wardrobe.includes(want), want);
+  for (const want of ['end-panels', 'edit-cabinet']) assert.ok(wardrobe.includes(want), want);
+  assert.ok(!wardrobe.includes('rotate-90'), 'Rotate 90 left the menu (its home is the right panel)');
   // The store refuses the carcass extras on a board, in words.
   const ep = S().addEndPanel(id, { side: 'L' });
   assert.equal(ep.id, null);

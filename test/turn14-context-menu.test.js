@@ -42,56 +42,45 @@ test('F6.2/T50-F10 — "Show all dimensions" has LEFT the menu', () => {
   }
 });
 
-test('F6.3 — the sections are [top infill + plinth] | [all end panels] | [the rest]', () => {
+// REWRITTEN BY the right-click menu turn (01.11.2026): the sections are the
+// owner's boards: edit | build | inside | copy | danger, and under a part menu
+// part | cabinet. The order is still DATA (MENU_GROUPS), as T14 made it.
+test('F6.3 · the sections are edit | build | inside | copy | danger', () => {
   const groups = groupedActions(menu('WARDROBE'));
-  // T50-F10: the `dimensions` group is EMPTY now that its one entry has gone,
-  // so it is not drawn. `MENU_GROUPS` still names it (below) — the ORDER is a
-  // table, and a group with nothing in it is a group nothing is in, not a group
-  // that has been deleted.
-  assert.deepEqual(groups.map((g) => g.id), ['edit', 'run-pieces', 'end-panels', 'rest']);
-
-  const runPieces = groups.find((g) => g.id === 'run-pieces').actions.map((a) => a.id);
-  // Turn 25 (CLAUDE.md F12.3): the TOP CORNICE joins them, as three entries
-  // rather than a toggle — it is a CHOICE of moulding — and it sits with the
-  // infill it is screwed to rather than at the bottom with the per-cabinet
-  // actions.
-  assert.deepEqual(
-    runPieces,
-    ['top-infill', 'cornice-0', 'cornice-70', 'cornice-100', 'plinth'],
-    'the pieces that finish a run',
-  );
-
-  const panels = groups.find((g) => g.id === 'end-panels').actions.map((a) => a.id);
-  assert.deepEqual(panels, ['end-panel-L', 'end-panel-R', 'end-panel-B'], 'every masking panel');
-
+  assert.deepEqual(groups.map((g) => g.id), ['edit', 'build', 'inside', 'copy', 'danger']);
+  const of = (id) => groups.find((g) => g.id === id).actions.map((a) => a.id);
+  // Turn 25's cornice is ONE choice row now, with the infill it is screwed to.
+  assert.deepEqual(of('build'), ['plinth', 'top-infill', 'cornice', 'end-panels', 'side-infill', 'pin-infill-L', 'pin-infill-R'],
+    'what finishes the cabinet and its run, in the owner\'s order');
+  assert.deepEqual(of('inside'), ['center-shelves', 'center-between', 'add-doors']);
+  assert.deepEqual(of('copy'), ['save-template', 'duplicate']);
+  assert.deepEqual(of('danger'), ['delete'], 'Delete red, alone, last');
   // …and the rule between them is drawn once per boundary, never at the top.
-  // T50-F10: FOUR sections now, because the `dimensions` group's one entry has
-  // left the menu and `groupedActions` does not draw a group with nothing in it.
-  assert.equal(groups.length, 4, 'four sections since the dimensions entry left');
-  assert.equal(groups.length - 1, 3, 'three delicate lines for four sections');
+  assert.equal(groups.length - 1, 4, 'four delicate lines for five sections');
+  // No group carries a title in the cabinet menu; only a part menu's Cabinet group does.
+  assert.ok(groups.every((g) => g.title === undefined));
 });
 
-test('F6.3 — a WALL unit’s run group carries the masking panel with the top infill', () => {
+test('F6.3 · a WALL unit’s build group carries the masking panel with the top infill', () => {
   const groups = groupedActions(menu('WUD'));
-  const runPieces = groups.find((g) => g.id === 'run-pieces').actions.map((a) => a.id);
-  // ─── TURN 26 (CLAUDE.md F9.2): …AND THE CORNICE JOINS THEM ──────────────
-  // "A cornice run continues across ANY adjacent cornice-bearing unit whose
-  // top edges meet — tall and wall alike." A run of wall units finishes at the
-  // same height as the tall unit beside it and takes the same moulding, so the
-  // three entries are offered here exactly as they are on a tall unit.
-  assert.deepEqual(runPieces, ['top-infill', 'cornice-0', 'cornice-70', 'cornice-100', 'bottom-mask'],
+  const build = groups.find((g) => g.id === 'build').actions.map((a) => a.id);
+  // TURN 26 (F9.2): a run of wall units takes the same moulding as the tall unit beside it.
+  assert.deepEqual(build, ['top-infill', 'cornice', 'end-panels', 'side-infill', 'pin-infill-L', 'pin-infill-R', 'bottom-mask'],
     'what closes the gap above, what finishes it, and what closes the underside');
-  assert.ok(!runPieces.includes('plinth'), 'a hanging cabinet stands on nothing');
+  assert.ok(!build.includes('plinth'), 'a hanging cabinet stands on nothing');
 });
 
-test('F6.3 — the ORDER of the sections is the list, not the order entries are pushed', () => {
-  // An entry that names no group falls into "the rest" and cannot land above
-  // the end panels by accident — which is the whole point of the indirection.
-  const rogue = [{ id: 'x', group: 'nonsense' }, { id: 'y', group: 'end-panels' }];
+test('F6.3 · the ORDER of the sections is the list, not the order entries are pushed', () => {
+  // An entry that names no group falls into "inside" and cannot land above
+  // the build section by accident, which is the whole point of the indirection.
+  const rogue = [{ id: 'x', group: 'nonsense' }, { id: 'y', group: 'danger' }, { id: 'z', group: 'build' }];
   const groups = groupedActions(rogue);
-  assert.deepEqual(groups.map((g) => g.id), ['end-panels', 'rest']);
-  assert.deepEqual(groups.find((g) => g.id === 'rest').actions.map((a) => a.id), ['x']);
-  assert.deepEqual(MENU_GROUPS, ['edit', 'run-pieces', 'end-panels', 'rest', 'dimensions']);
+  assert.deepEqual(groups.map((g) => g.id), ['build', 'inside', 'danger']);
+  assert.deepEqual(groups.find((g) => g.id === 'inside').actions.map((a) => a.id), ['x']);
+  assert.deepEqual(MENU_GROUPS, ['part', 'edit', 'build', 'inside', 'copy', 'danger', 'cabinet']);
+  // A group's title is the one its entries carry (the Cabinet group of a part menu).
+  const titled = groupedActions([{ id: 'a', group: 'cabinet', groupTitle: 'Cabinet W02' }, { id: 'b', group: 'part' }]);
+  assert.deepEqual(titled.map((g) => [g.id, g.title]), [['part', undefined], ['cabinet', 'Cabinet W02']]);
 });
 
 test('F6.3 — every entry belongs to a section, and no section is invented', () => {
@@ -114,30 +103,41 @@ test('F6.4 — the hinges toggle is GONE from the menu, and only from the menu',
   assert.ok(!withFlag.some((a) => a.id === 'hinges'));
 });
 
-test('F6 — nothing that was reachable stopped being reachable', () => {
-  // The redesign moves entries; it must not lose any. Every id turn 13's menu
-  // offered a wardrobe is still offered, minus the one the owner deleted.
+// REWRITTEN BY the right-click menu turn (01.11.2026): the owner took six
+// entries out (*"drawers front usun ... colour i turn tez usunac ... rename ...
+// na pole name, juz jest, mniej zmian"*) and brought Add doors back. The ENTRIES
+// go; every ACT stays reachable, and this is where that is asserted.
+test('F6 · nothing that was reachable stopped being reachable', () => {
   const ids = menu('WARDROBE').map((a) => a.id);
-  const turn13 = [
-    'end-panel-L', 'end-panel-R', 'end-panel-B',
-    'top-infill', 'side-infill', 'pin-infill-L', 'pin-infill-R',
-    'plinth', 'unit-colour', 'edit-cabinet', 'save-template',
-    'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
+  const kept = [
+    'edit-cabinet', 'plinth', 'top-infill', 'cornice', 'end-panels', 'side-infill', 'pin-infill-L', 'pin-infill-R',
+    'center-shelves', 'save-template', 'delete',
   ];
-  for (const id of turn13) assert.ok(ids.includes(id), `${id} went missing`);
-
-  // ─── T50-F10: THE TWO THE OWNER ASKED FOR, AND WHERE THEY LIVE NOW ───────
-  // Iron rule 4: the ENTRIES go, the ACTIONS stay reachable, and this is where
-  // that is asserted rather than promised.
-  assert.ok(!ids.includes('add-doors'));
-  assert.ok(!ids.includes('dimensions'));
+  for (const id of kept) assert.ok(ids.includes(id), `${id} went missing`);
+  for (const id of ['rename', 'unit-colour', 'rotate-90', 'back-to-wall', 'side-to-wall', 'drawer-fronts', 'dimensions']) {
+    assert.ok(!ids.includes(id), `${id} is still in the menu`);
+  }
+  // Add doors is BACK (it left on 25.08.2026 at T50 F10), and it is still the
+  // store's one answer in the other three places.
+  assert.ok(ids.includes('add-doors'));
   const panel = readFileSync(new URL('../src/components/RightPanel.jsx', import.meta.url), 'utf8');
   const plus = readFileSync(new URL('../src/components/AddItemsModal.jsx', import.meta.url), 'utf8');
   const multi = readFileSync(new URL('../src/components/MultiUnitPanel.jsx', import.meta.url), 'utf8');
   assert.match(panel, /addDoorsToUnit/, 'Add doors: the right-hand panel');
   assert.match(plus, /addDoors\(unit\.id\)/, '…the plus modal');
   assert.match(multi, /addDoorsBulk\(ids\)/, '…and a multi-selection');
-
+  // Where the six that left live: the right panel's NAME field, its Colour,
+  // its rotation row; the drawer fronts' store acts and the Hide fronts lens.
+  assert.match(panel, /data-unit-name=\{unit\.id\}/, 'Rename: the NAME field');
+  assert.match(panel, /openModal\('unit-finish', \{ unitIds: \[unit\.id\]/, 'Colour: the right panel');
+  assert.match(panel, /rotateUnit\(unit\.id, 'step', 90\)/, 'Rotate 90: the right panel');
+  assert.match(panel, /rotateUnit\(unit\.id, 'back'\)/, 'Back to wall: the right panel');
+  assert.match(panel, /rotateUnit\(unit\.id, 'side'\)/, 'Side to wall: the right panel');
+  const projectStore = readFileSync(new URL('../src/stores/projectStore.js', import.meta.url), 'utf8');
+  assert.match(projectStore, /removeDrawerFronts: \(unitId\) =>/, 'Drawer fronts: the store act stays');
+  assert.match(projectStore, /addDrawerFronts: \(unitId\) =>/);
+  const toolbar = readFileSync(new URL('../src/components/CanvasToolbar.jsx', import.meta.url), 'utf8');
+  assert.match(toolbar, /onClick=\{toggleHideFronts\}/, '*"mam przycisk hide all fronts"*');
   const top = readFileSync(new URL('../src/components/TopBar.jsx', import.meta.url), 'utf8');
   const bar = readFileSync(new URL('../src/components/CanvasToolbar.jsx', import.meta.url), 'utf8');
   assert.match(top, /label: 'Dimensions'/, 'Dimensions: the top bar — *"już mamy na górze"*');

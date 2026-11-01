@@ -172,8 +172,17 @@ const LICENSED_RED = new Set([
   'static.library.kitchen', 'static.library.wardrobe', 'static.library.typeSlots', 'static.library.registryLeaves',
   'static.topMenu.Library', 'static.topMenu.Database', 'static.topMenu.pathsMissing',
   'static.modalKinds.missing', 'static.library.typesMissing',
+  // AMENDED BY the right-click menu turn (01.11.2026): the owner's list on the mockups moves the
+  // right-click rows: *"drawers front usun ... colour i turn tez usunac ... rename ... na pole name,
+  // juz jest ... jak juz to copy czyli duplicate bym tylko zostawil, natomiast center shelves i center
+  // between oraz add doors bym dodal"*. Both files of the menu move with it, by name.
+  'static.context.censusRows', 'static.context.ids', 'static.context.idsMissing',
+  'static.context.sha256', 'static.contextMenu.sha256',
 ]);
-test('F7 parity · the census of this tree, static half, is RED only on the rows T-CC1b licensed', () => {
+/** The census's 22 right-click rows the menu turn moved: six out by the owner's word, three made one row each. */
+const MENU_TURN_OUT = ['Rename', 'Drawer fronts', 'Unit colour', 'Rotate 90 deg', 'Back to wall', 'Side to wall'];
+const MENU_TURN_ONE_ROW = { 'End panel L': 'end-panels', 'End panel R': 'end-panels', 'Top cornice (the height ladder)': 'cornice' };
+test('F7 parity · the census of this tree, static half, is RED only on the rows T-CC1b and the menu turn licensed', () => {
   assert.ok(NOW.json, `the census did not run:\n${NOW.stdout}\n${NOW.stderr}`);
   const red = (NOW.json.comparison?.rows || []).filter((r) => /^RED/.test(r.status));
   assert.deepEqual(red.filter((r) => !LICENSED_RED.has(r.key)).map((r) => `${r.key}: ${r.was} -> ${r.value} ${r.status}`), []);
@@ -183,6 +192,14 @@ test('F7 parity · the census of this tree, static half, is RED only on the rows
   if (row('static.library.typesMissing')) assert.equal(row('static.library.typesMissing').value, 8);
   // The warehouse window (replaced by the stock window, F9.3) and the render window (opened inside the Drawings window, F8.1).
   if (row('static.modalKinds.missing')) assert.equal(row('static.modalKinds.missing').value, 2);
+  // The menu turn: 13 of the 22 rows present; the ids gone are exactly the six out and the two made one row.
+  if (row('static.context.censusRows')) assert.equal(row('static.context.censusRows').value, 13);
+  if (row('static.context.idsMissing')) {
+    assert.deepEqual([...row('static.context.idsMissing').detail].sort(), [
+      'back-to-wall', 'cornice-0', 'cornice-100', 'cornice-70', 'drawer-fronts', 'end-panel-B', 'end-panel-L',
+      'end-panel-R', 'rename', 'rotate-90', 'side-to-wall', 'unit-colour',
+    ]);
+  }
 });
 
 test('F7 parity · every top-menu leaf of the census, by label and by the SAME handler and call', () => {
@@ -367,10 +384,27 @@ test('F7 parity · the project name keeps its rename and its end of edit; the go
 
 // === 4 · THE RIGHT-CLICK MENU AND THE 26 WINDOWS, UNTOUCHED ==================
 
-test('F7 parity · the 22 right-click actions untouched: the two files byte for byte as on main', () => {
+// REWRITTEN BY the right-click menu turn (01.11.2026): the two files move by the owner's word on the
+// mockups (FROZEN 6 is lifted for these two by name). Every one of the census's 22 rows is either still
+// offered, out by his word, or one choice row now, and the row it became is offered.
+test('F7 parity · the 22 right-click rows: each still offered, out by the owner\'s word, or one row now', () => {
   assert.equal(MAIN.static.context.rowsPresent, 22);
-  assert.equal(sha('src/lib/contextActions.js'), MAIN.static.context.sha256, 'lib/contextActions.js moved (FROZEN 6)');
-  assert.equal(sha('src/components/ContextMenu.jsx'), MAIN.static.context.component.sha256, 'ContextMenu.jsx moved (FROZEN 6)');
+  const rows = NOW.json?.static?.context?.censusRows || [];
+  const ids = new Set((NOW.json?.static?.context?.ids || []).map((r) => r.id));
+  assert.equal(rows.length, 22);
+  for (const r of rows) {
+    if (MENU_TURN_OUT.includes(r.name)) { assert.equal(r.present, false, `${r.name} is out of the menu and still there`); continue; }
+    if (MENU_TURN_ONE_ROW[r.name]) {
+      assert.equal(r.present, false, `${r.name}: still its old rows`);
+      assert.ok(ids.has(MENU_TURN_ONE_ROW[r.name]), `${r.name}: its one row ${MENU_TURN_ONE_ROW[r.name]} is not offered`);
+      continue;
+    }
+    assert.equal(r.present, true, `GONE: ${r.name}`);
+  }
+  // …and what the owner added: Centre between, Add doors, Duplicate; a door's own menu.
+  for (const id of ['center-between', 'add-doors', 'duplicate', 'edit-door', 'hinge-side', 'remove-door', 'cabinet-actions']) {
+    assert.ok(ids.has(id), `${id} is not offered`);
+  }
 });
 
 // REWRITTEN BY T-CC1a F3: the 'auth' window (AuthModal.jsx) is deleted with CC's own login, by name; the other 25
@@ -457,9 +491,12 @@ test('F7 parity · Add\'s hints are the Library menu\'s own words, and a held-op
 
 test('F7 parity · Materials opens the four existing windows, each as its first road opens it', () => {
   const top = code(read('src/components/TopBar.jsx'));
-  const menu = code(read('src/components/ContextMenu.jsx'));
-  // Selected finishes: the right-click Colour's own window and arguments.
-  assert.match(menu, /openModal\('unit-finish', \{ unitIds: ids, anchor: menuAnchor\(\) \}\)/);
+  // AMENDED BY the right-click menu turn (01.11.2026): the right-click Colour... is out of the menu
+  // (*"colour i turn tez usunac"*); Selected finishes keeps the window and its arguments, and the
+  // right panel's Colour is the cabinet's own road to it.
+  const menuActionsSrc = read('src/lib/contextActions.js');
+  assert.doesNotMatch(menuActionsSrc, /store\.unitColour/, 'the right-click Colour is out of the menu');
+  assert.match(code(read('src/components/RightPanel.jsx')), /openModal\('unit-finish', \{ unitIds: \[unit\.id\], anchor: anchorOfEvent\(e\) \}\)/);
   assert.match(RAIL, /openModal\('unit-finish', \{ unitIds: \[\.\.\.chosen\], anchor: anchorOfEvent\(e\) \}\)/);
   assert.match(RAIL, /disabled: chosen\.length === 0/);
   // Project finishes: Settings..., the same window.

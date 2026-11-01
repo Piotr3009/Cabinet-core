@@ -134,27 +134,34 @@ test('F12.2 — the 100 is RICHER, not a 70 scaled up', () => {
   assert.ok(P.autoParts.cornice.section.byHeight[100]);
 });
 
-test('F12.3 — the cornice is in the right-click menu, none / 70 / 100', () => {
+// REWRITTEN BY the right-click menu turn (01.11.2026): the three Top cornice
+// rows are ONE choice row, Cornice: None / 70 / 100 (board 1, *"Kolka = wybierz
+// jedno; 3 wiersze Top cornice w jednym"*), the heights still the profile's.
+test('F12.3 · the cornice is in the right-click menu, none / 70 / 100', () => {
   const wardrobe = {
     id: 'u1', type: 'WARDROBE', params: { unit_num: '01', cornice: 0 }, position: { x_mm: 0, wall: 0 },
   };
   const actions = menuActions({ unit: wardrobe, panelPart: 'BUL', store: {} });
-  const ids = actions.map((a) => a.id);
-  assert.deepEqual(
-    ids.filter((id) => id.startsWith('cornice-')),
-    ['cornice-0', 'cornice-70', 'cornice-100'],
-  );
-  // …with the one it is currently on ticked.
+  const row = actions.find((a) => a.id === 'cornice');
+  assert.equal(row.kind, 'choice');
+  assert.deepEqual(row.options.map((o) => o.label), ['None', '70', '100']);
+  assert.deepEqual(row.options.map((o) => o.selected), [true, false, false]);
+  // …with the one it is currently on selected, and a click sets the height.
+  const set = [];
   const fitted = menuActions({
-    unit: { ...wardrobe, params: { ...wardrobe.params, cornice: 100 } }, panelPart: 'BUL', store: {},
+    unit: { ...wardrobe, params: { ...wardrobe.params, cornice: 100 } },
+    panelPart: 'BUL',
+    store: { setCornice: (id, h) => set.push([id, h]), openPanelSection: () => {} },
   });
-  assert.equal(fitted.find((a) => a.id === 'cornice-100').checked, true);
-  assert.equal(fitted.find((a) => a.id === 'cornice-70').checked, false);
+  const fittedRow = fitted.find((a) => a.id === 'cornice');
+  assert.deepEqual(fittedRow.options.map((o) => o.selected), [false, false, true]);
+  fittedRow.options.find((o) => o.label === '70').run();
+  assert.deepEqual(set, [['u1', 70]]);
 
   // …and it sits with the top infill, which is the piece it is screwed to.
-  const group = groupedActions(actions).find((g) => g.id === 'run-pieces');
+  const group = groupedActions(actions).find((g) => g.id === 'build');
   assert.ok(group.actions.map((a) => a.id).includes('top-infill'));
-  assert.ok(group.actions.map((a) => a.id).includes('cornice-100'));
+  assert.ok(group.actions.map((a) => a.id).includes('cornice'));
 });
 
 // ─── F13 — front dimensions ─────────────────────────────────────────────────

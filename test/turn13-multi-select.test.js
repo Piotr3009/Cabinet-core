@@ -137,36 +137,35 @@ const fakeUnit = (id, extra = {}) => ({
   params: { unit_num: id, width: 600, ...extra },
 });
 
-test('the menu names the five bulk entries and only those', () => {
-  const selection = [fakeUnit('u1'), fakeUnit('u2'), fakeUnit('u3')];
+// REWRITTEN BY the right-click menu turn (01.11.2026): *"tak jak teraz na
+// wszystkie dzialaja ktore sa zaznaczone oczywiscie"*. Every entry of the
+// several menu acts on ALL selected (T13 named five; 13 of 21 acted on the one
+// clicked, Delete too), so no entry carries a "(3)": the count is said ONCE,
+// in the header ("3 cabinets selected"), and a label counts only where the
+// cabinets DISAGREE ("Plinth (1 of 3)").
+test('over several, every entry acts on all of them and the labels count only a mixed state', () => {
+  const selection = [fakeUnit('u1'), fakeUnit('u2', { plinth: true }), fakeUnit('u3')];
   const actions = menuActions({ unit: selection[0], selection, panelPart: 'BUL', store: {} });
-  const bulk = actions.filter((a) => /\(3\)$/.test(a.label)).map((a) => a.id);
-  // T50-F10: `add-doors` left this menu — the owner: *"w prawym przycisku
-  // myszy menu nie powinno być Add doors."*  The BULK action is not lost with
-  // it: `MultiUnitPanel.jsx` has carried its own "Add doors (n)" over a
-  // multi-selection since T45, through `projectStore.addDoorsBulk`, which is
-  // what this entry was reaching for.
-  // AMENDED BY T75 F5: the UPSTAND joins the plinth as a bulk entry, *"on and
-  // off per run like the plinth (BACKLOG #16's grammar)"*, on a base unit.
-  // AMENDED BY T75 F20: over a selection "Save as template" saves a SET, *"`lib/templates.js`
-  // grows `kind: 'set'`: an ORDERED list of units"*, and says over how many.
-  assert.deepEqual(bulk, [
-    'end-panel-L', 'end-panel-R', 'end-panel-B',
-    'pin-infill-L', 'pin-infill-R',
-    'plinth', 'upstand', 'unit-colour', 'save-template',
+  assert.deepEqual(actions.map((a) => a.id), [
+    // A base unit: no top infill and no cornice (a worktop goes on it), an upstand on the worktop.
+    'plinth', 'end-panels', 'side-infill', 'pin-infill-L', 'pin-infill-R', 'upstand',
+    'center-shelves', 'add-doors', 'save-template', 'duplicate', 'delete',
   ]);
-  // …and the entries that are NOT bulk say nothing about a count, which is what
-  // stops the menu quietly doing three things where it says one.
-  const single = actions.filter((a) => !/\(\d+\)$/.test(a.label)).map((a) => a.id);
-  assert.ok(single.includes('delete'));
-  assert.ok(single.includes('rotate-90'));
-  assert.ok(single.includes('edit-cabinet'));
+  const counted = actions.filter((a) => /\(\d+ of \d+\)$/.test(a.label)).map((a) => [a.id, a.label]);
+  assert.deepEqual(counted, [['plinth', 'Plinth (1 of 3)']], 'only the plinth disagrees');
+  assert.equal(actions.find((a) => a.id === 'plinth').checked, 'mixed');
+  assert.equal(actions.find((a) => a.id === 'delete').label, 'Delete 3 cabinets', 'Delete says how many it takes');
+  assert.equal(actions.find((a) => a.id === 'save-template').label, 'Save as a set…');
+  // Not with several: the cabinet's own window and Centre between are one cabinet's.
+  for (const one of ['edit-cabinet', 'center-between']) {
+    assert.equal(actions.some((a) => a.id === one), false, `${one} is offered over three`);
+  }
 });
 
 test('one cabinet selected: the labels carry no count at all', () => {
   const only = [fakeUnit('u1')];
   const actions = menuActions({ unit: only[0], selection: only, panelPart: 'BUL', store: {} });
-  for (const a of actions) assert.ok(!/\(\d+\)$/.test(a.label), `${a.id} says "${a.label}" over one cabinet`);
+  for (const a of actions) assert.ok(!/\(\d+( of \d+)?\)$/.test(a.label), `${a.id} says "${a.label}" over one cabinet`);
 });
 
 test('a caller that never heard of multi-select is unaffected', () => {
@@ -210,9 +209,12 @@ test('a bulk entry runs once per selected cabinet, inside ONE batch', () => {
   assert.equal(batches, 1, 'one batch, so one undo step');
 });
 
+// REWRITTEN BY the right-click menu turn (01.11.2026): the three end panel
+// rows are ONE choice row (None / Left / Right / Both); the rule is T13's.
 test('end panels read each cabinet’s OWN state, not the primary’s', () => {
-  // Over a run where one cabinet already has a left panel, "End panel — left"
-  // must fit the ones that have none and not add a second to that one.
+  // Over a run where one cabinet already has a left panel, End panels: Left
+  // must fit the ones that have none and not add a second to that one; and
+  // the row selects no option while they disagree.
   const selection = [
     fakeUnit('u1'),
     fakeUnit('u2', { end_panels: [{ id: 'ep1', side: 'L' }] }),
@@ -230,7 +232,9 @@ test('end panels read each cabinet’s OWN state, not the primary’s', () => {
       openPanelSection: () => {},
     },
   });
-  actions.find((a) => a.id === 'end-panel-L').run();
+  const row = actions.find((a) => a.id === 'end-panels');
+  assert.equal(row.options.some((o) => o.selected), false, 'mixed: no option is selected');
+  row.options.find((o) => o.id === 'L').run();
   assert.deepEqual(added, ['u1:L', 'u3:L'], 'u2 already had one');
 });
 

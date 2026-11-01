@@ -53,18 +53,33 @@ test('F9 · the retail menu shows exactly the six, and nothing else', () => {
     `the sheet names ${[...new Set(shown)].join(', ')}`);
 });
 
-test('F9 · the six are ids the SHARED table actually offers', () => {
+// AMENDED BY the right-click menu turn (01.11.2026): the owner took four of
+// the six out of PRO's menu, the SHARED table (*"colour i turn tez usunac ...
+// rename ... na pole name, juz jest"*; Back to wall and Side to wall live in the
+// right panel). Retail is parked (*"parkujemy retail narazie"*, 31.10.2026), so
+// its sheet still names them: four NAMED ghosts until the owner decides retail's
+// menu; any other ghost is still a red test.
+const GONE_FROM_PRO = ['rotate-90', 'back-to-wall', 'side-to-wall', 'rename'];
+test('F9 · the six are ids the SHARED table actually offers, but the four PRO took out', () => {
   const id = wardrobe();
   const rows = rowsFor(id);
   for (const want of THE_SIX) {
-    assert.ok(rows.includes(want), `${want} is not a row the menu has — the sheet names a ghost`);
+    if (GONE_FROM_PRO.includes(want)) {
+      assert.ok(!rows.includes(want), `${want} is back in the shared table: the named ghost is not a ghost any more`);
+      continue;
+    }
+    assert.ok(rows.includes(want), `${want} is not a row the menu has: the sheet names a ghost`);
   }
 });
 
 test('F9 · every row that went is homed, and the home is named', () => {
   // The claim of this test is the claim of F9: NOTHING was simply taken away.
   const id = wardrobe();
-  const gone = rowsFor(id).filter((r) => !THE_SIX.includes(r));
+  // AMENDED BY the right-click menu turn (01.11.2026): the rows NEW in PRO's
+  // menu tonight never stood in retail's, so they did not leave it (the sheet
+  // hides every row it does not name back).
+  const NEW_TONIGHT = ['center-between', 'add-doors', 'duplicate'];
+  const gone = rowsFor(id).filter((r) => !THE_SIX.includes(r) && !NEW_TONIGHT.includes(r));
   assert.ok(gone.length > 0, 'the menu had nothing beyond the six to slim');
 
   const options = read('src/retail/design/Options.jsx');
@@ -77,6 +92,10 @@ test('F9 · every row that went is homed, and the home is named', () => {
     'end-panel-L': /testid="details-end-panels"/.test(options),
     'end-panel-R': /testid="details-end-panels"/.test(options),
     'end-panel-B': /testid="details-end-panels"/.test(options),
+    // AMENDED BY the right-click menu turn: the three end panel rows and the
+    // cornice rows are one choice row each, with the same homes.
+    'end-panels': /testid="details-end-panels"/.test(options),
+    cornice: /testid="details-cornice"/.test(options),
     'cornice-0': /testid="details-cornice"/.test(options),
     'cornice-40': /testid="details-cornice"/.test(options),
     'cornice-70': /testid="details-cornice"/.test(options),
@@ -105,7 +124,10 @@ test('F9 · they are HIDDEN in retail, never cut — PRO keeps its whole menu', 
   // The rows live in the SHARED table PRO's own menu reads, so a filter there
   // would take them off a joiner's menu too.
   const actions = read('src/lib/contextActions.js');
-  for (const id of ['top-infill', 'side-infill', 'unit-colour', 'save-template', 'rename']) {
+  // AMENDED BY the right-click menu turn (01.11.2026): `unit-colour` and
+  // `rename` left PRO's menu by the owner's word (their homes are the right
+  // panel's Colour and NAME field); the rest of the table is PRO's whole menu.
+  for (const id of ['top-infill', 'side-infill', 'save-template']) {
     assert.ok(actions.includes(`id: '${id}'`) || actions.includes(`id: \`${id}\``)
       || new RegExp(`id: .${id}.`).test(actions), `the shared table lost ${id} — PRO's menu shrank`);
   }

@@ -2079,7 +2079,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     let remembered = null;
     if (patch?.company) {
       next.company = { ...(prev.company || {}), ...patch.company };
-      remembered = rememberTitleBlockCompany(next.company);
+      // T-CC1b F7.2: an inserted logo (or 'none') is THIS item's only; the computer remembers the company
+      // without it, so the next item opens on the company's logo from Joinery Core (lib/jcLogo.js).
+      const { logo: _logo, ...company } = next.company;
+      remembered = rememberTitleBlockCompany(company);
     }
     set((s) => ({ project: { ...s.project, titleBlock: next } }));
     return { remembered };

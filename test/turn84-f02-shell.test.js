@@ -33,8 +33,8 @@ import {
 } from '../src/components/studio/lib/studioFace.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { audienceForPath } from '../src/lib/appEntry.js';
-import { buildDatabaseMenu, MENU_ORDER, orderMenus } from '../src/lib/topMenu.js';
-import { buildOutputMenu, DRAWING_KINDS } from '../src/lib/outputMenu.js';
+import { MENU_ORDER, orderMenus } from '../src/lib/topMenu.js';
+import { buildOutputMenu } from '../src/lib/outputMenu.js';
 import { getUnitType, UNIT_CATEGORIES } from '../src/engine/types.js';
 import { roomWalls } from '../src/engine/room.js';
 import { findingsToAct } from '../src/engine/checks.js';
@@ -195,8 +195,6 @@ test('F2 · the array the two layouts draw is the census\'s 48 leaves, menu for 
     profile: P,
     UNIT_CATEGORIES,
     buildOutputMenu,
-    buildDatabaseMenu,
-    DRAWING_KINDS,
     viewMode: '3d',
     contourView: false,
     dirty: false,
@@ -223,7 +221,7 @@ test('F2 · the array the two layouts draw is the census\'s 48 leaves, menu for 
   // eslint-disable-next-line no-new-func
   const menus = new Function('__scope', `with (__scope) { return (${arrayText}); }`)(scope);
   const ordered = orderMenus(menus);
-  assert.deepEqual(ordered.map((m) => m.label), MENU_ORDER, 'File / View / Library / Settings / Database / Spraying / Lighting / Output');
+  assert.deepEqual(ordered.map((m) => m.label), MENU_ORDER, 'File / View / Settings / Spraying / Lighting / Output (T-CC1b F3 and F4)');
   // The census's rule 1: an entry that acts (a dropdown item with no items of
   // its own, a submenu's child, a slider item, a top-level entry with run).
   const leaves = (menu) => {
@@ -237,10 +235,17 @@ test('F2 · the array the two layouts draw is the census\'s 48 leaves, menu for 
   // the census stays, by label and by handler (test/turn84-f07-parity.test.js); the census itself, 48, is not
   // re-pinned, and every other menu keeps its count exactly. The owner: *"zrobisz mi pozniej cos co zadziala, czyli
   // export i import projektow"*; of the census: *"funkcje w menu musza sie zachowac wszystkie"*.
-  const ADDED = { File: 2 };
-  const expected = Object.fromEntries(Object.entries(CENSUS.static.topMenu.perMenu).map(([k, n]) => [k, n + (ADDED[k] || 0)]));
-  assert.deepEqual(perMenu, expected, 'every menu keeps its leaves');
-  assert.equal(Object.values(perMenu).reduce((a, b) => a + b, 0), CENSUS.static.topMenu.total + 2);
+  // AMENDED BY T-CC1b F3, F4 and F5 (the Deletion licence, by name; SAME DOORS proven in
+  // test/turn-cc1b-f05-output.test.js): Library (4) and Database (5) leave the bar, Company defaults
+  // joins Settings (+1), Output keeps its four (*"Output tylko: cutting list, BOM PDF, labels 21 i 44"*,
+  // the owner, 01.11.2026). The census itself, 48, is main's and is not re-pinned.
+  const ADDED = { File: 2, Settings: 1 };
+  const GONE = new Set(['Library', 'Database']);
+  const expected = Object.fromEntries(Object.entries(CENSUS.static.topMenu.perMenu)
+    .filter(([k]) => !GONE.has(k))
+    .map(([k, n]) => [k, k === 'Output' ? 4 : n + (ADDED[k] || 0)]));
+  assert.deepEqual(perMenu, expected, 'every menu keeps its leaves but the licensed deletions');
+  assert.equal(Object.values(perMenu).reduce((a, b) => a + b, 0), CENSUS.static.topMenu.total + 2 + 1 - 4 - 5 - 10);
   assert.equal(CENSUS.static.topMenu.total, 48);
 });
 
@@ -259,7 +264,12 @@ test('F2 · every header control is written once and drawn by both layouts', () 
   ]) {
     assert.equal(TOP.split(handler).length - 1, 1, `${handler} is written once`);
     assert.ok(helperOf(helper).includes(handler), `${helper} carries ${handler}`);
-    assert.ok(studio.includes(`{${helper}()}`), `the Studio layout draws ${helper}`);
+    // AMENDED BY T-CC1b F1: on the Studio bar the item's name stands in the job block, right of the
+    // menus (*"po prawej, z numerem projektu JC i nazwa"*, the owner, 01.11.2026): the same helper.
+    const drawn = helper === 'drawProjectName'
+      ? studio.includes('{drawJobBlock()}') && helperOf('drawJobBlock').includes('{drawProjectName()}')
+      : studio.includes(`{${helper}()}`);
+    assert.ok(drawn, `the Studio layout draws ${helper}`);
     assert.ok(legacy.includes(`{${helper}()}`), `the legacy layout draws ${helper}`);
   }
   // The census reads the header's controls out of every `return (`: each
@@ -270,11 +280,13 @@ test('F2 · every header control is written once and drawn by both layouts', () 
   // The Studio order (CLAUDE.md T84 F2) and the legacy order (today's).
   const order = (src, names) => names.map((n) => src.indexOf(n));
   // REWRITTEN BY T-CC1a F3: Account and the mock badge are deleted from both orders; the rest keeps its place.
-  const s = order(studio, ['{drawWordmark()}', '>PRO<', '{drawProjectName()}', '{drawMenuBar()}', '<StudioHistory />', '{drawSave()}', '{drawBrightness()}', '{drawBom()}']);
+  // AMENDED BY T-CC1b F1: [wordmark] [PRO] [menus] [spacer] [the job block] [Save] [Brightness] [BOM] [Back to Joinery Core].
+  const s = order(studio, ['{drawWordmark()}', '>PRO<', '{drawMenuBar()}', '{drawJobBlock()}', '<StudioHistory />', '{drawSave()}', '{drawBrightness()}', '{drawBom()}', '{drawBackToJc()}']);
   assert.ok(s.every((v, i) => v > 0 && (i === 0 || v > s[i - 1])), `the Studio bar's order: ${s}`);
   const l = order(legacy, ['{drawWordmark()}', '{drawMenuBar()}', '{drawProjectName()}', '{drawSave()}', '{drawBrightness()}', '{drawBom()}']);
   assert.ok(l.every((v, i) => v > 0 && (i === 0 || v > l[i - 1])), `the legacy bar's order: ${l}`);
   assert.ok(!legacy.includes('StudioHistory') && !legacy.includes('PRO<'), 'the legacy bar gains nothing');
+  assert.ok(!legacy.includes('drawJobBlock') && !legacy.includes('drawBackToJc'), 'T-CC1b F1: no line of the legacy bar changes');
   assert.match(studio, /<header\b/, 'the Studio top bar is a <header> (the census finds it by its menu nav)');
   assert.match(studio, /style=\{\{ height: 'var\(--studio-top\)' \}\}/, 'its height is the profile\'s');
 });
@@ -287,8 +299,9 @@ test('F2 · the gold button: BOM on the Studio bar, the same setBomOpen call (*"
   assert.match(bom, /data-studio=\{studio \? 'topbar-bom' : undefined\}/);
   assert.match(TOP, /const bomOpen = useUiStore\(\(s\) => s\.bomOpen\);/);
   assert.match(TOP, /const setBomOpen = useUiStore\(\(s\) => s\.setBomOpen\);/);
-  // Output > Bill of materials... is still the other road to the same panel.
-  assert.match(TOP, /onOpenBom: \(\) => setBomOpen\(true\),/);
+  // AMENDED BY T-CC1b F5: Output > Bill of materials... is deleted (*"Output tylko: cutting list, BOM
+  // PDF, labels 21 i 44"*, the owner, 01.11.2026); this button is the one road to the panel.
+  assert.doesNotMatch(TOP, /onOpenBom:/);
 });
 
 test('F2 · Undo and Redo on the Studio bar are the history store\'s, with the toolbar\'s guards and titles', () => {

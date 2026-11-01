@@ -267,11 +267,11 @@
   margin: 0 3px;
 }
 
-/* The only part of the top bar that gives way when the screen is narrow: the name truncates. */
+/* The item's name truncates when it is long. T-CC1b F1.4: it no longer gives its width to the
+   menus (Library and Database are gone from the bar, F3 and F4); it stands in the job block. */
 .studio-pro .studio-project-name {
   flex: 0 1 auto;
   min-width: 0;
-  max-width: 180px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -291,6 +291,42 @@
   display: block;
   font-size: calc(var(--studio-text) - 2px);
   color: theme('colors.ink.200');
+}
+
+/* T-CC1b F1 (the owner: *"wprowadza w blad ... po prawej, z numerem projektu JC i nazwa"*;
+   *"srodkowe prawo, wyraznie oddzielone od menu"*): the JOB BLOCK, to the right of the menus, a
+   1 px rule on its left, two lines: the item's name, then the Joinery Core project it belongs to. */
+.studio-pro .studio-job {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 320px;
+  padding-left: 12px;
+  margin: 0 12px 0 12px;
+  line-height: 1.2;
+}
+
+.studio-pro .studio-job::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: calc(50% - 12px);
+  width: 1px;
+  height: 24px;
+  background: theme('colors.shell.600');
+}
+
+.studio-pro .studio-job-project {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: calc(var(--studio-text) - 2px);
+  color: theme('colors.ink.400');
 }
 
 /* The legacy MenuBar, mounted whole (ZERO KASOWANIA): its own buttons, compacted to 13 px with

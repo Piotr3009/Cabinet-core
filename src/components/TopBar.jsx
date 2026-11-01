@@ -8,11 +8,13 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 // Turn 44 (CLAUDE.md iron rule 5): which head is reading — factory or retail.
 import MenuBar from './MenuBar.jsx';
-import { UNIT_CATEGORIES } from '../engine/types.js';
 // Turn 35 (CLAUDE.md F10): the View item reads the project's ONE lighting state.
 import { migrateDesign } from '../engine/design.js';
 import { buildOutputMenu } from '../lib/outputMenu.js';
-import { buildDatabaseMenu, orderMenus } from '../lib/topMenu.js';
+// T-CC1b F1: the job block's second line and the way back to Joinery Core (lib/topMenu.js).
+import {
+  BACK_TO_JC_LABEL, goToJoineryCore, jobProjectLine, orderMenus,
+} from '../lib/topMenu.js';
 import { persistProject } from '../lib/persist.js';
 // Chat fix 28.10.2026: the job as a file (Save to file, Open from file).
 import { pickProjectFile } from '../lib/projectFile.js';
@@ -38,8 +40,11 @@ import { Icon } from './studio/StudioIcons.jsx';
 // being about the PROJECT, and everything that produces an artefact — a render,
 // a drawing, a cut list, a DXF, a PDF — is in one place, in the order a
 // workshop meets them: show the client, draw it, cut it.
+// T-CC1b F5: Output takes the cutting list, the materials list and the labels
+// only (*"Output zmniejszyc"*, the owner, 01.11.2026); the render, the
+// drawings and the CNC files leave from their own windows.
 export default function TopBar({
-  onExportCsv, onExportPdf, onExportDxfZip, onExportLabels, onRender, onDrawing,
+  onExportCsv, onExportPdf, onExportLabels,
   // T84 F2 (CLAUDE.md PART A): 'studio' when StudioShell holds the bar; absent, the bar of today.
   variant = null,
 }) {
@@ -68,7 +73,6 @@ export default function TopBar({
     warnIfUnsaved({ dirty, units });
     goToStart();
   };
-  const setLibraryCategory = useUiStore((s) => s.setLibraryCategory);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const toggleOutlines = useUiStore((s) => s.toggleOutlines);
   const showDimensions = useUiStore((s) => s.showDimensions);
@@ -285,28 +289,19 @@ export default function TopBar({
         },
       ],
     },
-    {
-      label: 'Library',
-      items: UNIT_CATEGORIES.map((c) => ({
-        label: c.label,
-        hint: c.soon
-          ? 'Coming later'
-          : (c.saved
-            ? 'Units you have saved — right-click a unit to add one'
-            // T75 F20 · the sets shelf: the five shipped and the workshop's own.
-            : (c.sets
-              ? 'Media wall, sideboard, vanity, utility, hallway, and the sets you have saved'
-              : `${c.types.length} type${c.types.length === 1 ? '' : 's'}`)),
-        soon: c.soon,
-        disabled: c.soon,
-        run: () => setLibraryCategory(c.id),
-      })),
-    },
+    // T-CC1b F4 · the Library menu is deleted: *"Library powinno byc po lewej"* (the owner, 01.11.2026); the rail's Add is its one door.
     {
       label: 'Settings',
       items: [
         { label: 'Settings…', run: (e) => openModal('design', { anchor: anchorOfEvent(e) }) },
         { label: 'Room setup…', run: (e) => openModal('room', { anchor: anchorOfEvent(e) }) },
+        // T-CC1b F3 (the owner: *"Database: Company defaults do Settings"*): the
+        // Database menu's entry moves house, the same window, the same call.
+        {
+          label: 'Company defaults…',
+          hint: 'Hinges, plates, runners and boards this workshop fits: every new project starts here',
+          run: (e) => openModal('company-defaults', { anchor: anchorOfEvent(e) }),
+        },
         { divider: true },
         {
           label: 'Snap',
@@ -318,28 +313,7 @@ export default function TopBar({
         },
       ],
     },
-    // ─── Turn 11 (CLAUDE.md F7) ───
-    // Database gains a dropdown of its own — Materials, Clients, Projects — and
-    // absorbs the top-level "Clients" entry, which was a menu with nothing
-    // behind it standing beside a menu with nothing behind it. Nothing is lost:
-    // this is a reorder, not a cull.
-    buildDatabaseMenu({
-      // ─── TURN 51 (CLAUDE.md F7): …AND NOW THERE IS A SECOND SCREEN ──────
-      //
-      // *"Database ▸ Materials opens the warehouse, not the design modal."*
-      //
-      // T11's note above was right for T11: the assignment lived in Design
-      // Settings and a second screen would have had to be kept in step with
-      // it. The warehouse is not that screen — it is the workshop's STOCK, one
-      // table, twelve columns, its own categories — and Design Settings is
-      // still where a project's materials are ASSIGNED. Two different
-      // questions, and this entry was answering the wrong one.
-      onMaterials: (e) => openModal('warehouse', { anchor: anchorOfEvent(e) }),
-      // Turn 22 (CLAUDE.md F2b.2): the second one that is real.
-      onCompanyDefaults: (e) => openModal('company-defaults', { anchor: anchorOfEvent(e) }),
-      // Turn 39 (CLAUDE.md F3): the third.
-      onAssignMaterials: (e) => openModal('assign-materials', { anchor: anchorOfEvent(e) }),
-    }),
+    // T-CC1b F3 · the Database menu is deleted: *"Database niepotrzebne, wszystko jest w JC, Assign materials juz jest po lewej"* (the owner, 01.11.2026).
     // === T78 F21 (CLAUDE.md PART F): SPRAYING, THE OWNER'S OWN MENU =========
     // BACKLOG #36's held-open place, filled. The owner, 11.10.2026: *"cale
     // sprayowanie jako osobne menu Cabinet Core."*  A BUTTON like Lighting: it
@@ -364,18 +338,8 @@ export default function TopBar({
     // shape is a thing a node test can look at rather than a thing inside a
     // component nobody mounts. Turn 11 moves it to the END of the bar (F7):
     // it is what LEAVES the app, and a joiner reaches for it last.
-    buildOutputMenu({
-      onRender,
-      onDrawing,
-      onExportDxf: onExportDxfZip,
-      onExportCsv,
-      onExportPdf,
-      onOpenBom: () => setBomOpen(true),
-      // T78 F21 - Output > Spraying..., the same page the Spraying button opens.
-      onOpenSpraying: (e) => openModal('spraying', { anchor: anchorOfEvent(e) }),
-      // CHAT FIX 17.10.2026 - Output > Part labels (PDF): the sticker sheets.
-      onExportLabels,
-    }),
+    // T-CC1b F5: the cutting list, the materials list and the two label sheets, nothing else.
+    buildOutputMenu({ onExportCsv, onExportPdf, onExportLabels }),
   ];
 
   // ─── T84 F2 (CLAUDE.md PART A): ONE SET OF CONTROLS, TWO LAYOUTS ───────────
@@ -440,6 +404,48 @@ export default function TopBar({
           {dirty && <span className="ml-2 text-ink-400 text-xs">•</span>}
         </button>
       )
+    );
+  };
+  // ─── T-CC1b F1 · THE JOB BLOCK (law 2) ──────────────────────────────────
+  // The owner, over his screenshot: the project name before the File menu
+  // *"wprowadza w blad"*; it belongs *"po prawej, z numerem projektu JC i
+  // nazwa"*, *"srodkowe prawo, wyraznie oddzielone od menu"*. Line one is the
+  // ITEM's name (editable as ever); line two the Joinery Core project it is
+  // bound to, read-only here. An unknown project name shows the number alone.
+  const drawJobBlock = () => {
+    return (
+      <div className="studio-job" data-studio="topbar-job">
+        {drawProjectName()}
+        <span
+          className="studio-job-project"
+          data-studio="topbar-job-project"
+          title="Joinery Core project: read-only here"
+        >
+          {jobProjectLine(project)}
+        </span>
+      </div>
+    );
+  };
+  // ─── T-CC1b F1.2 · BACK TO JOINERY CORE ─────────────────────────────────
+  // The owner: *"duzy przycisk Return to Joinery Core"*. A dirty item is saved
+  // first by today's road (the pagehide flush of T-CC1a F8 covers a refused
+  // save), then the browser goes to Joinery Core's dashboard.
+  const backToJc = async () => {
+    if (dirty) await save();
+    goToJoineryCore();
+  };
+  const drawBackToJc = () => {
+    return (
+      <button
+        type="button"
+        className="cc-btn-gold shrink-0"
+        data-studio="topbar-back-jc"
+        title="Save this item if it has changes, then go back to Joinery Core"
+        onClick={backToJc}
+      >
+        {/* The house set has no arrow-left icon (StudioIcons.jsx), so the words alone (F1.2). */}
+        {BACK_TO_JC_LABEL}
+      </button>
     );
   };
   const drawSave = () => {
@@ -511,13 +517,15 @@ export default function TopBar({
         {drawWordmark()}
         <span className="studio-pro-label shrink-0">PRO</span>
         <span className="h-5 w-px bg-shell-600 shrink-0" aria-hidden />
-        {drawProjectName()}
         <div className="studio-legacy-menu min-w-0">{drawMenuBar()}</div>
         <span className="flex-1" />
+        {/* T-CC1b F1: the job block, to the right of the menus and apart from them. */}
+        {drawJobBlock()}
         <StudioHistory />
         {drawSave()}
         {drawBrightness()}
         {drawBom()}
+        {drawBackToJc()}
       </header>
     );
   }

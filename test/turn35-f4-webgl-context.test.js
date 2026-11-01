@@ -236,7 +236,8 @@ test('F4 — the room canvas outlives a screen flip, which is where "one canvas"
   const page = read('pages/ConfiguratorPage.jsx');
   assert.match(page, /<Scene onCaptureReady=\{onCaptureReady\} onRenderReady=\{onRenderReady\} \/>/);
   assert.doesNotMatch(page, /viewMode === '3d' && \s*<Scene/);
-  assert.match(page, /\{viewMode === 'cnc' && <CncView \/>\}/);
+  // AMENDED BY T-CC1b F5.2: the CNC view carries its own "Export CNC / DXF" (*"Output zmniejszyc"*).
+  assert.match(page, /\{viewMode === 'cnc' && <CncView onExportDxfZip=\{onExportDxfZip\} \/>\}/);
   // The editor's single-slot unmount was LOOKED AT and left, with the reason
   // written down where the next person will look for it (F4's brief allows the
   // decision either way; what it does not allow is silence).

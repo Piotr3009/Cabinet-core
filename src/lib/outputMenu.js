@@ -15,111 +15,33 @@
 // Zero new logic, deliberately: every `run` below is a handler that already
 // existed and did the same thing from the old place.
 
-/**
- * The submenu of technical drawings.
- *
- * Turn 6 held two places open here — "Top view" and "Front (carcass only)" —
- * for the turn that drew them. Turn 7 draws them, and it does NOT add two more
- * menu entries: the three views are one CARD, which is what a workshop hands to
- * a bench, and three separate exports of the same cabinet is three things to
- * keep in step. So the places close, and what replaces them is the card, its
- * SVG, and the whole project as a booklet.
- */
-export const DRAWING_KINDS = [
-  {
-    id: 'preview',
-    label: 'Preview…',
-    hint: 'The card on screen, and turn 6’s single elevation beside it',
-  },
-  {
-    id: 'unit-card',
-    label: 'Unit card (PDF)',
-    hint: 'The selected unit: front, carcass and plan, dimensioned',
-  },
-  {
-    id: 'unit-card-svg',
-    label: 'Unit card (SVG)',
-    hint: 'The same card as vectors, for a drawing office',
-  },
-  {
-    id: 'booklet',
-    label: 'All units (PDF)',
-    hint: 'A cover and a page per unit — the whole project',
-  },
-  // ─── TURN 40 (CLAUDE.md F5): THE WALL DRAWINGS ──────────────────────────
-  //
-  // The owner, 18.08.2026: *"nie mamy drawingu całościowego — pokazuje nam
-  // tylko pojedyncze szafki, a ja bym chciał drawing całości profesjonalny jak
-  // z AutoCada."* A sheet is a WALL: /1 with the fronts on, /2 the carcass
-  // without them, and one horizontal section for the whole job. They sit HERE,
-  // beside the Unit Card, which is where CLAUDE.md puts them.
-  // ─── T71: THE SET ────────────────────────────────────────────────────────
-  // Skylon's own set on the table: one view per A3 sheet, the same title strip
-  // on all of them. Cover, plans, per wall the front view, the internal layout
-  // and the sections, then the perspective, the visualisation and the cut list.
-  {
-    id: 'walls',
-    label: 'Drawing set (PDF)',
-    hint: 'Cover, plans, per wall the front view, internal layout and sections, perspective, visualisation, cut list',
-  },
-  {
-    id: 'walls-dxf',
-    label: 'Drawing set (DXF)',
-    // The warning is in the MENU as well as on every sheet and in the ZIP: a
-    // DXF with text in it crashes VCarve's parser (02.08.2026), and the CNC
-    // export — which is a different path entirely — still ships none.
-    hint: 'AutoCAD only — do NOT open in VCarve',
-  },
-];
+// ─── T-CC1b F5 · OUTPUT SHRINKS (law 5) ─────────────────────────────────────
+// The owner, 01.11.2026: *"na dole Drawings dobre, ale myli sie z Output;
+// Output zmniejszyc"*; *"Output tylko: cutting list, BOM PDF, labels 21 i
+// 44"*; *"BOM pdf to export listy materialow w pdf (malo potrzebny ale niech
+// U maja)"*. Output is what leaves for the workshop. DELETED from the menu (the
+// Deletion licence, by name): Preview..., Unit card (PDF), Unit card (SVG),
+// All units (PDF), Drawing set (PDF), Drawing set (DXF), Render..., CNC / DXF,
+// Bill of materials..., Spraying.... Their doors now: the drawings and the
+// renders in the Drawings window (the camera bar's "Drawings..."); the BOM on
+// the top bar's BOM button; Spraying on its own menu; the CNC files on the CNC
+// workspace's "Export CNC / DXF".
 
 /**
  * @param {object} handlers
- *   onRender      open the render settings
- *   onDrawing     (kindId) => open that drawing
- *   onExportDxf   the CNC / DXF ZIP of the selected unit
- *   onExportCsv   the cutting-list CSV
- *   onExportPdf   the project PDF
- *   onOpenBom     the live BOM panel
- *   onOpenSpraying  the Spraying page (T78 F21)
+ *   onExportCsv     the cutting-list CSV
+ *   onExportPdf     the BOM PDF (the materials list of the job)
  *   onExportLabels  ({sheet}) => the part labels PDF on that paper (chat fix 17.10.2026; T79 F18)
  * @returns {{label:string, items:Array}}  a MenuBar menu
  */
-export function buildOutputMenu({
-  onRender, onDrawing, onExportDxf, onExportCsv, onExportPdf, onOpenBom, onOpenSpraying, onExportLabels,
-} = {}) {
+export function buildOutputMenu({ onExportCsv, onExportPdf, onExportLabels } = {}) {
   return {
     label: 'Output',
     items: [
-      // 1 — the render. First, because it is the one thing here a workshop
-      // shows to somebody who is not a workshop.
-      { label: 'Render…', hint: 'A photographic image of this project, to 4K', run: onRender },
-      { divider: true },
-
-      // 2 — the drawings.
-      {
-        label: 'Drawings',
-        hint: 'Technical drawings of the selected unit',
-        items: DRAWING_KINDS.map((d) => ({
-          label: d.label,
-          hint: d.soon ? 'A later turn' : d.hint,
-          soon: d.soon || undefined,
-          disabled: Boolean(d.soon),
-          run: d.soon ? undefined : (e) => onDrawing?.(d.id, e),
-        })),
-      },
-      { divider: true },
-
-      // 3 — the machine files. Moved here from File ▸ Export; the old place is
-      // gone rather than duplicated, so there is one route to each of them.
-      { label: 'CNC / DXF', hint: 'Every cut part of the selected unit, as a ZIP', run: onExportDxf },
       { label: 'Cutting list CSV', hint: 'The LISP cutting-list format, unchanged', run: onExportCsv },
-      { label: 'BOM PDF', hint: 'The project sheet: 3D view, parts, materials, hardware', run: onExportPdf },
+      { label: 'BOM PDF', hint: 'The materials list of the job as a PDF: parts, materials, hardware', run: onExportPdf },
       // CHAT FIX 17.10.2026 (the owner, 13:07): *"naklejki 44 na A4 bo takie
-      // mam, kolorami ... napis co to, i strzalka co oklejamy"*; 13:15: every
-      // element numbered. One sticker per carcass board of the whole project,
-      // in number order, on the owner's label paper (profile.labels).
-      // T79 F18 (the handover: *"przełącznik 21/44 naklejek w oknie eksportu"*;
-      // the owner 18.10, 14:55: *"ok daj"*): there is no export window, so the
+      // mam, kolorami ... napis co to, i strzalka co oklejamy"*. T79 F18: the
       // paper is chosen by the entry, each naming a preset of
       // profile.labels.sheets; the sizes are the profile's, never typed here.
       {
@@ -132,15 +54,6 @@ export function buildOutputMenu({
         hint: 'The same stickers, scaled onto the 44-up A4 paper',
         run: () => onExportLabels?.({ sheet: 'generic44' }),
       },
-      { divider: true },
-      { label: 'Bill of materials…', hint: 'Live BOM, with the export buttons', run: onOpenBom },
-      // T78 F21 (CLAUDE.md PART F): *"Output > Spraying"*, one page on the
-      // Production Core pattern: the sprayed elements by colour with their
-      // paint codes, the cards of the rules that are not all around, the paint
-      // per colour (litres, tins), Export PDF in the T71 frame. The same page
-      // the owner's Spraying button opens (*"cale sprayowanie jako osobne menu
-      // Cabinet Core"*), in the BOM's own group: both are live documents.
-      { label: 'Spraying…', hint: 'The spray schedule: elements by colour, paint codes, m2, the paint to order', run: onOpenSpraying },
     ],
   };
 }

@@ -69,7 +69,9 @@ const SECTION_GAPS = 6;
 // this is.
 const HEADROOM_GAPS = 4;
 
-export default function CncView() {
+// T-CC1b F5.2 (SAME DOORS): Output's "CNC / DXF" dies (*"Output tylko: cutting list, BOM PDF,
+// labels 21 i 44"*, the owner, 01.11.2026); the CNC files leave from here, today's `onExportDxfZip`.
+export default function CncView({ onExportDxfZip = null } = {}) {
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const units = useProjectStore((s) => s.units);
   // T48-F5: the sheet reads the CNC answer — the unit's result with its LED
@@ -560,6 +562,20 @@ export default function CncView() {
         <button type="button" className="cc-btn-ghost" title="Zoom out" onClick={() => zoomBy(ZOOM_STEP)}>−</button>
         <button type="button" className="cc-btn-ghost" title="Zoom in" onClick={() => zoomBy(1 / ZOOM_STEP)}>+</button>
         <button type="button" className="cc-btn-ghost" title="Fit the whole sheet" onClick={sheetView.fit}>Fit</button>
+        {onExportDxfZip && (
+          <>
+            <span className="w-px h-4 bg-shell-600" />
+            <button
+              type="button"
+              className="cc-btn"
+              data-cnc-export="1"
+              title="Every cut part of the selected unit, as a ZIP of DXF files"
+              onClick={() => onExportDxfZip()}
+            >
+              Export CNC / DXF
+            </button>
+          </>
+        )}
       </div>
 
       {/* layer legend: click a row to hide that layer. T79 F1: it stands on

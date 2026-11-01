@@ -10,7 +10,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { buildOutputMenu, DRAWING_KINDS } from '../src/lib/outputMenu.js';
+import * as outputMenu from '../src/lib/outputMenu.js';
+import { buildOutputMenu } from '../src/lib/outputMenu.js';
 
 const TOPBAR = new URL('../src/components/TopBar.jsx', import.meta.url).pathname;
 
@@ -29,77 +30,33 @@ function entries(menu) {
   return out;
 }
 
-test('Output carries the three groups CLAUDE.md asks for, in that order', () => {
+// REWRITTEN BY T-CC1b F5 (law 5, OUTPUT IS WHAT LEAVES FOR THE WORKSHOP): the owner, 01.11.2026:
+// *"na dole Drawings dobre, ale myli sie z Output; Output zmniejszyc"*; *"Output tylko: cutting list,
+// BOM PDF, labels 21 i 44"*. The render, the drawings, the CNC files, the BOM window and Spraying
+// leave by their own doors (test/turn-cc1b-f05-output.test.js finds each).
+test('Output carries the four CLAUDE.md T-CC1b F5 names, in that order, and nothing else', () => {
   const menu = buildOutputMenu({});
   assert.equal(menu.label, 'Output');
-
-  const labels = menu.items.filter((i) => !i.divider).map((i) => i.label);
-  assert.deepEqual(labels, [
-    'Render…',
-    'Drawings',
-    'CNC / DXF',
+  assert.deepEqual(menu.items.map((i) => i.label), [
     'Cutting list CSV',
     'BOM PDF',
-    // Chat fix 17.10.2026: the sticker sheets, in the machine files' group
-    // (*"naklejki 44 na A4 bo takie mam ... ok koduj"*). T79 F18: two entries,
-    // one per paper (the handover: *"przełącznik 21/44 naklejek w oknie
-    // eksportu"*; the owner 18.10, 14:55: *"ok daj"*).
+    // Chat fix 17.10.2026 and T79 F18: one entry per paper.
     'Part labels · 21 per sheet (Avery L7160)',
     'Part labels · 44 per sheet',
-    'Bill of materials…',
-    // T78 F21: the Spraying page, in the BOM's group (a live document, like it).
-    'Spraying…',
   ]);
-
-  // The groups are separated, not run together: a joiner scanning the menu
-  // must see "picture / drawing / machine files", not one list of six.
-  assert.equal(menu.items.filter((i) => i.divider).length, 3);
+  assert.equal(menu.items.find((i) => i.label === 'BOM PDF').hint, 'The materials list of the job as a PDF: parts, materials, hardware');
+  assert.equal(outputMenu.DRAWING_KINDS, undefined, 'the Drawings submenu is deleted with its kinds');
 });
 
-// Turn 7 (CLAUDE.md F1) closes the two places turn 6 held open. It does NOT
-// replace them with two more menu entries: the three views are ONE card, and
-// three separate exports of the same cabinet would be three things to keep in
-// step. So the whole submenu is live, and the check is that nothing is left
-// disabled pretending to be coming.
-test('Drawings is all live now — the two held-open places are closed, not renamed', () => {
-  const drawings = buildOutputMenu({}).items.find((i) => i.label === 'Drawings');
-  assert.equal(drawings.items.length, DRAWING_KINDS.length);
-  assert.equal(drawings.items.filter((i) => i.disabled).length, 0,
-    'turn 7 draws the set — nothing in Drawings is still a promise');
-  for (const item of drawings.items) {
-    assert.equal(typeof item.run, 'function', `${item.label} does something`);
-  }
-
-  const labels = drawings.items.map((i) => i.label);
-  assert.ok(labels.includes('Unit card (PDF)'), 'the card, which is what a bench is handed');
-  assert.ok(labels.includes('Unit card (SVG)'));
-  assert.ok(labels.includes('All units (PDF)'), 'and the whole project as a booklet');
-  assert.ok(labels.includes('Preview…'), 'and a way to look at it before it is a file');
-
-  // An entry that SAYS "(PDF)" writes a PDF. A menu whose export items open a
-  // preview instead is a menu that lies about what it does — the preview has
-  // its own entry, and that is the one that opens a window.
-  assert.equal(labels.filter((l) => l.endsWith('…')).length, 1);
-});
-
-test('every entry runs the handler it was given — and only that one', () => {
+test('every entry runs the handler it was given, and only that one', () => {
   const fired = [];
   const menu = buildOutputMenu({
-    onRender: () => fired.push('render'),
-    onDrawing: (kind) => fired.push(`drawing:${kind}`),
-    onExportDxf: () => fired.push('dxf'),
     onExportCsv: () => fired.push('csv'),
     onExportPdf: () => fired.push('pdf'),
-    onOpenBom: () => fired.push('bom'),
-    onOpenSpraying: () => fired.push('spraying'),
+    onExportLabels: ({ sheet }) => fired.push(`labels:${sheet}`),
   });
-
   for (const item of entries(menu)) item.run?.();
-  assert.deepEqual(fired, [
-    'render',
-    ...DRAWING_KINDS.map((d) => `drawing:${d.id}`),
-    'dxf', 'csv', 'pdf', 'bom', 'spraying',
-  ]);
+  assert.deepEqual(fired, ['csv', 'pdf', 'labels:L7160', 'labels:generic44']);
 });
 
 test('the old export places are GONE from the top bar, not left as a second route', () => {
@@ -108,7 +65,7 @@ test('the old export places are GONE from the top bar, not left as a second rout
   // File used to carry an Export submenu with the same three items in it.
   // Two menus that both export the cutting list is two things to keep in step.
   assert.ok(!/label: 'Export'/.test(src), "File ▸ Export is gone — Output is the one place");
-  for (const label of ['Cutting list CSV', 'BOM PDF', 'CNC / DXF']) {
+  for (const label of ['Cutting list CSV', 'BOM PDF']) {
     assert.equal(
       src.split(label).length - 1, 0,
       `${label} is spelled in lib/outputMenu.js only, never a second time in TopBar`,

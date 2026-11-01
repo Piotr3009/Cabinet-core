@@ -22,7 +22,8 @@
 //   - the pointer moving over the canvas buys a short window (hover, orbit);
 //   - a still room is redrawn IDLE_BEAT_MS apart anyway, the safety net for a
 //     texture or a model that lands with no state change behind it;
-//   - under the CNC view and the editor windows only the slow beat runs.
+//   - under the editor windows only the slow beat runs, and under the CNC
+//     view not even that (CNC speed J3, 01.11.2026).
 //
 // A demand frame after a pause would hand every animation the whole pause as
 // one `delta` and the door would snap open in one frame; the clock is read
@@ -48,6 +49,11 @@ const HOLD_SLOP_PX = 4;
 
 // Under the CNC view or an editor window with its own canvas.
 const hiddenIn = (s) => s.viewMode === 'cnc' || s.modal === 'cabinet' || s.modal === 'part-detail' || Boolean(s.islandPlan);
+// CNC SPEED J3 (01.11.2026): under the CNC sheet the room is not seen at all
+// (CncView is opaque over it), so there not even the slow beat draws it; the
+// editor windows keep the slow beat as before. On the way back the room is
+// drawn at once, so a texture that landed meanwhile is there on return.
+const underCnc = (s) => s.viewMode === 'cnc';
 
 export default function FrameDemand({ onHeld = null }) {
   const gl = useThree((s) => s.gl);
@@ -118,6 +124,7 @@ export default function FrameDemand({ onHeld = null }) {
     let beat = 0;
     const timer = setInterval(() => {
       if (document.hidden) return;
+      if (underCnc(useUiStore.getState())) return;
       beat += 1;
       if (hiddenIn(useUiStore.getState()) && (beat * IDLE_BEAT_MS) % HIDDEN_BEAT_MS !== 0) return;
       if (now() > until.current) kick();
@@ -152,6 +159,18 @@ export default function FrameDemand({ onHeld = null }) {
       invalidate();
     }
   }, [paused, clock, invalidate]);
+
+  // J3: leaving the CNC sheet draws the room once at once, even where an
+  // editor window still holds the slow beat (the effect above waits for it).
+  const cnc = useUiStore(underCnc);
+  const wasCnc = useRef(cnc);
+  useEffect(() => {
+    if (wasCnc.current && !cnc) {
+      clock.getDelta();
+      invalidate();
+    }
+    wasCnc.current = cnc;
+  }, [cnc, clock, invalidate]);
 
   const camera = useThree((s) => s.camera);
   const lodBeat = useRef(0);

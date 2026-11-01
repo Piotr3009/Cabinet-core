@@ -65,6 +65,11 @@
 .studio-pro > .studio-statusbar { grid-row: 4; }
 
 /* rail | scene | inspector; the inspector column is 0 when it is hidden (--studio-inspector). */
+/* 01.11.2026, 22:08 (the owner: *"powinno sie nakladac a nie ruszac scena"*): in the 3D view the
+   scene spans the inspector's column too, so the canvas never changes width; the inspector is
+   drawn over the scene's right edge (relative, no z-index: after the scene in tree order, and no
+   stacking context or containing block for the fixed windows inside it). The CNC view keeps the
+   scene in its own column, so no part of the sheet stands under its tree. */
 .studio-pro .studio-workspace {
   position: relative;
   display: grid;
@@ -76,7 +81,12 @@
 
 .studio-pro .studio-workspace > .studio-rail { grid-column: 1; grid-row: 1; }
 .studio-pro .studio-workspace > .studio-scene { grid-column: 2; grid-row: 1; }
-.studio-pro .studio-workspace > .studio-inspector { grid-column: 3; grid-row: 1; }
+.studio-pro[data-scene-under-panels="1"] .studio-workspace > .studio-scene { grid-column: 2 / 4; }
+.studio-pro .studio-workspace > .studio-inspector { grid-column: 3; grid-row: 1; position: relative; }
+
+/* ...and a panel docked in the scene (the BOM, the Check: `absolute right-0`) stands beside the
+   inspector, where it stood while the scene ended at the column. */
+.studio-pro[data-scene-under-panels="1"] .studio-scene > aside { right: var(--studio-inspector); }
 
 .studio-pro[data-inspector="none"] .studio-inspector { display: none; }
 
@@ -546,13 +556,10 @@
   color: theme('colors.ink.100');
 }
 
-/* THE UX TURN, U2, after Ewa's check of the BOM frame: a panel docked at the scene's right edge
-   (the BOM, the Check) narrows the visible scene as the inspector column does. StudioShell
-   measures the docked panel and sets --studio-dock on the scene (0 when nothing is docked); the
-   canvas wrapper and the first-unit plus (ConfiguratorPage.jsx, data-scene-follows-dock) end where
-   the panel begins, so the canvas is resized, never mounted again, and its camera stays; the two
-   bars below centre in what is left. */
-.studio-pro .studio-scene > [data-scene-follows-dock] { right: var(--studio-dock, 0px); }
+/* THE UX TURN, U2 (Ewa's check of the BOM frame) and 01.11.2026, 22:08: the panels lying over the
+   scene's right edge (the inspector, then the BOM or the Check beside it) are measured by
+   StudioShell into --studio-dock on the scene (0 when none); the canvas keeps the whole scene, and
+   the two bars below centre in what the panels leave visible, so no button stands under a panel. */
 
 /* The four toggles, centred on the top edge (her bar style, the one her camera bar wears). Centred
    by its margins, not a transform, so nothing in it becomes a containing block. */
@@ -647,6 +654,12 @@
    measure as the messages column, so no chip covers A to D or Frame selection. */
 .studio-pro .studio-scene:has(.studio-scene-links) [data-island-chips="1"] {
   bottom: calc(18px + var(--studio-button) + 12px + theme('spacing.2'));
+}
+
+/* 22:08: the chips centre in the visible part too (their own `left-1/2 -translate-x-1/2` keeps the
+   centring; only the point moves left by half the panels' cover). */
+.studio-pro .studio-scene [data-island-chips="1"] {
+  left: calc(50% - var(--studio-dock, 0px) / 2);
 }
 
 

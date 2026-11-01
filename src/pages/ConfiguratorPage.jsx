@@ -115,7 +115,7 @@ function FirstUnitPlus() {
       notify(`${set.name}: ${ids.length} units in. They are ordinary units now; Ctrl+Z takes the set back.`, 'ok');
     };
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" data-scene-follows-dock="1">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <button
           type="button"
           className="pointer-events-auto w-28 h-28 rounded-full border-2 border-dashed border-gold/70
@@ -135,7 +135,7 @@ function FirstUnitPlus() {
     );
   }
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" data-scene-follows-dock="1">
+    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
       <button
         type="button"
         className="pointer-events-auto w-28 h-28 rounded-full border-2 border-dashed border-gold/70
@@ -595,10 +595,14 @@ export default function ConfiguratorPage({ studio = false } = {}) {
     // T84 F5 · the counters on the status bar.
     statusExtras: <IssueCounters />,
     // T84 F6 · the four toggles, View, and the camera bar with Drawings... (the PREVIEW).
+    // CNC SPEED J5 (01.11.2026, the owner 21:43): *"nie no po co w widoku cnc nam pasek 3d etc?"*.
+    // On the CNC sheet the toggles are not mounted and the camera bar keeps its Drawings... alone,
+    // in its place with its opener (the only door to the Drawings window); the way back to Design is
+    // the rail's Design and View > 3D. In Design both bars stand exactly as before.
     sceneEdge: (
       <>
-        <SceneToggles />
-        <CameraBar onDrawings={(e) => openModal('drawing', { kind: 'walls', anchor: anchorOfEvent(e) })} />
+        {viewMode !== 'cnc' && <SceneToggles />}
+        <CameraBar cncSheet={viewMode === 'cnc'} onDrawings={(e) => openModal('drawing', { kind: 'walls', anchor: anchorOfEvent(e) })} />
       </>
     ),
     // T84 F7 · Add and Materials open their popups beside the rail.
@@ -618,10 +622,10 @@ export default function ConfiguratorPage({ studio = false } = {}) {
             context the PDF export captures, and re-initialising it on every
             toggle would both lose that and cost a visible stall. CncView is
             opaque, so nothing shows through. */}
-        {/* THE UX TURN, U2: in the Studio a panel docked at the scene's right edge (the BOM, the
-            Check) ends the canvas where it begins (studio.css, data-scene-follows-dock): the same
-            canvas, resized, its camera kept; the legacy face draws it as before. */}
-        <div className="absolute inset-0 bg-canvas" data-scene-follows-dock="1">
+        {/* 01.11.2026, 22:08 (the owner: *"powinno sie nakladac a nie ruszac scena"*): the canvas
+            keeps the whole scene; in the Studio the inspector, the BOM and the Check lie over its
+            right edge and never resize it (StudioShell.jsx, studio.css data-scene-under-panels). */}
+        <div className="absolute inset-0 bg-canvas">
           <Scene onCaptureReady={onCaptureReady} onRenderReady={onRenderReady} />
         </div>
         {/* T-CC1b F5.2: the CNC files leave from the CNC workspace's own "Export CNC / DXF". */}

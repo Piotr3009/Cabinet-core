@@ -596,6 +596,11 @@ export const NEW_FILES = [
   // (*"1 - koduj, 2 - wszystkie"*, the owner, 18:04).
   'test/ux-turn-engine.test.js',
   'scripts/t78-classify.d/f57-ux-turn.mjs',
+  // CNC speed (01.11.2026, in chat): the slowness since 19.10.2026, measured and fixed
+  // (*"1 - ok, 2 - ok, 3 - ok, 4 - ok"*, the owner, 21:39).
+  'test/cnc-speed-engine.test.js',
+  'test/cnc-speed-ui.test.js',
+  'scripts/t78-classify.d/f58-cnc-speed.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

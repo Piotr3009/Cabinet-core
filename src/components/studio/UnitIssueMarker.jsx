@@ -66,7 +66,11 @@ const keepToItself = (e) => { e.stopPropagation(); };
 export default function UnitIssueMarker({ unit, position }) {
   const findings = useCheckFindings();
   const issue = unitIssue(findings, unit?.id);
-  if (!unit || !issue) return null;
+  // CNC SPEED J4 (01.11.2026): the scene stays mounted under the CNC sheet
+  // (ConfiguratorPage.jsx), and an Html marker is a DOM element over it: on
+  // the sheet it stood over the parts. In CNC there is no room to point at.
+  const underCnc = useUiStore((s) => s.viewMode === 'cnc');
+  if (!unit || !issue || underCnc) return null;
 
   const num = unit.params?.unit_num ?? '';
   const said = `${num}: ${issueCountText(issue)}`;

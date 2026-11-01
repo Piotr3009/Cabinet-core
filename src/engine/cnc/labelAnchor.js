@@ -170,7 +170,17 @@ export function labelAnchors(panel, { captionH = 0, noteSize = 0, noteBlockH = 0
   const caption = onBoardPoint(cx, h / 2, outline, windows, captionH / 2);
   // The note stands at the top edge by design (beside the cut), so it asks for
   // half its own height only when it has to move; on a rectangle it stays.
-  const note = roomAt(noteAt[0], noteAt[1], outline, windows) >= 0 ? noteAt : onBoardPoint(noteAt[0], noteAt[1], outline, windows, noteSize / 2);
+  // CNC SPEED 01.11.2026 (the owner: "1 - ok"): no note asked (noteSize not
+  // > 0, the size a hidden note block has) is no search for its place. Its
+  // point is the intended one, unmoved: every caller reads `note` and
+  // `noteCentre` only when the note is drawn (`cnc/dxf.js` under
+  // `note.visible`, `components/CncView.jsx` under `slopeNote.visible`), and a
+  // drawn note always has a size above 0 (`cnc/annotation.js labelBlock`).
+  // Measured on the owner's Black Kitchen plus six cabinets: the grid scan of
+  // a note nobody draws made one CNC switch 2 029 ms, without it 182 ms.
+  const note = !(noteSize > 0) || roomAt(noteAt[0], noteAt[1], outline, windows) >= 0
+    ? noteAt
+    : onBoardPoint(noteAt[0], noteAt[1], outline, windows, noteSize / 2);
   // The block's own middle, for a layout that centres its lines (the CNC sheet).
   const noteCentre = [note[0], note[1] - (blockH - noteSize) / 2];
   return { caption, note, noteCentre, box };

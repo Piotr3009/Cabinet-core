@@ -638,6 +638,23 @@ function Caption({
   );
 }
 
+// ─── CNC SPEED J1 (01.11.2026): THE ANCHORS, ONCE PER PANEL AND LABEL ─────
+// Measured on the owner's Black Kitchen: one wheel step 2.7 to 3.6 s, a hover
+// 1.2 to 1.6 s, a short pan 9 s, nearly all of it `labelAnchors` run again for
+// every part on every render of the sheet (verify: /home/claude/perf). A part's
+// anchors are a function of its panel and of its label's size alone; the zoom
+// moves that size only where a label is shown or hidden. So they are kept per
+// panel OBJECT (the engine's answers are immutable: a changed part is a new
+// panel) and per label size: a zoom inside one size, a pan and a hover ask for
+// nothing new, and leaving and coming back to the sheet asks for nothing either.
+const ANCHORS = new WeakMap();
+function partAnchors(panel, key, args) {
+  let seen = ANCHORS.get(panel);
+  if (!seen) { seen = new Map(); ANCHORS.set(panel, seen); }
+  if (!seen.has(key)) seen.set(key, labelAnchors(panel, args));
+  return seen.get(key);
+}
+
 // ─── one cut part ───
 
 function Part({
@@ -760,7 +777,10 @@ function Part({
   // CHAT FIX 19.10.2026: the anchors are the DXF's own (`cnc/labelAnchor.js`,
   // read off the outline, moved onto the board when the middle is a window or
   // a cut-out), so the sheet shows the words where the file writes them.
-  const captionAnchor = labelAnchors(panel, { captionH: (label.size || 0) + Math.max(0, (label.lines || []).length - 1) * (label.size || 0) * 1.25 }).caption;
+  // CNC SPEED J1 (01.11.2026): read through `partAnchors`, once per panel and
+  // label size; a zoom, a pan or a hover re-renders this part and asks again.
+  const captionH = (label.size || 0) + Math.max(0, (label.lines || []).length - 1) * (label.size || 0) * 1.25;
+  const captionAnchor = partAnchors(panel, `caption|${captionH}`, { captionH }).caption;
   const [labelX, labelY] = toSheet(place, captionAnchor[0], captionAnchor[1]);
   const labelTurn = place.bounds.turn || 0;
   // ─── TURN 47 (F2/F3/F4): THE ANGLE, BESIDE THE EDGE ──────────────────────
@@ -784,10 +804,9 @@ function Part({
     ? edgeArrowGeometry(panel, profile, { textMm: label.size * 0.9 }) : null;
   // 19.10.2026: the sheet centres the note's lines on the anchor (`l.dy`), so
   // it reads the BLOCK's middle, lifted where the block would run off the board.
-  const noteAnchor = labelAnchors(panel, {
-    noteSize: slopeNote.size || 0,
-    noteBlockH: (slopeNote.size || 0) + Math.max(0, (slopeNote.lines || []).length - 1) * (slopeNote.step || 0),
-  }).noteCentre;
+  const noteSize = slopeNote.size || 0;
+  const noteBlockH = noteSize + Math.max(0, (slopeNote.lines || []).length - 1) * (slopeNote.step || 0);
+  const noteAnchor = partAnchors(panel, `note|${noteSize}|${noteBlockH}`, { noteSize, noteBlockH }).noteCentre;
   const [noteX, noteY] = toSheet(place, noteAnchor[0], noteAnchor[1]);
   // Drilling and machining marks are the drawing's own geometry now — a ⌀5 hole
   // is five millimetres wide at every zoom, never the screen-space minimum turn

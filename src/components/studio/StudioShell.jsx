@@ -30,16 +30,28 @@
 // `studioCssVars` and re-read when the window is resized.
 //
 // THE UX TURN, U2 · THE PANEL THAT HIDES. Nothing selected and nothing pinned,
-// the inspector column is not drawn and the scene takes the whole width; a
-// cabinet or a part selected, the column comes back and the scene narrows. The
-// owner: *"niech sie zweza, nie chce ustawiac sceny od nowa"*. Only the grid's
-// third column changes (`--studio-inspector`, 0 or the panel's width): the
-// scene slot below and the canvas inside it stay mounted, so the canvas is
-// resized as it is when the window is resized, and the camera stays where it
-// is (@react-three/fiber makes its camera once, at the canvas's creation, and
-// a new size only sets its aspect).
+// the inspector column is not drawn; a cabinet or a part selected, it comes
+// back. The grid's third column is 0 or the panel's width (`--studio-inspector`);
+// the scene slot below and the canvas inside it stay mounted, and the camera
+// stays where it is (@react-three/fiber makes its camera once, at the canvas's
+// creation). U2 narrowed the scene for the column (*"niech sie zweza"*); the
+// owner reversed that the same evening, below.
+//
+// THE PANELS LIE OVER THE SCENE (the owner, 01.11.2026, 22:08, over the
+// merged U2: *"miales racje, przy chowaniu sie i otwieraniu panelu zmniejszanie
+// sie widoku szafy to masakra, powinno sie nakladac a nie ruszac scena"*). In
+// the 3D view the scene spans the inspector's column too (studio.css,
+// `data-scene-under-panels`), so the canvas keeps the same width whether the
+// inspector, the BOM or the Check is up or not: the inspector is drawn over
+// the scene's right edge, the BOM and the Check stand beside it, and the canvas
+// is never resized by a panel. The inspector still goes when nothing is
+// selected and nothing is pinned. The two bars centre in what the panels leave
+// visible (`--studio-dock`, below). The CNC view keeps its column as before, so
+// no part of the sheet stands under its tree.
 
-import { useEffect, useRef, useState } from 'react';
+import {
+  useEffect, useLayoutEffect, useRef, useState,
+} from 'react';
 import './studio.css';
 import { useUiStore } from '../../stores/uiStore.js';
 import { useProjectStore } from '../../stores/projectStore.js';
@@ -100,56 +112,62 @@ export function inspectorHasContent({ viewMode = '3d', unitType = null, pinned =
 }
 
 /**
- * THE UX TURN, U2, after Ewa's check of the BOM frame: how much of the scene's
- * right edge a DOCKED panel covers. A docked panel is a direct `<aside>` of
- * the scene standing against its right edge for its whole height (the BOM and
- * the Check, both `absolute right-0 top-0 bottom-0`); the widest one wins. A
- * floating panel (the Library) is not docked. The scene then narrows for it as
- * it narrows for the inspector (studio.css `--studio-dock`): the canvas, the
- * same one with its camera, ends where the panel begins and the two bars centre
- * in what is left. Pure: the rectangles are handed in.
+ * How much of the scene's right edge the panels lying over it cover, from the
+ * edge inwards: a panel counts when it stands the scene's whole height and its
+ * right side touches the edge reached so far (the inspector against the
+ * scene's edge, then the BOM or the Check against the inspector; two at one
+ * edge, the wider). A floating panel (the Library) is not docked, and a column
+ * beside the scene (the inspector in the CNC view) covers none of it. The two
+ * bars centre in what is left (studio.css `--studio-dock`). Pure: the
+ * rectangles are handed in.
  *
  * @param {{left:number,right:number,top:number,bottom:number,width:number}} scene
- * @param {Array<{left:number,right:number,top:number,bottom:number,width:number}>} asides
- * @returns {number} the px covered, 0 when nothing is docked
+ * @param {Array<{left:number,right:number,top:number,bottom:number,width:number}>} panels
+ * @returns {number} the px covered, 0 when nothing lies over the scene
  */
-function dockedCover(scene, asides = []) {
+function dockedCover(scene, panels = []) {
   if (!scene || !(scene.width > 0)) return 0;
-  let cover = 0;
-  for (const r of asides) {
-    if (!r || !(r.width > 0)) continue;
-    const againstRight = Math.abs(r.right - scene.right) <= 1;
-    const wholeHeight = r.top <= scene.top + 1 && r.bottom >= scene.bottom - 1;
-    if (againstRight && wholeHeight) cover = Math.max(cover, scene.right - r.left);
+  const tall = panels.filter((r) => r && r.width > 0 && r.top <= scene.top + 1 && r.bottom >= scene.bottom - 1);
+  let edge = scene.right;
+  for (;;) {
+    const touching = tall.filter((r) => Math.abs(r.right - edge) <= 1 && r.left < edge - 1);
+    if (!touching.length) break;
+    edge = Math.min(...touching.map((r) => r.left));
   }
-  return Math.max(0, Math.min(scene.width, Math.round(cover)));
+  return Math.max(0, Math.min(scene.width, Math.round(scene.right - edge)));
 }
 
 /**
  * The scene's `--studio-dock`, kept up to date: re-read when a panel is mounted
- * or unmounted in the scene (the BOM, the Check), when a docked panel changes
- * width (the BOM's tabs) and when the scene itself is resized. Written on the
- * scene element's own style, so nothing re-renders and the canvas is only
- * resized, never mounted again.
+ * or unmounted (the BOM and the Check in the scene, the inspector beside it in
+ * the workspace), when a panel changes width (the BOM's tabs, the inspector at
+ * a breakpoint) and when the scene itself is resized. Measured before the
+ * frame is painted and written on the scene element's own style, so nothing
+ * re-renders and the canvas is never touched.
  */
 function useSceneDock(sceneRef) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const scene = sceneRef.current;
-    if (!scene || typeof ResizeObserver !== 'function' || typeof MutationObserver !== 'function') return undefined;
-    const asides = () => [...scene.children].filter((el) => el.tagName === 'ASIDE');
+    const workspace = scene?.parentElement;
+    if (!scene || !workspace || typeof ResizeObserver !== 'function' || typeof MutationObserver !== 'function') return undefined;
+    const panels = () => [
+      ...[...scene.children].filter((el) => el.tagName === 'ASIDE'),
+      ...[...workspace.children].filter((el) => el.dataset?.studio === 'inspector'),
+    ];
     const apply = () => {
-      const px = dockedCover(scene.getBoundingClientRect(), asides().map((el) => el.getBoundingClientRect()));
+      const px = dockedCover(scene.getBoundingClientRect(), panels().map((el) => el.getBoundingClientRect()));
       scene.style.setProperty('--studio-dock', `${px}px`);
     };
     const sizes = new ResizeObserver(apply);
     const watch = () => {
       sizes.disconnect();
       sizes.observe(scene);
-      asides().forEach((el) => sizes.observe(el));
+      panels().forEach((el) => sizes.observe(el));
       apply();
     };
     const kids = new MutationObserver(watch);
     kids.observe(scene, { childList: true });
+    kids.observe(workspace, { childList: true });
     watch();
     return () => { kids.disconnect(); sizes.disconnect(); };
   }, [sceneRef]);
@@ -176,6 +194,8 @@ export default function StudioShell({
   // it is hidden, or (U2) when it has nothing to show; the root still says the
   // store's mode (`data-inspector`) and, beside it, the column it draws.
   const column = inspector && mode !== 'none' && shown ? mode : 'none';
+  // 22:08: in the 3D view the panels lie over the scene; the CNC view keeps its column.
+  const overlay = viewMode !== 'cnc';
   const widths = studioWidths(profile, viewport.width);
   const vars = studioCssVars(profile, { viewportWidth: viewport.width, inspector: column });
   // The scene slot, for the rail's Add (the Library is placed in its
@@ -184,7 +204,7 @@ export default function StudioShell({
   // layer, lib/modalLayer.js: a menu stands over a window).
   const sceneRef = useRef(null);
   const [popupLayer, setPopupLayer] = useState(null);
-  // U2: a docked panel (the BOM, the Check) narrows the visible scene as the inspector does.
+  // The visible part of the scene, left of whatever panel lies over it: the bars centre in it.
   useSceneDock(sceneRef);
 
   return (
@@ -195,6 +215,7 @@ export default function StudioShell({
         data-studio-shell=""
         data-inspector={mode || 'full'}
         data-inspector-column={column}
+        data-scene-under-panels={overlay ? '1' : '0'}
         style={{ ...vars, ...SHELL_GRID }}
       >
         <StudioIcons />

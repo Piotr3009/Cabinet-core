@@ -106,6 +106,8 @@ test('F5.3 · the incomplete words, and the stock not loaded is never read as "r
     notInCatalogue: 'Not in the catalogue yet',
     sheetSizeMissing: 'Sheet size missing, add it in Link materials',
     unitUnknown: 'Check the unit of this item in Joinery Core',
+    // UX turn B5 (Ewa P9, Kamil P3): a price of 0 is no price.
+    noPrice: 'No price',
   });
   const links = new Map([['hinge.blum.clip-top.155.nickel', link('hinge.blum.clip-top.155.nickel', 'h155')]]);
   const offline = purchaseBom(TWO_HINGES, { links, stock: null, profile: P, design: {} });
@@ -124,21 +126,26 @@ test('F5.1 · the quoted price of T75 F21 still wins over the stock row\'s avera
   assert.equal(r.lineCost, Math.round(r.qty * 3.75 * 100) / 100);
 });
 
-/** main, c3542b9: the purchase list's hardware quantities per role (mergeUnitMaterials, `part:` keys, nothing assigned). */
+/**
+ * main, c3542b9: the purchase list's hardware quantities per role (mergeUnitMaterials, `part:` keys, nothing assigned).
+ * UX turn B3 (the owner, 01.11.2026, 18:04, *"wkrety jako jeden ... z wyjatkiem zawiasow i runnersow"*): the
+ * screws are ONE line without the hinge cups' own screws (`cup_screw`), so three jobs count fewer on purpose:
+ * 0003 274 to 220 (54 cup screws), t43 178 to 154 (24), hh 419 to 335 (84). Every other number is main's.
+ */
 const MAIN = {
   '0002-test-wardrobe-28.10.2026.ccproject': { screws: 44, legs: 5, puzzle_screws: 28 },
   '0002-test-wardrobe-30.10.2026.ccproject': { screws: 36, legs: 6, puzzle_screws: 50 },
   '0003-black-kitchen-31.10.2026.ccproject': {
-    hawa_foot: 1, cabineo_connector: 16, screws: 274, cornice: 3.169, runner_pairs: 3, handle: 12, hawa_connector: 1, hinge_plates: 27, hinges: 27, legs: 24, puzzle_screws: 260, runner_sync_rods: 3, shelf_pins: 28, hangers: 6,
+    hawa_foot: 1, cabineo_connector: 16, screws: 220, cornice: 3.169, runner_pairs: 3, handle: 12, hawa_connector: 1, hinge_plates: 27, hinges: 27, legs: 24, puzzle_screws: 260, runner_sync_rods: 3, shelf_pins: 28, hangers: 6,
   },
   '0004-project-0004-30.10.2026.ccproject': {
     cabineo_connector: 48, screws: 66, runner_pairs: 6, handle: 6, legs: 5, puzzle_screws: 24, runner_sync_rods: 6,
   },
   t43: {
-    screws: 178, runner_pairs: 3, handle: 7, hinge_plates: 12, hinges: 12, legs: 16, puzzle_screws: 180, runner_sync_rods: 3, shelf_pins: 12, hangers: 2,
+    screws: 154, runner_pairs: 3, handle: 7, hinge_plates: 12, hinges: 12, legs: 16, puzzle_screws: 180, runner_sync_rods: 3, shelf_pins: 12, hangers: 2,
   },
   hh: {
-    screws: 419, runner_pairs: 3, handle: 17, hinge_plates: 42, hinges: 42, legs: 25, puzzle_screws: 404, runner_sync_rods: 3, shelf_pins: 64, hangers: 12,
+    screws: 335, runner_pairs: 3, handle: 17, hinge_plates: 42, hinges: 42, legs: 25, puzzle_screws: 404, runner_sync_rods: 3, shelf_pins: 64, hangers: 12,
   },
 };
 

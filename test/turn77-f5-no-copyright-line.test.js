@@ -592,6 +592,10 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f56-t-cc2a-f09.mjs',
   'scripts/t78-classify.d/f56-t-cc2a-f11.mjs',
   'scripts/t78-classify.d/f56-t-cc2a-f13.mjs',
+  // UX turn (01.11.2026, in chat): the engine half of the post merge audit of T-CC2a
+  // (*"1 - koduj, 2 - wszystkie"*, the owner, 18:04).
+  'test/ux-turn-engine.test.js',
+  'scripts/t78-classify.d/f57-ux-turn.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

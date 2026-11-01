@@ -981,8 +981,9 @@ function resolveMouldingMaterial(panel, unit, assignment, { design, profile, mat
 // number, image, unit, the weighted average cost JC keeps; a quoted price of
 // T75 F21 (`pricedAt`) still wins. A row with no link, a link to a stock row
 // the company no longer has, an entry the catalogue does not hold, a sheet
-// without its size, a stock unit the list does not know: no price, said in
-// words, counted in `incomplete` (law 7).
+// without its size, a stock unit the list does not know, a price of 0 (UX
+// turn B5, 'No price'; a bespoke row "Supplied by client" is 0 by right): no
+// price, said in words, counted in `incomplete` (law 7).
 
 /** The words of law 7, one place (CONTRACT B). */
 export const LINK_WORDS = Object.freeze({
@@ -991,16 +992,24 @@ export const LINK_WORDS = Object.freeze({
   notInCatalogue: NOT_IN_CATALOGUE,
   sheetSizeMissing: 'Sheet size missing, add it in Link materials',
   unitUnknown: 'Check the unit of this item in Joinery Core',
+  // UX turn B5 (Ewa P9, Kamil P3): a price of 0 is no price, never a free line.
+  noPrice: 'No price',
 });
 
-/** "Incomplete total, <n> lines not linked" (one line: "1 line"). */
-export function incompleteWords(n) {
+/**
+ * "Incomplete total, <n> lines not linked" (one line: "1 line"). UX turn B5:
+ * a line with no price is not "not linked", so when `noPrice` lines are among
+ * the n the words say both: "... not linked or without a price". With none,
+ * the words are T-CC2a's, unchanged.
+ */
+export function incompleteWords(n, noPrice = 0) {
   const k = Number(n) || 0;
-  return `Incomplete total, ${k} ${k === 1 ? 'line' : 'lines'} not linked`;
+  const tail = Number(noPrice) > 0 ? 'not linked or without a price' : 'not linked';
+  return `Incomplete total, ${k} ${k === 1 ? 'line' : 'lines'} ${tail}`;
 }
 
 /** The statuses a row may carry; every one but `linked` and `bespoke` is counted incomplete. */
-export const INCOMPLETE_STATUSES = Object.freeze(['not-linked', 'removed', 'not-in-catalogue', 'no-sheet-size', 'unit-unknown']);
+export const INCOMPLETE_STATUSES = Object.freeze(['not-linked', 'removed', 'not-in-catalogue', 'no-sheet-size', 'unit-unknown', 'no-price']);
 
 // F6.2 (the word lists the owner confirms after the merge, case and plural folded): what a stock row's unit says it is sold by.
 const SHEET_UNITS = new Set(['sheet', 'board', 'pc', 'pcs', 'each', 'ea']);
@@ -1031,8 +1040,12 @@ export function sheetCount(m2, { yield: y = null, widthMm = null, lengthMm = nul
   return Math.ceil(roundTo((area * k) / ((w * l) / 1e6), 9));
 }
 
-/** The company's sheet yield when the link holds none (`profile.materials.sheetYield`). */
-function yieldOf(link, profile) {
+/**
+ * The yield a sheet row is counted at: the link's own, else the company's
+ * (`profile.materials.sheetYield`). Exported (UX turn B6) so the Order tab
+ * (engine/bomInvoice.js materialsSummary) counts with the SAME number.
+ */
+export function sheetYieldOf(link, profile) {
   const own = Number(link?.yield);
   if (own > 0) return own;
   const p = Number(profile?.materials?.sheetYield);
@@ -1051,6 +1064,39 @@ function linkLookup(links) {
 }
 
 const DEPARTMENT_ORDER = new Map([...DEPARTMENTS.map((d, i) => [d.id, i]), ['bespoke', DEPARTMENTS.length]]);
+
+// ─── UX TURN B3 · THE SCREWS, ONE LINE ───────────────────────────────────────
+// The owner, 01.11.2026, 18:04: *"raczej zostawilbym wkrety jako jeden i
+// wszystkie dziurki 3 mm na wkrety czyli to liczylbym to, z wyjatkiem zawiasow
+// i runnersow"*. ONE Screws line; its quantity is the number of screw pilot
+// holes at the carcass's screw diameter (`profile.puzzle.screwDiameter`, the
+// SCREWS_3MM layer's 3), every drill kind of the drilling that is a screw
+// (/screw/), less the hinges' own holes. The runners' holes are kind 'runner'
+// (engine/cabinet.js addDrill(..., 'runner', RN.layer, ...)) and the hinge
+// mounting plates' kind 'hinge' (engine/mirrorCabinet.js :704): neither is a
+// screw kind, so neither is counted. A screw pilot at another diameter is not
+// counted either (none is drilled on the fixtures or the owner's projects).
+
+/** The drill kinds that are a HINGE's own screw holes: the cup's two screws (engine/cabinet.js :10396). */
+const HINGE_SCREW_KINDS = new Set(['cup_screw']);
+
+/** The screw pilot the Screws line counts, in mm: the carcass's own (`profile.puzzle.screwDiameter`). */
+export function screwPilotDiameter(profile) {
+  const d = Number(profile?.puzzle?.screwDiameter);
+  return d > 0 ? d : null;
+}
+
+/** How many screws a drilling takes: its screw pilots at the carcass's diameter, the hinges' excluded. */
+export function screwPilotCount(drills, profile) {
+  const pilot = screwPilotDiameter(profile);
+  if (pilot == null) return 0;
+  let n = 0;
+  for (const d of drills || []) {
+    if (!/screw/.test(String(d?.kind || '')) || HINGE_SCREW_KINDS.has(d.kind)) continue;
+    if (Number(d.d) === pilot) n += 1;
+  }
+  return n;
+}
 
 /** The drilling's own counts, as hardware lines (the T32 invoice's reads, one law). */
 function drilledLines(entry, design, profile) {
@@ -1072,9 +1118,8 @@ function drilledLines(entry, design, profile) {
     push('hinge_plates', 'Hinge mounting plates', qty, { plate, finish }, `Mounting plate · ${finish || 'finish unknown'}`);
   }
   push('rail_supports', 'Rail supports', drills.filter((d) => d.kind === 'rail_bracket').length, {}, 'Rail support bracket');
-  const screws = new Map();
-  for (const d of drills) if (/screw/.test(d.kind)) screws.set(Number(d.d), (screws.get(Number(d.d)) || 0) + 1);
-  for (const [d, qty] of [...screws.entries()].sort((a, b) => a[0] - b[0])) push('screws', 'Screws', qty, { d }, `Screw for a ${d} mm pilot`);
+  const pilot = screwPilotDiameter(profile);
+  push('screws', 'Screws', screwPilotCount(drills, profile), { d: pilot }, `Screw for a ${pilot} mm pilot`);
   push('puzzle_screws', 'Puzzle connectors', drills.filter((d) => d.kind === 'puzzle').length, {}, 'Puzzle connector');
   const dowels = new Map();
   for (const d of drills) if (d.kind === 'dowel' && d.face !== 'edge') dowels.set(Number(d.d), (dowels.get(Number(d.d)) || 0) + 1);
@@ -1243,6 +1288,13 @@ export function purchaseBom(unitsIn = [], ctx = {}) {
     const v = st.price ?? st.cost_per_unit;
     return { price: v == null || v === '' ? null : Number(v) || 0, source: 'stock' };
   };
+  // UX turn B5 (Ewa P9, Kamil P3): NO PRICE IS NOT A PRICE. A linked row whose
+  // price (the quote of T75 F21, else the stock row's average) is 0 or missing
+  // is 'no-price': said in words, never in the total, counted incomplete. A
+  // row with no price SOURCE at all (no quote, the stock not loaded) is still
+  // 'linked' and unpriced, as T-CC2a F5.3 left it.
+  const unpriced = (price, source) => source != null && !(Number(price) > 0);
+  const NO_PRICE = { status: 'no-price', words: LINK_WORDS.noPrice, price: null, lineCost: null };
   const rows = [];
   for (const v of acc.values()) {
     const base = {
@@ -1292,7 +1344,7 @@ export function purchaseBom(unitsIn = [], ctx = {}) {
       price_source: source,
     };
     if (v.kind === 'sheet') {
-      const y = yieldOf(link, profile);
+      const y = sheetYieldOf(link, profile);
       const sheets = sheetCount(v.m2, { yield: y, widthMm: link.sheet_width_mm, lengthMm: link.sheet_length_mm });
       const sized = { ...base, ...said, yield: y, sheetSize: sheets == null ? null : { width_mm: Number(link.sheet_width_mm), length_mm: Number(link.sheet_length_mm) } };
       if (sheets == null) {
@@ -1308,10 +1360,18 @@ export function purchaseBom(unitsIn = [], ctx = {}) {
         });
         continue;
       }
+      if (unpriced(price, source)) {
+        rows.push({ ...sized, sheets, priceBy: how, ...NO_PRICE });
+        continue;
+      }
       const lineCost = price == null ? null : roundTo(how === 'area' ? v.m2 * y * price : sheets * price, 2);
       rows.push({
         ...sized, status: 'linked', words: null, sheets, price, priceBy: how, lineCost,
       });
+      continue;
+    }
+    if (unpriced(price, source)) {
+      rows.push({ ...base, ...said, ...NO_PRICE });
       continue;
     }
     rows.push({
@@ -1327,6 +1387,9 @@ export function purchaseBom(unitsIn = [], ctx = {}) {
     const qty = Number.isFinite(q) && q >= 0 && b.qty !== null && b.qty !== '' ? q : 1;
     const client = b.suppliedByClient === true;
     const price = client ? 0 : (Number(b.price) || 0);
+    // UX turn B5: a bespoke row the workshop BUYS with no price is no price;
+    // "Supplied by client" is 0 by right and complete.
+    const free = !client && !(price > 0);
     rows.push({
       key: `bespoke:${b.id}`,
       catalogueId: null,
@@ -1344,6 +1407,7 @@ export function purchaseBom(unitsIn = [], ctx = {}) {
       stock: null,
       price,
       lineCost: roundTo(qty * price, 2),
+      ...(free ? NO_PRICE : {}),
       bespoke: true,
       suppliedByClient: client,
     });
@@ -1359,12 +1423,14 @@ export function purchaseBom(unitsIn = [], ctx = {}) {
     totals: {
       lines: rows.length,
       linked: rows.filter((r) => r.status === 'linked').length,
+      // UX turn B5: the rows linked (or bespoke) with no price, a part of `incomplete`.
+      noPrice: rows.filter((r) => r.status === 'no-price').length,
       notLinked,
       incomplete: notLinked,
       cost: roundTo(rows.reduce((s, r) => s + (Number(r.lineCost) || 0), 0), 2),
       complete: notLinked === 0,
       sheets: rows.reduce((s, r) => s + (Number(r.sheets) || 0), 0),
-      ...(notLinked > 0 ? { words: incompleteWords(notLinked) } : {}),
+      ...(notLinked > 0 ? { words: incompleteWords(notLinked, rows.filter((r) => r.status === 'no-price').length) } : {}),
     },
   };
 }

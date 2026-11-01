@@ -136,6 +136,81 @@ function slotRecord(design, slotId) {
 }
 
 /**
+ * ─── UX TURN B2 · AN OLD PROJECT'S STOCK BOARD THICKNESS, MOVED ONCE INTO THE SETTINGS ─
+ *
+ * The owner, 01.11.2026, 18:04: *"do silnika do ciecia nie bierzesz ze stocku
+ * tylko z ustawien, prawda?"*; *"egger w 90 procentach jest 18 mm, a do
+ * produkcji przy ustawieniach dodajesz 18.5"*. The cut thickness comes from the
+ * SETTINGS only, never from a stock row at cut time (slotNominal above reads
+ * none since T-CC2a F3.3).
+ *
+ * Before T-CC2a (c3542b9) a slot whose `material_id` was a Joinery Core stock
+ * row took that row's thickness at cut time: an MDF 25 row on an 18 mm project
+ * cut at 25. Such a project, opened today, cuts at 18. This moves that row's
+ * thickness ONCE into the settings field the engine already reads first
+ * (`design.thickness.slots[slotId].measured`, slotThickness above), so the
+ * project cuts what it cut before, and from then on the settings alone decide.
+ *
+ * It moves a slot only when ALL hold: the slot is a carcass or front slot; its
+ * `material_id` is a row of `stockRows` (a Joinery Core stock row) and NOT an
+ * old Cabinet Core id or a generic placeholder (engine/catalogue.js
+ * boardChoiceOfOldId: those pin through the old-id table, untouched); the row
+ * has a numeric thickness; that thickness differs from slotNominal today; the
+ * slot has no `measured` of its own (a caliper reading always wins). Nothing
+ * else in the design changes: `confirmed`, the types, the material ids stay;
+ * the one addition is the drawer box's pin below (it keeps what it cuts today).
+ *
+ * Pure and idempotent: the second call finds `measured` set and moves nothing.
+ *
+ * @param {object} design     the project's design (not mutated)
+ * @param {Array}  stockRows  the company's stock as lib/jcStock.js toMaterial rows ({ id, thickness })
+ * @param {object} profile
+ * @returns {{ design: object, moved: Array<{ slotId: string, from: number|null, to: number, pinned?: true }> } | null}
+ *   null when nothing moved (the caller saves nothing); `pinned` marks the box kept at its own number
+ */
+export function migrateStockThickness(design, stockRows, profile) {
+  if (!design || typeof design !== 'object' || !profile) return null;
+  const rows = Array.isArray(stockRows) ? stockRows : [];
+  if (!rows.length) return null;
+  const byId = new Map(rows.filter(Boolean).map((m) => [String(m.id), m]));
+  const moved = [];
+  const slots = { ...(design.thickness?.slots || {}) };
+  for (const slot of THICKNESS_SLOTS) {
+    if (slot.kind === 'box') continue;
+    const types = slot.kind === 'front' ? (design.fronts?.types || []) : (design.carcass?.types || []);
+    const id = types[slot.index]?.material_id;
+    if (id == null || id === '') continue;
+    if (boardChoiceOfOldId(id)) continue;
+    const row = byId.get(String(id));
+    const to = num(row?.thickness);
+    if (to == null) continue;
+    if (num(slotRecord(design, slot.id).measured) != null) continue;
+    const from = slotNominal(slot.id, { design, profile });
+    if (from === to) continue;
+    slots[slot.id] = { ...(slots[slot.id] || {}), measured: to };
+    moved.push({ slotId: slot.id, from, to });
+  }
+  if (!moved.length) return null;
+  // The DRAWER BOX inherits carcass 1's `measured` (slotThickness, CHAT FIX
+  // 15.08.2026), and before T-CC2a it never inherited the stock row: c3542b9
+  // cut the box of such a project at its own seed. So when carcass 1 moves and
+  // the box has no number of its own, the box is pinned at what it cuts today,
+  // never silently re-cut at the moved carcass number.
+  const c1 = moved.find((m) => m.slotId === 'carcass1');
+  if (c1 && num(slotRecord(design, DRAWER_BOX_SLOT).measured) == null) {
+    const boxNow = slotThickness(DRAWER_BOX_SLOT, { design, profile });
+    if (boxNow != null && boxNow !== c1.to) {
+      slots[DRAWER_BOX_SLOT] = { ...(slots[DRAWER_BOX_SLOT] || {}), measured: boxNow };
+      moved.push({ slotId: DRAWER_BOX_SLOT, from: boxNow, to: boxNow, pinned: true });
+    }
+  }
+  return {
+    design: { ...design, thickness: { ...(design.thickness || {}), slots } },
+    moved,
+  };
+}
+
+/**
  * THE NUMBER THE ENGINE COMPUTES FROM.
  *
  * The caliper where somebody has used one; the manufacturer's nominal where

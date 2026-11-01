@@ -62,7 +62,7 @@ test('F7.1 · two front colours are two paint lines with their own litres, keyed
   }
 });
 
-test('F7.2 · one primer line for the whole job, one solvent line at 5 percent of the two colours\' litres', () => {
+test('F7.2 · one primer line for the whole job, one solvent line at 5 percent of the two colours\' and the primer\'s litres', () => {
   assert.equal(P.spray.solventPct, 5, 'CONFIRMED, in the profile');
   assert.equal(P.spray.primerCoats, 1, 'PROPOSED, in the profile');
   const lines = paintLinesFor(JOB, { design: DESIGN, profile: P });
@@ -75,8 +75,13 @@ test('F7.2 · one primer line for the whole job, one solvent line at 5 percent o
   const m2 = colours.reduce((s, l) => s + l.m2, 0);
   assert.ok(Math.abs(primer[0].m2 - m2) < 1e-4, 'the primer covers every sprayed m2');
   assert.equal(primer[0].litres, litresFor(m2, { coats: 1, coverage: P.spray.defaults.coverageM2PerL, wastePct: P.spray.wastePct }));
-  const litres = colours.reduce((s, l) => s + l.litres, 0);
-  assert.equal(solvent[0].litres, Math.round(litres * 0.05 * 100) / 100, '5 percent of the colours\' litres');
+  // UX turn B4 · the owner, 01.11.2026, 18:04: the 5 percent applies to the primer too (*"tak"*).
+  const litres = colours.reduce((s, l) => s + l.litres, 0) + primer[0].litres;
+  assert.ok(primer[0].litres > 0, 'the primer has litres of its own');
+  // Kept to 4 places (UX turn B4: a job is the sum of its cabinets in the solvent too).
+  const r4 = (v) => Math.round(v * 10000) / 10000;
+  assert.equal(solvent[0].litres, r4(litres * 0.05), '5 percent of the colours\' and the primer\'s litres');
+  assert.notEqual(solvent[0].litres, r4(colours.reduce((s, l) => s + l.litres, 0) * 0.05), 'not the colours alone any more');
   const pb = purchaseBom(JOB, { profile: P, design: DESIGN });
   assert.equal(pb.rows.filter((r) => r.catalogueId === 'paint.primer').length, 1);
   assert.equal(pb.rows.filter((r) => r.catalogueId === 'paint.solvent').length, 1);

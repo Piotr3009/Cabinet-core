@@ -26,6 +26,10 @@ import { DEFAULT_CABINET_PROFILE } from './profile.js';
 import { hingeAutomat, plateFamily } from './hinges.js';
 import { frontLegCount } from './legs.js';
 import { hardwareVariant, projectFrontThickness } from './projectSettings.js';
+// UX turn B6: the Order tab counts sheets with the purchase list's own law
+// (function-level reads only: the import cycle with bom.js is safe).
+import { LINK_WORDS, sheetCount, sheetYieldOf } from './bom.js';
+import { NOT_IN_CATALOGUE, entryById } from './catalogue.js';
 
 /**
  * The waste allowance as a percentage: T-CC2a's ONE offcut number,
@@ -53,10 +57,13 @@ export function bomSheet(profile) {
  * @param {object} profile
  * @param {object} [opts]  { excludeDrawerBoxes } — F7's ready-made boxes
  *   leave the cut list; their purchase line is ironmongery's business.
+ *   `links` (UX turn B6): the company's links, a Map cc_material_id to link
+ *   (stores/materialLinkStore.js `links`); see `linkedSummary` below.
  * @returns {Array<{kind:'carcasses'|'fronts', label, thickness, pieces,
  *   net_m2, waste_pct, order_m2, sheets, sheet_label, edging_m}>}
  */
-export function materialsSummary(bom, profile, { excludeDrawerBoxes = false } = {}) {
+export function materialsSummary(bom, profile, { excludeDrawerBoxes = false, links = null } = {}) {
+  if (links) return linkedSummary(bom, profile, { excludeDrawerBoxes, links });
   const wastePct = bomWastePct(profile);
   const sheet = bomSheet(profile);
   const sheetM2 = (sheet.width * sheet.height) / 1e6;
@@ -89,6 +96,93 @@ export function materialsSummary(bom, profile, { excludeDrawerBoxes = false } = 
       };
     })
     // Carcasses first, fronts after — SEPARATE, as the owner ordered.
+    .sort((a, b) => (a.kind === b.kind ? a.label.localeCompare(b.label) : (a.kind === 'fronts' ? 1 : -1)));
+}
+
+/** A link lookup over a Map, an object keyed by catalogue id, or an array of link rows (bom.js purchaseBom's own shapes). */
+function linkLookup(links) {
+  if (links instanceof Map) return (id) => links.get(id) || null;
+  if (Array.isArray(links)) {
+    const m = new Map(links.filter(Boolean).map((l) => [l.cc_material_id, l]));
+    return (id) => m.get(id) || null;
+  }
+  if (links && typeof links === 'object') return (id) => links[id] || null;
+  return () => null;
+}
+
+/**
+ * ─── UX TURN B6 · THE ORDER TAB COUNTS THE PURCHASE LIST'S SHEETS ───────────
+ *
+ * Ewa P3, Wiktor: the Order tab counted sheets on the profile's fixed 2800 x
+ * 2070 sheet while the purchase list (engine/bom.js purchaseBom) counts each
+ * catalogue entry over the whole project on its LINK's size and yield (law 6).
+ * Two numbers for one board. With `links` the Order tab is grouped as the
+ * purchase list is, ONE row per catalogue entry, and counted with the SAME
+ * functions (bom.js sheetCount, sheetYieldOf), so the two numbers are one.
+ *
+ * A row carries `sheets` and `sheetSize: { width_mm, length_mm }` (the
+ * purchase rows' names), `catalogueId`, its own `yield` and `waste_pct` (a
+ * link may hold its own), and `words` where there is no count, the purchase
+ * list's own: no link, "Not linked"; a linked sheet with no size, "Sheet size
+ * missing, add it in Link materials"; a board the catalogue does not hold,
+ * "Not in the catalogue yet".
+ * The count is never guessed. `kind` is 'fronts' when every piece of the
+ * entry is a front, else 'carcasses' (one board bought once, listed once);
+ * `kinds` names both where an entry serves both. A piece with no catalogue id
+ * keeps today's group (kind, material key, thickness). Without `links` the
+ * function above is untouched.
+ */
+function linkedSummary(bom, profile, { excludeDrawerBoxes = false, links } = {}) {
+  const linkOf = linkLookup(links);
+  const groups = new Map();
+  for (const r of bom.cutRows || []) {
+    if (excludeDrawerBoxes && r.role === 'drawer_box') continue;
+    const kind = r.material_role === 'front' ? 'fronts' : 'carcasses';
+    const id = r.catalogue_id || null;
+    const label = r.material_label || 'Unassigned';
+    const key = id ? `cat:${id}` : `${kind}|${r.material_key || label}|${r.thickness}`;
+    const g = groups.get(key) || {
+      catalogueId: id, kinds: new Set(), label: id ? (entryById(id)?.name || label) : label, thickness: r.thickness, pieces: 0, net_m2: 0, edging_m: 0,
+    };
+    g.kinds.add(kind);
+    g.pieces += r.qty;
+    g.net_m2 += r.area_m2 * r.qty;
+    g.edging_m += r.edge_m * r.qty;
+    groups.set(key, g);
+  }
+  return [...groups.values()]
+    .map(({ kinds, ...g }) => {
+      const kind = kinds.size === 1 && kinds.has('fronts') ? 'fronts' : 'carcasses';
+      const link = g.catalogueId ? linkOf(g.catalogueId) : null;
+      const y = sheetYieldOf(link, profile);
+      const sheets = link ? sheetCount(g.net_m2, { yield: y, widthMm: link.sheet_width_mm, lengthMm: link.sheet_length_mm }) : null;
+      const sheetSize = sheets == null ? null : { width_mm: Number(link.sheet_width_mm), length_mm: Number(link.sheet_length_mm) };
+      // The purchase list's words, in its order: not in the catalogue, not linked, a linked sheet with no size.
+      let words = null;
+      if (sheets == null && g.net_m2 > 0) {
+        if (!g.catalogueId) words = NOT_IN_CATALOGUE;
+        else if (!link) words = LINK_WORDS.notLinked;
+        else words = LINK_WORDS.sheetSizeMissing;
+      }
+      return {
+        ...g,
+        kind,
+        kinds: [...kinds].sort(),
+        net_m2: roundTo(g.net_m2, 3),
+        // Each row its OWN yield (the link's, else the company's): two links may hold two, so a
+        // header that reads one row's percent for the whole table can mislead; read it per row.
+        yield: y,
+        waste_pct: roundTo((y - 1) * 100, 2),
+        order_m2: roundTo(g.net_m2 * y, 3),
+        sheets: sheets == null ? (g.net_m2 > 0 ? null : 0) : sheets,
+        sheetSize,
+        words,
+        sheet_label: sheets != null
+          ? `${sheets} sheet${sheets === 1 ? '' : 's'} of ${sheetSize.width_mm}×${sheetSize.length_mm}`
+          : (words || '0 sheets'),
+        edging_m: roundTo(g.edging_m, 2),
+      };
+    })
     .sort((a, b) => (a.kind === b.kind ? a.label.localeCompare(b.label) : (a.kind === 'fronts' ? 1 : -1)));
 }
 

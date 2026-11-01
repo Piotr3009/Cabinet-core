@@ -204,7 +204,11 @@ test('F4 · the column: its hooks, its width, the panel embedded at once, the fo
   assert.match(src, /if \(viewMode === 'cnc'\) shows = 'cnc';\n\s+else if \(unitType && several\) shows = 'several';\n\s+else if \(unitType\) shows = 'one';/);
   // The panel, then the FOOT of one cabinet: Open cabinet and under it the strip of F5 (the owner:
   // "open cabinet na samym dole a pod nim wszystkie bledy ktore pokazuje"). Nothing over the panel.
-  assert.match(src, /<RightPanel\n\s+layout="embedded"\n\s+headerActions=\{<HostActions pinned=\{pinned\} \/>\}\n\s+\/>/);
+  // AMENDED BY THE RIGHT-CLICK MENU TURN, J2 (the owner's option B, 01.11.2026: *"na gorze prawego
+  // panelu"*): the host's actions carry the "..." icon too, wherever a cabinet is selected (one or
+  // several) and never in the CNC view; still one RightPanel, still nothing over it.
+  assert.match(src, /<RightPanel\n\s+layout="embedded"\n\s+headerActions=\{<HostActions pinned=\{pinned\} menu=\{shows === 'one' \|\| shows === 'several'\} \/>\}\n\s+\/>/);
+  assert.match(cut(src, 'HostActions'), /\{menu \? <ActionsMenuButton \/> : null\}\n\s+<button/, 'the icon does not stand before Pin');
   assert.equal((src.match(/<RightPanel\b/g) || []).length, 1, 'one RightPanel, at one place in the tree');
   const panelAt = src.indexOf('<RightPanel\n');
   const footAt = src.indexOf('{fullOne ? <InspectorFoot unitId={unitId} unitType={unitType} renderStrip={renderStrip} /> : null}');

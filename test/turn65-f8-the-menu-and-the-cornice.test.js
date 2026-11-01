@@ -38,7 +38,11 @@ test('F8 · ContextMenu is COPIED, not re-written — same line count, same labe
   // CLAUDE.md names the file's size, and the copy is the same file.
   // AMENDED BY T75 F5: + five lines, the UPSTAND's two store calls, *"on and
   // off per run like the plinth"*; the copy is re-made by scripts/t75-copy.mjs.
-  assert.equal(lines(pro), 339, "PRO's ContextMenu is not 339 lines any more");
+  // AMENDED BY THE RIGHT-CLICK MENU TURN, J1 and J2 (the owner's boards, 01.11.2026: 280 px, the
+  // square, the circles, the mixed state, the submenu, Delete alone, the "..." icon *"na gorze prawego
+  // panelu"*): 755 lines. The copy is re-made by the copy machine (scripts/t78-copy.mjs), never by
+  // hand; until it is, the line below is red and says so.
+  assert.equal(lines(pro), 755, "PRO's ContextMenu is not 755 lines any more");
   assert.equal(lines(retail), lines(pro), 'the copy is not the same shape');
   // It is in the manifest, so the fidelity test and the classifier both see it.
   assert.ok(isCopy('src/retail/design/detail/ContextEdits.jsx'), 'the copy is not in the manifest');
@@ -63,11 +67,14 @@ test('F8 · ContextMenu is COPIED, not re-written — same line count, same labe
   // one PRO reaches. That is what makes it a copy rather than a lookalike.
   assert.match(retail, /from '\.\.\/\.\.\/\.\.\/lib\/contextActions\.js'/);
   const actions = read('src/lib/contextActions.js');
-  for (const id of ['cornice-0', 'cornice-70', 'cornice-100', 'bottom-mask']) {
+  // AMENDED BY the right-click menu turn (01.11.2026): the three Top cornice
+  // rows are ONE choice row (*"3 wiersze Top cornice w jednym"*, board 1), its
+  // options the profile's heights; the sections are the owner's boards.
+  for (const id of ["id: 'cornice'", "id: 'end-panels'", "id: 'bottom-mask'", "id: 'top-infill'"]) {
     assert.ok(actions.includes(id), `the shared action table lost "${id}"`);
   }
-  assert.match(actions, /top infill \+ plinth/);
-  assert.match(actions, /all end panels/);
+  assert.match(actions, /profile\.autoParts\?\.cornice\?\.heights/, 'the cornice heights are the profile\'s');
+  assert.match(actions, /export const MENU_GROUPS = \['part', 'edit', 'build', 'inside', 'copy', 'danger', 'cabinet'\];/);
 });
 
 test('F8 · …and PRO is untouched by it', () => {

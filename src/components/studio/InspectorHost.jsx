@@ -78,6 +78,8 @@ import { useCabinetProfileStore } from '../../stores/cabinetProfileStore.js';
 import { anchorOfEvent } from '../../lib/modalAnchor.js';
 import { isFreePanel } from '../../engine/types.js';
 import { Icon } from './StudioIcons.jsx';
+// J2: the right-click menu's own door, at the top of the panel.
+import { ActionsMenuButton } from '../ContextMenu.jsx';
 import { studioWidths } from './lib/studioSkin.js';
 // U2: the shell's one answer to "has the column anything to show".
 import { inspectorHasContent } from './StudioShell.jsx';
@@ -148,11 +150,19 @@ function guardAnswer(root, active, gone) {
  * Pin, handed to RightPanel as its `headerActions` and drawn INSIDE its own
  * header, before its x. `data-studio-host` keeps it apart from the panel's own
  * controls when the census counts the panel.
+ *
+ * THE RIGHT-CLICK MENU TURN, J2 (the owner's option B, 01.11.2026: *"na gorze
+ * prawego panelu"*): beside Pin, the "..." icon that opens the right-click
+ * menu for the selection, hung under it. It stands wherever a cabinet is
+ * selected (one cabinet beside its name, several in MultiUnitPanel's header,
+ * which draws these same actions) and not in the CNC view, where the panel is
+ * the sheet's tree and the scene's menu has nothing to act on.
  */
-function HostActions({ pinned }) {
+function HostActions({ pinned, menu = false }) {
   const toggleInspectorPin = useUiStore((s) => s.toggleInspectorPin);
   return (
     <span className="flex items-center gap-1 shrink-0" data-studio-host="1">
+      {menu ? <ActionsMenuButton /> : null}
       <button
         type="button"
         className={`cc-btn-ghost px-1.5 ${pinned ? 'text-gold bg-shell-700' : ''}`}
@@ -297,7 +307,7 @@ export default function InspectorHost({ renderStrip = null }) {
       <div className="flex-1 min-h-0 flex flex-col">
         <RightPanel
           layout="embedded"
-          headerActions={<HostActions pinned={pinned} />}
+          headerActions={<HostActions pinned={pinned} menu={shows === 'one' || shows === 'several'} />}
         />
       </div>
       {fullOne ? <InspectorFoot unitId={unitId} unitType={unitType} renderStrip={renderStrip} /> : null}

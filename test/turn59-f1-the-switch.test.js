@@ -137,7 +137,8 @@ const EXEMPT = {
     + ' T78 F21 · the BOM\'s materials are the warehouse\'s rows with the Paints department beside them (withPaints), so the paint lines of the spray schedule reach the Purchase list with the material\'s price, or a missing price said. *"cale sprayowanie jako osobne menu Cabinet Core"*; waste *"10 percent."*'
     + ' T-CC1b F11.1 · the live BOM window shows the Assign window\'s count: <n> of <m> lines assigned, and Not assigned materials: <k> lines in red. *"materialy z JC (jego baza), przypisanie w CC, grupy ... modal duzo wiekszy i czytelny, polaczony na stale, kazda funkcja przypisana (10 rodzajow zawiasow, wszystkie przypisane), inaczej eksport BOM pisze not assigned materials"* (the owner, 01.11.2026)'
     + ' T-CC2a F10 · every line from the one purchase list (the catalogue entry, the quantity, the JC material, the cost, or the red words of law 7 with Link to the window at that entry and the toast Saved for all projects); the Materials tab\'s board and hardware selects deleted (the Deletion licence); the Bespoke, this project only block; <n> of <m> lines linked and the incomplete total. *"chodzi o robienie listy materialow na dany projekt oraz listy kosztow"*; *"w liscie materialow bedziemy musieli dodac jeszcze add materialy bespoke (od klienta na przyklad inne ironmongery)"* (the owner, 01.11.2026)'
-    + ' UX turn (01.11.2026, chat) · Ewa P3, P7, P9: "<n> sheets of <w> x <l>" on a sheet line; the Order tab counts from each link (sheets, size, offcut per row); the Link button a real 12 px button; "<n> not linked" on the tab; an incomplete subtotal said; Qty and Unit price labels on a bespoke row; No price in red and in the incomplete words. *"ok to daj wszystkie propozycje, jak co to bedziemy usuwac"*; *"2 - wszystkie"* (the owner, 01.11.2026, 18:04)',
+    + ' UX turn (01.11.2026, chat) · Ewa P3, P7, P9: "<n> sheets of <w> x <l>" on a sheet line; the Order tab counts from each link (sheets, size, offcut per row); the Link button a real 12 px button; "<n> not linked" on the tab; an incomplete subtotal said; Qty and Unit price labels on a bespoke row; No price in red and in the incomplete words. *"ok to daj wszystkie propozycje, jak co to bedziemy usuwac"*; *"2 - wszystkie"* (the owner, 01.11.2026, 18:04)'
+    + ' CNC speed (01.11.2026, chat) · CNC speed J2: the red findings from the shared useCheckFindings; the BOM runs no Check of its own. *"przeanalizuj dlaczego CC zaczal sie tak mocno zacinac ... mnostwo funkcji moze sie nie uruchamiac za kazdym razem tylko jak cos zmieniamy lub zapisujemy"*; *"1 - ok, 2 - ok, 3 - ok, 4 - ok"* (the owner, 01.11.2026)',
   // ─── ADDED BY TURN 75 · F7, THE CORNER NOTCH ─────────────────────────────
   // CLAUDE.md T75, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file and re-frozen at its new hash in the
@@ -209,7 +210,8 @@ const EXEMPT = {
     + ' 16:10 \u00b7 a mark is drawn as the open walk it is (markPoints): the corner mark one L through the corner. *"jeden L wektor ... obok linii"*'
     + ' T79 F1 . the layer legend stands on the Changes bar (bottom-11, was bottom-3) so the bar of the one bottom-left message column never covers it. *"wszystkie informacje po zmianach które pokazujesz na ekranie proszę zrób po lewej ... powód: teraz wszystkie informacje pokazują się na środku i zasłaniają nam widok pracy."*'
     + ' T82 F15 · the front readout names a reed valley (title and vector). The owner, 25.10.2026: *"fluted teraz to sa rowki a ja potrzebuje chmurke"*'
-    + ' T-CC1b F5 · the CNC workspace gains its own Export CNC / DXF button calling today\'s onExportDxfZip, the door of the deleted Output entry. *"na dole Drawings dobre, ale myli sie z Output; Output zmniejszyc"* (the owner, 01.11.2026)',
+    + ' T-CC1b F5 · the CNC workspace gains its own Export CNC / DXF button calling today\'s onExportDxfZip, the door of the deleted Output entry. *"na dole Drawings dobre, ale myli sie z Output; Output zmniejszyc"* (the owner, 01.11.2026)'
+    + ' CNC speed (01.11.2026, chat) · CNC speed J1: a part\'s label anchors are computed once per panel and label size (a WeakMap), not on every zoom, pan or hover (the slowness measured since 19.10.2026). *"przeanalizuj dlaczego CC zaczal sie tak mocno zacinac ... mnostwo funkcji moze sie nie uruchamiac za kazdym razem tylko jak cos zmieniamy lub zapisujemy"*; *"1 - ok, 2 - ok, 3 - ok, 4 - ok"* (the owner, 01.11.2026)',
   'src/components/FrontDecorationControls.jsx': 'ORNATE, Piotr 10.10.2026: rozpisz zakoduj dokaldnei prosze i ja roto dam do clauda, ale daj gotowy kod wlacznei z leyersami prosze do cnc. Adds proposed relief note and mirror choice; no new numeric fields. ' + 'DECOR F1: editable, versioned decorative machining defaults shared with Retail. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T76 F4 · the Arch rise field goes with the ellipse it set; the defaults the controls show are the profile\'s. *"SEMICIRCULAR arch (rise = half the inner width; ... never squashed to an ellipse)"*'
     + ' T76 F6 · one prop, `fields` (PRO passes nothing and keeps every field); retail passes false and shows no number of a recipe. *"a client picks a style and gets the owner\'s recipe with NO numeric fields (lazy client law; the recipe controls are PRO\'s)"*'
@@ -339,7 +341,8 @@ const EXEMPT = {
     + ' T-CC1a F8 · the four triggers of the one save (lib/saveTriggers.js): Ctrl+S / Cmd+S beside Ctrl+Z, the autosave every profile.save.autosaveMinutes when dirty, the crash buffer flushed and the keepalive save on pagehide; the six export callbacks run after the save settles when the item is dirty (saveFirst); the exports themselves untouched. *"dopiero caly json powinien sie zapisac do DB przy nacisnieciu Zapisz lub co 5 minut automatycznie"* (the owner, 30.10.2026)'
     + ' T-CC1b F2, F5, F9.3 · the scene corner\'s View dropdown (SceneViewMenu) and its mount deleted, the onDrawing road of the deleted Output entries deleted, the CNC view receives onExportDxfZip for its own Export CNC / DXF door, JcStockModal mounted on \'jc-stock\'. *"dwa menu View, jedno wystarczy, menu wystarczy"* (the owner, 01.11.2026)'
     + ' T-CC2a F8, F5.3 · LinkMaterialsModal mounted on \'link-materials\'; the BOM PDF reads the company\'s links. *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na stale"* (the owner, 01.11.2026)'
-    + ' UX turn (01.11.2026, chat) · the canvas wrapper and the first unit plus follow the dock: the scene narrows for the BOM and the Check panel as it does for the inspector, so the scene bars stay visible (Ewa\'s check of the build). *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
+    + ' UX turn (01.11.2026, chat) · the canvas wrapper and the first unit plus follow the dock: the scene narrows for the BOM and the Check panel as it does for the inspector, so the scene bars stay visible (Ewa\'s check of the build). *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)'
+    + ' CNC speed (01.11.2026, chat) · CNC speed J5: in CNC the scene toggles are not mounted and the camera bar keeps only Drawings... *"nie no po co w widoku cnc nam pasek 3d etc?"* (the owner, 01.11.2026, 21:43)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -483,7 +486,8 @@ const EXEMPT = {
     + ' UX turn (01.11.2026, chat) · the same inspectorHasContent answer as the shell; the empty "Select a cabinet or part" block deleted with the empty column. *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
   'src/components/studio/UnitIssueMarker.jsx':
     'T84 F5 · NEW, the marker beside the unit number in the scene: a red or yellow triangle with the count; a click selects the unit and opens its card. *"napewno naprzyklad wszystkie bledy zolte i czerwone sa totalnie niewidoczne, mala czcionka etc"* (the owner, 27.10.2026, 16:27)'
-    + ' Chat fix 30.10.2026 F2 · the marker\'s title says panel, not card; its click is what it was (select, show the inspector). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)',
+    + ' Chat fix 30.10.2026 F2 · the marker\'s title says panel, not card; its click is what it was (select, show the inspector). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)'
+    + ' CNC speed (01.11.2026, chat) · CNC speed J4: the warning marker is not drawn while the view is CNC (it showed on the sheet). *"przeanalizuj dlaczego CC zaczal sie tak mocno zacinac ... mnostwo funkcji moze sie nie uruchamiac za kazdym razem tylko jak cos zmieniamy lub zapisujemy"*; *"1 - ok, 2 - ok, 3 - ok, 4 - ok"* (the owner, 01.11.2026)',
   'src/components/studio/IssueStrip.jsx':
     'T84 F5 · NEW, the strip in the card and over the full panel (the finding\'s own words, its level\'s colour, Show) and the counters on the status bar. *"napewno naprzyklad wszystkie bledy zolte i czerwone sa totalnie niewidoczne, mala czcionka etc"* (the owner, 27.10.2026, 16:27)'
     + ' Chat fix 30.10.2026 F2 · the strip stands in the column\'s foot under Open cabinet (the head comment; no row changed). *"open cabinet na samym dole a pod nim wszystkie bledy ktore pokazuje"* (the owner, 30.10.2026)'
@@ -495,7 +499,8 @@ const EXEMPT = {
   'src/components/studio/SceneToggles.jsx':
     'T84 F6 · NEW, the four toggles at the scene\'s top edge (profile.ui.studio.sceneToggles) with the canvas toolbar\'s own handlers and guards. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
   'src/components/studio/CameraBar.jsx':
-    'T84 F6 · NEW, the camera bar: Plan, Iso, A, B, C, D and Frame selection through the room\'s registered camera, and Drawings as the drawing window\'s preview. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
+    'T84 F6 · NEW, the camera bar: Plan, Iso, A, B, C, D and Frame selection through the room\'s registered camera, and Drawings as the drawing window\'s preview. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)'
+    + ' CNC speed (01.11.2026, chat) · CNC speed J5: with cncSheet only Drawings... is drawn, in its place, with its one opener. *"nie no po co w widoku cnc nam pasek 3d etc?"* (the owner, 01.11.2026, 21:43)',
   'src/components/studio/lib/cameraPresets.js':
     'T84 F6 · NEW, pure: the six directions from the room and Frame selection over the selected boxes (profile.ui.studio.frameMargin). *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
   'src/components/studio/RailMenus.jsx':
@@ -577,7 +582,7 @@ const FROZEN = {
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/AssignMaterialsModal.jsx': 'fdba1f655c1155e9e09c82261eb6c2d6f25a48662f6f21a415d9f2c10ca0a1ec',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/BomPanel.jsx': '830fefd3333ca10cfec1cb45fc350f428182a93de5029d993908615c989ad495',
+  'src/components/BomPanel.jsx': '75baa3d7ff4032854008ea75dae23db8f99c1631ea601f22b23e1e1e5db1e2b1',
   // T79 F12 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 re-frozen at the new hash; EXEMPT above carries the reason.
   'src/components/CabinetEditorModal.jsx': '3f080e23b09ce5c5018f89649264e77cb85e5f5594dafecd839673d6db9fd066',
@@ -595,7 +600,7 @@ const FROZEN = {
   // T79 F1 re-frozen at the new hash; EXEMPT above carries the reason.
   // CHAT FIX 19.10.2026 (the afternoon) re-frozen at the new hash; EXEMPT above carries the reason.
   // T82 F15 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/CncView.jsx': 'd3afdbb6fa29e5517b1df14c3dcc3a26cb788aeadc393dcd1d1182c48c11be79',
+  'src/components/CncView.jsx': '1dc7346b3328c48548b4ac817453b1f97243477fadf8daa218aed1ceffb1ee86',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
   // T78 F19 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/CompanyDefaultsModal.jsx': 'e365305d290ab32057544e05f83b068f1ef9414642fe00f429cfbedb84dbc917',
@@ -719,7 +724,7 @@ const FROZEN = {
   // T84 F5 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F7 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '107661912b6ba8378c5094b2fd0dd1e83bf6566335a70cd5cfb1d5dad96e3dff',
+  'src/pages/ConfiguratorPage.jsx': '57a92223b4d035c3b28fe6a5f79cc43362408c69eee618025617a5b8866b11e5',
   // T84 F1 · NEW PRO files (the skin), frozen at their first hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F8 re-frozen at the new hash; EXEMPT above carries the reason.
@@ -737,12 +742,12 @@ const FROZEN = {
   // T84 F4 · NEW PRO files (the inspector host), frozen at their first hash; EXEMPT above carries the reason.
   'src/components/studio/InspectorHost.jsx': 'f2c3b50a433f102f008ab2912bd39c6cdf085bdf97a32e2ff375fa39648a6fc4',
   // T84 F5 · NEW PRO files (the errors you can see), frozen at their first hash; EXEMPT above carries the reason.
-  'src/components/studio/UnitIssueMarker.jsx': 'db0654d18de67bdc71741d4cf4d456fa5e5e5fac003c3efc51f0e212413a1fc1',
+  'src/components/studio/UnitIssueMarker.jsx': 'dee8ec475a7a55179865d8aa9855eb5fe3fda778dad9f669352ffd9900da6cbc',
   'src/components/studio/IssueStrip.jsx': '02363c544450a030bcb34f20643a04852d1d8740a5d656d7452f982ce2047797',
   'src/components/studio/lib/studioIssues.js': '49e8c7f94b9f6d28553380be6e33c20c962122fbdf8bede857aa90493bbbce4e',
   // T84 F6 · NEW PRO files (the scene's edge), frozen at their first hash; EXEMPT above carries the reason.
   'src/components/studio/SceneToggles.jsx': '9f32a1ec81a2fe4fc1edbaadd564a0d89b25acdd34e2e03495f5202c72f97204',
-  'src/components/studio/CameraBar.jsx': '5fc9ef238bc0b9d724c85bde0c35f1cd304679f84b0b92167536654633995ac2',
+  'src/components/studio/CameraBar.jsx': 'a0bb875fc220fdf0e749d933450d701926e9fb8910f7d102039ecad36b904753',
   'src/components/studio/lib/cameraPresets.js': 'ebca96709d0a5e5c9803980130a4720357e06f724bf56b8bc5d59f0d63ebd6f6',
   // T84 F7 · NEW PRO files (the rail's menus, Escape and the parity gate), frozen at their first hash; EXEMPT above carries the reason.
   'src/components/studio/RailMenus.jsx': '04288890a3726f2dca033568233119de2f8eef0d3a2ee48253672800fce2d889',

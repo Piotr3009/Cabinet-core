@@ -1,0 +1,3974 @@
+{
+ "schema": 1,
+ "issued": "2026-11-01",
+ "turn": "T-CC2a",
+ "ids": {
+  "sheet.egger.w1000_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "W1000_9",
+   "thickness": 18
+  },
+  "sheet.egger.w1000_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "W1000_9",
+   "thickness": 19
+  },
+  "sheet.egger.w1000_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "W1000_9",
+   "thickness": 22
+  },
+  "sheet.egger.w1000_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "W1000_9",
+   "thickness": 25
+  },
+  "sheet.egger.u702_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U702_9",
+   "thickness": 18
+  },
+  "sheet.egger.u702_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U702_9",
+   "thickness": 19
+  },
+  "sheet.egger.u702_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U702_9",
+   "thickness": 22
+  },
+  "sheet.egger.u702_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U702_9",
+   "thickness": 25
+  },
+  "sheet.egger.h1180_37.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1180_37",
+   "thickness": 18
+  },
+  "sheet.egger.h1180_37.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1180_37",
+   "thickness": 19
+  },
+  "sheet.egger.h1180_37.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1180_37",
+   "thickness": 22
+  },
+  "sheet.egger.h1180_37.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1180_37",
+   "thickness": 25
+  },
+  "sheet.egger.h1145_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1145_10",
+   "thickness": 18
+  },
+  "sheet.egger.h1145_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1145_10",
+   "thickness": 19
+  },
+  "sheet.egger.h1145_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1145_10",
+   "thickness": 22
+  },
+  "sheet.egger.h1145_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1145_10",
+   "thickness": 25
+  },
+  "sheet.egger.h3325_28.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3325_28",
+   "thickness": 18
+  },
+  "sheet.egger.h3325_28.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3325_28",
+   "thickness": 19
+  },
+  "sheet.egger.h3325_28.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3325_28",
+   "thickness": 22
+  },
+  "sheet.egger.h3325_28.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3325_28",
+   "thickness": 25
+  },
+  "sheet.egger.u999_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U999_12",
+   "thickness": 18
+  },
+  "sheet.egger.u999_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U999_12",
+   "thickness": 19
+  },
+  "sheet.egger.u999_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U999_12",
+   "thickness": 22
+  },
+  "sheet.egger.u999_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U999_12",
+   "thickness": 25
+  },
+  "sheet.egger.u606_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U606_9",
+   "thickness": 18
+  },
+  "sheet.egger.u606_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U606_9",
+   "thickness": 19
+  },
+  "sheet.egger.u606_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U606_9",
+   "thickness": 22
+  },
+  "sheet.egger.u606_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U606_9",
+   "thickness": 25
+  },
+  "sheet.egger.u699_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U699_9",
+   "thickness": 18
+  },
+  "sheet.egger.u699_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U699_9",
+   "thickness": 19
+  },
+  "sheet.egger.u699_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U699_9",
+   "thickness": 22
+  },
+  "sheet.egger.u699_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U699_9",
+   "thickness": 25
+  },
+  "sheet.egger.u636_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U636_9",
+   "thickness": 18
+  },
+  "sheet.egger.u636_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U636_9",
+   "thickness": 19
+  },
+  "sheet.egger.u636_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U636_9",
+   "thickness": 22
+  },
+  "sheet.egger.u636_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U636_9",
+   "thickness": 25
+  },
+  "sheet.egger.u399_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U399_9",
+   "thickness": 18
+  },
+  "sheet.egger.u399_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U399_9",
+   "thickness": 19
+  },
+  "sheet.egger.u399_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U399_9",
+   "thickness": 22
+  },
+  "sheet.egger.u399_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U399_9",
+   "thickness": 25
+  },
+  "sheet.egger.u540_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U540_9",
+   "thickness": 18
+  },
+  "sheet.egger.u540_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U540_9",
+   "thickness": 19
+  },
+  "sheet.egger.u540_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U540_9",
+   "thickness": 22
+  },
+  "sheet.egger.u540_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U540_9",
+   "thickness": 25
+  },
+  "sheet.egger.u963_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U963_9",
+   "thickness": 18
+  },
+  "sheet.egger.u963_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U963_9",
+   "thickness": 19
+  },
+  "sheet.egger.u963_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U963_9",
+   "thickness": 22
+  },
+  "sheet.egger.u963_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U963_9",
+   "thickness": 25
+  },
+  "sheet.egger.u732_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U732_9",
+   "thickness": 18
+  },
+  "sheet.egger.u732_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U732_9",
+   "thickness": 19
+  },
+  "sheet.egger.u732_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U732_9",
+   "thickness": 22
+  },
+  "sheet.egger.u732_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U732_9",
+   "thickness": 25
+  },
+  "sheet.egger.u560_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U560_9",
+   "thickness": 18
+  },
+  "sheet.egger.u560_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U560_9",
+   "thickness": 19
+  },
+  "sheet.egger.u560_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U560_9",
+   "thickness": 22
+  },
+  "sheet.egger.u560_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U560_9",
+   "thickness": 25
+  },
+  "sheet.egger.u363_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U363_9",
+   "thickness": 18
+  },
+  "sheet.egger.u363_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U363_9",
+   "thickness": 19
+  },
+  "sheet.egger.u363_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U363_9",
+   "thickness": 22
+  },
+  "sheet.egger.u363_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U363_9",
+   "thickness": 25
+  },
+  "sheet.egger.u500_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U500_9",
+   "thickness": 18
+  },
+  "sheet.egger.u500_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U500_9",
+   "thickness": 19
+  },
+  "sheet.egger.u500_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U500_9",
+   "thickness": 22
+  },
+  "sheet.egger.u500_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U500_9",
+   "thickness": 25
+  },
+  "sheet.egger.u522_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U522_9",
+   "thickness": 18
+  },
+  "sheet.egger.u522_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U522_9",
+   "thickness": 19
+  },
+  "sheet.egger.u522_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U522_9",
+   "thickness": 22
+  },
+  "sheet.egger.u522_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U522_9",
+   "thickness": 25
+  },
+  "sheet.egger.u599_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U599_9",
+   "thickness": 18
+  },
+  "sheet.egger.u599_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U599_9",
+   "thickness": 19
+  },
+  "sheet.egger.u599_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U599_9",
+   "thickness": 22
+  },
+  "sheet.egger.u599_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U599_9",
+   "thickness": 25
+  },
+  "sheet.egger.u961_7.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U961_7",
+   "thickness": 18
+  },
+  "sheet.egger.u961_7.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U961_7",
+   "thickness": 19
+  },
+  "sheet.egger.u961_7.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U961_7",
+   "thickness": 22
+  },
+  "sheet.egger.u961_7.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "U961_7",
+   "thickness": 25
+  },
+  "sheet.egger.h3190_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3190_19",
+   "thickness": 18
+  },
+  "sheet.egger.h3190_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3190_19",
+   "thickness": 19
+  },
+  "sheet.egger.h3190_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3190_19",
+   "thickness": 22
+  },
+  "sheet.egger.h3190_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3190_19",
+   "thickness": 25
+  },
+  "sheet.egger.h3146_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3146_19",
+   "thickness": 18
+  },
+  "sheet.egger.h3146_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3146_19",
+   "thickness": 19
+  },
+  "sheet.egger.h3146_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3146_19",
+   "thickness": 22
+  },
+  "sheet.egger.h3146_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3146_19",
+   "thickness": 25
+  },
+  "sheet.egger.h1199_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1199_12",
+   "thickness": 18
+  },
+  "sheet.egger.h1199_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1199_12",
+   "thickness": 19
+  },
+  "sheet.egger.h1199_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1199_12",
+   "thickness": 22
+  },
+  "sheet.egger.h1199_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1199_12",
+   "thickness": 25
+  },
+  "sheet.egger.h3152_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3152_19",
+   "thickness": 18
+  },
+  "sheet.egger.h3152_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3152_19",
+   "thickness": 19
+  },
+  "sheet.egger.h3152_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3152_19",
+   "thickness": 22
+  },
+  "sheet.egger.h3152_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3152_19",
+   "thickness": 25
+  },
+  "sheet.egger.h1487_22.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1487_22",
+   "thickness": 18
+  },
+  "sheet.egger.h1487_22.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1487_22",
+   "thickness": 19
+  },
+  "sheet.egger.h1487_22.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1487_22",
+   "thickness": 22
+  },
+  "sheet.egger.h1487_22.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1487_22",
+   "thickness": 25
+  },
+  "sheet.egger.h1303_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1303_12",
+   "thickness": 18
+  },
+  "sheet.egger.h1303_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1303_12",
+   "thickness": 19
+  },
+  "sheet.egger.h1303_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1303_12",
+   "thickness": 22
+  },
+  "sheet.egger.h1303_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1303_12",
+   "thickness": 25
+  },
+  "sheet.egger.h1113_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1113_10",
+   "thickness": 18
+  },
+  "sheet.egger.h1113_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1113_10",
+   "thickness": 19
+  },
+  "sheet.egger.h1113_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1113_10",
+   "thickness": 22
+  },
+  "sheet.egger.h1113_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1113_10",
+   "thickness": 25
+  },
+  "sheet.egger.h1379_36.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1379_36",
+   "thickness": 18
+  },
+  "sheet.egger.h1379_36.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1379_36",
+   "thickness": 19
+  },
+  "sheet.egger.h1379_36.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1379_36",
+   "thickness": 22
+  },
+  "sheet.egger.h1379_36.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1379_36",
+   "thickness": 25
+  },
+  "sheet.egger.h1142_36.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1142_36",
+   "thickness": 18
+  },
+  "sheet.egger.h1142_36.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1142_36",
+   "thickness": 19
+  },
+  "sheet.egger.h1142_36.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1142_36",
+   "thickness": 22
+  },
+  "sheet.egger.h1142_36.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1142_36",
+   "thickness": 25
+  },
+  "sheet.egger.h309_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H309_12",
+   "thickness": 18
+  },
+  "sheet.egger.h309_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H309_12",
+   "thickness": 19
+  },
+  "sheet.egger.h309_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H309_12",
+   "thickness": 22
+  },
+  "sheet.egger.h309_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H309_12",
+   "thickness": 25
+  },
+  "sheet.egger.h1307_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1307_19",
+   "thickness": 18
+  },
+  "sheet.egger.h1307_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1307_19",
+   "thickness": 19
+  },
+  "sheet.egger.h1307_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1307_19",
+   "thickness": 22
+  },
+  "sheet.egger.h1307_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1307_19",
+   "thickness": 25
+  },
+  "sheet.egger.h1401_22.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1401_22",
+   "thickness": 18
+  },
+  "sheet.egger.h1401_22.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1401_22",
+   "thickness": 19
+  },
+  "sheet.egger.h1401_22.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1401_22",
+   "thickness": 22
+  },
+  "sheet.egger.h1401_22.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1401_22",
+   "thickness": 25
+  },
+  "sheet.egger.h3860_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3860_9",
+   "thickness": 18
+  },
+  "sheet.egger.h3860_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3860_9",
+   "thickness": 19
+  },
+  "sheet.egger.h3860_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3860_9",
+   "thickness": 22
+  },
+  "sheet.egger.h3860_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3860_9",
+   "thickness": 25
+  },
+  "sheet.egger.h3012_22.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3012_22",
+   "thickness": 18
+  },
+  "sheet.egger.h3012_22.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3012_22",
+   "thickness": 19
+  },
+  "sheet.egger.h3012_22.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3012_22",
+   "thickness": 22
+  },
+  "sheet.egger.h3012_22.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3012_22",
+   "thickness": 25
+  },
+  "sheet.egger.h3398_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3398_12",
+   "thickness": 18
+  },
+  "sheet.egger.h3398_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3398_12",
+   "thickness": 19
+  },
+  "sheet.egger.h3398_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3398_12",
+   "thickness": 22
+  },
+  "sheet.egger.h3398_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3398_12",
+   "thickness": 25
+  },
+  "sheet.egger.h3154_36.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3154_36",
+   "thickness": 18
+  },
+  "sheet.egger.h3154_36.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3154_36",
+   "thickness": 19
+  },
+  "sheet.egger.h3154_36.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3154_36",
+   "thickness": 22
+  },
+  "sheet.egger.h3154_36.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3154_36",
+   "thickness": 25
+  },
+  "sheet.egger.h3043_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3043_12",
+   "thickness": 18
+  },
+  "sheet.egger.h3043_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3043_12",
+   "thickness": 19
+  },
+  "sheet.egger.h3043_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3043_12",
+   "thickness": 22
+  },
+  "sheet.egger.h3043_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3043_12",
+   "thickness": 25
+  },
+  "sheet.egger.h3198_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3198_19",
+   "thickness": 18
+  },
+  "sheet.egger.h3198_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3198_19",
+   "thickness": 19
+  },
+  "sheet.egger.h3198_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3198_19",
+   "thickness": 22
+  },
+  "sheet.egger.h3198_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3198_19",
+   "thickness": 25
+  },
+  "sheet.egger.h2033_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H2033_10",
+   "thickness": 18
+  },
+  "sheet.egger.h2033_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H2033_10",
+   "thickness": 19
+  },
+  "sheet.egger.h2033_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H2033_10",
+   "thickness": 22
+  },
+  "sheet.egger.h2033_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H2033_10",
+   "thickness": 25
+  },
+  "sheet.egger.h1357_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1357_10",
+   "thickness": 18
+  },
+  "sheet.egger.h1357_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1357_10",
+   "thickness": 19
+  },
+  "sheet.egger.h1357_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1357_10",
+   "thickness": 22
+  },
+  "sheet.egger.h1357_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1357_10",
+   "thickness": 25
+  },
+  "sheet.egger.h1313_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1313_10",
+   "thickness": 18
+  },
+  "sheet.egger.h1313_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1313_10",
+   "thickness": 19
+  },
+  "sheet.egger.h1313_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1313_10",
+   "thickness": 22
+  },
+  "sheet.egger.h1313_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1313_10",
+   "thickness": 25
+  },
+  "sheet.egger.h3156_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3156_12",
+   "thickness": 18
+  },
+  "sheet.egger.h3156_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3156_12",
+   "thickness": 19
+  },
+  "sheet.egger.h3156_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3156_12",
+   "thickness": 22
+  },
+  "sheet.egger.h3156_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3156_12",
+   "thickness": 25
+  },
+  "sheet.egger.h3332_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3332_10",
+   "thickness": 18
+  },
+  "sheet.egger.h3332_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3332_10",
+   "thickness": 19
+  },
+  "sheet.egger.h3332_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3332_10",
+   "thickness": 22
+  },
+  "sheet.egger.h3332_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3332_10",
+   "thickness": 25
+  },
+  "sheet.egger.h1143_36.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1143_36",
+   "thickness": 18
+  },
+  "sheet.egger.h1143_36.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1143_36",
+   "thickness": 19
+  },
+  "sheet.egger.h1143_36.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1143_36",
+   "thickness": 22
+  },
+  "sheet.egger.h1143_36.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1143_36",
+   "thickness": 25
+  },
+  "sheet.egger.h3158_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3158_19",
+   "thickness": 18
+  },
+  "sheet.egger.h3158_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3158_19",
+   "thickness": 19
+  },
+  "sheet.egger.h3158_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3158_19",
+   "thickness": 22
+  },
+  "sheet.egger.h3158_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3158_19",
+   "thickness": 25
+  },
+  "sheet.egger.h3349_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3349_19",
+   "thickness": 18
+  },
+  "sheet.egger.h3349_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3349_19",
+   "thickness": 19
+  },
+  "sheet.egger.h3349_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3349_19",
+   "thickness": 22
+  },
+  "sheet.egger.h3349_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3349_19",
+   "thickness": 25
+  },
+  "sheet.egger.h1362_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1362_12",
+   "thickness": 18
+  },
+  "sheet.egger.h1362_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1362_12",
+   "thickness": 19
+  },
+  "sheet.egger.h1362_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1362_12",
+   "thickness": 22
+  },
+  "sheet.egger.h1362_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1362_12",
+   "thickness": 25
+  },
+  "sheet.egger.h1277_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1277_9",
+   "thickness": 18
+  },
+  "sheet.egger.h1277_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1277_9",
+   "thickness": 19
+  },
+  "sheet.egger.h1277_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1277_9",
+   "thickness": 22
+  },
+  "sheet.egger.h1277_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1277_9",
+   "thickness": 25
+  },
+  "sheet.egger.h3165_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3165_12",
+   "thickness": 18
+  },
+  "sheet.egger.h3165_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3165_12",
+   "thickness": 19
+  },
+  "sheet.egger.h3165_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3165_12",
+   "thickness": 22
+  },
+  "sheet.egger.h3165_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3165_12",
+   "thickness": 25
+  },
+  "sheet.egger.h1714_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1714_19",
+   "thickness": 18
+  },
+  "sheet.egger.h1714_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1714_19",
+   "thickness": 19
+  },
+  "sheet.egger.h1714_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1714_19",
+   "thickness": 22
+  },
+  "sheet.egger.h1714_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1714_19",
+   "thickness": 25
+  },
+  "sheet.egger.h1636_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1636_12",
+   "thickness": 18
+  },
+  "sheet.egger.h1636_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1636_12",
+   "thickness": 19
+  },
+  "sheet.egger.h1636_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1636_12",
+   "thickness": 22
+  },
+  "sheet.egger.h1636_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1636_12",
+   "thickness": 25
+  },
+  "sheet.egger.h3197_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3197_19",
+   "thickness": 18
+  },
+  "sheet.egger.h3197_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3197_19",
+   "thickness": 19
+  },
+  "sheet.egger.h3197_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3197_19",
+   "thickness": 22
+  },
+  "sheet.egger.h3197_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3197_19",
+   "thickness": 25
+  },
+  "sheet.egger.h3710_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3710_12",
+   "thickness": 18
+  },
+  "sheet.egger.h3710_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3710_12",
+   "thickness": 19
+  },
+  "sheet.egger.h3710_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3710_12",
+   "thickness": 22
+  },
+  "sheet.egger.h3710_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3710_12",
+   "thickness": 25
+  },
+  "sheet.egger.h3395_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3395_12",
+   "thickness": 18
+  },
+  "sheet.egger.h3395_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3395_12",
+   "thickness": 19
+  },
+  "sheet.egger.h3395_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3395_12",
+   "thickness": 22
+  },
+  "sheet.egger.h3395_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3395_12",
+   "thickness": 25
+  },
+  "sheet.egger.h3131_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3131_12",
+   "thickness": 18
+  },
+  "sheet.egger.h3131_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3131_12",
+   "thickness": 19
+  },
+  "sheet.egger.h3131_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3131_12",
+   "thickness": 22
+  },
+  "sheet.egger.h3131_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3131_12",
+   "thickness": 25
+  },
+  "sheet.egger.h3734_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3734_9",
+   "thickness": 18
+  },
+  "sheet.egger.h3734_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3734_9",
+   "thickness": 19
+  },
+  "sheet.egger.h3734_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3734_9",
+   "thickness": 22
+  },
+  "sheet.egger.h3734_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3734_9",
+   "thickness": 25
+  },
+  "sheet.egger.h3303_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3303_10",
+   "thickness": 18
+  },
+  "sheet.egger.h3303_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3303_10",
+   "thickness": 19
+  },
+  "sheet.egger.h3303_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3303_10",
+   "thickness": 22
+  },
+  "sheet.egger.h3303_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3303_10",
+   "thickness": 25
+  },
+  "sheet.egger.h3730_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3730_10",
+   "thickness": 18
+  },
+  "sheet.egger.h3730_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3730_10",
+   "thickness": 19
+  },
+  "sheet.egger.h3730_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3730_10",
+   "thickness": 22
+  },
+  "sheet.egger.h3730_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3730_10",
+   "thickness": 25
+  },
+  "sheet.egger.h3170_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3170_12",
+   "thickness": 18
+  },
+  "sheet.egger.h3170_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3170_12",
+   "thickness": 19
+  },
+  "sheet.egger.h3170_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3170_12",
+   "thickness": 22
+  },
+  "sheet.egger.h3170_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3170_12",
+   "thickness": 25
+  },
+  "sheet.egger.h3368_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3368_9",
+   "thickness": 18
+  },
+  "sheet.egger.h3368_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3368_9",
+   "thickness": 19
+  },
+  "sheet.egger.h3368_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3368_9",
+   "thickness": 22
+  },
+  "sheet.egger.h3368_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3368_9",
+   "thickness": 25
+  },
+  "sheet.egger.h3840_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3840_9",
+   "thickness": 18
+  },
+  "sheet.egger.h3840_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3840_9",
+   "thickness": 19
+  },
+  "sheet.egger.h3840_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3840_9",
+   "thickness": 22
+  },
+  "sheet.egger.h3840_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3840_9",
+   "thickness": 25
+  },
+  "sheet.egger.h3331_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3331_10",
+   "thickness": 18
+  },
+  "sheet.egger.h3331_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3331_10",
+   "thickness": 19
+  },
+  "sheet.egger.h3331_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3331_10",
+   "thickness": 22
+  },
+  "sheet.egger.h3331_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3331_10",
+   "thickness": 25
+  },
+  "sheet.egger.h3700_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3700_10",
+   "thickness": 18
+  },
+  "sheet.egger.h3700_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3700_10",
+   "thickness": 19
+  },
+  "sheet.egger.h3700_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3700_10",
+   "thickness": 22
+  },
+  "sheet.egger.h3700_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3700_10",
+   "thickness": 25
+  },
+  "sheet.egger.h1242_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1242_10",
+   "thickness": 18
+  },
+  "sheet.egger.h1242_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1242_10",
+   "thickness": 19
+  },
+  "sheet.egger.h1242_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1242_10",
+   "thickness": 22
+  },
+  "sheet.egger.h1242_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1242_10",
+   "thickness": 25
+  },
+  "sheet.egger.h305_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H305_12",
+   "thickness": 18
+  },
+  "sheet.egger.h305_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H305_12",
+   "thickness": 19
+  },
+  "sheet.egger.h305_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H305_12",
+   "thickness": 22
+  },
+  "sheet.egger.h305_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H305_12",
+   "thickness": 25
+  },
+  "sheet.egger.h1318_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1318_10",
+   "thickness": 18
+  },
+  "sheet.egger.h1318_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1318_10",
+   "thickness": 19
+  },
+  "sheet.egger.h1318_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1318_10",
+   "thickness": 22
+  },
+  "sheet.egger.h1318_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1318_10",
+   "thickness": 25
+  },
+  "sheet.egger.h1250_36.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1250_36",
+   "thickness": 18
+  },
+  "sheet.egger.h1250_36.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1250_36",
+   "thickness": 19
+  },
+  "sheet.egger.h1250_36.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1250_36",
+   "thickness": 22
+  },
+  "sheet.egger.h1250_36.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1250_36",
+   "thickness": 25
+  },
+  "sheet.egger.h3003_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3003_19",
+   "thickness": 18
+  },
+  "sheet.egger.h3003_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3003_19",
+   "thickness": 19
+  },
+  "sheet.egger.h3003_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3003_19",
+   "thickness": 22
+  },
+  "sheet.egger.h3003_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3003_19",
+   "thickness": 25
+  },
+  "sheet.egger.h3171_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3171_12",
+   "thickness": 18
+  },
+  "sheet.egger.h3171_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3171_12",
+   "thickness": 19
+  },
+  "sheet.egger.h3171_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3171_12",
+   "thickness": 22
+  },
+  "sheet.egger.h3171_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3171_12",
+   "thickness": 25
+  },
+  "sheet.egger.h1715_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1715_12",
+   "thickness": 18
+  },
+  "sheet.egger.h1715_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1715_12",
+   "thickness": 19
+  },
+  "sheet.egger.h1715_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1715_12",
+   "thickness": 22
+  },
+  "sheet.egger.h1715_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1715_12",
+   "thickness": 25
+  },
+  "sheet.egger.h3433_22.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3433_22",
+   "thickness": 18
+  },
+  "sheet.egger.h3433_22.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3433_22",
+   "thickness": 19
+  },
+  "sheet.egger.h3433_22.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3433_22",
+   "thickness": 22
+  },
+  "sheet.egger.h3433_22.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3433_22",
+   "thickness": 25
+  },
+  "sheet.egger.h1312_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1312_10",
+   "thickness": 18
+  },
+  "sheet.egger.h1312_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1312_10",
+   "thickness": 19
+  },
+  "sheet.egger.h1312_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1312_10",
+   "thickness": 22
+  },
+  "sheet.egger.h1312_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1312_10",
+   "thickness": 25
+  },
+  "sheet.egger.h1732_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1732_9",
+   "thickness": 18
+  },
+  "sheet.egger.h1732_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1732_9",
+   "thickness": 19
+  },
+  "sheet.egger.h1732_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1732_9",
+   "thickness": 22
+  },
+  "sheet.egger.h1732_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1732_9",
+   "thickness": 25
+  },
+  "sheet.egger.h1710_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1710_10",
+   "thickness": 18
+  },
+  "sheet.egger.h1710_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1710_10",
+   "thickness": 19
+  },
+  "sheet.egger.h1710_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1710_10",
+   "thickness": 22
+  },
+  "sheet.egger.h1710_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1710_10",
+   "thickness": 25
+  },
+  "sheet.egger.h1377_36.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1377_36",
+   "thickness": 18
+  },
+  "sheet.egger.h1377_36.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1377_36",
+   "thickness": 19
+  },
+  "sheet.egger.h1377_36.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1377_36",
+   "thickness": 22
+  },
+  "sheet.egger.h1377_36.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1377_36",
+   "thickness": 25
+  },
+  "sheet.egger.h1223_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1223_19",
+   "thickness": 18
+  },
+  "sheet.egger.h1223_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1223_19",
+   "thickness": 19
+  },
+  "sheet.egger.h1223_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1223_19",
+   "thickness": 22
+  },
+  "sheet.egger.h1223_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1223_19",
+   "thickness": 25
+  },
+  "sheet.egger.h3702_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3702_10",
+   "thickness": 18
+  },
+  "sheet.egger.h3702_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3702_10",
+   "thickness": 19
+  },
+  "sheet.egger.h3702_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3702_10",
+   "thickness": 22
+  },
+  "sheet.egger.h3702_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3702_10",
+   "thickness": 25
+  },
+  "sheet.egger.h1225_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1225_12",
+   "thickness": 18
+  },
+  "sheet.egger.h1225_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1225_12",
+   "thickness": 19
+  },
+  "sheet.egger.h1225_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1225_12",
+   "thickness": 22
+  },
+  "sheet.egger.h1225_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1225_12",
+   "thickness": 25
+  },
+  "sheet.egger.h3133_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3133_12",
+   "thickness": 18
+  },
+  "sheet.egger.h3133_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3133_12",
+   "thickness": 19
+  },
+  "sheet.egger.h3133_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3133_12",
+   "thickness": 22
+  },
+  "sheet.egger.h3133_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3133_12",
+   "thickness": 25
+  },
+  "sheet.egger.h1399_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1399_10",
+   "thickness": 18
+  },
+  "sheet.egger.h1399_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1399_10",
+   "thickness": 19
+  },
+  "sheet.egger.h1399_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1399_10",
+   "thickness": 22
+  },
+  "sheet.egger.h1399_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1399_10",
+   "thickness": 25
+  },
+  "sheet.egger.h3157_12.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3157_12",
+   "thickness": 18
+  },
+  "sheet.egger.h3157_12.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3157_12",
+   "thickness": 19
+  },
+  "sheet.egger.h3157_12.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3157_12",
+   "thickness": 22
+  },
+  "sheet.egger.h3157_12.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3157_12",
+   "thickness": 25
+  },
+  "sheet.egger.h1330_10.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1330_10",
+   "thickness": 18
+  },
+  "sheet.egger.h1330_10.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1330_10",
+   "thickness": 19
+  },
+  "sheet.egger.h1330_10.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1330_10",
+   "thickness": 22
+  },
+  "sheet.egger.h1330_10.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1330_10",
+   "thickness": 25
+  },
+  "sheet.egger.h3430_22.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3430_22",
+   "thickness": 18
+  },
+  "sheet.egger.h3430_22.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3430_22",
+   "thickness": 19
+  },
+  "sheet.egger.h3430_22.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3430_22",
+   "thickness": 22
+  },
+  "sheet.egger.h3430_22.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3430_22",
+   "thickness": 25
+  },
+  "sheet.egger.h3195_19.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3195_19",
+   "thickness": 18
+  },
+  "sheet.egger.h3195_19.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3195_19",
+   "thickness": 19
+  },
+  "sheet.egger.h3195_19.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3195_19",
+   "thickness": 22
+  },
+  "sheet.egger.h3195_19.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3195_19",
+   "thickness": 25
+  },
+  "sheet.egger.h3450_22.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3450_22",
+   "thickness": 18
+  },
+  "sheet.egger.h3450_22.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3450_22",
+   "thickness": 19
+  },
+  "sheet.egger.h3450_22.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3450_22",
+   "thickness": 22
+  },
+  "sheet.egger.h3450_22.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H3450_22",
+   "thickness": 25
+  },
+  "sheet.egger.h1910_9.18": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1910_9",
+   "thickness": 18
+  },
+  "sheet.egger.h1910_9.19": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1910_9",
+   "thickness": 19
+  },
+  "sheet.egger.h1910_9.22": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1910_9",
+   "thickness": 22
+  },
+  "sheet.egger.h1910_9.25": {
+   "department": "sheets",
+   "brand": "egger",
+   "kind": "sheet",
+   "decorId": "H1910_9",
+   "thickness": 25
+  },
+  "sheet.mdf.18": {
+   "department": "sheets",
+   "brand": "mdf",
+   "kind": "sheet",
+   "thickness": 18
+  },
+  "sheet.mdf.19": {
+   "department": "sheets",
+   "brand": "mdf",
+   "kind": "sheet",
+   "thickness": 19
+  },
+  "sheet.mdf.22": {
+   "department": "sheets",
+   "brand": "mdf",
+   "kind": "sheet",
+   "thickness": 22
+  },
+  "sheet.mdf.25": {
+   "department": "sheets",
+   "brand": "mdf",
+   "kind": "sheet",
+   "thickness": 25
+  },
+  "sheet.generic.18": {
+   "department": "sheets",
+   "brand": "generic",
+   "kind": "sheet",
+   "thickness": 18
+  },
+  "sheet.generic.22": {
+   "department": "sheets",
+   "brand": "generic",
+   "kind": "sheet",
+   "thickness": 22
+  },
+  "sheet.generic.25": {
+   "department": "sheets",
+   "brand": "generic",
+   "kind": "sheet",
+   "thickness": 25
+  },
+  "edge.egger.w1000_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "W1000_9",
+   "role": "edging"
+  },
+  "edge.egger.u702_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U702_9",
+   "role": "edging"
+  },
+  "edge.egger.h1180_37": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1180_37",
+   "role": "edging"
+  },
+  "edge.egger.h1145_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1145_10",
+   "role": "edging"
+  },
+  "edge.egger.h3325_28": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3325_28",
+   "role": "edging"
+  },
+  "edge.egger.u999_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U999_12",
+   "role": "edging"
+  },
+  "edge.egger.u606_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U606_9",
+   "role": "edging"
+  },
+  "edge.egger.u699_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U699_9",
+   "role": "edging"
+  },
+  "edge.egger.u636_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U636_9",
+   "role": "edging"
+  },
+  "edge.egger.u399_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U399_9",
+   "role": "edging"
+  },
+  "edge.egger.u540_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U540_9",
+   "role": "edging"
+  },
+  "edge.egger.u963_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U963_9",
+   "role": "edging"
+  },
+  "edge.egger.u732_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U732_9",
+   "role": "edging"
+  },
+  "edge.egger.u560_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U560_9",
+   "role": "edging"
+  },
+  "edge.egger.u363_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U363_9",
+   "role": "edging"
+  },
+  "edge.egger.u500_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U500_9",
+   "role": "edging"
+  },
+  "edge.egger.u522_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U522_9",
+   "role": "edging"
+  },
+  "edge.egger.u599_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U599_9",
+   "role": "edging"
+  },
+  "edge.egger.u961_7": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "U961_7",
+   "role": "edging"
+  },
+  "edge.egger.h3190_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3190_19",
+   "role": "edging"
+  },
+  "edge.egger.h3146_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3146_19",
+   "role": "edging"
+  },
+  "edge.egger.h1199_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1199_12",
+   "role": "edging"
+  },
+  "edge.egger.h3152_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3152_19",
+   "role": "edging"
+  },
+  "edge.egger.h1487_22": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1487_22",
+   "role": "edging"
+  },
+  "edge.egger.h1303_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1303_12",
+   "role": "edging"
+  },
+  "edge.egger.h1113_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1113_10",
+   "role": "edging"
+  },
+  "edge.egger.h1379_36": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1379_36",
+   "role": "edging"
+  },
+  "edge.egger.h1142_36": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1142_36",
+   "role": "edging"
+  },
+  "edge.egger.h309_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H309_12",
+   "role": "edging"
+  },
+  "edge.egger.h1307_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1307_19",
+   "role": "edging"
+  },
+  "edge.egger.h1401_22": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1401_22",
+   "role": "edging"
+  },
+  "edge.egger.h3860_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3860_9",
+   "role": "edging"
+  },
+  "edge.egger.h3012_22": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3012_22",
+   "role": "edging"
+  },
+  "edge.egger.h3398_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3398_12",
+   "role": "edging"
+  },
+  "edge.egger.h3154_36": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3154_36",
+   "role": "edging"
+  },
+  "edge.egger.h3043_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3043_12",
+   "role": "edging"
+  },
+  "edge.egger.h3198_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3198_19",
+   "role": "edging"
+  },
+  "edge.egger.h2033_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H2033_10",
+   "role": "edging"
+  },
+  "edge.egger.h1357_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1357_10",
+   "role": "edging"
+  },
+  "edge.egger.h1313_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1313_10",
+   "role": "edging"
+  },
+  "edge.egger.h3156_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3156_12",
+   "role": "edging"
+  },
+  "edge.egger.h3332_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3332_10",
+   "role": "edging"
+  },
+  "edge.egger.h1143_36": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1143_36",
+   "role": "edging"
+  },
+  "edge.egger.h3158_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3158_19",
+   "role": "edging"
+  },
+  "edge.egger.h3349_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3349_19",
+   "role": "edging"
+  },
+  "edge.egger.h1362_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1362_12",
+   "role": "edging"
+  },
+  "edge.egger.h1277_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1277_9",
+   "role": "edging"
+  },
+  "edge.egger.h3165_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3165_12",
+   "role": "edging"
+  },
+  "edge.egger.h1714_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1714_19",
+   "role": "edging"
+  },
+  "edge.egger.h1636_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1636_12",
+   "role": "edging"
+  },
+  "edge.egger.h3197_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3197_19",
+   "role": "edging"
+  },
+  "edge.egger.h3710_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3710_12",
+   "role": "edging"
+  },
+  "edge.egger.h3395_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3395_12",
+   "role": "edging"
+  },
+  "edge.egger.h3131_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3131_12",
+   "role": "edging"
+  },
+  "edge.egger.h3734_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3734_9",
+   "role": "edging"
+  },
+  "edge.egger.h3303_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3303_10",
+   "role": "edging"
+  },
+  "edge.egger.h3730_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3730_10",
+   "role": "edging"
+  },
+  "edge.egger.h3170_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3170_12",
+   "role": "edging"
+  },
+  "edge.egger.h3368_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3368_9",
+   "role": "edging"
+  },
+  "edge.egger.h3840_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3840_9",
+   "role": "edging"
+  },
+  "edge.egger.h3331_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3331_10",
+   "role": "edging"
+  },
+  "edge.egger.h3700_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3700_10",
+   "role": "edging"
+  },
+  "edge.egger.h1242_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1242_10",
+   "role": "edging"
+  },
+  "edge.egger.h305_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H305_12",
+   "role": "edging"
+  },
+  "edge.egger.h1318_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1318_10",
+   "role": "edging"
+  },
+  "edge.egger.h1250_36": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1250_36",
+   "role": "edging"
+  },
+  "edge.egger.h3003_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3003_19",
+   "role": "edging"
+  },
+  "edge.egger.h3171_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3171_12",
+   "role": "edging"
+  },
+  "edge.egger.h1715_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1715_12",
+   "role": "edging"
+  },
+  "edge.egger.h3433_22": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3433_22",
+   "role": "edging"
+  },
+  "edge.egger.h1312_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1312_10",
+   "role": "edging"
+  },
+  "edge.egger.h1732_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1732_9",
+   "role": "edging"
+  },
+  "edge.egger.h1710_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1710_10",
+   "role": "edging"
+  },
+  "edge.egger.h1377_36": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1377_36",
+   "role": "edging"
+  },
+  "edge.egger.h1223_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1223_19",
+   "role": "edging"
+  },
+  "edge.egger.h3702_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3702_10",
+   "role": "edging"
+  },
+  "edge.egger.h1225_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1225_12",
+   "role": "edging"
+  },
+  "edge.egger.h3133_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3133_12",
+   "role": "edging"
+  },
+  "edge.egger.h1399_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1399_10",
+   "role": "edging"
+  },
+  "edge.egger.h3157_12": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3157_12",
+   "role": "edging"
+  },
+  "edge.egger.h1330_10": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1330_10",
+   "role": "edging"
+  },
+  "edge.egger.h3430_22": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3430_22",
+   "role": "edging"
+  },
+  "edge.egger.h3195_19": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3195_19",
+   "role": "edging"
+  },
+  "edge.egger.h3450_22": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H3450_22",
+   "role": "edging"
+  },
+  "edge.egger.h1910_9": {
+   "department": "consumables",
+   "brand": "egger",
+   "kind": "edging",
+   "decorId": "H1910_9",
+   "role": "edging"
+  },
+  "hinge.blum.clip-top.95.nickel": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges",
+   "articleNo": "71B9550"
+  },
+  "hinge.blum.clip-top.95.onyx": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges",
+   "articleNo": "71B9590"
+  },
+  "hinge.blum.clip-top.110.nickel": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges",
+   "articleNo": "71B3550"
+  },
+  "hinge.blum.clip-top.110.onyx": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges",
+   "articleNo": "71B3590"
+  },
+  "hinge.blum.clip-top.155.nickel": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges",
+   "articleNo": "71B7550"
+  },
+  "hinge.blum.clip-top.155.onyx": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges",
+   "articleNo": "71B7590"
+  },
+  "hinge.blum.clip-top.170.wide": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges"
+  },
+  "hinge.blum.inset.71b3750": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges",
+   "articleNo": "71B3750"
+  },
+  "hinge.blum.inset.71b3790": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges",
+   "articleNo": "71B3790"
+  },
+  "hinge.blum.inset.71m2750": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges",
+   "articleNo": "71M2750"
+  },
+  "hinge.blum.inset.71b9750": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges",
+   "articleNo": "71B9750"
+  },
+  "hinge.blum.inset.71b3650-p": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinges",
+   "articleNo": "71B3650+P"
+  },
+  "hinge.blum.clip-top.60.bifold": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "bifold_hinges"
+  },
+  "hinge.hawa.concepta-iii": {
+   "department": "hinges",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_hinges"
+  },
+  "hinge-plate.blum.plate_knockin5.nickel": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinge_plates",
+   "articleNo": "174E6100.01"
+  },
+  "hinge-plate.blum.plate_knockin5.onyx": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinge_plates",
+   "articleNo": "174E6130.01"
+  },
+  "hinge-plate.blum.plate_screw3.nickel": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinge_plates",
+   "articleNo": "173L6100"
+  },
+  "hinge-plate.blum.plate_screw3.onyx": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "hinge_plates",
+   "articleNo": "173L6130"
+  },
+  "runner.blum.movento-760h.250.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H2500T"
+  },
+  "runner.blum.movento-760h.250.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H2500S"
+  },
+  "runner.blum.movento-760h.270.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H2700T"
+  },
+  "runner.blum.movento-760h.270.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H2700S"
+  },
+  "runner.blum.movento-760h.300.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H3000T"
+  },
+  "runner.blum.movento-760h.300.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H3000S"
+  },
+  "runner.blum.movento-760h.320.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H3200T"
+  },
+  "runner.blum.movento-760h.320.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H3200S"
+  },
+  "runner.blum.movento-760h.350.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H3500T"
+  },
+  "runner.blum.movento-760h.350.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H3500S"
+  },
+  "runner.blum.movento-760h.380.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H3800T"
+  },
+  "runner.blum.movento-760h.380.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H3800S"
+  },
+  "runner.blum.movento-760h.400.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H4000T"
+  },
+  "runner.blum.movento-760h.400.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H4000S"
+  },
+  "runner.blum.movento-760h.450.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H4500T"
+  },
+  "runner.blum.movento-760h.450.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H4500S"
+  },
+  "runner.blum.movento-760h.500.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H5000T"
+  },
+  "runner.blum.movento-760h.500.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H5000S"
+  },
+  "runner.blum.movento-760h.550.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H5500T"
+  },
+  "runner.blum.movento-760h.550.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H5500S"
+  },
+  "runner.blum.movento-760h.600.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H6000T"
+  },
+  "runner.blum.movento-760h.600.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H6000S"
+  },
+  "runner.blum.movento-760h.650.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H6500T"
+  },
+  "runner.blum.movento-760h.650.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H6500S"
+  },
+  "runner.blum.movento-760h.700.t": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H7000T"
+  },
+  "runner.blum.movento-760h.700.s": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_pairs",
+   "articleNo": "760H7000S"
+  },
+  "runner.blum.sync-rod.adapters": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_sync_rods"
+  },
+  "runner.blum.sync-rod.narrow": {
+   "department": "runners",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "runner_sync_rods"
+  },
+  "leg.adjustable": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "legs"
+  },
+  "plinth.clip": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "plinth_clips"
+  },
+  "plinth.clip-connector": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "plinth_clip_connectors"
+  },
+  "hanger.wall-unit": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "hangers"
+  },
+  "hanger.vanity": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "vanity_hangers"
+  },
+  "handle.bar.96": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "handle"
+  },
+  "handle.bar.128": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "handle"
+  },
+  "handle.bar.160": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "handle"
+  },
+  "handle.bar.192": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "handle"
+  },
+  "handle.bar.224": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "handle"
+  },
+  "handle.knob": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "handle"
+  },
+  "cabineo.8.surface": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.8.flush": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.8.flushcap": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.8.hpl": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.12.surface": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.12.flush": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.12.flushcap": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.12.hpl": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.8m6.surface": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.8m6.flush": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.8m6.flushcap": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.8m6.hpl": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_connector"
+  },
+  "cabineo.cap.surface": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_cap"
+  },
+  "cabineo.cap.flush": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_cap"
+  },
+  "cabineo.cap.flushcap": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_cap"
+  },
+  "cabineo.cap.hpl": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_cap"
+  },
+  "worktop.connector-bolt": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "worktop_bolts"
+  },
+  "hawa.concepta-iii.25.push.left": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_set"
+  },
+  "hawa.concepta-iii.25.push.right": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_set"
+  },
+  "hawa.concepta-iii.25.pull.left": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_set"
+  },
+  "hawa.concepta-iii.25.pull.right": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_set"
+  },
+  "hawa.concepta-iii.35.push.left": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_set"
+  },
+  "hawa.concepta-iii.35.push.right": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_set"
+  },
+  "hawa.concepta-iii.35.pull.left": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_set"
+  },
+  "hawa.concepta-iii.35.pull.right": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_set"
+  },
+  "hawa.connector.55": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_connector"
+  },
+  "hawa.connector.110": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_connector"
+  },
+  "hawa.tracks": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_tracks"
+  },
+  "hawa.steel-profile": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_stiffener"
+  },
+  "hawa.foot": {
+   "department": "ironmongery",
+   "brand": "hawa",
+   "kind": "hardware",
+   "role": "hawa_foot"
+  },
+  "cornice.70": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "cornice"
+  },
+  "cornice.100": {
+   "department": "ironmongery",
+   "kind": "hardware",
+   "role": "cornice"
+  },
+  "rail.tube": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "rail"
+  },
+  "rail.support": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "rail_supports"
+  },
+  "shelf-pin.7.5": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "shelf_pins"
+  },
+  "insert.shoe": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "drawer_insert"
+  },
+  "insert.belt_tie": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "drawer_insert"
+  },
+  "insert.cutlery": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "drawer_insert"
+  },
+  "insert.watch": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "watch_insert"
+  },
+  "glass.drawer-top": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "drawer_glass"
+  },
+  "glass.pane.clear.4": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "glass_pane"
+  },
+  "glass.pane.smoke.4": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "glass_pane"
+  },
+  "glass.pane.reeded.4": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "glass_pane"
+  },
+  "glass.mirror.door": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "mirror"
+  },
+  "glass.mirror.4": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "mirror_m2"
+  },
+  "glass.shelf.6.toughened": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "mirror_glass_shelf"
+  },
+  "led.panel.made-to-measure": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "mirror_led_panel"
+  },
+  "led.strip.3000": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "led_strip"
+  },
+  "led.strip.4000": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "led_strip"
+  },
+  "led.strip.6000": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "led_strip"
+  },
+  "led.profile": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "led_profile"
+  },
+  "led.driver": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "led_driver"
+  },
+  "led.switch.door": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "led_switch"
+  },
+  "led.switch.sensor": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "led_switch"
+  },
+  "led.switch.touchless": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "led_switch"
+  },
+  "led.spot": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "led_spots"
+  },
+  "kit.trouser": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "wardrobe_kit_trouser"
+  },
+  "kit.tie-rack": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "wardrobe_kit_tie_rack"
+  },
+  "kit.pulldown-rail": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "wardrobe_kit_pulldown_rail"
+  },
+  "kit.hook": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "wardrobe_kit_hooks"
+  },
+  "kit.valet-rod": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "wardrobe_kit_valet_rod"
+  },
+  "kit.carousel": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "carousel"
+  },
+  "kit.space-corner": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "space_corner"
+  },
+  "kit.blind-pullout": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "blind_pullout"
+  },
+  "kit.bin-pullout": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "bin_pullout"
+  },
+  "kit.cargo-frame": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "cargo_frame"
+  },
+  "drawer.ready-box": {
+   "department": "internal",
+   "kind": "hardware",
+   "role": "ready_boxes"
+  },
+  "lift.blum.aventos-hk.set.22k2300": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22K2300"
+  },
+  "lift.blum.aventos-hk.set.22k2500": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22K2500"
+  },
+  "lift.blum.aventos-hk.set.22k2700": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22K2700"
+  },
+  "lift.blum.aventos-hk.set.22k2900": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22K2900"
+  },
+  "lift.blum.aventos.caps.22k8000": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_caps",
+   "articleNo": "22K8000"
+  },
+  "lift.blum.aventos-hs.set.22s2200": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22S2200"
+  },
+  "lift.blum.aventos-hs.set.22s2500": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22S2500"
+  },
+  "lift.blum.aventos-hs.set.22s2800": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22S2800"
+  },
+  "lift.blum.aventos-hs.arm.22s3500": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_arm",
+   "articleNo": "22S3500"
+  },
+  "lift.blum.aventos.caps.22.8000": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_caps",
+   "articleNo": "22.8000"
+  },
+  "lift.blum.aventos-hl.set.22l2200": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22L2200"
+  },
+  "lift.blum.aventos-hl.set.22l2500": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22L2500"
+  },
+  "lift.blum.aventos-hl.arm.22l3200": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_arm",
+   "articleNo": "22L3200"
+  },
+  "lift.blum.aventos-hl.arm.22l3500": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_arm",
+   "articleNo": "22L3500"
+  },
+  "lift.blum.aventos-hl.arm.22l3800": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_arm",
+   "articleNo": "22L3800"
+  },
+  "lift.blum.aventos-hl.arm.22l3900": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_arm",
+   "articleNo": "22L3900"
+  },
+  "lift.blum.aventos-hf.set.22f2200": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22F2200"
+  },
+  "lift.blum.aventos-hf.set.22f2500": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22F2500"
+  },
+  "lift.blum.aventos-hf.set.22f2800": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_unit",
+   "articleNo": "22F2800"
+  },
+  "lift.blum.aventos-hf.arm.22f3200": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_arm",
+   "articleNo": "22F3200"
+  },
+  "lift.blum.aventos-hf.arm.22f3500": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_arm",
+   "articleNo": "22F3500"
+  },
+  "lift.blum.aventos-hf.arm.22f3900": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_arm",
+   "articleNo": "22F3900"
+  },
+  "lift.blum.aventos-hf.hinge-set.78z5530t": {
+   "department": "hinges",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_hinges",
+   "articleNo": "78Z5530T"
+  },
+  "lift.blum.aventos.bracket.20s4200": {
+   "department": "internal",
+   "brand": "blum",
+   "kind": "hardware",
+   "role": "lift_bracket",
+   "articleNo": "20S4200"
+  },
+  "screw.pilot-3": {
+   "department": "consumables",
+   "kind": "hardware",
+   "role": "screws"
+  },
+  "puzzle.connector": {
+   "department": "consumables",
+   "kind": "hardware",
+   "role": "puzzle_screws"
+  },
+  "dowel.6": {
+   "department": "consumables",
+   "kind": "hardware",
+   "role": "dowels"
+  },
+  "paint.bespoke": {
+   "department": "paint",
+   "kind": "paint",
+   "role": "paint"
+  },
+  "paint.primer": {
+   "department": "paint",
+   "kind": "paint",
+   "role": "primer"
+  },
+  "paint.solvent": {
+   "department": "paint",
+   "kind": "paint",
+   "role": "solvent"
+  },
+  "stain.bespoke": {
+   "department": "paint",
+   "kind": "paint",
+   "role": "stain"
+  },
+  "lacquer": {
+   "department": "paint",
+   "kind": "paint",
+   "role": "lacquer"
+  },
+  "cabineo.insert.8m6": {
+   "department": "ironmongery",
+   "brand": "lamello",
+   "kind": "hardware",
+   "role": "cabineo_insert"
+  }
+ }
+}

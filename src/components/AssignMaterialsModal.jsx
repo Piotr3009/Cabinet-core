@@ -43,9 +43,20 @@ import { categoryTree, STOCK_EMPTY, STOCK_PAGE } from '../lib/jcStock.js';
  *
  * Opens BESIDE its menu entry and drags by its header (rule 15, the shared
  * `Modal` shell).
+ *
+ * ─── T-CC2a F14.1 · READ ONLY FOR ONE TURN ───────────────────────────────────
+ * Replaced by Link materials (the company's links, CLAUDE.md T-CC2a law 3);
+ * the owner: *"zgadzam sie z Ola i Kamilem"* (the old window's deletion waits
+ * for T-CC2b). A banner says so with a button to the new window; every assign,
+ * clear, automatics and family control is disabled, and nothing runs on open
+ * that writes the blob (the automatics, the schema 2 adoption): the blob stays
+ * as saved (FROZEN 4). The lists stay visible.
  */
+export const READ_ONLY_WORDS = 'Replaced by Link materials. This window is read only until the next update.';
+const READ_ONLY = true;
 export default function AssignMaterialsModal() {
   const closeModal = useUiStore((s) => s.closeModal);
+  const openModal = useUiStore((s) => s.openModal);
   const anchor = useUiStore((s) => s.modalArgs?.anchor) || null;
   const openPart = useUiStore((s) => s.modalArgs?.partId) || null;
 
@@ -118,9 +129,10 @@ export default function AssignMaterialsModal() {
     return out;
   }, [proposals]);
   const runAutomatics = useMemo(() => () => {
+    if (READ_ONLY) return;
     for (const p of applicable(proposals)) setAutoAssignment(p.partId, p.material_id, { variant: null });
   }, [proposals, setAutoAssignment]);
-  useEffect(() => { runAutomatics(); }, [runAutomatics]);
+  useEffect(() => { if (!READ_ONLY) runAutomatics(); }, [runAutomatics]);
   const autoCount = useMemo(
     () => applicable(proposals).filter((p) => assignmentFor(data, p.partId, null)?.material_id === p.material_id).length,
     [proposals, data],
@@ -128,7 +140,7 @@ export default function AssignMaterialsModal() {
 
   // T-CC1b F10.1: the schema 2 migration, once, at load: a legacy role value
   // reaches every key of that role the current BOM lists.
-  useEffect(() => { adoptHardwareKeys?.(bom.hardware || []); }, [bom, adoptHardwareKeys]);
+  useEffect(() => { if (!READ_ONLY) adoptHardwareKeys?.(bom.hardware || []); }, [bom, adoptHardwareKeys]);
 
   const lines = useMemo(
     () => buildAssignLines({ bom, data, materials, usage: shownUsage, missingOf }),
@@ -151,7 +163,7 @@ export default function AssignMaterialsModal() {
   const choose = (line, fam = null) => { setSelected(line.id); setFamily(fam); };
 
   const assign = (line, material, fam = null) => {
-    if (!line) return;
+    if (!line || READ_ONLY) return;
     if (line.type === 'hardware') {
       if (material) setHardwareAssignment(line.key, material.id);
       else clearHardwareAssignment(line.key);
@@ -190,6 +202,7 @@ export default function AssignMaterialsModal() {
             type="button"
             className="cc-btn"
             onClick={runAutomatics}
+            disabled={READ_ONLY}
             data-assign-auto-run={String(autoCount)}
             title="Hinges from the chosen metal, legs from the plinth height, runners from the length the engine snapped to. A material you chose by hand is never overwritten."
           >
@@ -208,7 +221,14 @@ export default function AssignMaterialsModal() {
         </>
       )}
     >
-      <div className="flex flex-col gap-2" data-assign-materials="1">
+      <div className="flex flex-col gap-2" data-assign-materials="1" data-assign-read-only={READ_ONLY ? '1' : '0'}>
+        {/* T-CC2a F14.1: the banner, and the way to the window that replaced this one. */}
+        <div className="flex items-center gap-2 rounded px-2 py-1.5 border border-gold/60 bg-gold/10" data-assign-replaced="1">
+          <span className="flex-1 text-ink-50">{READ_ONLY_WORDS}</span>
+          <button type="button" className="cc-btn-gold" data-assign-open-link="1" onClick={() => openModal('link-materials')}>
+            Open Link materials
+          </button>
+        </div>
         {/* THE HEADER LINE, F10.3: what is assigned, and in red what is not. */}
         <div
           className={count.missing > 0
@@ -253,8 +273,9 @@ export default function AssignMaterialsModal() {
                             refused={line.partId ? refusedBy[line.partId] : null}
                             onChoose={(fam) => choose(line, fam)}
                             onAssign={(m, fam) => assign(line, m, fam)}
-                            onYield={(v) => setYield(line.partId, Number(v) || 1)}
-                            onRemoveCustom={() => removeCustomPart(line.partId)}
+                            onYield={(v) => { if (!READ_ONLY) setYield(line.partId, Number(v) || 1); }}
+                            onRemoveCustom={() => { if (!READ_ONLY) removeCustomPart(line.partId); }}
+                            readOnly={READ_ONLY}
                           />
                         ))}
                       </tbody>
@@ -266,11 +287,13 @@ export default function AssignMaterialsModal() {
                       <input
                         className="cc-input flex-1"
                         placeholder="Your own consumable, e.g. Dowels 8 x 40"
+                        disabled={READ_ONLY}
                         value={draft.name}
                         data-custom-draft-name="1"
                         onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
                       />
                       <NumberField
+                        disabled={READ_ONLY}
                         value={draft.qtyPerUnit}
                         min={0.01}
                         max={9999}
@@ -281,6 +304,7 @@ export default function AssignMaterialsModal() {
                       />
                       <select
                         className="cc-input w-[80px]"
+                        disabled={READ_ONLY}
                         value={draft.unit}
                         data-custom-draft-unit="1"
                         onChange={(e) => setDraft((d) => ({ ...d, unit: e.target.value }))}
@@ -291,8 +315,9 @@ export default function AssignMaterialsModal() {
                         type="button"
                         className="cc-btn"
                         data-custom-add="1"
-                        disabled={!draft.name.trim()}
+                        disabled={READ_ONLY || !draft.name.trim()}
                         onClick={() => {
+                          if (READ_ONLY) return;
                           addCustomPart(draft);
                           setDraft({ name: '', unit: 'pcs', qtyPerUnit: 1 });
                         }}
@@ -331,8 +356,8 @@ export default function AssignMaterialsModal() {
               kind={current?.kind || 'all'}
               tree={tree}
               testId="assign"
-              onSelect={current ? (m) => assign(current, m, current.type === 'part' ? family : null) : null}
-              onClear={current ? () => assign(current, null, current.type === 'part' ? family : null) : null}
+              onSelect={current && !READ_ONLY ? (m) => assign(current, m, current.type === 'part' ? family : null) : null}
+              onClear={current && !READ_ONLY ? () => assign(current, null, current.type === 'part' ? family : null) : null}
             />
           </div>
         </div>
@@ -343,7 +368,7 @@ export default function AssignMaterialsModal() {
 
 /** One line of the demand: label and spec, quantity, then the material or the red chip. */
 function LineRow({
-  line, active, family, data, materials, tree, refused, onChoose, onAssign, onYield, onRemoveCustom,
+  line, active, family, data, materials, tree, refused, onChoose, onAssign, onYield, onRemoveCustom, readOnly = false,
 }) {
   const [openFamilies, setOpenFamilies] = useState(false);
   const isSheet = line.type === 'part' && line.group === 'sheets';
@@ -387,6 +412,7 @@ function LineRow({
         <td className="align-top text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
           {isSheet && (
             <NumberField
+              disabled={readOnly}
               value={line.yield ?? 1}
               min={1}
               max={3}
@@ -404,6 +430,7 @@ function LineRow({
               type="button"
               className={openFamilies ? 'cc-btn-ghost text-gold ml-1' : 'cc-btn-ghost ml-1'}
               title="Per cabinet family: a different board in the wardrobes from the kitchen bases"
+              disabled={readOnly}
               data-assign-override={line.partId}
               onClick={() => setOpenFamilies((v) => !v)}
             >
@@ -411,14 +438,14 @@ function LineRow({
             </button>
           )}
           {line.material && (
-            <button type="button" className="cc-btn-ghost ml-1" data-assign-clear={line.id} onClick={() => onAssign(null, null)}>Clear</button>
+            <button type="button" className="cc-btn-ghost ml-1" disabled={readOnly} data-assign-clear={line.id} onClick={() => onAssign(null, null)}>Clear</button>
           )}
           {line.type === 'custom' && (
-            <button type="button" className="cc-btn-ghost text-status-danger ml-1" title="Remove this line" data-custom-remove={line.partId} onClick={onRemoveCustom}>Remove</button>
+            <button type="button" className="cc-btn-ghost text-status-danger ml-1" title="Remove this line" disabled={readOnly} data-custom-remove={line.partId} onClick={onRemoveCustom}>Remove</button>
           )}
         </td>
       </tr>
-      {isSheet && openFamilies && (
+      {isSheet && openFamilies && !readOnly && (
         <tr className="bg-shell-700/30">
           <td colSpan={4}>
             <div className="text-ink-400 mb-1">Per cabinet family: blank inherits the project's board above</div>

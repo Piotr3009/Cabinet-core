@@ -48,7 +48,21 @@
 // The tenant is T-CC1a's `ten-skylon` unless `--tenant <uuid>` (or
 // `startFakeJc({ tenantId })`) says otherwise; T-CC1a's walk is unchanged.
 //
-//   node scripts/t-cc1a-fake-jc.mjs [--port 4380] [--upstream 4173] [--tenant <uuid>] [--no-ai-key] [--ai-delay-ms 300]
+// T-CC2a F4.3 (CLAUDE.md T-CC2a, WHAT JOINERY CORE GIVES): THE FAKE GROWS AGAIN
+// AND LOSES NOTHING. The owner, 01.11.2026: *"zebysmy przypisali pewne materialy
+// na stale nie do projektu, tylko na stale"*. One more read, `cc_material_links`
+// (the tenant's rows only, every column but tenant_id), seeded with two links
+// (MDF 18 to the fake's MDF 18 row at 2440 x 1220, a hinge to the Blum 110 row),
+// and the two functions with every refusal of the contract: 22023 for a bad
+// argument (an id off ^[a-z0-9][a-z0-9._-]{0,119}$, a yield outside 1.0 to 3.0, a
+// sheet size outside 100 to 6000 mm, a coverage outside 0.1 to 100, a `sheet.` id
+// without both sizes, a list not of 1 to 500), 42501 for a stock row that is not
+// this company's. Two more stock rows (MDF 18 and an Egger H3325 18 mm board, for
+// a suggestion). `CC_FAKE_NO_LINKS=1` (or `--no-links`, or GET /__fake/links?on=0)
+// answers 403 for the read and both functions: the SQL of T-JC3a not run. The
+// shim passes a refusal's `code` beside its words.
+//
+//   node scripts/t-cc1a-fake-jc.mjs [--port 4380] [--upstream 4173] [--tenant <uuid>] [--no-ai-key] [--ai-delay-ms 300] [--no-links]
 //   or: import { startFakeJc } from './t-cc1a-fake-jc.mjs'
 
 import http from 'node:http';
@@ -71,6 +85,8 @@ const READABLE = new Set([
   'pipeline_projects', 'projects', 'clients', 'company_settings', 'cc_items', 'cc_item_revisions', 'cc_company_profile',
   // T-CC1b: the tenant's stock (CLAUDE.md T-CC1b, WHAT JOINERY CORE GIVES).
   'stock_items', 'stock_categories',
+  // T-CC2a: the company's material links (CLAUDE.md T-CC2a, WHAT JOINERY CORE GIVES).
+  'cc_material_links',
 ]);
 
 /** T-CC1b F16.1 . the company's logo, served by the fake (company_settings.logo_url). */
@@ -127,7 +143,7 @@ const aiPicture = (n) => {
 function stockSeed() {
   const cat = (id, name, type, parent, order) => ({ id, name, type, parent_category_id: parent, display_order: order });
   const row = (n, name, category, subcategory, unit, cost, extra = {}) => ({
-    id: `5e0c4b1a-7f2d-4c3e-9a8b-00000000000${n}`, name, category, subcategory, unit,
+    id: `5e0c4b1a-7f2d-4c3e-9a8b-${String(n).padStart(12, '0')}`, name, category, subcategory, unit,
     current_quantity: 20, min_quantity: 2, cost_per_unit: cost, size: '', thickness: null, color: '',
     item_number: '', image_url: null, supplier_id: null, notes: '', ...extra,
   });
@@ -152,6 +168,10 @@ function stockSeed() {
       row(6, 'Blum Clip top 155 hinge', 'Hardware', 'Hinges', 'pcs', 5.1, { item_number: '71T6550' }),
       row(7, 'Blum Movento runner pair 500', 'Hardware', 'Runners', 'pairs', 6.9, { size: '500', item_number: '760H5000S' }),
       row(8, 'Paint, Hague Blue 2.5 L', 'Consumables', null, 'tin', 42, { color: 'Hague Blue' }),
+      // T-CC2a F4.3: the MDF 18 the seed link points at, and an Egger board a suggestion finds by its decor code.
+      row(9, 'MDF 18 mm', 'Sheets', 'MDF', 'sheet', 29.5, { thickness: '18', size: '2440 x 1220', item_number: 'MDF-18' }),
+      row(10, 'Egger H3325 ST28 Tobacco Gladstone Oak 18 mm', 'Sheets', 'Melamine', 'sheet', 61,
+        { thickness: '18', color: 'Oak', size: '2800 x 2070', item_number: 'EG-H3325-18' }),
     ],
   };
 }
@@ -184,7 +204,25 @@ function seed(now = Date.now()) {
     cc_item_revisions: [],
     cc_company_profile: [],
     ...stockSeed(),
+    cc_material_links: linkSeed(iso(30)),
   };
+}
+
+// === THE COMPANY'S LINKS (T-CC2a F4.3) ======================================
+/** The two seed links: catalogue ids of src/engine/catalogueData.js, stock rows of the seed above. */
+export const SEED_LINKS = {
+  mdf18: { cc_material_id: 'sheet.mdf.18', stock_item_id: '5e0c4b1a-7f2d-4c3e-9a8b-000000000009', sheet_width_mm: 1220, sheet_length_mm: 2440 },
+  hinge: { cc_material_id: 'hinge.blum.clip-top.110.nickel', stock_item_id: '5e0c4b1a-7f2d-4c3e-9a8b-000000000005' },
+};
+/** A stock row of ANOTHER company: never readable here; linking it is refused 42501. */
+export const FOREIGN_STOCK_ID = 'f0f0f0f0-0000-4000-8000-0000000000aa';
+
+function linkSeed(at) {
+  const row = (l) => ({
+    tenant_id: TENANT.id, yield: null, sheet_width_mm: null, sheet_length_mm: null, coverage_m2_per_l: null,
+    updated_by: USERS.admin.id, updated_at: at, ...l,
+  });
+  return [row(SEED_LINKS.mdf18), row(SEED_LINKS.hinge)];
 }
 
 // === THE SHIM (served as /js/api-client.js; a classic script) ===============
@@ -206,7 +244,7 @@ const SHIM = `/* Fake Joinery Core api-client (scripts/t-cc1a-fake-jc.mjs). Not 
       KEYS.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
       return { data: null, error: { message: (body && body.error) || 'Unauthorised', status: 401 } };
     }
-    if (!res.ok) return { data: null, error: { message: (body && body.error) || res.statusText, status: res.status } };
+    if (!res.ok) return { data: null, error: { message: (body && body.error) || res.statusText, status: res.status, code: (body && body.code) || null } };
     return { data: body && Object.prototype.hasOwnProperty.call(body, 'data') ? body.data : body, error: null };
   }
   function rpc(name, params) {
@@ -270,19 +308,24 @@ document.getElementById('signin').addEventListener('click', function () {
 // === THE SERVER =============================================================
 export async function startFakeJc({
   port = 4380, upstream = 4173, host = '127.0.0.1', tenantId = TENANT.id, aiKey = true, aiDelayMs = 300,
+  links = process.env.CC_FAKE_NO_LINKS !== '1',
 } = {}) {
+  // T-CC2a F4.3 . false: the SQL of T-JC3a not run (403 for the read and both functions).
+  const linksOn = { on: links !== false };
   // T-CC1b F16.1 . the tenant's uuid is the fake's to switch (walk station g); T-CC1a's stays the default.
   let tenant = TENANT.id;
   const ai = { key: aiKey !== false, delayMs: Math.max(0, Number(aiDelayMs) || 0) };
   const seeded = () => {
     const fresh = seed();
     for (const r of fresh.cc_items) r.tenant_id = tenant;
+    for (const r of fresh.cc_material_links) r.tenant_id = tenant;
     return fresh;
   };
   const setTenant = (id) => {
     const next = String(id || '').trim();
     if (!next) return tenant;
     for (const r of db.cc_items) if (r.tenant_id === tenant) r.tenant_id = next;
+    for (const r of db.cc_material_links) if (r.tenant_id === tenant) r.tenant_id = next;
     tenant = next;
     return tenant;
   };
@@ -295,6 +338,8 @@ export async function startFakeJc({
     rpc: {}, rpcKeepalive: {}, rpcRefused: 0, getSession: 0, proxied: 0,
     // T-CC1b: the AI calls per token, their answers by status, and the logo fetches.
     ai: {}, aiStatus: {}, logo: 0,
+    // T-CC2a: links saved and cleared, refusals by code.
+    linksSaved: 0, linksCleared: 0, linkRefused: {},
   };
   const log = [];
   const bump = (obj, k) => { obj[k] = (obj[k] || 0) + 1; };
@@ -336,11 +381,15 @@ export async function startFakeJc({
     const table = String(q.table || '');
     bump(counters.queryByTable, table);
     if (q.write) { counters.writesRefused += 1; return [403, { error: `Joinery Core refuses a ${q.write} on ${table} here: writes go through rpc.` }]; }
-    if (!READABLE.has(table)) { counters.queryRefused += 1; return [403, { error: `Joinery Core does not serve ${table} to Cabinet Core.` }]; }
+    if (!READABLE.has(table) || (table === 'cc_material_links' && !linksOn.on)) { counters.queryRefused += 1; return [403, { error: `Joinery Core does not serve ${table} to Cabinet Core.` }]; }
     if (table === 'cc_items' && String(q.select || '*').trim() === '*') counters.starOnItems += 1;
     if (table === 'cc_items' && /\bdesign\b/.test(String(q.select || ''))) counters.designReads += 1;
     let rows = (db[table] || []).slice();
     if (table === 'cc_items') rows = rows.filter((r) => r.tenant_id === tenant);
+    if (table === 'cc_material_links') {
+      rows = rows.filter((r) => r.tenant_id === tenant);
+      if (/\btenant_id\b/.test(String(q.select || '*')) || String(q.select || '*').trim() === '*') counters.starOnLinks = (counters.starOnLinks || 0) + 1;
+    }
     for (const f of q.filters || []) {
       if (f.op === 'eq') rows = rows.filter((r) => r[f.col] === f.val);
       else if (f.op === 'neq') rows = rows.filter((r) => r[f.col] !== f.val);
@@ -388,7 +437,49 @@ export async function startFakeJc({
       row.archived_at = p.p_restore ? null : new Date().toISOString();
       return [200, { data: strip(row) }];
     }
+    if (name === 'cc_save_material_links' || name === 'cc_clear_material_link') return linkCall(name, p);
     return [404, { error: `Joinery Core has no rpc ${name} for Cabinet Core.` }];
+  }
+
+  // T-CC2a F4.3 . the two functions of T-JC3a, with every refusal of the contract (same codes, same rules).
+  const LINK_ID = /^[a-z0-9][a-z0-9._-]{0,119}$/;
+  const refuse = (code, error) => { bump(counters.linkRefused, code); return [code === '42501' ? 403 : 400, { error, code }]; };
+  const inRange = (v, lo, hi) => v == null || (Number.isFinite(Number(v)) && Number(v) >= lo && Number(v) <= hi);
+  function linkCall(name, p) {
+    if (!linksOn.on) return [403, { error: `Joinery Core has no rpc ${name} for Cabinet Core.` }];
+    if (name === 'cc_clear_material_link') {
+      const id = String(p.p_cc_material_id || '');
+      if (!LINK_ID.test(id)) return refuse('22023', `"${id}" is not a Cabinet Core material id.`);
+      const before = db.cc_material_links.length;
+      db.cc_material_links = db.cc_material_links.filter((r) => !(r.tenant_id === tenant && r.cc_material_id === id));
+      const cleared = db.cc_material_links.length < before;
+      if (cleared) counters.linksCleared += 1;
+      return [200, { data: { cleared } }];
+    }
+    const list = p.p_links;
+    if (!Array.isArray(list) || list.length < 1 || list.length > 500) return refuse('22023', 'Send between 1 and 500 links at a time.');
+    const mine = new Set(db.stock_items.map((r) => r.id));
+    for (const l of list) {
+      const id = String(l?.cc_material_id || '');
+      if (!LINK_ID.test(id)) return refuse('22023', `"${id}" is not a Cabinet Core material id.`);
+      if (!inRange(l.yield, 1.0, 3.0)) return refuse('22023', 'The offcut allowance must be between 0 and 200 % (a yield of 1.0 to 3.0).');
+      if (!inRange(l.sheet_width_mm, 100, 6000) || !inRange(l.sheet_length_mm, 100, 6000)) return refuse('22023', 'A sheet size must be between 100 and 6000 mm.');
+      if (!inRange(l.coverage_m2_per_l, 0.1, 100)) return refuse('22023', 'The coverage must be between 0.1 and 100 m2 per litre.');
+      if (id.startsWith('sheet.') && (l.sheet_width_mm == null || l.sheet_length_mm == null)) return refuse('22023', 'A sheet needs both its width and its length.');
+      if (!l.stock_item_id || !mine.has(String(l.stock_item_id))) return refuse('42501', 'That stock item is not in your company\'s Joinery Core stock.');
+    }
+    const at = new Date().toISOString();
+    for (const l of list) {
+      const row = {
+        tenant_id: tenant, cc_material_id: String(l.cc_material_id), stock_item_id: String(l.stock_item_id),
+        yield: l.yield ?? null, sheet_width_mm: l.sheet_width_mm ?? null, sheet_length_mm: l.sheet_length_mm ?? null,
+        coverage_m2_per_l: l.coverage_m2_per_l ?? null, updated_by: user().id, updated_at: at,
+      };
+      const i = db.cc_material_links.findIndex((r) => r.tenant_id === tenant && r.cc_material_id === row.cc_material_id);
+      if (i >= 0) db.cc_material_links[i] = row; else db.cc_material_links.push(row);
+    }
+    counters.linksSaved += list.length;
+    return [200, { data: { saved: list.length } }];
   }
 
   const designSummary = (d) => {
@@ -408,6 +499,7 @@ export async function startFakeJc({
     ai: { ...ai },
     counters: JSON.parse(JSON.stringify(counters)),
     items: db.cc_items.map((r) => ({ ...strip(r), design: designSummary(r.design) })),
+    links: { on: linksOn.on, rows: db.cc_material_links.filter((r) => r.tenant_id === tenant).map(({ tenant_id, ...r }) => r) },
     log: log.slice(),
   });
 
@@ -445,6 +537,10 @@ export async function startFakeJc({
         if (url.searchParams.has('key')) ai.key = url.searchParams.get('key') !== '0';
         if (url.searchParams.has('delay')) ai.delayMs = Math.max(0, Number(url.searchParams.get('delay')) || 0);
         return send(res, 200, { ...ai });
+      }
+      if (path === '/__fake/links') {
+        if (url.searchParams.has('on')) linksOn.on = url.searchParams.get('on') !== '0';
+        return send(res, 200, { on: linksOn.on });
       }
       if (path === '/__fake/user') {
         const want = url.searchParams.get('as');
@@ -512,6 +608,7 @@ export async function startFakeJc({
       return { ...ai };
     },
     reseed: () => { db = seeded(); seq = 0; reset(); },
+    setLinks: (on) => { linksOn.on = on !== false; return linksOn.on; },
     close: () => new Promise((resolve) => { server.closeAllConnections?.(); server.close(() => resolve()); }),
   };
 }
@@ -524,6 +621,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const fake = await startFakeJc({
     port: opt('port', 4380), upstream: opt('upstream', 4173), tenantId: word('tenant', TENANT.id),
     aiKey: !argv.includes('--no-ai-key'), aiDelayMs: opt('ai-delay-ms', 300),
+    links: !argv.includes('--no-links') && process.env.CC_FAKE_NO_LINKS !== '1',
   });
   process.stdout.write(`fake Joinery Core at ${fake.origin} (proxying to 127.0.0.1:${opt('upstream', 4173)})\n`);
 }

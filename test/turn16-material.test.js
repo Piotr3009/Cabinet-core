@@ -248,7 +248,10 @@ test('F1.5 — two fronts on different boards are TWO BOM material groups', () =
   const fronts = bom.units.flatMap((u) => u.rows).filter((r) => r.material_role === 'front');
   const groups = new Set(fronts.map((r) => r.material_key));
   assert.equal(groups.size, 2, 'oak-laminate doors and wine-red sprayed doors are two boards');
-  assert.ok(groups.has('mat:m_oak') && groups.has('mat:m_mdf'));
+  // T-CC2a F3 (law 2) REWRITES the keys by name: the group is the CATALOGUE entry the
+  // design says (an Egger H1180 laminate, a sprayed MDF), never the stored stock id.
+  const t = fronts[0].thickness;
+  assert.ok(groups.has(`cat:sheet.egger.h1180_37.${t}`) && groups.has(`cat:sheet.mdf.${t}`), [...groups].join(', '));
 
   // …and two fronts on the SAME board are one group, which is the other half of
   // the owner's sentence.
@@ -277,7 +280,8 @@ test('F1.5 — an override MOVES a part between groups', () => {
   const shelfId = resultOf(base).panels.find((p) => p.part === 'SHELF').id;
   const before = buildBom([{ unit: base, result: resultOf(base) }], { design, profile: P, materials: MATERIALS });
   const rowBefore = before.units[0].rows.find((r) => r.id === shelfId);
-  assert.equal(rowBefore.material_key, 'mat:m_white', 'a shelf is carcass board');
+  // T-CC2a F3 (law 2): carcass 1 says no source and no decor, so it is the generic placeholder at the cut thickness.
+  assert.equal(rowBefore.material_key, `cat:sheet.generic.${rowBefore.thickness}`, 'a shelf is carcass board');
 
   const moved = unitOn('BUD', {
     ...base.params,
@@ -285,7 +289,7 @@ test('F1.5 — an override MOVES a part between groups', () => {
   });
   const after = buildBom([{ unit: moved, result: resultOf(moved) }], { design, profile: P, materials: MATERIALS });
   const rowAfter = after.units[0].rows.find((r) => r.id === shelfId);
-  assert.equal(rowAfter.material_key, 'mat:m_mdf', 'and now it is on the fronts\' MDF');
+  assert.equal(rowAfter.material_key, `cat:sheet.mdf.${rowAfter.thickness}`, 'and now it is on the fronts\' MDF');
   assert.equal(rowAfter.material_label, 'RAL 3005 Wine Red spray');
 });
 

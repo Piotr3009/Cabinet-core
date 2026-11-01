@@ -5497,11 +5497,14 @@ export const DEFAULT_CABINET_PROFILE = {
   // 2790×2060): one is what the supplier sells, the other is what the
   // machine holds, and they move separately.
   //
-  //   wastePct — OWNER — unanswered; ship 15, owner to confirm (15.08.2026).
   //   sheet    — OWNER — unanswered; ship 2800×2070, owner to confirm
   //              (15.08.2026).
+  //
+  // T-CC2a (CLAUDE.md T-CC2a DELETION LICENCE): the second offcut number of
+  // this block, `wastePct: 15`, is DELETED in favour of the ONE number,
+  // `materials.sheetYield` below (the owner, 01.11.2026, 13:28: *"dajmy 10
+  // procent na offcuts bo zawsze zaokraglamy do gory"*).
   bom: {
-    wastePct: 15,
     sheet: { width: 2800, height: 2070 },
   },
 
@@ -5526,6 +5529,13 @@ export const DEFAULT_CABINET_PROFILE = {
     frameMm: 100,          // owner 11.10.2026, decided: the end panel's back frame, the blind blank's strip
     // T78 proposed, owner to confirm. Read only where the paint's warehouse row says nothing.
     defaults: { coats: 2, coverageM2PerL: 10, tinSizesL: [1, 2.5, 5] },
+    // T-CC2a F7 (CLAUDE.md T-CC2a THE NUMBERS): the solvent is 5 percent of the
+    // litres of the bespoke colours (the owner, 01.11.2026, 12:50, CONFIRMED:
+    // *"rozpuszczalnik 5 procent ilosc farby"*), and the primer or basecoat is
+    // one line for the job at this many coats (PROPOSED 1: *"dodac primer czy
+    // basecoat"*).
+    solventPct: 5,
+    primerCoats: 1,
     rules: {
       door:           { no: 1, faces: 2, edges: 4, grooves: 'inside the face', code: '2S + 4E' },
       drawer_front:   { no: 2, faces: 2, edges: 4, code: '2S + 4E' },
@@ -5562,6 +5572,13 @@ export const DEFAULT_CABINET_PROFILE = {
   // *"A project that has never been assigned opens with the defaults already in
   // place, not empty."*
   materials: {
+    // ─── T-CC2a F6 (CLAUDE.md T-CC2a law 6): THE SHEET OFFCUT ALLOWANCE ──────
+    // The owner, 01.11.2026, 13:28, CONFIRMED: *"dajmy 10 procent na offcuts
+    // bo zawsze zaokraglamy do gory, nawet jesli wyjdzie 2.1 plyty musimy
+    // zamowic 3"*; *"jesli klient bedzie chcial mniej to zmieni sobie w yeld
+    // ustawieniu"*. Sheets = ceil(m2 x yield / sheet area); a company's link
+    // may hold its own yield, and this is the one number when it holds none.
+    sheetYield: 1.10,
     // partId → material id (a Joinery Core `stock_items` row since T-CC1b F9), or { material_id, yield }.
     // Keys are `engine/partRegistry.js` ids; `seedFromDefaults()` ignores any
     // key the registry does not know, so a stale profile cannot inject a row.

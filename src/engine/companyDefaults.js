@@ -41,6 +41,11 @@
 //
 // Pure functions. No React, no store, no network.
 
+// T-CC2a F11.3: the RAL palette the colour picker reads (the retail adapter's
+// `ralWine()` reads the same file through lib/pswColors.js), so the new item's
+// front colour is resolved by name and never typed as a hex.
+import pswColours from '../../reference/colors/psw-colors.json' with { type: 'json' };
+
 export const COMPANY_DEFAULTS_SCHEMA = 1;
 
 /**
@@ -83,6 +88,15 @@ export const DEFAULT_COMPANY_DEFAULTS = {
   // (`params.joints_system`, the T75 F23 Joints row). Flat, as `hinge_system`
   // is, because the row is flat. `null` is "the shop has not said" (puzzle).
   joints_system: null,
+  // ─── T-CC2a F11.2 / F11.3 (CLAUDE.md T-CC2a law 2): A NEW ITEM'S BOARDS ──
+  // What a NEW item of this company starts on: `{ carcass, front, back,
+  // drawerBottom }`, each a board choice of engine/catalogue.js (`source`,
+  // `finishId` or `finish_id`, `colour`, `thickness`) or null. Null back and
+  // drawer bottom are "As today" (the part takes the slot the engine uses
+  // today); a null carcass and front are Cabinet Core's own new-item default
+  // (`newItemBoardDefaults` below). Not a rule and not a number: a preference
+  // F2b.1 allows, which nothing in this app infers.
+  item_boards: null,
 };
 
 /**
@@ -303,8 +317,37 @@ export function validateCompanyDefaults(raw, profile) {
     if (Object.keys(out).length) value.boards[family] = out;
   }
 
+  // ─── T-CC2a F11: the new item's boards, board choices or nothing ─────────
+  {
+    const stated = source.item_boards;
+    if (stated != null && stated !== '') {
+      if (typeof stated !== 'object' || Array.isArray(stated)) {
+        rejected.push({ key: 'item_boards', why: 'not a set of board choices' });
+      } else {
+        const out = {};
+        for (const [slot, choice] of Object.entries(stated)) {
+          if (!ITEM_BOARD_SLOTS.includes(slot)) {
+            rejected.push({ key: `item_boards.${slot}`, why: 'not a board slot of a new item' });
+            continue;
+          }
+          if (choice == null) continue;
+          if (typeof choice !== 'object' || Array.isArray(choice) || !choice.source) {
+            rejected.push({ key: `item_boards.${slot}`, why: 'a board choice names its source' });
+            continue;
+          }
+          out[slot] = Object.fromEntries(ITEM_BOARD_KEYS.filter((k) => choice[k] != null && choice[k] !== '').map((k) => [k, choice[k]]));
+        }
+        if (Object.keys(out).length) value.item_boards = out;
+      }
+    }
+  }
+
   return { value, rejected };
 }
+
+/** T-CC2a F11 · the slots of `item_boards`, and what one board choice may say. */
+export const ITEM_BOARD_SLOTS = Object.freeze(['carcass', 'front', 'back', 'drawerBottom']);
+const ITEM_BOARD_KEYS = ['source', 'finishId', 'finish_id', 'decorId', 'colour', 'thickness'];
 
 /** Is this row saying anything at all? An empty row is the same as no row. */
 export function hasCompanyDefaults(row) {
@@ -318,6 +361,8 @@ export function hasCompanyDefaults(row) {
   // T78 F19: a row whose only entry is the joint system is a row that is
   // saying something (a workshop that dowels everything).
   if (row.joints_system) return true;
+  // T-CC2a F11: a row whose only entry is the new item's boards says something.
+  if (row.item_boards && Object.keys(row.item_boards).length) return true;
   return Object.keys(row.boards || {}).length > 0;
 }
 
@@ -410,4 +455,64 @@ export function prefillDesignFromCompany(design, company, profile) {
   // `front_thickness` is kept on the row and read by the screen; it does not
   // write a project field there is no place for.
   return next;
+}
+
+// ─── T-CC2a F11.3 · A NEW ITEM IS NEVER WHITE ───────────────────────────────
+//
+// The owner, 01.11.2026, 12:02: *"przypisane prawdziwe materialy, z Egger
+// boardow listy ... srodek carcasu to walnut a fronty to red wine z RAL
+// kolorem, poprostu wybrane default a ludzie se beda zmieniac sami ... jak
+// dadza next next next to zeby im biale nie wyskoczylo"*; 12:34: *"domyslny
+// h3325 tabaco gladstone oak"*.
+//
+// THE RETAIL DEFAULTS, read and not edited (src/retail/design/adapter.js:
+// `DEFAULT_CARCASS_DECOR = 'H3325_28'`, held equal to the profile's
+// `projectSettings.defaultCarcassDecorId`; `RAL_WINE_NAME = '3005 Wine Red'`,
+// resolved off the RAL palette by `ralWine()`). The carcass decor is read from
+// the profile; the front's colour by its NAME off the same palette; its board
+// thickness is the spray source's own (`profile.projectSettings.frontSources`).
+// A company's own `item_boards` win where it has them. Existing items are never
+// touched: this answers a NEW item only (NewProjectFlow preselects it).
+
+/** The new item's front colour, by name: retail's `RAL_WINE_NAME` (test/turn-cc2a-f11 holds the two equal). */
+export const NEW_ITEM_FRONT_COLOUR = Object.freeze({ system: 'RAL', name: '3005 Wine Red' });
+
+/** A palette colour by system and name, normalised as the picker hands it ({ hex, name, system }), or null. */
+export function paletteColour({ system, name } = {}) {
+  const list = system === 'RAL' ? pswColours.RAL_OPTS : (system === 'F&B' ? pswColours.FB_OPTS : []);
+  for (const [, colours] of list || []) {
+    for (const [hex, n] of colours || []) {
+      if (n === name) return { hex: String(hex).toLowerCase(), name: n, system };
+    }
+  }
+  return null;
+}
+
+/**
+ * THE BOARDS A NEW ITEM STARTS ON (CONTRACT E).
+ *
+ * @param {object} profile
+ * @param {object} [company]  the company row; `undefined` reads the active one
+ * @returns {{ carcass: object, front: object, boards: { back: object|null, drawerBottom: object|null } }}
+ *   carcass `{ source: 'egger', finish_id: 'egger:<profile.projectSettings.defaultCarcassDecorId>' }`;
+ *   front `{ source: 'spray', colour: <RAL 3005 Wine Red>, thickness: <the spray source's> }`;
+ *   boards null for "As today".
+ */
+export function newItemBoardDefaults(profile, company = undefined) {
+  const row = company === undefined ? companyDefaults() : company;
+  const own = row?.item_boards || {};
+  const PS = profile?.projectSettings || {};
+  const decor = PS.defaultCarcassDecorId || null;
+  const spray = (PS.frontSources || []).find((s) => s.id === 'spray') || null;
+  const carcass = own.carcass || (decor ? { source: 'egger', finish_id: `egger:${decor}` } : null);
+  const front = own.front || {
+    source: 'spray',
+    colour: paletteColour(NEW_ITEM_FRONT_COLOUR),
+    thickness: Number(spray?.thickness) > 0 ? Number(spray.thickness) : null,
+  };
+  return {
+    carcass,
+    front,
+    boards: { back: own.back ?? null, drawerBottom: own.drawerBottom ?? null },
+  };
 }

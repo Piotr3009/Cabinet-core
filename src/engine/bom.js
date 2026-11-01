@@ -11,10 +11,11 @@ import { formatMm, roundTo } from './format.js';
 import { resolvePanelMaterial } from './materials.js';
 import { frontManufacturing } from './frontDecorationBom.js';
 import {
-  ALL_PARTS as REGISTRY_PARTS, PART_REGISTRY, HARDWARE_TO_PART_ID, LIGHTING_TO_PART_ID,
+  PART_REGISTRY, HARDWARE_TO_PART_ID, LIGHTING_TO_PART_ID,
   partIdForElement, edgePartFor, cabinetFamilyOf, assignmentFor, normalizeAssignments,
 } from './partRegistry.js';
-import { sheetSizeForFamily } from './checks.js';
+// T-CC2a F6: the family sheet sizes of checks.js stay for the CNC checks and
+// are no longer read by the purchase list (the company's link holds the size).
 import { lightingBomLines } from './ledStrips.js';
 // T75 F5 · the worktop's slabs, joint and cut-outs, resolved from the design.
 // T75 F22 · the state of every line, read off the part.
@@ -26,7 +27,15 @@ import { dowelNoteRow } from './dowels.js';
 // T78 F20 · a Cabineo unit's cut list says so in a NOTE row of the same grammar (OUTSIDE FACE UP, the gate).
 import { cabineoNoteRow } from './cabineo.js';
 // T78 F21 - the paint of the sprayed sets, litres off the spray schedule (CLAUDE.md PART F).
-import { paintPurchaseQtys, sprayAreaFor } from './spray.js';
+import { paintLinesFor, paintPurchaseQtys, sprayAreaFor } from './spray.js';
+// T-CC2a PART B: the catalogue the purchase list is keyed by, the plate the hinges
+// sit on, the plinth's front legs and the bought boxes (bomInvoice.js's own reads).
+import {
+  DEPARTMENTS, NOT_IN_CATALOGUE, catalogueIdOfLine, edgeEntryOfBoard, entryById, isMdfSource,
+} from './catalogue.js';
+import { resolveHingePlate } from './hinges.js';
+import { frontLegCount } from './legs.js';
+import { readyBoxLines } from './bomInvoice.js';
 // T83 F4 . the profile the mirror cabinet's articles are read from when the caller hands none.
 import { getCabinetProfile } from './profile.js';
 
@@ -318,6 +327,14 @@ export function buildBom(entries, {
         // an override moves a piece between groups.
         material_key: resolved?.key || null,
         material_id: resolved ? resolved.material_id : (p.meta?.material_id ?? null),
+        // T-CC2a F3 (law 2): the catalogue entry this piece is cut from, the
+        // SAME answer the purchase list reads (`purchaseBom` below), or null
+        // with the words of law 7 where the catalogue does not hold the board.
+        ...(resolved ? {
+          catalogue_id: resolved.catalogue_id ?? null,
+          catalogue_reason: resolved.catalogue_reason ?? null,
+          board_source: resolved.board?.source ?? null,
+        } : {}),
         w: p.w,
         h: p.h,
         qty: p.qty,
@@ -930,268 +947,436 @@ function resolveMouldingMaterial(panel, unit, assignment, { design, profile, mat
   }, unit, design, profile, materials);
 }
 
-/**
- * MANY CABINETS → ONE FLAT PURCHASE LIST.
- *
- * Production Core's `mergeWindowMaterials`, and its accumulator verbatim:
- *
- *   assigned   → key `mat:{material_id}`, `_assigned: true`, cost from the
- *                stock row — so every part on that board lands on ONE line
- *   unassigned → key `part:{partId}`,     `_assigned: false`, cost 0 — so the
- *                user sees exactly what is missing rather than a short total
- *
- * The project BOM is a SIMPLE SUM over the units, which is what makes it
- * impossible for one cabinet's BOM and the project's to disagree: the project
- * is this function over N entries, one cabinet is this function over 1.
- *
- * @param {Array<{unit:object, result:object}>} units
- * @param {object} ctx
- *   assignments      the schema-2 blob (any shape `normalizeAssignments` eats)
- *   materials        the workshop's stock list (Joinery Core `stock_items` rows since T-CC1b F9)
- *   ALL_PARTS        injectable, so a caller can narrow the walk; defaults to
- *                    the whole registry — and iterating THIS is what makes a
- *                    missing row a dropped line, which is why F1 has the test
- *                    it has
- *   profile, design  for the sheet estimate and the lighting lines
- */
-export function mergeUnitMaterials(unitsIn = [], {
-  assignments = null,
-  assignmentsData = null,
-  materials = [],
-  // Named `ALL_PARTS` on the outside because CLAUDE.md F5 names it that, bound
-  // to `parts` on the inside because `ALL_PARTS` is another module's export and
-  // this house's import test — rightly — will not have a bare one here.
-  ALL_PARTS: parts = REGISTRY_PARTS,
-  profile = null,
-  design = null,
-  // T75 F21 · the prices this job was quoted at (`project.warehouseStamp`):
-  // a material in it is priced at its quoted figure, never silently at today's.
-  pricedAt = null,
-} = {}) {
-  // `= []` only defends against `undefined`; a caller with nothing to show may
-  // well hand us a null, and a BOM screen must not be the thing that crashes.
-  const units = Array.isArray(unitsIn) ? unitsIn : [];
-  const data = normalizeAssignments(assignmentsData || assignments);
-  const byId = new Map((materials || []).map((m) => [m.id, m]));
-  const acc = {};
+// ═══════════════════════════════════════════════════════════════════════════
+// T-CC2a PART B · ONE PRODUCT, ONE LINE (CLAUDE.md T-CC2a F5 to F7)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner, 01.11.2026, 12:14: *"jesli CC wybierze MDF 25 a nie mamy
+// przypisanego materialu z JC to bedzie napisane MDF 25 materials not
+// assigned, proste, chodzi o robienie listy materialow na dany projekt oraz
+// listy kosztow"*; 12:34: *"jedne produkt osobna linia, proste"*.
+//
+// The purchase list is keyed by the CATALOGUE (engine/catalogue.js), never by
+// the per-part assignment blob of T39 / T-CC1b (that window stays readable,
+// F14, and is no longer read here: the board road's `assignmentFor` and the
+// m2 row's `qty x costPerUnit` are DELETED, the Deletion licence). One
+// catalogue entry a project uses is one row with its own price:
+//
+//   boards   the cut list's own catalogue id for every piece (buildBom, the
+//            SAME resolver, engine/materials.js), m2 summed per entry, then
+//            sheets = ceil(m2 x yield / sheet area) by the company's link
+//   edging   the tape follows the decor: metres per Egger decor (a sprayed
+//            or raw MDF edge is painted or left, never taped)
+//   hardware the BOM's own hardware lines (buildBom().hardware, the engine's
+//            quantities) and the counts the drilling already holds (plates,
+//            screws, dowels, puzzle connectors, rail supports, handles, plinth
+//            clips) and the project's light, resolved line by line by
+//            catalogueIdOfLine and merged on the catalogue id
+//   paint    one line a colour through the ONE paint.bespoke link, the primer,
+//            the solvent (engine/spray.js paintLinesFor)
+//   bespoke  project.bespoke rows: this project's only, never the catalogue
+//
+// Each row resolves its LINK (the company's, lib/jcLinks.js) to its STOCK row
+// (Joinery Core stock_items through lib/jcStock.js toMaterial): name, item
+// number, image, unit, the weighted average cost JC keeps; a quoted price of
+// T75 F21 (`pricedAt`) still wins. A row with no link, a link to a stock row
+// the company no longer has, an entry the catalogue does not hold, a sheet
+// without its size, a stock unit the list does not know: no price, said in
+// words, counted in `incomplete` (law 7).
 
-  // Production Core's `bump()`, unchanged in spirit: create on first sight,
-  // then only ever add to the quantity.
-  const bump = (key, fields, addQty, { partId = null, family = null } = {}) => {
-    if (!acc[key]) {
-      acc[key] = {
-        qty: 0, parts: new Set(), _m2ByFamily: { carcasses: 0, fronts: 0 }, ...fields,
-      };
-    }
-    acc[key].qty += addQty;
-    if (partId) acc[key].parts.add(partId);
-    // The sheet estimate is per BOARD FAMILY, because a workshop's carcass
-    // board and its front board are different sizes (T35-F15). A line that
-    // somehow carries both counts each family's sheets and adds them, rather
-    // than measuring one board against the other's format.
-    if (family && acc[key]._m2ByFamily[family] != null) acc[key]._m2ByFamily[family] += addQty;
-  };
+/** The words of law 7, one place (CONTRACT B). */
+export const LINK_WORDS = Object.freeze({
+  notLinked: 'Not linked',
+  removed: 'Not linked (removed from your Joinery Core stock)',
+  notInCatalogue: NOT_IN_CATALOGUE,
+  sheetSizeMissing: 'Sheet size missing, add it in Link materials',
+  unitUnknown: 'Check the unit of this item in Joinery Core',
+});
 
-  const costOf = (mat) => {
-    // T75 F21 · the quoted price first: *"prices change a quote only by the
-    // owner's decision"*.
-    const quoted = pricedAt?.prices?.[mat?.id];
-    if (quoted && quoted.price != null) return Number(quoted.price) || 0;
-    // CLAUDE.md F5 says the materials row's `cost_per_unit`; Cabinet Core's own table
-    // (sql/001_init.sql) calls the column `price`. Both are read, so the spec's
-    // name works the day somebody adds it and today's column works now.
-    const v = mat?.cost_per_unit ?? mat?.price;
-    return Number(v) || 0;
-  };
-  // T75 F21 · *"The purchase BOM export carries `jc_uuid` and the material code
-  // on every line that has them, so JoineryCore can import the shopping list by
-  // identity."*  The code is the stock row's own `code`, else the warehouse's
-  // `item_number`; and where the price came from rides beside it.
-  const identityOf = (mat) => ({
-    jc_uuid: mat?.jc_uuid ? String(mat.jc_uuid) : null,
-    code: mat?.code ?? mat?.item_number ?? null,
-    price_source: pricedAt?.prices?.[mat?.id] ? 'quoted' : (mat?.price_source || 'stock list'),
-  });
+/** "Incomplete total, <n> lines not linked" (one line: "1 line"). */
+export function incompleteWords(n) {
+  const k = Number(n) || 0;
+  return `Incomplete total, ${k} ${k === 1 ? 'line' : 'lines'} not linked`;
+}
 
-  const consume = (partQtys, family) => {
-    for (const part of parts) {
-      const entry = partQtys[part.id];
-      if (!entry) continue;
-      const assignment = assignmentFor(data, part.id, family);
-      const { total, unit } = resolvePartTotal(entry, assignment?.yield ?? 1.0);
-      if (!(total > 0)) continue;
-      const isArea = PART_REGISTRY[part.id]?.unit === 'm²';
-      const sheetFamily = isArea ? sheetFamilyOfPart(part.id) : null;
+/** The statuses a row may carry; every one but `linked` and `bespoke` is counted incomplete. */
+export const INCOMPLETE_STATUSES = Object.freeze(['not-linked', 'removed', 'not-in-catalogue', 'no-sheet-size', 'unit-unknown']);
 
-      const mat = assignment?.material_id ? byId.get(assignment.material_id) : null;
-      if (mat) {
-        bump(`mat:${mat.id}`, {
-          name: mat.name || mat.id,
-          unit,
-          costPerUnit: costOf(mat),
-          source: 'material',
-          material: mat,
-          ...identityOf(mat),
-          group: part.group,
-          _assigned: true,
-        }, total, { partId: part.id, family: sheetFamily });
-        continue;
-      }
-      // Assigned to a material this workshop's list does not have, or not
-      // assigned at all — the SAME line either way, because both mean "nobody
-      // has told this BOM what to buy" and hiding one of them behind a price of
-      // zero would be the more expensive mistake.
-      bump(`part:${part.id}`, {
-        name: part.name,
-        unit,
-        costPerUnit: 0,
-        source: 'part',
-        material: null,
-        group: part.group,
-        _assigned: false,
-      }, total, { partId: part.id, family: sheetFamily });
-    }
-  };
+// F6.2 (the word lists the owner confirms after the merge, case and plural folded): what a stock row's unit says it is sold by.
+const SHEET_UNITS = new Set(['sheet', 'board', 'pc', 'pcs', 'each', 'ea']);
+const AREA_UNITS = new Set(['m2', 'm²', 'sqm', 'sq m']);
 
-  // Moulding thickness is chosen per front. Keep each strip's dimensions and
-  // explicit stock until material validation has run, before areas merge.
-  // Family assignments use the same material resolver as the cut list.
-  const mouldingPart = parts.find((part) => part.id === 'front_moulding');
-  const consumeMouldings = (entry, family) => {
-    if (!mouldingPart) return;
-    const assignment = assignmentFor(data, mouldingPart.id, family);
-    for (const panel of entry.result.panels || []) {
-      if (panel.part !== 'FRONT-MOULDING') continue;
-      const area = (Number(panel.area_m2) || 0) * (Number(panel.qty) || 1);
-      const { total, unit } = resolvePartTotal({ m2: area, unit: mouldingPart.unit }, assignment?.yield ?? 1.0);
-      if (!(total > 0)) continue;
-      const resolved = resolveMouldingMaterial(panel, entry.unit, assignment, { design, profile, materials });
-      const mat = resolved.assigned ? byId.get(resolved.material_id) : null;
-      const sheetFamily = sheetFamilyOfPart(mouldingPart.id);
-      if (mat) {
-        bump(`mat:${mat.id}`, {
-          name: mat.name || mat.id, unit, costPerUnit: costOf(mat),
-          source: 'material', material: mat, group: mouldingPart.group, _assigned: true,
-        }, total, { partId: mouldingPart.id, family: sheetFamily });
-      } else {
-        bump(`part:front_moulding:${panel.thickness}`, {
-          name: `Applied front mouldings ${panel.thickness} mm`, unit, costPerUnit: 0,
-          source: 'part', material: null, group: mouldingPart.group, _assigned: false,
-          assignmentProblem: resolved.assignmentProblem,
-        }, total, { partId: mouldingPart.id, family: sheetFamily });
-      }
-    }
-  };
-
-  for (const entry of units) {
-    if (!entry?.result) continue;
-    const family = cabinetFamilyOf(entry.result.type || entry.unit?.type);
-    const quantities = buildCabinetPartQtys(entry.result, entry.unit, { profile });
-    if (quantities.front_moulding) {
-      delete quantities.front_moulding;
-      consumeMouldings(entry, family);
-    }
-    consume(quantities, family);
-    // ── F8: the joiner's own rows, a fixed quantity per cabinet ────────────
-    for (const cp of data.customParts || []) {
-      const assignment = assignmentFor(data, cp.id, family);
-      const total = (Number(cp.qtyPerUnit) || 0) * (Number(assignment?.yield) > 0 ? Number(assignment.yield) : 1);
-      if (!(total > 0)) continue;
-      const mat = assignment?.material_id ? byId.get(assignment.material_id) : null;
-      if (mat) {
-        bump(`mat:${mat.id}`, {
-          name: mat.name || mat.id,
-          unit: cp.unit || 'pcs',
-          costPerUnit: costOf(mat),
-          source: 'material',
-          material: mat,
-          ...identityOf(mat),
-          group: 'consumable',
-          _assigned: true,
-        }, total, { partId: cp.id });
-      } else {
-        bump(`part:${cp.id}`, {
-          name: cp.name,
-          unit: cp.unit || 'pcs',
-          costPerUnit: 0,
-          source: 'custom',
-          material: null,
-          group: 'consumable',
-          _assigned: false,
-        }, total, { partId: cp.id });
-      }
-    }
-  }
-
-  // ── LIGHTING, which is a PROJECT fact and not a cabinet's ────────────────
-  // `lightingBomLines` counts the strips over the whole entries list at once,
-  // so it is consumed once, here, under the project's base assignments.
-  if (design && profile && units.length) {
-    consume(lightingPartQtys(units, { design, profile }), null);
-  }
-
-  // -- T78 F21 - THE PAINT, which is a PROJECT fact like the lighting --------
-  // *"lines go to BOM > Purchase list"*: litres per sprayed set (set 1 the
-  // fronts and the run pieces, set 2 a veneer or sprayed carcass), computed by
-  // the spray law over the whole job, through the SAME door every registry
-  // part takes: `paint_fronts` / `paint_carcass` under the base assignments,
-  // priced by the paint the Assign Materials modal chose, or an unassigned
-  // line that says so. The litres read the assigned paint's own coverage and
-  // coats, so the assignment is handed in.
-  if (design && profile && units.length) {
-    consume(paintPurchaseQtys(units, { design, profile, assignments: data, materials }), null);
-  }
-
-  const carcassSheet = sheetSizeForFamily(profile, 'carcasses');
-  const frontSheet = sheetSizeForFamily(profile, 'fronts');
-
-  const rows = Object.entries(acc).map(([key, v]) => {
-    const { _m2ByFamily, parts, ...rest } = v;
-    const sheets = (sheetsFor(_m2ByFamily.carcasses, carcassSheet) || 0)
-      + (sheetsFor(_m2ByFamily.fronts, frontSheet) || 0);
-    return {
-      key,
-      ...rest,
-      parts: [...parts],
-      // An ESTIMATE, and labelled one everywhere it is shown. Null where the
-      // line is not bought by the sheet at all.
-      sheets: sheets > 0 ? sheets : null,
-      lineCost: rest._assigned ? roundTo(v.qty * rest.costPerUnit, 2) : null,
-    };
-  });
-
-  // Unassigned FIRST — CLAUDE.md F6: *"Unassigned lines sit at the TOP"*. That
-  // is the opposite of Production Core's order, and it is the spec's call: what
-  // is missing is the thing the joiner has to act on.
-  rows.sort((a, b) => {
-    if (a._assigned !== b._assigned) return a._assigned ? 1 : -1;
-    return String(a.name).localeCompare(String(b.name));
-  });
-  return rows;
+/** 'sheet' | 'area' | null: how a sheet's stock row is priced (F6.2). */
+export function sheetUnitKind(unit) {
+  const raw = String(unit ?? '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/\.$/, '');
+  if (!raw) return null;
+  // Case and plural folded: "Sheets", "boards", "PCS", "sq m".
+  const forms = [raw, raw.replace(/s$/, ''), raw.replace(/es$/, '')];
+  if (forms.some((f) => SHEET_UNITS.has(f))) return 'sheet';
+  if (forms.some((f) => AREA_UNITS.has(f))) return 'area';
+  return null;
 }
 
 /**
- * The whole purchase document, with its totals — what the BOM view renders.
- *
- * `complete: false` is the one that matters. A BOM with a `part:` line in it
- * has a total that is missing money, and CLAUDE.md F6 says it must never be
- * shown as a confident number.
+ * How many sheets an area needs (law 6): ceil(m2 x yield / (w x l / 1e6)).
+ * Null when the link holds no size: the count is never guessed.
  */
-export function purchaseBom(units = [], ctx = {}) {
-  const rows = mergeUnitMaterials(units, ctx);
-  const unassigned = rows.filter((r) => !r._assigned);
-  const cost = rows.reduce((s, r) => s + (r.lineCost || 0), 0);
+export function sheetCount(m2, { yield: y = null, widthMm = null, lengthMm = null } = {}) {
+  const w = Number(widthMm);
+  const l = Number(lengthMm);
+  const area = Number(m2) || 0;
+  if (!(w > 0) || !(l > 0) || !(area > 0)) return null;
+  const k = Number(y) > 0 ? Number(y) : 1;
+  // A hair under a whole sheet from floating point is still that sheet, never one more.
+  return Math.ceil(roundTo((area * k) / ((w * l) / 1e6), 9));
+}
+
+/** The company's sheet yield when the link holds none (`profile.materials.sheetYield`). */
+function yieldOf(link, profile) {
+  const own = Number(link?.yield);
+  if (own > 0) return own;
+  const p = Number(profile?.materials?.sheetYield);
+  return p > 0 ? p : 1;
+}
+
+/** A link lookup over a Map, an object keyed by catalogue id, or an array of link rows. */
+function linkLookup(links) {
+  if (links instanceof Map) return (id) => links.get(id) || null;
+  if (Array.isArray(links)) {
+    const m = new Map(links.filter(Boolean).map((l) => [l.cc_material_id, l]));
+    return (id) => m.get(id) || null;
+  }
+  if (links && typeof links === 'object') return (id) => links[id] || null;
+  return () => null;
+}
+
+const DEPARTMENT_ORDER = new Map([...DEPARTMENTS.map((d, i) => [d.id, i]), ['bespoke', DEPARTMENTS.length]]);
+
+/** The drilling's own counts, as hardware lines (the T32 invoice's reads, one law). */
+function drilledLines(entry, design, profile) {
+  const out = [];
+  const { result, unit } = entry;
+  const drills = result.drills || [];
+  const push = (role, label, qty, spec, specLabel, u = 'pcs') => {
+    if (qty > 0) out.push({ role, label, qty, unit: u, spec, spec_label: specLabel });
+  };
+  // A hinge has a PLATE, one a hinge (T39 F1, bomInvoice's line), by its finish.
+  const plate = profile?.hardware?.hinge?.cliptop ? resolveHingePlate(design, profile) : null;
+  const byFinish = new Map();
+  for (const h of result.hardware || []) {
+    if (h.role !== 'hinges' || !(Number(h.qty) > 0)) continue;
+    const f = h.spec?.finish ?? null;
+    byFinish.set(f, (byFinish.get(f) || 0) + Number(h.qty));
+  }
+  for (const [finish, qty] of byFinish) {
+    push('hinge_plates', 'Hinge mounting plates', qty, { plate, finish }, `Mounting plate · ${finish || 'finish unknown'}`);
+  }
+  push('rail_supports', 'Rail supports', drills.filter((d) => d.kind === 'rail_bracket').length, {}, 'Rail support bracket');
+  const screws = new Map();
+  for (const d of drills) if (/screw/.test(d.kind)) screws.set(Number(d.d), (screws.get(Number(d.d)) || 0) + 1);
+  for (const [d, qty] of [...screws.entries()].sort((a, b) => a[0] - b[0])) push('screws', 'Screws', qty, { d }, `Screw for a ${d} mm pilot`);
+  push('puzzle_screws', 'Puzzle connectors', drills.filter((d) => d.kind === 'puzzle').length, {}, 'Puzzle connector');
+  const dowels = new Map();
+  for (const d of drills) if (d.kind === 'dowel' && d.face !== 'edge') dowels.set(Number(d.d), (dowels.get(Number(d.d)) || 0) + 1);
+  for (const [d, qty] of dowels) push('dowels', 'Dowels', qty, { d }, `Dowel ${d} mm`);
+  const handles = new Map();
+  for (const h of result.drillSummary?.handles || []) {
+    const key = `${h.type}|${h.centres ?? ''}`;
+    handles.set(key, (handles.get(key) || 0) + 1);
+  }
+  for (const [key, qty] of handles) {
+    const [type, centres] = key.split('|');
+    push('handle', 'Handles', qty, { type, centres: centres === '' ? null : Number(centres) }, `${type}${centres ? ` ${centres} mm` : ''}`);
+  }
+  // The plinth's clips and their connectors, the FRONT legs only (bomInvoice.js, T32).
+  if (unit?.params?.plinth && profile) {
+    const clips = frontLegCount({
+      width: Number(unit.params.width) || 0,
+      depth: Number(unit.params.depth) || 0,
+      boardT: Number(unit.params.board_t) || profile.board.thickness,
+    }, profile);
+    push('plinth_clips', 'Plinth clips', clips, {}, 'Plinth clip, one per front leg');
+    push('plinth_clip_connectors', 'Plinth clip connectors', clips, {}, 'Plinth clip connector, one per front leg');
+  }
+  return out;
+}
+
+/**
+ * THE PURCHASE LIST (CONTRACT B).
+ *
+ * @param {Array<{unit, result}>} unitsIn
+ * @param {object} ctx
+ *   links     the company's links: a Map (cc_material_id to link), an object, or an array
+ *   stock     the company's stock as lib/jcStock.js toMaterial rows; null when not
+ *             loaded (a link is then not judged "removed", and is unpriced)
+ *   profile, design, pricedAt (T75 F21), bespoke (project.bespoke), room (the worktop's bolts)
+ * @returns {{ rows: Array, totals: { lines, linked, notLinked, incomplete, cost, complete, sheets } }}
+ */
+export function purchaseBom(unitsIn = [], ctx = {}) {
+  const units = (Array.isArray(unitsIn) ? unitsIn : []).filter((e) => e?.result);
+  const {
+    links = null, stock = null, pricedAt = null, bespoke = [], room = null,
+  } = ctx || {};
+  const profile = ctx?.profile || getCabinetProfile();
+  const design = migrateDesign(ctx?.design || null);
+  const linkOf = linkLookup(links);
+  const stockList = Array.isArray(stock) ? stock : null;
+  const stockById = new Map((stockList || []).map((m) => [String(m.id), m]));
+  const acc = new Map();
+
+  const rowFor = (key, base) => {
+    if (!acc.has(key)) {
+      acc.set(key, {
+        key, qty: 0, m2: 0, parts: new Set(), roles: new Set(), specs: new Set(), ...base,
+      });
+    }
+    return acc.get(key);
+  };
+
+  // ── boards and edging, off the cut list's own catalogue ids ──────────────
+  const ready = design.drawerBoxes?.mode === 'ready';
+  const bom = buildBom(units, {
+    design, profile, excludeDrawerBoxes: ready, room,
+  });
+  for (const r of bom.cutRows || []) {
+    const qty = Number(r.qty) || 0;
+    const area = (Number(r.area_m2) || 0) * qty;
+    const partId = partIdForElement(r.part) || r.role;
+    const id = r.catalogue_id || null;
+    const entry = id ? entryById(id) : null;
+    const key = id ? `cat:${id}` : `nc:board:${r.material_label || r.role}|${r.thickness}`;
+    const row = rowFor(key, {
+      catalogueId: id,
+      department: 'sheets',
+      kind: 'sheet',
+      name: entry ? entry.name : `${r.material_label || 'Board'}, ${formatMm(r.thickness)} mm`,
+      unit: 'm²',
+      why: id ? null : (r.catalogue_reason || NOT_IN_CATALOGUE),
+    });
+    row.m2 += area;
+    row.qty += area;
+    row.parts.add(partId);
+    row.roles.add(r.role);
+    const edgeM = (Number(r.edge_m) || 0) * qty;
+    if (!(edgeM > 0)) continue;
+    // A painted or raw MDF edge is not taped, whether the catalogue holds that MDF or not.
+    if (entry?.brand === 'mdf' || isMdfSource(r.board_source)) continue;
+    const edge = entry ? edgeEntryOfBoard(id) : null;
+    const ekey = edge ? `cat:${edge.id}` : `nc:edge:${entry?.name || r.material_label || r.role}`;
+    const erow = rowFor(ekey, {
+      catalogueId: edge?.id || null,
+      department: 'consumables',
+      kind: 'edging',
+      name: edge ? edge.name : `Edging for ${entry?.name || r.material_label || 'a board'}`,
+      unit: 'm',
+      why: edge ? null : 'the edging follows a board with no Egger decor',
+    });
+    erow.qty += edgeM;
+    erow.parts.add(edgePartFor(partId) || partId);
+    erow.roles.add('edging');
+  }
+
+  // ── hardware: the engine's lines, the drilling's counts, the light ───────
+  const lines = [];
+  for (const h of bom.hardware || []) {
+    if (h.role === 'rail') {
+      // Tube is bought by the METRE (bomInvoice.js since T32, the T39 registry's unit).
+      lines.push({ ...h, qty: roundTo(((Number(h.spec?.length_mm) || 0) * (Number(h.qty) || 0)) / 1000, 4), unit: 'm' });
+    } else lines.push(h);
+  }
+  for (const e of units) lines.push(...drilledLines(e, design, profile));
+  if (units.length) {
+    const light = lightingBomLines({ entries: units, design, profile });
+    lines.push(...light);
+    const strip = light.filter((l) => l.role === 'led_strip').reduce((s, l) => s + (Number(l.qty) || 0), 0);
+    if (strip > 0) lines.push({ role: 'led_profile', label: 'LED profile', qty: roundTo(strip, 2), unit: 'm', spec: {}, spec_label: 'a metre of profile a metre of strip' });
+  }
+  if (ready) lines.push(...readyBoxLines(units).map((l) => ({ ...l, spec: {} })));
+  for (const l of lines) {
+    const qty = Number(l.qty) || 0;
+    if (!(qty > 0)) continue;
+    const res = catalogueIdOfLine(l);
+    if (res.notBought) continue;                          // the client's appliance, a machined J-pull
+    const entry = res.id ? entryById(res.id) : null;
+    const key = entry ? `cat:${entry.id}` : `nc:${l.role}|${l.spec_label || l.label || ''}`;
+    const row = rowFor(key, {
+      catalogueId: entry?.id || null,
+      department: entry?.department || 'ironmongery',
+      kind: entry?.kind || 'hardware',
+      name: entry ? entry.name : `${l.label || l.role}${l.spec_label ? `, ${l.spec_label}` : ''}`,
+      unit: l.unit || entry?.unit || 'pcs',
+      why: entry ? null : (res.why || NOT_IN_CATALOGUE),
+    });
+    row.qty += qty;
+    row.roles.add(l.role);
+    if (l.spec_label) row.specs.add(l.spec_label);
+    const partId = HARDWARE_TO_PART_ID[l.role] || LIGHTING_TO_PART_ID[l.role] || l.role;
+    row.parts.add(partId);
+  }
+
+  // ── paint: one line a colour, through the ONE paint.bespoke link (F7) ────
+  if (units.length) {
+    const paintLink = linkOf('paint.bespoke');
+    const primerLink = linkOf('paint.primer');
+    for (const p of paintLinesFor(units, {
+      design, profile, coverage: paintLink?.coverage_m2_per_l, primerCoverage: primerLink?.coverage_m2_per_l,
+    })) {
+      if (!(p.litres > 0)) continue;
+      const id = { paint: 'paint.bespoke', primer: 'paint.primer', solvent: 'paint.solvent', lacquer: 'lacquer' }[p.role];
+      const key = p.role === 'paint' ? `cat:${id}|${p.colour}` : `cat:${id}`;
+      const row = rowFor(key, {
+        catalogueId: id, department: 'paint', kind: 'paint', name: p.name, unit: 'L', why: null,
+        colour: p.colour, coats: p.coats, coverage: p.coverage,
+      });
+      row.qty += p.litres;
+      row.m2 += p.m2;
+      row.roles.add(p.role);
+    }
+  }
+
+  // ── resolve every row: link, stock row, price, status ─────────────────────
+  const priceOf = (st, link) => {
+    const sid = st?.id ?? link?.stock_item_id;
+    const quoted = sid != null ? pricedAt?.prices?.[sid] : null;
+    if (quoted && quoted.price != null) return { price: Number(quoted.price) || 0, source: 'quoted' };
+    if (!st) return { price: null, source: null };
+    const v = st.price ?? st.cost_per_unit;
+    return { price: v == null || v === '' ? null : Number(v) || 0, source: 'stock' };
+  };
+  const rows = [];
+  for (const v of acc.values()) {
+    const base = {
+      key: v.key,
+      catalogueId: v.catalogueId,
+      department: v.department,
+      kind: v.kind,
+      name: v.name,
+      qty: roundTo(v.qty, 4),
+      unit: v.unit,
+      ...(v.kind === 'sheet' ? { m2: roundTo(v.m2, 4), sheets: null } : {}),
+      ...(v.kind === 'paint' ? {
+        m2: roundTo(v.m2, 4), colour: v.colour ?? null, coats: v.coats ?? null, coverage: v.coverage ?? null,
+      } : {}),
+      parts: [...v.parts],
+      roles: [...v.roles],
+      specs: [...v.specs],
+    };
+    if (!v.catalogueId) {
+      rows.push({
+        ...base, status: 'not-in-catalogue', words: LINK_WORDS.notInCatalogue, why: v.why, link: null, stock: null, price: null, lineCost: null,
+      });
+      continue;
+    }
+    const link = linkOf(v.catalogueId);
+    if (!link) {
+      rows.push({
+        ...base, status: 'not-linked', words: LINK_WORDS.notLinked, link: null, stock: null, price: null, lineCost: null,
+      });
+      continue;
+    }
+    const st = stockList ? (stockById.get(String(link.stock_item_id)) || null) : null;
+    if (stockList && !st) {
+      rows.push({
+        ...base, status: 'removed', words: LINK_WORDS.removed, link, stock: null, price: null, lineCost: null,
+      });
+      continue;
+    }
+    const { price, source } = priceOf(st, link);
+    const said = {
+      link,
+      stock: st,
+      ...(st ? { stockName: st.name ?? null, item_number: st.item_number ?? null, image_url: st.image_url ?? null, stockUnit: st.unit ?? null } : {}),
+      // T75 F21 · *"the purchase BOM export carries jc_uuid and the material code on every line that has them"*.
+      jc_uuid: String(st?.jc_uuid ?? link.stock_item_id ?? '') || null,
+      code: st?.code ?? st?.item_number ?? null,
+      price_source: source,
+    };
+    if (v.kind === 'sheet') {
+      const y = yieldOf(link, profile);
+      const sheets = sheetCount(v.m2, { yield: y, widthMm: link.sheet_width_mm, lengthMm: link.sheet_length_mm });
+      const sized = { ...base, ...said, yield: y, sheetSize: sheets == null ? null : { width_mm: Number(link.sheet_width_mm), length_mm: Number(link.sheet_length_mm) } };
+      if (sheets == null) {
+        rows.push({
+          ...sized, status: 'no-sheet-size', words: LINK_WORDS.sheetSizeMissing, sheets: null, price: null, lineCost: null,
+        });
+        continue;
+      }
+      const how = st ? sheetUnitKind(st.unit) : (price != null ? 'sheet' : null);
+      if (st && !how) {
+        rows.push({
+          ...sized, status: 'unit-unknown', words: LINK_WORDS.unitUnknown, sheets, price: null, lineCost: null,
+        });
+        continue;
+      }
+      const lineCost = price == null ? null : roundTo(how === 'area' ? v.m2 * y * price : sheets * price, 2);
+      rows.push({
+        ...sized, status: 'linked', words: null, sheets, price, priceBy: how, lineCost,
+      });
+      continue;
+    }
+    rows.push({
+      ...base, ...said, status: 'linked', words: null, price, lineCost: price == null ? null : roundTo(v.qty * price, 2),
+    });
+  }
+
+  // ── bespoke: this project's own, never the catalogue (law 9) ─────────────
+  for (const b of Array.isArray(bespoke) ? bespoke : []) {
+    if (!b || !b.id) continue;
+    // A quantity nobody can parse is ONE (T39 F8, Production Core's own answer), never zero and never NaN.
+    const q = Number(b.qty);
+    const qty = Number.isFinite(q) && q >= 0 && b.qty !== null && b.qty !== '' ? q : 1;
+    const client = b.suppliedByClient === true;
+    const price = client ? 0 : (Number(b.price) || 0);
+    rows.push({
+      key: `bespoke:${b.id}`,
+      catalogueId: null,
+      department: 'bespoke',
+      kind: 'other',
+      name: String(b.name || 'Bespoke item'),
+      qty,
+      unit: b.unit || 'pcs',
+      parts: [],
+      roles: ['bespoke'],
+      specs: [],
+      status: 'bespoke',
+      words: client ? 'Supplied by client' : null,
+      link: null,
+      stock: null,
+      price,
+      lineCost: roundTo(qty * price, 2),
+      bespoke: true,
+      suppliedByClient: client,
+    });
+  }
+
+  const incomplete = (r) => INCOMPLETE_STATUSES.includes(r.status);
+  rows.sort((a, b) => (incomplete(a) === incomplete(b) ? 0 : (incomplete(a) ? -1 : 1))
+    || (DEPARTMENT_ORDER.get(a.department) ?? 99) - (DEPARTMENT_ORDER.get(b.department) ?? 99)
+    || String(a.name).localeCompare(String(b.name)));
+  const notLinked = rows.filter(incomplete).length;
   return {
     rows,
-    unassigned,
     totals: {
       lines: rows.length,
-      unassigned: unassigned.length,
-      sheets: rows.reduce((s, r) => s + (r.sheets || 0), 0),
-      cost: roundTo(cost, 2),
-      complete: unassigned.length === 0,
+      linked: rows.filter((r) => r.status === 'linked').length,
+      notLinked,
+      incomplete: notLinked,
+      cost: roundTo(rows.reduce((s, r) => s + (Number(r.lineCost) || 0), 0), 2),
+      complete: notLinked === 0,
+      sheets: rows.reduce((s, r) => s + (Number(r.sheets) || 0), 0),
+      ...(notLinked > 0 ? { words: incompleteWords(notLinked) } : {}),
     },
   };
+}
+
+/**
+ * The T39 name of the purchase list, kept as a door to the ONE road: the rows
+ * of `purchaseBom`. Its assignment-keyed body (the board road's
+ * `assignmentFor`, the `mat:` / `part:` keys, the m2 row's `qty x
+ * costPerUnit`) is DELETED by T-CC2a's Deletion licence.
+ */
+export function mergeUnitMaterials(unitsIn = [], ctx = {}) {
+  return purchaseBom(unitsIn, ctx).rows;
 }
 
 /**

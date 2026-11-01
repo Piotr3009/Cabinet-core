@@ -592,7 +592,31 @@ function migrateDesignFresh(design) {
     // a hand-written payload, a switch back to lay-on) is lay-on and leaves no
     // key behind, which is what main saved.
     ...(d.inframe === true ? { inframe: true } : {}),
+    // T-CC2a F11.2 (CLAUDE.md T-CC2a law 2): the board slots of the design, a
+    // board choice each or null for "As today" (the owner, 13:28: *"domyslne,
+    // ale mamy mozliwosc zmienic na inne"*). Data passthrough only, read by
+    // engine/materials.js boardChoiceOfPanel; present only where the stored
+    // design has the key, so every design saved before tonight is the bytes
+    // main wrote.
+    ...(d.boards && typeof d.boards === 'object' ? { boards: migrateBoards(d.boards) } : {}),
   };
+}
+
+/** T-CC2a F11.2 · the slots `design.boards` keeps, and the fields of a board choice it keeps. */
+const DESIGN_BOARD_SLOTS = ['back', 'drawerBottom', 'plinth', 'infill', 'end_panel', 'mask'];
+const BOARD_CHOICE_KEYS = ['source', 'finishId', 'finish_id', 'decorId', 'colour', 'thickness'];
+function migrateBoards(stored) {
+  const out = { back: null, drawerBottom: null };
+  for (const slot of DESIGN_BOARD_SLOTS) {
+    const c = stored?.[slot];
+    if (!c || typeof c !== 'object' || Array.isArray(c)) {
+      if (slot === 'back' || slot === 'drawerBottom') out[slot] = null;
+      continue;
+    }
+    const kept = Object.fromEntries(BOARD_CHOICE_KEYS.filter((k) => c[k] != null && c[k] !== '').map((k) => [k, c[k]]));
+    out[slot] = Object.keys(kept).length ? kept : null;
+  }
+  return out;
 }
 
 // ─── T80 F2 · THE FRONTS ROW: LAY-ON OR IN-FRAME, PER PROJECT ─────────────

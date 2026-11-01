@@ -1,16 +1,21 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import NumberField from './NumberField.jsx';
+import { StockPhoto, PhotoCard } from './MaterialPicker.jsx';
 import { useUiStore } from '../stores/uiStore.js';
-import { useProjectStore } from '../stores/projectStore.js';
+import { useProjectStore, BESPOKE_UNITS } from '../stores/projectStore.js';
+import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
+// ─── T-CC2a F10 · THE BOM: MATERIALS AND COSTS (CLAUDE.md T-CC2a laws 3, 7, 9) ─
+// The owner, 01.11.2026: *"chodzi o robienie listy materialow na dany projekt
+// oraz listy kosztow"*. Every line is ONE catalogue entry of the purchase list
+// (bom.js purchaseBom, the same road the CSV writes), priced through the
+// company's link to its Joinery Core stock; a line without one says so in red
+// and carries a Link that opens the Link materials window at that entry. The
+// per-part blob is not read here any more.
 import {
-  useMaterialAssignmentStore, BOM_ROLES, HARDWARE_ROLES, assignCount, buildAssignLines,
-} from '../stores/materialAssignmentStore.js';
-import {
-  buildBom, materialDemand, hardwareDemand, demandCost, purchaseBom, formatQty,
+  buildBom, purchaseBom, formatQty, LINK_WORDS, incompleteWords,
 } from '../engine/bom.js';
-// ─── Turn 39 (CLAUDE.md F6): THE BOM — what the job COSTS, not what it is cut
-// into. The registry groups it, and the same `purchaseBom()` the CSV writes.
-import { PART_GROUPS } from '../engine/partRegistry.js';
+import { DEPARTMENTS } from '../engine/catalogue.js';
+import { useMaterialLinkStore } from '../stores/materialLinkStore.js';
 import { exportPurchaseBomCsv } from '../lib/exporters.js';
 // Turn 32 (CLAUDE.md F5): the invoice — materials per decor, ironmongery
 // with articles, yellow named specs where the registry does not know.
@@ -40,7 +45,6 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   const allResults = useProjectStore((s) => s.allResults);
   const runElements = useProjectStore((s) => s.runElements);
   const units = useProjectStore((s) => s.units);   // the subscription that re-runs the BOM
-  const assignments = useMaterialAssignmentStore((s) => s.assignments);
   const ownMaterials = useMaterialAssignmentStore((s) => s.materials);
   // T78 F21 - THE PAINT LINES (CLAUDE.md PART F): `purchaseBom` carries the
   // paint of each sprayed set (engine/bom.js, through engine/spray.js
@@ -49,9 +53,17 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   // unassigned with a tin chosen. Same helper the Assign Materials modal uses.
   const warehouseRows = useWarehouseStore((s) => s.rows);
   const materials = useMemo(() => withPaints(ownMaterials, warehouseRows), [ownMaterials, warehouseRows]);
-  const setAssignment = useMaterialAssignmentStore((s) => s.setAssignment);
-  const setYield = useMaterialAssignmentStore((s) => s.setYield);
   const jcConnected = useMaterialAssignmentStore((s) => s.jcConnected);
+  // T-CC2a F10: the company's links and the stock they point at (read once per session, the store decides).
+  const links = useMaterialLinkStore((s) => s.links);
+  const linkStock = useMaterialLinkStore((s) => s.stock);
+  const loadLinks = useMaterialLinkStore((s) => s.load);
+  useEffect(() => { loadLinks?.()?.catch?.(() => {}); }, [loadLinks]);
+  const bespoke = useProjectStore((s) => s.project.bespoke);
+  const addBespoke = useProjectStore((s) => s.addBespoke);
+  const updateBespoke = useProjectStore((s) => s.updateBespoke);
+  const removeBespoke = useProjectStore((s) => s.removeBespoke);
+  const [enlarged, setEnlarged] = useState(null);
   const design = useProjectStore((s) => s.project.design);
   // Turn 39 (F6): the export names its file after the job, like every other.
   const project = useProjectStore((s) => s.project);
@@ -113,7 +125,6 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   // Two levels, switchable, and the project one is the SUM of the cabinets by
   // construction (F5) — so "this cabinet" and "whole project" can never
   // disagree about a board.
-  const assignmentData = useMaterialAssignmentStore((s) => s.data);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const openModal = useUiStore((s) => s.openModal);
   const [scope, setScope] = useState('project');
@@ -127,33 +138,24 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   const catalogueMoves = useProjectStore((s) => s.catalogueMoves);
   const acceptCatalogue = useProjectStore((s) => s.acceptCatalogue);
   const moved = useMemo(() => catalogueMoves(), [catalogueMoves, pricedAt, materials]);
+  // T-CC2a F10: ONE purchase list (bom.js purchaseBom), keyed by catalogue id and priced through the company's
+  // links; the bespoke rows of this project ride it (law 9). The per-part blob is not read by it (law 2).
   const purchase = useMemo(() => purchaseBom(scoped, {
-    assignments: assignmentData, materials, profile, design: migrated, pricedAt,
-  }), [scoped, assignmentData, materials, profile, migrated, pricedAt]);
+    links, stock: linkStock, profile, design: migrated, pricedAt, bespoke: bespoke || [],
+  }), [scoped, links, linkStock, profile, migrated, pricedAt, bespoke]);
+  const t = purchase.totals || {};
+  const notLinked = Number(t.notLinked ?? t.incomplete ?? 0) || 0;
+  const linkedLines = Number(t.linked ?? 0) || 0;
+  // The lines a link can be made for: a bespoke row is this project's own and is never linked (law 9).
+  const allLines = purchase.rows.filter((r) => !r.bespoke).length;
+  const openLink = (r) => openModal('link-materials', { entryId: r.catalogueId, department: r.department, from: 'bom' });
 
-  const demand = useMemo(() => materialDemand(bom, assignments, materials), [bom, assignments, materials]);
-  const hardware = useMemo(() => hardwareDemand(bom, assignments, materials), [bom, assignments, materials]);
-  // T-CC1b F11.1: the live BOM window shows the Assign window's own count (one line per role AND spec).
-  const lineCount = useMemo(
-    () => assignCount(buildAssignLines({ bom, data: assignmentData, materials }).filter((l) => l.qty !== 0 || l.type !== 'part')),
-    [bom, assignmentData, materials],
-  );
-  const boardCost = demandCost(demand);
-  const hwCost = demandCost(hardware);
-  const cost = boardCost == null && hwCost == null ? null : (boardCost ?? 0) + (hwCost ?? 0);
-
-  // Boards go with boards, hinges with hinges: offering the whole list for
-  // every role is how a hinge ends up assigned to the back panel.
   // The project's finishes, resolved the same way the 3D view resolves them —
   // one unit is enough, because these two are PROJECT settings.
   const finish = useMemo(
     () => resolveFinishes(null, design, profile),
     [design, profile],
   );
-
-  // T78 F21 - a tin of paint is not a board: the Materials tab's board selects leave it out.
-  const boardChoices = materials.filter((m) => m.category !== 'hardware' && m.category !== 'paint');
-  const hardwareChoices = materials.filter((m) => m.category === 'hardware');
 
   return (
     <aside className={`absolute right-0 top-0 bottom-0 ${tab === 'bom' ? 'w-[720px]' : 'w-[560px]'} cc-panel rounded-none border-y-0 border-r-0 ${LAYER_CLASS.panel} flex flex-col`}>
@@ -172,16 +174,25 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
           onClick={() => setTab('bom')}
         >
           BOM
-          {purchase.totals.unassigned > 0 && (
-            <span className="ml-1 text-status-warn tabular-nums">{purchase.totals.unassigned}</span>
+          {notLinked > 0 && (
+            <span className="ml-1 text-status-danger tabular-nums">{notLinked}</span>
           )}
         </button>
         <button type="button" className="cc-btn-ghost" onClick={() => setBomOpen(false)}>×</button>
       </div>
 
-      <div className="px-3 py-1.5 border-b border-shell-600 text-[12px] flex gap-3" data-bom-assign-count="1">
-        <span className="text-ink-200 tabular-nums">{lineCount.text}</span>
-        {lineCount.missing > 0 && <span className="text-status-danger tabular-nums">{lineCount.missingText}</span>}
+      {/* T-CC2a F10.4: the header, "<n> of <m> lines linked", and the total with law 7's words. */}
+      <div
+        className="px-3 py-1.5 border-b border-shell-600 text-[12px] flex gap-3 items-baseline"
+        data-bom-link-count={String(linkedLines)}
+        data-bom-link-total={String(allLines)}
+      >
+        <span className="text-ink-200 tabular-nums">{`${linkedLines} of ${allLines} lines linked`}</span>
+        <span className="flex-1" />
+        <span className={`tabular-nums ${notLinked > 0 ? 'text-status-danger' : 'text-gold'}`} data-bom-header-total={notLinked > 0 ? 'incomplete' : 'complete'}>
+          {`Total £${Number(t.cost || 0).toFixed(2)}`}
+          {notLinked > 0 ? `, ${incompleteWords(notLinked)}` : ''}
+        </span>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -216,10 +227,12 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
             </tbody>
           </table>
         ) : tab === 'bom' ? (
-          /* ═══ TURN 39 (CLAUDE.md F6): THE BOM ══════════════════════════════
-             What the job COSTS, grouped by the part registry. Unassigned lines
-             at the TOP, marked, each with a button that opens Assign Materials
-             on that exact part — the owner's own loop, closed. */
+          /* ═══ TURN 39 (CLAUDE.md F6): THE BOM, T-CC2a F10 ═══════════════════
+             What the job COSTS: one line per catalogue entry (law 4), grouped by
+             the departments of the Link materials window, each with the company's
+             Joinery Core material and its line cost, or the red words of law 7
+             and a Link that opens the window at that entry. The bespoke rows of
+             this project at the bottom (law 9). */
           <div className="p-3 space-y-2 text-[12px]" data-bom-purchase="1">
             <div className="flex items-center gap-2">
               <span className="cc-label mb-0">Level</span>
@@ -245,131 +258,48 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
               </span>
             </div>
 
-            {/* A total with a hole in it is never shown as a confident number. */}
-            {purchase.totals.unassigned > 0 && (
+            {/* A total with a hole in it is never shown as a confident number (law 7). */}
+            {notLinked > 0 && (
               <p
-                className="border border-status-warn/60 bg-status-warn/10 text-status-warn rounded px-2 py-1.5 text-[11px]"
-                data-bom-incomplete={String(purchase.totals.unassigned)}
+                className="border border-status-danger/60 bg-status-danger/10 text-status-danger rounded px-2 py-1.5 text-[11px]"
+                data-bom-incomplete={String(notLinked)}
               >
-                {purchase.totals.unassigned} line{purchase.totals.unassigned === 1 ? ' has' : 's have'} no
-                material assigned — this total is INCOMPLETE, not the price of the job.
+                {incompleteWords(notLinked)}. Press Link on a red line: the link is saved for all projects.
               </p>
             )}
 
-            {purchase.rows.length === 0 ? (
+            {purchase.rows.filter((r) => !r.bespoke).length === 0 ? (
               <p className="text-ink-400 text-[11px] py-3">
-                Nothing to buy yet — add a cabinet, then assign its materials.
+                Nothing to buy yet: add a cabinet first.
               </p>
             ) : (
-              <table className="w-full text-[11px]">
-                <thead className="sticky top-0 bg-shell-800 text-ink-400 border-b border-shell-600">
-                  <tr>
-                    <th className="text-left font-normal px-1.5 py-1.5">Material</th>
-                    <th className="text-right font-normal px-1.5 py-1.5">Qty</th>
-                    <th className="text-left font-normal px-1.5 py-1.5">Unit</th>
-                    <th className="text-right font-normal px-1.5 py-1.5" title="An ESTIMATE — area ÷ sheet, rounded up. Real nesting is parked.">Sheets*</th>
-                    <th className="text-right font-normal px-1.5 py-1.5">Unit cost</th>
-                    <th className="text-right font-normal px-1.5 py-1.5">Line cost</th>
-                    <th className="text-left font-normal px-1.5 py-1.5">From</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* UNASSIGNED FIRST — CLAUDE.md F6, and `mergeUnitMaterials`
-                      already sorts them there, so the view does not re-decide. */}
-                  {purchase.rows.filter((r) => !r._assigned).length > 0 && (
-                    <tr className="bg-status-warn/10">
-                      <td colSpan={7} className="px-1.5 py-1 text-[10px] uppercase tracking-wide text-status-warn">
-                        Not assigned — nothing can be ordered for these
-                      </td>
-                    </tr>
-                  )}
-                  {purchase.rows.filter((r) => !r._assigned).map((r) => (
-                    <tr key={r.key} className="border-b border-shell-600/40" data-bom-line={r.key}>
-                      <td className="px-1.5 py-1">
-                        <span className="text-status-warn underline decoration-status-warn decoration-2 underline-offset-2">
-                          {r.name}
-                        </span>
-                      </td>
-                      <td className="px-1.5 py-1 text-right tabular-nums">{formatQty(r.qty, r.unit).split(' ')[0]}</td>
-                      <td className="px-1.5 py-1 text-ink-400">{r.unit}</td>
-                      <td className="px-1.5 py-1 text-right tabular-nums text-ink-400">{r.sheets ?? '—'}</td>
-                      <td className="px-1.5 py-1 text-right text-ink-600">—</td>
-                      <td className="px-1.5 py-1 text-right text-ink-600">—</td>
-                      <td className="px-1.5 py-1">
-                        <button
-                          type="button"
-                          className="cc-btn-ghost text-[10px] text-gold"
-                          data-bom-assign={r.parts[0] || ''}
-                          onClick={() => openModal('assign-materials', { partId: r.parts[0] || null })}
-                        >
-                          Assign…
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {/* …then the assigned lines, GROUPED, with a subtotal each. */}
-                  {PART_GROUPS.map((g) => {
-                    const rows = purchase.rows.filter((r) => r._assigned && r.group === g.id);
-                    if (!rows.length) return null;
-                    const sub = rows.reduce((acc, r) => acc + (r.lineCost || 0), 0);
-                    const sheets = rows.reduce((acc, r) => acc + (r.sheets || 0), 0);
-                    return (
-                      <Fragment key={g.id}>
-                        <tr className="bg-shell-700/60" data-bom-group={g.id}>
-                          <td colSpan={7} className="px-1.5 py-1 text-[10px] uppercase tracking-wide text-gold">
-                            {g.label}
-                          </td>
-                        </tr>
-                        {rows.map((r) => (
-                          <tr key={r.key} className="border-b border-shell-600/40" data-bom-line={r.key}>
-                            <td className="px-1.5 py-1 text-ink-100">{r.name}</td>
-                            <td className="px-1.5 py-1 text-right tabular-nums">{formatQty(r.qty, r.unit).split(' ')[0]}</td>
-                            <td className="px-1.5 py-1 text-ink-400">{r.unit}</td>
-                            <td className="px-1.5 py-1 text-right tabular-nums">{r.sheets ?? '—'}</td>
-                            <td className="px-1.5 py-1 text-right tabular-nums">
-                              {r.costPerUnit > 0 ? r.costPerUnit.toFixed(2) : '—'}
-                            </td>
-                            <td className="px-1.5 py-1 text-right tabular-nums">
-                              {r.lineCost != null && r.lineCost > 0 ? r.lineCost.toFixed(2) : '—'}
-                            </td>
-                            <td className="px-1.5 py-1 text-[10px] text-ink-400 truncate max-w-[150px]" title={r.parts.join(' + ')}>
-                              {r.parts.join(' + ')}
-                            </td>
-                          </tr>
-                        ))}
-                        <tr className="border-b border-shell-600" data-bom-subtotal={g.id}>
-                          <td colSpan={3} className="px-1.5 py-1 text-[10px] text-ink-400 text-right">
-                            {g.label} subtotal
-                          </td>
-                          <td className="px-1.5 py-1 text-right tabular-nums text-ink-400">{sheets || '—'}</td>
-                          <td />
-                          <td className="px-1.5 py-1 text-right tabular-nums text-ink-200">
-                            {sub > 0 ? sub.toFixed(2) : '—'}
-                          </td>
-                          <td />
-                        </tr>
-                      </Fragment>
-                    );
-                  })}
-
-                  <tr data-bom-total={purchase.totals.complete ? 'complete' : 'incomplete'}>
-                    <td colSpan={3} className="px-1.5 py-2 text-right uppercase tracking-wide text-[10px] text-ink-400">
-                      {scope === 'project' ? 'Project total' : 'Cabinet total'}
-                      {purchase.totals.complete ? '' : ' — INCOMPLETE'}
-                    </td>
-                    <td className="px-1.5 py-2 text-right tabular-nums text-ink-200">{purchase.totals.sheets || '—'}</td>
-                    <td />
-                    <td className={`px-1.5 py-2 text-right tabular-nums ${purchase.totals.complete ? 'text-gold' : 'text-status-warn'}`}>
-                      {purchase.totals.cost.toFixed(2)}
-                    </td>
-                    <td />
-                  </tr>
-                </tbody>
-              </table>
+              <PurchaseLines rows={purchase.rows} onLink={openLink} onEnlarge={setEnlarged} costs />
             )}
+
+            <BespokeBlock
+              rows={bespoke || []}
+              purchaseRows={purchase.rows}
+              onAdd={() => addBespoke?.()}
+              onUpdate={(id, patch) => updateBespoke?.(id, patch)}
+              onRemove={(id) => removeBespoke?.(id)}
+            />
+
+            <div
+              className="flex items-baseline gap-2 border-t border-shell-600 pt-2"
+              data-bom-total={notLinked > 0 ? 'incomplete' : 'complete'}
+            >
+              <span className="uppercase tracking-wide text-[10px] text-ink-400">
+                {scope === 'project' ? 'Project total' : 'Cabinet total'}
+              </span>
+              <span className="flex-1" />
+              {t.sheets ? <span className="text-ink-400 tabular-nums">{`${t.sheets} sheets`}</span> : null}
+              <span className={`tabular-nums ${notLinked > 0 ? 'text-status-danger' : 'text-gold'}`}>
+                {`£${Number(t.cost || 0).toFixed(2)}`}
+              </span>
+              {notLinked > 0 && <span className="text-status-danger" data-bom-incomplete-words="1">{incompleteWords(notLinked)}</span>}
+            </div>
             <p className="text-[10px] text-ink-600">
-              * Sheets is an ESTIMATE — area × yield ÷ the sheet size for that board family, rounded up.
+              Sheets are counted from the area, the offcut allowance and the sheet size of each link, rounded up.
               Real nesting is a later turn and this is not it.
             </p>
           </div>
@@ -485,11 +415,7 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
             )}
           </div>
         ) : (
-          <div className="p-3 space-y-3">
-            <p className="text-[11px] text-ink-400">
-              One material per role. <span className="text-ink-200">Yield</span> is the waste allowance:
-              1.00 orders exactly the panel area, 1.15 orders 15 % more.
-            </p>
+          <div className="p-3 space-y-3" data-bom-materials-tab="1">
             {/* What the job is FINISHED in. A decor is named in full and with
                 its attribution — "EGGER H1180 ST37 Natural Halifax Oak" is what
                 gets ordered, and the brand is not optional (BACKLOG #19). */}
@@ -507,105 +433,14 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                 </div>
               ))}
             </div>
-
-            <div className="text-[11px] uppercase tracking-wide text-gold">Boards &amp; fronts</div>
-            {BOM_ROLES.map((role) => {
-              const d = demand.find((x) => x.role === role.id);
-              const a = assignments[role.id] || {};
-              const used = d && d.pieces > 0;
-              return (
-                <div key={role.id} className={`p-2 rounded border ${used ? 'border-shell-600 bg-shell-700/40' : 'border-shell-600/50 opacity-50'}`}>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-sm text-ink-50">{role.label}</span>
-                    <span className="text-[11px] text-ink-400">{role.hint}</span>
-                    <span className="flex-1" />
-                    <span className="text-[11px] text-ink-200">
-                      {d ? `${d.pieces} pcs · ${d.area_m2.toFixed(3)} m²` : '—'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <select
-                      className="cc-input flex-1"
-                      value={a.material_id || ''}
-                      onChange={(e) => setAssignment(role.id, e.target.value, a.yield ?? 1.0)}
-                    >
-                      <option value="">— not assigned —</option>
-                      {boardChoices.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
-                    <NumberField
-                      className="cc-input w-20 text-right"
-                      integer={false}
-                      min={1}
-                      title="Yield / waste allowance — Enter to apply"
-                      value={a.yield ?? 1.0}
-                      onCommit={(v) => setYield(role.id, v || 1)}
-                    />
-                    <span className="text-[11px] text-ink-400 w-24 text-right">
-                      {d?.required_m2 != null ? `${d.required_m2.toFixed(3)} m²` : ''}
-                      {d?.cost != null ? ` · ${d.cost.toFixed(2)}` : ''}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* ── Hardware ──
-                Quantities come from the geometry, not from a product list: the
-                engine counts hinges, runner pairs, legs, rail and shelf pins,
-                and this is where the workshop says WHICH ones. No yield — you
-                do not order 15 % extra hinges for offcuts. The cutting-list CSV
-                is untouched by any of this and stays cut parts only. */}
-            <div className="text-[11px] uppercase tracking-wide text-gold pt-1">Hardware</div>
-            {HARDWARE_ROLES.map((role) => {
-              const lines = hardware.filter((h) => h.role === role.id);
-              const a = assignments[role.id] || {};
-              const qty = lines.reduce((s, h) => s + h.qty, 0);
-              const lineCost = lines.reduce((s, h) => (h.cost == null ? s : s + h.cost), 0);
-              const priced = lines.some((h) => h.cost != null);
-              const used = qty > 0;
-              return (
-                <div key={role.id} className={`p-2 rounded border ${used ? 'border-shell-600 bg-shell-700/40' : 'border-shell-600/50 opacity-50'}`}>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-sm text-ink-50">{role.label}</span>
-                    <span className="text-[11px] text-ink-400">{role.hint}</span>
-                    <span className="flex-1" />
-                    <span className="text-[11px] text-ink-200">
-                      {used ? `${qty} ${lines[0].unit}` : '—'}
-                      {/* One spec: say it right here. Several (440 mm and
-                          490 mm runners in the same project): break them out
-                          below, because they are separate things to buy. */}
-                      {lines.length === 1 && lines[0].spec_label ? ` · ${lines[0].spec_label}` : ''}
-                    </span>
-                  </div>
-                  {lines.length > 1 && (
-                    <ul className="text-[11px] text-ink-400 mt-0.5">
-                      {lines.map((h) => (
-                        <li key={h.spec_label} className="flex justify-between">
-                          <span>{h.spec_label || '—'}</span>
-                          <span className="tabular-nums">
-                            {h.qty} {h.unit}
-                            {h.units.length > 1 ? ` · ${h.units.length} units` : ''}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <select
-                      className="cc-input flex-1"
-                      value={a.material_id || ''}
-                      onChange={(e) => setAssignment(role.id, e.target.value, 1)}
-                    >
-                      <option value="">— not assigned —</option>
-                      {hardwareChoices.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
-                    <span className="text-[11px] text-ink-400 w-24 text-right">
-                      {priced ? lineCost.toFixed(2) : ''}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+            {/* T-CC2a F10.2: the board and hardware selects are gone (the Deletion licence). The same list,
+                read only: what each line is linked to in Joinery Core, and Link where it is not. */}
+            <p className="text-[11px] text-ink-400">
+              Every material is linked once to your Joinery Core stock, for all projects, in Link materials.
+            </p>
+            {purchase.rows.filter((r) => !r.bespoke).length === 0
+              ? <p className="text-ink-400 text-[11px]">Nothing in the room yet.</p>
+              : <PurchaseLines rows={purchase.rows} onLink={openLink} onEnlarge={setEnlarged} costs={false} />}
           </div>
         )}
       </div>
@@ -618,8 +453,13 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
           <Stat label="Edging (carcass)" value={`${bom.totals.edging_m.toFixed(2)} m`} />
           <Stat label="Edging (incl. fronts)" value={`${bom.totals.edging_total_m.toFixed(2)} m`} />
           <Stat label="Hardware" value={`${bom.hardware.reduce((s, h) => s + h.qty, 0)} items`} />
-          {hwCost != null && <Stat label="Hardware cost" value={hwCost.toFixed(2)} />}
-          {cost != null && <Stat label="Total cost" value={cost.toFixed(2)} accent />}
+          <Stat label="Lines linked" value={`${linkedLines} of ${allLines}`} />
+          <Stat
+            label="Total cost"
+            value={notLinked > 0 ? `${Number(t.cost || 0).toFixed(2)}, ${incompleteWords(notLinked)}` : Number(t.cost || 0).toFixed(2)}
+            accent={notLinked === 0}
+            danger={notLinked > 0}
+          />
         </div>
         <div className="flex gap-2">
           <button type="button" className="cc-btn flex-1" onClick={onExportCsv}>Cutting list CSV</button>
@@ -630,12 +470,13 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
             type="button"
             className="cc-btn flex-1"
             data-bom-purchase-export="1"
-            title="The purchase list, with the unassigned lines in it and the total marked incomplete when there are any"
+            title="The purchase list, with the lines not linked in it and the total marked incomplete when there are any"
             onClick={() => {
               exportPurchaseBomCsv({
                 entries: scoped,
-                assignments: assignmentData,
-                materials,
+                links,
+                stock: linkStock,
+                bespoke: bespoke || [],
                 profile,
                 design: migrated,
                 projectName: project?.name || 'project',
@@ -670,6 +511,15 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
           </button>
         </div>
       </div>
+      {enlarged && (
+        <PhotoCard
+          url={enlarged.url}
+          title={enlarged.title}
+          caption={enlarged.caption}
+          anchor={enlarged.anchor}
+          onClose={() => setEnlarged(null)}
+        />
+      )}
     </aside>
   );
 }
@@ -717,11 +567,210 @@ function FragmentRows({ unit }) {
   );
 }
 
-function Stat({ label, value, accent }) {
+function Stat({
+  label, value, accent, danger,
+}) {
   return (
-    <div className="flex justify-between">
+    <div className="flex justify-between gap-2">
       <span className="text-ink-400">{label}</span>
-      <span className={accent ? 'text-gold' : 'text-ink-50'}>{value}</span>
+      <span className={danger ? 'text-status-danger text-right' : accent ? 'text-gold' : 'text-ink-50'}>{value}</span>
     </div>
+  );
+}
+
+/** The quantity of a purchase line as a number and its unit, never a guessed sheet count. */
+function qtyText(r) {
+  const qty = Number(r.qty);
+  if (!Number.isFinite(qty)) return '';
+  return formatQty(qty, r.unit);
+}
+
+/**
+ * T-CC2a F10.1 · the purchase lines, grouped by the departments of the Link materials window: the catalogue
+ * entry's name, the quantity and unit, the company's Joinery Core material (photo, number, name) and the line cost,
+ * or the red words of law 7 and a Link. `costs` false is the Materials tab: the same list, without the money.
+ */
+function PurchaseLines({
+  rows, onLink, onEnlarge, costs,
+}) {
+  const known = new Set(DEPARTMENTS.map((d) => d.id));
+  const groups = [
+    ...DEPARTMENTS.map((d) => ({ ...d, rows: rows.filter((r) => !r.bespoke && r.department === d.id) })),
+    { id: 'other', label: 'Other', rows: rows.filter((r) => !r.bespoke && !known.has(r.department)) },
+  ].filter((g) => g.rows.length);
+  return (
+    <table className="w-full text-[11px]" data-bom-lines={costs ? 'bom' : 'materials'}>
+      <thead className="sticky top-0 bg-shell-800 text-ink-400 border-b border-shell-600">
+        <tr>
+          <th className="text-left font-normal px-1.5 py-1.5">Material</th>
+          <th className="text-right font-normal px-1.5 py-1.5">Qty</th>
+          <th className="text-left font-normal px-1.5 py-1.5">Joinery Core</th>
+          {costs && <th className="text-right font-normal px-1.5 py-1.5">Unit price</th>}
+          {costs && <th className="text-right font-normal px-1.5 py-1.5">Line cost</th>}
+          <th />
+        </tr>
+      </thead>
+      <tbody>
+        {groups.map((g) => {
+          const sub = g.rows.reduce((acc, r) => acc + (Number(r.lineCost) || 0), 0);
+          return (
+            <Fragment key={g.id}>
+              <tr className="bg-shell-700/60" data-bom-group={g.id}>
+                <td colSpan={costs ? 6 : 4} className="px-1.5 py-1 text-[10px] uppercase tracking-wide text-gold">{g.label}</td>
+              </tr>
+              {g.rows.map((r, i) => {
+                const linked = r.status === 'linked';
+                const canLink = !linked && r.status !== 'not-in-catalogue' && r.catalogueId;
+                return (
+                  <tr key={r.key || i} className="border-b border-shell-600/40" data-bom-line-status={r.status}>
+                    <td className="px-1.5 py-1">
+                      <span className={linked ? 'text-ink-100' : 'text-status-danger'}>{r.name}</span>
+                      {r.sheets != null && <div className="text-ink-400 tabular-nums">{`${r.sheets} sheet${r.sheets === 1 ? '' : 's'}`}</div>}
+                    </td>
+                    <td className="px-1.5 py-1 text-right tabular-nums whitespace-nowrap">{qtyText(r)}</td>
+                    <td className="px-1.5 py-1">
+                      {r.stock ? (
+                        <div className="flex items-center gap-2" data-bom-jc="1">
+                          <StockPhoto
+                            url={r.stock.image_url}
+                            alt={r.stock.name}
+                            size={32}
+                            testId="bom-jc"
+                            onOpen={(anchor) => onEnlarge({
+                              url: r.stock.image_url, title: r.stock.name, caption: [r.stock.item_number, r.stock.name].filter(Boolean).join(', '), anchor,
+                            })}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-ink-400 tabular-nums">{r.stock.item_number || ''}</div>
+                            <div className="text-ink-100">{r.stock.name}</div>
+                          </div>
+                        </div>
+                      ) : null}
+                      {r.words && <div className="text-status-danger" data-bom-words="1">{r.words}</div>}
+                    </td>
+                    {costs && (
+                      <td className="px-1.5 py-1 text-right tabular-nums whitespace-nowrap">
+                        {Number(r.price) > 0 ? `${Number(r.price).toFixed(2)}${r.stock?.unit ? ` / ${r.stock.unit}` : ''}` : ''}
+                      </td>
+                    )}
+                    {costs && (
+                      <td className="px-1.5 py-1 text-right tabular-nums">
+                        {r.lineCost != null ? Number(r.lineCost).toFixed(2) : ''}
+                      </td>
+                    )}
+                    <td className="px-1.5 py-1 text-right">
+                      {canLink && (
+                        <button
+                          type="button"
+                          className="cc-btn-ghost text-[10px] text-gold"
+                          data-bom-link="1"
+                          title="Link this material to a row of your Joinery Core stock, for all projects"
+                          onClick={() => onLink(r)}
+                        >
+                          Link
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {costs && (
+                <tr className="border-b border-shell-600" data-bom-subtotal={g.id}>
+                  <td colSpan={4} className="px-1.5 py-1 text-[10px] text-ink-400 text-right">{`${g.label} subtotal`}</td>
+                  <td className="px-1.5 py-1 text-right tabular-nums text-ink-200">{sub > 0 ? sub.toFixed(2) : ''}</td>
+                  <td />
+                </tr>
+              )}
+            </Fragment>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+/**
+ * T-CC2a F10.3 · BESPOKE, THIS PROJECT ONLY (law 9): rows typed in this project and saved with it
+ * (`project.bespoke`, projectStore addBespoke / updateBespoke / removeBespoke); on the purchase list marked
+ * Bespoke; never in the catalogue, never in Joinery Core's stock. "Supplied by client" is a row with nothing to buy.
+ */
+function BespokeBlock({
+  rows, purchaseRows, onAdd, onUpdate, onRemove,
+}) {
+  const costOf = (row) => {
+    const hit = purchaseRows.find((r) => r.bespoke && (r.key === `bespoke:${row.id}`));
+    if (hit && hit.lineCost != null) return Number(hit.lineCost);
+    return row.suppliedByClient ? 0 : (Number(row.qty) || 0) * (Number(row.price) || 0);
+  };
+  return (
+    <section className="rounded border border-shell-600 p-2 space-y-1.5" data-bom-bespoke="1">
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] uppercase tracking-wide text-gold">Bespoke, this project only</span>
+        <span className="flex-1" />
+        <button type="button" className="cc-btn px-2 py-0.5" data-bom-bespoke-add="1" onClick={onAdd}>Add bespoke item</button>
+      </div>
+      {rows.length === 0 && (
+        <p className="text-[11px] text-ink-400">
+          A material for this job only, the client&apos;s own ironmongery for example. It goes on this purchase list, never into the catalogue or your stock.
+        </p>
+      )}
+      {rows.map((row) => (
+        <div key={row.id} className="flex flex-wrap items-center gap-1.5 border-t border-shell-600/50 pt-1.5" data-bom-bespoke-row="1">
+          <input
+            className="cc-input flex-1 min-w-[160px]"
+            placeholder="Name, e.g. Client's own handles"
+            value={row.name}
+            data-bom-bespoke-name="1"
+            onChange={(e) => onUpdate(row.id, { name: e.target.value })}
+          />
+          <NumberField
+            className="cc-input w-[70px] text-right"
+            integer={false}
+            decimals={2}
+            min={0}
+            value={row.qty}
+            title="Quantity"
+            data-bom-bespoke-qty="1"
+            onCommit={(v) => onUpdate(row.id, { qty: Number(v) || 0 })}
+          />
+          <span className="flex gap-0.5" data-bom-bespoke-units="1">
+            {(BESPOKE_UNITS || []).map((u) => (
+              <button
+                key={u}
+                type="button"
+                className={`cc-btn px-1.5 py-0.5 ${row.unit === u ? 'border-gold text-gold' : ''}`}
+                aria-pressed={row.unit === u}
+                data-bom-bespoke-unit={u}
+                onClick={() => onUpdate(row.id, { unit: u })}
+              >
+                {u}
+              </button>
+            ))}
+          </span>
+          <NumberField
+            className="cc-input w-[80px] text-right"
+            integer={false}
+            decimals={2}
+            min={0}
+            value={row.suppliedByClient ? 0 : row.price}
+            title="Unit price"
+            disabled={row.suppliedByClient}
+            data-bom-bespoke-price="1"
+            onCommit={(v) => onUpdate(row.id, { price: Number(v) || 0 })}
+          />
+          <label className="flex items-center gap-1 text-[11px] text-ink-200">
+            <input
+              type="checkbox"
+              checked={Boolean(row.suppliedByClient)}
+              data-bom-bespoke-client="1"
+              onChange={(e) => onUpdate(row.id, { suppliedByClient: e.target.checked })}
+            />
+            Supplied by client
+          </label>
+          <span className="w-[64px] text-right tabular-nums text-ink-200" data-bom-bespoke-cost="1">{costOf(row).toFixed(2)}</span>
+          <button type="button" className="cc-btn-ghost text-status-danger" data-bom-bespoke-remove="1" onClick={() => onRemove(row.id)}>Remove</button>
+        </div>
+      ))}
+    </section>
   );
 }

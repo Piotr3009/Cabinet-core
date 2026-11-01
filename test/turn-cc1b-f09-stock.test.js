@@ -178,7 +178,17 @@ test('F9.2 src has no cc_materials read and no row of the deleted samples', () =
   };
   walk('src');
   for (const rel of files) {
-    const t = read(rel);
+    let t = read(rel);
+    // REWRITTEN BY T-CC2a F13 (CLAUDE.md T-CC2a F13.1: the old CC ids *"map through ONE table in catalogue.js to the
+    // source and thickness they meant"*): the deleted samples' ids stand in that ONE table as KEYS, a migration and
+    // never a material row; the table is taken out of the text before the sample list is looked for.
+    if (rel === 'src/engine/catalogue.js') {
+      const a = t.indexOf('export const OLD_CC_IDS');
+      const b = t.indexOf('});', a);
+      assert.ok(a > 0 && b > a, 'the one table of the old CC ids is in catalogue.js');
+      assert.doesNotMatch(t.slice(a, b), /name:|price:|category:/, 'the table maps ids to a source and a thickness, never a material row');
+      t = t.slice(0, a) + t.slice(b);
+    }
     assert.doesNotMatch(t, /hw_hinge_clip|mat_mfc18_white|MOCK_MATERIALS/, `${rel} still carries the sample list`);
     assert.doesNotMatch(code(t), /cc_materials/, `${rel} still reads cc_materials`);
   }

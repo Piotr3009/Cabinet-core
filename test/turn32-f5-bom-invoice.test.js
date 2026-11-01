@@ -47,12 +47,18 @@ function entriesOf(params) {
 
 // ─── the owner-tunable numbers, marked ──────────────────────────────────────
 
-test('waste 15 % and the 2800×2070 sheet ship marked "owner to confirm"', async () => {
-  assert.equal(bomWastePct(P), 15);
+// T-CC2a REWRITES this test by name (CLAUDE.md T-CC2a DELETION LICENCE): the
+// second offcut number of the invoice (`profile.bom.wastePct` 15) is deleted in
+// favour of the ONE number, `profile.materials.sheetYield` 1.10 (the owner,
+// 01.11.2026, 13:28: *"dajmy 10 procent na offcuts"*).
+test('waste is the ONE offcut number (materials.sheetYield 1.10) and the 2800×2070 sheet ships marked "owner to confirm"', async () => {
+  assert.equal(P.bom.wastePct, undefined, 'the second offcut number is gone');
+  assert.equal(P.materials.sheetYield, 1.10);
+  assert.equal(bomWastePct(P), 10, 'the invoice reads the one number');
   assert.deepEqual(bomSheet(P), { width: 2800, height: 2070 });
   const { readFile } = await import('node:fs/promises');
   const src = await readFile(new URL('../src/engine/profile.js', import.meta.url), 'utf8');
-  assert.match(src, /wastePct — OWNER — unanswered; ship 15, owner to confirm/);
+  assert.doesNotMatch(src, /wastePct . OWNER . unanswered; ship 15/);
   assert.match(src, /sheet {4}— OWNER — unanswered; ship 2800×2070, owner to confirm/);
   // …and the purchase sheet is NOT the CNC bed.
   assert.notDeepEqual(bomSheet(P), P.cnc.sheet);
@@ -70,7 +76,8 @@ test('materials group per decor and thickness, FRONTS listed separately', () => 
     assert.ok(g.net_m2 > 0);
     // The order is rounded from the UNROUNDED net (bomInvoice.js), so the two
     // roundings may differ by a thousandth (19.10.2026: the plinth's site-trim area landed on one).
-    assert.ok(Math.abs(g.order_m2 - g.net_m2 * 1.15) <= 0.0011, `+15 % waste (${g.order_m2} vs ${g.net_m2} x 1.15)`);
+    // T-CC2a: the waste is the one number, materials.sheetYield (1.10), no longer the invoice's own 15.
+    assert.ok(Math.abs(g.order_m2 - g.net_m2 * P.materials.sheetYield) <= 0.0011, `+10 % waste (${g.order_m2} vs ${g.net_m2} x ${P.materials.sheetYield})`);
     // The sheets line is a DIVISION with the owner's label, never a plan.
     assert.match(g.sheet_label, /^~\d+ sheets? of 2800×2070$/);
     assert.equal(g.sheets, Math.max(1, Math.ceil(g.order_m2 / ((2800 * 2070) / 1e6))));

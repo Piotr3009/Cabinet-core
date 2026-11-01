@@ -29,6 +29,8 @@ import { DEFAULT_SCOPE } from '../lib/wizardSteps.js';
 import { visibleTabs, wardrobeSeed } from '../lib/wizardTabs.js';
 // T-CC1a F5: an item is born bound to the Joinery Core project it was opened from (cc_create_item).
 import { startItem } from '../lib/jcList.js';
+// T-CC2a F11.3: a NEW item's preselected boards (the company's own, else H3325 carcass and RAL 3005 fronts).
+import { companyDefaults, newItemBoardDefaults } from '../engine/companyDefaults.js';
 
 const SECTION_META = {
   project: { label: 'Project', icon: 'project', hint: 'Name the job and choose what you are making.' },
@@ -68,6 +70,31 @@ const sameRoomValues = (left, right) => JSON.stringify(left) === JSON.stringify(
 // withDb): the record is built with the server's id and the row's
 // jc_project_number, and nothing is made locally when JC refuses (403,
 // offline): the words stay on the flow. The rest of the workspace is as it was.
+
+// ─── T-CC2a F11.3 · A NEW ITEM STARTS ON REAL BOARDS (CLAUDE.md T-CC2a laws 2, 3) ─
+// The owner, 01.11.2026, 12:02: *"poprostu wybrane default a ludzie se beda
+// zmieniac sami ... jak dadza next next next to zeby im biale nie wyskoczylo"*;
+// 12:34: *"domyslny h3325 tabaco gladstone oak"*. When the item is BORN (the
+// first confirm, Joinery Core has made it), Carcass 1 and Front 1 are written
+// through the store's own setters from `newItemBoardDefaults` (the company's
+// own defaults win where it has them; else EGGER H3325 ST28 Tobacco Gladstone
+// Oak and sprayed RAL 3005 Wine red on MDF 18), so the carcases and fronts
+// sections show them preselected and changeable. An item that already stood is
+// never touched: this runs on the birth only.
+function applyNewItemBoards(profile) {
+  const want = newItemBoardDefaults(profile, companyDefaults());
+  if (!want) return;
+  const store = useProjectStore.getState();
+  const c1 = migrateDesign(store.project.design).carcass.types[0]?.id || 'c1';
+  if (want.carcass?.source) store.setCarcassSource(c1, want.carcass.source);
+  if (want.carcass?.finish_id) store.setCarcassFinish(c1, want.carcass.finish_id);
+  const f1 = migrateDesign(useProjectStore.getState().project.design).fronts.types[0]?.id || 'f1';
+  if (want.front?.source) store.setFrontType(f1, { source: want.front.source });
+  if (want.front?.colour) store.setFrontColour(want.front.colour, f1);
+  for (const slot of ['back', 'drawerBottom']) {
+    if (want.boards?.[slot]) store.setDesignBoard?.(slot, want.boards[slot]);
+  }
+}
 
 /** One workspace, the existing editors and store setters, one navigation row. */
 export default function NewProjectFlow({ jcProject = null, onCancel, onStart, anchor = null }) {
@@ -204,6 +231,8 @@ export default function NewProjectFlow({ jcProject = null, onCancel, onStart, an
   const settleProject = (destination, created) => {
     const store = useProjectStore.getState();
     store.setDesign({ scope, projectType: typeId });
+    // T-CC2a F11.3: the boards a new item starts on, on its birth only.
+    if (!created) applyNewItemBoards(profile);
     // Revisiting the name or client must never re-seed customised heights.
     if (!created || seededType.current !== typeId) {
       store.setProjectHeights(heightsForProjectType(typeId, profile));

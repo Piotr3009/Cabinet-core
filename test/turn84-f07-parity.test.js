@@ -466,14 +466,16 @@ test('F7 parity · Materials opens the four existing windows, each as its first 
   assert.match(top, /openModal\('design', \{ anchor: anchorOfEvent\(e\) \}\)/, 'TopBar no longer opens design');
   // AMENDED BY T-CC1b F3 and F9.3: Assign materials is the rail's alone (the Database menu died,
   // *"Database niepotrzebne, wszystko jest w JC, Assign materials juz jest po lewej"*); Stock opens Joinery Core's stock.
-  for (const kind of ['design', 'assign-materials', 'jc-stock']) {
+  // AMENDED BY T-CC2a F8.7: Link materials... stands FIRST (*"zebysmy przypisali pewne materialy na stale nie do
+  // projektu, tylko na stale"*, the owner, 01.11.2026); the four windows of T84 follow it unchanged.
+  for (const kind of ['link-materials', 'design', 'assign-materials', 'jc-stock']) {
     assert.match(RAIL, new RegExp(`openModal\\('${kind}', \\{ anchor: anchorOfEvent\\(e\\) \\}\\)`), `Materials does not open ${kind}`);
   }
   assert.doesNotMatch(top, /openModal\('assign-materials'|openModal\('warehouse'/, 'the Database menu is gone from the bar');
   // Nothing else: four windows, by the CONTRACT's popup hooks.
   assert.deepEqual([...RAIL.matchAll(/\bid: '([a-z-]+)'/g)].map((m) => m[1]),
-    ['selected-finishes', 'project-finishes', 'assign-materials', 'stock']);
-  assert.equal((RAIL.match(/openModal\('/g) || []).length, 4);
+    ['link-materials', 'selected-finishes', 'project-finishes', 'assign-materials', 'stock']);
+  assert.equal((RAIL.match(/openModal\('/g) || []).length, 5);
 });
 
 // REWRITTEN BY T-CC1b F3.2: `databaseEntry` read the deleted Database menu; the rows are written in

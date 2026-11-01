@@ -1,0 +1,112 @@
+T-CC2a . THE WALK (scripts/t-cc2a-walk.mjs)
+HEAD 960fa83e . 2026-11-01T15:37:39.886Z . the built app (vite preview 4173) behind the fake Joinery Core (http://127.0.0.1:4391)
+Every line PASS or FAIL with the number expected and the number read; a FAIL is written down, never patched.
+
+
+== station a ==
+PASS  [a] sign in as admin (a real click on the fake's login): the list of Joinery Core | expect: projects listed | read: 3
+NOTE  [a] the build walked (data-build-stamp) and the app files changed between it and HEAD | {"stamp":"#1240 . 2026-11-01 15:36 UTC . e8f9633e","head":"960fa83e","srcDelta":"src/components/LinkMaterialsModal.jsx | 6 +++---\n src/components/studio/RailMenus.jsx   | 3 ++-\n src/lib/jcLinks.js                    | 7 +++++--\n 3 files changed, 10 insertions(+), 6 deletions(-)"}
+FRAME [a] f11-new-item.png
+FRAME [a] f11-new-item-front.png
+NOTE  [a] the New item flow by hand (T-CC1a's, the primary pressed, an empty Stock board select given its first option) | Confirm project & continue > Confirm space & continue > Confirm section & continue > Next - Carcass 1 - board and sheet > carcass:c1=generic-18 > Next - What was chosen > Confirm section & continue > Next - Front 1 - colour, board and sheet > front:f1=generic-18 > Next - Shape, opening and shine > Confirm section & continue > Confirm section & continue > Confirm section & continue > Confirm & review project > Start designing
+PASS  [a] the wizard's carcass step, before any hand: Carcass 1 is EGGER H3325 (finish_id egger:H3325_28, source egger) | expect: egger:H3325_28 / egger | read: {"id":"c1","label":"Carcass 1","source":"egger","finish_id":"egger:H3325_28"}
+PASS  [a] the wizard's front step, before any hand: Front 1 is sprayed RAL 3005 | expect: source spray, colour holds 3005 | read: {"id":"f1","label":"Front 1","source":"spray","colour":"RAL 3005 Wine Red","thickness":null}
+PASS  [a] the new item "Walk links" in the editor: Carcass 1 EGGER H3325, Front 1 sprayed RAL 3005 | expect: egger:H3325_28 / egger; spray / 3005 | read: {"item":"itm-walk-1","carcass":{"id":"c1","label":"Carcass 1","source":"egger","finish_id":"egger:H3325_28"},"front":{"id":"f1","label":"Front 1","source":"spray","colour":"RAL 3005 Wine Red","thickness":null}}
+NOTE  [a] THE STAGE (the store's addUnit BUD and WARDROBE, addDoors on each) | [{"type":"BUD","doors":1},{"type":"WARDROBE","doors":1}]
+PASS  [a] Ctrl+S (real keys): the fake counts one cc_save_item | expect: 1 | read: 1
+PASS  [a] open "Walk links" from the list (Open, a real click): the same boards and units | expect: H3325 / RAL 3005; BUD,WARDROBE | read: {"opened":true,"carcass":{"id":"c1","label":"Carcass 1","source":"egger","finish_id":"egger:H3325_28"},"front":{"id":"f1","label":"Front 1","source":"spray","colour":"RAL 3005 Wine Red","thickness":null},"units":"BUD,WARDROBE"}
+
+== station b ==
+PASS  [b] rail Materials: "Link materials..." is the FIRST row | expect: Link materials... first | read: ["Link materials...","Selected finishes...","Project finishes...","Assign materials...","Stock..."]
+PASS  [b] "Assign materials..." still below it | expect: index > 0 | read: 3
+PASS  [b] click Link materials... (a real click): the window opens and reads the stock and the links | expect: window, no "Reading..." line | read: {"window":true,"loading":false}
+PASS  [b] "Back to project" top left of the window | expect: Back to project, within 120 x 60 px of the top left corner | read: {"back":"Back to project","title":"Back to project Link materials","dx":17,"dy":11,"shellW":1544,"closeDx":17}
+PASS  [b] the title "Link materials" (the shell's cross top right) | expect: Link materials; the close within 60 px of the right | read: {"title":"Back to project Link materials","closeDx":17}
+PASS  [b] seven tabs in order | expect: ["Sheets","Hinges","Runners","Ironmongery","Internal fittings","Paint","Consumables"] | read: ["Sheets","Hinges","Runners","Ironmongery","Internal fittings","Paint","Consumables"]
+PASS  [b] each tab with "<linked> / <total>" | expect: n / m on all seven | read: ["Sheets 1 / 347 some","Hinges 1 / 19 some","Runners 0 / 28 some","Ironmongery 0 / 44 some","Internal fittings 0 / 58 some","Paint 0 / 5 some","Consumables 0 / 88 some"]
+PASS  [b] the Sheets brands: Egger, MDF, Generic, then Veneer, Fenix, Kronospan "Coming soon" | expect: six brands, the last three Coming soon | read: ["Egger","MDF","Generic","Veneer (Coming soon)","Fenix (Coming soon)","Kronospan (Coming soon)"]
+PASS  [b] Veneer pressed with the mouse: not clickable (no button, the brand stays Egger) | expect: not a button, aria-disabled, Egger still pressed | read: {"soon":["Veneer:SPAN:true","Fenix:SPAN:true","Kronospan:SPAN:true"],"egger":"true","veneerTag":"SPAN"}
+PASS  [b] the header "<n> of <m> linked", n >= 2 (the two seed links) | expect: n >= 2 (the fake holds 2) | read: {"n":2,"m":589,"text":"2 of 589 linked"}
+PASS  [b] no catalogue id text in the window's innerText, on every one of the seven tabs | expect: none on all seven | read: ["sheets:none","hinges:none","runners:none","ironmongery:none","internal:none","paint:none","consumables:none"]
+PASS  [b] Sheets, MDF: the MDF 18 row reads "Linked" (the seed link) | expect: linked, Linked | read: {"status":"linked","words":"Linked","selected":"0","suggested":null,"error":null}
+FRAME [b] f08-window.png
+
+== station c ==
+PASS  [c] search "H3325" (real keys): the four H3325 rows, 18, 19, 22, 25 mm | expect: 4 | read: 4 ["r8o8oyn","r8e939o","r6g2ewy","r524eg3"]
+PASS  [c] the 18 mm row: "Suggested: <the fake's row 10>" with Accept; 19, 22 and 25 mm none (thickness) | expect: Suggested: Egger H3325 ST28 Tobacco Gladstone Oak 18 mm, Accept; others none | read: {"r18":"Suggested: Egger H3325 ST28 Tobacco Gladstone Oak 18 mm Accept","others":[null,null,null]}
+PASS  [c] a suggestion is not a link (law 8): the row still "Not linked" | expect: not-linked | read: {"status":"not-linked","words":"Not linked"}
+FRAME [c] f09-suggestion.png
+PASS  [c] Accept (a real click): the sheet form asks for the size, both empty, the offcut prefilled 10 | expect: sheet form, width "", length "", offcut 10 | read: {"kind":"sheet","width":"","length":"","offcut":"10","to":"Egger H3325 ST28 Tobacco Gladstone Oak 18 mm"}
+PASS  [c] nothing saved on Accept alone (law 8) | expect: 0 | read: 0
+PASS  [c] Save link with the width empty (the mouse on it): refused in words, nothing sent | expect: Save disabled, "Type the sheet's width and length...", 0 calls, Not linked | read: {"disabled":true,"hint":"Type the sheet's width and length: Cabinet Core counts the sheets to buy from them.","calls":0,"status":"not-linked"}
+FRAME [c] f09-suggestion-form.png
+PASS  [c] type 1220 and 2440, Save link: the row reads "Linked" | expect: linked, Linked | read: {"status":"linked","words":"Linked"}
+PASS  [c] the fake holds the link: sheet.egger.h3325_28.18 to row 10, 1220 x 2440 | expect: 5e0c4b1a-7f2d-4c3e-9a8b-000000000010, 1220, 2440 | read: {"cc_material_id":"sheet.egger.h3325_28.18","stock_item_id":"5e0c4b1a-7f2d-4c3e-9a8b-000000000010","yield":1.1,"sheet_width_mm":1220,"sheet_length_mm":2440,"coverage_m2_per_l":null,"updated_by":"usr-admin","updated_at":"2026-11-01T15:38:59.451Z"}
+NOTE  [c] the yield the form sent with the prefilled offcut (10 %) | 1.1
+FRAME [c] f09-suggestion-linked.png
+PASS  [c] the clear cross (a real click) empties the search and the list comes back whole | expect: q "", rows > 4, cross gone | read: {"q":"","rows":340,"cross":false}
+
+== station d ==
+PASS  [d] the MDF brand, the 22 mm row chosen (a real click): selected, "Linking: MDF, 22 mm" | expect: selected, target r14ewf6j | read: {"row":"1","target":"r14ewf6j","linking":"Linking: MDF, 22 mm"}
+PASS  [d] Link on the stock row "MDF 22 mm" (row 3): the sheet form, to MDF 22 mm | expect: sheet, MDF 22 mm | read: {"kind":"sheet","to":"MDF 22 mm"}
+FRAME [d] f08-link-sheet-form.png
+PASS  [d] 1220 x 2440, offcut 10 %, Save link: the row reads "Linked" | expect: linked, Linked | read: {"status":"linked","words":"Linked"}
+PASS  [d] the fake holds sheet.mdf.22 to row 3, 1220 x 2440, yield 1.1 | expect: 5e0c4b1a-7f2d-4c3e-9a8b-000000000003, 1220, 2440, yield 1.1 | read: {"cc_material_id":"sheet.mdf.22","stock_item_id":"5e0c4b1a-7f2d-4c3e-9a8b-000000000003","yield":1.1,"sheet_width_mm":1220,"sheet_length_mm":2440,"coverage_m2_per_l":null,"updated_by":"usr-admin","updated_at":"2026-11-01T15:39:30.176Z"}
+FRAME [d] f08-link-sheet.png
+
+== station e ==
+PASS  [e] the Hinges tab lists "Blum CLIP top BLUMOTION 155 degree hinge, nickel" | expect: the row | read: true
+PASS  [e] Link on row 6 "Blum Clip top 155 hinge" (one real click): Linked, no form | expect: linked, Linked, 0 forms | read: {"status":"linked","words":"Linked","selected":"0","suggested":null,"error":null,"forms":0}
+PASS  [e] the fake counts one more cc_save_material_links call | expect: 3 | read: 3
+PASS  [e] the fake holds the hinge link to row 6, no sheet size | expect: 5e0c4b1a-7f2d-4c3e-9a8b-000000000006 | read: {"cc_material_id":"hinge.blum.clip-top.155.nickel","stock_item_id":"5e0c4b1a-7f2d-4c3e-9a8b-000000000006","yield":null,"sheet_width_mm":null,"sheet_length_mm":null,"coverage_m2_per_l":null,"updated_by":"usr-admin","updated_at":"2026-11-01T15:39:37.237Z"}
+FRAME [e] f08-link-hinge.png
+
+== station f ==
+PASS  [f] Unlink on the same hinge row (a real click): "Not linked" | expect: not-linked, Not linked | read: {"status":"not-linked","words":"Not linked","selected":"0","suggested":null,"error":null}
+PASS  [f] the fake counts linksCleared 1 | expect: 1 | read: 1
+PASS  [f] the fake's rows lost that link | expect: absent | read: ["sheet.mdf.18","hinge.blum.clip-top.110.nickel","sheet.egger.h3325_28.18","sheet.mdf.22"]
+FRAME [f] f08-unlink.png
+
+== station g ==
+PASS  [g] "Back to project" (a real click): the window closes | expect: closed | read: true
+PASS  [g] the BOM's purchase list (top bar BOM, tab BOM): at least one line "Not linked" in red with a Link button | expect: >= 1 | read: 11 of 13 lines; e.g. [{"name":"Blum CLIP top BLUMOTION 155 degree hinge, nickel","colour":"rgb(201, 82, 75)"},{"name":"Blum mounting plate knock-in 5 mm, nickel","colour":"rgb(201, 82, 75)"}]
+PASS  [g] the header "<n> of <m> lines linked" and "Incomplete total, <k> lines not linked", k = m - n | expect: n of m lines linked; Incomplete total, m - n lines not linked | read: {"text":"2 of 13 lines linked Total GBP 212.50, Incomplete total, 11 lines not linked","n":"2","m":"13"}
+NOTE  [g] the lines not linked (department: name) | ["hinges: Blum CLIP top BLUMOTION 155 degree hinge, nickel","hinges: Blum mounting plate knock-in 5 mm, nickel","ironmongery: Adjustable plinth leg","ironmongery: Plinth clip","ironmongery: Plinth clip connector","paint: Paint, bespoke colour: RAL 3005 Wine Red","paint: Primer or basecoat","paint: Solvent","consumables: Chipboard screw for a 3 mm pilot","consumables: Egger edging H3325 ST28 Tobacco Gladstone Oak","consumables: Puzzle connector screw"]
+FRAME [g] f10-bom.png
+PASS  [g] the line to Link: the 155 hinge unlinked in (f) | expect: Blum CLIP top BLUMOTION 155 degree hinge, nickel | read: {"group":"hinges","name":"Blum CLIP top BLUMOTION 155 degree hinge, nickel"}
+PASS  [g] Link on that line (a real click): the window opens at that entry (the selected row's token is the line's) | expect: row r1jpinqt (Blum CLIP top BLUMOTION 155 degree hinge, nickel), tab hinges | read: {"row":"r1jpinqt","name":"Blum CLIP top BLUMOTION 155 degree hinge, nickel","tab":"hinges","outline":"solid 2px rgb(170, 142, 104)","inView":true,"target":"r1jpinqt"}
+PASS  [g] the selected row is outlined gold and in view | expect: outline solid, the house gold rgb(170, 142, 104), in view | read: {"outline":"solid 2px rgb(170, 142, 104)","inView":true}
+NOTE  [g] after the link made from the BOM, what the window holds chosen for the next Link | "Linking: Blum CLIP top BLUMOTION 155 degree hinge, nickel"
+PASS  [g] link it there (row 6, a real click): the toast "Saved for all projects" appears | expect: Saved for all projects | read: {"text":"Saved for all projects","level":"grey","onTop":true,"at":[124,762]}
+PASS  [g] the toast stands on top of the window (not under it) | expect: on top at its centre | read: {"onTop":true,"at":[124,762]}
+PASS  [g] one cc_save_material_links call for that link | expect: 4 | read: 4
+FRAME [g] f10-toast.png
+PASS  [g] back in the BOM: that line is linked now and the header counts one more | expect: linked; 3 linked | read: {"status":"linked","header":"3 of 13 lines linked Total GBP 258.40, Incomplete total, 10 lines not linked"}
+PASS  [g] the block "Bespoke, this project only" under the lines | expect: Bespoke, this project only | read: "Bespoke, this project only"
+PASS  [g] Add bespoke item, "Client handles", 6, pcs, 4.5 (real clicks and keys): the row in the Bespoke block, 27.00 | expect: Client handles, 6, pcs, 4.5, 27.00; one row in project.bespoke | read: {"typed":{"name":"Client handles","qty":"6","unit":"pcs","price":"4.5","cost":"27.00","inBlock":true},"store":[{"name":"Client handles","qty":6,"unit":"pcs","price":4.5,"client":false}]}
+NOTE  [g] the project total line with the bespoke row in it | "PROJECT TOTAL 4 sheets GBP 285.40 Incomplete total, 10 lines not linked"
+FRAME [g] f10-bespoke.png
+PASS  [g] Ctrl+S (real keys): one cc_save_item | expect: 2 | read: 2
+PASS  [g] the fake's saved design (cc_items.design, one select) carries project.bespoke with that row | expect: [Client handles, 6, pcs, 4.5] | read: [{"name":"Client handles","qty":6,"unit":"pcs","price":4.5}]
+PASS  [g] the saved design holds no link (law 3: a project never holds one) | expect: no cc_material_id, no stock_item_id | read: null
+
+== station h ==
+NOTE  [h] the fake's links switched off (GET /__fake/links?on=0), reload, the item opened again | {"opened":true}
+PASS  [h] open Link materials: "Material links are not set up in Joinery Core yet." | expect: Material links are not set up in Joinery Core yet. | read: "Material links are not set up in Joinery Core yet. The list below is read only until it is. Retry"
+PASS  [h] no Link button enabled (read only), before and after a row is chosen | expect: every Link, Accept, Change, Unlink, Save disabled | read: {"before":{"link":0,"linkButtons":10,"accept":0,"acceptAll":0,"change":0,"unlink":0,"save":0},"afterChoosing":{"link":0,"linkButtons":10,"accept":0,"acceptAll":0,"change":0,"unlink":0,"save":0}}
+NOTE  [h] the fake refused the links read (403, the SQL of T-JC3a not run) | {"linksReads":1,"refused":7}
+FRAME [h] f08-not-set-up.png
+PASS  [h] the switch on again (GET /__fake/links?on=1), Retry (a real click): the links are read, the count is the fake's | expect: not-set-up gone, 5 linked | read: {"gone":true,"linked":5}
+PASS  [h] Assign materials...: the banner "Replaced by Link materials. This window is read only until the next update." | expect: Replaced by Link materials. This window is read only until the next update. | read: {"words":"Replaced by Link materials. This window is read only until the next update.","button":"Open Link materials","readOnly":"1"}
+FRAME [h] f14-old-window.png
+PASS  [h] "Open Link materials" (a real click) opens the new window | expect: the Link materials window | read: {"link":true,"assign":false}
+
+== probe (Next only) ==
+NOTE  [probe] PROBE: a second new item, the primary button ONLY (Next, Next, Next; no Stock board chosen) | Confirm project & continue > Confirm space & continue > Confirm section & continue > Next - Carcass 1 - board and sheet > Next - What was chosen > stuck: ["Choose a stock board for Carcass 1. Generic is also available."]
+NOTE  [probe] PROBE: where it ended and on which boards | {"editor":false,"carcass":{"id":"c1","label":"Carcass 1","source":"egger","finish_id":"egger:H3325_28"},"front":{"id":"f1","label":"Front 1","source":"spray","colour":"RAL 3005 Wine Red","thickness":null}}
+NOTE  [end] page errors the walk saw (uncaught) | none
+NOTE  [end] the fake's link rows at the end | ["sheet.mdf.18 -> 09 1220x2440","hinge.blum.clip-top.110.nickel -> 05","sheet.egger.h3325_28.18 -> 10 1220x2440 y1.1","sheet.mdf.22 -> 03 1220x2440 y1.1","hinge.blum.clip-top.155.nickel -> 06"]
+NOTE  [end] the fake's counters at the end (since the reseed) | {"me":4,"me401":0,"query":60,"queryByTable":{"pipeline_projects":4,"projects":4,"clients":4,"cc_items":7,"cc_hardware":12,"cc_hardware_register":4,"cc_settings_sets":4,"cc_company_defaults":4,"stock_items":6,"stock_categories":6,"cc_material_links":5},"queryRefused":25,"writesRefused":0,"starOnItems":0,"designReads":3,"rpc":{"cc_create_item":2,"cc_save_item":2,"cc_save_material_links":4,"cc_clear_material_link":1},"rpcKeepalive":{"cc_save_item":2},"rpcRefused":0,"getSession":0,"proxied":243,"ai":{},"aiStatus":{},"logo":0,"linksSaved":4,"linksCleared":1,"linkRefused":{}}
+
+RESULT: 58 PASS, 0 FAIL
+FRAMES: f11-new-item.png, f11-new-item-front.png, f08-window.png, f09-suggestion.png, f09-suggestion-form.png, f09-suggestion-linked.png, f08-link-sheet-form.png, f08-link-sheet.png, f08-link-hinge.png, f08-unlink.png, f10-bom.png, f10-toast.png, f10-bespoke.png, f08-not-set-up.png, f14-old-window.png

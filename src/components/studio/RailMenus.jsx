@@ -173,6 +173,14 @@ function MaterialsMenu({ onDone }) {
 
   const items = [
     {
+      id: 'link-materials',
+      label: 'Link materials…',
+      hint: 'Every material Cabinet Core uses, linked once to your Joinery Core stock, for every project',
+      // T-CC2a F8.7: FIRST in the menu. The owner: *"zebysmy przypisali pewne materialy na stale nie do projektu,
+      // tylko na stale"* (01.11.2026); the BOM's and Project settings' Link open the same window at their entry.
+      run: (e) => openModal('link-materials', { anchor: anchorOfEvent(e) }),
+    },
+    {
       id: 'selected-finishes',
       label: 'Selected finishes…',
       hint: 'The selected cabinets\' own finish, from the project palette; the project is left alone',
@@ -191,7 +199,8 @@ function MaterialsMenu({ onDone }) {
     {
       id: 'assign-materials',
       label: 'Assign materials…',
-      hint: 'Which board, which hinge, which runner: per part, per project. What the BOM is built from',
+      // T-CC2a F14: read only for one turn; the BOM is built from the company's links now (Link materials...).
+      hint: 'The old per-part assignments, read only: Link materials replaces this window',
       // The window the Database menu's entry opened, the same call (T-CC1b F3.2).
       run: (e) => openModal('assign-materials', { anchor: anchorOfEvent(e) }),
     },

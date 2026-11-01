@@ -22,19 +22,44 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import {
-  buildCabinetPartQtys, mergeUnitMaterials, purchaseBom, sheetsFor,
+  buildBom, buildCabinetPartQtys, mergeUnitMaterials, purchaseBom, sheetsFor,
   sheetFamilyOfPart, resolvePartTotal, formatQty,
 } from '../src/engine/bom.js';
 import { PART_REGISTRY, partIdForElement } from '../src/engine/partRegistry.js';
 import { sheetFamilyOfPanel } from '../src/engine/checks.js';
+// T-CC2a: the hinge catalogue of record the app always loads, so a hinge line has its angle and its product.
+import { loadHardwareCatalogues } from '../src/lib/hardwareCatalogue.js';
+
+loadHardwareCatalogues();
 
 // ─── Fixtures ───────────────────────────────────────────────────────────────
+//
+// T-CC2a (CLAUDE.md T-CC2a laws 2 to 7) REWRITES the purchase-list half of this
+// file by name: the list is keyed by the CATALOGUE (engine/catalogue.js) and
+// priced through the COMPANY'S LINKS, never by the per-part assignment blob of
+// T39. The owner, 01.11.2026, 12:34: *"jedne produkt osobna linia, proste"*.
+// Each rewritten test keeps the T39 sentence it stood for where the new law
+// still says it (one board, one line; the project is the sum of its cabinets)
+// and says the new law where T39's is reversed (a link, not an assignment).
 
-const MATS = [
-  { id: 'egger_white', name: 'Egger W980 18 mm', category: 'board', price: 11.4 },
-  { id: 'hdf6', name: 'HDF backing 6 mm', category: 'board', price: 4.6 },
-  { id: 'sprayed', name: 'Sprayed MDF 25 mm', category: 'front', cost_per_unit: 27 },
+const DESIGN = {
+  carcass: {
+    types: [
+      { id: 'c1', label: 'Carcass 1', source: 'egger', finish_id: 'egger:W1000_9' },
+      { id: 'c2', label: 'Carcass 2', source: 'egger', finish_id: 'egger:H3325_28' },
+    ],
+  },
+  fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'spray', colour: { hex: '#5e2129', name: '3005 Wine Red', system: 'RAL' } }] },
+};
+const WHITE = 'sheet.egger.w1000_9.18';
+const STOCK = [
+  { id: 's-white', name: 'Egger W1000 ST9 18', unit: 'sheet', price: 41 },
+  { id: 's-mdf', name: 'MDF 18', unit: 'sheet', price: 30 },
+  { id: 's-pin', name: 'Shelf pin', unit: 'pcs', price: 0.09 },
 ];
+const link = (cc, stock, extra = {}) => [cc, {
+  cc_material_id: cc, stock_item_id: stock, yield: null, sheet_width_mm: 2800, sheet_length_mm: 2070, coverage_m2_per_l: null, ...extra,
+}];
 
 function cabinet(typeId, extra = {}) {
   const params = { ...defaultParamsFor(typeId, P), unit_num: '01', ...extra };
@@ -54,89 +79,71 @@ const WARDROBE_WITH_PARTITION = cabinet('WARDROBE', {
 });
 const BUD = cabinet('BUD', { doors: true, plinth: true, shelves: 1 });
 
-const ctx = (assignments) => ({ assignments, materials: MATS, profile: P });
+const ctx = (links = [], design = DESIGN, profile = P) => ({ links: new Map(links), stock: STOCK, profile, design });
 const rowFor = (rows, key) => rows.find((r) => r.key === key);
+/** The cut area of a cabinet's pieces on one catalogue board (the cut list's own resolution). */
+const cutArea = (entries, id, design = DESIGN, parts = null) => buildBom(entries, { design, profile: P }).cutRows
+  .filter((r) => r.catalogue_id === id && (!parts || parts.includes(partIdForElement(r.part))))
+  .reduce((s, r) => s + r.area_m2 * r.qty, 0);
+const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-4, `${msg}: ${a} vs ${b}`);
 
 // ─── THE COLLAPSE ───────────────────────────────────────────────────────────
 
-test('two parts on ONE material merge into ONE line with the summed area', () => {
+test('two parts on ONE board merge into ONE line with the summed area (T-CC2a: the board is the catalogue entry)', () => {
   const qtys = buildCabinetPartQtys(WARDROBE.result, WARDROBE.unit, { profile: P });
-  const sides = qtys.carcase_side.m2;
-  const horiz = qtys.carcase_horizontal.m2;
-  assert.ok(sides > 0 && horiz > 0, 'the fixture must actually have both');
-
-  const rows = mergeUnitMaterials([WARDROBE], ctx({
-    base: {
-      carcase_side: { material_id: 'egger_white' },
-      carcase_horizontal: { material_id: 'egger_white' },
-    },
-  }));
-  const line = rowFor(rows, 'mat:egger_white');
-  assert.ok(line, 'the two parts did not merge onto the board they were assigned');
-  assert.equal(line.qty, sides + horiz);
-  assert.equal(line._assigned, true);
-  assert.deepEqual([...line.parts].sort(), ['carcase_horizontal', 'carcase_side']);
-  // …and exactly ONE line for that board, which is the owner's whole question.
-  assert.equal(rows.filter((r) => r.key === 'mat:egger_white').length, 1);
+  assert.ok(qtys.carcase_side.m2 > 0 && qtys.carcase_horizontal.m2 > 0, 'the fixture must actually have both');
+  const rows = mergeUnitMaterials([WARDROBE], ctx([link(WHITE, 's-white')]));
+  const line = rowFor(rows, `cat:${WHITE}`);
+  assert.ok(line, 'the carcass parts did not merge onto their board');
+  near(line.m2, cutArea([WARDROBE], WHITE), 'every piece cut from the board');
+  assert.ok(line.m2 >= qtys.carcase_side.m2 + qtys.carcase_horizontal.m2);
+  assert.equal(line.status, 'linked');
+  assert.ok(line.parts.includes('carcase_side') && line.parts.includes('carcase_horizontal'));
+  assert.equal(rows.filter((r) => r.key === `cat:${WHITE}`).length, 1, 'exactly ONE line for that board');
 });
 
 test('the owner’s sentence, whole: sides + top + bottom + partitions + shelves, one line', () => {
   const cab = WARDROBE_WITH_PARTITION;   // T42-F1: see the note beside it
   const q = buildCabinetPartQtys(cab.result, cab.unit, { profile: P });
   const want = ['carcase_side', 'carcase_horizontal', 'partition', 'shelf'];
-  const base = {};
-  for (const id of want) base[id] = { material_id: 'egger_white' };
-  const rows = mergeUnitMaterials([cab], ctx({ base }));
-  const line = rowFor(rows, 'mat:egger_white');
-  const expected = want.reduce((s, id) => s + (q[id]?.m2 || 0), 0);
-  assert.equal(line.qty, expected);
-  assert.equal(line.parts.length, want.length);
+  const line = rowFor(mergeUnitMaterials([cab], ctx([link(WHITE, 's-white')])), `cat:${WHITE}`);
+  for (const id of want) assert.ok(line.parts.includes(id), `${id} on the one line`);
+  near(cutArea([cab], WHITE, DESIGN, want), want.reduce((s, id) => s + (q[id]?.m2 || 0), 0), 'the four parts\' area');
 });
 
-test('different boards do NOT merge — the back keeps its own 6 mm line', () => {
-  const rows = mergeUnitMaterials([WARDROBE], ctx({
-    base: {
-      carcase_side: { material_id: 'egger_white' },
-      back: { material_id: 'hdf6' },
-    },
-  }));
-  assert.ok(rowFor(rows, 'mat:egger_white'));
-  assert.ok(rowFor(rows, 'mat:hdf6'));
-  assert.notEqual(rowFor(rows, 'mat:egger_white').qty, rowFor(rows, 'mat:hdf6').qty);
+test('different boards do NOT merge: a back moved to its own sheet keeps its own line (T-CC2a F11.2)', () => {
+  const moved = { ...DESIGN, boards: { back: { source: 'mdf' }, drawerBottom: null } };
+  const rows = mergeUnitMaterials([WARDROBE], ctx([link(WHITE, 's-white')], moved));
+  const back = buildBom([WARDROBE], { design: moved, profile: P }).cutRows.filter((r) => r.role === 'back');
+  assert.ok(back.length && back.every((r) => r.catalogue_id === 'sheet.mdf.18'), 'the cut list moves the back');
+  assert.ok(rowFor(rows, `cat:${WHITE}`) && rowFor(rows, 'cat:sheet.mdf.18'), 'two boards, two lines');
+  near(rowFor(rows, 'cat:sheet.mdf.18').m2, cutArea([WARDROBE], 'sheet.mdf.18', moved), 'the back with the plinth on MDF 18, as cut');
+  near(rowFor(rows, `cat:${WHITE}`).m2, cutArea([WARDROBE], WHITE) - back.reduce((s, r) => s + r.area_m2 * r.qty, 0), 'the white line lost the back');
 });
 
 // ─── Yield ──────────────────────────────────────────────────────────────────
 
-test('yield is applied per assignment BEFORE the parts are summed', () => {
-  const q = buildCabinetPartQtys(WARDROBE.result, WARDROBE.unit, { profile: P });
-  const rows = mergeUnitMaterials([WARDROBE], ctx({
-    base: {
-      carcase_side: { material_id: 'egger_white', yield: 1.1 },
-      carcase_horizontal: { material_id: 'egger_white', yield: 1.25 },
-    },
-  }));
-  const line = rowFor(rows, 'mat:egger_white');
-  // Two coefficients on one line, each applied to its OWN part — not one
-  // average over the total, which is what a per-line waste percentage would do.
-  assert.equal(line.qty, q.carcase_side.m2 * 1.1 + q.carcase_horizontal.m2 * 1.25);
+test('the yield is the LINK\'s, applied to the line\'s m2 for the sheet count (T-CC2a law 6)', () => {
+  const line = rowFor(mergeUnitMaterials([WARDROBE], ctx([link(WHITE, 's-white', { yield: 1.25 })])), `cat:${WHITE}`);
+  assert.equal(line.yield, 1.25);
+  assert.equal(line.sheets, Math.ceil((line.m2 * 1.25) / ((2800 * 2070) / 1e6)));
+  assert.equal(line.lineCost, line.sheets * 41, 'a per-sheet price costs sheets x price');
 });
 
-test('yield 1.0 changes nothing, and a broken yield is 1.0', () => {
-  const q = buildCabinetPartQtys(WARDROBE.result, WARDROBE.unit, { profile: P });
-  for (const y of [1, 1.0, 0, -3, 'x', null, undefined, NaN]) {
-    const rows = mergeUnitMaterials([WARDROBE], ctx({
-      base: { carcase_side: { material_id: 'egger_white', yield: y } },
-    }));
-    assert.equal(rowFor(rows, 'mat:egger_white').qty, q.carcase_side.m2, `yield ${String(y)}`);
+test('a link with no yield takes the profile\'s 1.10, and a broken yield is the profile\'s too', () => {
+  for (const y of [null, undefined, 0, -3, 'x', NaN]) {
+    const line = rowFor(mergeUnitMaterials([WARDROBE], ctx([link(WHITE, 's-white', { yield: y })])), `cat:${WHITE}`);
+    assert.equal(line.yield, P.materials.sheetYield, `yield ${String(y)}`);
   }
+  assert.equal(rowFor(mergeUnitMaterials([WARDROBE], ctx([link(WHITE, 's-white', { yield: 1 })])), `cat:${WHITE}`).yield, 1);
 });
 
-test('yield applies to pieces too, not only to area', () => {
-  const rows = mergeUnitMaterials([WARDROBE], ctx({
-    base: { shelf_pin: { material_id: 'egger_white', yield: 2 } },
-  }));
+test('a piece line is counted in pieces, never by a yield', () => {
   const q = buildCabinetPartQtys(WARDROBE.result, WARDROBE.unit, { profile: P });
-  assert.equal(rowFor(rows, 'mat:egger_white').qty, q.shelf_pin.pcs * 2);
+  const pin = rowFor(mergeUnitMaterials([WARDROBE], ctx([link('shelf-pin.7.5', 's-pin', { yield: 2 })])), 'cat:shelf-pin.7.5');
+  assert.equal(pin.qty, q.shelf_pin.pcs);
+  assert.equal(pin.sheets, undefined);
+  assert.equal(pin.lineCost, Math.round(q.shelf_pin.pcs * 0.09 * 100) / 100);
 });
 
 test('resolvePartTotal reads whichever measure the entry carries', () => {
@@ -148,53 +155,41 @@ test('resolvePartTotal reads whichever measure the entry carries', () => {
 
 // ─── What is missing ────────────────────────────────────────────────────────
 
-test('unassigned parts appear as `part:` lines with zero cost, and FIRST', () => {
-  const rows = mergeUnitMaterials([WARDROBE], ctx({
-    base: { carcase_side: { material_id: 'egger_white' } },
-  }));
-  const doors = rowFor(rows, 'part:door');
-  assert.ok(doors, 'the doors are unassigned and must be VISIBLE, not absent');
-  assert.equal(doors._assigned, false);
-  assert.equal(doors.costPerUnit, 0);
-  assert.equal(doors.lineCost, null);
-  assert.equal(doors.name, PART_REGISTRY.door.name);
-  // Unassigned at the top — CLAUDE.md F6, and the opposite of Production Core's
-  // order, deliberately: what is missing is what the joiner has to act on.
-  const firstAssigned = rows.findIndex((r) => r._assigned);
-  const lastUnassigned = rows.map((r) => r._assigned).lastIndexOf(false);
-  assert.ok(lastUnassigned < firstAssigned, 'an assigned line came before an unassigned one');
+test('a line with no link is "Not linked", priced at nothing, and FIRST (T-CC2a law 7)', () => {
+  const rows = mergeUnitMaterials([WARDROBE], ctx([link(WHITE, 's-white')]));
+  const doors = rows.find((r) => r.roles.includes('front'));
+  assert.ok(doors, 'the doors are not linked and must be VISIBLE, not absent');
+  assert.deepEqual([doors.status, doors.words, doors.price, doors.lineCost], ['not-linked', 'Not linked', null, null]);
+  const firstLinked = rows.findIndex((r) => r.status === 'linked');
+  const lastIncomplete = rows.map((r) => r.status !== 'linked').lastIndexOf(true);
+  assert.ok(lastIncomplete < firstLinked, 'a linked line came before a not-linked one');
 });
 
-test('a material id nothing in the stock list matches reads as UNASSIGNED', () => {
-  // The worse mistake would be a priced line at zero. A board the workshop no
-  // longer stocks is a board nobody can buy, and the BOM has to say so.
-  const rows = mergeUnitMaterials([WARDROBE], ctx({
-    base: { carcase_side: { material_id: 'deleted_last_year' } },
-  }));
-  assert.equal(rowFor(rows, 'mat:deleted_last_year'), undefined);
-  assert.equal(rowFor(rows, 'part:carcase_side')._assigned, false);
+test('a link to a stock row the company deleted reads "removed", never priced at zero (T-CC2a law 5)', () => {
+  const rows = mergeUnitMaterials([WARDROBE], ctx([link(WHITE, 'deleted_last_year')]));
+  const line = rowFor(rows, `cat:${WHITE}`);
+  assert.deepEqual([line.status, line.words, line.price], ['removed', 'Not linked (removed from your Joinery Core stock)', null]);
 });
 
-test('a BOM with anything unassigned is INCOMPLETE, and says so', () => {
-  const partial = purchaseBom([WARDROBE], ctx({ base: { carcase_side: { material_id: 'egger_white' } } }));
+test('a BOM with anything not linked is INCOMPLETE, and says so', () => {
+  const partial = purchaseBom([WARDROBE], ctx([link(WHITE, 's-white')]));
   assert.equal(partial.totals.complete, false);
-  assert.ok(partial.totals.unassigned > 0);
+  assert.ok(partial.totals.incomplete > 0);
   assert.ok(partial.totals.cost > 0, 'the money that IS known is still shown');
-
-  const nothing = purchaseBom([WARDROBE], ctx(null));
+  assert.match(partial.totals.words, /^Incomplete total, \d+ lines? not linked$/);
+  const nothing = purchaseBom([WARDROBE], ctx([]));
   assert.equal(nothing.totals.complete, false);
   assert.equal(nothing.totals.cost, 0);
-  assert.equal(nothing.rows.every((r) => !r._assigned), true);
+  assert.equal(nothing.rows.every((r) => r.status !== 'linked'), true);
 });
 
-test('a fully assigned cabinet is COMPLETE and has no part: lines at all', () => {
-  const q = buildCabinetPartQtys(WARDROBE.result, WARDROBE.unit, { profile: P });
-  const base = {};
-  for (const id of Object.keys(q)) base[id] = { material_id: 'egger_white' };
-  const bom = purchaseBom([WARDROBE], ctx({ base }));
+test('a fully linked cabinet is COMPLETE and has no incomplete line at all', () => {
+  const ids = purchaseBom([WARDROBE], ctx([])).rows.map((r) => r.catalogueId).filter(Boolean);
+  const bom = purchaseBom([WARDROBE], ctx(ids.map((id) => link(id, id.startsWith('sheet.mdf') ? 's-mdf' : 's-white'))));
+  assert.equal(bom.rows.filter((r) => r.status === 'not-in-catalogue').length, 0, 'every line of this cabinet is in the catalogue');
   assert.equal(bom.totals.complete, true);
-  assert.equal(bom.totals.unassigned, 0);
-  assert.equal(bom.rows.length, 1, 'one board for everything is one line');
+  assert.equal(bom.totals.incomplete, 0);
+  assert.equal(bom.totals.words, undefined);
   assert.ok(bom.totals.cost > 0);
 });
 
@@ -216,16 +211,11 @@ test('the sheet estimate ROUNDS UP — half a sheet is a sheet you bought', () =
 });
 
 test('a board line counts sheets; a metre or a piece line does not', () => {
-  const rows = mergeUnitMaterials([WARDROBE], ctx({
-    base: {
-      carcase_side: { material_id: 'egger_white' },
-      edge_carcase: { material_id: 'hdf6' },
-      hinge: { material_id: 'sprayed' },
-    },
-  }));
-  assert.ok(rowFor(rows, 'mat:egger_white').sheets >= 1);
-  assert.equal(rowFor(rows, 'mat:hdf6').sheets, null);      // metres of banding
-  assert.equal(rowFor(rows, 'mat:sprayed').sheets, null);   // pieces of hinge
+  const rows = mergeUnitMaterials([WARDROBE], ctx([link(WHITE, 's-white'), link('edge.egger.w1000_9', 's-pin'), link('shelf-pin.7.5', 's-pin')]));
+  assert.ok(rowFor(rows, `cat:${WHITE}`).sheets >= 1);
+  assert.equal(rowFor(rows, 'cat:edge.egger.w1000_9').sheets, undefined, 'metres of banding');
+  assert.equal(rowFor(rows, 'cat:edge.egger.w1000_9').unit, 'm');
+  assert.equal(rowFor(rows, 'cat:shelf-pin.7.5').sheets, undefined, 'pieces');
 });
 
 test('the sheet a part is ESTIMATED against is the sheet the engine CHECKS it against', () => {
@@ -244,7 +234,7 @@ test('the sheet a part is ESTIMATED against is the sheet the engine CHECKS it ag
   }
 });
 
-test('carcass parts are measured against the carcass board, fronts against the front board', () => {
+test('carcass parts are measured against the carcass board, fronts against the front board (T-CC2a: each board its link\'s size)', () => {
   assert.equal(sheetFamilyOfPart('carcase_side'), 'carcasses');
   assert.equal(sheetFamilyOfPart('shelf'), 'carcasses');
   assert.equal(sheetFamilyOfPart('drawer_box_side'), 'carcasses');
@@ -254,76 +244,59 @@ test('carcass parts are measured against the carcass board, fronts against the f
   // …and the two the engine puts on the carcass board despite their spray.
   assert.equal(sheetFamilyOfPart('plinth'), 'carcasses');
   assert.equal(sheetFamilyOfPart('infill'), 'carcasses');
-
-  // A workshop with a SMALL front board and a big carcass board gets more
-  // front sheets for the same area — which is the whole point of T35-F15.
-  const small = {
-    ...P,
-    cnc: { ...P.cnc, sheetCarcass: { width: 2800, height: 2070 }, sheetFronts: { width: 1220, height: 2440 } },
-  };
-  const rows = mergeUnitMaterials([WARDROBE], {
-    assignments: { base: { door: { material_id: 'sprayed' }, carcase_side: { material_id: 'egger_white' } } },
-    materials: MATS,
-    profile: small,
-  });
-  const q = buildCabinetPartQtys(WARDROBE.result, WARDROBE.unit, { profile: small });
-  assert.equal(rowFor(rows, 'mat:sprayed').sheets, Math.ceil(q.door.m2 / ((1220 * 2440) / 1e6)));
-  assert.equal(rowFor(rows, 'mat:egger_white').sheets, Math.ceil(q.carcase_side.m2 / ((2800 * 2070) / 1e6)));
+  // A company whose MDF sheet is SMALL gets more MDF sheets for the same area:
+  // the size is the link's (law 6), never the CNC family sheet.
+  const rows = mergeUnitMaterials([WARDROBE], ctx([
+    link(WHITE, 's-white'), link('sheet.mdf.18', 's-mdf', { sheet_width_mm: 1220, sheet_length_mm: 2440 }),
+  ]));
+  const mdf = rows.find((r) => r.catalogueId && r.catalogueId.startsWith('sheet.mdf.'));
+  const white = rowFor(rows, `cat:${WHITE}`);
+  if (mdf.catalogueId === 'sheet.mdf.18') assert.equal(mdf.sheets, Math.ceil((mdf.m2 * 1.10) / ((1220 * 2440) / 1e6)));
+  assert.equal(white.sheets, Math.ceil((white.m2 * 1.10) / ((2800 * 2070) / 1e6)));
 });
 
 // ─── The project is the sum of its cabinets ─────────────────────────────────
 
 test('a two-cabinet project EQUALS the sum of its two single-cabinet BOMs', () => {
-  const assignments = {
-    base: {
-      carcase_side: { material_id: 'egger_white', yield: 1.1 },
-      carcase_horizontal: { material_id: 'egger_white' },
-      back: { material_id: 'hdf6' },
-      door: { material_id: 'sprayed' },
-    },
-  };
-  const both = mergeUnitMaterials([WARDROBE, BUD], ctx(assignments));
-  const a = mergeUnitMaterials([WARDROBE], ctx(assignments));
-  const b = mergeUnitMaterials([BUD], ctx(assignments));
-
+  const links = [link(WHITE, 's-white'), link('sheet.mdf.18', 's-mdf')];
+  const both = mergeUnitMaterials([WARDROBE, BUD], ctx(links));
+  const a = mergeUnitMaterials([WARDROBE], ctx(links));
+  const b = mergeUnitMaterials([BUD], ctx(links));
   const sum = new Map();
   for (const r of [...a, ...b]) sum.set(r.key, (sum.get(r.key) || 0) + r.qty);
   assert.deepEqual(
     [...sum.keys()].sort(), both.map((r) => r.key).sort(),
     'the project has lines the two cabinets do not, or the other way round',
   );
-  for (const r of both) {
-    assert.equal(r.qty, sum.get(r.key), `${r.key} disagrees between project and cabinet`);
-  }
+  for (const r of both) near(r.qty, sum.get(r.key), `${r.key} disagrees between project and cabinet`);
 });
 
 test('…and so does the money', () => {
-  const assignments = { base: { carcase_side: { material_id: 'egger_white' }, door: { material_id: 'sprayed' } } };
-  const both = purchaseBom([WARDROBE, BUD], ctx(assignments));
-  const a = purchaseBom([WARDROBE], ctx(assignments));
-  const b = purchaseBom([BUD], ctx(assignments));
-  assert.ok(Math.abs(both.totals.cost - (a.totals.cost + b.totals.cost)) < 0.02);
+  const links = [link(WHITE, 's-white'), link('shelf-pin.7.5', 's-pin')];
+  const both = purchaseBom([WARDROBE, BUD], ctx(links));
+  const a = purchaseBom([WARDROBE], ctx(links));
+  const b = purchaseBom([BUD], ctx(links));
+  // Sheets are counted over the WHOLE project (law 6), so a shared board may need fewer sheets than two cabinets apart.
+  assert.ok(both.totals.cost <= a.totals.cost + b.totals.cost + 0.02);
+  const pins = (pb) => rowFor(pb.rows, 'cat:shelf-pin.7.5').lineCost;
+  assert.ok(Math.abs(pins(both) - (pins(a) + pins(b))) < 0.02, 'a piece line\'s money is exactly the sum');
 });
 
 test('the same cabinet twice is exactly double one of it', () => {
-  const assignments = { base: { carcase_side: { material_id: 'egger_white' } } };
-  const one = rowFor(mergeUnitMaterials([WARDROBE], ctx(assignments)), 'mat:egger_white');
-  const two = rowFor(mergeUnitMaterials([WARDROBE, WARDROBE], ctx(assignments)), 'mat:egger_white');
-  assert.equal(two.qty, one.qty * 2);
-  assert.equal(two.lineCost, Math.round(one.lineCost * 2 * 100) / 100);
+  const links = [link(WHITE, 's-white', { sheet_width_mm: 100, sheet_length_mm: 100 })];
+  const one = rowFor(mergeUnitMaterials([WARDROBE], ctx(links)), `cat:${WHITE}`);
+  const two = rowFor(mergeUnitMaterials([WARDROBE, WARDROBE], ctx(links)), `cat:${WHITE}`);
+  near(two.m2, one.m2 * 2, 'the area');
+  assert.ok(two.sheets >= one.sheets * 2 - 1 && two.sheets <= one.sheets * 2, 'the sheets, counted over the whole project');
 });
 
-// ─── Per-family overrides reach the purchase list ───────────────────────────
+// ─── A cabinet on its own board reaches the purchase list ──────────────────
 
-test('a wardrobe-only override buys a different board from the base unit beside it', () => {
-  const rows = mergeUnitMaterials([WARDROBE, BUD], ctx({
-    base: { carcase_side: { material_id: 'egger_white' } },
-    overrides: { carcase_side: { wardrobe: { material_id: 'hdf6' } } },
-  }));
-  const qW = buildCabinetPartQtys(WARDROBE.result, WARDROBE.unit, { profile: P });
-  const qB = buildCabinetPartQtys(BUD.result, BUD.unit, { profile: P });
-  assert.equal(rowFor(rows, 'mat:hdf6').qty, qW.carcase_side.m2);
-  assert.equal(rowFor(rows, 'mat:egger_white').qty, qB.carcase_side.m2);
+test('a wardrobe on its own carcass type buys a different board from the base unit beside it', () => {
+  const own = { ...WARDROBE, unit: { ...WARDROBE.unit, params: { ...WARDROBE.unit.params, carcass_type_id: 'c2' } } };
+  const rows = mergeUnitMaterials([own, BUD], ctx([]));
+  near(rowFor(rows, 'cat:sheet.egger.h3325_28.18').m2, cutArea([own], 'sheet.egger.h3325_28.18'), 'the wardrobe\'s Gladstone Oak');
+  near(rowFor(rows, `cat:${WHITE}`).m2, cutArea([BUD], WHITE), 'the base unit\'s white');
 });
 
 // ─── The read of the engine ─────────────────────────────────────────────────

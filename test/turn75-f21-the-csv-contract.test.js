@@ -112,23 +112,29 @@ test('F21 · FIXED: the project list is THIS project\'s rows, not every uuid in 
   assert.match(read('src/components/WarehouseModal.jsx'), /uuids: projectUuids\(\{ assignments, materials: stock \}\)/);
 });
 
+// REWRITTEN BY T-CC2a F5 (CLAUDE.md T-CC2a laws 3 and 7): a line's identity is the LINKED stock row's (the
+// company's link from the catalogue entry), never the per-part assignment blob. The uuid and the code still ride
+// every line that has them; a line not linked has neither.
+const LINKED = { carcass: { types: [{ id: 'c1', label: 'Carcass 1', source: 'egger', finish_id: 'egger:W1000_9' }] } };
+const linkTo = (cc, sid) => new Map([[cc, { cc_material_id: cc, stock_item_id: sid, sheet_width_mm: 2800, sheet_length_mm: 2070 }]]);
+
 test('F21 · the purchase BOM carries jc_uuid and the material code on every line that has them', () => {
   const unit = { id: 'u', type: 'BUD', params: { ...defaultParamsFor('BUD', P), unit_num: '01' } };
   const result = computeCabinet(unit.params, P);
-  const materials = [
-    { id: 'mat_a', name: 'Egger W980', price: 11.4, jc_uuid: '6f1c2a7e-0000-4000-8000-000000000001', code: 'W980 SM' },
+  const stock = [
+    { id: '6f1c2a7e-0000-4000-8000-000000000001', name: 'Egger W1000 ST9', unit: 'sheet', price: 11.4, item_number: 'W1000 ST9' },
   ];
   const bom = purchaseBom([{ unit, result }], {
-    assignments: { base: { carcase_side: { material_id: 'mat_a' } } }, materials, profile: P,
+    links: linkTo('sheet.egger.w1000_9.18', stock[0].id), stock, profile: P, design: LINKED,
   });
-  const line = bom.rows.find((r) => r._assigned);
+  const line = bom.rows.find((r) => r.status === 'linked');
   assert.equal(line.jc_uuid, '6f1c2a7e-0000-4000-8000-000000000001');
-  assert.equal(line.code, 'W980 SM');
+  assert.equal(line.code, 'W1000 ST9');
   const csv = buildPurchaseBomCsvText(bom, {});
   assert.match(csv, /PARTS,JC_UUID,CODE\n/);
-  assert.match(csv, /,6f1c2a7e-0000-4000-8000-000000000001,W980 SM\n/);
-  // An unassigned line has neither, and says nothing it does not know.
-  assert.ok(bom.rows.filter((r) => !r._assigned).every((r) => !r.jc_uuid && !r.code));
+  assert.match(csv, /,6f1c2a7e-0000-4000-8000-000000000001,W1000 ST9\n/);
+  // A line not linked has neither, and says nothing it does not know.
+  assert.ok(bom.rows.filter((r) => r.status !== 'linked').every((r) => !r.jc_uuid && !r.code));
 });
 
 test('F21 · priced at what the job was quoted at; the moved list is a Check in words, never a silent recompute', () => {
@@ -141,10 +147,13 @@ test('F21 · priced at what the job was quoted at; the moved list is a Check in 
   assert.equal(stamp.prices.mat_a.price_source, 'import', 'the price_source per assigned material');
   assert.equal(stamp.stamp, catalogueStamp([{ id: 'mat_a', jc_uuid: 'U-1', price: 10 }]));
   const now = [{ ...then[0], price: 12 }];
+  // REWRITTEN BY T-CC2a F5.1: the quoted price still wins, read by the LINKED stock row's uuid.
   const quoted = purchaseBom([{ unit, result }], {
-    assignments, materials: now, profile: P, pricedAt: stamp,
-  }).rows.find((r) => r._assigned);
-  assert.equal(quoted.costPerUnit, 10, 'the quote stands');
+    links: linkTo('sheet.egger.w1000_9.18', 'U-1'),
+    stock: [{ id: 'U-1', name: 'Egger W980', unit: 'sheet', price: 12 }],
+    profile: P, design: LINKED, pricedAt: { prices: { 'U-1': { price: 10, price_source: 'import' } } },
+  }).rows.find((r) => r.status === 'linked');
+  assert.equal(quoted.price, 10, 'the quote stands');
   assert.equal(quoted.price_source, 'quoted');
   const moves = catalogueMoves(stamp, { materials: now });
   assert.deepEqual(moves, [{

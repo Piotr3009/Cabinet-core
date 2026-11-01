@@ -39,6 +39,9 @@ import NumberField from './NumberField.jsx';
 import { HingeHardware, SheetSizeRow } from './SettingsPanel.jsx';
 // T80 F2 · the FRONTS row, SettingsPanel's own (one row, two surfaces).
 import { InframeRow } from './SettingsPanel.jsx';
+// T-CC2a F11 · each board slot's catalogue entry and its company link, and the back panels and drawer bottoms on a
+// sheet of their own (SettingsPanel's own components: one implementation, two surfaces).
+import { DesignBoardSlots, SlotLink, slotChoices } from './SettingsPanel.jsx';
 // Turn 33 (CLAUDE.md F8): the shaker frame's one resolver — the same number
 // the engine cuts pockets to and the settings panel edits.
 import { shakerFrameMm } from '../engine/shaker.js';
@@ -239,6 +242,10 @@ export default function WizardSettings({
   const setDimensionColour = useUiStore((s) => s.setDimensionColour);
 
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
+  // T-CC2a F11.1: the slot's entry (the one resolver, as the cut list) and its link, shown under each board choice.
+  const allResults = useProjectStore((s) => s.allResults);
+  const setDesignBoard = useProjectStore((s) => s.setDesignBoard);
+  const slotsOf = useMemo(() => slotChoices(design, profile, allResults ? allResults() : []), [design, profile, units, allResults]);
   const heights = useMemo(() => projectHeights(design, profile), [design, profile]);
   const type = getProjectType(design.projectType);
   const wardrobe = isWardrobeType(design.projectType);
@@ -661,6 +668,7 @@ export default function WizardSettings({
             : 'No board assigned — drawing on the source’s own thickness'}
           {isJcMaterial(assigned) ? ' · JC' : ''}
         </p>
+        <SlotLink choice={kind === 'carcass' ? slotsOf.carcass(t) : slotsOf.front(t)} testId={`${kind}:${t.id}`} />
         {/* ─── THE HARD GATE, IN THE OPEN (T15-B, carried here by T36 F1) ───
             The project is DRAWN at one thickness and this choice is another.
             Nothing changes until the owner says which truth wins. */}
@@ -1652,6 +1660,8 @@ export default function WizardSettings({
                           );
                         })}
                       </div>
+                      {/* T-CC2a F11.2: the back panels and the drawer bottoms, "As today" or another sheet of the same thickness. */}
+                      <DesignBoardSlots design={design} onChange={(slot, choice) => { touchCarcass(); setDesignBoard(slot, choice); }} />
             </div>
           )}
 
@@ -2201,7 +2211,8 @@ export default function WizardSettings({
                               const setting = runMaterialSetting(design, g.id);
                               const assigned = materials.find((m) => m.id === setting.material_id) || null;
                               return (
-                                <div key={g.id} className="cc-row" data-run-material={g.id}>
+                                <div key={g.id} className="space-y-1">
+                                <div className="cc-row" data-run-material={g.id}>
                                   <span className="text-[11px] text-ink-100 w-28 shrink-0" title={g.hint}>{g.label}</span>
                                   <label className="flex items-center gap-1.5 text-[11px] text-ink-200 shrink-0">
                                     <input
@@ -2244,6 +2255,9 @@ export default function WizardSettings({
                                   {!setting.sameAsFronts && assigned?.placeholder && (
                                     <span className="text-[10px] text-status-warn shrink-0" title="A placeholder board — assign a real one before check-out">⚠</span>
                                   )}
+                                </div>
+                                {/* T-CC2a F11.1: a run piece on its own board shows its entry and its link. */}
+                                {!setting.sameAsFronts && <SlotLink choice={slotsOf.run(g.id)} testId={`run:${g.id}`} />}
                                 </div>
                               );
                             })}

@@ -37,6 +37,11 @@
 // on one of them goes through the override like any other exception.
 
 import { migrateDesign, paletteEntryByKey, resolveFinishes } from './design.js';
+// T-CC2a F3 (law 2): the board's catalogue entry, read by the SAME resolver the
+// cut list, the purchase list, the 3D finish and the BOM read.
+import {
+  boardChoiceOfOldId, catalogueIdOfBoard, entryById, normaliseBoardChoice,
+} from './catalogue.js';
 
 /**
  * The pieces that belong to a RUN and get a project-level switch of their own
@@ -170,7 +175,7 @@ function stockById(materials, id) {
  *   `finish`/`colour`  what the 3D view paints (F1.4).
  */
 export function resolvePanelMaterial(panel, unit, design, profile, materials = []) {
-  const resolved = resolvePanelMaterialBase(panel, unit, design, profile, materials);
+  const resolved = withCatalogue(resolvePanelMaterialBase(panel, unit, design, profile, materials), panel, unit, design, profile);
   if (!panel?.meta?.frontDecorationParent) return resolved;
   const stock = stockById(materials, resolved.material_id);
   const explicit = elementMaterialOverride(panel);
@@ -185,6 +190,118 @@ export function resolvePanelMaterial(panel, unit, design, profile, materials = [
     assignmentProblem: explicit
       ? `Assign moulding stock matching its ${panel.thickness} mm thickness.`
       : `Assign separate ${panel.thickness} mm stock for the applied moulding.`,
+  };
+}
+
+// ─── T-CC2a F3 · ONE SOURCE OF A BOARD (CLAUDE.md T-CC2a law 2) ─────────────
+//
+// The owner, 01.11.2026, 12:14: *"do wszystkich plyt na przyklad MDF 18 mamy
+// przypisany material z JC MAT 018 MDF 18 i jak program go wybierze to bedzie
+// na liscie BOM z przypisanym materialem"*. The board a piece is cut from is
+// what the DESIGN says: the slot's source (Egger decor, sprayed MDF, raw MDF,
+// generic), its decor and the thickness the engine cut the piece at. The
+// stored `material_id` (a JC uuid or an old CC id) is read only through the
+// old-id table of engine/catalogue.js, never as a stock row.
+//
+// The record keeps every field it had (the finish, the label, the 3D surface
+// are unchanged) and gains `catalogue_id`, `catalogue_reason` and `board`;
+// its grouping KEY is `cat:<id>` where the catalogue knows the board.
+
+/** The design slot of `design.boards` a piece belongs to (F11.2), or null. */
+export function boardSlotOfPanel(panel) {
+  if (!panel) return null;
+  if (panel.part === 'DRAWER-BOTTOM') return 'drawerBottom';
+  if (panel.role === 'back') return 'back';
+  if (RUN_MATERIAL_ROLES.has(panel.role)) return panel.role;
+  return null;
+}
+
+/** A carcass type's board choice: its source, its decor (or the project's old finish), no colour. */
+function carcassChoice(type, d) {
+  const finishId = type?.finish_id || d.finish?.carcass || null;
+  let source = type?.source || null;
+  if (!source && finishId) source = String(finishId).startsWith('egger:') ? 'egger' : 'decor';
+  return { source, finishId: source === 'sprayed' ? null : finishId, colour: source === 'sprayed' ? d.colour?.carcass || null : null };
+}
+
+/** A front type's board choice: spray, raw, a faced decor, or nothing chosen. */
+function frontChoice(type, d) {
+  if (!type) {
+    if (d.colour?.front) return { source: 'spray', colour: d.colour.front };
+    const finishId = d.finish?.front || null;
+    return { source: finishId ? (String(finishId).startsWith('egger:') ? 'laminate' : 'decor') : null, finishId };
+  }
+  let source = type.source || null;
+  if (!source) {
+    if (type.finish_id) source = String(type.finish_id).startsWith('egger:') ? 'laminate' : 'decor';
+    else if (type.colour || d.colour?.front) source = 'spray';
+  }
+  const faced = source === 'laminate' || source === 'egger' || source === 'decor';
+  return { source, finishId: faced ? (type.finish_id || null) : null, colour: faced ? null : (type.colour || d.colour?.front || null) };
+}
+
+/**
+ * WHAT BOARD THIS PIECE IS CUT FROM, as the design says it (F2.1's choice):
+ * `{ source, finishId, decorId, colour, thickness }`, the thickness the
+ * engine cut the piece at. The slot rules are `resolvePanelMaterialBase`'s
+ * own: the slot of `design.boards` first (F11.2, null = as today), then the
+ * element override, then the watch insert's spray, then the run switch, the
+ * front type and the carcass type.
+ */
+export function boardChoiceOfPanel(panel, unit, design, profile) {
+  const d = migrateDesign(design);
+  const thickness = Number(panel?.thickness) > 0 ? Number(panel.thickness) : null;
+  const done = (c, from) => ({ ...normaliseBoardChoice({ ...c, thickness }), from });
+  const slotKey = boardSlotOfPanel(panel);
+  const own = slotKey ? d.boards?.[slotKey] : null;
+  if (own) return done(own, `boards.${slotKey}`);
+
+  const override = elementMaterialOverride(panel);
+  if (override) {
+    const entry = override.key ? paletteEntryByKey(d, profile, override.key) : null;
+    if (entry) {
+      const type = entry.kind === 'front'
+        ? d.fronts.types.find((t) => t.id === entry.id) || null
+        : d.carcass.types.find((t) => t.id === entry.id) || null;
+      return done(entry.kind === 'front' ? frontChoice(type, d) : carcassChoice(type, d), `override:${entry.key}`);
+    }
+    const old = boardChoiceOfOldId(override.material_id);
+    if (old) return done({ source: old.source }, 'override:old-id');
+    return done({ unknown: Boolean(override.material_id), source: override.material_id ? null : 'generic' }, 'override');
+  }
+
+  if (panel?.role === 'watch_insert' && panel?.meta?.watch_finish === 'spray') {
+    const slot = materialSlotOf({ role: 'front', material_role: 'front' }, unit, d);
+    return done(frontChoice(d.fronts.types.find((t) => t.id === slot.typeId) || null, d), 'watch:spray');
+  }
+
+  const slot = materialSlotOf(panel, unit, d);
+  if (slot.kind === 'run') {
+    const setting = runMaterialSetting(d, slot.role);
+    const old = boardChoiceOfOldId(setting.material_id);
+    if (old) return done({ source: old.source }, slot.key);
+    return done(setting.material_id ? { unknown: true } : { source: 'generic' }, slot.key);
+  }
+  if (slot.kind === 'front') {
+    return done(frontChoice(d.fronts.types.find((t) => t.id === slot.typeId) || null, d), slot.key);
+  }
+  return done(carcassChoice(d.carcass.types.find((t) => t.id === slot.typeId) || null, d), slot.key);
+}
+
+/** Attach the catalogue's answer to a resolved record, and key the board by it. */
+function withCatalogue(resolved, panel, unit, design, profile) {
+  const board = boardChoiceOfPanel(panel, unit, design, profile);
+  const { id, reason } = catalogueIdOfBoard(board, profile);
+  const moved = String(board.from || '').startsWith('boards.');
+  return {
+    ...resolved,
+    // Same board, same key (F3.1): `cat:<id>` replaces `mat:<material_id>`.
+    key: id ? `cat:${id}` : resolved.key,
+    // A piece moved to another sheet by F11.2 says the sheet it is cut from.
+    ...(moved && id ? { label: entryById(id)?.name || resolved.label } : {}),
+    catalogue_id: id,
+    catalogue_reason: reason,
+    board,
   };
 }
 

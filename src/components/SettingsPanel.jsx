@@ -1,29 +1,43 @@
 import FrontDecorationControls from './FrontDecorationControls.jsx';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useSettingsSetsStore } from '../stores/settingsSetsStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { isJcMaterial, materialSlotState, useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
+import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
+// ─── T-CC2a F11 (CLAUDE.md T-CC2a laws 2 and 3): THE SLOT, ITS ENTRY AND ITS LINK ─
+// The three MaterialStock selects are gone (the Deletion licence): a board is
+// what the design says (its source, decor, colour, thickness), its catalogue
+// entry follows from it (engine/catalogue.js, the resolver the cut list reads),
+// and the company's link to its Joinery Core stock says what is bought.
+import { useMaterialLinkStore } from '../stores/materialLinkStore.js';
+import {
+  NOT_IN_CATALOGUE, boardChoiceOfEntry, catalogueIdOfBoard, entriesOf, entryById,
+} from '../engine/catalogue.js';
+import { LINK_WORDS } from '../engine/bom.js';
+import { decorById, decorLabel } from '../engine/decors.js';
+import { linkStatus, matchesEntry } from '../lib/linkSuggest.js';
+import { StockPhoto } from './MaterialPicker.jsx';
 import {
   FRONT_STYLE_OPTIONS, colourLabel, finishById, frontStyleSelection, migrateDesign, projectHeights, resolveJoinery,
   INFRAME_CHOICES, inframeHint, inframeTooltip,
 } from '../engine/design.js';
-import { RUN_MATERIAL_GROUPS, runMaterialSetting } from '../engine/materials.js';
+import { RUN_MATERIAL_GROUPS, boardChoiceOfPanel, runMaterialSetting } from '../engine/materials.js';
 import {
   carcassSources, frontSources, hardwareChoices, pickerForSource, projectBoardThickness,
   projectDimensions, projectFrontThickness, saveButtonState, settingsSectionSnapshot, sourceById,
 } from '../engine/projectSettings.js';
 import { formatMm } from '../engine/format.js';
 // ─── TURN 24 (CLAUDE.md F3): THE CALIPER, NOT THE LABEL ─────────────────────
-import { drawerBoxGate, thicknessSlotRows } from '../engine/thickness.js';
-import { doorCountFor, hingePlatePilotD, hingeStandard } from '../engine/cabinet.js';
+import {
+  drawerBoxGate, projectThicknesses, thicknessOf, thicknessSlotRows,
+} from '../engine/thickness.js';
+import { hingePlatePilotD, hingeStandard } from '../engine/cabinet.js';
 // Turn 35 (CLAUDE.md F15): the board on the bed, per family — one resolver, so
 // the buttons and check #7 read the same answer.
 import { sheetOptionIdFor, sheetSizeForFamily } from '../engine/checks.js';
-import { UNIT_TYPES } from '../engine/types.js';
 import {
-  hingeAngleFor, hingeReResolve, resolveHingeFinish, resolveHingePlate, resolveHingeSystem,
+  hingeAngleFor, resolveHingeFinish, resolveHingePlate, resolveHingeSystem,
 } from '../engine/hinges.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
 import { PROJECT_TYPES as PROJECT_TYPE_OPTIONS } from '../engine/projectTypes.js';
@@ -114,12 +128,10 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const setShelfSleeve = useProjectStore((s) => s.setShelfSleeve);
   const setCarcassTypes = useProjectStore((s) => s.setCarcassTypes);
   const setCarcassFinish = useProjectStore((s) => s.setCarcassFinish);
-  const setCarcassMaterial = useProjectStore((s) => s.setCarcassMaterial);
   const setCarcassSource = useProjectStore((s) => s.setCarcassSource);
   const setFrontTypes = useProjectStore((s) => s.setFrontTypes);
   const setFrontType = useProjectStore((s) => s.setFrontType);
   const setFrontColour = useProjectStore((s) => s.setFrontColour);
-  const setFrontMaterial = useProjectStore((s) => s.setFrontMaterial);
   const setRunMaterial = useProjectStore((s) => s.setRunMaterial);
   const addDoorStyle = useProjectStore((s) => s.addDoorStyle);
   const updateDoorStyle = useProjectStore((s) => s.updateDoorStyle);
@@ -128,9 +140,8 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   const materials = useMaterialAssignmentStore((s) => s.materials);
   const units = useProjectStore((s) => s.units);
   const unitCount = units.length;
-  const updateUnitParamsBulk = useProjectStore((s) => s.updateUnitParamsBulk);
-  /** Re-cut every cabinet's fronts at a new board — one action, one undo step. */
-  const recutFronts = (thickness) => updateUnitParamsBulk(units.map((u) => u.id), { front_t: thickness });
+  // T-CC2a F11.2: the back panels and the drawer bottoms on a sheet of their own (null = "As today").
+  const setDesignBoard = useProjectStore((s) => s.setDesignBoard);
 
   const [picking, setPicking] = useState(null);          // { carcassId } | null
   const [joineryOpen, setJoineryOpen] = useState(false);
@@ -179,12 +190,10 @@ export default function SettingsPanel({ onRoomSetup = null }) {
   );
 
   const finishes = profile.appearance.finishes;
-  const boardMaterials = materials.filter((m) => m.category === 'board');
-  // What the project is DRAWN at today. Carcass 1's assigned board is the
-  // truth once one exists; before that, the soft-start Generic 18 default.
-  const carcass1Board = materials.find((m) => m.id === design.carcass.types[0]?.material_id) || null;
-  const drawnBoardT = carcass1Board?.thickness
-    ?? (design.thickness.custom ?? design.thickness.board ?? 18);
+  // What the project is DRAWN at today. T-CC2a law 2: a board is what the design
+  // says, so the thickness is the project's own (its typed number, else carcass
+  // 1's source), never a Joinery Core stock row's.
+  const drawnBoardT = projectBoardThickness(design, profile);
   // Is this type the one that PINS the project's thickness? Carcass 1 and only
   // carcass 1 — one G per project, the kit's own boundary (#58). Types 2–3 are
   // cost lines, not geometry.
@@ -204,38 +213,10 @@ export default function SettingsPanel({ onRoomSetup = null }) {
     }
   };
 
-  const assignBoard = (typeId, materialId) => {
-    const m = boardMaterials.find((x) => x.id === materialId) || null;
-    if (!m) { setCarcassMaterial(typeId, null); return; }
-    gateOrApply(typeId, m.thickness, m.name, () => setCarcassMaterial(typeId, m.id));
-  };
-
-  // ─── Turn 16 (CLAUDE.md F1.1): A FRONT TYPE'S BOARD ──────────────────────
-  //
-  // "Each front type gains the same MaterialStock dropdown a carcass type has —
-  // same store, same Generic fallback, same T15-B hard gates (changing an
-  // effective thickness with units present ASKS Recompute/Keep)."
-  //
-  // The gate is the CARCASS's gate, reused rather than rewritten — a front
-  // board pins what every door in the job is cut from exactly as the carcass
-  // board pins the boxes, so the question ("the project is drawn at 18 and this
-  // is 22 — recompute, or keep?") is the same question and deserves the same
-  // dialog. `frontGate` holds the offered assignment while the owner decides.
-  const [frontGate, setFrontGate] = useState(null);       // { typeId, thickness, label, apply }
-  const assignFrontBoard = (typeId, materialId) => {
-    const m = frontStock.find((x) => x.id === materialId) || null;
-    if (!m) { setFrontMaterial(typeId, null); return; }
-    const apply = () => setFrontMaterial(typeId, m.id);
-    // Front type 1 is the project's front, so it is the one that pins the
-    // thickness — the same rule carcass 1 follows (#58: one G per project).
-    if (unitCount > 0 && typeId === frontTypes[0]?.id && m.thickness && m.thickness !== frontBoard) {
-      setFrontGate({
-        typeId, thickness: m.thickness, label: m.name, apply,
-      });
-      return;
-    }
-    apply();
-  };
+  // T-CC2a F11.1: `assignBoard` and the front type's `assignFrontBoard` (with
+  // the fronts' own thickness gate, reached only through its select) are gone
+  // with the MaterialStock selects (the Deletion licence). The SOURCE still
+  // goes through `gateOrApply` above, unchanged.
 
   // ─── TURN 24 (CLAUDE.md F3): THE SIX SLOTS, RESOLVED ─────────────────────
   //
@@ -273,15 +254,6 @@ export default function SettingsPanel({ onRoomSetup = null }) {
     gateOrApply(typeId, src?.thickness, src?.label || 'that source', () => setCarcassSource(typeId, src?.id || null));
   };
   const frontMaterials = materials.filter((m) => m.category === 'front');
-  // The stock a FRONT may be assigned (turn 16, F1.1): the front blanks AND the
-  // ordinary boards, because a workshop cuts doors out of both — an MDF shaker
-  // blank and an 18 mm melamine board are both real answers to "what are these
-  // doors made of", and the Generic placeholders are on the board list.
-  const frontStock = materials.filter((m) => m.category === 'front' || m.category === 'board');
-  const slots = materialSlotState(
-    design.carcass.types.map((t) => ({ id: t.id, label: t.label, material_id: t.material_id })),
-    materials,
-  );
   const joinery = resolveJoinery(design, profile);
   const PS = profile.projectSettings;
   const frontTypes = design.fronts.types.length
@@ -290,9 +262,11 @@ export default function SettingsPanel({ onRoomSetup = null }) {
       id: 'f1', label: 'Front 1', source: PS.frontSources[0].id, colour: null, material_id: null,
     }];
   const board = projectBoardThickness(design, profile);
-  // Turn 16 (F1.1): the assigned board wins over the source, so the folded line
-  // and the gate both speak about what the doors are actually cut from.
-  const frontBoard = projectFrontThickness(design, profile, materials);
+  // T-CC2a law 2: the doors are cut at front type 1's source, never a stock row's thickness.
+  const frontBoard = projectFrontThickness(design, profile);
+  // The slots' boards as the engine resolves them (engine/materials.js boardChoiceOfPanel).
+  const allResults = useProjectStore((s) => s.allResults);
+  const slotsOf = useMemo(() => slotChoices(design, profile, allResults ? allResults() : []), [design, profile, units, allResults]);
 
   const setDimension = (key, value) => {
     if (key === 'depth') { setProjectDefaults({ depth: value }); return; }
@@ -386,10 +360,7 @@ export default function SettingsPanel({ onRoomSetup = null }) {
              that is exactly the moment the line has to say which one won. */
           <div className="cc-row text-[12px] text-ink-300" data-folded="carcass">
             <span className="flex-1">
-              {design.carcass.types.map((t) => {
-                const m = materials.find((x) => x.id === t.material_id);
-                return `${t.label}: ${m ? `${m.code ? `${m.code} · ` : ''}${m.name}` : 'Generic 18 (default)'}`;
-              }).join('   ·   ')}
+              {design.carcass.types.map((t) => `${t.label}: ${entryNameOf(slotsOf.carcass(t), profile)}`).join('   ·   ')}
               <span className="text-ink-100" data-folded-thickness="1">{`   ·   ${formatMm(drawnBoardT)} mm`}</span>
             </span>
             <button type="button" className="cc-btn px-2" onClick={() => editSection('carcass')}>Edit</button>
@@ -480,37 +451,11 @@ export default function SettingsPanel({ onRoomSetup = null }) {
               )}
 
               {(() => {
-                const assigned = materials.find((m) => m.id === t.material_id) || null;
                 const gateHere = thickGate && thickGate.typeId === t.id ? thickGate : null;
                 return (
                   <div className="space-y-1">
-                    <div className="cc-row">
-                      <span className="text-[11px] text-ink-400 flex-1">
-                        {assigned
-                          ? `${assigned.code ? `${assigned.code} · ` : ''}${assigned.name} · ${assigned.thickness} mm`
-                          : 'No board assigned — drawing on Generic 18 mm'}
-                        {isJcMaterial(assigned) ? ' · JC' : ''}
-                      </span>
-                      <select
-                        className="cc-input w-[260px]"
-                        value={t.material_id || ''}
-                        onChange={(e) => assignBoard(t.id, e.target.value || null)}
-                      >
-                        <option value="">MaterialStock…</option>
-                        <optgroup label="Generic — geometry only, assign a real board before check-out">
-                          {boardMaterials.filter((m) => m.placeholder).map((m) => (
-                            <option key={m.id} value={m.id}>{m.name}</option>
-                          ))}
-                        </optgroup>
-                        <optgroup label="Stock">
-                          {boardMaterials.filter((m) => !m.placeholder).map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {`${m.code ? `${m.code} · ` : ''}${m.name}`}{isJcMaterial(m) ? ' · JC' : ''}
-                            </option>
-                          ))}
-                        </optgroup>
-                      </select>
-                    </div>
+                    {/* T-CC2a F11.1: the slot's catalogue entry and the company's link, under its WHAT. */}
+                    <SlotLink choice={slotsOf.carcass(t)} testId={`carcass:${t.id}`} />
                     {gateHere && (
                       /* The HARD gate, in the open (owner 09.08): the project is
                          DRAWN at one thickness and this choice is another.
@@ -544,23 +489,13 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           );
         })}
 
-        {slots.missing.length > 0 && (
-          <p className="text-[11px] text-status-warn">
-            {slots.missing.map((t) => t.label).join(', ')} has no board behind it yet — the look is set, the cost is not.
-          </p>
-        )}
-        {design.carcass.types.some((t) => materials.find((m) => m.id === t.material_id)?.placeholder) && (
-          <p className="text-[11px] text-status-warn">
-            A Generic board is a placeholder: the geometry is pinned, the cost is not — assign a real
-            board before check-out.
-          </p>
-        )}
         <p className="text-[11px] text-ink-400">
-          Board thickness: <span className="text-ink-200">{formatMm(drawnBoardT)}</span> — from{' '}
-          {carcass1Board ? `${carcass1Board.code ? `${carcass1Board.code} · ` : ''}${carcass1Board.name}` : 'the Generic 18 default'}.
+          Board thickness: <span className="text-ink-200">{formatMm(drawnBoardT)}</span>, from carcass 1&apos;s source.
           One board thickness per project — the kit's own boundary (#58). Changing it once cabinets
           exist asks first, and recuts everything.
         </p>
+        {/* T-CC2a F11.2: the back panels and the drawer bottoms, "As today" or another sheet of the same thickness. */}
+        <DesignBoardSlots design={design} onChange={setDesignBoard} />
         </>)}
       </section>
 
@@ -700,91 +635,9 @@ export default function SettingsPanel({ onRoomSetup = null }) {
                   NO stock, so "what board are these doors cut from" had no
                   answer anywhere in the project, the BOM could not name it and
                   the CNC sheet could not group by it. */}
-              {(() => {
-                const assigned = materials.find((m) => m.id === t.material_id) || null;
-                const gateHere = frontGate && frontGate.typeId === t.id ? frontGate : null;
-                return (
-                  <div className="space-y-1">
-                    <div className="cc-row">
-                      <span className="text-[11px] text-ink-400 flex-1">
-                        {assigned
-                          ? `${assigned.code ? `${assigned.code} · ` : ''}${assigned.name} · ${assigned.thickness} mm`
-                          : `No board assigned — drawing on ${formatMm(src.thickness)} mm from the source`}
-                        {isJcMaterial(assigned) ? ' · JC' : ''}
-                      </span>
-                      <select
-                        className="cc-input w-[260px]"
-                        data-front-material={t.id}
-                        value={t.material_id || ''}
-                        onChange={(e) => assignFrontBoard(t.id, e.target.value || null)}
-                      >
-                        <option value="">MaterialStock…</option>
-                        <optgroup label="Generic — geometry only, assign a real board before check-out">
-                          {frontStock.filter((m) => m.placeholder).map((m) => (
-                            <option key={m.id} value={m.id}>{m.name}</option>
-                          ))}
-                        </optgroup>
-                        <optgroup label="Stock">
-                          {frontStock.filter((m) => !m.placeholder).map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {`${m.code ? `${m.code} · ` : ''}${m.name}`}{isJcMaterial(m) ? ' · JC' : ''}
-                            </option>
-                          ))}
-                        </optgroup>
-                      </select>
-                    </div>
-                    {gateHere && (
-                      /* The T15-B hard gate, on the fronts: the doors in this
-                         job are DRAWN at one thickness and this board is
-                         another. Nothing changes until the owner says which
-                         truth wins. */
-                      <div className="cc-row rounded border border-status-warn/60 bg-status-warn/10 px-2 py-1" data-front-thickness-gate="1">
-                        <span className="text-[11px] text-status-warn flex-1">
-                          Fronts are drawn at {formatMm(frontBoard)} mm — {gateHere.label} is {formatMm(gateHere.thickness)} mm.
-                        </span>
-                        <button
-                          type="button"
-                          className="cc-btn px-2"
-                          onClick={() => {
-                            gateHere.apply();
-                            // RECOMPUTE means recompute: every cabinet already
-                            // on the floor is re-cut at the new front board, in
-                            // one batch and one undo step. Assigning the board
-                            // alone would only change what the NEXT cabinet is
-                            // drawn at, which is exactly the silent half-change
-                            // the gate exists to prevent.
-                            const { notices } = recutFronts(gateHere.thickness) || { notices: [] };
-                            for (const n of notices) notify(n, 'warn');
-                            setFrontGate(null);
-                            notify(`Fronts recomputed at ${formatMm(gateHere.thickness)} mm`, 'warn');
-                            // ─── Turn 19 (CLAUDE.md F1.4): THE RE-RESOLVE GATE ───
-                            // A thicker front is a different HINGE — 110° up to
-                            // 25 mm, 95° above it — so a board change can flip
-                            // the angle under every door in the job. The doors
-                            // that follow the rule follow it; a door somebody
-                            // ASSIGNED a hinge to by hand is never silently
-                            // overruled, which is the whole point of assigning
-                            // one. Both facts are said out loud rather than
-                            // discovered on an invoice.
-                            const { message } = hingeReResolve({
-                              fromThickness: frontBoard,
-                              toThickness: gateHere.thickness,
-                              assignedDoors: doorsWithOwnHinge(units),
-                              totalDoors: doorsInProject(units, profile),
-                            });
-                            if (message) notify(message, 'warn');
-                          }}
-                        >
-                          Recompute at {formatMm(gateHere.thickness)}
-                        </button>
-                        <button type="button" className="cc-btn px-2" onClick={() => setFrontGate(null)}>
-                          Keep {formatMm(frontBoard)} — pick another
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
+              {/* T-CC2a F11.1: the front type's catalogue entry and the company's link; the MaterialStock
+                  select and the gate it alone reached are gone (the Deletion licence). */}
+              <SlotLink choice={slotsOf.front(t)} testId={`front:${t.id}`} />
             </div>
           );
         })}
@@ -803,9 +656,9 @@ export default function SettingsPanel({ onRoomSetup = null }) {
           </span>
           {RUN_MATERIAL_GROUPS.map((g) => {
             const setting = runMaterialSetting(design, g.id);
-            const assigned = materials.find((m) => m.id === setting.material_id) || null;
             return (
-              <div key={g.id} className="cc-row" data-run-material={g.id}>
+              <div key={g.id} className="space-y-1" data-run-material={g.id}>
+              <div className="cc-row">
                 <span className="text-sm text-ink-100 w-32 shrink-0" title={g.hint}>{g.label}</span>
                 <label className="flex items-center gap-1.5 text-[11px] text-ink-200 shrink-0">
                   <input
@@ -817,36 +670,21 @@ export default function SettingsPanel({ onRoomSetup = null }) {
                   <span>Same as fronts</span>
                 </label>
                 {setting.sameAsFronts ? (
-                  <span className="text-[11px] text-ink-400 flex-1 text-right truncate">
-                    {frontTypes[0]?.label || 'Front 1'}
-                    {materials.find((m) => m.id === frontTypes[0]?.material_id)
-                      ? ` · ${materials.find((m) => m.id === frontTypes[0].material_id).name}`
-                      : ''}
-                  </span>
-                ) : (
-                  <select
-                    className="cc-input flex-1"
-                    data-run-material-stock={g.id}
-                    value={setting.material_id || ''}
-                    onChange={(e) => setRunMaterial(g.id, { material_id: e.target.value || null })}
-                  >
-                    <option value="">MaterialStock…</option>
-                    <optgroup label="Generic — geometry only, assign a real board before check-out">
-                      {frontStock.filter((m) => m.placeholder).map((m) => (
-                        <option key={m.id} value={m.id}>{m.name}</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Stock">
-                      {frontStock.filter((m) => !m.placeholder).map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {`${m.code ? `${m.code} · ` : ''}${m.name}`}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </select>
-                )}
-                {!setting.sameAsFronts && assigned?.placeholder && (
-                  <span className="text-[10px] text-status-warn shrink-0" title="A placeholder board — assign a real one before check-out">⚠</span>
+                  <span className="text-[11px] text-ink-400 flex-1 text-right truncate">{frontTypes[0]?.label || 'Front 1'}</span>
+                ) : <span className="flex-1" />}
+              </div>
+              {/* T-CC2a F11.1/F11.2: what it is cut from, and its link; unticked, "As today" or another sheet. */}
+              {setting.sameAsFronts
+                ? <SlotLink choice={slotsOf.run(g.id)} testId={`run:${g.id}`} />
+                : (
+                  <BoardSlotPicker
+                    slot={g.id}
+                    label={g.label}
+                    thickness={slotsOf.thicknessOf(g.id)}
+                    value={design.boards?.[g.id] || null}
+                    today={slotsOf.run(g.id)}
+                    onChange={(choice) => setDesignBoard?.(g.id, choice)}
+                  />
                 )}
               </div>
             );
@@ -1876,41 +1714,234 @@ export function HingeHardware({
   );
 }
 
-/**
- * How many doors in this job carry a hinge somebody picked by hand
- * (turn 19, CLAUDE.md F1.4).
- *
- * These are the doors the re-resolve gate does NOT touch: an assignment is
- * somebody's decision about that door and a board change is not an argument
- * against it.
- */
-function doorsWithOwnHinge(units) {
-  let n = 0;
-  for (const u of units) n += Object.keys(u.params?.door_hinges || {}).length;
-  return n;
+// ─── T-CC2a F11 · THE SLOT, ITS ENTRY AND ITS LINK (CLAUDE.md T-CC2a laws 2, 3) ─
+//
+// The owner, 01.11.2026: *"do wszystkich plyt na przyklad MDF 18 mamy
+// przypisany material z JC MAT 018 MDF 18 i jak program go wybierze to bedzie
+// na liscie BOM z przypisanym materialem"*. A slot keeps its choice of WHAT
+// (source, decor, colour, thickness); under it, the catalogue entry that choice
+// IS (the resolver the cut list reads, engine/materials.js boardChoiceOfPanel)
+// and the company's link to its Joinery Core stock: "JC: <name>", or red
+// "Not linked" with a Link that opens the Link materials window at that entry.
+// Exported so the wizard's settings surface shows the same rows, never a copy.
+
+/** What the engine cuts the back panels and the drawer bottoms at, read off the cut list when it has them. */
+function cutThickness(entries, pred, fallback) {
+  for (const { result } of entries || []) {
+    const hit = (result?.panels || []).find(pred);
+    if (Number(hit?.thickness) > 0) return Number(hit.thickness);
+  }
+  return fallback;
 }
 
 /**
- * How many hinged doors the job has altogether.
- *
- * `doorCountFor` is the engine's own width rule, so this counts the doors the
- * engine will actually hang rather than a guess of one per cabinet — a 1200 mm
- * base unit has two, and both of them re-resolve.
+ * Every board slot's choice, as engine/materials.js resolves it for a piece of
+ * that slot (the SAME road the cut list and the purchase list read), at the
+ * thickness the engine cuts that slot at.
  */
-function doorsInProject(units, profile) {
-  let n = 0;
-  for (const u of units) {
-    const type = UNIT_TYPES[u.type];
-    if (!type?.supports?.doors) continue;
-    const said = u.params?.doors;
-    if (said === false || said === 0) continue;
-    if (said && typeof said === 'object') {
-      n += Number.isFinite(Number(said.count)) ? Number(said.count) : doorCountFor(u.params.width, profile);
-    } else {
-      n += doorCountFor(u.params.width, profile);
-    }
+export function slotChoices(design, profile, entries = []) {
+  const T = projectThicknesses({ design, profile });
+  const at = (list, t) => Math.max(0, (list || []).findIndex((x) => x.id === t?.id));
+  const thick = {
+    back: cutThickness(entries, (pn) => pn.role === 'back', thicknessOf('BACK', T)),
+    drawerBottom: cutThickness(entries, (pn) => pn.part === 'DRAWER-BOTTOM', thicknessOf('DRAWER-BOTTOM', T)),
+  };
+  for (const g of RUN_MATERIAL_GROUPS) {
+    const same = runMaterialSetting(design, g.id).sameAsFronts;
+    thick[g.id] = cutThickness(entries, (pn) => pn.role === g.id, same ? (T.front1 ?? T.carcass1) : T.carcass1);
   }
-  return n;
+  return {
+    carcass: (t) => boardChoiceOfPanel(
+      { role: 'side', part: 'SIDE', thickness: T[`carcass${at(design.carcass.types, t) + 1}`] ?? T.carcass1 },
+      { params: { carcass_type_id: t?.id || null } }, design, profile,
+    ),
+    front: (t) => boardChoiceOfPanel(
+      { role: 'front', part: 'FRONT', material_role: 'front', thickness: T[`front${at(design.fronts.types, t) + 1}`] ?? T.front1 },
+      { params: { front_type_id: t?.id || null } }, design, profile,
+    ),
+    run: (role) => boardChoiceOfPanel({ role, part: String(role).toUpperCase(), thickness: thick[role] }, { params: {} }, design, profile),
+    // "As today": the slot the engine uses for that piece, without the slot's own choice.
+    today: (slot) => boardChoiceOfPanel(
+      slot === 'drawerBottom'
+        ? { role: 'drawer_box', part: 'DRAWER-BOTTOM', thickness: thick.drawerBottom }
+        : { role: 'back', part: 'BACK', thickness: thick.back },
+      { params: {} }, { ...design, boards: { ...(design.boards || {}), [slot]: null } }, profile,
+    ),
+    thicknessOf: (slot) => thick[slot] ?? T.carcass1,
+  };
+}
+
+/** The catalogue's answer for a board choice: `{ entry, reason }`. */
+function entryOfChoice(choice, profile) {
+  try {
+    const { id, reason } = catalogueIdOfBoard(choice, profile);
+    return { entry: id ? entryById(id) : null, reason: id ? null : (reason || NOT_IN_CATALOGUE) };
+  } catch {
+    return { entry: null, reason: NOT_IN_CATALOGUE };
+  }
+}
+
+/** A slot's entry name for a folded line, or the reason it has none. */
+function entryNameOf(choice, profile) {
+  const { entry, reason } = entryOfChoice(choice, profile);
+  return entry ? entry.name : reason;
+}
+
+/** Open Link materials at an entry: over the window this was opened from, so its Back returns there. */
+function openLinkAt(entry, from) {
+  const ui = useUiStore.getState();
+  const open = ui.modal ? ui.pushModal : ui.openModal;
+  open('link-materials', { entryId: entry.id, department: entry.department, from });
+}
+
+/**
+ * One slot's catalogue entry and the company's link (F11.1): "JC: <name>" when
+ * linked, the red words of law 7 and "Link" when not, the reason when the
+ * catalogue does not hold the board yet.
+ */
+export function SlotLink({ choice, testId = null, from = 'settings' }) {
+  const profile = useCabinetProfileStore((s) => s.profile);
+  const links = useMaterialLinkStore((s) => s.links);
+  const stock = useMaterialLinkStore((s) => s.stock);
+  const stockStatus = useMaterialLinkStore((s) => s.stockStatus);
+  const load = useMaterialLinkStore((s) => s.load);
+  useEffect(() => { load?.()?.catch?.(() => {}); }, [load]);
+  const { entry, reason } = useMemo(() => entryOfChoice(choice, profile), [choice, profile]);
+  const st = entry ? linkStatus(entry, links, stock, { stockOk: stockStatus === 'ok' }) : null;
+  return (
+    <div className="flex items-center gap-2 text-[11px]" data-slot-link={testId || '1'} data-slot-link-status={st?.status || 'not-in-catalogue'}>
+      <span className="text-ink-200 flex-1 truncate" title={entry?.name || reason}>{entry ? entry.name : reason}</span>
+      {st?.status === 'linked' && (
+        <span className="text-status-ok truncate" data-slot-link-jc="1">{`JC: ${st.row?.name || 'linked'}`}</span>
+      )}
+      {st && st.status !== 'linked' && (
+        <>
+          <span className="text-status-danger" data-slot-link-words="1">{st.status === 'removed' ? LINK_WORDS.removed : LINK_WORDS.notLinked}</span>
+          <button type="button" className="cc-btn px-2 py-0.5" data-slot-link-open="1" onClick={() => openLinkAt(entry, from)}>Link</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * F11.2 · a board slot: "As today" (the part takes the slot the engine uses
+ * today), or another sheet from a visible list with search of the catalogue's
+ * sheets OF THE SAME THICKNESS the engine cuts that part at (geometry is not
+ * this turn, so another thickness is never offered). The choice is a board
+ * choice (engine/catalogue.js boardChoiceOfEntry), never an id typed by hand.
+ */
+function BoardSlotPicker({
+  slot, label, thickness, value = null, today = null, onChange,
+}) {
+  const profile = useCabinetProfileStore((s) => s.profile);
+  const [open, setOpen] = useState(Boolean(value));
+  const [q, setQ] = useState('');
+  const sheets = useMemo(
+    () => entriesOf('sheets').filter((e) => Number(e.thickness) === Number(thickness)),
+    [thickness],
+  );
+  const shown = useMemo(() => sheets.filter((e) => matchesEntry(e, q)), [sheets, q]);
+  const chosenId = value ? entryOfChoice({ ...value, thickness }, profile).entry?.id || null : null;
+  return (
+    <div className="space-y-1" data-board-slot={slot} data-board-slot-thickness={String(thickness ?? '')}>
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] text-ink-100 w-32 shrink-0">{label}</span>
+        <span className="text-[11px] text-ink-400 tabular-nums shrink-0">{thickness ? `${formatMm(thickness)} mm` : ''}</span>
+        <button
+          type="button"
+          className={`cc-btn px-2 py-0.5 ${!value && !open ? 'border-gold text-gold' : ''}`}
+          aria-pressed={!value && !open}
+          data-board-slot-today="1"
+          onClick={() => { setOpen(false); onChange?.(null); }}
+        >
+          As today
+        </button>
+        <button
+          type="button"
+          className={`cc-btn px-2 py-0.5 ${value || open ? 'border-gold text-gold' : ''}`}
+          aria-pressed={Boolean(value || open)}
+          data-board-slot-other="1"
+          onClick={() => setOpen(true)}
+        >
+          Another sheet
+        </button>
+      </div>
+      <SlotLink choice={value ? { ...value, thickness } : today} testId={`board:${slot}`} />
+      {open && (
+        <div className="border border-shell-600 rounded p-1.5 space-y-1" data-board-slot-list={slot}>
+          <span className="relative flex items-center">
+            <input
+              className="cc-input pr-7"
+              value={q}
+              placeholder="Search by name or decor code"
+              data-board-slot-search="1"
+              onChange={(e) => setQ(e.target.value)}
+            />
+            {q !== '' && (
+              <button
+                type="button"
+                className="absolute right-1 px-1.5 text-ink-400 hover:text-gold"
+                aria-label="Clear the search"
+                data-board-slot-search-clear="1"
+                onClick={() => setQ('')}
+              >
+                ✕
+              </button>
+            )}
+          </span>
+          <ul className="cc-scroll max-h-[220px]" data-board-slot-rows={String(shown.length)}>
+            {shown.map((e) => {
+              const decor = e.decorId ? decorById(e.decorId) : null;
+              const chosen = chosenId === e.id;
+              return (
+                <li key={e.id}>
+                  <button
+                    type="button"
+                    className={`w-full flex items-center gap-2 px-1.5 py-1 rounded text-left text-[11px] ${chosen ? 'outline outline-1 outline-gold bg-gold/10' : 'hover:bg-shell-700'}`}
+                    aria-pressed={chosen}
+                    data-board-slot-option="1"
+                    onClick={() => onChange?.(boardChoiceOfEntry(e))}
+                  >
+                    {decor && <StockPhoto url={decor.thumb} fill={decor.hex} alt={decorLabel(decor)} size={28} />}
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-ink-100 truncate">{e.name}</span>
+                      {decor && <span className="block text-ink-400 truncate">{decorLabel(decor)}</span>}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** F11.2 · the two new board slots, "Back panels" and "Drawer bottoms", each "As today" by default. */
+export function DesignBoardSlots({ design, entries = null, onChange }) {
+  const profile = useCabinetProfileStore((s) => s.profile);
+  const allResults = useProjectStore((s) => s.allResults);
+  const units = useProjectStore((s) => s.units);
+  const cut = useMemo(() => entries || (allResults ? allResults() : []), [entries, allResults, units]);
+  const slots = useMemo(() => slotChoices(design, profile, cut), [design, profile, cut]);
+  return (
+    <div className="border border-shell-600 rounded p-2 space-y-2" data-design-boards="1">
+      <span className="text-[11px] uppercase tracking-wide text-ink-400">Back panels and drawer bottoms</span>
+      {[['back', 'Back panels'], ['drawerBottom', 'Drawer bottoms']].map(([slot, label]) => (
+        <BoardSlotPicker
+          key={slot}
+          slot={slot}
+          label={label}
+          thickness={slots.thicknessOf(slot)}
+          value={design.boards?.[slot] || null}
+          today={slots.today(slot)}
+          onChange={(choice) => onChange?.(slot, choice)}
+        />
+      ))}
+    </div>
+  );
 }
 
 // ─── TURN 58b (CLAUDE.md F3.1, licensed deletion 2): THE NUMBERS LEAVE ──────

@@ -113,8 +113,14 @@ test('F14.3 . a unit with ORNATE_A_1 under another tenant still computes, as mai
   }
   if (!base) return;
   const diff = execFileSync('git', ['diff', '--stat', base, '--', 'src/engine/cabinet.js', 'src/engine/ornateFront.js',
-    'src/engine/ornateFrontProfile.js', 'src/engine/frontDecoration.js', 'src/engine/design.js'], { cwd: ROOT, encoding: 'utf8' }).trim();
+    'src/engine/ornateFrontProfile.js', 'src/engine/frontDecoration.js'], { cwd: ROOT, encoding: 'utf8' }).trim();
   assert.equal(diff, '', `the ornate engine moved:\n${diff}`);
+  // REWRITTEN by T-CC2a (F11.2, the `boards` passthrough of migrateDesign, licensed by the turn's classifier): design.js
+  // may only GAIN lines, and none of them may touch the ornate or decorated fronts.
+  const design = execFileSync('git', ['diff', '-U0', base, '--', 'src/engine/design.js'], { cwd: ROOT, encoding: 'utf8' });
+  const changed = design.split('\n').filter((l) => /^[+-](?![+-])/.test(l));
+  assert.deepEqual(changed.filter((l) => l.startsWith('-')), [], `design.js lost lines:\n${design}`);
+  assert.deepEqual(changed.filter((l) => /ornate|decoration|frontDecoration/i.test(l)), [], `design.js moved the ornate road:\n${design}`);
 });
 
 test('F14 . the copied gallery and controls are not edited: the retail copies stay the machine\'s (FROZEN 5)', () => {

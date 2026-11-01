@@ -256,8 +256,11 @@ test('F7 — it degrades: the warehouse opens, says so, and loses no typed row',
 
 // ─── the door ──────────────────────────────────────────────────────────────
 
+// AMENDED BY T-CC1b F3 and F9.3: the Database menu is deleted (*"Database niepotrzebne, wszystko jest
+// w JC"*, the owner, 01.11.2026) and the rail's Stock... opens Joinery Core's stock; the warehouse
+// window stays mounted, local, as T-CC1a left it (FROZEN 4), and the design modal is still not it.
 test('F7 — Database ▸ Materials opens the WAREHOUSE, not the design modal', () => {
-  assert.match(TOPBAR, /onMaterials: \(e\) => openModal\('warehouse'/);
+  assert.doesNotMatch(TOPBAR, /onMaterials:/, 'the Database menu is gone from the bar');
   assert.doesNotMatch(TOPBAR, /onMaterials: \(e\) => openModal\('design'/);
   assert.match(read('pages/ConfiguratorPage.jsx'), /modal === 'warehouse' && <WarehouseModal \/>/);
 });

@@ -20,7 +20,8 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { projectPartUsage, unassignedInUse } from '../src/engine/bom.js';
 import { ALL_PARTS, PART_GROUPS, partsInGroup } from '../src/engine/partRegistry.js';
-import { buildDatabaseMenu } from '../src/lib/topMenu.js';
+// AMENDED BY T-CC1b F3: `buildDatabaseMenu` is deleted; Assign materials is the rail's (RailMenus.jsx).
+import { readFileSync as readSource } from 'node:fs';
 import { MODAL_KINDS, modalAnchorFault } from '../src/lib/modalLayer.js';
 
 function cabinet(typeId, extra = {}) {
@@ -143,14 +144,12 @@ test('a design that gains a drawer gains drawer-box parts to assign', () => {
 
 // ─── The way in ─────────────────────────────────────────────────────────────
 
-test('Assign materials is on the Database menu, reachable from the project always', () => {
-  let opened = 0;
-  const menu = buildDatabaseMenu({ onAssignMaterials: () => { opened += 1; } });
-  const entry = menu.items.find((i) => i.label === 'Assign materials…');
-  assert.ok(entry, 'the entry the owner asked for by name');
-  assert.equal(entry.disabled, false);
-  entry.run();
-  assert.equal(opened, 1);
+// REWRITTEN BY T-CC1b F3: the Database menu is deleted (*"Database niepotrzebne, wszystko jest w JC, Assign
+// materials juz jest po lewej"*, the owner, 01.11.2026); the entry lives on the rail's Materials popup.
+test('Assign materials is on the rail\'s Materials popup, reachable from the project always', () => {
+  const rail = readSource(new URL('../src/components/studio/RailMenus.jsx', import.meta.url), 'utf8');
+  assert.ok(rail.includes("label: 'Assign materials…'"), 'the entry the owner asked for by name');
+  assert.match(rail, /openModal\('assign-materials', \{ anchor: anchorOfEvent\(e\) \}\)/);
 });
 
 test('the modal is registered, so the shell knows what it is about', () => {

@@ -28,9 +28,9 @@
 //   'materials'  the four EXISTING windows (CLAUDE.md F2): Selected finishes
 //                (`unit-finish` for the selected cabinets, the right-click
 //                Colour's own arguments), Project finishes (`design`), Assign
-//                materials (`assign-materials`) and Stock (`warehouse`, the
-//                Database menu's Materials). Nothing else: the Stock as Joinery
-//                Core's warehouse is NOT THIS TURN.
+//                materials (`assign-materials`) and Stock (T-CC1b F9.3:
+//                `jc-stock`, Joinery Core's stock, read-only; the Database
+//                menu died with T-CC1b F3).
 //
 // Every entry is a SECOND road to a function the app already has, by the same
 // store action (LAW 1, ZERO KASOWANIA: the first road is untouched). The popup
@@ -45,7 +45,6 @@ import {
 import { useUiStore } from '../../stores/uiStore.js';
 import { useCabinetProfileStore } from '../../stores/cabinetProfileStore.js';
 import { UNIT_CATEGORIES } from '../../engine/types.js';
-import { buildDatabaseMenu } from '../../lib/topMenu.js';
 import { placeBesideAnchor } from '../../lib/menuPlacement.js';
 import { anchorOfEvent } from '../../lib/modalAnchor.js';
 import { LAYER_CLASS } from '../../lib/modalLayer.js';
@@ -64,21 +63,15 @@ const RAIL_MENU_KINDS = ['add', 'materials'];
  * together.
  */
 function categoryHint(c) {
-  if (c.soon) return 'Coming later';
+  // T-CC1b F4.5: a held-open family says its own reason (*"czesc coming soon"*).
+  if (c.soon) return c.reason || 'Coming soon';
   if (c.saved) return 'Units you have saved: right-click a unit to add one';
   if (c.sets) return 'Media wall, sideboard, vanity, utility, hallway, and the sets you have saved';
   return `${c.types.length} type${c.types.length === 1 ? '' : 's'}`;
 }
 
-/**
- * The Database menu's own entry for one handler (lib/topMenu.js): built with
- * that handler alone, it is the one entry the menu enables, so its label and
- * its sentence are read from the menu and never typed twice.
- */
-function databaseEntry(handlers) {
-  return buildDatabaseMenu(handlers).items.find((i) => !i.disabled) || null;
-}
-const noop = () => {};
+// T-CC1b F3.2 · `databaseEntry` read the deleted Database menu (*"Database niepotrzebne, wszystko
+// jest w JC"*, the owner, 01.11.2026); the Materials popup's rows are written in place below.
 
 /** A DOMRect, or any { left|x, top|y, width, height }, as a plain rectangle. */
 function rectOf(r) {
@@ -156,9 +149,10 @@ function AddMenu({ anchor, gapPx, onDone }) {
         className="studio-library-item"
         data-studio="popup-item"
         data-item={c.id}
-        disabled={c.soon}
+        disabled={Boolean(c.soon)}
+        data-soon={c.soon ? '1' : undefined}
         title={hint}
-        onClick={() => choose(c)}
+        onClick={() => { if (!c.soon) choose(c); }}
       >
         <Icon name="cube" />
         <span className="min-w-0 flex-1">
@@ -176,9 +170,6 @@ function MaterialsMenu({ onDone }) {
   const openModal = useUiStore((s) => s.openModal);
   const selectedUnitIds = useUiStore((s) => s.selectedUnitIds);
   const chosen = Array.isArray(selectedUnitIds) ? selectedUnitIds : [];
-  // Database > Materials... is the warehouse (TopBar.jsx, T51); here it is Stock.
-  const stock = databaseEntry({ onMaterials: noop });
-  const assign = databaseEntry({ onAssignMaterials: noop });
 
   const items = [
     {
@@ -197,21 +188,22 @@ function MaterialsMenu({ onDone }) {
       // Settings > Settings... (TopBar.jsx), the same window.
       run: (e) => openModal('design', { anchor: anchorOfEvent(e) }),
     },
-    assign && {
+    {
       id: 'assign-materials',
-      label: assign.label,
-      hint: assign.hint,
-      // Database > Assign materials... (TopBar.jsx), the same window.
+      label: 'Assign materials…',
+      hint: 'Which board, which hinge, which runner: per part, per project. What the BOM is built from',
+      // The window the Database menu's entry opened, the same call (T-CC1b F3.2).
       run: (e) => openModal('assign-materials', { anchor: anchorOfEvent(e) }),
     },
-    stock && {
+    {
       id: 'stock',
       label: 'Stock…',
-      hint: stock.hint,
-      // Database > Materials... (TopBar.jsx), the same window.
-      run: (e) => openModal('warehouse', { anchor: anchorOfEvent(e) }),
+      hint: 'The boards and hardware of your Joinery Core stock, read-only here',
+      // T-CC1b F9.3: Joinery Core's stock (*"materialy z JC (jego baza)"*); it replaces the
+      // warehouse window this row opened before.
+      run: (e) => openModal('jc-stock', { anchor: anchorOfEvent(e) }),
     },
-  ].filter(Boolean);
+  ];
 
   return items.map((item) => (
     <button

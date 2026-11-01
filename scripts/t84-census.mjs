@@ -549,8 +549,9 @@ function pageBindings() {
 async function staticTopMenu() {
   const { DEFAULT_CABINET_PROFILE: profile } = await import('../src/engine/profile.js');
   const { UNIT_CATEGORIES } = await import('../src/engine/types.js');
-  const { buildOutputMenu, DRAWING_KINDS } = await import('../src/lib/outputMenu.js');
-  const { buildDatabaseMenu, orderMenus, MENU_ORDER } = await import('../src/lib/topMenu.js');
+  // T-CC1b F3 and F5: buildDatabaseMenu and DRAWING_KINDS are deleted; the census reads what stands.
+  const { buildOutputMenu } = await import('../src/lib/outputMenu.js');
+  const { orderMenus, MENU_ORDER } = await import('../src/lib/topMenu.js');
   const candidates = MENUS_SOURCE ? [MENUS_SOURCE] : ['src/components/TopBar.jsx', 'src/lib/studioMenus.js'];
   let file = null;
   let text = null;
@@ -570,8 +571,6 @@ async function staticTopMenu() {
     profile,
     UNIT_CATEGORIES,
     buildOutputMenu,
-    buildDatabaseMenu,
-    DRAWING_KINDS,
     viewMode: '3d',
     contourView: false,
     dirty: false,
@@ -604,14 +603,13 @@ async function staticTopMenu() {
   const B = standIns();
   const named = (fn) => Object.fromEntries(paramsOf(fn).map((p) => [p, B.spy(p)]));
   const byProp = new Map();
-  for (const built of [buildOutputMenu(named(buildOutputMenu)), buildDatabaseMenu(named(buildDatabaseMenu))]) {
+  for (const built of [buildOutputMenu(named(buildOutputMenu))]) {
     for (const l of leavesOf(built, B.calls)) byProp.set(l.path, l);
   }
   const page = pageBindings();
   // The guards as written: TopBar's literal, and the two builders' own.
   const literals = [
     ...labelledLiterals(arrayText).map((p) => ({ ...p, from: file })),
-    ...labelledLiterals(buildDatabaseMenu.toString()).map((p) => ({ ...p, from: 'src/lib/topMenu.js' })),
     ...labelledLiterals(buildOutputMenu.toString()).map((p) => ({ ...p, from: 'src/lib/outputMenu.js' })),
   ];
   const guardOf = (leaf, run) => {
@@ -659,7 +657,7 @@ async function staticTopMenu() {
   return {
     file,
     line: lineOf(text, at),
-    builders: ['src/lib/topMenu.js buildDatabaseMenu', 'src/lib/outputMenu.js buildOutputMenu'],
+    builders: ['src/lib/outputMenu.js buildOutputMenu'],
     order: ordered.map((m) => m.label),
     menuOrder: MENU_ORDER,
     pageBindings: page,

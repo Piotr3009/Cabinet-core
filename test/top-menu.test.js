@@ -9,22 +9,26 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
-import { MENU_ORDER, buildDatabaseMenu, orderMenus } from '../src/lib/topMenu.js';
+import * as topMenu from '../src/lib/topMenu.js';
+import { MENU_ORDER, orderMenus } from '../src/lib/topMenu.js';
 import { buildOutputMenu } from '../src/lib/outputMenu.js';
 
 const bar = (labels) => labels.map((label) => ({ label, items: [] }));
 
 // Turn 33 (CLAUDE.md F1): the owner's order gains LIGHTING, "placed BEFORE
 // Output" in as many words — Output still last, because it is what LEAVES.
-test('the bar reads File · View · Library · Settings · Database · Spraying · Lighting · Output', () => {
-  assert.deepEqual(MENU_ORDER, ['File', 'View', 'Library', 'Settings', 'Database', 'Spraying', 'Lighting', 'Output']);
+// AMENDED BY T-CC1b F3 and F4: Library and Database leave the bar (*"Database niepotrzebne, wszystko
+// jest w JC"*; *"Library powinno byc po lewej"*, the owner, 01.11.2026).
+test('the bar reads File · View · Settings · Spraying · Lighting · Output', () => {
+  assert.deepEqual(MENU_ORDER, ['File', 'View', 'Settings', 'Spraying', 'Lighting', 'Output']);
 });
 
 test('menus handed over in any order come back in the owner’s', () => {
   // The order they are BUILT in is not the order they are shown in — the point
   // of putting this in data.
-  const built = bar(['File', 'View', 'Library', 'Settings', 'Database', 'Spraying', 'Lighting']);
+  const built = bar(['File', 'View', 'Settings', 'Spraying', 'Lighting']);
   built.splice(1, 0, { label: 'Output', items: [] });     // where turn 6 had it
   const shown = orderMenus(built).map((m) => m.label);
   assert.deepEqual(shown, MENU_ORDER);
@@ -46,91 +50,29 @@ test('ordering is stable and does not clone the menus', () => {
   assert.notEqual(shown, built, '…in a new array, so the caller’s is untouched');
 });
 
-test('Database is a dropdown of five', () => {
-  const menu = buildDatabaseMenu({});
-  assert.equal(menu.label, 'Database');
-  // Turn 22 (CLAUDE.md F2b.2) adds "Company defaults…" — the storey between the
-  // code and the project — beside Materials, where a workshop looks for what it
-  // buys. It is an ADDITION and not a reorder: the other three keep their
-  // places and their behaviour.
-  //
-  // Turn 39 (CLAUDE.md F3) adds "Assign materials…" directly under Materials,
-  // and for the same reason: the workshop's stock list, then which part of a
-  // cabinet is cut from which row of it. Also an ADDITION — Company defaults,
-  // Clients and Projects keep their order and their behaviour, and Materials
-  // is still first.
-  assert.deepEqual(
-    menu.items.map((i) => i.label),
-    ['Materials…', 'Assign materials…', 'Company defaults…', 'Clients…', 'Projects…'],
-  );
-});
-
-test('…and Assign materials is wired the same way every other entry is', () => {
-  const off = buildDatabaseMenu({}).items.find((i) => i.label === 'Assign materials…');
-  assert.equal(off.disabled, true);
-  assert.equal(off.soon, true, 'an entry with nothing behind it says "not yet" rather than opening a half-answer');
-
-  let opened = 0;
-  const entry = buildDatabaseMenu({ onAssignMaterials: () => { opened += 1; } })
-    .items.find((i) => i.label === 'Assign materials…');
-  assert.equal(entry.disabled, false);
-  assert.equal(entry.soon, false);
-  assert.ok(entry.hint.length > 0);
-  entry.run();
-  assert.equal(opened, 1);
-});
-
-test('…and Company defaults is wired the same way every other entry is', () => {
-  let opened = 0;
-  const menu = buildDatabaseMenu({ onCompanyDefaults: () => { opened += 1; } });
-  const entry = menu.items.find((i) => i.label === 'Company defaults…');
-  assert.equal(entry.disabled, false);
-  assert.equal(entry.soon, false);
-  entry.run();
-  assert.equal(opened, 1);
-  // …and with nothing behind it, it says so rather than pretending.
-  assert.equal(buildDatabaseMenu({}).items.find((i) => i.label === 'Company defaults…').disabled, true);
-});
-
-test('an entry with nothing behind it is disabled and says "soon"', () => {
-  const menu = buildDatabaseMenu({});
-  for (const item of menu.items) {
-    assert.equal(item.disabled, true, `${item.label} should not pretend to work`);
-    assert.equal(item.soon, true);
+// REWRITTEN BY T-CC1b F3: the Database menu is DELETED (*"Database niepotrzebne, wszystko jest w JC,
+// Assign materials juz jest po lewej"*, the owner, 01.11.2026). Its five entries find their homes:
+// Company defaults in Settings, Assign materials and Stock on the rail's Materials; Clients and
+// Projects die for good (they were "soon" badges for what Joinery Core is).
+test('the Database menu is gone, and its entries live where T-CC1b F3 put them', () => {
+  assert.equal(topMenu.buildDatabaseMenu, undefined, 'the builder is deleted');
+  assert.equal(MENU_ORDER.includes('Database'), false);
+  const top = readFileSync(new URL('../src/components/TopBar.jsx', import.meta.url), 'utf8');
+  const settings = top.slice(top.indexOf("label: 'Settings',"), top.indexOf("label: 'Snap',"));
+  assert.ok(settings.includes("label: 'Company defaults…'"), 'Company defaults is a Settings entry');
+  assert.match(settings, /openModal\('company-defaults', \{ anchor: anchorOfEvent\(e\) \}\)/);
+  const rail = readFileSync(new URL('../src/components/studio/RailMenus.jsx', import.meta.url), 'utf8');
+  assert.ok(rail.includes("label: 'Assign materials…'") && rail.includes("label: 'Stock…'"));
+  for (const gone of ['Clients…', 'Projects…']) {
+    assert.ok(!top.includes(gone) && !rail.includes(gone), `${gone} is deleted`);
   }
 });
 
-test('…and an entry that IS wired runs, and stops saying soon', () => {
-  let opened = 0;
-  const menu = buildDatabaseMenu({ onMaterials: () => { opened += 1; } });
-  const materials = menu.items.find((i) => i.label === 'Materials…');
-  assert.equal(materials.disabled, false);
-  assert.equal(materials.soon, false);
-  materials.run();
-  assert.equal(opened, 1);
-  // The other two are untouched by that.
-  assert.equal(menu.items.find((i) => i.label === 'Clients…').disabled, true);
-});
-
-test('every Database entry has a hint, because a disabled control has to say why', () => {
-  for (const item of buildDatabaseMenu({}).items) {
-    assert.ok(item.hint && item.hint.length > 8, `${item.label} has no hint`);
-  }
-});
-
-test('Output still carries everything that leaves the app', () => {
-  // The reorder must not have cost it anything. Counted rather than listed, so
-  // this does not become a second copy of lib/outputMenu.js.
-  const out = buildOutputMenu({
-    onRender: () => {},
-    onDrawing: () => {},
-    onExportDxf: () => {},
-    onExportCsv: () => {},
-    onExportPdf: () => {},
-    onOpenBom: () => {},
-  });
+// AMENDED BY T-CC1b F5: *"Output tylko: cutting list, BOM PDF, labels 21 i 44"* (the owner, 01.11.2026).
+test('Output still carries everything that leaves for the workshop', () => {
+  const out = buildOutputMenu({ onExportCsv: () => {}, onExportPdf: () => {}, onExportLabels: () => {} });
   assert.equal(out.label, 'Output');
   const leaves = (items) => items.flatMap((i) => (i.items ? leaves(i.items) : [i]));
-  assert.ok(leaves(out.items).filter((i) => !i.divider).length >= 6,
-    'a render, the drawings, the cut list, the DXF and the PDF are all still there');
+  assert.equal(leaves(out.items).filter((i) => !i.divider).length, 4,
+    'the cutting list, the BOM PDF and the two label sheets');
 });

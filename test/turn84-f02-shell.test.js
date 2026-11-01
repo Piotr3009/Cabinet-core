@@ -402,8 +402,8 @@ test('F2 · the shell\'s lengths are the profile\'s, through studioSkin; the ins
 
 // ═══ THE UX TURN, U2 · THE PANEL THAT HIDES ════════════════════════════════
 // The owner, over the mockup: with nothing selected the inspector column stood black; now it is not
-// drawn and the scene takes the width, and a selection brings it back with the scene narrowed
-// (*"niech sie zweza, nie chce ustawiac sceny od nowa"*).
+// drawn, and a selection brings it back. AMENDED 01.11.2026, 22:08: the scene no longer narrows for
+// it (*"powinno sie nakladac a nie ruszac scena"*, the owner): the panels lie over the scene.
 
 /** A function of `src` as written, from `function name(` to its closing brace, run as written. */
 function runFunction(src, name) {
@@ -438,6 +438,7 @@ test('U2 · one answer to "has the column anything to show", the same truth as t
   assert.match(HOST, /const column = mode === 'none' \|\| !panel \? null : \(/);
 });
 
+// AMENDED 01.11.2026, 22:08: the third column is still the inspector's width, and in the 3D view the scene spans it (the next test).
 test('U2 · the shell sizes only the third column by it; the scene slot and the canvas in it stay mounted', () => {
   assert.match(SHELL, /export function inspectorHasContent\(\{ viewMode = '3d', unitType = null, pinned = false \} = \{\}\) \{/);
   for (const line of [
@@ -461,32 +462,54 @@ test('U2 · the shell sizes only the third column by it; the scene slot and the 
   assert.match(read('src/3d/Scene.jsx'), /camera=\{\{ position: \[/, 'the camera is an options object, made once by @react-three/fiber');
 });
 
-test('U2 · a docked panel (the BOM, the Check) narrows the visible scene as the inspector does (Ewa\'s check of the BOM frame)', () => {
+// REWRITTEN 01.11.2026, 22:08 (the owner over the merged U2: *"miales racje, przy chowaniu sie i otwieraniu panelu
+// zmniejszanie sie widoku szafy to masakra, powinno sie nakladac a nie ruszac scena"*): the test of the docked panel that
+// narrowed the canvas now asserts the overlay: the canvas keeps the whole scene, the panels lie over its right edge, and the
+// two bars centre in what the panels leave visible.
+test('22:08 · the panels lie over the scene: the canvas keeps its width, the bars centre in the visible part', () => {
   const cover = runFunction(SHELL, 'dockedCover');
   const scene = { left: 112, right: 1600, top: 82, bottom: 870, width: 1488 };
-  const dock = (w, over = {}) => ({ left: scene.right - w, right: scene.right, top: scene.top, bottom: scene.bottom, width: w, ...over });
-  assert.equal(cover(scene, []), 0, 'nothing docked: the whole width');
-  assert.equal(cover(scene, [dock(720)]), 720, 'the BOM tab');
-  assert.equal(cover(scene, [dock(560)]), 560, 'the other BOM tabs');
-  assert.equal(cover(scene, [dock(380), dock(720)]), 720, 'the Check and the BOM: the widest wins');
+  const at = (right, w, over = {}) => ({ left: right - w, right, top: scene.top, bottom: scene.bottom, width: w, ...over });
+  assert.equal(cover(scene, []), 0, 'nothing over the scene: the whole width');
+  assert.equal(cover(scene, [at(1600, 720)]), 720, 'the BOM tab, no inspector');
+  assert.equal(cover(scene, [at(1600, 400)]), 400, 'the inspector alone');
+  assert.equal(cover(scene, [at(1600, 400), at(1200, 560)]), 960, 'the inspector, and the BOM beside it');
+  assert.equal(cover(scene, [at(1200, 380), at(1600, 400), at(1200, 560)]), 960, 'the inspector, the Check and the BOM beside it: the wider');
+  assert.equal(cover(scene, [at(1600, 380), at(1600, 720)]), 720, 'two at one edge: the wider');
+  assert.equal(cover(scene, [at(1200, 560)]), 0, 'a panel that does not touch the edge reached covers nothing');
+  assert.equal(cover(scene, [at(2000, 400)]), 0, 'a column beside the scene (the CNC view\'s inspector) covers none of it');
   assert.equal(cover(scene, [{ left: 300, right: 548, top: 120, bottom: 600, width: 248 }]), 0, 'a floating panel (the Library) is not docked');
-  assert.equal(cover(scene, [dock(380, { top: 200 })]), 0, 'not the whole height: not docked');
-  assert.equal(cover({ ...scene, width: 0 }, [dock(720)]), 0, 'no scene, nothing to narrow');
-  // The shell keeps the variable on the scene element: re-read on a mount, a width and a resize; no re-render.
+  assert.equal(cover(scene, [at(1600, 380, { top: 200 })]), 0, 'not the whole height: not docked');
+  assert.equal(cover({ ...scene, width: 0 }, [at(1600, 720)]), 0, 'no scene, nothing to measure');
+  // The shell: the 3D view lies the panels over the scene, the CNC view keeps its column.
+  assert.match(SHELL, /const overlay = viewMode !== 'cnc';/);
+  assert.match(SHELL, /data-scene-under-panels=\{overlay \? '1' : '0'\}/);
+  // The measure: before the paint, on the scene element's style; the scene's asides and the workspace's inspector.
   assert.match(SHELL, /useSceneDock\(sceneRef\);/);
+  assert.match(SHELL, /function useSceneDock\(sceneRef\) \{\n {2}useLayoutEffect\(/);
   assert.match(SHELL, /scene\.style\.setProperty\('--studio-dock', `\$\{px\}px`\);/);
-  assert.match(SHELL, /kids\.observe\(scene, \{ childList: true \}\);/);
-  // The canvas wrapper and the first-unit plus end where the panel begins; the two bars centre in what is left.
+  assert.match(SHELL, /\.\.\.\[\.\.\.workspace\.children\]\.filter\(\(el\) => el\.dataset\?\.studio === 'inspector'\),/);
+  assert.match(SHELL, /kids\.observe\(scene, \{ childList: true \}\);\n\s+kids\.observe\(workspace, \{ childList: true \}\);/);
+  // The CSS: the scene spans the inspector's column in 3D; the inspector is drawn over it; the BOM and the Check beside it.
   const css = read('src/components/studio/studio.css');
-  assert.ok(css.includes('.studio-pro .studio-scene > [data-scene-follows-dock] { right: var(--studio-dock, 0px); }'));
+  assert.ok(css.includes('.studio-pro .studio-workspace > .studio-scene { grid-column: 2; grid-row: 1; }'), 'the CNC view keeps its column');
+  assert.ok(css.includes('.studio-pro[data-scene-under-panels="1"] .studio-workspace > .studio-scene { grid-column: 2 / 4; }'));
+  assert.ok(css.includes('.studio-pro .studio-workspace > .studio-inspector { grid-column: 3; grid-row: 1; position: relative; }'));
+  assert.ok(css.includes('.studio-pro[data-scene-under-panels="1"] .studio-scene > aside { right: var(--studio-inspector); }'));
   for (const sel of ['.studio-pro .studio-scene-toggles {', '.studio-pro .studio-scene-links {']) {
     const rule = css.slice(css.indexOf(sel), css.indexOf('}', css.indexOf(sel)));
-    assert.match(rule, /right: var\(--studio-dock, 0px\);/, `${sel} ends at the docked panel`);
+    assert.match(rule, /right: var\(--studio-dock, 0px\);/, `${sel} ends where the panels begin`);
     assert.match(rule, /max-width: calc\(100% - var\(--studio-dock, 0px\) - 28px\);/, `${sel} fits in what is left`);
   }
+  assert.ok(css.includes('.studio-pro .studio-scene [data-island-chips="1"] {\n  left: calc(50% - var(--studio-dock, 0px) / 2);\n}'), 'the island chips centre there too');
+  // The canvas follows nothing: its wrapper is the whole scene, and no element of src/ follows the dock any more.
   const page = read('src/pages/ConfiguratorPage.jsx');
-  assert.match(page, /<div className="absolute inset-0 bg-canvas" data-scene-follows-dock="1">\s*<Scene /, 'the same canvas, resized');
-  assert.equal((page.match(/data-scene-follows-dock="1"/g) || []).length, 3, 'the canvas and the two faces of the first-unit plus');
+  assert.match(page, /<div className="absolute inset-0 bg-canvas">\s*<Scene /, 'the same canvas, the whole scene');
+  for (const [name, src] of [['ConfiguratorPage', page], ['studio.css', css], ['StudioShell', SHELL]]) {
+    assert.ok(!src.includes('data-scene-follows-dock'), `${name}: nothing follows the dock but the bars and the chips`);
+  }
+  const workspace = css.slice(css.indexOf('.studio-pro .studio-inspector {'), css.indexOf('}', css.indexOf('.studio-pro .studio-inspector {')));
+  assert.doesNotMatch(workspace, /z-index|transform|filter|contain|will-change/, 'the column over the scene makes no stacking context');
 });
 
 test('F2 · the shell\'s DOM hooks (CONTRACT section 6)', () => {

@@ -342,7 +342,8 @@ const EXEMPT = {
     + ' T-CC1b F2, F5, F9.3 · the scene corner\'s View dropdown (SceneViewMenu) and its mount deleted, the onDrawing road of the deleted Output entries deleted, the CNC view receives onExportDxfZip for its own Export CNC / DXF door, JcStockModal mounted on \'jc-stock\'. *"dwa menu View, jedno wystarczy, menu wystarczy"* (the owner, 01.11.2026)'
     + ' T-CC2a F8, F5.3 · LinkMaterialsModal mounted on \'link-materials\'; the BOM PDF reads the company\'s links. *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na stale"* (the owner, 01.11.2026)'
     + ' UX turn (01.11.2026, chat) · the canvas wrapper and the first unit plus follow the dock: the scene narrows for the BOM and the Check panel as it does for the inspector, so the scene bars stay visible (Ewa\'s check of the build). *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)'
-    + ' CNC speed (01.11.2026, chat) · CNC speed J5: in CNC the scene toggles are not mounted and the camera bar keeps only Drawings... *"nie no po co w widoku cnc nam pasek 3d etc?"* (the owner, 01.11.2026, 21:43)',
+    + ' CNC speed (01.11.2026, chat) · CNC speed J5: in CNC the scene toggles are not mounted and the camera bar keeps only Drawings... *"nie no po co w widoku cnc nam pasek 3d etc?"* (the owner, 01.11.2026, 21:43)'
+    + ' Panel overlay (01.11.2026, chat) · the canvas wrapper and the first unit plus no longer follow the dock (the panels lie over the scene). *"miales racje, przy chowaniu sie i otwieraniu panelu zmniejszanie sie widoku szafy to masakra, powinno sie nakladac a nie ruszac scena"* (the owner, 01.11.2026, 22:08)',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -450,7 +451,8 @@ const EXEMPT = {
     + ' Chat fix 30.10.2026 F2 · the card\'s and the refused field\'s rules are gone; the foot under the panel (.studio-inspector-foot, max 45 percent of the column, the findings scrolling inside .studio-inspector-issues) and the strip edge to edge in the column. *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026); *"open cabinet na samym dole a pod nim wszystkie bledy ktore pokazuje"* (the owner, 30.10.2026)'
     + ' Chat fix 30.10.2026 F3 (the evening) · the strip quiet: the panel\'s dark ground, the level a 3 px hairline at the left edge, the panel\'s small text, Show a ghost; the folded row (.studio-issues-row, a field high, transparent) and the dot (.studio-issue-dot, the house radius); the counters and the marker keep F5\'s 13 px dark on the level\'s ground. *"te zolte alerty moze by jakos skromniej to pokazac i zwiniete, jak bedzie 10 to caly menu mi zabierze, ja uwazam ze powinno byc skromnie gdzies na dole a nie ZOLTE wywalone na wierzch, rozprasza tylko czlowieka"*; *"koduj"* (the owner, 30.10.2026, 19:49 and 19:52)'
     + ' T-CC1b F1 · .studio-job (the 1 px rule on its left), .studio-job-project; .studio-project-name loses its max-width. *"wprowadza w blad ... po prawej, z numerem projektu JC i nazwa"* (the owner, 01.11.2026); *"srodkowe prawo, wyraznie oddzielone od menu"* (the owner, 01.11.2026)'
-    + ' UX turn (01.11.2026, chat) · the rule after Back to Joinery Core at the left; the empty "Select a cabinet or part" state and its rule go with the empty column. *"zostaje zloty, tylko na lewo"*; *"serio zawsze back przyciski sa raczej po lewej, taka zasada i przyzwyczajenie"* (the owner, 01.11.2026); *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
+    + ' UX turn (01.11.2026, chat) · the rule after Back to Joinery Core at the left; the empty "Select a cabinet or part" state and its rule go with the empty column. *"zostaje zloty, tylko na lewo"*; *"serio zawsze back przyciski sa raczej po lewej, taka zasada i przyzwyczajenie"* (the owner, 01.11.2026); *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)'
+    + ' Panel overlay (01.11.2026, chat) · the scene spans the inspector column in 3D, the inspector and the BOM or Check asides lie over it; the dock rule for the canvas deleted. *"miales racje, przy chowaniu sie i otwieraniu panelu zmniejszanie sie widoku szafy to masakra, powinno sie nakladac a nie ruszac scena"* (the owner, 01.11.2026, 22:08)',
   'src/components/studio/StudioIcons.jsx':
     'T84 F1 · NEW, the Stage-1 SVG symbols as one hidden sprite, and the Icon that uses it. *"skupiamy sie teraz wylacznie na PRO. PRO i Retail maja osobne interfejsy. Dla PRO wybieramy Studio"* (the owner\'s line to the designer, CLAUDE.md T84 THE ORDER)'
     + ' Chat fix 30.10.2026 F3 (the evening) · one symbol more in her stroke style: up, the chevron of the folded findings row. *"te zolte alerty moze by jakos skromniej to pokazac i zwiniete, jak bedzie 10 to caly menu mi zabierze, ja uwazam ze powinno byc skromnie gdzies na dole a nie ZOLTE wywalone na wierzch, rozprasza tylko czlowieka"*; *"koduj"* (the owner, 30.10.2026, 19:49 and 19:52)',
@@ -466,7 +468,8 @@ const EXEMPT = {
     + ' T84 F6 · the scene\'s edge is drawn before the scene layer, where the canvas toolbar stands on the legacy face, so the Check, the BOM and the Library drawn after it at the same layer stand over it (the edge had covered the Check\'s head and the BOM\'s export buttons). *"czy zadna funkcja nam nie zginie? np corners etc"* (the owner, 27.10.2026, 22:13)'
     + ' Chat fix 30.10.2026 F2 · the root says full or none (no quick mode). *"nie nie nie, zwijanie musi byc oczywiscie tak jak bylo zeby bylo widac ze jest osobne menu, tylko ten jeden przycisk usun, Full settings"* (the owner, 30.10.2026)'
     + ' UX turn (01.11.2026, chat) · the inspector column is not shown when nothing is selected, nothing is pinned and the view is not CNC (inspectorHasContent); the scene widens and narrows on the same Canvas, the camera kept. *"po prawej jak nic nie jest wybrane ten czarny miejsce na menu jest niepotrzebne powinno sie chowac"*; *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)'
-    + ' UX turn (01.11.2026, chat) · the scene narrows for the BOM and the Check panel as it does for the inspector, so the scene bars stay visible (Ewa\'s check of the build). *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)',
+    + ' UX turn (01.11.2026, chat) · the scene narrows for the BOM and the Check panel as it does for the inspector, so the scene bars stay visible (Ewa\'s check of the build). *"niech sie zweza, nie chce ustawiac sceny od nowa"* (the owner, 01.11.2026)'
+    + ' Panel overlay (01.11.2026, chat) · the panels lie OVER the scene: in 3D the canvas keeps the whole width when the inspector, the BOM or the Check opens or closes; the bars centre in the visible part (the U2 narrowing reversed). *"miales racje, przy chowaniu sie i otwieraniu panelu zmniejszanie sie widoku szafy to masakra, powinno sie nakladac a nie ruszac scena"* (the owner, 01.11.2026, 22:08)',
   'src/components/studio/StudioRail.jsx':
     'T84 F2 · NEW, the rail: Select, Add (the existing Library), Room, Materials, Check with its badge; Design and CNC at its foot, the toolbar\'s own calls and guards. *"wiem ze silnik jako tako nie ruszamy ale funkcje w menu musza sie zachowac wszystkie"* (the owner, 27.10.2026, 22:19)',
   'src/components/studio/SelectionBreadcrumb.jsx':
@@ -724,16 +727,16 @@ const FROZEN = {
   // T84 F5 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F7 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '57a92223b4d035c3b28fe6a5f79cc43362408c69eee618025617a5b8866b11e5',
+  'src/pages/ConfiguratorPage.jsx': 'c233044e7f401da62ac9afb0333edf26ff077f3fdd0652879ab00fcff56416c6',
   // T84 F1 · NEW PRO files (the skin), frozen at their first hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
   // T84 F8 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/studio/studio.css': '7d886413c1abb3279bfd8f7eb917e19933426453051bf0ccbd83b82ba7da882e',
+  'src/components/studio/studio.css': '24f73013e99b5200247caa247ac22971c1c8e01204925f421f606f21c1a300be',
   'src/components/studio/StudioIcons.jsx': 'f84fdead962263ea0eda756addf80ad801fe81b253b0273ca876562e344ca0ff',
   'src/components/studio/lib/studioSkin.js': '72bd15140c022ca10bd39de4f01c959d50df1f3dd56a0e564729390a4c85b31d',
   // T84 F2 · NEW PRO files (the shell), frozen at their first hash; EXEMPT above carries the reason.
   // T84 F6 re-frozen at the new hash; EXEMPT above carries the reason.
-  'src/components/studio/StudioShell.jsx': 'f273d94d597c66e1b815a38e6af75833d1f512bc23e05a8874762e37870d9613',
+  'src/components/studio/StudioShell.jsx': '26eccda960862d240f998fb4f67e5025ce39e6cbb35213309b6e9070023c0814',
   'src/components/studio/StudioRail.jsx': '09a32f77522d130b3d76e3ff8a4a3a17688ba98c434733313fa2ae435854e7ff',
   'src/components/studio/SelectionBreadcrumb.jsx': '206b97f4c2280451f035b0fd61dbd695f2577a7eaa1360956284358c733da835',
   'src/components/studio/StatusBar.jsx': 'cbc25914a5ca5369f84c0a986005cd043c5dd9af6ff1afad99b8894eef329abf',

@@ -160,6 +160,11 @@ test('F9 · the menu is still the COPY, mounted by the room, reading the shared 
   const copy = read('src/retail/design/detail/ContextEdits.jsx');
   assert.match(copy, /from '\.\.\/\.\.\/\.\.\/lib\/contextActions\.js'/);
   assert.match(copy, /data-menu-entry=\{a\.id\}/, 'the rows lost the hook the sheet keys on');
-  assert.match(copy, /data-menu-divider=\{group\.id\}/);
+  // AMENDED BY the right-click menu turn (01.11.2026): PRO draws its line
+  // between two groups in ONE component, `Divider`, which stamps the hook from
+  // its own `id`; every group hands it `group.id`, so the hook the sheet hides
+  // is the group's id as before, now through the component the machine copied.
+  assert.match(copy, /data-menu-divider=\{id\}/, 'the line between groups lost the hook the sheet keys on');
+  assert.match(copy, /<Divider id=\{group\.id\} \/>/, 'the line between groups is no longer stamped with the group\'s id');
   assert.match(read('src/retail/design/DesignRoom.jsx'), /<ContextEdits \/>/);
 });

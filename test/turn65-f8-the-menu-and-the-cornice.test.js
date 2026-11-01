@@ -40,8 +40,10 @@ test('F8 · ContextMenu is COPIED, not re-written — same line count, same labe
   // off per run like the plinth"*; the copy is re-made by scripts/t75-copy.mjs.
   // AMENDED BY THE RIGHT-CLICK MENU TURN, J1 and J2 (the owner's boards, 01.11.2026: 280 px, the
   // square, the circles, the mixed state, the submenu, Delete alone, the "..." icon *"na gorze prawego
-  // panelu"*): 755 lines. The copy is re-made by the copy machine (scripts/t78-copy.mjs), never by
-  // hand; until it is, the line below is red and says so.
+  // panelu"*): 755 lines. The copy is re-made by the copy machine, never by hand: scripts/t63-copy.mjs
+  // with the menu's 43 new tokens in THE MAP, and scripts/t78-copy.mjs names the PRO file
+  // (T78_PRO_EDITS), the map and its sheet (T78_MACHINE_EDITS, sheet: true) and says CLEAN. So the
+  // copy is 755 lines too (the 339 of 28.10 below were the menu before this turn).
   assert.equal(lines(pro), 755, "PRO's ContextMenu is not 755 lines any more");
   assert.equal(lines(retail), lines(pro), 'the copy is not the same shape');
   // It is in the manifest, so the fidelity test and the classifier both see it.

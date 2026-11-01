@@ -95,6 +95,9 @@ export default function SprayingPanel() {
       onClose={closeModal}
       maximised
       width="w-[1240px]"
+      // T-CC1b F12: the font floor and the full width (*"okno duze a fonty male
+      // i duzo pustego miejsca"*, the owner, 01.11.2026; index.css .cc-modal-wide).
+      className="cc-modal-wide"
       footer={(
         <>
           {schedule && (
@@ -202,19 +205,19 @@ function PartA({ schedule, notes, setSprayNote }) {
       {schedule.groups.length === 0 ? (
         <p className="text-ink-400 py-2">Nothing to spray yet: add a cabinet with a door, or a run piece.</p>
       ) : (
-        <table className="w-full text-[11px]">
+        <table className="w-full text-[11px]" style={{ tableLayout: 'auto' }} data-spray-table="a">
           <thead className="text-ink-400 border-b border-shell-600">
             <tr>
-              <th className="text-left font-normal px-1.5 py-1 w-[28px]">#</th>
-              <th className="text-left font-normal px-1.5 py-1 w-[90px]">Unit no.</th>
+              <th className="text-left font-normal px-1.5 py-1">#</th>
+              <th className="text-left font-normal px-1.5 py-1">Unit no.</th>
               <th className="text-left font-normal px-1.5 py-1">Element</th>
-              <th className="text-left font-normal px-1.5 py-1 w-[120px]">Paint code</th>
-              <th className="text-left font-normal px-1.5 py-1 w-[130px]">Size (w x h x t)</th>
-              <th className="text-right font-normal px-1.5 py-1 w-[68px]">m2 each</th>
-              <th className="text-right font-normal px-1.5 py-1 w-[40px]">Qty</th>
-              <th className="text-right font-normal px-1.5 py-1 w-[68px]">m2</th>
-              <th className="text-right font-normal px-1.5 py-1 w-[68px]">Edges lm</th>
-              <th className="text-left font-normal px-1.5 py-1 w-[220px]">Additional info</th>
+              <th className="text-left font-normal px-1.5 py-1">Paint code</th>
+              <th className="text-left font-normal px-1.5 py-1">Size (w x h x t)</th>
+              <th className="text-right font-normal px-1.5 py-1">m2 each</th>
+              <th className="text-right font-normal px-1.5 py-1">Qty</th>
+              <th className="text-right font-normal px-1.5 py-1">m2</th>
+              <th className="text-right font-normal px-1.5 py-1">Edges lm</th>
+              <th className="text-left font-normal px-1.5 py-1">Additional info</th>
             </tr>
           </thead>
           <tbody>

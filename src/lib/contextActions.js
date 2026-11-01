@@ -91,9 +91,11 @@
 //   wall (the right panel), Drawer fronts (the store's acts stay). Never
 //   built: Show in CNC, Size..., Lock, Copy size.
 //   IN: Centre shelves (the spelling), Centre between, Add doors (back after
-//   T50), Duplicate (new, projectStore.duplicateUnits).
+//   T50), Duplicate (new, projectStore.duplicateUnits; one cabinet only, its
+//   turn kept: *"duplikujemy po jednej szafce, bedzie latwiej ... ten sam obrot"*).
 //   SEVERAL: every entry acts on ALL selected (today 13 of 21 acted only on
-//   the one clicked, Delete too); a toggle that differs is MIXED.
+//   the one clicked, Delete too); a toggle that differs is MIXED. Duplicate
+//   is not offered over several (23:04).
 //   A PART: a door or a drawer front has its own short menu, and the cabinet
 //   it hangs on in one group below it, with the whole cabinet menu one click
 //   away (All cabinet actions).
@@ -571,16 +573,19 @@ function cabinetMenu({
       : 'Keep these parameters in Library ▸ Saved sets, ready to insert again',
     run: () => store.saveAsTemplate?.(unit.id),
   });
-  actions.push({
-    id: 'duplicate',
-    group: 'copy',
-    kind: 'command',
-    label: 'Duplicate',
-    hint: many
-      ? 'A copy of each beside it: the same type, sizes, colour and contents, the next free numbers'
-      : 'A copy beside it: the same type, sizes, colour and contents, the next free number',
-    run: () => store.duplicateUnits?.(ids(targets)),
-  });
+  // Duplicate is ONE cabinet's (the owner, 01.11.2026, 23:04: *"duplikujemy po
+  // jednej szafce, bedzie latwiej"*): not offered over several, and the menu
+  // sends the one id. The copy keeps the original's turn (*"ten sam obrot"*).
+  if (!many) {
+    actions.push({
+      id: 'duplicate',
+      group: 'copy',
+      kind: 'command',
+      label: 'Duplicate',
+      hint: 'A copy beside it: the same type, sizes, turn, colour and contents, the next free number',
+      run: () => store.duplicateUnits?.([unit.id]),
+    });
+  }
 
   // ── danger: red, alone, last; over several it says how many ──
   actions.push({

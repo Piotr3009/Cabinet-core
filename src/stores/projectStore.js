@@ -801,6 +801,41 @@ function duplicateParamsOf(unit) {
 }
 
 /**
+ * A unit's FOOTPRINT along its wall and what stands in its way there, read
+ * exactly as `moveUnit` reads them for the clamp (a turned unit covers its
+ * depth along the wall, not its width; end panels and the back inset
+ * included). The right-click menu turn reads it to place a turned copy.
+ *
+ * @returns {{ wall, walls, others: Array<{left:number,right:number}>, span: {left:number,right:number}, lead: number, width: number }}
+ */
+function footprintOnWall(state, unit, profile = getCabinetProfile()) {
+  const walls = roomWalls(state.project.room);
+  const wall = walls[unit.position?.wall ?? 0] || walls[0];
+  const others = wallObstacles({
+    wall,
+    walls,
+    depth: unit.params.depth,
+    others: obstaclesFor(state, unit),
+    boxes: planObstaclesInWayOf(unit, wall, state.project.room, state.project.wallSlopes, profile),
+    back: bandBackOf(unit, profile),
+    enter: notchEnterFor(unit),
+  });
+  const pad = footprintPads(unit, unit.params.front_t, profile);
+  const x = Number(unit.position?.x_mm) || 0;
+  const span = unitPlanSpan({
+    wall,
+    x: x - pad.left,
+    width: (Number(unit.params.width) || 0) + pad.left + pad.right,
+    depth: unit.params.depth,
+    rotation: unit.position?.rotation_deg,
+    backInset: pad.back,
+  });
+  return {
+    wall, walls, others, span: { left: span.left, right: span.right }, lead: span.left - x, width: span.right - span.left,
+  };
+}
+
+/**
  * The parameter maps keyed by the ENGINE's panel id. A carcass board is `BUL`
  * in every cabinet, but a front carries the cabinet's number (`B07-F`,
  * `B07-DF2`), so a copy numbered B08 re-keys `B07-...` to `B08-...` and keeps
@@ -7911,6 +7946,41 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   duplicateUnits: (unitIds) => runBatch(() => {
     const before = get();
+    /**
+     * Turn the copy as its original stands and place it again by the turned
+     * footprint, beside the original. Returns null when placed, else the words.
+     */
+    const turnCopyLike = (copyId, srcId, turn) => {
+      const profile = getCabinetProfile();
+      set((st) => ({
+        units: st.units.map((u) => (u.id === copyId ? { ...u, position: { ...u.position, rotation_deg: turn } } : u)),
+      }));
+      const st = get();
+      const copy = st.units.find((u) => u.id === copyId);
+      const original = st.units.find((u) => u.id === srcId);
+      const mine = footprintOnWall(st, copy, profile);
+      const theirs = footprintOnWall(st, original, profile);
+      const slot = freeSlotOnWall({
+        width: mine.width,
+        wallWidth: mine.wall.width,
+        wallMargin: wallMarginOf(st, copy, mine.wall),
+        others: mine.others,
+        near: theirs.span,
+      }, profile);
+      const said = `there is no room beside it for its turned footprint (${formatMm(Math.round(mine.width))} mm) on ${wallName(mine.walls, mine.wall.index)}: move or remove something there first.`;
+      if (slot == null) return said;
+      set((s2) => ({
+        units: s2.units.map((u) => (u.id === copyId ? { ...u, position: { ...u.position, x_mm: Math.round(slot - mine.lead) } } : u)),
+      }));
+      get().refreshAutoParts(copyId);
+      get().settleLayout(copyId);
+      // The proof, by the same footprints: the copy where it now stands fouls nothing.
+      const now = get();
+      const placed = footprintOnWall(now, now.units.find((u) => u.id === copyId), profile);
+      const fouls = placed.others.some((o) => !(Number(o.enter) > 0)
+        && o.left < placed.span.right - 0.5 && o.right > placed.span.left + 0.5);
+      return fouls ? said : null;
+    };
     const wanted = new Set((Array.isArray(unitIds) ? unitIds : [unitIds]).filter(Boolean));
     const sources = before.units.filter((u) => wanted.has(u.id));
     if (!sources.length) return { ok: false, error: 'Nothing to duplicate: no cabinet is selected.' };
@@ -7935,6 +8005,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         };
       }
       copyOf.set(src.id, res.id);
+      // THE SAME TURN (the owner, 01.11.2026, 23:04: *"ten sam obrot"*). The
+      // copy is born straight like every add; a turned original's copy takes
+      // its turn and is placed again by the turned FOOTPRINT, against the
+      // footprints a drag clamps against (`moveUnit`'s own obstacles), in the
+      // nearest free slot beside the original. No slot: refused in words, and
+      // the room goes back as it was. A top box turns with its host
+      // (`settleRiders`), an L is never turned.
+      const turn = (((Number(src.position?.rotation_deg) || 0) % 360) + 360) % 360;
+      if (turn && !rides(src) && !isCornerLKit(src.type)) {
+        const refused = turnCopyLike(res.id, src.id, turn);
+        if (refused) {
+          set({ units: before.units, project: before.project });
+          return { ok: false, error: `Nothing was duplicated. ${src.params?.unit_num || 'A cabinet'}: ${refused}` };
+        }
+      }
       const copy = get().units.find((u) => u.id === res.id);
       // A hung cabinet keeps its original's height (the set's `after`).
       const type = getUnitType(src.type);

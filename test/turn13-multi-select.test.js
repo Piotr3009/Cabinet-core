@@ -149,7 +149,8 @@ test('over several, every entry acts on all of them and the labels count only a 
   assert.deepEqual(actions.map((a) => a.id), [
     // A base unit: no top infill and no cornice (a worktop goes on it), an upstand on the worktop.
     'plinth', 'end-panels', 'side-infill', 'pin-infill-L', 'pin-infill-R', 'upstand',
-    'center-shelves', 'add-doors', 'save-template', 'duplicate', 'delete',
+    // Duplicate is one cabinet's (the owner, 01.11.2026, 23:04: *"duplikujemy po jednej szafce"*).
+    'center-shelves', 'add-doors', 'save-template', 'delete',
   ]);
   const counted = actions.filter((a) => /\(\d+ of \d+\)$/.test(a.label)).map((a) => [a.id, a.label]);
   assert.deepEqual(counted, [['plinth', 'Plinth (1 of 3)']], 'only the plinth disagrees');
@@ -157,7 +158,7 @@ test('over several, every entry acts on all of them and the labels count only a 
   assert.equal(actions.find((a) => a.id === 'delete').label, 'Delete 3 cabinets', 'Delete says how many it takes');
   assert.equal(actions.find((a) => a.id === 'save-template').label, 'Save as a set…');
   // Not with several: the cabinet's own window and Centre between are one cabinet's.
-  for (const one of ['edit-cabinet', 'center-between']) {
+  for (const one of ['edit-cabinet', 'center-between', 'duplicate']) {
     assert.equal(actions.some((a) => a.id === one), false, `${one} is offered over three`);
   }
 });

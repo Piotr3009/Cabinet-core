@@ -34,10 +34,10 @@ import { useUiStore } from '../src/stores/uiStore.js';
 import {
   flushHistory, unwatchProjectHistory, useHistoryStore, watchProjectHistory,
 } from '../src/stores/historyStore.js';
-import { migrateRoom, rectCorners } from '../src/engine/room.js';
+import { migrateRoom, rectCorners, roomWalls } from '../src/engine/room.js';
 import { UNIT_TYPES, defaultParamsFor } from '../src/engine/types.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
-import { unitSpan } from '../src/engine/collision.js';
+import { unitPlanSpan, unitSpan } from '../src/engine/collision.js';
 import { confirmDrawerBox } from './drawer-box-gate.js';
 
 const S = () => useProjectStore.getState();
@@ -148,7 +148,9 @@ test('Duplicate one: a copy beside it, the same type and parameters, new ids, th
   assert.deepEqual(JSON.parse(JSON.stringify(S().units)), before, 'one Ctrl+Z and the room is as it was');
 });
 
-test('Duplicate three: three copies, each of its own original, no overlap, one undo step, all three selected', () => {
+// The menu sends ONE id (*"duplikujemy po jednej szafce, bedzie latwiej"*, 23:04);
+// the store act still takes a list, and a list is all or nothing in one step.
+test('the store act takes a list: three copies, each of its own original, no overlap, one undo step, all three selected', () => {
   room();
   const ids = [S().addUnit('BUD').id];
   ids.push(S().addUnit('BUD', { near: ids[0], side: 'R' }).id);
@@ -177,6 +179,54 @@ test('Duplicate three: three copies, each of its own original, no overlap, one u
   assert.equal(history().past.length, depth + 1, 'three copies, one undo step');
   assert.ok(history().undo());
   assert.equal(S().units.length, count);
+});
+
+test('Duplicate keeps the original\'s turn (*"ten sam obrot"*), beside it, with no overlap of the turned footprints', () => {
+  room();
+  const a = S().addUnit('BUD').id;
+  S().updateUnitParams(a, { width: 400 });
+  S().rotateUnit(a, 'step', 90);
+  assert.equal(unitOf(a).position.rotation_deg, 90);
+  const others = S().units.length;
+  const depth = history().past.length;
+  const sent = [];
+  const entry = menuActions({
+    unit: unitOf(a), selection: [unitOf(a)], store: { duplicateUnits: (ids) => { sent.push(ids); return S().duplicateUnits(ids); } }, profile: P,
+  }).find((x) => x.id === 'duplicate');
+  entry.run();
+  flushHistory();
+  assert.deepEqual(sent, [[a]], 'the menu sends the one id');
+  assert.equal(S().units.length, others + 1);
+  const copy = S().units.find((u) => u.id !== a && u.type === 'BUD');
+  assert.equal(copy.position.rotation_deg, 90, 'the copy is turned the same');
+  assert.equal(copy.position.wall, unitOf(a).position.wall);
+  // The TURNED footprints along the wall (the depth, not the width) do not overlap.
+  const wall = roomWalls(S().project.room)[copy.position.wall];
+  const fp = (u) => unitPlanSpan({
+    wall, x: u.position.x_mm, width: u.params.width, depth: u.params.depth, rotation: u.position.rotation_deg,
+  });
+  const [p, q] = [fp(unitOf(a)), fp(copy)];
+  assert.ok(Math.round(q.right - q.left) === Math.round(p.right - p.left), 'the same footprint');
+  assert.ok(p.right <= q.left + 0.5 || q.right <= p.left + 0.5, `the copy [${q.left}, ${q.right}] overlaps the original [${p.left}, ${p.right}]`);
+  assert.ok(Math.min(Math.abs(q.left - p.right), Math.abs(p.left - q.right)) < 50, 'beside it');
+  assert.equal(history().past.length, depth + 1, 'one undo step');
+  // A straight original's copy stands straight, as before.
+  const b = S().addUnit('BUD').id;
+  const res = S().duplicateUnits([b]);
+  assert.equal(unitOf(res.ids[0]).position.rotation_deg || 0, 0);
+});
+
+test('a turned copy with no room for its turned footprint is refused in words, nothing added', () => {
+  // A 1000 mm wall: a straight 300 copy would fit beside it, its turned 558 footprint does not.
+  room(1000);
+  const a = S().addUnit('BUD').id;
+  S().updateUnitParams(a, { width: 300 });
+  S().rotateUnit(a, 'step', 90);
+  const before = JSON.parse(JSON.stringify(S().units));
+  const res = S().duplicateUnits([a]);
+  assert.equal(res.ok, false);
+  assert.match(res.error, /^Nothing was duplicated\. 01: there is no room beside it for its turned footprint \(\d+ mm\)/);
+  assert.deepEqual(JSON.parse(JSON.stringify(S().units)), before, 'nothing added, nothing moved');
 });
 
 test('Duplicate with no room beside it says why in words and adds nothing', () => {
@@ -247,7 +297,7 @@ test('several: Delete takes all of them, in one undo step', () => {
   assert.equal(S().units.length, 3, 'one Ctrl+Z brings the three back');
 });
 
-test('several: Duplicate copies all of them, Centre shelves and Add doors act on all, each one undo step', () => {
+test('several: Duplicate is not offered (one cabinet at a time); Centre shelves and Add doors act on all, each one undo step', () => {
   const ids = three();
   for (const id of ids) S().addShelvesBulk([id], 2);
   history().clear();
@@ -257,12 +307,11 @@ test('several: Duplicate copies all of them, Centre shelves and Add doors act on
   for (const id of ids) assert.ok(unitOf(id).params.doors, `${unitOf(id).params.unit_num} has its doors`);
   assert.equal(history().past.length, depth + 1);
 
+  assert.equal(menuOver(ids).some((a) => a.id === 'duplicate'), false, '*"duplikujemy po jednej szafce"*');
   depth = history().past.length;
-  menuOver(ids).find((a) => a.id === 'duplicate').run();
+  menuOver(ids).find((a) => a.id === 'center-shelves').run();
   flushHistory();
-  assert.equal(S().units.length, 6);
-  assert.equal(history().past.length, depth + 1);
-  assertNoOverlap();
+  assert.ok(history().past.length <= depth + 1, 'never more than one step');
 });
 
 test('several: the end panel row asks every one of them, and None takes every panel off, one undo step each', () => {

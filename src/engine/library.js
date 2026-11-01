@@ -35,6 +35,9 @@
 // Pure data and pure functions — no React, no store, no profile import at the
 // top level. `library.js` is read by the engine tests as well as the panel.
 
+// T-CC1b F15 · the AVENTOS rows read their words from the lift book, never retyped.
+import { LIFT_LABELS, LIFT_MOTIONS, LIFT_SYSTEMS } from './liftSystems.js';
+
 /** The one-liner every held-open kit carries, so the wording cannot drift. */
 const NO_PATTERN = 'No kit or LISP defines this carcass yet — the pattern comes first';
 
@@ -63,22 +66,44 @@ const OVEN_STACK = 'An oven stands at eye level with cupboards under and over it
  * One row more in the one group, so both libraries carry it; its name is the
  * kit's own (`engine/types.js`: "Mirror cabinet").
  */
-const BATHROOM_GROUP = {
+// ─── T-CC1b F4.2 · BATHROOM IS A FAMILY OF ITS OWN ───────────────────────────
+// The owner, 01.11.2026: *"Add po lewej dobre, ale uporzadkowac: lazienki w
+// kuchniach itd."*. The group leaves the Kitchen and the Wardrobes lists and
+// its rows are the entries of the Bathroom category (engine/types.js).
+export const BATHROOM_LIBRARY = [
+  { kind: 'type', id: 'vanity-2', typeId: 'VANITY2' },
+  { kind: 'type', id: 'vanity-3', typeId: 'VANITY3' },
+  { kind: 'type', id: 'vanity-4', typeId: 'VANITY4' },
+  { kind: 'type', id: 'mirror-cabinet', typeId: 'MIRROR_CABINET', hint: 'Hung over the vanity: mirror doors, LED stiles, glass shelves, the panels round' },
+];
+
+/**
+ * ─── T-CC1b F15 · AVENTOS LIFT-UP ROWS ──────────────────────────────────────
+ *
+ * The owner, 01.11.2026: *"szafki AVENTOS musza byc zrobione"*. A wall unit
+ * (`WUD`) with a Blum AVENTOS lift chosen at insertion: the row carries
+ * `params.front_system`, the field the engine already reads
+ * (`liftSystems.js liftSystemOf`). The words are the lift book's
+ * (`LIFT_LABELS`, `LIFT_MOTIONS`), read here and never retyped.
+ */
+const AVENTOS_GROUP = {
   kind: 'group',
-  id: 'bathroom',
-  label: 'Bathroom',
-  hint: 'The vanity unit (equal drawers under a basin, an open back for the pipes) and the mirror cabinet over it',
-  items: [
-    { kind: 'type', id: 'vanity-2', typeId: 'VANITY2' },
-    { kind: 'type', id: 'vanity-3', typeId: 'VANITY3' },
-    { kind: 'type', id: 'vanity-4', typeId: 'VANITY4' },
-    { kind: 'type', id: 'mirror-cabinet', typeId: 'MIRROR_CABINET', hint: 'Hung over the vanity: mirror doors, LED stiles, glass shelves, the panels round' },
-  ],
+  id: 'aventos',
+  label: 'AVENTOS lift-up',
+  hint: 'A wall unit with a Blum AVENTOS lift instead of hinges: the engine chooses the unit from the front\'s weight',
+  items: LIFT_SYSTEMS.map((system) => ({
+    kind: 'type',
+    id: `wud-${system}`,
+    typeId: 'WUD',
+    label: LIFT_LABELS[system],
+    hint: LIFT_MOTIONS[system],
+    params: { front_system: system },
+  })),
 };
 
 /**
  * An entry is one of:
- *   { kind: 'type',  id, typeId, label?, hint? }
+ *   { kind: 'type',  id, typeId, label?, hint?, params? }  (T-CC1b F15: `params` ride into addUnit)
  *   { kind: 'group', id, label, hint?, items: [entry…] }   — flies out to the side
  *   { kind: 'soon',  id, label, hint, reason }             — held open
  *   { kind: 'action', id, action, label, hint }  (T75 F15: done to the selected unit's run)
@@ -290,11 +315,11 @@ export const KITCHEN_LIBRARY = [
       { kind: 'type', id: 'blind-corner-wall', typeId: 'BLIND_WALL', label: 'Blind corner wall', hint: 'Wall unit for a corner: one door, a blank behind the next run' },
       // T75 F4 · *"Wall units "Corner L wall""*, replacing the held-open row.
       { kind: 'type', id: 'corner-l-wall', typeId: 'CORNER_L_WALL', label: 'Corner L wall', hint: 'One L wall carcass in a room corner: two doors, hung on both far ends' },
+      // T-CC1b F15: the AVENTOS sub-group, the last of the wall units.
+      AVENTOS_GROUP,
     ],
   },
-  // ─── T82 F9 · *"new library group "Bathroom" in the Kitchen library"* ──
-  // Before Extras: the pieces that finish a run stay the last group.
-  BATHROOM_GROUP,
+  // T-CC1b F4.2 · the Bathroom group left this list for its own category (*"lazienki w kuchniach"*).
   {
     // ─── The new group (turn 15, CLAUDE.md F5.2) ───
     // Not cabinets: the pieces that FINISH a run. They belong in the library
@@ -371,63 +396,13 @@ export const WARDROBE_LIBRARY = [
   // T82 F2 · the HAWA pocket in the wardrobe library too (CLAUDE.md T82 F2:
   // *"kitchen and wardrobe families"*): a pocket door over a wardrobe.
   { kind: 'type', id: 'HAWA_POCKET', typeId: 'HAWA_POCKET', label: 'HAWA pocket (Concepta III)', hint: 'A pocket between two panels; the door of the cabinet beside it swings and slides in' },
-  // T82 F9 · *"... and in the wardrobe library"*: the same group, the same rows.
-  BATHROOM_GROUP,
+  // T-CC1b F4.2 · the Bathroom group left this list for its own category.
 ];
 
-/** T82 F9 · the families every job's library keeps, whatever the job (the bathroom). */
-const EVERY_JOB_FAMILIES = new Set(['bathroom']);
+// T-CC1b F4.3 · the project filter and its families set are deleted: *"po co blokowac
+// wyspe w pokoju albo mala szafe w kuchni"* (the owner, 01.11.2026). Every family shows always.
 
-/** Every entry, groups flattened — what a "which kits exist" question wants. */
-/**
- * ─── TURN 32 (CLAUDE.md F8): THE LIBRARY FOLLOWS THE PROJECT ────────────────
- *
- * Cargo units, bins and pull-outs are KITCHEN items; a Wardrobe project's
- * library shows wardrobe things. The FAMILY is the kit's own
- * (`engine/types.js`, family: 'kitchen' | 'wardrobe'), read through an
- * injected `familyOf` so this file keeps importing nothing from types.js.
- *
- * It is a FILTER AND NEVER A BLOCK — the same grammar the item filter
- * learned in T11 F4.4: the panel puts a "Show all" under the list, and
- * everything is one click away. A group whose insertable types are all
- * foreign folds away with them; `hidden` is what the escape hatch counts.
- *
- * @returns {{entries: Array, hidden: number}}
- */
-export function filterLibraryByProject(entries, projectCategory, familyOf) {
-  if (!projectCategory || typeof familyOf !== 'function') {
-    return { entries: entries || [], hidden: 0 };
-  }
-  let hidden = 0;
-  const prune = (list) => (list || [])
-    .map((e) => {
-      if (e.kind === 'group') {
-        const before = hidden;
-        const items = prune(e.items);
-        // A group folds away only when the FILTER emptied it: it lost kits
-        // and keeps nothing a click can insert (nor a subgroup that does).
-        // A group of held-open "soon" rows that lost nothing stands as it
-        // always stood.
-        const lost = hidden > before;
-        const alive = items.some((i) => (i.kind === 'type' && i.typeId) || i.kind === 'group');
-        return lost && !alive ? null : { ...e, items };
-      }
-      if (e.kind === 'type' && e.typeId) {
-        const family = familyOf(e.typeId) || null;
-        // T82 F9 · a bathroom kit is every job's: the owner put its group in
-        // the Kitchen library and in the wardrobe library alike.
-        if (family && family !== projectCategory && !EVERY_JOB_FAMILIES.has(family)) {
-          hidden += 1;
-          return null;
-        }
-      }
-      return e;
-    })
-    .filter(Boolean);
-  const pruned = prune(entries);
-  return { entries: pruned, hidden };
-}
-
+/** Every entry, groups flattened: what a "which kits exist" question wants. */
 export function flattenLibrary(entries = KITCHEN_LIBRARY) {
   const out = [];
   for (const e of entries) {

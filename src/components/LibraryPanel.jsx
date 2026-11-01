@@ -6,8 +6,7 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useTemplateStore } from '../stores/templateStore.js';
 import { UNIT_TYPES, getCategory, getUnitType, profilePath } from '../engine/types.js';
-import { filterLibraryByProject, groupCounts, resolveEntry } from '../engine/library.js';
-import { getProjectType } from '../engine/projectTypes.js';
+import { groupCounts, resolveEntry } from '../engine/library.js';
 import { formatMm } from '../engine/format.js';
 import { projectHeights } from '../engine/design.js';
 // T75 F20 · the sets shelf: the five shipped and the workshop's own.
@@ -47,11 +46,8 @@ export default function LibraryPanel() {
   const profile = useCabinetProfileStore((s) => s.profile);
   const design = useProjectStore((s) => s.project.design);
   const heights = useMemo(() => projectHeights(design, profile), [design, profile]);
-  // ─── TURN 32 (CLAUDE.md F8): the library follows the PROJECT ─────────────
-  // A wardrobe project's library shows wardrobe things; "Show all" is the
-  // one-click way past it (T11 F4.4's grammar). A filter, never a block.
-  const projectCategory = getProjectType(design?.projectType).category;
-  const [showAllTypes, setShowAllTypes] = useState(false);
+  // T-CC1b F4.3 · the project-type gate is deleted (`projectCategory`, `showAllTypes`): *"po co
+  // blokowac wyspe w pokoju albo mala szafe w kuchni"* (the owner, 01.11.2026). Every family, always.
   const [chestAsk, setChestAsk] = useState(false);
   const addChestIsland = useProjectStore((s) => s.addChestIsland);
 
@@ -249,37 +245,18 @@ export default function LibraryPanel() {
             through the same row. */}
         {(() => {
           const base = category.entries || category.types.map((id) => ({ kind: 'type', id, typeId: id }));
-          // Turn 32 (CLAUDE.md F8): the kits' own families decide — a
-          // wardrobe project hides the kitchen-only kits until "Show all".
-          const filtered = filterLibraryByProject(base, projectCategory, (id) => getUnitType(id)?.family);
-          const shownEntries = showAllTypes ? base : filtered.entries;
-          return (
-            <>
-              {shownEntries.map((entry) => (
-                <LibraryEntry
-                  key={entry.id}
-                  entry={entry}
-                  profile={profile}
-                  heights={heights}
-                  onAdd={handleAdd}
-                  onAction={handleAction}
-                  onChestInRoom={() => setChestAsk(true)}
-                />
-              ))}
-              {filtered.hidden > 0 && (
-                <button
-                  type="button"
-                  data-library-show-all="1"
-                  className="w-full text-left px-2 py-1 text-[11px] text-ink-400 hover:text-gold transition-colors"
-                  onClick={() => setShowAllTypes((v) => !v)}
-                >
-                  {showAllTypes
-                    ? `▴ Show what a ${projectCategory} project usually takes`
-                    : `▾ Show all (${filtered.hidden} more)`}
-                </button>
-              )}
-            </>
-          );
+          // T-CC1b F4.3: every category shows all its entries, always (law 4).
+          return base.map((entry) => (
+            <LibraryEntry
+              key={entry.id}
+              entry={entry}
+              profile={profile}
+              heights={heights}
+              onAdd={handleAdd}
+              onAction={handleAction}
+              onChestInRoom={() => setChestAsk(true)}
+            />
+          ));
         })()}
       </div>
       {chestAsk && (
@@ -416,7 +393,8 @@ function LibraryEntry({
       className="w-full text-left px-2 py-2 rounded hover:bg-shell-700 border border-transparent hover:border-shell-600 transition-colors"
       data-library-entry={entry.id}
       title={state.hint || type?.label || ''}
-      onClick={() => onAdd(entry.typeId)}
+      // T-CC1b F15: a row's own `params` (the AVENTOS lift) ride into addUnit.
+      onClick={() => (entry.params ? onAdd(entry.typeId, { params: { ...entry.params } }) : onAdd(entry.typeId))}
     >
       <div className="text-sm text-ink-50">
         {label}

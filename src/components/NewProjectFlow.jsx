@@ -342,7 +342,8 @@ export default function NewProjectFlow({ jcProject = null, onCancel, onStart, an
                 </div>
                 {refusal && <p className="cc-setup-help text-status-danger" role="alert" data-jc-refusal="1">{refusal}</p>}
               </section>
-              <section><h2>What are you making?</h2><p className="cc-setup-help">The type sets the starting dimensions and where the furniture library opens. You can adjust every dimension later.</p>
+              {/* T-CC1b F4.4: the tiles are what they truly do, a heights preset (*"po co blokowac wyspe w pokoju albo mala szafe w kuchni"*). */}
+              <section data-start-from="1"><h2>Start from</h2><p className="cc-setup-help">Only the starting heights. Every family of units is in the library whatever you pick.</p>
                 <div className="cc-setup-project-grid">{PROJECT_TYPES.map((type) => {
                   const soon = SOON_TYPES.includes(type.id);
                   return <button key={type.id} type="button"

@@ -15,7 +15,9 @@ import { freePanelDefaultParams } from './freePanel.js';
 // T82 F2 · the HAWA pocket's width, height and choices at birth (KIT_HAWA.lsp).
 import { hawaPocketDefaultParams } from './hawaPocket.js';
 import { resolveApertures } from './applianceTower.js';
-import { KITCHEN_LIBRARY, WARDROBE_LIBRARY, libraryTypeIds } from './library.js';
+import {
+  BATHROOM_LIBRARY, KITCHEN_LIBRARY, WARDROBE_LIBRARY, libraryTypeIds,
+} from './library.js';
 // T82 F13 · how a vanity stands (KIT_VANITY.lsp D19, part 5(e)).
 import { vanityBaseY, vanityMount, vanityPlinthP } from './vanity.js';
 // T83 F2 . what a mirror cabinet is born with (KIT_MIRROR.lsp section 3).
@@ -1886,15 +1888,34 @@ export const UNIT_CATEGORIES = [
   {
     id: 'wardrobe', label: 'Wardrobes', entries: WARDROBE_LIBRARY, types: libraryTypeIds(WARDROBE_LIBRARY),
   },
-  // Turn 5 (BACKLOG #30): its contents are the workshop's OWN saved units
-  // rather than kits, so it carries no `types` — the panel reads them from the
-  // template store.
-  { id: 'sets', label: 'Saved sets', types: [], saved: true },
+  // ─── T-CC1b F4.2 · EVERY FAMILY ON THE RAIL (law 4) ──────────────────────
+  // The owner, 01.11.2026: *"wszystkie rodzaje po lewej, czesc coming soon"*;
+  // *"Add po lewej dobre, ale uporzadkowac: lazienki w kuchniach itd."*. The
+  // Bathroom is its own family now (its rows left Kitchen and Wardrobes), and
+  // three families are held open, greyed with their reason, opening nothing.
+  {
+    id: 'bathroom', label: 'Bathroom', entries: BATHROOM_LIBRARY, types: libraryTypeIds(BATHROOM_LIBRARY),
+  },
+  // T-CC1b F4.2: Sets before Saved sets, the owner's order on the rail.
   // T75 F20 · *"the Library's `media` category (`soon`) becomes the sets
   // shelf (saved sets and shipped sets on one list)"*: `engine/sets.js`'s five
   // and the workshop's own, one list. Kasacja: the `soon` flag, deleted.
   // Tombstone: `soon: true` held this place from T4 to T74.
   { id: 'media', label: 'Sets', types: [], sets: true },
+  // Turn 5 (BACKLOG #30): its contents are the workshop's OWN saved units
+  // rather than kits, so it carries no `types`: the panel reads them from the
+  // template store.
+  { id: 'sets', label: 'Saved sets', types: [], saved: true },
+  // T-CC1b F4.2 · the families held open (PROPOSED three): a `soon` category has no types by design.
+  {
+    id: 'media_wall', label: 'Media wall', types: [], soon: true, reason: 'Coming soon',
+  },
+  {
+    id: 'hallway', label: 'Hallway', types: [], soon: true, reason: 'Coming soon',
+  },
+  {
+    id: 'office', label: 'Office', types: [], soon: true, reason: 'Coming soon',
+  },
 ];
 
 /**

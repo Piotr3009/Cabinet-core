@@ -48,9 +48,9 @@ import {
   vanityBaseY, vanityHangers, vanityMount, vanityPlinthP,
 } from '../src/engine/vanity.js';
 import {
-  KITCHEN_LIBRARY, WARDROBE_LIBRARY, filterLibraryByProject, flattenLibrary, resolveEntry,
+  BATHROOM_LIBRARY, KITCHEN_LIBRARY, WARDROBE_LIBRARY, flattenLibrary, resolveEntry,
 } from '../src/engine/library.js';
-import { getCategory } from '../src/engine/types.js';
+import { categoryOf, getCategory } from '../src/engine/types.js';
 import { buildBom } from '../src/engine/bom.js';
 import { HARDWARE_TO_PART_ID, PART_REGISTRY } from '../src/engine/partRegistry.js';
 import { floorOf } from '../src/engine/roomFit.js';
@@ -314,12 +314,14 @@ test('F13 · an old project (no `floating` key) opens standing, exactly as it wa
 
 const familyOf = (id) => getUnitType(id)?.family;
 
-test('F14 · the Bathroom group: "Vanity unit, N drawers", in the Kitchen library and in the wardrobe library', () => {
-  for (const list of [KITCHEN_LIBRARY, WARDROBE_LIBRARY]) {
-    const group = list.find((e) => e.id === 'bathroom');
-    assert.ok(group, 'no Bathroom group');
-    assert.equal(group.kind, 'group');
-    assert.equal(group.label, 'Bathroom');
+// REWRITTEN BY T-CC1b F4.2: *"Add po lewej dobre, ale uporzadkowac: lazienki w kuchniach itd."*; *"po co blokowac wyspe w pokoju albo mala szafe w kuchni"* (the owner, 01.11.2026).
+// The Bathroom rows are the entries of their OWN category now, and neither the Kitchen nor the
+// Wardrobes list carries them; the rail shows every family to every job, so no filter is asked.
+test('F14 · the Bathroom family: "Vanity unit, N drawers", its own category, in no other list', () => {
+  {
+    const group = { items: BATHROOM_LIBRARY };
+    assert.equal(getCategory('bathroom').label, 'Bathroom');
+    assert.equal(getCategory('bathroom').entries, BATHROOM_LIBRARY);
     // AMENDED BY T83 F5: the mirror cabinet joins the group beside the vanity, *"`MIRROR_CABINET`, family bathroom, library group Bathroom (beside the vanity), row "Mirror cabinet""* (CLAUDE.md T83 F2); *"Library rows in PRO's Kitchen and Wardrobe libraries under Bathroom"* (CLAUDE.md T83 F5).
     assert.deepEqual(group.items.map((i) => i.typeId), [...VANITIES, 'MIRROR_CABINET']);
     VANITIES.forEach((id, k) => {
@@ -331,29 +333,22 @@ test('F14 · the Bathroom group: "Vanity unit, N drawers", in the Kitchen librar
       assert.doesNotMatch(getUnitType(id).label, /[\u2013\u2014]/);
     });
   }
-  // One group, one source: the same data in both lists, so the two cannot drift.
-  assert.equal(KITCHEN_LIBRARY.find((e) => e.id === 'bathroom'), WARDROBE_LIBRARY.find((e) => e.id === 'bathroom'));
-  // Before Extras in the Kitchen list (the pieces that finish a run stay last); last in the wardrobe list.
-  assert.deepEqual(KITCHEN_LIBRARY.map((e) => e.id), ['base-units', 'tall-units', 'wall-units', 'bathroom', 'extras']);
-  assert.equal(WARDROBE_LIBRARY.at(-1).id, 'bathroom');
-  for (const cat of ['kitchen', 'wardrobe']) {
-    for (const id of VANITIES) assert.ok(getCategory(cat).types.includes(id), `${id} is not in ${cat}`);
+  // One family, one home: the Kitchen and the Wardrobes lists hold none of it.
+  assert.deepEqual(KITCHEN_LIBRARY.map((e) => e.id), ['base-units', 'tall-units', 'wall-units', 'extras']);
+  assert.equal(WARDROBE_LIBRARY.some((e) => e.id === 'bathroom'), false);
+  for (const id of VANITIES) {
+    assert.ok(getCategory('bathroom').types.includes(id), `${id} is not in bathroom`);
+    for (const cat of ['kitchen', 'wardrobe']) assert.equal(getCategory(cat).types.includes(id), false, `${id} is still in ${cat}`);
   }
 });
 
-test('F14 · the project filter keeps the bathroom in every job: a kitchen and a wardrobe both show it', () => {
+// REWRITTEN BY T-CC1b F4.3: the project filter is deleted (law 4); the Bathroom family is on the rail
+// for every job, and its kits answer `categoryOf` 'bathroom'.
+test('F14 · the bathroom is every job\'s: its own family on the rail, whatever the job', () => {
   for (const id of VANITIES) assert.equal(familyOf(id), 'bathroom');
-  const ids = (r) => flattenLibrary(r.entries).filter((e) => e.kind === 'type').map((e) => e.typeId);
-  const kitchen = filterLibraryByProject(KITCHEN_LIBRARY, 'kitchen', familyOf);
-  assert.equal(kitchen.hidden, 0, 'a kitchen job hid something of its own');
-  for (const id of VANITIES) assert.ok(ids(kitchen).includes(id));
-  const wardrobe = filterLibraryByProject(WARDROBE_LIBRARY, 'wardrobe', familyOf);
-  assert.equal(wardrobe.hidden, 0);
-  for (const id of VANITIES) assert.ok(ids(wardrobe).includes(id));
-  // A wardrobe job opening the KITCHEN list still loses the kitchen kits, and keeps the bathroom.
-  const across = filterLibraryByProject(KITCHEN_LIBRARY, 'wardrobe', familyOf);
-  assert.ok(across.hidden > 10);
-  assert.ok(across.entries.some((e) => e.id === 'bathroom'), 'the bathroom folded away with the kitchen');
+  for (const id of VANITIES) assert.equal(categoryOf(id).id, 'bathroom');
+  const ids = flattenLibrary(BATHROOM_LIBRARY).filter((e) => e.kind === 'type').map((e) => e.typeId);
+  for (const id of VANITIES) assert.ok(ids.includes(id));
   // The library places one: the store's own road (addUnit), born on the floor, VU01.
   vanityJob('wardrobe');
   const id = S().addUnit('VANITY2').id;

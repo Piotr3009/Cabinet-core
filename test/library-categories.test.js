@@ -22,11 +22,10 @@ test('every unit type is reachable from exactly one category', () => {
   // AMENDED BY T82 F9: *"new library group "Bathroom" in the Kitchen library and in the wardrobe library"* (CLAUDE.md T82 F9).
   // And the vanity, a bathroom piece a kitchen job and a wardrobe job both take, in its
   // two homes the same way (one map: every kit with two homes is named in it).
+  // AMENDED BY T-CC1b F4.2: the vanity and the mirror cabinet leave Kitchen and Wardrobes for the
+  // Bathroom family, ONE home each, *"Add po lewej dobre, ale uporzadkowac: lazienki w kuchniach itd."*; *"wszystkie rodzaje po lewej, czesc coming soon"* (the owner, 01.11.2026); `categoryOf` answers 'bathroom' for them.
   const TWO_HOMES = {
     HAWA_POCKET: ['kitchen', 'wardrobe'],
-    VANITY2: ['kitchen', 'wardrobe'], VANITY3: ['kitchen', 'wardrobe'], VANITY4: ['kitchen', 'wardrobe'],
-    // AMENDED BY T83 F5: the mirror cabinet, in the same Bathroom group, *"`MIRROR_CABINET`, family bathroom, library group Bathroom (beside the vanity), row "Mirror cabinet""* (CLAUDE.md T83 F2); *"Library rows in PRO's Kitchen and Wardrobe libraries under Bathroom"* (CLAUDE.md T83 F5).
-    MIRROR_CABINET: ['kitchen', 'wardrobe'],
   };
   for (const id of UNIT_TYPE_ORDER) {
     const homes = UNIT_CATEGORIES.filter((c) => c.types.includes(id));
@@ -52,7 +51,19 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // kitchen furniture meant opening three of them. They are ONE list now, in
   // the owner's order, and the categories beyond Kitchen are untouched — F3.7
   // says so outright.
-  assert.deepEqual(UNIT_CATEGORIES.map((c) => c.id), ['kitchen', 'wardrobe', 'sets', 'media']);
+  // AMENDED BY T-CC1b F4.2, in the owner's order: Kitchen, Wardrobes, Bathroom, Sets, Saved sets, then
+  // the three families held open, *"Add po lewej dobre, ale uporzadkowac: lazienki w kuchniach itd."*; *"wszystkie rodzaje po lewej, czesc coming soon"* (the owner, 01.11.2026).
+  assert.deepEqual(UNIT_CATEGORIES.map((c) => c.id), ['kitchen', 'wardrobe', 'bathroom', 'media', 'sets', 'media_wall', 'hallway', 'office']);
+  assert.deepEqual(UNIT_CATEGORIES.map((c) => c.label), ['Kitchen', 'Wardrobes', 'Bathroom', 'Sets', 'Saved sets', 'Media wall', 'Hallway', 'Office']);
+  assert.deepEqual(getCategory('bathroom').types, ['VANITY2', 'VANITY3', 'VANITY4', 'MIRROR_CABINET']);
+  for (const id of ['VANITY2', 'VANITY3', 'VANITY4', 'MIRROR_CABINET']) assert.equal(categoryOf(id).id, 'bathroom');
+  // A `soon` category has no types BY DESIGN: it is a greyed rail row with its reason, opening nothing.
+  for (const id of ['media_wall', 'hallway', 'office']) {
+    const c = getCategory(id);
+    assert.equal(c.soon, true, `${id} is held open`);
+    assert.equal(c.reason, 'Coming soon');
+    assert.deepEqual(c.types, [], `${id} has no types by design`);
+  }
   // ─── TURN 36 (CLAUDE.md F7): THE WARDROBE CATEGORY GAINS A SECOND KIT ────
   // "library offers Main wardrobe + Top box." The owner's reason: *"wysokie
   // szafy nie wejdą do domu"* — a 2600 wardrobe cannot be carried up a
@@ -67,7 +78,7 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // AMENDED BY T82 F2: + the HAWA pocket, *"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2).
   // AMENDED BY T82 F9: + the Bathroom group's three vanity units, *"new library group "Bathroom" in the Kitchen library and in the wardrobe library"* (CLAUDE.md T82 F9).
   // AMENDED BY T83 F5: + the Bathroom group's mirror cabinet, *"`MIRROR_CABINET`, family bathroom, library group Bathroom (beside the vanity), row "Mirror cabinet""* (CLAUDE.md T83 F2); *"Library rows in PRO's Kitchen and Wardrobe libraries under Bathroom"* (CLAUDE.md T83 F5).
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET', 'VANITY2', 'VANITY3', 'VANITY4', 'MIRROR_CABINET'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET'] /* AMENDED BY T-CC1b F4.2: the Bathroom's four left for their own family */ /* AMENDED BY T75 F4: + the Corner L wardrobe */);
   // Turn 15 (CLAUDE.md F5.2): the same nine kits, in the order the owner's
   // CATALOGUE puts them in — base units, then talls, then walls.
   assert.deepEqual(getCategory('kitchen').types, [
@@ -84,10 +95,7 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
     // AMENDED BY T78 F17: the canopy hood and the short hood, beside the hood unit.
     // AMENDED BY T82 F2: the HAWA pocket in Tall units, after Standard (*"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2)).
     'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDR2_HOB', 'BUDR_HOB', 'BUD_INT', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'HAWA_POCKET', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'BLIND_WALL', 'CORNER_L_WALL',
-    // AMENDED BY T82 F9: the Bathroom group's three vanity units, before Extras.
-    'VANITY2', 'VANITY3', 'VANITY4',
-    // AMENDED BY T83 F5: the Bathroom group's mirror cabinet, beside the vanity, *"`MIRROR_CABINET`, family bathroom, library group Bathroom (beside the vanity), row "Mirror cabinet""* (CLAUDE.md T83 F2); *"Library rows in PRO's Kitchen and Wardrobe libraries under Bathroom"* (CLAUDE.md T83 F5).
-    'MIRROR_CABINET',
+    // AMENDED BY T-CC1b F4.2: the Bathroom's four (T82 F9, T83 F5) left for their own family.
     // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
     'FREE_PANEL',
   ]);
@@ -100,7 +108,7 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // AMENDED BY T82 F2: + the HAWA pocket, *"`HAWA_POCKET` (kitchen and wardrobe families, library row "HAWA pocket (Concepta III)""* (CLAUDE.md T82 F2).
   // AMENDED BY T82 F9: + the Bathroom group's three vanity units, *"new library group "Bathroom" in the Kitchen library and in the wardrobe library"* (CLAUDE.md T82 F9).
   // AMENDED BY T83 F5: + the Bathroom group's mirror cabinet, *"`MIRROR_CABINET`, family bathroom, library group Bathroom (beside the vanity), row "Mirror cabinet""* (CLAUDE.md T83 F2); *"Library rows in PRO's Kitchen and Wardrobe libraries under Bathroom"* (CLAUDE.md T83 F5).
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET', 'VANITY2', 'VANITY3', 'VANITY4', 'MIRROR_CABINET'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'HAWA_POCKET'] /* AMENDED BY T-CC1b F4.2: the Bathroom's four left for their own family */ /* AMENDED BY T75 F4: + the Corner L wardrobe */);
 
   // Turn 5 (BACKLOG #30): Saved sets is real. It holds the workshop's OWN units
   // rather than kits, so it lists no types and is marked `saved` — the panel
@@ -115,7 +123,7 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   assert.equal(getCategory('media').soon, undefined);
   assert.equal(getCategory('media').sets, true);
   assert.deepEqual(getCategory('media').types, []);
-  for (const id of ['kitchen', 'wardrobe']) {
+  for (const id of ['kitchen', 'wardrobe', 'bathroom']) {
     assert.equal(getCategory(id).soon, undefined);
     assert.equal(getCategory(id).saved, undefined);
   }

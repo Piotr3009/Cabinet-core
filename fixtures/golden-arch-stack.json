@@ -6,7 +6,8 @@
     "source": "engine/frontDecoration.js sliceToBand: the arch of the whole BUDR x3 stack (767 high, the two gaps included), each front its slice; the house 25 board, so the recipe's 18 recess reaches the box fixing screws of the two lower fronts (T76's skin law)",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "31.10.2026: the drawer box walls stand on the upper edge of the bottom's groove, FLUSH with the sides' top (the kit's 1 is the bottom's play); every DRAWER-BOX-FRONT and DRAWER-BOX-BACK box.y + 1, no cut, no hole, no row moved (the two Cabineo box goldens: the sides' dia 5 holes 1 higher as well, 25 under the side's top and 25 above the groove). The owner, 31.10.2026: \"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa\"; 18.10.2026: \"nawiercanie w bokach bedzie liczone od gory boxa\""
   },
   "params": {
     "type": "BUDR",
@@ -287,7 +288,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 515,
           "w": 518,
           "h": 203,
@@ -307,7 +308,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 43,
           "w": 518,
           "h": 203,
@@ -327,7 +328,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 387.5,
+          "y": 388.5,
           "z": 515,
           "w": 518,
           "h": 144,
@@ -347,7 +348,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 387.5,
+          "y": 388.5,
           "z": 43,
           "w": 518,
           "h": 144,
@@ -367,7 +368,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 644.5,
+          "y": 645.5,
           "z": 515,
           "w": 518,
           "h": 84,
@@ -387,7 +388,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 644.5,
+          "y": 645.5,
           "z": 43,
           "w": 518,
           "h": 84,

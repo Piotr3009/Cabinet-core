@@ -6,7 +6,8 @@
     "source": "T82 F9 (B5). KIT_VANITY.lsp 5(c2) THE TWO COLUMNS and D8 on WARDROBE_CHEST4 (KIT_BUDR_FULL.lsp, the chest of T75 F16) at 800 x 647 x 568, columns 2, drawer_split equal: the DIVIDER at x 391, 18 x 611 x 550; the openings 373; the fronts (W - 6) / 2 = 397 at x 1.5 and 401.5; the boxes 363 at x 23 and 414. The owner, 25.10.2026: (12:57) *\"vanity unit (podobna zasada bedzie do chest drawers) ... pamietaj ze w vanity default to sa rowne, do tego prosze external drawers ale wybor 2 rows, patrz szafa\"*; (13:03) *\"7 - tak\"*.",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "31.10.2026: the drawer box walls stand on the upper edge of the bottom's groove, FLUSH with the sides' top (the kit's 1 is the bottom's play); every DRAWER-BOX-FRONT and DRAWER-BOX-BACK box.y + 1, no cut, no hole, no row moved (the two Cabineo box goldens: the sides' dia 5 holes 1 higher as well, 25 under the side's top and 25 above the groove). The owner, 31.10.2026: \"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa\"; 18.10.2026: \"nawiercanie w bokach bedzie liczone od gory boxa\""
   },
   "params": {
     "type": "WARDROBE_CHEST4",
@@ -533,7 +534,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 525,
           "w": 327,
           "h": 77,
@@ -553,7 +554,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 53,
           "w": 327,
           "h": 77,
@@ -573,7 +574,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 208.5,
+          "y": 209.5,
           "z": 525,
           "w": 327,
           "h": 77,
@@ -593,7 +594,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 208.5,
+          "y": 209.5,
           "z": 53,
           "w": 327,
           "h": 77,
@@ -613,7 +614,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 370.5,
+          "y": 371.5,
           "z": 525,
           "w": 327,
           "h": 77,
@@ -633,7 +634,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 370.5,
+          "y": 371.5,
           "z": 53,
           "w": 327,
           "h": 77,
@@ -653,7 +654,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 532.5,
+          "y": 533.5,
           "z": 525,
           "w": 327,
           "h": 77,
@@ -673,7 +674,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 532.5,
+          "y": 533.5,
           "z": 53,
           "w": 327,
           "h": 77,
@@ -693,7 +694,7 @@
         "thickness": 18,
         "box": {
           "x": 432,
-          "y": 64.5,
+          "y": 65.5,
           "z": 525,
           "w": 327,
           "h": 77,
@@ -713,7 +714,7 @@
         "thickness": 18,
         "box": {
           "x": 432,
-          "y": 64.5,
+          "y": 65.5,
           "z": 53,
           "w": 327,
           "h": 77,
@@ -733,7 +734,7 @@
         "thickness": 18,
         "box": {
           "x": 432,
-          "y": 208.5,
+          "y": 209.5,
           "z": 525,
           "w": 327,
           "h": 77,
@@ -753,7 +754,7 @@
         "thickness": 18,
         "box": {
           "x": 432,
-          "y": 208.5,
+          "y": 209.5,
           "z": 53,
           "w": 327,
           "h": 77,
@@ -773,7 +774,7 @@
         "thickness": 18,
         "box": {
           "x": 432,
-          "y": 370.5,
+          "y": 371.5,
           "z": 525,
           "w": 327,
           "h": 77,
@@ -793,7 +794,7 @@
         "thickness": 18,
         "box": {
           "x": 432,
-          "y": 370.5,
+          "y": 371.5,
           "z": 53,
           "w": 327,
           "h": 77,
@@ -813,7 +814,7 @@
         "thickness": 18,
         "box": {
           "x": 432,
-          "y": 532.5,
+          "y": 533.5,
           "z": 525,
           "w": 327,
           "h": 77,
@@ -833,7 +834,7 @@
         "thickness": 18,
         "box": {
           "x": 432,
-          "y": 532.5,
+          "y": 533.5,
           "z": 53,
           "w": 327,
           "h": 77,

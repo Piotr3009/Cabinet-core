@@ -146,7 +146,8 @@ test('F5 · the drawer BOX does not move (FROZEN 6): its boards and its runners 
     }
   }
   const [f1] = frontsOn.sort((p, q) => p.box.y - q.box.y);
-  assert.deepEqual(f1.cnc.holes.map((h) => [h.x, h.y]), [[69, 92.5], [387, 92.5]], 'the probe\'s numbers');
+  // CHAT FIX 31.10.2026: 93.5 (92.5 until that day; 31.10.2026, the owner: *"dziurki 5 mm byly za nisko ... powinny byc przesuniete o 1 mm do gory boxa"*: the wall stands on the groove's upper edge, flush with the sides' top, and the facade pilots follow its 50 up by the same 1 mm).
+  assert.deepEqual(f1.cnc.holes.map((h) => [h.x, h.y]), [[69, 93.5], [387, 93.5]], 'the probe\'s numbers');
 });
 
 // ═══ IN-FRAME OFF IS MAIN ═════════════════════════════════════════════════

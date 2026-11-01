@@ -2985,9 +2985,12 @@ export function computeCabinet(params, profileOverride) {
     //   box side lower edge   + 13.5   (boxAboveRunner)
     //   drawer bottom under   + 15     (runnerPocketWidth, the groove)
     //   box front standing on + G      (the bottom board)
+    //   the bottom's play     + 1      (boxFrontHeightExtra: CHAT FIX 31.10.2026,
+    //                                   the wall on the groove's upper edge)
     //   box-front pilot       + 50     (boxScrewFromEdge)
     //   ────────────────────────────
-    //                         + 96.5   = the façade's own pilot, every time.
+    //                         + 97.5   = the façade's own pilot, every time
+    //                                   (96.5 until 31.10.2026).
     const runnerBottomY = frontY.map((y, i) => (i === 0 ? G : y));
     const runnerRows = runnerBottomY.map((y) => y + B.firstRowFromBottom);
     // ─── TURN 18 (CLAUDE.md F5.4): THE BOX FITS THE OPENING ─────────────────
@@ -6004,9 +6007,19 @@ export function computeCabinet(params, profileOverride) {
       // left above the groove, less the millimetre of air at the top); it is
       // the PICTURE that had all three boards sitting on the same line.
       const bottomY = boxY + B.runnerPocketWidth;
-      // The front and back stand ON the bottom, so this is the BOTTOM's board
-      // (turn 24, F3.2) — the box's own, never the carcass's.
-      const boxWallY = bottomY + GB;
+      // ─── CHAT FIX 31.10.2026: THE WALLS STAND ON THE GROOVE'S UPPER EDGE ──
+      // The owner, putting a side and a wall together: the side's Cabineo
+      // holes *"byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo
+      // mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa"*
+      // (31.10.2026); 18.10.2026: *"nawiercanie w bokach bedzie liczone od
+      // gory boxa"*. A wall is cut side - 15 - GB - 1 and its lower edge stands
+      // on the upper edge of the bottom's groove (15 + GB + 1 = 34), so its
+      // top edge IS the side's top edge; the bottom (GB) slides in under it on
+      // the 1 mm of play (boxFrontHeightExtra). Turn 18 stood it on the bottom
+      // BOARD, 1 mm low, and SKYLON_JOINTS_CABINEO.lsp D.2c followed with the
+      // holes 1 + offset under the side's top; both say flush now. The BOTTOM's
+      // board (turn 24, F3.2) is the box's own, never the carcass's.
+      const boxWallY = bottomY + GB + B.boxFrontHeightExtra;
       // ─── TURN 24 (CLAUDE.md F3.2): ONE NUMBER FOR THE WHOLE BOX ───────────
       // `boxSideThickness` was the box's board and `G` was used for its
       // geometry, which is two answers to one question. The BOX SLOT is the
@@ -6149,7 +6162,8 @@ export function computeCabinet(params, profileOverride) {
         const bfH = set.bfHs[i - 1];
         const boxY = zoneY + B.boxAboveRunner;
         const bottomY = boxY + B.runnerPocketWidth;
-        const boxWallY = bottomY + GB;
+        // CHAT FIX 31.10.2026: on the groove's upper edge, flush with the sides' top (the wardrobe's box above says why).
+        const boxWallY = bottomY + GB + B.boxFrontHeightExtra;
         const tag = tagOf(i);
         panels.push(panel({
           id: `${tag}-SL`, part: 'DRAWER-SIDE', role: 'drawer_box', w: set.dl, h: sideHeight, ...common,
@@ -6589,8 +6603,9 @@ export function computeCabinet(params, profileOverride) {
             box: {
               // Turn 18 (CLAUDE.md F3.4): standing ON the bottom, which stands in
               // the groove: the same correction the wardrobe's box gets above,
-              // because it is the same box.
-              x: bx.boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB,
+              // because it is the same box. CHAT FIX 31.10.2026: and the same
+              // millimetre: on the groove's upper edge, flush with the sides' top.
+              x: bx.boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB + B.boxFrontHeightExtra,
               z: isFront ? boxZFront - GB : boxZFront - budr.depth,
               w: bx.boxLen, h: bfH, d: GB,
             },
@@ -6656,7 +6671,8 @@ export function computeCabinet(params, profileOverride) {
           id: `D${i}I-${suffix}`, part: isFront ? 'DRAWER-BOX-FRONT' : 'DRAWER-BOX-BACK', role: 'drawer_box',
           w: budr.boxLen, h: bfH, ...common,
           box: {
-            x: boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB,
+            // CHAT FIX 31.10.2026: on the groove's upper edge, flush with the sides' top, as every box.
+            x: boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB + B.boxFrontHeightExtra,
             z: isFront ? boxZFront - GB : boxZFront - budr.depth,
             w: budr.boxLen, h: bfH, d: GB,
           },

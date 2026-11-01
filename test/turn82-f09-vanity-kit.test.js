@@ -605,12 +605,14 @@ test('F9, after the review . D25 D29: the bowl that enters a board is said in #4
   const def = kit('VANITY3');
   assert.deepEqual(bowl(def), [L.call('vanity-bowl-verdict', 'VU01', 900, 600, 500, G, GB, FT, 3, 1, 1, [450], 20, T.basinH)]);
   assert.equal(def.derived.vanity.bowl, bowl(def)[0]);
-  assert.equal(bowl(def)[0], 'VU01: The bowl enters D3-BB-1 by 21.1 mm, D3-BB-2 by 21.1 mm: move the basin forward or take a shallower bowl.');
+  // 31.10.2026: 22.1 (21.1 until that day: the walls stand 1 higher since, flush with the sides' top).
+  assert.equal(bowl(def)[0], 'VU01: The bowl enters D3-BB-1 by 22.1 mm, D3-BB-2 by 22.1 mm: move the basin forward or take a shallower bowl.');
   // The top's thickness is its slab's (the store hands `vanity_top_mm`): a 40 top lifts the bowl clear.
   assert.deepEqual(bowl(kit('VANITY3', { vanity_top_mm: 40 })),
     [L.call('vanity-bowl-verdict', 'VU01', 900, 600, 500, G, GB, FT, 3, 1, 1, [450], 40, T.basinH)].filter(Boolean));
-  // A shallower bowl, 115 deep, enters nothing; one 116 deep enters the back wall by 0.6.
-  for (const [h, said] of [[115, []], [116, ['VU01: The bowl enters D3-BB-1 by 0.6 mm, D3-BB-2 by 0.6 mm: move the basin forward or take a shallower bowl.']]]) {
+  // A shallower bowl, 113 deep, enters nothing; one 114 deep enters the back wall by 0.4 (31.10.2026: 115 and 116 by 0.6
+  // until that day, the walls 1 lower).
+  for (const [h, said] of [[113, []], [114, ['VU01: The bowl enters D3-BB-1 by 0.4 mm, D3-BB-2 by 0.4 mm: move the basin forward or take a shallower bowl.']]]) {
     const Ph = { ...P, vanity: { ...P.vanity, basin: { ...P.vanity.basin, heightMm: h } } };
     assert.deepEqual(bowl(computeCabinet({ ...defaultParamsFor('VANITY3', Ph), unit_num: 'VU01' }, Ph)), said, `${h}`);
   }
@@ -620,7 +622,8 @@ test('F9, after the review . D25 D29: the bowl that enters a board is said in #4
   // No basin, nothing; never a clamp: the drawer and the rail are cut as asked.
   assert.deepEqual(bowl(kit('VANITY3', { sinks: 0 })), []);
   assert.deepEqual(byId(def, 'RAIL-TOP').box, byId(kit('VANITY3', { sinks: 0 }), 'RAIL-TOP').box);
-  assert.deepEqual(byId(def, 'D3-BB-1').box, { x: 41, y: 446.5, z: 85, w: 329, h: 104, d: 18 }, 'the board is cut as asked');
+  // 31.10.2026: y 447.5 (446.5 until that day): the wall stands on the groove's upper edge, flush with the sides' top.
+  assert.deepEqual(byId(def, 'D3-BB-1').box, { x: 41, y: 447.5, z: 85, w: 329, h: 104, d: 18 }, 'the board is cut as asked');
   // Check #48 says it, yellow, once, in the LISP's words.
   const unit = { id: 'u1', type: 'VANITY3', params: { ...defaultParamsFor('VANITY3', P), unit_num: 'VU01' } };
   const found = runChecks({ entries: [{ unit, result: def }], units: [unit], profile: P }).filter((f) => f.check === 48);
@@ -637,15 +640,16 @@ test('F9, after the review . the store hands the slab\'s thickness (vanity_top_m
   const { id } = S().addUnit('VANITY3');
   const said = () => S().unitResult(id).warnings.filter((w) => w.code === 'VANITY_BOWL').map((w) => w.message)[0];
   // AMENDED BY T83 F8 (25.10.2026, 22:41): CLAUDE.md T83 F8: *"#48 grows the sentence: "the bowl enters RAIL-TOP by N mm: move the basin forward or take a shallower bowl""*: the boards entered, by how much.
-  assert.match(said(), /enters D3-BB-1 by 21\.1 mm/, 'born under its own 20 top');
+  // 31.10.2026: 22.1 and 2.1 (21.1 and 1.1 until that day: the walls stand 1 higher since).
+  assert.match(said(), /enters D3-BB-1 by 22\.1 mm/, 'born under its own 20 top');
   const slab = S().worktopsOf().find((w) => (w.unitIds || []).includes(id));
   assert.ok(slab, 'born under its own top');
   S().setWorktopThickness(slab.id, 40);
-  assert.match(said(), /enters D3-BB-1 by 1\.1 mm/, 'a typed 40 top lifts the bowl 20: 1.1 mm left in the back wall');
+  assert.match(said(), /enters D3-BB-1 by 2\.1 mm/, 'a typed 40 top lifts the bowl 20: 2.1 mm left in the back wall');
   // With no record over it the store hands nothing: the kit's own 20.
   S().removeWorktop(slab.id);
   assert.ok(!S().worktopsOf().some((w) => (w.unitIds || []).includes(id)));
-  assert.match(said(), /enters D3-BB-1 by 21\.1 mm/);
+  assert.match(said(), /enters D3-BB-1 by 22\.1 mm/);
 });
 
 // ===========================================================================

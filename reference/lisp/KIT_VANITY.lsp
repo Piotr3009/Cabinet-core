@@ -440,10 +440,11 @@
 ;;;     The U follows the waste (D13, D15). THE NUMBERS DISAGREE AND THE ROOM
 ;;;     SAYS SO (D15's law): F6 moved the boxes 50 forward too (D27), so at
 ;;;     250 the bowl clears RAIL-TOP (its oval 50 in front of the carcass
-;;;     back) but the top box's back wall beside the U stands 21.1 in it, as
-;;;     T82's stood at 200: #48 says "The bowl enters D3-BB-1 by 21.1 mm,
-;;;     D3-BB-2 by 21.1 mm"; the waste at 270, or a bowl 115 deep, clears it:
-;;;     the owner's to set.
+;;;     back) but the top box's back wall beside the U stands 22.1 in it, as
+;;;     T82's stood at 200: #48 says "The bowl enters D3-BB-1 by 22.1 mm,
+;;;     D3-BB-2 by 22.1 mm" (21.1 until 31.10.2026, when the wall stood on the
+;;;     bottom board, 1 lower); the waste at 270, or a bowl 113 deep (115 until
+;;;     that day), clears it: the owner's to set.
 ;;;
 ;;;========================================
 ;;; 3. CONSTANTS (the owner's numbers; profile.vanity mirrors them)
@@ -1080,7 +1081,9 @@
         base (nth 5 b)
         depth (nth 6 b)
         zBack (nth 7 b)
-        wy (+ base (vanityBottomGroove) GB)
+        ;; 31.10.2026: the wall stands on the groove's upper edge, flush with the sides' top (SKYLON_JOINTS_CABINEO.lsp
+        ;; D.2c; the owner: "dziurki 5 mm ... powinny byc przesuniete o 1 mm do gory boxa"); it stood on the bottom board.
+        wy (+ base (vanityBottomGroove) GB (vanityBoxWallExtra))
         wh (vanity-box-wall-h b GB)
         len (vanity-box-len b GB)
         mine nil
@@ -1236,11 +1239,12 @@
 ;;; on site to the basin's template."; every tenon and screw of the TOP's back
 ;;; edge stays (under T82 the rail's screw at 450 was not cut). THE BOWL (T83
 ;;; F8, D29): RAIL-TOP clear, the sides clear; "VU01: The bowl enters D3-BB-1
-;;; by 21.1 mm, D3-BB-2 by 21.1 mm: move the basin forward or take a shallower
-;;; bowl."; the waste at 270, or a bowl 115 deep, enters nothing. ONE BASIN ON
-;;; TWO COLUMNS: "VU01: The bowl enters Z1D3-SR by 70 mm, Z2D3-SL by 70 mm,
-;;; Z1D3-BB by 6.1 mm, Z2D3-BB by 6.1 mm: move the basin forward or take a
-;;; shallower bowl." THE SHELL: the waste at 210, the oval 10 from the carcass
+;;; by 22.1 mm, D3-BB-2 by 22.1 mm: move the basin forward or take a shallower
+;;; bowl." (21.1 until 31.10.2026, the walls 1 lower); the waste at 270, or a
+;;; bowl 113 deep (115 until that day), enters nothing. ONE BASIN ON TWO
+;;; COLUMNS: "VU01: The bowl enters Z1D3-SR by 70 mm, Z2D3-SL by 70 mm, Z1D3-BB
+;;; by 7.1 mm, Z2D3-BB by 7.1 mm: move the basin forward or take a shallower
+;;; bowl." (6.1 until that day) THE SHELL: the waste at 210, the oval 10 from the carcass
 ;;; back: "VU01: The bowl enters RAIL-TOP by 22 mm: move the basin forward or
 ;;; take a shallower bowl.", refused with the worktop's refusals, cut in
 ;;; neither top.

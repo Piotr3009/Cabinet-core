@@ -74,9 +74,22 @@ test('WITHOUT slopeCut the six standard configs are byte-identical', () => {
     WARDROBE: '5adc6f7fc977009013b4f79d6348ce44d40ba1d03f8e3a7e7218c2a8a844ec25',
     BUD: '857c1503829fdc919fba049113b9ff83f863b6e26c46379e6640ef05140aef5a',
     WUD: '9affdd412d8accaec1b9fcf3789e7847940e224eb701c605b56b2df26ee5cc35',
-    BUDR: 'cffa92780e121307f348382fb5e2537dda651e960afac4236d5456bca39c0354',
-    BUDR4: '64d072ec20e9adaecf12febef69ad8dcd3ed1226f18a6e92807e88651c7b35b1',
-    PANTRY: '89d95acfbd0849705dbffec1558b738acf6d99bb6e19603e23facef0571d4e7a',
+    // AMENDED BY THE CHAT FIX OF 31.10.2026: THE DRAWER BOX WALLS STAND FLUSH
+    // WITH THE SIDES' TOP by the owner's order (*"dziurki 5 mm byly za nisko,
+    // byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ...
+    // powinny byc przesuniete o 1 mm do gory boxa"*). The three with drawers
+    // move: every DRAWER-BOX-FRONT and DRAWER-BOX-BACK box.y + 1, the
+    // placement the result's hash holds; not a cut, hole, pocket or row
+    // (proved field by field against the engine before the change:
+    // verify/chatfix-3110/box-flush.md). Named in
+    // scripts/t78-classify.d/f53-owner-3110-box-flush.mjs. The values until
+    // then: BUDR cffa9278, BUDR4 64d072ec, PANTRY 89d95acf. And the facade
+    // pilots follow the wall (97.5, 115.5 on drawer 1: KIT_BUDR_FULL.lsp and
+    // the profile amended the same night): BUDR and BUDR4 move once more by
+    // those circles alone; PANTRY's inner fronts carry none and hold.
+    BUDR: '030a307a306bab63ad7f2383a1dde28428b8f5fe87bb7761368168366da34e7b',
+    BUDR4: '5173a0c463d36a99aefcc89516d3d73207c49a61b5eb8e1fdbb6a64f792bab3e',
+    PANTRY: '8523f611ba7275dab04c444a10117f6e78787e30321a9ed989bc9f4ca4f54fc5',
   });
 });
 

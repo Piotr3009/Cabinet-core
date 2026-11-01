@@ -6,7 +6,8 @@
     "source": "KIT_VANITY.lsp (the parent KIT_BUDR_FULL): RAIL-BOTTOM and RAIL-TOP W x 100 x G where the back stood (D2 to D4), equal overlay fronts (D8), the box on the runner less ten (D9); VANITY3 900 x 600 x 500, columns 2 and two basins (D10 to D12, D14): the DIVIDER at x 441, 18 x 564 x 482, fronts 447 at x 1.5 and 451.5, six boxes 413 wide, the U's 145..305 in Z1D3 and 595..755 in Z2D3, Z1D3's back wall (0 104) and (264 377) (the columns cut by drawerColumnsPlan, B5's, once for every drawerColumns kit). The owner, 25.10.2026 (12:57): *\"vanity unit potrzebuje z szufladami nawierzchniowymi, wybor jak zawsze 2 3 i 4 ale pamietaj ze w vanity default to sa rowne ... musimy miec tez wyciecie na trap, w razie czego jak nie bedzie miejsca to zostawimy informacje prosze uzyc shallow trap ... nie ma plecow na vanity unit tylko sa poziome poprzeczki na dole i na gorze, plecy sa jakby wyciete\"*; (13:03) *\"2 wyciecie u dookola zeby sie szuflada otwierala, 3 - 80, 4 - 100 na material carcasa grubosc\"*; (13:46) *\"6 - tak\"*. RE-PINNED BY T83 F6 (scripts/t78-classify.d/f44-t83-f06.mjs), the owner 25.10.2026 (22:41): *\"carcas powinien byc do sciany, czyli wszystko w srodku carcasa mniejsze ale carcas do sciany\"*: KIT_VANITY.lsp D27, the carcass to the wall (no wall_gap at birth, the house clearance), the void 80 inside: every drawer box on the rung that keeps it (390 on the 400 runner at D 500, the back face at 85).",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "31.10.2026: the drawer box walls stand on the upper edge of the bottom's groove, FLUSH with the sides' top (the kit's 1 is the bottom's play); every DRAWER-BOX-FRONT and DRAWER-BOX-BACK box.y + 1, no cut, no hole, no row moved (the two Cabineo box goldens: the sides' dia 5 holes 1 higher as well, 25 under the side's top and 25 above the groove). The owner, 31.10.2026: \"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa\"; 18.10.2026: \"nawiercanie w bokach bedzie liczone od gory boxa\""
   },
   "params": {
     "type": "VANITY3",
@@ -466,7 +467,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 457,
           "w": 377,
           "h": 104,
@@ -486,7 +487,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 64.5,
+          "y": 65.5,
           "z": 85,
           "w": 377,
           "h": 104,
@@ -506,7 +507,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 246.5,
+          "y": 247.5,
           "z": 457,
           "w": 377,
           "h": 104,
@@ -526,7 +527,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 246.5,
+          "y": 247.5,
           "z": 85,
           "w": 377,
           "h": 104,
@@ -546,7 +547,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 446.5,
+          "y": 447.5,
           "z": 457,
           "w": 377,
           "h": 104,
@@ -566,7 +567,7 @@
         "thickness": 18,
         "box": {
           "x": 41,
-          "y": 446.5,
+          "y": 447.5,
           "z": 85,
           "w": 104,
           "h": 104,
@@ -586,7 +587,7 @@
         "thickness": 18,
         "box": {
           "x": 305,
-          "y": 446.5,
+          "y": 447.5,
           "z": 85,
           "w": 113,
           "h": 104,
@@ -606,7 +607,7 @@
         "thickness": 18,
         "box": {
           "x": 482,
-          "y": 64.5,
+          "y": 65.5,
           "z": 457,
           "w": 377,
           "h": 104,
@@ -626,7 +627,7 @@
         "thickness": 18,
         "box": {
           "x": 482,
-          "y": 64.5,
+          "y": 65.5,
           "z": 85,
           "w": 377,
           "h": 104,
@@ -646,7 +647,7 @@
         "thickness": 18,
         "box": {
           "x": 482,
-          "y": 246.5,
+          "y": 247.5,
           "z": 457,
           "w": 377,
           "h": 104,
@@ -666,7 +667,7 @@
         "thickness": 18,
         "box": {
           "x": 482,
-          "y": 246.5,
+          "y": 247.5,
           "z": 85,
           "w": 377,
           "h": 104,
@@ -686,7 +687,7 @@
         "thickness": 18,
         "box": {
           "x": 482,
-          "y": 446.5,
+          "y": 447.5,
           "z": 457,
           "w": 377,
           "h": 104,
@@ -706,7 +707,7 @@
         "thickness": 18,
         "box": {
           "x": 482,
-          "y": 446.5,
+          "y": 447.5,
           "z": 85,
           "w": 113,
           "h": 104,
@@ -726,7 +727,7 @@
         "thickness": 18,
         "box": {
           "x": 755,
-          "y": 446.5,
+          "y": 447.5,
           "z": 85,
           "w": 104,
           "h": 104,

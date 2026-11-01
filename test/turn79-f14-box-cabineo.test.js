@@ -79,18 +79,23 @@ test('F14 · THE GATE: a bare kit cuts no box Cabineo; a unit that names ANY joi
 
 // ═══ THE LISP'S NUMBERS (H.1), NUMBER FOR NUMBER ═════════════════════════════
 
-test('F14 · H.1, the BUDR default: two per joint at 25 and 178 from the wall\'s top, holes 211 and 58, the walls 1 under the sides', () => {
+// CHAT FIX 31.10.2026: THE TOPS ARE FLUSH. The wall stands on the groove's upper edge (34), its top edge the side's, so the
+// side's holes stand 25 under the side's top and 25 above the groove: 212 and 59, not 211 and 58; the wall's lower edge at
+// 65.5, not 64.5; the pockets never moved. the owner, 31.10.2026: *"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa"*. SKYLON_JOINTS_CABINEO.lsp D.2c and H.1 amended first.
+test('F14 · H.1, the BUDR default: two per joint at 25 and 178 from the wall\'s top, holes 212 and 59, the walls flush with the sides', () => {
   const r = computeCabinet(NAMED, P);
   const sl = panelOf(r, 'D1-SL');
   const bf = panelOf(r, 'D1-BF');
   assert.deepEqual([sl.h, sl.w, bf.h, bf.w], [237, 490, 203, 518], 'side 237 x 490, wall 203 x 518');
-  assert.equal(bf.box.y, 64.5);
-  assert.equal(r4(bf.box.y + bf.box.h), 267.5);
+  assert.equal(bf.box.y, 65.5);
+  assert.equal(r4(bf.box.y + bf.box.h), 268.5);
   assert.equal(r4(sl.box.y + sl.box.h), 268.5);
-  assert.equal(r4((sl.box.y + sl.box.h) - (bf.box.y + bf.box.h)), 1, 'boxWallY + hw = boxY + sideH - 1: NOT flush (the LISP says why)');
+  assert.equal(r4((sl.box.y + sl.box.h) - (bf.box.y + bf.box.h)), 0, 'boxWallY + hw = boxY + sideH: FLUSH (the LISP says why; 1 until 31.10.2026)');
   // SL: x up from its lower edge, y from its FRONT end; SR: y from its BACK end.
-  assert.deepEqual(pts(holesOn(r, 'D1-SL')), [[211, 5.5], [58, 5.5], [211, 484.5], [58, 484.5]]);
-  assert.deepEqual(pts(holesOn(r, 'D1-SR')), [[211, 484.5], [58, 484.5], [211, 5.5], [58, 5.5]]);
+  assert.deepEqual(pts(holesOn(r, 'D1-SL')), [[212, 5.5], [59, 5.5], [212, 484.5], [59, 484.5]]);
+  assert.deepEqual(pts(holesOn(r, 'D1-SR')), [[212, 484.5], [59, 484.5], [212, 5.5], [59, 5.5]]);
+  // 25 above the groove's upper edge (15 + 18 + 1 = 34): the owner's "25 od wyciecia".
+  assert.equal(59 - (P.baseDrawerUnit.runnerPocketWidth + 18 + P.baseDrawerUnit.boxFrontHeightExtra), 25);
   assert.ok(holesOn(r, 'D1-SL').every((d) => d.d === 5 && d.depth === 12 && d.layer === 'CABINEO_HOLE_5MM'), 'dia 5, 12 deep (X of Cabineo 12)');
   // BOX-FRONT: the owner's drill15 lobes at 3.6 / 14.8 / 26 from each end, on the axes 178 and 25.
   const d15 = r.drills.filter((d) => d.panel === 'D1-BF' && d.kind === 'cabineo_pocket');
@@ -101,27 +106,28 @@ test('F14 · H.1, the BUDR default: two per joint at 25 and 178 from the wall\'s
   const skims = bf.cnc.pockets.filter((k) => k.kind === 'cabineo_recess').map((k) => [k.x1, k.y1, k.x2, k.y2, k.depth]);
   assert.deepEqual(skims, [[169.65, 0, 186.35, 34.35, 0.5], [16.65, 0, 33.35, 34.35, 0.5], [169.65, 483.65, 186.35, 518, 0.5], [16.65, 483.65, 33.35, 518, 0.5]]);
   // D2 and D3.
-  assert.deepEqual(pts(holesOn(r, 'D2-SL')).slice(0, 2), [[152, 5.5], [58, 5.5]]);
-  assert.deepEqual(pts(holesOn(r, 'D3-SL')), [[75, 5.5], [75, 484.5]], 'the wall of 84 takes ONE a joint, at 42');
+  assert.deepEqual(pts(holesOn(r, 'D2-SL')).slice(0, 2), [[153, 5.5], [59, 5.5]]);
+  assert.deepEqual(pts(holesOn(r, 'D3-SL')), [[76, 5.5], [76, 484.5]], 'the wall of 84 takes ONE a joint, at 42');
   assert.deepEqual([...new Set(r.drills.filter((d) => d.panel === 'D3-BF' && d.kind === 'cabineo_pocket').map((d) => d.x))], [42]);
   assert.deepEqual(r.derived.boxCabineo, { joints: 12, pockets: 20, holes: 20 }, '8 + 8 + 4');
   assert.equal(r.drills.filter((d) => d.kind === 'cabineo_pocket').length, 60);
   assert.match(LISP, /12 joints, 20 pockets \(60 dia 15 holes, 20 skims\), 20 dia 5\s+;;;\s+holes, 20 x Cabineo 12/);
 });
 
-test('F14 · H.1, a wardrobe wall of 90 (a 160 front): ONE a joint at 45, holes at 78; the default 130 wall takes two at 25 and 105', () => {
+test('F14 · H.1, a wardrobe wall of 90 (a 160 front): ONE a joint at 45, holes at 79; the default 130 wall takes two at 25 and 105', () => {
   const r = computeCabinet(wardrobe(160), P);
   const bf = panelOf(r, 'D1-BF');
   assert.deepEqual([panelOf(r, 'D1-SL').h, bf.h, bf.w], [124, 90, 1022]);
   // SL: x from its BACK end, y up; SR: x from its FRONT end.
-  assert.deepEqual(pts(holesOn(r, 'D1-SL')), [[434.5, 78], [5.5, 78]]);
-  assert.deepEqual(pts(holesOn(r, 'D1-SR')), [[5.5, 78], [434.5, 78]]);
+  // 31.10.2026: 79 from the side's lower edge (124 - 45), the tops flush; 78 until that day.
+  assert.deepEqual(pts(holesOn(r, 'D1-SL')), [[434.5, 79], [5.5, 79]]);
+  assert.deepEqual(pts(holesOn(r, 'D1-SR')), [[5.5, 79], [434.5, 79]]);
   const lobes = r.drills.filter((d) => d.panel === 'D1-BF' && d.kind === 'cabineo_pocket').map((d) => [d.x, d.y]);
   assert.deepEqual(lobes, [[1018.4, 45], [1007.2, 45], [996, 45], [3.6, 45], [14.8, 45], [26, 45]]);
   assert.deepEqual(r.derived.boxCabineo, { joints: 12, pockets: 12, holes: 12 });
   const d = computeCabinet(wardrobe(), P);
   assert.equal(panelOf(d, 'D1-BF').h, 130);
-  assert.deepEqual(pts(holesOn(d, 'D1-SL')), [[434.5, 138], [434.5, 58], [5.5, 138], [5.5, 58]]);
+  assert.deepEqual(pts(holesOn(d, 'D1-SL')), [[434.5, 139], [434.5, 59], [5.5, 139], [5.5, 59]]);
   assert.deepEqual(d.derived.boxCabineo, { joints: 12, pockets: 24, holes: 24 });
 });
 
@@ -175,8 +181,10 @@ test('F14 · MEASURED FROM THE TOP: every hole meets its pocket\'s screw axis, t
       assert.equal(hole[0], axis[0], `${h.meta.joint}: the hole in the side's inside face, where the wall's end stands`);
       const outsideZ = /-BF$/.test(wallId) ? wall.box.z + wall.box.d : wall.box.z;
       assert.equal(hole[2], r4(outsideZ + (/-BF$/.test(wallId) ? -ax : ax)), `${h.meta.joint}: ax inside the wall's outside face`);
-      // From the top: the side's top above the hole is dTop (1) plus the offset; the wall's top above the axis is the offset.
-      assert.equal(r4(side.box.y + side.box.h - hole[1]), r4(1 + h.meta.offset));
+      // From the top: the side's top above the hole is the offset itself (dTop 0, the tops flush, 31.10.2026; 1 + offset
+      // until that day); the wall's top above the axis is the offset.
+      assert.equal(r4(side.box.y + side.box.h - hole[1]), r4(h.meta.offset));
+      assert.equal(r4(side.box.y + side.box.h), r4(wall.box.y + wall.box.h), `${h.meta.joint}: the two top edges are one line`);
       assert.equal(r4(wall.box.y + wall.box.h - axis[1]), h.meta.offset);
       n += 1;
     }
@@ -291,7 +299,8 @@ test('F14 · the gate shares the carcass\'s confirmed flag: shut, the boxes say 
 // ═══ THE MIRROR: the LISP's table rows are the engine's ══════════════════════
 
 test('F14 · cabineo-box-table and cabineoBoxJointTable: the eight rows, field for field, in both frames', () => {
-  const env = { hw: 203, top: 236, ax: 5.5, sideL: 490, wallL: 518, GB: 18 };
+  // 31.10.2026: top = 237 (dTop 0, the tops flush); 236 until that day.
+  const env = { hw: 203, top: 237, ax: 5.5, sideL: 490, wallL: 518, GB: 18 };
   const value = (tok) => {
     const m = tok.match(/^\(- (\w+) (\w+)\)$/);
     if (m) return env[m[1]] - env[m[2]];
@@ -302,8 +311,8 @@ test('F14 · cabineo-box-table and cabineoBoxJointTable: the eight rows, field f
   assert.equal(rows.length, 8);
   const keys = ['name', 'len', 'side', 'hx0', 'hy0', 'hdx', 'hdy', 'board', 'along', 'endAt', 'dirIn', 'acrossFrom', 'acrossDir', 'boardW', 'boardT'];
   const js = [
-    ...C.cabineoBoxJointTable(490, 237, 518, 203, 1, 18, 5.5, true),
-    ...C.cabineoBoxJointTable(490, 237, 518, 203, 1, 18, 5.5, false),
+    ...C.cabineoBoxJointTable(490, 237, 518, 203, 0, 18, 5.5, true),
+    ...C.cabineoBoxJointTable(490, 237, 518, 203, 0, 18, 5.5, false),
   ];
   // The non-rotated half writes the wardrobe frame; its W is the wall's length.
   rows.forEach((row, i) => {

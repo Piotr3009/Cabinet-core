@@ -6,7 +6,8 @@
     "source": "KIT_RECESS.lsp I4 CASE G (e): a wardrobe 1200 x 2150 x 558 whose recess column (the dividers 210 and 972, three drawers 200) left the band: usable 445, the ladder's 440 in the carcass alone (D27), a plain column stack, the dividers full height 540 x 2114, its own board Z2-PART 744 x 530. *\"jak przesuwam i mam recess lub komin to mi sie ladnie zmienia ksztalt elementow, to dziala super, ale jak mamy szuflady w recess to juz sie tak nie przesuwa, tylko przy przesunieciu calej szafy szuflady znikaja a zostaja dividery ktore sie robia do samej gory, nie powinno tak byc\"*; *\"2 - jesli wneka wychodzi poza szafe to zostaje jeden divider ... szuflady sa mniej glebokie do plytszej szafy a polka zostaje w ksztalcie litery L, proste prawda?\"*; *\"2 - nie, tutaj musi byc minimum 30 mm\"*; *\"3 - znikaja z szufladami, bo to sa dividery do szuflad\"* (30.10.2026)",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "31.10.2026: the drawer box walls stand on the upper edge of the bottom's groove, FLUSH with the sides' top (the kit's 1 is the bottom's play); every DRAWER-BOX-FRONT and DRAWER-BOX-BACK box.y + 1, no cut, no hole, no row moved (the two Cabineo box goldens: the sides' dia 5 holes 1 higher as well, 25 under the side's top and 25 above the groove). The owner, 31.10.2026: \"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa\"; 18.10.2026: \"nawiercanie w bokach bedzie liczone od gory boxa\""
   },
   "params": {
     "type": "WARDROBE",
@@ -298,7 +299,7 @@
         "thickness": 18,
         "box": {
           "x": 251,
-          "y": 64.5,
+          "y": 65.5,
           "z": 465,
           "w": 698,
           "h": 130,
@@ -318,7 +319,7 @@
         "thickness": 18,
         "box": {
           "x": 251,
-          "y": 64.5,
+          "y": 65.5,
           "z": 43,
           "w": 698,
           "h": 130,
@@ -398,7 +399,7 @@
         "thickness": 18,
         "box": {
           "x": 251,
-          "y": 267.5,
+          "y": 268.5,
           "z": 465,
           "w": 698,
           "h": 130,
@@ -418,7 +419,7 @@
         "thickness": 18,
         "box": {
           "x": 251,
-          "y": 267.5,
+          "y": 268.5,
           "z": 43,
           "w": 698,
           "h": 130,
@@ -498,7 +499,7 @@
         "thickness": 18,
         "box": {
           "x": 251,
-          "y": 470.5,
+          "y": 471.5,
           "z": 465,
           "w": 698,
           "h": 130,
@@ -518,7 +519,7 @@
         "thickness": 18,
         "box": {
           "x": 251,
-          "y": 470.5,
+          "y": 471.5,
           "z": 43,
           "w": 698,
           "h": 130,

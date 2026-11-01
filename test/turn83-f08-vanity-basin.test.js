@@ -30,7 +30,9 @@
 // from the back says #48 in words. WHAT THE NUMBERS SAY (D29, the room says
 // so): at 250 the bowl clears RAIL-TOP and the sides, but F6 moved the boxes 50
 // forward too (the void inside), so the top box's back wall beside the U stands
-// 21.1 in the bowl, said in #48; the waste at 270, or a bowl 115 deep, enters
+// 22.1 in the bowl, said in #48 (21.1 until 31.10.2026: the wall stands 1 higher
+// since, flush with the sides' top, the owner's "dziurki 5 mm ... powinny byc
+// przesuniete o 1 mm do gory boxa"); the waste at 270, or a bowl 113 deep, enters
 // nothing (held below), the owner's to set.
 
 import test from 'node:test';
@@ -71,7 +73,7 @@ const kit = (extra = {}, profile = P) => computeCabinet({ ...defaultParamsFor('V
 const byId = (r, id) => r.panels.find((p) => p.id === id);
 const bowlSaid = (r) => r.warnings.filter((w) => w.code === 'VANITY_BOWL').map((w) => w.message);
 const SHELL = ['BUL', 'BUR', 'RAIL-BOTTOM', 'RAIL-TOP'];
-const DEFAULT_SAID = 'VU01: The bowl enters D3-BB-1 by 21.1 mm, D3-BB-2 by 21.1 mm: move the basin forward or take a shallower bowl.';
+const DEFAULT_SAID = 'VU01: The bowl enters D3-BB-1 by 22.1 mm, D3-BB-2 by 22.1 mm: move the basin forward or take a shallower bowl.';
 
 /**
  * The bowl against a board by brute force, the solid the room draws (3d/Basin.jsx: the lower half of an
@@ -101,8 +103,8 @@ test('F8 . KIT_VANITY.lsp: D29 in the owner\'s words, 250 the PROPOSED reading o
   assert.ok(/^[\x00-\x7F]*$/.test(TEXT), 'ASCII');
   assert.doesNotMatch(TEXT, /[\u2013\u2014]/, 'no em or en dash');
   say(`D29 THE BOWL NEVER ENTERS A BOARD (CONFIRMED 22:41 "${OWNER}"; the 250 the PROPOSED reading of "about 50").`);
-  say('the bowl clears RAIL-TOP (its oval 50 in front of the carcass back) but the top box\'s back wall beside the U stands 21.1 in it');
-  say('the waste at 270, or a bowl 115 deep, clears it: the owner\'s to set.');
+  say('the bowl clears RAIL-TOP (its oval 50 in front of the carcass back) but the top box\'s back wall beside the U stands 22.1 in it');
+  say('the waste at 270, or a bowl 113 deep (115 until');
   for (const d of ['D13', 'D14', 'D15', 'D18', 'D25', 'D26']) {
     assert.match(PROSE, new RegExp(`${d} [^]*?AMENDED 25\\.10\\.2026 \\(T83 F8`), `${d} amended by F8`);
   }
@@ -170,8 +172,9 @@ test('F8 . the default VANITY3 with one basin: no board of the shell enters the 
   // The numbers disagree and the room says so (D29): F6's shorter boxes put the back wall beside the U in the bowl.
   assert.deepEqual(bowlSaid(r), [DEFAULT_SAID]);
   assert.equal(bowlSaid(r)[0], L.call('vanity-bowl-verdict', 'VU01', ...EX, 3, 1, 1, [450], 20, T.basinH));
-  // The cures the sentence names, held: the basin forward to 270, or a bowl 115 deep, and no board enters at all.
-  for (const pr of [withVanity({ wasteFromBackMm: 270 }), withVanity({ basin: { heightMm: 115 } })]) {
+  // The cures the sentence names, held: the basin forward to 270, or a bowl 113 deep (115 until 31.10.2026: the walls stand
+  // 1 higher since), and no board enters at all.
+  for (const pr of [withVanity({ wasteFromBackMm: 270 }), withVanity({ basin: { heightMm: 113 } })]) {
     const rr = kit({}, pr);
     assert.deepEqual(bowlSaid(rr), []);
     const zw = vanitySpec(pr).wasteFromBackMm;
@@ -184,14 +187,15 @@ test('F8 . the default VANITY3 with one basin: no board of the shell enters the 
 test('F8 . #48 grows the sentence: "the bowl enters RAIL-TOP by N mm: move the basin forward or take a shallower bowl"', () => {
   assert.equal(vanityBowlSentence('VU01', [{ id: 'RAIL-TOP', mm: 22 }]),
     'VU01: The bowl enters RAIL-TOP by 22 mm: move the basin forward or take a shallower bowl.');
-  assert.equal(vanityBowlSentence('VU01', [{ id: 'D3-BB-1', mm: 21.1 }, { id: 'D3-BB-2', mm: 21.1 }]), DEFAULT_SAID);
+  assert.equal(vanityBowlSentence('VU01', [{ id: 'D3-BB-1', mm: 22.1 }, { id: 'D3-BB-2', mm: 22.1 }]), DEFAULT_SAID);
   assert.equal(L.call('vanity-bowl-sentence', 'VU01', [['RAIL-TOP', 22]]),
     vanityBowlSentence('VU01', [{ id: 'RAIL-TOP', mm: 22 }]), 'the LISP\'s words, to the letter');
   // The engine's hits are the LISP's, board for board, at columns 1 and at the trap's gap (F7).
   const r2 = kit({ columns: 2 });
   assert.deepEqual(bowlSaid(r2), [L.call('vanity-bowl-verdict', 'VU01', ...EX, 3, 2, 1, [450], 20, 150)]);
-  assert.equal(bowlSaid(r2)[0], 'VU01: The bowl enters Z1D3-SR by 70 mm, Z2D3-SL by 70 mm, Z1D3-BB by 6.1 mm, '
-    + 'Z2D3-BB by 6.1 mm: move the basin forward or take a shallower bowl.');
+  // 31.10.2026: the back walls 1 higher (flush with the sides' top), so 1 deeper in the bowl: 7.1, not 6.1.
+  assert.equal(bowlSaid(r2)[0], 'VU01: The bowl enters Z1D3-SR by 70 mm, Z2D3-SL by 70 mm, Z1D3-BB by 7.1 mm, '
+    + 'Z2D3-BB by 7.1 mm: move the basin forward or take a shallower bowl.');
   const hits = vanityBowlHits(vanityBowlShell({
     W: 900, H: 600, D: 500, G,
   }, P), [450], 620, 150, withVanity({ wasteFromBackMm: 210 }));

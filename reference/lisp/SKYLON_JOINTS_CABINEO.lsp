@@ -741,17 +741,24 @@
 ;;; high; two WALLS, the BOX-FRONT (BF) and the BOX-BACK (BB), wallL long
 ;;; between the sides' inside faces and hw high; all four GB thick (the box
 ;;; board, 18). The BOTTOM slides into the sides' groove and carries nothing of
-;;; this section (the owner: "wsuwane"). The walls stand ON the bottom: a
-;;; wall's lower edge is 15 + GB (the runner strip and the bottom, 33) above
-;;; the side's lower edge, and hw = sideH - 15 - GB - 1, so a wall's TOP edge
-;;; stands dTop = 1 BELOW the side's top edge:
+;;; this section (the owner: "wsuwane"). The walls stand on the upper edge of
+;;; the bottom's groove: a wall's lower edge is 15 + GB + 1 (34) above the
+;;; side's lower edge, the groove 15 .. 34 under it with the bottom (GB) slid
+;;; in on 1 mm of play (boxFrontHeightExtra), and hw = sideH - 15 - GB - 1, so
+;;; a wall's TOP edge IS the side's top edge:
 ;;;
-;;;     boxWallY + hw = boxY + sideH - dTop
+;;;     boxWallY + hw = boxY + sideH          (dTop = 0)
 ;;;
-;;; THE TOPS ARE NOT FLUSH. CLAUDE.md T79 F14 wrote them flush; the kits'
-;;; arithmetic leaves 1 mm of air over the wall (boxFrontHeightExtra), and the
-;;; LISP follows the kits: each board is measured from its OWN top edge and the
-;;; side's holes add dTop, so the screw meets its hole.
+;;; THE TOPS ARE FLUSH. The owner, 18.10.2026: "nawiercanie w bokach bedzie
+;;; liczone od gory boxa"; 31.10.2026, putting the two boards together: the
+;;; side's dia 5 holes "byly za nisko, byly 24 od wyciecia i 26 od gory, a
+;;; cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory
+;;; boxa". Until that day this file and the engine stood the wall ON the bottom
+;;; board (its top 1 under the side's, dTop = 1) and the side's holes added
+;;; that 1; the pockets never moved. Each board is measured from its OWN top
+;;; edge and the two top edges are one line, so the screw meets its hole with
+;;; dTop = 0: the hole 25 under the side's top and 25 above the groove's upper
+;;; edge, the pocket 25 under the wall's top and 25 above its lower edge.
 ;;;
 ;;; THE JOINT. A wall's END stands on a side's inside FACE, as the TOP's end
 ;;; stands on a carcass side (section C), so the WALL carries the POCKET and
@@ -776,7 +783,7 @@
 ;;;                                   edge), never spread for a taller wall
 ;;; 25 is a minimum and a position both; the sheet's min. 20 holds under it.
 ;;; The side's holes stand at the SAME heights, measured from the side's top
-;;; edge: dTop + offset.
+;;; edge: the offset itself (dTop = 0 since 31.10.2026; it was 1).
 ;;;
 ;;; REFUSED IN WORDS, the box keeping no Cabineo (cabineo-box-refusal): a wall
 ;;; under 2 x 25 (one connector on its middle would stand under the owner's 25
@@ -851,8 +858,10 @@
     (cons "boardW" (float bW)) (cons "boardT" (float bT))))
 
 ;;; The four joints of one box. top = sideH - dTop is the side's coordinate of
-;;; the wall's top edge; ax the screw axis inside the wall's outside face;
-;;; rotated T for the box KIT_BUDR_FULL draws, nil for KIT_WARDROBE_FULL's.
+;;; the wall's top edge (dTop is 0 since 31.10.2026, the tops flush: the
+;;; parameter stays so a caller states the number it measured); ax the screw
+;;; axis inside the wall's outside face; rotated T for the box KIT_BUDR_FULL
+;;; draws, nil for KIT_WARDROBE_FULL's.
 (defun cabineo-box-table (sideL sideH wallL hw dTop GB ax rotated / top)
   (setq sideL (float sideL) sideH (float sideH) wallL (float wallL) hw (float hw)
         dTop (float dTop) GB (float GB) ax (float ax))
@@ -1536,7 +1545,8 @@
   (if (or (null GB) (<= GB 0.0)) (setq GB 18.0))
   (initget "Height Length")
   (setq rot (/= (getkword "\nDrawn along its [Height (KIT_BUDR_FULL)/Length (KIT_WARDROBE_FULL)] <Height>: ") "Length"))
-  (setq hw (- sideH 15.0 GB 1.0) dTop 1.0)
+  ;; 31.10.2026: dTop 0 (the tops flush); it was 1.0 until the owner put the two boards together.
+  (setq hw (- sideH 15.0 GB 1.0) dTop 0.0)
   (princ (strcat "\nCABINEO ON THE DRAWER BOX: Cabineo " (cabineo-get rule "variant") "  wall " (rtos hw 2 1)
                  " high, measured from its top  mounting " (cabineo-get bp "mounting") "  machining " (cabineo-get bp "machining")))
   (if (cabineo-gate bp) (princ (strcat "\nGATE: " (cabineo-gate bp) ". No machine file may carry these pockets.")))
@@ -1739,9 +1749,10 @@
 ;;; THE BUDR DEFAULT (KIT_BUDR_FULL: 600 x 770 x 558, front 25, 3 drawers;
 ;;; the box drawn rotated, x UP every board):
 ;;;   D1  side 237 x 490, wall 203 x 518 (hw = 237 - 15 - 18 - 1 = 203);
-;;;       boxY 31.5, the wall's lower edge 64.5 (= 31.5 + 15 + 18), the wall's
-;;;       top 267.5, the side's top 268.5: boxWallY + hw = boxY + sideH - 1,
-;;;       dTop = 1 (NOT flush), top = 237 - 1 = 236
+;;;       boxY 31.5, the wall's lower edge 65.5 (= 31.5 + 15 + 18 + 1, the
+;;;       groove's upper edge), the wall's top 268.5 = the side's top:
+;;;       boxWallY + hw = boxY + sideH, dTop = 0 (FLUSH; 31.10.2026, it was 1
+;;;       and the holes 1 low), top = 237
 ;;;       hw 203 > 100: TWO per joint, at 25 and 178 from the wall's top
 ;;;       BOX-FRONT, own frame (x up from its lower edge, y from its SL end):
 ;;;         pocket axes x = 203 - 25 = 178 and 203 - 178 = 25
@@ -1756,15 +1767,16 @@
 ;;;           483.65 .. 518 at the lower axis): no refusal
 ;;;       BOX-BACK: the same set, its y from its SR end
 ;;;       holes, dia 5, 12 deep, in the sides' inside faces at the same heights,
-;;;         measured from the side's top: x = 236 - 25 = 211 and 236 - 178 = 58
+;;;         measured from the side's top: x = 237 - 25 = 212 and 237 - 178 = 59
+;;;         (25 under the side's top, 25 above the groove's upper edge at 34)
 ;;;         SL (y from its FRONT end): y 5.5 (SL-BF) and 484.5 (SL-BB)
 ;;;         SR (y from its BACK end):  y 484.5 (SR-BF) and 5.5 (SR-BB)
 ;;;       8 pockets (24 dia 15 holes, 8 skims), 8 holes, 8 connectors
 ;;;   D2  side 178, wall 144: 25 and 119 from the top; pocket axes x 119 and
-;;;       25; holes x 177 - 25 = 152 and 177 - 119 = 58; 8 connectors
+;;;       25; holes x 178 - 25 = 153 and 178 - 119 = 59; 8 connectors
 ;;;   D3  side 118, wall 84 <= 100: ONE per joint at 42; pocket axis x 42
 ;;;       (EXPORT x' = 84 - 42 = 42); skim x 33.65 .. 50.35, y 0 .. 34.35,
-;;;       clear of the pilot at (50, 50) by y; holes x 117 - 42 = 75 at y 5.5
+;;;       clear of the pilot at (50, 50) by y; holes x 118 - 42 = 76 at y 5.5
 ;;;       and 484.5; 4 connectors
 ;;;   THE BUDR: 12 joints, 20 pockets (60 dia 15 holes, 20 skims), 20 dia 5
 ;;;   holes, 20 x Cabineo 12; no cover cap; the bottoms carry nothing.
@@ -1772,19 +1784,19 @@
 ;;; A WARDROBE BOX WITH A WALL OF 90 (KIT_WARDROBE_FULL, WARDROBE 1200, three
 ;;; internal drawers with a 160 front; the box drawn lying, x ALONG every
 ;;; board): side 440 x 124 (124 = 160 - 36), wall 1022 x 90 (90 = 124 - 15
-;;; - 18 - 1); dTop = 1, top = 123
+;;; - 18 - 1); dTop = 0 (flush, 31.10.2026), top = 124
 ;;;   hw 90 <= 100: ONE per joint at 45 from the wall's top
 ;;;   BOX-FRONT, own frame (x from its SR end, y up): pocket axis y = 90 - 45
 ;;;     = 45; SR end (x = 0, into +x): dia 15 at (3.6, 45) (14.8, 45) (26, 45);
 ;;;     SL end (x = 1022, into -x): (1018.4, 45) (1007.2, 45) (996, 45);
 ;;;     skims y 36.65 .. 53.35, x 0 .. 34.35 and 987.65 .. 1022
 ;;;     EXPORT x' = 1022 - x: the SR end's lobes land at 1018.4, 1007.2, 996
-;;;   holes at y = 123 - 45 = 78: SL (x from its BACK end) x 434.5 (SL-BF)
+;;;   holes at y = 124 - 45 = 79: SL (x from its BACK end) x 434.5 (SL-BF)
 ;;;     and 5.5 (SL-BB); SR (x from its FRONT end) x 5.5 (SR-BF), 434.5 (SR-BB)
 ;;;   4 connectors a box, 12 for the three
 ;;; The same wardrobe at the default 200 front: side 164, wall 130 > 100,
-;;; TWO at 25 and 105 from the top: pocket axes y 105 and 25, holes y 163 -
-;;; 25 = 138 and 163 - 105 = 58; 8 a box, 24 for the three.
+;;; TWO at 25 and 105 from the top: pocket axes y 105 and 25, holes y 164 -
+;;; 25 = 139 and 164 - 105 = 59; 8 a box, 24 for the three.
 ;;;
 ;;; THE THRESHOLDS. A wall of 100 takes one (at 50); 101 takes two (at 25
 ;;; and 76). A wall under 50 is refused: the shoe drawer's (side 80, wall 46)

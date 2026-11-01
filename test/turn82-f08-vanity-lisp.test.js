@@ -553,14 +553,16 @@ test('F8 D25 D29 . the bowl never enters a board: every board it enters is said 
   // the room's half ellipsoid, held board by board (D29): the T82 reading of the box as a block and its three sentences
   // are retired.
   const bowl = (h, xs = [450], dims = EX, n = 3, columns = 1, sinks = 1) => L.call('vanity-bowl-verdict', 'VU01', ...dims, n, columns, sinks, xs, 20, h);
-  const def = 'VU01: The bowl enters D3-BB-1 by 21.1 mm, D3-BB-2 by 21.1 mm: move the basin forward or take a shallower bowl.';
+  // 31.10.2026: 22.1 and a bowl 113 deep (21.1 and 115 until that day): the wall stands on the groove's upper edge, flush
+  // with the sides' top, 1 higher (SKYLON_JOINTS_CABINEO.lsp D.2c; KIT_VANITY.lsp vanity-box-boards wy + vanityBoxWallExtra).
+  const def = 'VU01: The bowl enters D3-BB-1 by 22.1 mm, D3-BB-2 by 22.1 mm: move the basin forward or take a shallower bowl.';
   assert.equal(bowl(150), def, 'RAIL-TOP clear at 250; the top box\'s back wall beside the U is not (F6 moved the boxes 50 forward)');
-  assert.equal(bowl(115), null, 'a bowl 115 deep clears it');
+  assert.equal(bowl(113), null, 'a bowl 113 deep clears it');
   assert.equal(bowl(20), null, 'a bowl no deeper than the worktop meets nothing under it');
   assert.equal(bowl(150, null), null, 'no basin the worktop takes, nothing to say');
   // One basin on two columns (D28): the narrowed boxes' inner sides stand under the bowl.
-  assert.equal(bowl(150, [450], EX, 3, 2, 1), 'VU01: The bowl enters Z1D3-SR by 70 mm, Z2D3-SL by 70 mm, Z1D3-BB by 6.1 mm, '
-    + 'Z2D3-BB by 6.1 mm: move the basin forward or take a shallower bowl.');
+  assert.equal(bowl(150, [450], EX, 3, 2, 1), 'VU01: The bowl enters Z1D3-SR by 70 mm, Z2D3-SL by 70 mm, Z1D3-BB by 7.1 mm, '
+    + 'Z2D3-BB by 7.1 mm: move the basin forward or take a shallower bowl.');
   // The board test itself: a board under the bowl's axis enters by the height it keeps under the rim.
   assert.equal(L.call('vanity-bowl-enters', ['B', 440, 400, 240, 20, 300, 20], 450, 250, 620, 150), 150, 'to the rim, through the bowl');
   assert.equal(L.call('vanity-bowl-enters', ['B', 0, 0, 0, 10, 10, 10], 450, 250, 620, 150), null, 'outside the oval');
@@ -569,7 +571,7 @@ test('F8 D25 D29 . the bowl never enters a board: every board it enters is said 
   assert.deepEqual(L.call('vanity-bowl-shell', 900, 600, 500, 18).map((b) => b[0]), ['BUL', 'BUR', 'RAIL-BOTTOM', 'RAIL-TOP']);
   assert.deepEqual(L.call('vanity-bowl-boards', ...EX, 3, 1, 1).map((b) => b[0]).slice(0, 12), [
     'BUL', 'BUR', 'RAIL-BOTTOM', 'RAIL-TOP', 'D1-SL', 'D1-SR', 'D2-SL', 'D2-SR', 'D3-SL', 'D3-SR', 'D1-BF', 'D1-BB']);
-  say('THE BOWL (T83 F8, D29): RAIL-TOP clear, the sides clear; "' + def + '"; the waste at 270, or a bowl 115 deep, enters nothing.');
+  say('THE BOWL (T83 F8, D29): RAIL-TOP clear, the sides clear; "' + def + '" (21.1 until 31.10.2026, the walls 1 lower); the waste at 270, or a bowl 113 deep (115 until that day), enters nothing.');
   say('THE SHELL: the waste at 210, the oval 10 from the carcass back: "VU01: The bowl enters RAIL-TOP by 22 mm: move the basin forward or take a shallower bowl.", refused with the worktop\'s refusals, cut in neither top.');
   // The kit's own NUMBERS, run: the waste at 270 and at 210 (the constant moved, nothing else).
   const at = (zw) => loadLisp(TEXT.replace('(defun vanityWasteFromBack ( / ) 250.0)', `(defun vanityWasteFromBack ( / ) ${zw}.0)`));

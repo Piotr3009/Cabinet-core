@@ -1434,8 +1434,14 @@ export const DEFAULT_CABINET_PROFILE = {
       // (the LISP drills them, the engine emits a plain rectangle) — that gap
       // is recorded in verify/t21/hole-alignment.md and in BLOCKERS, because
       // closing it is a CNC delta and this turn's iron rule is zero.
-      frontScrewFromBottom: 96.5,
-      firstFrontScrewFromBottom: 93.5,   // = frontScrewFromBottom − firstFrontAdjust
+      // CHAT FIX 31.10.2026: 97.5 and 94.5 (96.5 and 93.5 until that day). The box
+      // wall stands on the groove's upper edge, flush with the sides' top (the
+      // owner, putting a side and a wall together: *"dziurki 5 mm byly za nisko
+      // ... powinny byc przesuniete o 1 mm do gory boxa"*), so its pilots at 50
+      // above its lower edge stand 13.5 + 15 + 18 + 1 + 50 = 97.5 above the
+      // runner's bottom; the kits amended the same day.
+      frontScrewFromBottom: 97.5,
+      firstFrontScrewFromBottom: 94.5,   // = frontScrewFromBottom − firstFrontAdjust
       gap: 3,                  // gap between drawer fronts
       boxSideThickness: 18,
       boxWidthClearance: 10,   // box W = internal W − this − drawer-panel reduction
@@ -2140,7 +2146,7 @@ export const DEFAULT_CABINET_PROFILE = {
     clearanceBelowRunner: 10,   // …and the air the owner wants under them
     frontScrewFromSide: 50,     // + 2×G + halfDiameter, see cabinet.js
     frontScrewExtra: 3.5,
-    frontScrewFromBottom: 96.5, // + G on the bottom drawer
+    frontScrewFromBottom: 97.5, // + G on the bottom drawer (CHAT FIX 31.10.2026: 96.5 until that day, the wall 1 lower)
     frontScrewDiameter: 3,
     frontScrewLayer: 'FRONT_HINGES_3MM',
     boxScrewFromEdge: 50,

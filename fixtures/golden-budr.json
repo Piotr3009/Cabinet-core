@@ -12,7 +12,7 @@
     "drawer_depth": "maxDl = D - G - 20 (NOT the wardrobe formula); snap DOWN to {390,440,490,540,590,640,690}, floor 390",
     "box": "szufSzer = internalW - 10; side height = round(0.70 * front) — NOT front - 36; boxFront H = side - 15 - G - 1; boxFrontLen = W - 4G - 10; bottom = (boxFrontLen + 13) x szufDl",
     "runners": "both carcass sides, rows at [G+38, F1+3+38, F1+3+F2+3+38], holes x {37,69,293} from front edge (mirrored on BUR), layer RUNNERS_3MM",
-    "front_screws": "2 holes 3mm per front on FRONT_HINGES_3MM: x = 50+2G+3.5 from each side edge, y = 96.5 (+G for drawer 1)",
+    "front_screws": "2 holes 3mm per front on FRONT_HINGES_3MM: x = 50+2G+3.5 from each side edge, y = 97.5 (+G for drawer 1). CHAT FIX 31.10.2026: y = 97.5 (+G for drawer 1), 96.5 until that day: the box wall stands on the groove's upper edge, flush with the sides' top, and its pilots at 50 above its lower edge follow it (the owner, of the bench: 'pocialem dzisiaj szafe i mam przesuniecie o 1 milimetr'; KIT_BUDR_FULL.lsp amended first)",
     "side_pockets": "drawer side CNC (drawn rotated): DRAWER_RUNNER_POCKET strip x 0..15, DRAWER_BOTTOM_POCKET strip x 15..15+G+1, both overshooting 10mm past each end",
     "box_screws": "box FRONT only: 2x SCREWS_3MM at (50, 50) and (50, dlBoxFront-50) in drawn coords; bottoms: 4x SCREWS_3MM at x {70, szerDno-70}, y {9, dlDno-9}",
     "no_partition": "BUDR has NO partition above the drawer stack and NO shelves/doors/rail",
@@ -357,9 +357,9 @@
           507.5
         ],
         "drawer_front_screw_y_per_drawer": [
-          114.5,
-          96.5,
-          96.5
+          115.5,
+          97.5,
+          97.5
         ]
       },
       "csv_labels": [
@@ -737,9 +737,9 @@
           807.5
         ],
         "drawer_front_screw_y_per_drawer": [
-          114.5,
-          96.5,
-          96.5
+          115.5,
+          97.5,
+          97.5
         ]
       },
       "csv_labels": [
@@ -783,7 +783,7 @@
   "verify_with_piotr": [
     "box side = round(0.70 x front) gives 237/178/118 for the default 770 unit — confirm vs production drawer stock",
     "runner rows on BOTH carcass sides at y {56, 379, 636} (bottom row lifted by G) — confirm",
-    "drawer front screw holes at y 96.5 (+G on drawer 1) with x 50+2G+3.5 — confirm",
+    "drawer front screw holes at y 97.5 (+G on drawer 1) with x 50+2G+3.5 — confirm (96.5 until 31.10.2026)",
     "fronts overlay the full height (bottom front starts at 0, no firstFrontAdjust like the wardrobe) — confirm"
   ]
 }

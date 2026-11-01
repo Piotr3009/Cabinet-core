@@ -116,17 +116,19 @@ for (const { kit, build } of GATE_CASES) {
 }
 
 test('F1 GATE — the chain that makes them meet is the workshop’s four numbers', () => {
+  // CHAT FIX 31.10.2026: + boxFrontHeightExtra (the wall stands on the groove's upper edge, 1 above the bottom board):
+  // 13.5 + 15 + 18 + 1 + 50 = 97.5 (31.10.2026, the owner: *"dziurki 5 mm byly za nisko ... powinny byc przesuniete o 1 mm do gory boxa"*: the wall stands on the groove's upper edge, flush with the sides' top, and the facade pilots follow its 50 up by the same 1 mm).
   assert.equal(
-    B.boxAboveRunner + B.runnerPocketWidth + G + B.boxScrewFromEdge,
+    B.boxAboveRunner + B.runnerPocketWidth + G + B.boxFrontHeightExtra + B.boxScrewFromEdge,
     B.frontScrewFromBottom,
-    '13.5 + 15 + 18 + 50 = 96.5 — the box front’s pilot IS the façade’s',
+    '13.5 + 15 + 18 + 1 + 50 = 97.5 — the box front’s pilot IS the façade’s',
   );
   // The wardrobe's two numbers are one number: its bottom front starts
   // `firstFrontAdjust` higher, so its pilot is that much lower in the board.
   assert.equal(
     DR.firstFrontScrewFromBottom + DR.firstFrontAdjust,
     DR.frontScrewFromBottom,
-    '93.5 + 3 = 96.5 — KIT_WARDROBE_FULL L313-322',
+    '94.5 + 3 = 97.5 — KIT_WARDROBE_FULL L313-322 (93.5 + 3 = 96.5 until 31.10.2026)',
   );
   // And the screw row is NOT the anchor: it is the drilling offset above it.
   assert.equal(B.firstRowFromBottom, P.wardrobe.runners.firstRowFromBottom);
@@ -193,7 +195,7 @@ test('F1 GATE — and it FAILS on the anchor turn 20 shipped', () => {
   const r = budr('BUDR');
   for (const row of drawerPilotRows(r, P)) {
     const turn20BoxY = row.runnerScrewRow
-      + B.boxAboveRunner + B.runnerPocketWidth + G + B.boxScrewFromEdge;
+      + B.boxAboveRunner + B.runnerPocketWidth + G + B.boxFrontHeightExtra + B.boxScrewFromEdge;
     assert.equal(turn20BoxY - row.facadeY, B.firstRowFromBottom,
       `drawer ${row.drawer}: turn 20's box put its pilots 38 mm above the façade's`);
   }

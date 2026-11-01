@@ -7,7 +7,7 @@
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
-    "repinned": "30.10.2026 (T85 F2, KIT_RECESS.lsp D30, the RETURNs on Cabineo): \"1 - cabineo\" (the owner, 30.10.2026, 20:38; his question: \"dlaczego niektore elementy z recess nie sa machined?\"). RETURN-L and RETURN-R carry two Cabineo 12 each in their bottom end on the outside face (CABINEO_POCKET_15MM 6 each, pockets 0 -> 2, readiness geometry -> cut), the board over the drawers four dia 5 holes (CABINEO_HOLE_5MM|PARTITION 4), the connectors and caps 4 each; every other board, hole and row as it was."
+    "repinned": "30.10.2026 (T85 F2, KIT_RECESS.lsp D30, the RETURNs on Cabineo): \"1 - cabineo\" (the owner, 30.10.2026, 20:38; his question: \"dlaczego niektore elementy z recess nie sa machined?\"). RETURN-L and RETURN-R carry two Cabineo 12 each in their bottom end on the outside face (CABINEO_POCKET_15MM 6 each, pockets 0 -> 2, readiness geometry -> cut), the board over the drawers four dia 5 holes (CABINEO_HOLE_5MM|PARTITION 4), the connectors and caps 4 each; every other board, hole and row as it was. || 31.10.2026: the drawer box walls stand on the upper edge of the bottom's groove, FLUSH with the sides' top (the kit's 1 is the bottom's play); every DRAWER-BOX-FRONT and DRAWER-BOX-BACK box.y + 1, no cut, no hole, no row moved (the two Cabineo box goldens: the sides' dia 5 holes 1 higher as well, 25 under the side's top and 25 above the groove). The owner, 31.10.2026: \"dziurki 5 mm byly za nisko, byly 24 od wyciecia i 26 od gory, a cabineo mialo 25 i tu i tu ... powinny byc przesuniete o 1 mm do gory boxa\"; 18.10.2026: \"nawiercanie w bokach bedzie liczone od gory boxa\""
   },
   "params": {
     "type": "WARDROBE",
@@ -297,7 +297,7 @@
         "thickness": 18,
         "box": {
           "x": 151,
-          "y": 64.5,
+          "y": 65.5,
           "z": 475,
           "w": 698,
           "h": 130,
@@ -317,7 +317,7 @@
         "thickness": 18,
         "box": {
           "x": 151,
-          "y": 64.5,
+          "y": 65.5,
           "z": -97,
           "w": 698,
           "h": 130,
@@ -397,7 +397,7 @@
         "thickness": 18,
         "box": {
           "x": 151,
-          "y": 267.5,
+          "y": 268.5,
           "z": 475,
           "w": 698,
           "h": 130,
@@ -417,7 +417,7 @@
         "thickness": 18,
         "box": {
           "x": 151,
-          "y": 267.5,
+          "y": 268.5,
           "z": -97,
           "w": 698,
           "h": 130,
@@ -497,7 +497,7 @@
         "thickness": 18,
         "box": {
           "x": 151,
-          "y": 470.5,
+          "y": 471.5,
           "z": 475,
           "w": 698,
           "h": 130,
@@ -517,7 +517,7 @@
         "thickness": 18,
         "box": {
           "x": 151,
-          "y": 470.5,
+          "y": 471.5,
           "z": -97,
           "w": 698,
           "h": 130,

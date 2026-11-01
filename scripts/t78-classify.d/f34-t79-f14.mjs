@@ -96,7 +96,9 @@ export const LIVENESS = {
     const sum = r.derived.boxCabineo;
     return {
       live: bareCab === 0 && sum?.joints === 12 && sum?.pockets === 20 && sum?.holes === 20 && lobes === 60
-        && holes.join(' ') === '211,5.5 58,5.5 211,484.5 58,484.5' && bfFace === 'outside' && line?.qty === 20,
+        // CHAT FIX 31.10.2026 (f53-owner-3110-box-flush.mjs): the holes 212 / 59, the wall flush with the side's top (the owner:
+        // *"dziurki 5 mm ... powinny byc przesuniete o 1 mm do gory boxa"*); 211 / 58 until that day.
+        && holes.join(' ') === '212,5.5 59,5.5 212,484.5 59,484.5' && bfFace === 'outside' && line?.qty === 20,
       said: `bare BUDR: ${bareCab} Cabineo cuts; named puzzle: ${sum?.joints} joints, ${sum?.pockets} pockets (${lobes} dia 15 holes from `
         + `the walls' outside faces, D1-BF machinedFace ${bfFace}), ${sum?.holes} dia 5 holes, D1-SL at ${holes.join(' ')}, `
         + `${line?.qty} x ${line?.label} on the order`,

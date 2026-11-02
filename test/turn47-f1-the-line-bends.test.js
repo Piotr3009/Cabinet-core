@@ -214,12 +214,21 @@ test('a cabinet under the knee: the BACK carries the vertex and says where it is
   // run: 2000 − 40 = 1960. 45° fall: 2000 − 40/cos 45° = 2000 − 56.5685 lands
   // the lowered fall on y = 1943.4315 − (x − 300), which meets 1960 at
   // x = 300 − 40·(√2 − 1) = 283.4315.
+  //
+  // 01.11.2026 AMENDED (the owner, the knee: *"wariant B, koduj"*, *"plecy
+  // musza sie zgadzac"*): the two roof boards meet on their UNDERSIDES, so
+  // the sloped board runs on from the knee by G * tan(22.5) = 7.4558 to
+  // 275.9757, its outer corner G * tan(22.5) * tan(45) = 7.4558 above the
+  // flat top. The back follows the boards: the knee vertex gives way to the
+  // step at 275.9757, from the flat top 1960 up to the corner 1967.4558. The
+  // record still names the bend where the ceiling's line bends.
   const r = computeCabinet({ ...PARAMS, width: 900, slope_cut: KNEE }, P);
   const back = r.panels.find((p) => p.id === 'BACK');
   assert.deepEqual(back.meta.slopeCut.knees, [283.4315], 'the record names the bend');
-  assert.ok(back.cnc.outline.some(([x, y]) => x === 283.4315 && y === 1960),
-    `the knee is a corner of the board: ${JSON.stringify(back.cnc.outline)}`);
-  assert.equal(back.cnc.outline.length, 5);
+  assert.ok(back.cnc.outline.some(([x, y]) => x === 275.9757 && y === 1960)
+    && back.cnc.outline.some(([x, y]) => x === 275.9757 && y === 1967.4558),
+  `the knee step is two corners of the board: ${JSON.stringify(back.cnc.outline)}`);
+  assert.equal(back.cnc.outline.length, 6);
 });
 
 test('NOTHING assumes five corners — a ceiling that bends twice makes seven', () => {

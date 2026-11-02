@@ -55,7 +55,9 @@ test('a CUT panel is traced, corner for corner, in the drawing\'s own frame', ()
   const back = byId(r, 'BACK');
   const segs = elevationOutline(back);
   assert.ok(segs, 'the back has an outline and it is traced');
-  assert.equal(segs.length, 5, 'five sides, because it is a pentagon');
+  // 01.11.2026 AMENDED (the owner, the knee: *"plecy musza sie zgadzac"*):
+  // the pentagon plus the step the two roof boards' ends make at the knee.
+  assert.equal(segs.length, 6, 'five sides of the pentagon, and the knee step');
   // Every segment is the panel's own outline, offset by its box — so the shape
   // on the paper is the shape on the sheet and not a second opinion.
   const pts = back.cnc.outline;
@@ -71,7 +73,12 @@ test('a CUT panel is traced, corner for corner, in the drawing\'s own frame', ()
   // the knee moved from the ceiling's x = 125 to cutReach's crossing: ceiling
   // y = 2400 − 2x (tan β = 2, cos β = 1/√5), cutReach(x) = 2400 − 2x − 40/cos β
   // = 2310.55728 − 2x; = 2150 at x = 80.27864045 → 80.2786 on the sheet.
-  assert.ok(segs.some(([x1, y1]) => Math.abs(x1 - 80.2786) < 1e-6 && Math.abs(y1 - 2150) < 1e-6));
+  // 01.11.2026 AMENDED (the owner, the knee: *"wariant B, koduj"*): the two
+  // roof boards meet on their undersides, 18 · tan(31.7175°) = 11.1246 short
+  // of that knee, at 69.1540; the back follows them, so the step is traced
+  // there, from H up to the raked board's corner on the cut line, 2172.2492.
+  assert.ok(segs.some(([x1, y1]) => Math.abs(x1 - 69.154) < 1e-6 && Math.abs(y1 - 2150) < 1e-6));
+  assert.ok(segs.some(([x1, y1]) => Math.abs(x1 - 69.154) < 1e-6 && Math.abs(y1 - 2172.2492) < 1e-6));
 });
 
 test('THE DOOR is a pentagon on the elevation too', () => {
@@ -171,7 +178,9 @@ test('the part sheet shows the REAL board, not its bounding rectangle', () => {
   const back = byId(cut(), 'BACK');
   const drawing = partDetailDrawing(back, { profile: P });
   assert.deepEqual(drawing.outline, back.cnc.outline);
-  assert.equal(drawing.outline.length, 5);
+  // 01.11.2026 AMENDED (the owner, the knee: *"plecy musza sie zgadzac"*):
+  // the pentagon and the knee step, six corners.
+  assert.equal(drawing.outline.length, 6);
   // The overall dimensions stay the bounding box, which is what a joiner orders
   // the board by — F5 asks for the SHAPE, not for a new dimension chain.
   assert.equal(drawing.size.w, back.cnc.drawn_w);

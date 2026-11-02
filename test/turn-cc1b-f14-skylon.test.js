@@ -112,9 +112,15 @@ test('F14.3 . a unit with ORNATE_A_1 under another tenant still computes, as mai
     try { execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { cwd: ROOT }); base = ref; break; } catch { /* next */ }
   }
   if (!base) return;
-  const diff = execFileSync('git', ['diff', '--stat', base, '--', 'src/engine/cabinet.js', 'src/engine/ornateFront.js',
+  const diff = execFileSync('git', ['diff', '--stat', base, '--', 'src/engine/ornateFront.js',
     'src/engine/ornateFrontProfile.js', 'src/engine/frontDecoration.js'], { cwd: ROOT, encoding: 'utf8' }).trim();
   assert.equal(diff, '', `the ornate engine moved:\n${diff}`);
+  // REWRITTEN by the owner's knee of 01.11.2026 (*"wariant B, koduj"*, scripts/t78-classify.d/f60-slope-knee.mjs):
+  // engine/cabinet.js moves on the slope road (the roof boards meet on their undersides, the back follows them), so
+  // it is asked as design.js is below: not one line it gains or loses may touch the ornate or decorated fronts.
+  const cab = execFileSync('git', ['diff', '-U0', base, '--', 'src/engine/cabinet.js'], { cwd: ROOT, encoding: 'utf8' });
+  const cabChanged = cab.split('\n').filter((l) => /^[+-](?![+-])/.test(l));
+  assert.deepEqual(cabChanged.filter((l) => /ornate|decoration|frontDecoration/i.test(l)), [], `cabinet.js moved the ornate road:\n${cab}`);
   // REWRITTEN by T-CC2a (F11.2, the `boards` passthrough of migrateDesign, licensed by the turn's classifier): design.js
   // may only GAIN lines, and none of them may touch the ornate or decorated fronts.
   const design = execFileSync('git', ['diff', '-U0', base, '--', 'src/engine/design.js'], { cwd: ROOT, encoding: 'utf8' });

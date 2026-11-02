@@ -320,8 +320,12 @@ test('THE TOP IS A ROOF — the flat lid at the low end is gone', () => {
     }
   }
   // The two together span the FULL width, not the `W − 2G` between the sides.
+  // 01.11.2026 (the owner, the knee: *"wariant B, koduj"*): the sloped board
+  // runs on to where the undersides meet, so its level box is 600 − faceLen
+  // plus faceLen, each rounded to 4, and the sum is 600 to a float's last bit
+  // rather than to the bit: asked within 1e-6.
   assert.equal(tops[0].box.x, 0);
-  assert.equal(tops[1].box.x + tops[1].box.w, 600);
+  assert.ok(Math.abs(tops[1].box.x + tops[1].box.w - 600) < 1e-6);
   assert.ok(plain.w < 600, 'where the old lid was the internal width');
 });
 
@@ -359,15 +363,25 @@ test('THE BACK is cut on the same diagonal — and it is the PENTAGON', () => {
   // at x = 80.2786, and the record's y0/y1 are the lowered line's own ends.
   // (At a bend the knee x may shift too: it is the mitred-offset intersection,
   // no longer the ceiling's own knee x — no bend stands over this unit.)
+  //
+  // 01.11.2026 AMENDED (the owner, the knee: *"wyrownanie edga musi byc od
+  // srodka ... i dostosuj tez plecy"*, *"plecy musza sie zgadzac"*): the two
+  // roof boards meet on their UNDERSIDES, so the sloped board runs on from the
+  // knee at 80.2786 by G * tan(beta / 2) = 18 * tan(31.7175) = 11.1246, to
+  // 69.1540, and its outer corner stands G * tan(beta / 2) * tan(beta) =
+  // 22.2492 above the flat top, on the cut line (2310.5573 - 2 * 69.1540). The
+  // back follows the boards: the pentagon's knee gives way to that step, and
+  // the blank is as tall as the corner.
   assert.deepEqual(back.cnc.outline,
-    [[0, 0], [600, 0], [600, 1110.5573], [80.2786, 2150], [0, 2150]]);
-  assert.equal(back.cnc.outline.length, 5, 'five corners: a pentagon');
-  assert.equal(back.h, H, 'its cut rectangle is still the full height at the tall edge');
+    [[0, 0], [600, 0], [600, 1110.5573], [69.154, 2172.2492], [69.154, 2150], [0, 2150]]);
+  assert.equal(back.cnc.outline.length, 6, 'the pentagon plus the knee step');
+  assert.equal(back.h, 2172.2492, 'its blank is as tall as the sloped board\'s corner');
   // T47: `knees` joins the record — EMPTY here, because this unit stands
   // under one straight run. A cabinet the ceiling bends over lists the x of
   // every bend, and its back is a hexagon or better.
   assert.deepEqual(back.meta.slopeCut, {
-    y0: 2310.5573, y1: 1110.5573, full: 2150, corners: 5, knees: [],
+    y0: 2310.5573, y1: 1110.5573, full: 2150, corners: 6, knees: [],
+    steps: [{ x: 80.2787, y: 2150, at: 69.154, left: 2150, right: 2172.2492 }],
   });
 });
 

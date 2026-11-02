@@ -28,6 +28,7 @@ import { jcFetch, JC_OFFLINE } from './jcApi.js';
 import { dataUrlBytes, visualNumbers } from './visualNumbers.js';
 import { keepPicture } from './keepPicture.js';
 import { migrateDesign, normaliseHandle, resolveFinishes, sprayFinishLabel, worktopFinishOf } from '../engine/design.js';
+import { UNIT_TYPES, resolveTypeId } from '../engine/types.js';
 
 /** JC's endpoint (CLAUDE.md T-CC1b, WHAT JOINERY CORE GIVES). */
 export const AI_ENDPOINT = '/api/ai/visualise';
@@ -85,28 +86,72 @@ function describeFinishes({ units = [], design = null, profile = null } = {}) {
 }
 
 /**
+ * Which room the item stands in, from its own units (chat, 02.11.2026): the
+ * library family of each unit's type (engine/types.js) counted, the family with
+ * the most units wins; a tie goes to the first of kitchen, bedroom, bathroom;
+ * an item with no family at all is a kitchen (30 of the 44 kits are).
+ */
+export const ROOM_KINDS = Object.freeze(['kitchen', 'bedroom', 'bathroom']);
+const ROOM_OF_FAMILY = Object.freeze({ kitchen: 'kitchen', wardrobe: 'bedroom', bathroom: 'bathroom' });
+export function roomKindOf(units = []) {
+  const count = { kitchen: 0, bedroom: 0, bathroom: 0 };
+  for (const u of Array.isArray(units) ? units : []) {
+    const t = UNIT_TYPES[resolveTypeId(u?.type)] || UNIT_TYPES[u?.type];
+    const room = ROOM_OF_FAMILY[t?.family];
+    if (room) count[room] += 1;
+  }
+  let best = 'kitchen';
+  for (const k of ROOM_KINDS) if (count[k] > count[best]) best = k;
+  return best;
+}
+
+/**
+ * The room of one try: the three rooms of the item's kind in
+ * `profile.visuals.aiRooms` (lib/visualNumbers.js), try 1 the first, try 2 the
+ * second, try 3 the third, so the three pictures of one click stand in three
+ * different rooms and the furniture stays the same (the owner, 02.11.2026:
+ * *"zeby one byly inne od siebie tylko meble takie same, a jednak srodek inny"*).
+ */
+export function roomOfAttempt(kind, attempt = 1, numbers = visualNumbers(null)) {
+  const rooms = numbers?.aiRooms?.[kind] || numbers?.aiRooms?.kitchen || [];
+  const list = Array.isArray(rooms) ? rooms.filter((r) => typeof r === 'string' && r.trim()) : [];
+  if (!list.length) return null;
+  const k = Math.max(1, Math.floor(Number(attempt) || 1));
+  return list[(k - 1) % list.length].trim();
+}
+
+/**
  * The prompt JC sends with the picture: a photorealistic interior photograph
- * of THIS furniture, the layout and proportions unchanged, the fronts in the
- * named colours and materials, the worktop and the handles as named, natural
- * daylight, no people, no text (PROPOSED words, CLAUDE.md T-CC1b F13.1). The
+ * of THIS furniture, the layout and proportions unchanged, no colour and no
+ * material of any part changed from the picture (the owner, 02.11.2026: *"chodzi
+ * o to zeby nigdy nie zmienial kolorystyki elementow"*), the fronts and the
+ * insides named, the worktop and the handles as named, the room of this try
+ * (roomOfAttempt), natural daylight, no people, no text. The carcass decor is
+ * named as the INSIDE of the cabinets: named as "the carcasses" it repainted a
+ * sprayed side and plinth in the decor (the owner's wardrobe, 02.11.2026). The
  * user's own words (`extra`) are appended; the whole stays under PROMPT_MAX,
  * and it is the user's words that are cut, never the description.
  */
-export function buildPrompt({ project = null, design = null, finishes = null, room = null, units = null, profile = null, extra = '' } = {}) {
+export function buildPrompt({ project = null, design = null, finishes = null, room = null, units = null, profile = null, extra = '', attempt = 1 } = {}) {
   const d = design || project?.design || null;
   const f = finishes || describeFinishes({ units: units || [], design: d, profile });
   const parts = [
     'A photorealistic interior photograph of this exact fitted furniture, as built by a joinery workshop.',
     'Keep the layout, the number of cabinets, doors and drawers, and every proportion exactly as in the picture.',
+    'Do not change the colour or the material of any part of the furniture. Every part keeps exactly the colour and material it has in the picture: fronts, sides, end panels, plinths, cornices, worktops and handles.',
   ];
   if (f.fronts?.length) parts.push(`The fronts are finished in ${joinWords(f.fronts)}.`);
-  if (f.carcass?.length && joinWords(f.carcass) !== joinWords(f.fronts || [])) parts.push(`The carcasses are ${joinWords(f.carcass)}.`);
+  if (f.carcass?.length && joinWords(f.carcass) !== joinWords(f.fronts || [])) parts.push(`The insides of the cabinets are ${joinWords(f.carcass)}.`);
   if (f.worktop) parts.push(`It has ${f.worktop}.`);
   if (f.handle) parts.push(`The fronts carry ${f.handle}.`);
+  const scene = roomOfAttempt(roomKindOf(units || []), attempt, visualNumbers(profile));
+  if (scene) parts.push(`Set it in ${scene}. Change only the room around the furniture (walls, floor, light and decor); the furniture itself stays exactly as in the picture.`);
   const r = room || project?.room || null;
   const rw = Number(r?.width); const rh = Number(r?.height);
   if (rw > 0 && rh > 0) parts.push(`The room is about ${Math.round(rw)} mm wide and ${Math.round(rh)} mm high.`);
-  parts.push('Natural daylight, realistic materials and shadows. No people, no text, no labels, no dimensions.');
+  // The room of the try names its own light; without one the picture stays in daylight.
+  parts.push(scene ? 'Realistic materials, light and shadows. No people, no text, no labels, no dimensions.'
+    : 'Natural daylight, realistic materials and shadows. No people, no text, no labels, no dimensions.');
   let base = parts.join(' ');
   if (base.length > PROMPT_MAX) base = base.slice(0, PROMPT_MAX);
   const own = String(extra || '').replace(/\s+/g, ' ').trim();

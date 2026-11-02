@@ -535,7 +535,8 @@ const EXEMPT = {
   'src/components/JcStockModal.jsx':
     'T-CC1b F9.3 · NEW, the Stock window: the tenant\'s Joinery Core stock read-only (name, item number, category, thickness, unit, price, stock, the JC badge), a search and the categories tree, 1240 wide, the 13 px floor. *"materialy z JC (jego baza), przypisanie w CC, grupy ... modal duzo wiekszy i czytelny, polaczony na stale, kazda funkcja przypisana (10 rodzajow zawiasow, wszystkie przypisane), inaczej eksport BOM pisze not assigned materials"* (the owner, 01.11.2026)',
   'src/components/drawings/AiVisualCard.jsx':
-    'T-CC1b F13 · NEW, the AI visualisation card: the source, size, quality, Add to the prompt, Generate (at most three pictures through Joinery Core\'s /api/ai/visualise), Use this one, Remove; nothing kept until one is chosen. *"wizualizacja AI z renderu, max 3 proby, wybierasz jedna i dodajesz do rysunkow, tanie API"* (the owner, 01.11.2026)',
+    'T-CC1b F13 · NEW, the AI visualisation card: the source, size, quality, Add to the prompt, Generate (at most three pictures through Joinery Core\'s /api/ai/visualise), Use this one, Remove; nothing kept until one is chosen. *"wizualizacja AI z renderu, max 3 proby, wybierasz jedna i dodajesz do rysunkow, tanie API"* (the owner, 01.11.2026)'
+    + ' Chat (02.11.2026) · each of the three tries asks with its own room (the try number into buildPrompt) and the picture keeps the prompt it was made with. *"zeby one byly inne od siebie tylko meble takie same, a jednak srodek inny"*; *"koduj"* (the owner, 02.11.2026, 01:28)',
   // T-CC2a (01.11.2026): its NEW PRO file.
   'src/components/LinkMaterialsModal.jsx':
     'T-CC2a F8 · NEW, the Link materials window: the maximised work window, Back to project top left, the seven departments as tabs with their counts, the sheet brands (three coming soon), the CC material beside the linked Joinery Core material (no id shown), the stock on the right with Link, the sheet form that cannot be saved without both sizes, Change link and Unlink, the offline, not set up and empty stock states. *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na stale"*; *"link bedzie lepiej brzmial"* (the owner, 01.11.2026)'
@@ -764,7 +765,7 @@ const FROZEN = {
   // T-CC1b · a NEW PRO file, frozen at its first hash (EXEMPT above carries the reason).
   'src/components/JcStockModal.jsx': 'bf686137b95f5548619e2aaff9bbdfbdfd4d40037607e9efbc2d4d25a83deca4',
   // T-CC1b · a NEW PRO file, frozen at its first hash (EXEMPT above carries the reason).
-  'src/components/drawings/AiVisualCard.jsx': '565b087bb27673f594857a9efd1caaaba65be57b89b3ae3ce5330626a129a489',
+  'src/components/drawings/AiVisualCard.jsx': '1e103feb1d59c965e77a5eac56bef3af856af8ecf4721509fb12a55f588ff832',
   // T-CC2a · a NEW PRO file, frozen at its first hash (EXEMPT above carries the reason).
   'src/components/LinkMaterialsModal.jsx': '13d9bfceda7de11c2190bfb3829639dacacb5edc9c633abc4a9d5f6219d074d7',
 };

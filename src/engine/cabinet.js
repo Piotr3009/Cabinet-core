@@ -155,11 +155,12 @@ import { vanityGapBox, vanityGapOf } from './vanity.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
 // `trimOutlineOnSlope` are turn 46's (CLAUDE.md F3): the slope cut, ported 1:1
 // from SKYLON_COMMON's `SKY:slopeCutPts` — iron rule 3, the LISP states the
-// shape and this file follows it.
+// shape and this file follows it. `roofBoardTopAt` and `roofKneeSteps` are the
+// owner's knee of 01.11.2026: the boards meet on their undersides.
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
   carcassCutLineOf, carcassCutPts, roofBoards, roofLinePts, slopeCutActive, slopeCutPts,
-  slopeHeightAt, slopeReachAt, slopeReserveOf,
+  slopeHeightAt, slopeReachAt, slopeReserveOf, roofBoardTopAt, roofKneeSteps,
   slopeSegments, subSlopeCut, trimGeometryOnSlope, trimOutlineOnSlope,
   chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
@@ -2178,7 +2179,10 @@ export function computeCabinet(params, profileOverride) {
   const roofPts = cutActive ? roofPeakMerge(roofLinePts(cutLine, H)) : null;
   const roofLine = roofPts ? { w: W, h: H, pts: roofPts } : null;
   /** The segments of the roof line over a stretch of the width, with angles. */
-  const anglesOver = (a, b) => (roofLine ? slopeSegments(roofLine)
+  // 01.11.2026 (the owner, the knee): asked of the BOARDS (`roofList`, below),
+  // whose ends at a knee are where the undersides meet; a side's bevel changes
+  // angle there. A roof of one board is its one segment, to the bit.
+  const anglesOver = (a, b) => (roofLine && roofList ? roofList
     .filter((sg) => sg.x1 > a + 1e-9 && sg.x0 < b - 1e-9)
     .map((sg) => ({
       from: roundTo(Math.max(sg.x0, a), 4),
@@ -2269,8 +2273,10 @@ export function computeCabinet(params, profileOverride) {
       if (!(bd.x1 > a + 1e-9 && bd.x0 < b - 1e-9)) continue;
       const lo = Math.max(bd.x0, a);
       const hi = Math.min(bd.x1, b);
-      for (const y of [slopeHeightAt(roofLine, lo) - bd.vertical,
-        slopeHeightAt(roofLine, hi) - bd.vertical]) {
+      // 01.11.2026: the board's OWN top line, which at a knee runs on past
+      // the roof line's vertex to where the undersides meet.
+      for (const y of [roofBoardTopAt(bd, lo) - bd.vertical,
+        roofBoardTopAt(bd, hi) - bd.vertical]) {
         found = found == null ? y : pick(found, y);
       }
     }
@@ -2294,7 +2300,7 @@ export function computeCabinet(params, profileOverride) {
     for (const bd of roofList) {
       if (x < bd.x0 - 1e-9 || x > bd.x1 + 1e-9) continue;
       return roundTo(Math.max(0, Math.min(H,
-        slopeHeightAt(roofLine, Math.max(bd.x0, Math.min(bd.x1, x))) - bd.vertical)), 4);
+        roofBoardTopAt(bd, Math.max(bd.x0, Math.min(bd.x1, x))) - bd.vertical)), 4);
     }
     return sideH;
   };
@@ -2310,12 +2316,14 @@ export function computeCabinet(params, profileOverride) {
     for (const bd of roofList) {
       if (!(bd.x1 > a + 1e-9 && bd.x0 < b - 1e-9)) continue;
       for (const q of [Math.max(bd.x0, a), Math.min(bd.x1, b)]) {
-        const y = Math.max(0, Math.min(blank, slopeHeightAt(roofLine, q) - bd.vertical));
+        const y = Math.max(0, Math.min(blank, roofBoardTopAt(bd, q) - bd.vertical));
         const last = top[top.length - 1];
         const pt = [roundTo(q - a, 4), roundTo(y, 4)];
         // Two boards meeting over one side step the underside, and the step is
         // real: it is the two footprints, `G / cos β` apart. Only a repeated
-        // POINT is dropped.
+        // POINT is dropped. 01.11.2026 (the owner, the knee): the boards now
+        // meet on their undersides, so at a knee both ends give one point and
+        // it is dropped here as the repeat it is.
         if (last && Math.abs(last[0] - pt[0]) < 1e-9 && Math.abs(last[1] - pt[1]) < 1e-9) continue;
         top.push(pt);
       }
@@ -4012,14 +4020,46 @@ export function computeCabinet(params, profileOverride) {
     // edge is the cut height there). Its sockets come off the FULL height, so
     // they stay opposite the sides' tabs, and the pairs above the line are
     // dropped from both boards by the same line.
+    // ─── 01.11.2026 (the owner, the knee): THE BACK FOLLOWS THE BOARDS ─────
+    //
+    // *"i dostosuj tez plecy"*; *"plecy musza sie zgadzac, inaczej beda sie
+    // ludzie martwili, ze sa za krotkie i co nie dziala"*. SKYLON_COMMON.lsp
+    // SKY:roofBackPts, LISP first. Where a knee's boundary moved
+    // (`roofKneeSteps`), the back's top gives up the knee vertex for the
+    // vertical step the two board ends make there: at a convex knee the
+    // sloped board's outer corner, G * tan(beta / 2) * tan(beta) above the
+    // flat top, and the back rises to it. Its blank is then as tall as that
+    // corner (`backTall`), and the scene and the drawings are handed the roof
+    // line capped at H with the same steps, so all three cut one outline. With
+    // no step (no knee, or a knee whose boards meet level) every number below
+    // is the one it always was.
+    const backSteps = cutActive && roofList
+      ? roofKneeSteps(roofList).map((q) => ({
+        x: roundTo(q.x, 4), y: roundTo(q.y, 4), at: roundTo(q.at, 4), left: roundTo(q.left, 4), right: roundTo(q.right, 4),
+      }))
+      : [];
+    const backGeom = trimGeometryOnSlope(
+      backPanelGeometry({ w: backW, h: H, G, puzzle: pz }),
+      cutLine
+        ? (backSteps.length ? { ...cutLine, steps: backSteps } : cutLine)
+        : { w: backW, h: H, pts: [{ x: 0, y: H }, { x: backW, y: H }] },
+    );
+    // The blank is as tall as the outline it carries. Under one board that is
+    // `backH` itself; under a knee (a step, or a ridge between two falls) the
+    // outline may stand higher than both ends, and a back cut to `backH` there
+    // was short in the cut list and in the 3-D (the owner's worry, by name).
+    const backOutTop = cutActive && backGeom.outline.length
+      ? Math.max(...backGeom.outline.map((q) => q[1]))
+      : backH;
+    const backTall = backOutTop > backH + 1e-3 ? roundTo(backOutTop, 4) : backH;
+    const backLine = backSteps.length
+      ? roofLinePts(cutLine, H).map((q) => ({ x: roundTo(q.x, 4), y: roundTo(q.y, 4) }))
+      : null;
     const backCnc = {
       rotated: false,
       drawn_w: backW,
-      drawn_h: backH,
-      ...trimGeometryOnSlope(
-        backPanelGeometry({ w: backW, h: H, G, puzzle: pz }),
-        cutLine || { w: backW, h: H, pts: [{ x: 0, y: H }, { x: backW, y: H }] },
-      ),
+      drawn_h: backTall,
+      ...backGeom,
       // ─── TURN 46 (F6a): …AND THE SCENE READS THE SAME CUT ────────────────
       // *"the cut cabinet renders from the engine's own panels — no scene-side
       // twin geometry."* `3d/panelSolid.js` builds a board from a rectangle
@@ -4032,12 +4072,23 @@ export function computeCabinet(params, profileOverride) {
       // T47: the LINE, not its two ends. `hL`/`hR` stay beside it because the
       // scene's cache key and every T46 reader speak them, and they are exactly
       // what they always were — the first and last vertex (`cutEnds`).
-      ...(cutActive
+      ...(cutActive && !backLine
         ? {
           slopeCut: {
             pts: cutLine.pts.map((q) => ({ x: roundTo(q.x, 4), y: roundTo(q.y, 4) })),
             hL: roundTo(cutLine.pts[0].y, 4),
             hR: roundTo(cutLine.pts[cutLine.pts.length - 1].y, 4),
+          },
+        }
+        : {}),
+      // 01.11.2026: the knee's back, as the scene and the drawings must cut it.
+      ...(cutActive && backLine
+        ? {
+          slopeCut: {
+            pts: backLine,
+            hL: backLine[0].y,
+            hR: backLine[backLine.length - 1].y,
+            steps: backSteps,
           },
         }
         : {}),
@@ -4066,7 +4117,7 @@ export function computeCabinet(params, profileOverride) {
     // The condition is "the saw does NOT already say h" and not "wider than it
     // is tall", so a SQUARE back — the low cabinet's 600 × 600 — is answered
     // too rather than left to a tie-break nobody wrote down.
-    if (!(backH > backW)) backCnc.grain = 'h';
+    if (!(backTall > backW)) backCnc.grain = 'h';
     if (type.hangers) {
       // Two cut-outs at the top corners take the wall bracket (KIT_WUD L258-260).
       const HG = P.wallUnit.hangers;
@@ -4077,9 +4128,9 @@ export function computeCabinet(params, profileOverride) {
       ];
     }
     panels.push(panel({
-      id: 'BACK', part: 'BACK', role: 'back', w: backW, h: backH, thickness: G,
+      id: 'BACK', part: 'BACK', role: 'back', w: backW, h: backTall, thickness: G,
       edgeCode: codes.none, edgeLen: 0,
-      box: { x: 0, y: 0, z: 0, w: backW, h: backH, d: G },
+      box: { x: 0, y: 0, z: 0, w: backW, h: backTall, d: G },
       cnc: backCnc,
       ...(cutActive ? {
         meta: {
@@ -4092,6 +4143,8 @@ export function computeCabinet(params, profileOverride) {
             // nothing in this file assumes five.
             knees: cutLine.pts.slice(1, -1).map((q) => roundTo(q.x, 4)),
             corners: backCnc.outline.length,
+            // 01.11.2026: where the back steps with the boards, and how far.
+            ...(backSteps.length ? { steps: backSteps } : {}),
           },
         },
       } : {}),

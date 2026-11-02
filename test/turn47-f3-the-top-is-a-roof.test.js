@@ -199,21 +199,35 @@ test('ONE BOARD PER SEGMENT — a board does not bend at a knee', () => {
   // So the flat board spans 283.4315, the raked one 900 − 283.4315 = 616.5685
   // of plan, faceLen = 616.5685/cos 45° = 871.9595, blank = + G·tan 45° = 889.9595.
   const kneeX = 340 - 40 * Math.SQRT2; // = 283.43146
-  assert.deepEqual(boards.map((p) => p.meta.slopeCut.span), [283.4315, 616.5685]);
-  assert.deepEqual(boards.map((p) => p.meta.slopeCut.blankLen), [283.4315, 889.9595]);
+  // 01.11.2026 AMENDED (the owner, the knee: *"wyrownanie edga musi byc od
+  // srodka, nie od zewnatrz, wiec automatycznie skosna plyta bedzie troszeczke
+  // dluzsza"*, *"wariant B, koduj"*): the two boards meet on their
+  // UNDERSIDES, not at the knee of their tops. Re-derived: the flat underside
+  // is 1960 − 18 = 1942; the raked one hangs 18 / cos 45° = 25.4558 under
+  // y = 2243.4315 − x, so it is 1942 at x = 2243.4315 − 25.4558 − 1942 =
+  // 275.9757 = kneeX − 18 · tan 22.5°. The flat board spans 275.9757, the raked
+  // one 900 − 275.9757 = 624.0243 of plan, faceLen 624.0243 / cos 45° =
+  // 882.5037, blank + G · tan 45° = 900.5037. Each keeps its own β.
+  const boundary = kneeX - G * Math.tan(Math.PI / 8); // = 275.97562
+  assert.deepEqual(boards.map((p) => p.meta.slopeCut.span), [275.9757, 624.0243]);
+  assert.deepEqual(boards.map((p) => p.meta.slopeCut.blankLen), [275.9757, 900.5037]);
   // Between them they span the whole width, edge to edge, with no gap and no
   // overlap — a roof with a hole in it is not a roof. The level board is
   // asserted as it stands; the leant one by DOING the rotation (chat-fix
   // 25.08.2026: the box is the level board, the lean is the meta's).
   assert.equal(boards[0].box.x, 0);
-  assert.equal(boards[0].box.x + boards[0].box.w, 283.4315, 'the flat board ends at the mitred knee');
-  assert.ok(Math.abs(283.4315 - kneeX) < 1e-3, '…and 283.4315 IS 340 − 40√2, re-derived');
+  assert.equal(boards[0].box.x + boards[0].box.w, 275.9757, 'the flat board ends where the undersides meet');
+  assert.ok(Math.abs(275.9757 - boundary) < 1e-3, '…and 275.9757 IS 340 − 40√2 − 18 · tan 22.5°, re-derived');
   const pv = boards[1].meta.tilt_pivot;
   const topY = boards[1].box.y + boards[1].box.h;
   const [lx] = spin([boards[1].box.x, topY], pv, boards[1].meta.tilt_deg);
   const [rx] = spin([boards[1].box.x + boards[1].box.w, topY], pv, boards[1].meta.tilt_deg);
-  assert.ok(Math.abs(Math.min(lx, rx) - kneeX) < 1e-3, 'the leant board starts at the knee');
+  assert.ok(Math.abs(Math.min(lx, rx) - boundary) < 1e-3, 'the leant board starts where the undersides meet');
   assert.ok(Math.abs(Math.max(lx, rx) - 900) < 1e-3, '…and ends at the wall');
+  // …and the inside is flush: the two undersides at the boundary, equal.
+  const flatUnder = boards[0].meta.slopeCut.level;
+  const rakedUnder = (2243.4315 - boundary) - G / Math.cos(Math.PI / 4);
+  assert.ok(Math.abs(flatUnder - rakedUnder) < 1e-3, `no step inside: ${flatUnder} vs ${rakedUnder}`);
 });
 
 test('…and a ceiling that bends twice makes THREE', () => {
@@ -288,12 +302,19 @@ test('the roof over a PENTAGON is two boards: the flat top, then the fall', () =
   // 40√5 = 89.4427; the lowered fall runs 2310.5573 → 1110.5573 and crosses
   // H = 2150 at x = 125 − 20√5 = 80.2786.
   const kneeX = 125 - 20 * Math.sqrt(5); // = 80.27864
-  assert.ok(Math.abs(boards[0].meta.slopeCut.to - kneeX) < 1e-3);
+  // 01.11.2026 AMENDED (the owner, the knee: *"wariant B, koduj"*; *"plecy
+  // musza sie zgadzac"*): the boards meet where their UNDERSIDES meet, the
+  // knee less G · tan(β / 2) = 18 · tan 31.7175° = 11.1246, at 69.1540; the
+  // back follows them, with the step the two ends make there (H up to the
+  // raked board's corner, H + 11.1246 · 2 = 2172.2492).
+  const boundary = kneeX - G * Math.tan(Math.atan(2) / 2); // = 69.15403
+  assert.ok(Math.abs(boards[0].meta.slopeCut.to - boundary) < 1e-3);
   assert.equal(boards[0].meta.slopeCut.to, boards[1].meta.slopeCut.from,
-    'one knee, shared to the byte');
+    'one boundary, shared to the byte');
   const back = r.panels.find((p) => p.id === 'BACK');
-  assert.ok(back.cnc.outline.some(([x, y]) => Math.abs(x - kneeX) < 1e-3 && y === H),
-    'the board and the outline agree, because they are the same walk');
+  assert.ok(back.cnc.outline.some(([x, y]) => Math.abs(x - boundary) < 1e-3 && y === H)
+    && back.cnc.outline.some(([x, y]) => Math.abs(x - boundary) < 1e-3 && Math.abs(y - 2172.2492) < 1e-3),
+  'the boards and the back agree: the step at the boundary');
   assert.equal(boards[0].meta.slopeCut.deg, 0, 'level under the flat ceiling');
   assert.equal(boards[1].meta.slopeCut.deg, 63.4349);
 });

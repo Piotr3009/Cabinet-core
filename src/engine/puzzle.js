@@ -892,7 +892,9 @@ export function roofBoards(cut, { h, G } = {}) {
   const pts = roofLinePts(cut, h);
   if (!pts) return null;
   const t = Math.max(0, Number(G) || 0);
-  const out = [];
+  // The segments with a length, each with its own beta and its vertical
+  // footprint, exactly as they were measured before the knee law.
+  const segs = [];
   for (let i = 1; i < pts.length; i += 1) {
     const a = pts[i - 1];
     const b = pts[i];
@@ -901,26 +903,172 @@ export function roofBoards(cut, { h, G } = {}) {
     const deg = slopeSegDeg(span, b.y - a.y);
     const rad = (deg * Math.PI) / 180;
     const cos = Math.cos(rad);
-    const vertical = cos > SLOPE_EPS ? t / cos : t;
+    segs.push({
+      a, b, span, deg, rad, cos, vertical: cos > SLOPE_EPS ? t / cos : t,
+    });
+  }
+  if (!segs.length) return null;
+  // ─── 01.11.2026 (the owner): AT A KNEE THE BOARDS MEET ON THEIR UNDERSIDES ─
+  //
+  // *"wyrownanie edga musi byc od srodka, nie od zewnatrz, wiec automatycznie
+  // skosna plyta bedzie troszeczke dluzsza ... i dostosuj tez plecy"*;
+  // *"wariant B, koduj"*. SKYLON_COMMON.lsp SKY:roofKneeX and SKY:roofBoards,
+  // LISP first. The boundary of two boards is where their UNDERSIDES meet
+  // (`roofKneeX`), held between the left board's own start and the right
+  // board's own end, so the walk stays left to right. Every board keeps its
+  // own top line, its beta and its vertical ends; only where it ends moves.
+  // A roof of one board has no boundary and is the board it always was.
+  const ends = segs.map((s) => ({ x0: s.a.x, x1: s.b.x }));
+  for (let k = 1; k < segs.length; k += 1) {
+    const p = segs[k - 1];
+    const q = segs[k];
+    // A vertical step in the line (two ends that do not touch) is no knee.
+    const joined = Math.abs(p.b.x - q.a.x) < SLOPE_EPS && Math.abs(p.b.y - q.a.y) < SLOPE_EPS;
+    if (!joined || !(t > 0)) continue;
+    const xb = Math.max(ends[k - 1].x0, Math.min(q.b.x, roofKneeX(p, q)));
+    ends[k - 1].x1 = xb;
+    ends[k].x0 = xb;
+  }
+  const out = [];
+  segs.forEach((s, k) => {
+    const { x0, x1 } = ends[k];
+    const span = x1 - x0;
+    if (!(span > SLOPE_EPS)) return;
+    // Read on the board's OWN line, run on or cut back along itself; an end
+    // that did not move is the vertex it always was, to the bit.
+    const y0 = x0 === s.a.x ? s.a.y : s.a.y + (s.b.y - s.a.y) * ((x0 - s.a.x) / s.span);
+    const y1 = x1 === s.b.x ? s.b.y : s.a.y + (s.b.y - s.a.y) * ((x1 - s.a.x) / s.span);
+    const { cos, rad, vertical } = s;
     out.push({
       index: out.length + 1,
-      x0: a.x,
-      x1: b.x,
-      y0: a.y,
-      y1: b.y,
+      x0,
+      x1,
+      y0,
+      y1,
       span,
-      deg,
+      deg: s.deg,
       faceLen: cos > SLOPE_EPS ? span / cos : span,
       blankLen: (cos > SLOPE_EPS ? span / cos : span) + t * Math.abs(Math.tan(rad)),
       vertical,
-      rise: Math.abs(b.y - a.y),
+      rise: Math.abs(y1 - y0),
       // The board's bounding box in the elevation: its underside's lowest point
       // and its upper face's highest.
-      level: Math.min(a.y, b.y) - vertical,
-      top: Math.max(a.y, b.y),
+      level: Math.min(y0, y1) - vertical,
+      top: Math.max(y0, y1),
+      // The knee each moved end was laid off, so the back can take the step
+      // the two ends make (`roofKneeSteps`). Absent where an end did not move.
+      ...(x0 !== s.a.x ? { knee0: { x: s.a.x, y: s.a.y } } : {}),
+      ...(x1 !== s.b.x ? { knee1: { x: s.b.x, y: s.b.y } } : {}),
+    });
+  });
+  return out.length ? out : null;
+}
+
+/**
+ * ─── THE KNEE (01.11.2026): WHERE TWO ROOF BOARDS' UNDERSIDES MEET ─────────
+ *
+ * SKYLON_COMMON.lsp SKY:roofKneeX, 1:1. `p` is the left segment and `q` the
+ * right one, sharing the knee (xk, yk) of the roof line; each underside hangs
+ * its own vertical footprint `G / cos β` under its top line:
+ *
+ *     y = yk + m1 (x − xk) − v1,   y = yk + m2 (x − xk) − v2
+ *     xb = xk + (v1 − v2) / (m1 − m2)
+ *
+ * Convex, flat then slope: `xk + G · tan(β / 2)` along the slope (the sloped
+ * board runs on); concave: the other way (the flatter board runs on); equal
+ * slopes: the knee itself. The caller holds it inside the pair.
+ */
+export function roofKneeX(p, q) {
+  const m1 = (p.b.y - p.a.y) / p.span;
+  const m2 = (q.b.y - q.a.y) / q.span;
+  if (!(Math.abs(m1 - m2) > 1e-12)) return p.b.x;
+  return p.b.x + (p.vertical - q.vertical) / (m1 - m2);
+}
+
+/**
+ * A roof board's own TOP line at an x (SKY:roofTopAt): the board's two ends,
+ * interpolated, held at its ends beyond them. On a roof of one board this is
+ * `slopeHeightAt` over the roof line itself, to the bit, because it IS the
+ * same two points and the same expression.
+ */
+export function roofBoardTopAt(bd, x) {
+  return slopeHeightAt({ pts: [{ x: bd.x0, y: bd.y0 }, { x: bd.x1, y: bd.y1 }] }, x);
+}
+
+/**
+ * ─── THE BACK FOLLOWS THE BOARDS (01.11.2026) ──────────────────────────────
+ *
+ * *"plecy musza sie zgadzac, inaczej beda sie ludzie martwili, ze sa za
+ * krotkie i co nie dziala."* (SKY:roofBackTopPts.) At every knee whose
+ * boundary moved, the two board ends stand at `at` and their tops at `left`
+ * and `right`; the knee itself is (`x`, `y`), on both top lines. A back cut on
+ * the roof line takes these as `cut.steps` (`trimOutlineOnSlope`): the knee
+ * vertex gives way to the vertical step the two ends make.
+ *
+ * @returns {Array<{x, y, at, left, right}>} empty where no knee moved.
+ */
+export function roofKneeSteps(boards) {
+  const out = [];
+  const list = Array.isArray(boards) ? boards : [];
+  for (let k = 1; k < list.length; k += 1) {
+    const p = list[k - 1];
+    const q = list[k];
+    if (!p.knee1 || !q.knee0 || Math.abs(p.x1 - q.x0) > SLOPE_EPS) continue;
+    if (Math.abs(p.y1 - q.y0) < SLOPE_EPS) continue;
+    out.push({
+      x: p.knee1.x, y: p.knee1.y, at: p.x1, left: p.y1, right: q.y0,
     });
   }
-  return out.length ? out : null;
+  return out;
+}
+
+/**
+ * The line's height at an x, the knee steps counted (SKY:roofBackTopPts read
+ * at one x): between a knee and its moved boundary the LONGER board's top,
+ * which runs from the knee to that board's own end; everywhere else the line.
+ * With no steps it is `slopeHeightAt`, by identity of the call.
+ */
+export function roofStepHeightAt(cut, x) {
+  const steps = Array.isArray(cut?.steps) ? cut.steps : [];
+  const xv = Number(x) || 0;
+  for (const s of steps) {
+    const lo = Math.min(s.x, s.at);
+    const hi = Math.max(s.x, s.at);
+    if (!(xv > lo && xv < hi)) continue;
+    const far = s.at > s.x ? s.left : s.right;
+    return s.y + (far - s.y) * ((xv - s.x) / (s.at - s.x));
+  }
+  return slopeHeightAt(cut, xv);
+}
+
+/**
+ * An outline cut on the roof line, given the knee steps: the vertex at each
+ * knee gives way to the two board ends at the moved boundary, in the order the
+ * outline walks them. A knee the outline does not carry as a vertex, or whose
+ * neighbour lies nearer than the boundary (a socket notch inside the 6 mm),
+ * is left as cut, which is the line's own shape there.
+ */
+export function stepOutlineAtKnees(outline, steps) {
+  const list = Array.isArray(steps) ? steps : [];
+  if (!list.length || !Array.isArray(outline) || outline.length < 3) return outline;
+  let out = outline.map((p) => [p[0], p[1]]);
+  for (const s of list) {
+    const k = out.findIndex(([x, y]) => Math.abs(x - s.x) < 1e-3 && Math.abs(y - s.y) < 1e-3);
+    if (k < 0) continue;
+    const n = out.length;
+    const prev = out[(k - 1 + n) % n];
+    const next = out[(k + 1) % n];
+    const leftward = prev[0] > next[0];
+    // The neighbour on the boundary's side must lie beyond it.
+    const beyond = s.at > s.x
+      ? Math.max(prev[0], next[0]) > s.at + 1e-6
+      : Math.min(prev[0], next[0]) < s.at - 1e-6;
+    if (!beyond) continue;
+    const A = [round4(s.at), round4(s.right)];
+    const B = [round4(s.at), round4(s.left)];
+    out = [...out.slice(0, k), ...(leftward ? [A, B] : [B, A]), ...out.slice(k + 1)];
+  }
+  return out;
 }
 
 /**
@@ -1160,7 +1308,10 @@ export function trimOutlineOnSlope(outline, cut) {
   const last = clean[clean.length - 1];
   if (clean.length > 1 && first && last
     && Math.abs(first[0] - last[0]) < SLOPE_EPS && Math.abs(first[1] - last[1]) < SLOPE_EPS) clean.pop();
-  return clean;
+  // 01.11.2026 (the owner, *"i dostosuj tez plecy"*): a back cut on the roof
+  // line takes the knee steps the boards make (`roofKneeSteps`). A cut with no
+  // `steps` is every cut before tonight and returns `clean` as it was.
+  return Array.isArray(cut.steps) && cut.steps.length ? stepOutlineAtKnees(clean, cut.steps) : clean;
 }
 
 /**
@@ -1170,7 +1321,9 @@ export function trimOutlineOnSlope(outline, cut) {
  */
 export function trimGeometryOnSlope(geom, cut) {
   if (!geom || !slopeCutActive(cut)) return geom;
-  const at = (x) => slopeHeightAt(cut, x);
+  // 01.11.2026: with knee steps a pocket or a hole is asked of the back's own
+  // top (`roofStepHeightAt`); with none, of the line, as it always was.
+  const at = (x) => (Array.isArray(cut.steps) && cut.steps.length ? roofStepHeightAt(cut, x) : slopeHeightAt(cut, x));
   return {
     ...geom,
     outline: trimOutlineOnSlope(geom.outline, cut),

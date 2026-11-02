@@ -97,9 +97,24 @@ test('…and it never runs past the cabinet\'s own height', () => {
   // ceiling itself.
   assert.equal(panelOf(r, 'BUR').h, 1106.3081);
   // Not one board goes past the cabinet's own height.
+  // 01.11.2026 AMENDED (the owner, the knee: *"wyrownanie edga musi byc od
+  // srodka, nie od zewnatrz ... i dostosuj tez plecy"*, *"wariant B,
+  // koduj"*): but one. The two roof boards meet on their undersides, so the
+  // sloped one runs on past the knee and its outer corner stands
+  // G * tan(beta / 2) * tan(beta) = 22.2492 above H, ON the cut line, and the
+  // back follows it. That corner, and only it, is above H.
+  const beta = Math.atan(2);
+  const poke = G * Math.tan(beta / 2) * Math.tan(beta);
   for (const p of r.panels) {
-    if (p.box) assert.ok(p.box.y + p.box.h <= H + 1e-6, `${p.id} at ${p.box.y + p.box.h}`);
+    if (!p.box) continue;
+    const allowed = p.id === 'BACK' ? H + poke + 1e-3 : H + 1e-6;
+    assert.ok(p.box.y + p.box.h <= allowed, `${p.id} at ${p.box.y + p.box.h}`);
   }
+  const back = panelOf(r, 'BACK');
+  const corner = back.cnc.outline.find(([, y]) => y > H + 1e-6);
+  assert.ok(Math.abs(corner[1] - (H + poke)) < 1e-3, `the corner at ${corner[1]}`);
+  // …on the cut line: 2310.5573 - 2x at the corner's own x.
+  assert.ok(Math.abs(corner[1] - (2310.5573 - 2 * corner[0])) < 1e-3, 'on the cut line');
 });
 
 test('a side under a FLAT stretch of ceiling carries no angle and no bevel', () => {
@@ -166,8 +181,12 @@ test('A SIDE THAT SPANS A KNEE carries TWO angles and the vertex between them', 
   assert.ok(bul.meta.slopeCut.angles[1].deg > 0, 'then the fall');
   // The vertex between them is the knee, and it is at the CARCASS knee's own x
   // (T54-F1: the mitred-offset intersection, not the ceiling's 25).
-  assert.equal(bul.meta.slopeCut.angles[0].to, 8.4315);
-  assert.equal(bul.meta.slopeCut.angles[1].from, 8.4315);
+  // 01.11.2026 AMENDED (the owner, the knee: *"wariant B, koduj"*): the two
+  // roof boards meet on their UNDERSIDES, and the side stops under those, so
+  // the vertex is where they meet: the knee less G * tan(45 / 2) = 7.4558,
+  // 8.4315 - 7.4558 = 0.9757.
+  assert.equal(bul.meta.slopeCut.angles[0].to, 0.9757);
+  assert.equal(bul.meta.slopeCut.angles[1].from, 0.9757);
   // The blank is the peak over the whole 18 — the flat part's carcass height
   // (1800 − 40), less that flat board's own 18.
   // T54-F1 AMENDED (28.08.2026): was 1782 = 1800 − 18 off the ceiling.

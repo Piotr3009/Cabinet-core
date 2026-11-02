@@ -1250,6 +1250,47 @@
 ;;;
 ;;; ONE BOARD PER SEGMENT. A board does not bend at a knee.
 ;;;
+;;; AT A KNEE THE TWO BOARDS MEET ON THEIR UNDERSIDES (01.11.2026, the owner,
+;;; screenshot in hand: a wardrobe whose slope crosses its own height, the
+;;; sloped board and the flat one meeting at the knee):
+;;;
+;;;   "wyrownanie edga musi byc od srodka, nie od zewnatrz, wiec automatycznie
+;;;    skosna plyta bedzie troszeczke dluzsza ... i dostosuj tez plecy"
+;;;   "wariant B, koduj"
+;;;   "plecy musza sie zgadzac, inaczej beda sie ludzie martwili, ze sa za
+;;;    krotkie i co nie dziala"
+;;;
+;;; Until that night the two boards of a knee met where their TOP faces meet
+;;; (the knee of the roof line), so the steeper board's underside, which hangs
+;;; G / cos(beta) under its top, stood G / cos(beta) - G under its neighbour's:
+;;; a step INSIDE the cabinet, 5.5 mm at 40 degrees. THE LAW: the boundary of
+;;; two roof boards is where their UNDERSIDES intersect, so the inside is one
+;;; flush line and the step, where there is one, is OUTSIDE, under the ceiling.
+;;; Each board keeps its own top line (its segment of the roof line, run on or
+;;; cut back along itself), its own beta and its VERTICAL ends; only where it
+;;; ends moves.
+;;;
+;;;   undersides  y = yk + m1 (x - xk) - G / cos(b1)
+;;;               y = yk + m2 (x - xk) - G / cos(b2)
+;;;   boundary    xb = xk + (G / cos(b1) - G / cos(b2)) / (m1 - m2)
+;;;
+;;; At a CONVEX knee (flat then slope: the cut line rising into the cap at the
+;;; cabinet's height, or falling from it) that is xb = xk + G * tan(beta / 2)
+;;; along the slope: the SLOPED board is longer by G * tan(beta / 2) in plan
+;;; (its face by that over cos(beta)), the flat board shorter by the same, the
+;;; cut angles unchanged, and the sloped board's outer corner stands
+;;; G * tan(beta / 2) * tan(beta) above the flat top, on its own line, which
+;;; under a cap IS the cut line. At a CONCAVE knee (a valley: flat then
+;;; rising, falling then flat, two slopes) the same formula moves the boundary
+;;; the other way: the FLATTER board runs on and the step is a notch outside.
+;;; Two equal slopes meet at the knee itself, as before. The boundary is held
+;;; inside the pair, so the walk stays left to right (SKY:roofKneeX).
+;;;
+;;; THE BACK FOLLOWS THE BOARDS. A full back is cut to the boards' own
+;;; silhouette: the roof line, and at every knee the vertical step the two
+;;; board ends make at xb (SKY:roofBackPts), so a back is never short of the
+;;; boards it stands behind.
+;;;
 ;;; A three-axis machine cannot cut the two end bevels or the sides' angled
 ;;; tops. This file states the DEGREES so the sheet can print them and the
 ;;; joiner can set the saw; the five-axis representation is written down as
@@ -1628,23 +1669,106 @@
 (defun SKY:roofLinePts (szer wys pts)
   (SKY:slopeTopPts szer wys pts))
 
+;;; A board's own TOP line, read at any x: its segment of the roof line, run on
+;;; or cut back along itself. `s` is one of SKY:slopeSegments' (x0 y0 x1 y1 deg).
+(defun SKY:roofTopAt (s x / x0 y0 x1 y1)
+  (setq x0 (nth 0 s) y0 (nth 1 s) x1 (nth 2 s) y1 (nth 3 s))
+  (if (< (abs (- x1 x0)) 1e-9)
+    y1
+    (+ y0 (* (- y1 y0) (/ (- x x0) (- x1 x0))))))
+
+;;; THE KNEE (01.11.2026, "wyrownanie edga musi byc od srodka, nie od
+;;; zewnatrz"): where two neighbouring roof boards' UNDERSIDES meet. `a` is the
+;;; left segment and `b` the right one, sharing the knee (xk yk); each
+;;; underside hangs its own G / cos(beta) under its top line:
+;;;   xb = xk + (G / cos(b1) - G / cos(b2)) / (m1 - m2)
+;;; Convex, flat then slope: xk + G * tan(beta / 2) along the slope. Equal
+;;; slopes: the knee itself. Held between `lo` and `hi` (the left board's own
+;;; start and the right board's own end) so the walk stays left to right.
+(defun SKY:roofKneeX (a b G lo hi / xk m1 m2 v1 v2 xb)
+  (setq xk (nth 2 a))
+  (setq m1 (/ (- (nth 3 a) (nth 1 a)) (- (nth 2 a) (nth 0 a))))
+  (setq m2 (/ (- (nth 3 b) (nth 1 b)) (- (nth 2 b) (nth 0 b))))
+  (setq v1 (SKY:roofVertDrop G (nth 4 a)))
+  (setq v2 (SKY:roofVertDrop G (nth 4 b)))
+  (setq xb (if (< (abs (- m1 m2)) 1e-12) xk (+ xk (/ (- v1 v2) (- m1 m2)))))
+  (max lo (min hi xb)))
+
 ;;; The roof boards, left to right:
 ;;;   ((x0 x1 y0 y1 deg L L_MAX vdrop) ...)
 ;;; A board does not bend at a knee, so a line with an interior vertex makes
-;;; more than one board and each carries its own beta.
-(defun SKY:roofBoards (szer wys pts G / segs out span deg)
+;;; more than one board and each carries its own beta. AT A KNEE THE TWO MEET
+;;; ON THEIR UNDERSIDES (01.11.2026, the law above): the boundary is
+;;; SKY:roofKneeX, and each board's y0 and y1 are its own top line read at its
+;;; two boundaries. Ends VERTICAL, so L and L_MAX are the law's own, over the
+;;; board's new span. A roof of one board is the roof it always was.
+(defun SKY:roofBoards (szer wys pts G / segs raw bnd out span deg k n a b xb x0 x1)
   (setq segs (SKY:slopeSegments (SKY:roofLinePts szer wys pts)))
-  (setq out '())
+  (setq raw '())
   (foreach s segs
-    (setq span (- (nth 2 s) (nth 0 s)))
-    (setq deg (nth 4 s))
-    (if (> span 1e-9)
-      (setq out (cons (list (nth 0 s) (nth 2 s) (nth 1 s) (nth 3 s) deg
-                            (SKY:roofFaceLen span deg)
-                            (SKY:roofBlankLen span deg G)
-                            (SKY:roofVertDrop G deg))
-                      out))))
+    (if (> (- (nth 2 s) (nth 0 s)) 1e-9) (setq raw (cons s raw))))
+  (setq raw (reverse raw))
+  (if (null raw)
+    nil
+    (progn
+      ;; the boundaries, left to right: the first board's start, every knee
+      ;; moved to the meeting of the undersides, the last board's end. A
+      ;; vertical step in the line (two ends that do not touch) is no knee.
+      (setq bnd (list (nth 0 (car raw))))
+      (setq n (length raw) k 1)
+      (while (< k n)
+        (setq a (nth (1- k) raw) b (nth k raw))
+        (setq xb (if (and (> G 1e-9)
+                          (equal (nth 2 a) (nth 0 b) 1e-9)
+                          (equal (nth 3 a) (nth 1 b) 1e-9))
+                   (SKY:roofKneeX a b G (car bnd) (nth 2 b))
+                   (nth 0 b)))
+        (setq bnd (cons xb bnd))
+        (setq k (1+ k)))
+      (setq bnd (reverse (cons (nth 2 (last raw)) bnd)))
+      (setq out '() k 0)
+      (foreach s raw
+        (setq x0 (nth k bnd) x1 (nth (1+ k) bnd))
+        (setq span (- x1 x0))
+        (setq deg (nth 4 s))
+        (if (> span 1e-9)
+          (setq out (cons (list x0 x1 (SKY:roofTopAt s x0) (SKY:roofTopAt s x1) deg
+                                (SKY:roofFaceLen span deg)
+                                (SKY:roofBlankLen span deg G)
+                                (SKY:roofVertDrop G deg))
+                          out)))
+        (setq k (1+ k)))
+      (reverse out))))
+
+;;; THE BACK FOLLOWS THE BOARDS (01.11.2026): "plecy musza sie zgadzac,
+;;; inaczej beda sie ludzie martwili, ze sa za krotkie i co nie dziala."
+;;; The back's TOP, left to right: the roof boards' own top faces end to end,
+;;; and at a knee whose two board ends stand at different heights the vertical
+;;; step between them. One board, or boards that meet level, is exactly
+;;; SKY:slopeTopPts' walk.
+(defun SKY:roofBackTopPts (szer wys pts G / out p bd)
+  (setq out '())
+  (foreach bd (SKY:roofBoards szer wys pts G)
+    (foreach p (list (list (nth 0 bd) (nth 2 bd)) (list (nth 1 bd) (nth 3 bd)))
+      (if (or (null out) (> (distance p (car out)) 1e-9))
+        (setq out (cons p out)))))
   (reverse out))
+
+;;; The back's OUTLINE, walked like every outline in this file: bottom-left,
+;;; bottom-right, up the right edge, back along the boards' top. The step at a
+;;; convex knee stands G * tan(beta / 2) * tan(beta) above the flat top; its
+;;; inside corner keeps the cutter's radius, in the air above the flat board.
+(defun SKY:roofBackPts (x0 y0 szer wys pts G / top)
+  (setq top (SKY:roofBackTopPts szer wys pts G))
+  (append (list (list x0 y0) (list (+ x0 szer) y0))
+          (mapcar '(lambda (p) (list (+ x0 (car p)) (+ y0 (cadr p))))
+                  (reverse top))))
+
+;;; Draw it, on OUTLINE, as SKY:drawSlopeCut draws every other cut panel.
+(defun SKY:drawRoofBack (x0 y0 szer wys pts G / out)
+  (setq out (SKY:roofBackPts x0 y0 szer wys pts G))
+  (makePolyline "OUTLINE" out)
+  out)
 
 ;;; NO DOG BONES ON THE ROOF BOARD. The owner's ruling, stated where the shape
 ;;; is: "gorny wieniec w tym przypadku nie moze miec dog bonesow." The blank is

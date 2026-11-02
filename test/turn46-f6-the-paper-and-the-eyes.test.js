@@ -46,8 +46,17 @@ test('F6a — the LINE the scene clips with is published by the engine, per pane
   // vertical reserve is 40 / cos β = 89.4427: 2400 − 89.4427 = 2310.5573 and
   // 1200 − 89.4427 = 1110.5573. Still two points — a straight ceiling lowers
   // to a straight line, parallel, no knee appears.
+  // 01.11.2026 AMENDED (the owner, the knee: *"i dostosuj tez plecy"*,
+  // *"plecy musza sie zgadzac"*): the cap at H makes a knee at 80.2787, the
+  // two roof boards meet on their undersides 11.1246 short of it, and the
+  // back follows them up to the raked board's corner, 2172.2492, above H. So
+  // the back publishes the roof line CAPPED at H (its blank is now taller than
+  // H) and the step the two board ends make, and the scene cuts both.
   assert.deepEqual(back.cnc.slopeCut, {
-    pts: [{ x: 0, y: 2310.5573 }, { x: 600, y: 1110.5573 }], hL: 2310.5573, hR: 1110.5573,
+    pts: [{ x: 0, y: 2150 }, { x: 80.2787, y: 2150 }, { x: 600, y: 1110.5573 }],
+    hL: 2150,
+    hR: 1110.5573,
+    steps: [{ x: 80.2787, y: 2150, at: 69.154, left: 2150, right: 2172.2492 }],
   });
   // The FRONT's is in the SHEET's frame — the inside mirror — because that is
   // the frame its outline is in and the frame the scene rebuilds it in.
@@ -60,10 +69,13 @@ test('F6a — the LINE the scene clips with is published by the engine, per pane
   });
   // …and every one of them cuts the panel's own rectangle to the panel's own
   // outline, which is the parity the claim is made of.
+  // 01.11.2026 AMENDED: rebuilt from the published record WHOLE, as the scene
+  // hands it (`{ w, h, ...panel.cnc.slopeCut }`, 3d/panelSolid.js), because a
+  // back under a knee is no longer two ends and a straight line.
   for (const p of [back, front]) {
     const { drawn_w: w, drawn_h: h } = p.cnc;
     const rebuilt = trimOutlineOnSlope([[0, 0], [w, 0], [w, h], [0, h]], {
-      w, h, hL: p.cnc.slopeCut.hL, hR: p.cnc.slopeCut.hR,
+      w, h, ...p.cnc.slopeCut,
     });
     assert.deepEqual(rebuilt, p.cnc.outline, `${p.id}: the scene rebuilds the sheet's shape`);
   }

@@ -15,7 +15,7 @@
 // The source is one of the two angles or the user's render; one click of
 // Generate asks Joinery Core for at most `profile.visuals.aiTries` (3) pictures
 // in sequence (lib/aiVisualise.js), each shown as it arrives with "Use this
-// one" under it, Stop between calls. Nothing is kept until "Use this one":
+// one" under it, Stop between calls, each try in its own room (chat, 02.11.2026). Nothing is kept until "Use this one":
 // then ONE picture is kept under `profile.visuals.maxKb` in
 // `project.visuals.ai` and the set shows "Visualisation, AI" ticked.
 
@@ -48,18 +48,25 @@ export default function AiVisualCard({ project = null, visuals = null, initial =
 
   const generate = async () => {
     if (running) return;
-    const prompt = buildPrompt({ project, design: project?.design, units, profile: getCabinetProfile(), extra });
+    // Chat, 02.11.2026: each try asks with its own room (lib/aiVisualise.js roomOfAttempt), the furniture the same;
+    // the picture keeps the prompt it was made with, so "Use this one" stores that one.
+    const promptOf = (k) => buildPrompt({ project, design: project?.design, units, profile: getCabinetProfile(), extra, attempt: k });
+    const prompts = {};
     stopRef.current = false;
-    setLastPrompt(prompt);
+    setLastPrompt(promptOf(1));
     setPictures([]);
     setError(null);
     setRunning(true);
     try {
       const run = await generateRun({
         tries,
-        call: () => visualise({ image: source?.image, prompt, size, quality, numbers }),
+        call: (k) => {
+          prompts[k] = promptOf(k);
+          setLastPrompt(prompts[k]);
+          return visualise({ image: source?.image, prompt: prompts[k], size, quality, numbers });
+        },
         onProgress: (k) => setProgress(k),
-        onPicture: (pic) => setPictures((list) => [...list, pic]),
+        onPicture: (pic, k) => setPictures((list) => [...list, { ...pic, prompt: prompts[k] }]),
         shouldStop: () => stopRef.current,
       });
       if (run.error) setError(run.error);
@@ -71,7 +78,7 @@ export default function AiVisualCard({ project = null, visuals = null, initial =
 
   const chooseOne = async (pic) => {
     const res = await keepChosen(pic.image, {
-      prompt: lastPrompt,
+      prompt: pic.prompt || lastPrompt,
       numbers,
       setVisual: useProjectStore.getState().setVisual,
     });

@@ -610,6 +610,9 @@ export const NEW_FILES = [
   // (*"wariant B, koduj"*; *"plecy musza sie zgadzac"*, the owner, 23:14).
   'test/slope-knee.test.js',
   'scripts/t78-classify.d/f60-slope-knee.mjs',
+  // The AI prompt (02.11.2026, in chat): the colours of the picture kept, each try in its own room
+  // (*"chodzi o to zeby nigdy nie zmienial kolorystyki elementow"*; *"koduj"*, the owner, 01:28).
+  'test/ai-prompt-rooms.test.js',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

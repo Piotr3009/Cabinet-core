@@ -66,10 +66,10 @@ dash in anything written; the Skylon header on every new file.
 ## THE AGENTS
 | Agent | Slice | OWNS (writes) | Hands patches to |
 | - | - | - | - |
-| Marek (INT) | integration, F8 links client, F11 Delete, F12 store side, the walk, the PR | `src/stores/projectStore.js`, `src/stores/uiStore.js`, `src/pages/ConfiguratorPage.jsx`, `src/lib/deleteKey.js`, `src/lib/jcLinks.js`, `src/stores/materialLinkStore.js`, `src/components/studio/RailMenus.jsx`, `src/lib/outputMenu.js` and `src/components/TopBar.jsx` (the Output entry only), `scripts/t-cc1a-fake-jc.mjs` (grows, loses nothing), `scripts/t-cc3a-walk.mjs` (NEW), `scripts/t78-classify.d/f61-t-cc3a-*.mjs` (NEW), `test/turn59-f1-the-switch.test.js`, `test/turn77-f5-no-copyright-line.test.js`, `test/turn-cc3a-f08-*.test.js`, `test/turn-cc3a-f11-*.test.js`, `test/turn-cc3a-f12-*.test.js`, `verify/t-cc3a/walk.txt`, `verify/t-cc3a/*.png` | nobody |
-| Wiktor (A1) | PART A (recess drawers, runner holes, LED knee, Cabineo face) and the physics of F12 | `reference/lisp/KIT_RECESS.lsp`, `reference/lisp/KIT_WARDROBE_FULL.lsp` (only where F1 needs it), `src/engine/cabinet.js`, `src/engine/extension.js`, `src/engine/ledStrips.js`, `src/3d/panelSolid.js`, `src/engine/covers.js`, `test/turn-cc3a-f01-*.test.js` to `test/turn-cc3a-f04-*.test.js` | Marek (uiStore, projectStore) |
+| Marek (INT) | integration, F8 links client, F11 Delete, F10 store side, the walk, the PR | `src/stores/projectStore.js`, `src/stores/uiStore.js`, `src/pages/ConfiguratorPage.jsx`, `src/lib/deleteKey.js`, `src/lib/jcLinks.js`, `src/stores/materialLinkStore.js`, `src/components/studio/RailMenus.jsx`, `src/lib/outputMenu.js` and `src/components/TopBar.jsx` (the Output entry only), `scripts/t-cc1a-fake-jc.mjs` (grows, loses nothing), `scripts/t-cc3a-walk.mjs` (NEW), `scripts/t78-classify.d/f61-t-cc3a-*.mjs` (NEW), `test/turn59-f1-the-switch.test.js`, `test/turn77-f5-no-copyright-line.test.js`, `test/turn-cc3a-f08-*.test.js`, `test/turn-cc3a-f11-*.test.js`, `verify/t-cc3a/walk.txt`, `verify/t-cc3a/*.png` | nobody |
+| Wiktor (A1) | PART A (recess drawers, runner holes, LED knee, Cabineo face) and the physics of F10 | `reference/lisp/KIT_RECESS.lsp`, `reference/lisp/KIT_WARDROBE_FULL.lsp` (only where F1 needs it), `src/engine/cabinet.js`, `src/engine/extension.js`, `src/engine/ledStrips.js`, `src/3d/panelSolid.js`, `src/engine/covers.js`, `test/turn-cc3a-f01-*.test.js` to `test/turn-cc3a-f04-*.test.js` | Marek (uiStore, projectStore) |
 | Bruno (A2) | PART B (shelf supports, metal, screw packs arithmetic) and PART D (edging codes) | `src/engine/bom.js`, `src/engine/bomInvoice.js`, `src/engine/catalogue.js`, `src/engine/catalogueData.js` (append only), `scripts/t-cc2a-catalogue.mjs`, `test/fixtures/catalogue-ids.v1.json` (append only), `src/engine/profile.js` (THE NUMBERS rows only), `src/engine/design.js` (the metal fields only), `src/engine/hardwareFinishOf.js` (NEW, pure), `src/3d/hardwareFinish.js` (the one call to the engine resolver), `test/turn-cc3a-f05-*.test.js` to `test/turn-cc3a-f07-*.test.js`, `test/turn-cc3a-f16-*.test.js` | Wiktor (every `cabinet.js` line of F5 and F16), Marek (store wiring) |
-| Julia (A3) | PART C (the scene: selection, Delete's other half, doors, the pull-down, the watches, the red drawer finding) and PART E's windows (X-ray out, Connect button out, J-pull window, the pack labels window) | `src/3d/UnitView.jsx`, `src/3d/Hardware.jsx`, `src/3d/Scene.jsx`, `src/3d/Props.jsx`, `src/3d/coneroModels.js`, `src/3d/glbSource.js`, `src/lib/propsSource.js`, `src/components/BomPanel.jsx`, `src/components/LinkMaterialsModal.jsx`, `src/components/DrawingModal.jsx`, `src/components/JpullRunModal.jsx`, `src/components/PackLabelsModal.jsx` (NEW), `src/engine/drawings/wallSheets.js`, `src/engine/drawings/projector.js`, `src/engine/drawings/setSheet.js`, `src/engine/cnc/layers.js` (the X-ray inks only), `src/engine/checks.js`, `src/engine/handles.js`, `test/turn-cc3a-f09-*.test.js`, `test/turn-cc3a-f10-*.test.js`, `test/turn-cc3a-f13-*.test.js` to `test/turn-cc3a-f15-*.test.js`, `test/turn-cc3a-f17-*.test.js`, `test/turn-cc3a-f18-*.test.js` | Marek (projectStore, uiStore, ConfiguratorPage, the Output entry), Wiktor (cabinet.js) |
+| Julia (A3) | PART C (the scene: selection, Delete's other half, doors, the pull-down, the watches, the red drawer finding) and PART E's windows (X-ray out, Connect button out, J-pull window, the pack labels window) | `src/3d/UnitView.jsx`, `src/3d/Hardware.jsx`, `src/3d/Scene.jsx`, `src/3d/Props.jsx`, `src/3d/coneroModels.js`, `src/3d/glbSource.js`, `src/lib/propsSource.js`, `src/components/BomPanel.jsx`, `src/components/LinkMaterialsModal.jsx`, `src/components/DrawingModal.jsx`, `src/components/JpullRunModal.jsx`, `src/components/PackLabelsModal.jsx` (NEW), `src/engine/drawings/wallSheets.js`, `src/engine/drawings/projector.js`, `src/engine/drawings/setSheet.js`, `src/engine/cnc/layers.js` (the X-ray inks only), `src/engine/checks.js`, `src/engine/handles.js`, `test/turn-cc3a-f09-*.test.js`, `test/turn-cc3a-f10-*.test.js`, `test/turn-cc3a-f12-*.test.js`, `test/turn-cc3a-f13-*.test.js` to `test/turn-cc3a-f15-*.test.js`, `test/turn-cc3a-f17-*.test.js`, `test/turn-cc3a-f18-*.test.js` | Marek (projectStore, uiStore, ConfiguratorPage, the Output entry), Wiktor (cabinet.js) |
 | Hania (A4) | PART E's print: the part labels' edge order, the pack labels PDF | `src/lib/labelsPdf.js`, `src/lib/packLabelsPdf.js` (NEW, pure), `src/engine/partNumbers.js` (the edge record only), `test/turn-cc3a-f19-*.test.js`, `test/turn-cc3a-f20-*.test.js` | Julia (the window), Bruno (the edge codes) |
 | Ewa | the UX check of PART C and PART E from the walk's frames | `verify/t-cc3a/ewa.txt` | Julia (findings), the PR (her table) |
 | Ola | targeted runs, suite per PART and at the end, goldens, classifier, the proof pass | `verify/t-cc3a/ola.txt` | the PR (the numbers) |
@@ -106,6 +106,11 @@ dash in anything written; the Skylon header on every new file.
 - 02.11.2026, 02:01 (the pack): *"ty liczysz ile srubek, jak bedziemy
   przypisywac to ja podaje ilosc srubek w paczce i wtedy liczy 500 srubek / 1000
   = 0.5 paczki, proste"*.
+- 02.11.2026, 02:12 (his answers): the pack labels: *"48 nie, bo to za duzo ... a4
+  naklejki nie zmieniaj, chcialem dodac nowe ... okolo 6 naklejek na jednej
+  stronie, po zapakowaniu, zeby byl item do oklejenia"*; the pull-down: *"siatka
+  3d, jest setki tych, jakby to troche uproscic, to by sie latwiej ladowalo"*;
+  a drawer behind a shut door opens the door first: *"3 moze byc"*.
 
 ## WHAT JOINERY CORE GIVES (read, do not assume more)
 - Everything T-CC1a, T-CC1b and T-CC2a list holds unchanged.
@@ -344,7 +349,7 @@ and coverage fields), `src/lib/linkSuggest.js:35` to `:39` `LINK_RULES`;
    pack of 0 is refused 22023 and the words reach the row; a saved pack of 1000
    reads back and prices F7's line.
 
-## PART C · THE SCENE (F9 to F15; Julia, Marek F11 and F12's store, Wiktor checks)
+## PART C · THE SCENE (F9 to F15; Julia, Marek F11 and F10's store, Wiktor checks)
 
 ### F9 · The red drawer finding (the owner: *"ciagly czerwony blad z szufladami"*)
 Facts: `src/components/studio/lib/studioIssues.js:76` gives a red triangle for
@@ -367,9 +372,8 @@ nothing; only closing a leaf closes what it covers, `:1122`); `:1180` to `:1184`
 and `src/engine/covers.js:30`, `:48`, `:64` (`coveredByLeaf`, `pullOutsOf`);
 `src/3d/Hardware.jsx:1381` the pull-down's click; Open all `uiStore.js:1194`.
 1. Opening a drawer front, an internal drawer or a pull-down that a SHUT leaf
-   covers opens that leaf first, then the drawer (one click, PROPOSED: the
-   joiner opens the door with his other hand; the scene does what the hand
-   does). Open all opens leaves before what they cover. Closing a leaf closes
+   covers opens that leaf first, then the drawer (one click, CONFIRMED: *"3 moze
+   byc"*). Open all opens leaves before what they cover. Closing a leaf closes
    what it covers first (as today).
 2. `test/turn-cc3a-f10-doors.test.js`: every covered drawer and pull-down of the
    fixtures: a click with the leaf shut ends with the leaf open; the drawer is
@@ -400,23 +404,24 @@ pull-down is a kit (`uiStore.js:1180`).
    gone, the cabinet stands; the same for the pull-down and the watch insert;
    click the carcass, Delete: the cabinet goes; the list of every kind.
 
-### F12 · The pull-down's "hundreds of triangles" (the owner, 00:45)
-The owner's words can mean the red or amber warning triangles over the
-pull-down, or the triangles of its mesh. Do both checks and fix the one that
-is true (both if both):
-1. The warnings: count the issue markers and findings a wardrobe with one
-   pull-down raises; a finding repeated per segment, per frame or per vertex is
-   a bug: one finding per cause.
-2. The mesh: the pull-down is a GLB from the bucket (`profile.js:1595` to
-   `:1598`, `src/3d/coneroModels.js:62` to `:153` `coneroClone`, no
-   decimation); count its triangles at load (`src/3d/glbSource.js`) and, when
+### F12 · The pull-down's mesh, lighter (the owner, 02:12: *"siatka 3d ... jakby to troche uproscic, to by sie latwiej ladowalo"*)
+Facts: the pull-down is a GLB from the bucket (`profile.js:1595` to `:1598`,
+`lifts/conero/conero-pantograf-730.glb`, not in the repo); `src/3d/coneroModels.js:62`
+to `:153` `coneroClone` clones it with no decimation; `src/3d/glbSource.js:50`
+loads it.
+1. Count its triangles and its bytes at load and write both in the PR. When it is
    over the PROPOSED ceiling `profile.visuals.pulldownMaxTriangles` 8000,
-   simplify it once at load with three's own `SimplifyModifier`
-   (`three/examples/jsm/modifiers/SimplifyModifier.js`, part of the `three`
+   simplify it ONCE at load with three's own `SimplifyModifier`
+   (`three/examples/jsm/modifiers/SimplifyModifier.js`, inside the `three`
    package already installed: NO new dependency) to the ceiling, the silhouette
-   checked on a frame. The GLB in the bucket is not touched.
-3. `test/turn-cc3a-f12-pulldown.test.js`: one finding per cause; the triangle
-   count after load under the ceiling (a fixture mesh stands in for the GLB).
+   checked on a frame beside the original.
+2. Honest about loading: a simplification at load makes the scene draw faster,
+   not the file download faster. When the session can read the GLB, it writes a
+   lighter copy of the same file to `verify/t-cc3a/conero-pantograf-730.light.glb`
+   with its size, for the owner to upload to the bucket in place of the old one;
+   when it cannot reach the bucket, the PR says so and only point 1 is done.
+3. `test/turn-cc3a-f12-pulldown.test.js`: a fixture mesh over the ceiling comes
+   out under it; one under the ceiling is untouched; the clone keeps its pose.
 
 ### F13 · The watches load every time (the owner: *"czasami nie laduje mi sie srodek z zegarkami"*)
 Facts: the insert is engine boxes (`cabinet.js:10999` to `:11293`,
@@ -522,10 +527,10 @@ override `:584` to `:588`); 3D `src/3d/jpullProfile.js`, `UnitView.jsx:413`.
    offset 50 from the hinge side: the notch in the CNC and the band in the 3D at
    the same place; out of range values clamp and say so.
 
-### F18 · Pack labels, the window (the owner: *"naklejki 46 sztuk na A4"*)
+### F18 · Pack labels, the window (the owner, 02:12: *"okolo 6 naklejek na jednej stronie, po zapakowaniu"*)
 ```
  Pack labels                                  [x]
- Labels per cabinet  [ 1 ]        Sheet  4 x 12 (48 on A4)  <- profile numbers
+ Labels per cabinet  [ 1 ]        Sheet  2 x 3 (6 on A4)  <- profile numbers
  [x] 01 Wardrobe 1000      [x] 02 Wardrobe 600     ...   (all ticked, a search box)
  Preview: the first page            [ Export PDF ]
 ```
@@ -548,15 +553,16 @@ override `:584` to `:588`); 3D `src/3d/jpullProfile.js`, `UnitView.jsx:413`.
 ```
 1. `src/lib/packLabelsPdf.js` (NEW, pure, jsPDF as the part labels use it):
    A4, a grid from `profile.labels.pack` (columns, rows, label width and
-   height, top and left margin, gaps: PROPOSED 4 x 12 = 48 of 45.7 x 21.2 mm,
-   the standard 48 on A4 sheet; the owner said 46, which no standard sheet
-   has: the PR asks him for his sheet's numbers); the cabinet number as the
+   height, top and left margin, gaps: PROPOSED 2 x 3 = 6 of 99.1 x 93.1 mm, the
+   standard 6 on A4 sheet, big enough to read on a packed item across the
+   workshop); the cabinet number at 36 pt, the rest at 14 pt (PROPOSED); the
+   cabinet number as the
    drawings name it, the client and the site address from the title block's
    source (the project as JC gives it; a missing one prints nothing, never
    "undefined"), the colours as the BOM names them. Nothing under 7 pt; a line
    too long shrinks to 7 pt, then cuts with an ellipsis.
-2. `test/turn-cc3a-f19-pack-print.test.js`: 48 labels on page 1 at the grid's
-   places; 49 labels make two pages; a long address never leaves its label; no
+2. `test/turn-cc3a-f19-pack-print.test.js`: 6 labels on page 1 at the grid's
+   places; 7 labels make two pages; a long address never leaves its label; no
    "undefined" or "null" in the text.
 
 ### F20 · The edge order on the part labels (the owner: *"kolejnosc 1 - 2 na przeciwko, boki plyty, i 3 i 4 front i tyl"*)
@@ -577,7 +583,9 @@ ALL EDGES or EDGE.
    long, PROPOSED); only taped edges are numbered (a front-only shelf shows "1"
    on its front). `edgeArrowOf` and the DXF arrow stay as they are (FROZEN 1).
 2. `labelsPdf.js`: `drawEdgeIcon` draws the board with the numbered edges;
-   "NO EDGE" stays for none.
+   "NO EDGE" stays for none. The part labels' sheet, their size, their grid and
+   everything else on them do NOT change (the owner, 02:12: *"a4 naklejki nie
+   zmieniaj"*): only the edge drawing inside each label.
 3. `test/turn-cc3a-f20-edge-order.test.js`: an adjustable shelf 1-2 sides, 3
    front, 4 back; a front-only shelf "1"; a door with four edges 1-2 short, 3-4
    long; the label agrees with the part for every part of the fixtures.
@@ -590,7 +598,7 @@ ALL EDGES or EDGE.
 - Any new kit; retail (`src/retail/**`) except what the copy machine makes.
 
 ## IF THE NIGHT RUNS SHORT (the order things fall, whole)
-F12.2 (the mesh simplification) falls first, then F13.2 (the watches moving with
+F12.2 (the lighter GLB copy) falls first, then F13.2 (the watches moving with
 the drawer), then F17's Position (length and height stay), then F18's preview,
 then F20's numbering for parts other than shelves. F1 to F11, F14 to F16, F18
 and F19 never fall.
@@ -644,8 +652,7 @@ in words (what was true, what was fixed); the edging audit's counts; the
 re-pinned goldens with their rows; the EXEMPT rows and the manifest count before
 and after; the tests rewritten and deleted by name; the test count before and
 after; the walk; Ewa's table; Hania's check; Ola's numbers; DECISIONS TAKEN; the
-PROPOSED points for the owner (the pack words, the opening of a shut leaf, the
-element kinds, the pull-down ceiling, the retry numbers, the J-pull field names,
+PROPOSED points for the owner (the pack words, the element kinds, the pull-down ceiling, the retry numbers, the J-pull field names,
 the label sheet numbers, the edge order of parts without a front); SKIPPED AND
 WHY; RED AT THE END; THE NUMBERS below.
 
@@ -662,5 +669,5 @@ WHY; RED AT THE END; THE NUMBERS below.
 | the pull-down triangle ceiling | `profile.visuals.pulldownMaxTriangles` | 8000 | PROPOSED |
 | a failed picture's retry | `profile.visuals` | once after 3 s, then on the next toggle | PROPOSED |
 | the J-pull shortest run | `profile.handles.jpull.minRunMm` | 300 | as today, moved out of the UI |
-| the pack label sheet | `profile.labels.pack` | 4 x 12 of 45.7 x 21.2 mm | PROPOSED (the owner said 46) |
+| the pack label sheet | `profile.labels.pack` | 2 x 3 of 99.1 x 93.1 mm, 36 pt and 14 pt | PROPOSED (*"okolo 6 naklejek na jednej stronie"*) |
 | the smallest print on a label | `profile.labels.minPt` | 7 | PROPOSED |

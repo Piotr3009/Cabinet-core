@@ -1,71 +1,63 @@
-# CLAUDE.md, TURN CC2a · LINK MATERIALS: ONE CATALOGUE IN CABINET CORE, ONE LINK PER COMPANY TO JOINERY CORE'S STOCK
+# CLAUDE.md, TURN CC3a · THE WORKSHOP NIGHT: RECESS DRAWERS, SHELF SUPPORTS, SCREW PACKS, EDGING, DELETE, DOORS, LABELS
 
 Run autonomously. Zero questions, zero stops: every decision below is the
-owner's own (01.11.2026, 11:50 to 13:33, in chat, after a team brainstorm of
-eight agents and four mockups; his words are quoted where they decide), so
-nothing here is asked again. Where a number or a name is marked PROPOSED it is
-the turn's best reading and is used as written; the owner confirms or changes
-it after the merge, never during the run. If a point cannot be done, skip it
-WHOLE, write why in the PR, and go on to the next. Full suite, never
-`--silent`. Frames under `verify/t-cc2a/`. Branch `claude/t-cc2a-link-materials`,
-cut from `origin/main` (the merge of PR #96, c3542b9), with THIS file and
-`test/fixtures/owner-projects/` taken from `origin/chat/t-cc2a-spec`; one commit
-per F; PR against main at the end; the owner merges. Nothing lands in Petros
-from this session. Commit author: `Claude <noreply@anthropic.com>` (an author
-Vercel does not know blocks the preview). The owner's name for this turn is
-"T-CC2a". It stands on T-CC1b (PR #96), merged.
+owner's own (01.11.2026, 22:43, and 02.11.2026, 00:45 to 02:01, in chat; his
+words are quoted where they decide), so nothing here is asked again. Where a
+number or a name is marked PROPOSED it is the turn's best reading and is used as
+written; the owner confirms or changes it after the merge, never during the run.
+If a point cannot be done, skip it WHOLE, write why in the PR, and go on to the
+next. Full suite, never `--silent`. Frames under `verify/t-cc3a/`. Branch
+`claude/t-cc3a-workshop-night`, cut from `origin/main` (the merge of THIS brief's
+PR); one commit per F; PR against main at the end; the owner merges. Nothing
+lands in Petros from this session. Commit author: `Claude <noreply@anthropic.com>`
+(an author Vercel does not know blocks the preview). The owner's name for this
+turn is "T-CC3a". It stands on main after PR #103 (the AI prompt), merged.
 
-Its Joinery Core half is T-JC3a in the Joinery Core repository (brief on
-`chat/t-jc3a-spec` there): ONE table `cc_material_links` and TWO functions.
-This turn never calls a live Joinery Core: the fake of `scripts/t-cc1a-fake-jc.mjs`
-grows exactly the contract written under WHAT JOINERY CORE GIVES, and the
-owner's walk after both merges is the live proof. Release order, written in the
-PR: the SQL of T-JC3a in JC's Supabase, the JC merge, then this merge. This
-turn works (degraded, in words) when the JC half is not there yet.
+Its Joinery Core half is T-JC3b in the Joinery Core repository (its CLAUDE.md on
+main there): ONE nullable column `pack_qty` on `cc_material_links` and
+`cc_save_material_links` taught to store it. This turn never calls a live
+Joinery Core: the fake of `scripts/t-cc1a-fake-jc.mjs` grows exactly that
+contract, and CC works (degraded, in words) when the JC half is not there yet.
+Release order, written in the PR: the SQL of T-JC3b in JC's Supabase, the JC
+merge, then this merge.
 
-THE OWNER'S FRAME (01.11, 12:14): *"tu chodzi o polaczenie 2 programow CC i JC,
-do wszystkich plyt na przyklad MDF 18 mamy przypisany material z JC MAT 018
-MDF 18 i jak program go wybierze to bedzie na liscie BOM z przypisanym
-materialem ... ale jesli CC wybierze MDF 25 a nie mamy przypisanego materialu
-z JC to bedzie napisane MDF 25 materials not assigned, proste, chodzi o robienie
-listy materialow na dany projekt oraz listy kosztow"*. 12:50: *"kod nie moze
-wybierac poprzez nazwe bo nazwe mozemy zmienic i koniec, CC powinien miec swoja
-(nie widoczna) numeracje materialow, a nazwa tylko sie wyswietla"*.
-
-THIS TURN REVERSES T-CC1b's LAW 6 ("a material in Cabinet Core IS a row of the
-tenant's stock_items"). From tonight a material in Cabinet Core is an entry of
-CC's OWN CATALOGUE with a hidden id that never changes; a company LINKS each
-entry once to one row of its own Joinery Core stock; the BOM of every project
-reads the links. THE ENGINE'S GEOMETRY IS NOT TOUCHED: `src/engine/cabinet.js`,
-every kit, every `cnc/*`, `machining.js`, `lifts.js`, `liftSystems.js` have no
-delta; every golden is IDENTICAL by definition and the checks run anyway.
+THE OWNER'S FRAME (02.11.2026, 01:42 to 02:01): *"daj cala liste na noc ...
+rozdziel to na nasz team i robimy nocna zmiane w codzie"*; *"to wszystko plus rob
+tez i C"*. Group C (the pack labels, the J-pull, the edge order on the labels)
+has no mockup tonight: the layouts written in PART E below ARE the mockup, and
+the owner corrects them in the morning from the frames.
 
 ## THE COST OF THE NIGHT
-THREE writing agents, one integrator, two checkers, all in parallel from the
+FOUR writing agents, one integrator, two checkers, all in parallel from the
 first minute. One writer per file: a file is in exactly one OWNS cell below,
 and every other agent that needs a line in it hands a patch to its owner.
 NO review wave: a slice is reviewed ONCE by Marek when its patch lands; the
-morning audit is the chat's (Kamil and Wiktor). Targeted tests while writing;
-the full suite ONCE per PART when it lands and ONCE at the end, always in the
-background (Ola). Every agent reads this file and its PART, never the whole
-repo. A report is twenty lines, the six stations of DONE. Agents and parallel
-mode ON.
+morning audit is the chat's (Kamil and Wiktor's own second look). Targeted
+tests while writing; the full suite ONCE per PART when it lands and ONCE at the
+end, always in the background (Ola). Every agent reads this file and its PART,
+never the whole repo. A report is twenty lines, the six stations of DONE.
+Agents and parallel mode ON.
 
 ## THE TEAM (the owner's standing team, Petros shelf "programming-team"; the cards in one line)
 - **Marek** integrator: the only writer of shared files, the fake, the walk,
-  the freeze manifest, the PR. Never merges.
-- **Bruno** engine: catalogue, resolver, BOM arithmetic. LISP IS LAW; numbers
-  in the profile, never typed in code or UI; finds the working pattern in the
-  repo before writing.
-- **Julia** interface: the Link materials window, the BOM view, Project
-  settings. Lists always visible plus a search box with a clear cross; images
+  the freeze manifest, the classifier fragments, NEW_FILES, the PR. Never merges.
+- **Wiktor** physics and construction: nothing that cannot exist (a drawer
+  through a closed door, a pocket through a whole board, a runner screwed into
+  the wrong board). LISP IS LAW: the LISP is amended FIRST, then the engine.
+- **Bruno** engine: the BOM, the catalogue, the edging codes, the numbers.
+  Numbers in the profile, never typed in code or UI; finds the working pattern
+  in the repo before writing.
+- **Julia** interface: the windows, the menus, the selection, the drawings
+  window. Lists always visible plus a search box with a clear cross; images
   enlarge on click; copy in English; "employee", never "worker".
-- **Ewa** UX check (writes nothing but her report): walks Julia's screens from
-  the walk's frames as a joiner who sees them the first time; counts clicks;
-  checks the words. Julia builds, Ewa checks.
-- **Ola** tests and CI (writes nothing but her report): runs the targeted
-  tests, the suite per PART and at the end, the golden checks, the classifier;
-  reports numbers, never fixes.
+- **Hania** print: the part labels and the new pack labels; nothing under 7 pt
+  on a label, nothing cut off, no empty half page.
+- **Ewa** UX check (writes nothing but her report): walks the frames of PART C
+  and PART E as a joiner who sees them the first time; counts clicks; checks
+  the words.
+- **Ola** tests and CI (writes nothing but her report): targeted runs, the
+  suite per PART and at the end, the goldens, the classifier; reports numbers,
+  never fixes.
 Shared rules of the team: truth with evidence (file and line, command and
 result); "I do not know" when not known; every agent gives at least one
 objection to its own slice in its report (rule 13 of the team); no em or en
@@ -74,540 +66,551 @@ dash in anything written; the Skylon header on every new file.
 ## THE AGENTS
 | Agent | Slice | OWNS (writes) | Hands patches to |
 | - | - | - | - |
-| Marek (INT) | PART D (links client, store, clean start, migration) and integration; applies patches in F order; EXEMPT rows, re-hashes, NEW_FILES; `scripts/t78-classify.d/f56-t-cc2a-f*.mjs`; the walk; the PR | `src/lib/jcLinks.js` (NEW), `src/stores/materialLinkStore.js` (NEW), `src/stores/materialAssignmentStore.js`, `src/stores/projectStore.js`, `src/pages/ConfiguratorPage.jsx`, `src/components/studio/RailMenus.jsx`, `scripts/t-cc1a-fake-jc.mjs` (grows, loses nothing), `scripts/t-cc2a-walk.mjs` (NEW), `test/turn59-f1-the-switch.test.js`, `test/turn-cc2a-f12-*.test.js` to `test/turn-cc2a-f14-*.test.js`, `verify/t-cc2a/walk.txt`, `verify/t-cc2a/*.png` | nobody |
-| Bruno (A1) | PART A (catalogue, resolver, one source) and PART B (lines, arithmetic, paint) | `src/engine/catalogue.js` (NEW), `src/engine/catalogueData.js` (NEW, generated, append only), `scripts/t-cc2a-catalogue.mjs` (NEW), `test/fixtures/catalogue-ids.v1.json` (NEW, the ledger), `src/engine/bom.js`, `src/engine/materials.js`, `src/engine/thickness.js` (the board lookup at :104 only), `src/engine/spray.js`, `src/engine/companyDefaults.js`, `src/engine/profile.js` (THE NUMBERS rows only), `test/turn-cc2a-f01-*.test.js` to `test/turn-cc2a-f07-*.test.js` | Marek (projectStore, store wiring) |
-| Julia (A2) | PART C (the Link materials window, suggestions, the BOM view, Project settings, the new item) | `src/components/LinkMaterialsModal.jsx` (NEW), `src/lib/linkSuggest.js` (NEW, pure), `src/components/MaterialPicker.jsx`, `src/components/BomPanel.jsx`, `src/components/SettingsPanel.jsx`, `src/components/AssignMaterialsModal.jsx` (the read-only banner only), `src/components/NewProjectFlow.jsx` (the preselected defaults only), `test/turn-cc2a-f08-*.test.js` to `test/turn-cc2a-f11-*.test.js` | Marek (RailMenus entry, ConfiguratorPage mount, projectStore `bespoke`) |
-| Ewa | the UX check of PART C from the walk's frames | `verify/t-cc2a/ewa.txt` | Julia (findings), the PR (her table) |
-| Ola | targeted runs, suite per PART and at the end, goldens, classifier, the proof pass | `verify/t-cc2a/ola.txt` | the PR (the numbers) |
+| Marek (INT) | integration, F8 links client, F11 Delete, F10 store side, the walk, the PR | `src/stores/projectStore.js`, `src/stores/uiStore.js`, `src/pages/ConfiguratorPage.jsx`, `src/lib/deleteKey.js`, `src/lib/jcLinks.js`, `src/stores/materialLinkStore.js`, `src/components/studio/RailMenus.jsx`, `src/lib/outputMenu.js` and `src/components/TopBar.jsx` (the Output entry only), `scripts/t-cc1a-fake-jc.mjs` (grows, loses nothing), `scripts/t-cc3a-walk.mjs` (NEW), `scripts/t78-classify.d/f61-t-cc3a-*.mjs` (NEW), `test/turn59-f1-the-switch.test.js`, `test/turn77-f5-no-copyright-line.test.js`, `test/turn-cc3a-f08-*.test.js`, `test/turn-cc3a-f11-*.test.js`, `verify/t-cc3a/walk.txt`, `verify/t-cc3a/*.png` | nobody |
+| Wiktor (A1) | PART A (recess drawers, runner holes, LED knee, Cabineo face) and the physics of F10 | `reference/lisp/KIT_RECESS.lsp`, `reference/lisp/KIT_WARDROBE_FULL.lsp` (only where F1 needs it), `src/engine/cabinet.js`, `src/engine/extension.js`, `src/engine/ledStrips.js`, `src/3d/panelSolid.js`, `src/engine/covers.js`, `test/turn-cc3a-f01-*.test.js` to `test/turn-cc3a-f04-*.test.js` | Marek (uiStore, projectStore) |
+| Bruno (A2) | PART B (shelf supports, metal, screw packs arithmetic) and PART D (edging codes) | `src/engine/bom.js`, `src/engine/bomInvoice.js`, `src/engine/catalogue.js`, `src/engine/catalogueData.js` (append only), `scripts/t-cc2a-catalogue.mjs`, `test/fixtures/catalogue-ids.v1.json` (append only), `src/engine/profile.js` (THE NUMBERS rows only), `src/engine/design.js` (the metal fields only), `src/engine/hardwareFinishOf.js` (NEW, pure), `src/3d/hardwareFinish.js` (the one call to the engine resolver), `test/turn-cc3a-f05-*.test.js` to `test/turn-cc3a-f07-*.test.js`, `test/turn-cc3a-f16-*.test.js` | Wiktor (every `cabinet.js` line of F5 and F16), Marek (store wiring) |
+| Julia (A3) | PART C (the scene: selection, Delete's other half, doors, the pull-down, the watches, the red drawer finding) and PART E's windows (X-ray out, Connect button out, J-pull window, the pack labels window) | `src/3d/UnitView.jsx`, `src/3d/Hardware.jsx`, `src/3d/Scene.jsx`, `src/3d/Props.jsx`, `src/3d/coneroModels.js`, `src/3d/glbSource.js`, `src/lib/propsSource.js`, `src/components/BomPanel.jsx`, `src/components/LinkMaterialsModal.jsx`, `src/components/DrawingModal.jsx`, `src/components/JpullRunModal.jsx`, `src/components/PackLabelsModal.jsx` (NEW), `src/engine/drawings/wallSheets.js`, `src/engine/drawings/projector.js`, `src/engine/drawings/setSheet.js`, `src/engine/cnc/layers.js` (the X-ray inks only), `src/engine/checks.js`, `src/engine/handles.js`, `test/turn-cc3a-f09-*.test.js`, `test/turn-cc3a-f10-*.test.js`, `test/turn-cc3a-f12-*.test.js`, `test/turn-cc3a-f13-*.test.js` to `test/turn-cc3a-f15-*.test.js`, `test/turn-cc3a-f17-*.test.js`, `test/turn-cc3a-f18-*.test.js` | Marek (projectStore, uiStore, ConfiguratorPage, the Output entry), Wiktor (cabinet.js) |
+| Hania (A4) | PART E's print: the part labels' edge order, the pack labels PDF | `src/lib/labelsPdf.js`, `src/lib/packLabelsPdf.js` (NEW, pure), `src/engine/partNumbers.js` (the edge record only), `test/turn-cc3a-f19-*.test.js`, `test/turn-cc3a-f20-*.test.js` | Julia (the window), Bruno (the edge codes) |
+| Ewa | the UX check of PART C and PART E from the walk's frames | `verify/t-cc3a/ewa.txt` | Julia (findings), the PR (her table) |
+| Ola | targeted runs, suite per PART and at the end, goldens, classifier, the proof pass | `verify/t-cc3a/ola.txt` | the PR (the numbers) |
 
-## THE ORDER (the owner's words that frame this turn, 01.11.2026)
-- 11:50: *"musimy ustawic kolory jako default, to nie wyglada dobrze"*; 12:02:
-  *"przypisane prawdziwe materialy, z Egger boardow listy ... srodek carcasu to
-  walnut a fronty to red wine z RAL kolorem, poprostu wybrane default a ludzie
-  se beda zmieniac sami ... jak dadza next next next to zeby im biale nie
-  wyskoczylo"*; 12:34: *"domyslny h3325 tabaco gladstone oak"*.
-- 12:09: *"zebysmy przypisali pewne materialy na stale nie do projektu, tylko na
-  stale i wtedy cokolwiek sobie wygeneruje projekt to ma albo juz przypisane
-  materialy albo jest napisane materials not assigned"*.
-- 12:34: *"musimy miec liste materialow wszystkich materialow jakie CC uzywa i
-  wtedy dopiero przypisujemy wszystko a lista BOM do danego projektu sie bierze
-  z tej bazy danych"*; *"jak kiedys dodamy [Lamello] to zakodujemy lamelo do
-  bazy materialow i przypiszemy z JC"*; *"kazdy material musi miec identyfikator
-  ... nie moze byc po nazwie"*; *"jedne produkt osobna linia, proste"*; layout:
-  *"w data base assign material powinnismy miec departamenty podzielone na gorze
-  plyty, ironmongery etc etc, nie scrolowane ... polaczenie A i C plus B"*.
-- 12:50: *"kazdy tenant powinien sobie zlinkowac na maxa materialy na poczatku
-  a pozniej dodawac sukcesywnie ... najwazniejsze zeby te linki sie nigdy
-  klientowi nie rozlaczyly z jego DB ... bedziemy dodawac nowe materialy tez,
-  jak na przyklad kronospan w przyszlosci"*; *"w liscie materialow bedziemy
-  musieli dodac jeszcze add materialy bespoke (od klienta na przyklad inne
-  ironmongery)"*; paints: *"na farby jeden link z nazwa bespoke kolor (kolor w
-  nazwie), linkowanie kolorow nie ma sensu ... rozpuszczalnik 5 procent ilosc
-  farby ... ilosc farby na sqm malowania oraz dodac primer czy basecoat ... i
-  nie zapomnij dodac yieldy jak w production core"*; boards: *"decory wszystkie
-  ale podziel na rozne formy, narazie mamy eggery ale dojda veneery i dojda
-  przeciez fenixy i kronospany"*.
-- 13:28: sheets: *"cc zrobi nam 10 sqm a format plyty to 2.4 x 1.2 ... 2.88 sqm
-  ... dajmy 10 procent na offcuts bo zawsze zaokraglamy do gory, nawet jesli
-  wyjdzie 2.1 plyty musimy zamowic 3"*; *"jesli klient bedzie chcial mniej to
-  zmieni sobie w yeld ustawieniu"*; JC deletes a stock row: *"u nas sie robi
-  unassign, tenant musi podpiac inny material, to wszystko ... nie blokujemy, CC
-  nie ingeruje w decyzje tenanta w JC"*; price: *"srednia"* (JC's weighted
-  average, as today); paint per colour: *"2 razy zeby bylo widomo ile jednej i
-  drugiej farby"*; paints, stains, lacquers: *"farba bespoke kolor i tyle ...
-  bejca (bespoke kolor) nie piszemy jaka, i lakiery tylko piszemy lakier i tyle,
-  reszte wybiera i zamawia lakiernik"*; words: *"link bedzie lepiej brzmial"*;
-  backs, plinths, drawer bottoms: *"domyslne, ale mamy mozliwosc zmienic na
-  inne ... wyskoczy mu wybierz material z listy"*; suggestions: *"tylko
-  podpowiedz od akceptacji tenanta"*; bespoke: *"nie trafia do katalogu ale
-  dodaje do listy zakupow pod bespoke, bespoke nigdy nie idzie do stocku"*; no
-  "Add to JC stock" button: *"tylko informacja dodaj w JC do stocku zeby mozna
-  bylo przypisac"*; two turns: *"zgadzam sie z Ola i Kamilem"* (the old window's
-  deletion and the export wait for T-CC2b).
-- 13:33: *"przy przypisywaniu any sheets powinnismy dodac pole w CC ktore
-  wymusi wpisanie szerokosci i wysokosci materialow, tylko sheets, zeby mozna
-  bylo przeliczyc, z textu czytanie nie profesjonalne"*; the Pipeline total
-  with "incomplete" when a line is not linked: *"zgoda"*.
+## THE ORDER (the owner's words that frame this turn)
+- 01.11.2026, 22:43: *"szuflady we wnece ... 30 mm odsuniecia"*; *"do BOM kilka
+  materialow ... ilosc jest w paczce srub ... dodac zlote tuleje do BOM oraz
+  spoon do tulei"*.
+- 02.11.2026, 00:45, his answers to the chat's numbered questions: *"1 - usun,
+  niepotrzebny gadget, tylko przeszkadza"* (the X-ray sheet); *"2 - zostaw jak
+  jest, to nie wazne"* (render current view: no fold-left mode); *"5 - napraw,
+  nie ma pinow jak sa polki stale"*; *"6 - nie przy okuciach tylko przy srubach,
+  okucia nie w paczkach tylko pojedynczo"*; *"7 - 0.5 paczki"*; *"8 - tak"*;
+  *"9 - chrome domyslnie"*; *"tak przesun"* (the LED to the new knee). His
+  problems, the same message: the J-pull lets him change only its height and
+  should let him move it and change its length and height; *"pull down
+  handrail ma setki trojkatow ... mozna go otworzyc przy zamknietych drzwiach
+  ... to samo z szufladami"*; *"czasami nie laduje mi sie srodek z zegarkami"*;
+  *"deletem nie mozna usunac handraila, od razu usuwa sie cala szafa"* (check
+  every element); *"ciagly czerwony blad z szufladami"*; *"cabineo tylko od
+  strony gdzie sie je wycina"*; *"naklejki 46 sztuk na A4"* (for packed
+  elements: cabinet number, client, address, colour); edging: *"fronty, jesli
+  mamy fronty sprayowane, to nie zaznaczasz zadnego oklejania"*; *"polki
+  powinny byc oklejone z kazdej strony"*; *"kolejnosc 1 - 2 na przeciwko, boki
+  plyty, i 3 i 4 front i tyl"*; *"gory szuflad nie sa zaznaczone"*; *"dpr i dpl
+  boczne panele do szuflad, jak sa drzwi, nie maja okleiny od frontu"*.
+- 02.11.2026, 01:59: the chat wrote back the list of his answers and he
+  confirmed it whole (*"to wszystko plus rob tez i C"*): the X-ray sheet out;
+  drawers half in a recess get the DP at 30 mm and a filler; the runner holes
+  go into the DP; no pins at fixed shelves; packs only for screws, fittings
+  counted one by one; costed at the fraction (0.5 pack); a sleeve in every
+  drilled hole (12 per shelf) and a spoon in the bearing holes (4 per shelf);
+  chrome by default; the LED moves to the new knee.
+- 02.11.2026, 02:01 (the pack): *"ty liczysz ile srubek, jak bedziemy
+  przypisywac to ja podaje ilosc srubek w paczce i wtedy liczy 500 srubek / 1000
+  = 0.5 paczki, proste"*.
+- 02.11.2026, 02:12 (his answers): the pack labels: *"48 nie, bo to za duzo ... a4
+  naklejki nie zmieniaj, chcialem dodac nowe ... okolo 6 naklejek na jednej
+  stronie, po zapakowaniu, zeby byl item do oklejenia"*; the pull-down: *"siatka
+  3d, jest setki tych, jakby to troche uproscic, to by sie latwiej ladowalo"*;
+  a drawer behind a shut door opens the door first: *"3 moze byc"*.
 
 ## WHAT JOINERY CORE GIVES (read, do not assume more)
-- Everything T-CC1a and T-CC1b list (the session, `/api/auth/me`, the reads,
-  the seven `cc_*` functions, `stock_items`, `stock_categories`,
-  `company_settings`) holds unchanged.
-- ONE NEW READ through `/api/db/query`, owner, admin, manager, the tenant's
-  rows only: `cc_material_links` (`tenant_id`, `cc_material_id` text,
-  `stock_item_id` uuid, `yield` numeric, `sheet_width_mm` int null,
-  `sheet_length_mm` int null, `coverage_m2_per_l` numeric null, `updated_by`,
-  `updated_at`), primary key (`tenant_id`, `cc_material_id`). CC selects every
-  column but `tenant_id`.
-- TWO NEW FUNCTIONS through `/api/rpc` (JC injects `p_tenant_id` and
-  `p_user_id`; CC never sends them):
-  - `cc_save_material_links({ p_links })`: `p_links` a JSON array of 1 to 500
-    objects `{ cc_material_id, stock_item_id, yield?, sheet_width_mm?,
-    sheet_length_mm?, coverage_m2_per_l? }`; upserts each; answers `{ saved: n }`.
-    Refusals in words: 42501 (a `stock_item_id` not of this company, or the user
-    not of this company); 22023 (a bad argument: an id not matching
-    `^[a-z0-9][a-z0-9._-]{0,119}$`, `yield` outside 1.0 to 3.0, a sheet size
-    outside 100 to 6000 mm, a coverage outside 0.1 to 100, or an id starting
-    `sheet.` without BOTH sheet sizes).
-  - `cc_clear_material_link({ p_cc_material_id })`: deletes that link; answers
-    `{ cleared: true|false }`.
-- No foreign key from a link to `stock_items` (JC's tables are not altered):
-  a stock row the company deletes in JC leaves its link pointing at nothing,
-  and CC says so (F5). CC never writes `stock_items`, never reserves stock,
-  never touches a project's material list in this turn.
-- When the table or the functions are not there yet (the SQL not run): the read
-  answers 403 or 400 and the call answers 403 or 400. CC treats both as "Material
-  links are not set up in Joinery Core yet." (fail-open, F4).
+- Everything T-CC1a, T-CC1b and T-CC2a list holds unchanged.
+- `cc_material_links` gains ONE nullable column `pack_qty` (integer, 1 to
+  100000). `cc_save_material_links({ p_links })` accepts `pack_qty` in a link
+  (22023 `pack_qty must be a whole number from 1 to 100000 (<id>)` otherwise);
+  a save that does not name it keeps the stored one.
+- When the column is not there yet (the SQL not run): a select naming
+  `pack_qty` answers 400 (42703), and a save with `pack_qty` is stored WITHOUT it
+  (the old function ignores the key). CC must stay whole (F8).
 
 ## LAWS
-Every law of T75 to T-CC1b holds in full except T-CC1b's law 6, reversed above:
-LISP IS LAW (no engine geometry delta); the fossil six untouchable; material
-never enters material; one law one path; numbers in the profile, none typed;
-1:1 = COPY (`scripts/t78-copy.mjs --check` CLEAN); the Skylon header on every
-new file; no em or en dash in anything written; test the way the client
-clicks; a new function has a visible entry in the same package; a green test
-beside old broken code is a lie; "usun" and "kasacja" are physical deletions,
-never gates; the door is Joinery Core's; a change is memory, a save is one
-request. Nine laws are this turn's own:
-1. **ONE CATALOGUE, IDS NEVER CHANGE.** Every material Cabinet Core can put on
-   a list is ONE entry of `src/engine/catalogueData.js`, with a hidden id
-   written ONCE as a literal, never computed at run time, never shown to the
-   user, never reused, never deleted (a material CC stops offering gets
-   `retired: true` and stays). The ledger `test/fixtures/catalogue-ids.v1.json`
-   holds every id this turn issues; the test fails when an id of the ledger is
-   missing, changed in meaning, or reused. Names are for display only and may
-   change; no code path selects by name.
-2. **A BOARD IS WHAT THE DESIGN SAYS.** A board's catalogue entry follows from
-   the design alone: the slot's source (EGGER decor, sprayed MDF, raw MDF,
-   generic), its decor and its thickness. The cut list, the purchase list, the
-   3D finish and the BOM read the SAME resolver; there is ONE source of a board.
-   The stored `material_id` of the slots (a JC uuid or an old CC id) is read only
-   to migrate (F13) and is never written again.
-3. **A LINK IS THE COMPANY'S.** A link joins one catalogue id to one row of the
-   company's stock, for every project of that company, on every computer. A
-   project never holds a link. A link made from a project's BOM says "Saved for
-   all projects".
-4. **ONE PRODUCT, ONE LINE.** Every catalogue entry a project uses is its own
-   purchase line with its own price; two hinge kinds are two lines; two front
-   colours are two paint lines.
-5. **THE STOCK DECIDES ITS OWN ROWS.** A stock row deleted in Joinery Core turns
-   its link into "Not linked (removed from your Joinery Core stock)"; CC blocks
-   nothing in JC and never repairs a link by guessing.
-6. **A SHEET IS COUNTED, NOT GUESSED.** Sheets = ceiling of (m² × yield) divided
-   by the sheet's area, per catalogue entry, over the whole project; the sheet's
-   width and length are typed by the company when it links the sheet (both
-   required); no size is ever read out of a text.
-7. **NOT LINKED IS SAID, NEVER PRICED AT ZERO.** A line without a link shows
-   "Not linked" in red, in the window, the BOM, the BOM PDF and the CSV; a total
-   with any such line is shown with the words "Incomplete total, <n> lines not
-   linked" and never as a complete price.
-8. **SUGGEST, NEVER DECIDE.** CC may suggest a stock row for an entry; nothing
-   is linked until the company accepts it.
-9. **BESPOKE STAYS IN ITS PROJECT.** A bespoke material is typed in one
-   project, goes to that project's purchase list as bespoke, and never enters
-   the catalogue or the stock.
+Every law of T75 to T-CC2a holds in full: LISP IS LAW; the fossil six
+untouchable; material never enters material; one law one path; numbers in the
+profile, none typed; 1:1 = COPY (`scripts/t78-copy.mjs --check` CLEAN); the
+Skylon header on every new file; no em or en dash in anything written; test the
+way the client clicks; a new function has a visible entry in the same package;
+a green test beside old broken code is a lie; "usun" and "kasacja" are physical
+deletions, never gates; the door is Joinery Core's; a change is memory, a save
+is one request; ONE CATALOGUE, IDS NEVER CHANGE (T-CC2a law 1). Seven laws are
+this turn's own:
+1. **NOTHING PASSES THROUGH A CLOSED DOOR.** A drawer, an internal drawer, a
+   pull-down rail or any part that moves out of a cabinet never moves through a
+   leaf that is shut in front of it, in the scene, in Open all and in every
+   export frame.
+2. **THE BOARD THAT CARRIES THE RUNNER IS DRILLED.** Runner holes go into the
+   board the runner is screwed to: the DP when a DP stands, the side or the
+   divider only where none does. One rule for the full width and the columns.
+3. **WHAT THE DRILL DOES, THE BOM BUYS.** A fixed shelf is screwed and buys no
+   pin, no sleeve, no spoon; every drilled shelf support hole gets a sleeve;
+   every bearing hole of an adjustable shelf gets a spoon.
+4. **A PACK IS BOUGHT BY THE FRACTION.** Screws are counted by the engine; a
+   pack size typed once at linking turns the count into packs (500 / 1000 =
+   0.5); the line costs packs x the pack's price. Only screws offer a pack size;
+   fittings stay counted one by one.
+5. **DELETE REMOVES WHAT IS SELECTED.** With an element selected, Delete removes
+   that element or does nothing and says why; it never removes the cabinet. The
+   cabinet goes only when the cabinet is what is selected.
+6. **A SPRAYED FACE IS NOT TAPED.** A sprayed front carries no edge band on any
+   road (labels, CSV, DXF arrows, BOM); a taped part carries exactly its taped
+   edges, numbered in the order they are banded.
+7. **A POCKET IS SEEN FROM ITS OWN FACE.** A blind machining (Cabineo pocket,
+   its 5 mm hole when blind) is drawn from the face it is machined from, at its
+   depth; the other face of the board is whole.
 
 ## FROZEN
-1. Every golden IDENTICAL (no engine geometry delta; the checks run and the PR
-   pastes them). The four owner projects of `test/fixtures/owner-projects/`:
-   their cut list dimensions, counts and thicknesses IDENTICAL before and after
-   (F3 proves it).
-2. T-CC1a's and T-CC1b's code, tests and the fake's contract: as they left them
-   except the lines this file names; the fake GROWS and loses nothing.
-3. The old "Assign materials..." window stays reachable and readable this turn
-   (F14); its deletion is T-CC2b's. The "Stock..." window: unchanged.
-4. The saved data of every project: nothing deleted, nothing overwritten with
-   empty; the assignment blob is kept as saved (T-CC2b decides it).
-5. PRO freeze: every PRO file edited is licensed in EXEMPT with the owner's
+1. Every golden IDENTICAL except the rows a fragment of
+   `scripts/t78-classify.d/f61-t-cc3a-*.mjs` names with the owner's words (the
+   recess DP of F1, the column runner holes of F2, the edge codes of F16, the
+   BOM lines of F5 to F7); any other delta is RED and stops that F. The four
+   owner projects of `test/fixtures/owner-projects/`: their cut list dimensions
+   and counts IDENTICAL except the parts this file names (the PR lists each).
+2. T-CC2a's catalogue ids: none changed, none reused; new ids APPEND to the
+   ledger; a retired id stays with `retired: true`.
+3. The saved data of every project: nothing deleted, nothing overwritten with
+   empty; an old project opens and saves without loss.
+4. PRO freeze: every PRO file edited is licensed in EXEMPT with the owner's
    words from this file and re-frozen in the same commit; new files enter the
    manifest at their first hash; the count assertion of
-   `test/turn59-f1-the-switch.test.js` is amended by Marek. Retail copies NOT
-   edited: `t78-copy --check` CLEAN.
-6. The suite is green at the start (the count on main, written in the PR) and
-   at the end, plus this turn's tests, minus the tests this turn REWRITES by
-   name (each named in the PR with what it now asserts).
+   `test/turn59-f1-the-switch.test.js` is amended by Marek. A PRO file that is a
+   named surface of the retail copy machine is re-copied by the machine
+   (`scripts/t63-copy.mjs`), never by hand: `t78-copy --check` CLEAN.
+5. The suite is green at the start (the count on main, written in the PR) and
+   at the end, plus this turn's tests, minus the tests this turn REWRITES or
+   DELETES by name (each named in the PR with what it now asserts or why it
+   died).
+6. The lighting goldens: IDENTICAL for every job without a slope knee (F3 moves
+   only strips under a sloped roof with two or more boards).
 
-## PART A · THE CATALOGUE (F1 to F3; Bruno)
+## PART A · CONSTRUCTION (F1 to F4; Wiktor)
 
-### F1 · One catalogue, ids that never change (law 1)
-1. `src/engine/catalogue.js` (NEW, pure, Skylon header) exports
-   `DEPARTMENTS` (in this order, the window's tabs: `sheets` "Sheets",
-   `hinges` "Hinges", `runners` "Runners", `ironmongery` "Ironmongery",
-   `internal` "Internal fittings", `paint` "Paint", `consumables`
-   "Consumables"), `SHEET_BRANDS` (`egger` "Egger", `mdf` "MDF", `generic`
-   "Generic", then `veneer` "Veneer", `fenix` "Fenix", `kronospan`
-   "Kronospan" with `soon: true` and no entries), `catalogue()` (the entries
-   of `catalogueData.js`, frozen), `entryById(id)`, `entriesOf(department,
-   brand?)`.
-2. An entry: `{ id, department, brand?, kind: 'sheet'|'edging'|'hardware'|
-   'paint'|'other', name, decorId?, core?, thickness?, unit, role?, retired? }`.
-   `name` is what the user reads: a sheet carries the decor code in its name
-   (*"nazwa musi byc numer decoru w nazwie"*), e.g. "Egger H3325 ST28 Tobacco
-   Gladstone Oak, 18 mm" built from `public/decors/egger/egger-decors.json`
-   (`name` there already holds code, texture and name).
-3. `scripts/t-cc2a-catalogue.mjs` (NEW) writes `catalogueData.js` ONCE and
-   APPENDS later: it never edits or removes a line it wrote before. Tonight it
-   issues (PROPOSED id shapes; Bruno fixes them once, the ledger keeps them):
-   - Sheets, Egger: every decor of `egger-decors.json` (85 today) × every
-     thickness of the union of `profile.projectSettings.boardThicknessOptions`,
-     `profile.board.thicknessOptions` and `profile.front.thicknessOptions`
-     (18, 19, 22, 25 today); id `sheet.egger.<decor id lower case>.<mm>`.
-   - Sheets, MDF (sprayed and raw fronts, sprayed carcasses): the same
-     thicknesses; id `sheet.mdf.<mm>`.
-   - Sheets, Generic: the three placeholders of T-CC1b (18, 22, 25); id
-     `sheet.generic.<mm>`.
-   - Edging: one per Egger decor (the tape follows the decor; its width is the
-     product's); id `edge.egger.<decor id lower case>`.
-   - Hardware (Hinges, Runners, Ironmongery, Internal fittings): every product
-     the engine can put on a BOM today, read from the engine's own catalogues
-     (`src/engine/hinges.js` families by system, finish and angle; runners by
-     system and nominal length; legs; Cabineo; AVENTOS; HAWA; LED strip, driver,
-     switch; the wardrobe kits; the corner kits; hangers; handles by type and
-     finish; worktop bolts; plinth clips; shelf pins; screws by diameter), ONE
-     entry per product, never per quantity (a line label with a length or a
-     count in it is a quantity, not a product). Bruno lists every hardware role
-     of `ASSIGN_GROUPS` (`materialAssignmentStore.js:78`) and the roles the
-     engine emits for the fixtures and the owner projects, and every one maps
-     to an entry or is named in the PR as not mapped, with why.
-   - Paint: `paint.bespoke` "Paint, bespoke colour", `paint.primer` "Primer or
-     basecoat", `paint.solvent` "Solvent", `stain.bespoke` "Stain, bespoke
-     colour", `lacquer` "Lacquer".
-4. `test/fixtures/catalogue-ids.v1.json` (NEW, the ledger): every id issued
-   tonight with its meaning (`department`, `brand`, `decorId`, `thickness`,
-   `role` where present).
-5. `test/turn-cc2a-f01-catalogue.test.js`: ids unique; every ledger id present
-   with the same meaning; no id matches the shape of a uuid; a sheet name holds
-   its decor code; the script run twice writes the same file (idempotent);
-   renaming an entry's `name` in a copy of the data changes no id and no BOM
-   line key (law 1); retired entries stay.
+### F1 · Recess drawers get the DP and the filler (the owner, 22:43; the list of 01:59)
+Facts: `src/engine/cabinet.js:2751` `dpSideLaw` is the one rule (a DP on the
+hinged side of a door); `:5546` to `:5657` builds the recess column and
+`:5647` to `:5648` sets `set.dpL = false; set.dpR = false;` for it
+unconditionally (the comment at `:5642` parks "the doors-and-dividers question"
+for the owner: he answered it). `reference/lisp/KIT_RECESS.lsp:466` to `:476`
+(D22, "so no DP stands in the column") and `:625` to `:631` (D29, no filler
+beside a SIDE or a RETURN) are the LISP; `KIT_WARDROBE_FULL.lsp:498` to `:500`
+(`dpInset 30`, `fillerW 30`, `fillerFrontOffset 40`) and `:577` to `:586` are
+the DP law of the wardrobe.
+1. LISP FIRST: `KIT_RECESS.lsp` amends D22 and D29 with the owner's words: a
+   recess column whose drawers stand behind a hinged leaf gets, on that leaf's
+   hinged side, the DP of the wardrobe law (30 mm inset, the 30 mm filler at its
+   front offset), exactly as a full width drawer zone does; a column with no
+   leaf in front keeps no DP. Balanced parens; the classifier's LISP checks green.
+2. `cabinet.js`: the recess column reads `dpSideLaw` like every other column
+   (`:5451` to `:5454` is the pattern); its box narrows by `DP.inset + G` on
+   that side, and the DP and its two FILLER boards are made by the same code as
+   `:6336` to `:6371`. A recess column beside a SIDE or a RETURN wall under a
+   hinged leaf gets the DP too (that wall is not the board the runner can use
+   behind a door).
+3. `test/turn-cc3a-f01-recess-dp.test.js`: a wardrobe with drawers half in a
+   recess, no doors: no DP (as today); add hinged doors: a DP on the hinged
+   side at 30 mm, its filler, the box 30 + G narrower; both hands; the four
+   owner projects that have no recess drawers are IDENTICAL.
 
-### F2 · The resolver (law 2)
-1. `catalogue.js`: `catalogueIdOfBoard(choice, profile)` where `choice` is any
-   stored board choice of a design (a carcass type, a front type, a door style,
-   a run material, an element override, a box slot, the two new board slots of
-   F11) reduced to `{ source, finishId|decorId, colour?, thickness }`:
-   `egger` or `laminate` with a decor → `sheet.egger.<decor>.<t>`; `sprayed`,
-   `spray` or `raw` → `sheet.mdf.<t>`; a generic choice → `sheet.generic.<t>`;
-   `veneer`, `wood` → null with the reason "Not in the catalogue yet" (law 7
-   words apply). The thickness is the one the engine cuts the slot at (the
-   rules of `thickness.js` without the JC row, F3).
-2. `catalogueIdOfLine(line)` for a hardware, edging or paint line of the BOM:
-   from the line's ROLE and its structured fields (system, family, finish,
-   angle, nominal length, type), never from `spec_label`. Where the engine
-   gives a role nothing structured, ONE bridge table in `catalogue.js` maps
-   that role and its label pattern to an id, each row with a comment naming
-   the emitter (file and line); a label the bridge does not know is a red
-   test, never a silent fallback.
-3. `test/turn-cc2a-f02-resolver.test.js`: the cover test: every board choice
-   and every hardware, edging and paint line of every job in `test/fixtures`
-   and of the four owner projects resolves to a catalogue id or to a named
-   "not in the catalogue yet" reason; none falls through; two hinge kinds give
-   two ids; a changed `spec_label` text with the same structured fields gives
-   the same id.
+### F2 · Runner holes go into the DP (law 2)
+Facts: `cabinet.js:10565` says the rule ("on each drawer panel, and on a
+carcass side only where no drawer panel sits"); the full width zone keeps it
+(`:10581` to `:10600`); the columns break it: `:10626` to `:10646` drill
+`set.bounds` (`BUL`/`BUR`, set at `:5480` to `:5484`) even when `set.dpL` or
+`set.dpR` stands, so a column DP gets no holes and the side behind it is
+drilled while the box rides the DP (`:6207`). LISP: `KIT_WARDROBE_FULL.lsp:260`
+to `:300` `drawWDR_DRAWER_PANEL` drills the DP.
+1. `cabinet.js`: a column with a DP drills the runner rows (`runnerRowsDp`) on
+   its `Z{n}-DP-{L|R}` panel, in the DP's frame, and NOT on the side behind it;
+   the recess column of F1 the same.
+2. `test/turn-cc3a-f02-runner-holes.test.js`: for every column job of the
+   fixtures with a DP: the DP carries the runner rows, the side behind it
+   carries none at that height; the full width zone IDENTICAL; the RUNNERS_3MM
+   layer of the DXF follows.
 
-### F3 · One source of a board (law 2)
-1. `src/engine/materials.js` (Bruno): the board resolver behind the cut list
-   (`resolvePanelMaterial` and its record, :251 to :300) returns the catalogue
-   id beside today's fields and groups by `cat:<id>` instead of
-   `mat:<material_id>`; the finish, the label and the 3D surface are unchanged.
-2. `src/engine/bom.js` (Bruno): the purchase list's boards (`mergeUnitMaterials`,
-   `consume`, :1016 to :1060) read the SAME resolver: a board line is the
-   catalogue id the cut list printed for that part, never `assignmentFor(...)`
-   of the per-part blob. The per-part blob is no longer read by the purchase
-   list (its window stays readable, F14).
-3. `src/engine/thickness.js` (Bruno; :104 only): the slot's thickness no
-   longer comes from a JC stock row (`materials.find(type.material_id)`); it
-   comes from the slot's source and the project thickness exactly as the rest of
-   the function already does. The four owner projects resolve every slot to the
-   same thickness as before (the test proves it; a project whose thickness
-   would change is a RED test and the PR names it, never a silent change).
-4. `test/turn-cc2a-f03-one-source.test.js`: for the four owner projects and
-   every fixture job: the cut list's part dimensions, counts and thicknesses
-   before and after are IDENTICAL; the cut list and the purchase list name the
-   same catalogue id for every board part; `src/engine/bom.js` has no
-   `assignmentFor` on the board road (grep).
+### F3 · LED strips start at the knee (the owner, 00:45: *"tak przesun"*)
+Facts: `src/engine/ledStrips.js:235` to `:253` (`roofAt`, `levelRuns` on
+`roofLinePts`), the side strip top `:324`, the top strip `:360` to `:376`, the
+top-under strip `:383` to `:399`; no knee is read. The knee is
+`src/engine/puzzle.js:891` `roofBoards` and `:981` `roofKneeX` (PR #102, the
+undersides meet), `SKYLON_COMMON.lsp:1688` and `:1705`.
+1. `ledStrips.js`: under a roof of two or more boards the strips end where the
+   boards' undersides meet (the knee of `roofKneeX`), never at the raw roof
+   line vertex; one board or no slope: IDENTICAL (FROZEN 6).
+2. `test/turn-cc3a-f03-led-knee.test.js`: the WARDROBE 1000 x 2150 under
+   (0,1700) to (1000,2539) of PR #102: each strip's end equals the knee; a job
+   without a slope reaches no changed value.
 
-## PART B · THE LINES AND THE ARITHMETIC (F4 to F7; Marek F4, Bruno F5 to F7)
+### F4 · Cabineo seen from its own face (law 7)
+Facts: `src/engine/cabineo.js:360` `cabineoMachinedFace`, `:873` every pocket
+record carries its face, `:1473` to `:1491` pushes the pockets with
+`meta.machinedFace`; `src/engine/recesses.js:92` to `:123` passes the face to
+the scene; `src/3d/panelSolid.js:761` punches every recess as a HOLE through
+the whole board and `buildCuts` (`:948` to `:1040`) draws walls only from
+`zOpen` to `zFloor`, so the hole shows on the other face. The J-pull slab road
+(`:795` to `:806`) already honours the face.
+1. `panelSolid.js`: a blind recess (a depth under the board's thickness) is cut
+   from its machined face to its depth, with its walls and its floor, and the
+   other face stays whole, the J-pull slab road being the pattern. A through
+   hole stays through. The CNC output does not change (3D only).
+2. `test/turn-cc3a-f04-cabineo-face.test.js`: a TOP with Cabineo pockets: the
+   solid of the outside face has the pocket, the inside face has no opening; a
+   through hole still goes through; the DXF IDENTICAL.
 
-### F4 · The links client (law 3; Marek)
-1. `src/lib/jcLinks.js` (NEW, pure through `withDb`, Skylon header):
-   `loadLinks({ db }) -> { links: Map<cc_material_id, link>, error }` (the
-   select of WHAT JOINERY CORE GIVES, through `withDb` like `jcStock.js:43`);
-   `saveLinks(links[], { db })` (one `cc_save_material_links` call per 500);
-   `clearLink(ccMaterialId, { db })`; every answer in words: `JC_OFFLINE` when JC
-   does not answer, "Material links are not set up in Joinery Core yet." when
-   the table or function answers 403 or 400 with no row, the function's own
-   refusal words otherwise. Never throws.
-2. `src/stores/materialLinkStore.js` (NEW): holds `links`, `stock` (the F9 read
-   of T-CC1b, `loadJcStock`), `status` ('ok' | 'offline' | 'not-set-up'),
-   `load()`, `link(entries)`, `unlink(id)`; loaded once per session with the
-   stock, re-read on the window's Retry. The links are the company's: the store
-   never writes them into a project.
-3. `scripts/t-cc1a-fake-jc.mjs` (Marek): grows the table with two seed links
-   (MDF 18 to the fake's MDF 18 row with sizes 2440 × 1220, a hinge to the
-   fake's hinge row), the read with its columns, the two functions with EVERY
-   refusal of WHAT JOINERY CORE GIVES (same codes, same rules), and a switch
-   `CC_FAKE_NO_LINKS=1` that answers 403 for the read and both functions (the
-   SQL not run).
-4. `test/turn-cc2a-f04-links.test.js`: the select names its columns; 501 links
-   are two calls; a sheet without sizes is refused by the fake with 22023 and
-   the words reach the store; `CC_FAKE_NO_LINKS` gives "not set up" and no
-   throw; a stock row of another company is refused 42501.
+## PART B · SHELF SUPPORTS, METAL, SCREW PACKS (F5 to F8; Bruno, Marek F8)
 
-### F5 · One product, one line (laws 4, 5, 7)
-1. `bom.js` (Bruno): the purchase rows are keyed `cat:<catalogue id>` (paint
-   adds `|<colour name>`, F7); each row resolves its link → its stock row →
-   `name`, `item_number`, `image_url`, `unit`, `cost_per_unit` (the weighted
-   average JC keeps; the quoted price of T75 F21 still wins when the job has one).
-   A row with no link is "Not linked"; a row whose link points at a stock row the
-   company no longer has is "Not linked (removed from your Joinery Core stock)";
-   a row whose entry is not in the catalogue yet says "Not in the catalogue yet".
-   None of the three has a price; all three count in the incomplete total.
-2. Hardware: `hardwareDemand` (:674) and the purchase list are ONE road keyed
-   by catalogue id; `syncHardwarePart`'s first-key rule
-   (`materialAssignmentStore.js:376`) is no longer read by the purchase list.
-   The quantities of every line equal the engine's quantities (sum before ==
-   sum after per role).
-3. The total: `lineCost` of linked rows only; `total` with `incomplete: n`;
-   every place that prints a total (the BOM window, the BOM PDF of
-   `exporters.js`, the cutting list CSV's WARNING row) prints "Incomplete total,
-   <n> lines not linked" beside it when n > 0 (this REWRITES T-CC1b F11's
-   "Not assigned materials" and "not a price" by name: law 7, the owner 13:33).
-4. `test/turn-cc2a-f05-lines.test.js`: two hinge kinds on two products are two
-   lines with two prices (the T-CC1b audit's hinge case); a deleted stock row
-   gives the "removed" words and no price; the incomplete words in the window,
-   the PDF and the CSV; the quoted price still wins.
+### F5 · Fixed shelves buy no pin; sleeves and spoons (law 3)
+Facts: `cabinet.js:3529` `numShelves = cfg.shelves` counts EVERY shelf item
+(`:1014` to `:1016`); `:12261` to `:12262` is the only `shelf_pins` line
+(`numShelves * SH.pinsPerShelf`, `profile.js:844` 4); the drilling already knows
+better: `:10173` to `:10192` `isShelfLocked` (`:1794`, variant `fixed` or
+`updown_locked`) sends a fixed shelf to screws. `bomInvoice.js:368` to `:380`
+"Shelf supports" reads the same qty; `bom.js:203` to `:208` the mirror cabinet's
+own line. `profile.js:5087` to `:5090` says a support is a SLEEVE and a PIN;
+`profile.js:5096` to `:5118` `hardware.shelfPin` holds the sleeve's drawing
+sizes. No sleeve or spoon entry exists in the catalogue.
+1. `cabinet.js` (Bruno's patch, Wiktor applies): the shelf supports are counted
+   from the DRILLING, never from the shelf list: `spoons` = 4 per adjustable
+   shelf (the bearing holes, `profile.shelfHoles.pinsPerShelf`), `sleeves` = every
+   drilled shelf support hole (every hole of the `shelfPinRows`; the confirmed
+   list says 12 per shelf: the PR prints the drilling's count per shelf for the
+   owner's wardrobe, and when it is not 12 it says so in words, never forces 12), a fixed or locked shelf: none of either.
+   Two hardware lines replace the one `shelf_pins` line: role `shelf_sleeves`
+   "Shelf sleeves" and role `shelf_spoons` "Shelf spoons", each with the metal
+   of F6 in its spec. The mirror cabinet's glass shelves keep their own count
+   (4 spoons per glass shelf, no sleeves unless drilled).
+2. `catalogueData.js` (append only, through the script): `shelf-sleeve.gold`,
+   `shelf-sleeve.chrome`, `shelf-sleeve.onyx`, `shelf-spoon.gold`,
+   `shelf-spoon.chrome`, `shelf-spoon.onyx` (department `internal`, unit `pcs`,
+   PROPOSED names "Shelf sleeve, <metal>" and "Shelf spoon, <metal>");
+   `shelf-pin.7.5` gets `retired: true` and stays (law 1 of T-CC2a); its link,
+   if a company made one, is offered as a suggestion for `shelf-spoon.<metal>`
+   (law 8 of T-CC2a), never moved by itself. The ledger appends.
+3. `bomInvoice.js`: "Shelf supports" reads the two new lines.
+4. `test/turn-cc3a-f05-supports.test.js`: a wardrobe with 2 adjustable and 1
+   fixed shelf: 8 spoons, the sleeves equal to the drilled support holes, the
+   fixed shelf adds none; the drilled hole count and the sleeve count are the
+   same number (law 3, one source); the old `shelf-pin.7.5` is retired and still
+   in the ledger.
 
-### F6 · Sheets are counted (law 6)
-1. `bom.js` (Bruno): a sheet row: `m2` (the parts' area as today) → `sheets =
-   ceil(m2 × yield / (sheet_width_mm × sheet_length_mm / 1e6))`, `yield` the
-   link's (`profile.materials.sheetYield` 1.10 when the link has none), the
-   sizes the link's; no sizes → no sheet count and the words "Sheet size
-   missing, add it in Link materials". The family sheet sizes of
-   `checks.js:444` stay for the CNC checks and are no longer read by the
-   purchase list. The 15 % of `bomInvoice` (`profile.js:5500`) and the
-   purchase list's 0 % are replaced by the one number (*"dajmy 10 procent"*).
-2. The cost of a sheet row by the stock row's `unit` (PROPOSED word lists,
-   case and plural folded): sheet, board, pc, pcs, each, ea → `sheets ×
-   price`; m2, m², sqm, sq m → `m2 × yield × price`; any other unit → no price
-   and the words "Check the unit of this item in Joinery Core" (it counts as
-   incomplete). Today's `qty × costPerUnit` on m² (`bom.js:1159`, about three
-   times too much on a per-sheet price) is gone.
-3. Edging rows in metres, hardware in their unit, as today.
-4. `test/turn-cc2a-f06-sheets.test.js`: the owner's example: 10 m² of a
-   2440 × 1220 sheet at 1.10 is 4 sheets (11 / 2.977 = 3.69, up to 4); 2.1
-   sheets of need is 3; a per-sheet price costs sheets × price; a per-m² price
-   costs m² × 1.10 × price; an unknown unit has no price and the words; a link
-   with yield 1.05 uses 1.05.
+### F6 · The metal, chrome by default (the owner: *"9 - chrome domyslnie"*)
+Facts: `profile.js:4223` `metalDefault: 'gold'`; `src/3d/hardwareFinish.js:174`
+`shelfSupportMetal(design, profile)` is the one resolver of the support's
+colour; `design.js:293` `hardware.shelfSleeve` and `:462` to `:464` accept
+gold, silver, chrome, onyx; `profile.js:4229` `metalHingeFinish`; the hinge
+finish road `hinges.js:544` `resolveHingeFinish`.
+1. `profile.js`: `metalDefault: 'chrome'` (CONFIRMED).
+2. `src/engine/hardwareFinishOf.js` (NEW, pure): `supportMetalOf(design,
+   profile)` returns `gold | chrome | onyx` (silver read as chrome, an old
+   value kept as saved); `src/3d/hardwareFinish.js:174` calls it (one law, one
+   path), and the BOM of F5 reads the same function.
+3. `test/turn-cc3a-f06-metal.test.js`: a new design with no metal is chrome in
+   the 3D and in the BOM; gold chosen gives gold sleeves and spoons; onyx gives
+   onyx; an old design that saved `silver` opens as chrome and keeps `silver` in
+   its saved data until it is saved again by the user's own choice.
 
-### F7 · Paint by colour, primer, solvent (laws 4 and 7)
-1. `spray.js` (Bruno): the litres of each COLOUR the project sprays (front
-   types, door styles, a cabinet's own colour) are one line each, keyed
-   `cat:paint.bespoke|<colour name>`, all linked through the ONE link of
-   `paint.bespoke` (*"linkowanie kolorow nie ma sensu"*); the line's name is
-   "Paint, bespoke colour: <RAL name>". The litres: today's formula (:584 to
-   :611, m² × coats / coverage × (1 + waste)), the coverage the link's
-   `coverage_m2_per_l` or today's profile default.
-2. `paint.primer`: one line for the whole project, the same m² × the profile's
-   `spray.primerCoats` (PROPOSED 1) / coverage. `paint.solvent`: one line,
-   5 % of the litres of all bespoke colour lines (`profile.spray.solventPct` 5,
-   CONFIRMED *"rozpuszczalnik 5 procent ilosc farby"*). Stain and lacquer: lines
-   only when the engine emits them (no live source tonight); the catalogue holds
-   them.
-3. `test/turn-cc2a-f07-paint.test.js`: a job with two front colours gives two
-   paint lines with their own litres, one primer line, one solvent line at 5 %
-   of the two; the one `paint.bespoke` link prices both colours.
+### F7 · Screws by the pack (law 4)
+Facts: `bom.js:1068` to `:1122` the one screw line (`screwPilotCount`, the 3 mm
+pilots except hinge and runner screws); `catalogueData.js:600` `screw.pilot-3`;
+`bom.js:1280` to `:1287` `priceOf`; `:1377` to `:1378` a hardware row's
+`lineCost = qty * price`.
+1. `bom.js`: a row whose link has `pack_qty` shows `packs = qty / pack_qty`
+   rounded UP to 2 decimals and the words "<packs> pack (<qty> of <pack_qty>)";
+   `lineCost = packs x price` (the stock price is the pack's price). A screw row
+   whose link has no `pack_qty` and whose stock unit is a pack word (pack, box,
+   bx, packet, PROPOSED list, case and plural folded) has no price and says
+   "Pack size missing, add it in Link materials" (it counts in the incomplete
+   total, law 7 of T-CC2a); a unit of pcs or each prices `qty x price` as today.
+   Only `department: 'consumables'` entries of role `screws` read `pack_qty`;
+   every other line ignores it (fittings one by one).
+2. `test/turn-cc3a-f07-packs.test.js`: 500 screws, pack 1000, pack price 12.00:
+   "0.5 pack (500 of 1000)", 6.00; 1001 of 1000: 1.01 packs; a box unit without a
+   pack size: no price, the words, incomplete; a hinge link with a `pack_qty`
+   stored is still priced one by one.
 
-## PART C · LINK MATERIALS (F8 to F11; Julia, Ewa checks)
+### F8 · The pack size at linking, fail-open (law 4; Marek, Julia the field)
+Facts: `src/lib/jcLinks.js:24` the select string, `:90` the read, `:72` to
+`:80` `toLink`, `:105` to `:112` `forJc`, `:126` the save; the link form of
+`LinkMaterialsModal.jsx:141` (the pending state), `:850` to `:862` (the sheet
+and coverage fields), `src/lib/linkSuggest.js:35` to `:39` `LINK_RULES`;
+`scripts/t-cc1a-fake-jc.mjs:445` to `:479` the fake's validation and upsert.
+1. `jcLinks.js` (Marek): the select names `pack_qty`; on a 400 that names the
+   column (42703, or the words "pack_qty"), the read is made ONCE more without
+   it and the store remembers `packSizeReady: false` for the session; the links
+   load whole either way. `forJc` sends `pack_qty` when the form gave one.
+2. `LinkMaterialsModal.jsx` (Julia): linking a screws entry shows "Screws per
+   pack" (a whole number, 1 to 100000, `LINK_RULES.packQty` in
+   `linkSuggest.js`, Bruno's row), optional; a linked screws row shows "Pack of
+   <n>"; with `packSizeReady: false` the field is shown disabled with the words
+   "Pack size needs the Joinery Core update. Ask your administrator." Other
+   entries never show the field.
+3. `scripts/t-cc1a-fake-jc.mjs` (Marek): the table grows `pack_qty`; the save
+   validates it with the same words and code as T-JC3b; a switch
+   `CC_FAKE_NO_PACK=1` answers 400 (42703) to a select naming `pack_qty` and
+   drops the key on save (the SQL not run). The fake loses nothing.
+4. `test/turn-cc3a-f08-pack-link.test.js`: the select names `pack_qty`; with
+   `CC_FAKE_NO_PACK` the links still load and the field says the words; a
+   pack of 0 is refused 22023 and the words reach the row; a saved pack of 1000
+   reads back and prices F7's line.
 
-### F8 · The Link materials window (laws 3, 7)
-1. `src/components/LinkMaterialsModal.jsx` (NEW): the maximised window of
-   `SprayingPanel.jsx:96` (the one exception of rule 15 that Modal.jsx names
-   for a work window: near full screen, restore button, drags, scrolls), the
-   font floor `cc-modal-wide` of T-CC1b F12. Top left a "Back to project"
-   button (closes, the team's standing UX rule: the way back is top left); the
-   shell's ✕ top right. The title "Link materials", under it "Every material
-   Cabinet Core uses, linked once to your Joinery Core stock. Saved for <company
-   name>." and on the right "<n> of <m> linked" with a bar.
-2. The DEPARTMENTS as tabs along the top, each with its count "<linked> /
-   <total>" (green when all, amber otherwise); never a scrolled list of every
-   group (*"nie scrolowane"*). Under Sheets a second row: the SHEET_BRANDS, the
-   `soon` ones grey with "Coming soon" and not clickable; under it chips of the
-   decor families of `src/lib/decorFamilies.js` (no select).
-3. LEFT, the table of the tab: the CC material (for a sheet: the decor's
-   thumbnail at 40 px, the WHOLE image, with `decorLabel()` beside it (the
-   word EGGER plus the decor code and name, the licence of `decors.js:16` to
-   `:26`; there is no unattributed path); the name; the thickness), the
-   linked JC material (photo, `item_number`, name; the photo enlarges on click,
-   the MaterialCard pattern of `WarehouseModal.jsx:105`), the unit price and
-   unit, the status ("Linked" green, "Not linked" red, "Not linked (removed
-   from your Joinery Core stock)" red). NO id is shown anywhere (*"nie
-   widoczna numeracja"*). Above it: a search box with a clear ✕ (narrows by
-   name and decor code) and three chips: "All <n>", "Not linked <n>", "Used in
-   this project <n>". A row selected is outlined gold.
-4. RIGHT, the company's stock (one component, `MaterialPicker.jsx`, as the
-   Stock window uses it): a search box with a clear ✕, the tenant's categories
-   as chips from `categoryTree` (JC rule 6.5, never typed), the list visible at
-   once with photo, `item_number`, name, unit and price, a "Link" button per
-   row. Under the list: "Not in the list? Add it to your Joinery Core stock
-   first, then link it here." and a link "Open Stock" to `/stock.html` in a new
-   tab (no "Add to JC stock" button: the owner 13:28).
-5. Linking a SHEET opens, beside the row, a small form that cannot be saved
-   empty: "Sheet width (mm)", "Sheet length (mm)" (both required, 100 to 6000)
-   and "Offcut allowance (%)" prefilled 10 (the yield; *"zmieni sobie w yeld
-   ustawieniu"*), then "Save link". Linking PAINT shows an optional "Coverage
-   (m² per litre)". Other kinds link on one click. A linked row offers "Change
-   link" and "Unlink". Every save goes to Joinery Core at once (one call); an
-   error is said in its words on the row.
-6. States in words: offline (JC_OFFLINE and Retry), not set up ("Material links
-   are not set up in Joinery Core yet." and the table read only), empty stock
-   (T-CC1b's STOCK_EMPTY and "Open Stock").
-7. Entries: the rail's Materials menu gets "Link materials..." FIRST (Marek,
-   `RailMenus.jsx:192`); "Assign materials..." stays below it (F14); the BOM's
-   "Link" (F10) and Project settings' "Link" (F11) open the window at their
-   entry.
-8. `test/turn-cc2a-f08-window.test.js`: seven tabs in order with counts; the
-   Sheets brands with three soon; no id text in the rendered window (a regex for
-   the ledger's id shapes finds nothing); a sheet cannot be linked without both
-   sizes; Unlink clears; the not-set-up words; the search narrows by decor code
-   and clears with ✕; photos open the enlarged view.
+## PART C · THE SCENE (F9 to F15; Julia, Marek F11 and F10's store, Wiktor checks)
 
-### F9 · Suggestions, accepted by the company (law 8)
-1. `src/lib/linkSuggest.js` (NEW, pure): for a sheet entry, a stock row whose
-   name or `item_number` holds the decor code (e.g. "H3325", any separator) AND
-   whose `thickness` equals the entry's; for MDF, the word MDF and the
-   thickness; for hardware, an exact article number of the entry found in the
-   row's name or number (where the entry has one). PROPOSED rules; at most one
-   suggestion per entry; nothing else.
-2. The window shows "Suggested: <item>" in the row with "Accept"; a tab with
-   suggestions shows "Accept all suggestions" which lists them with a tick each
-   and, when sheets are among them, asks once for the sheet size that applies
-   to the ticked sheets (they may be unticked). Nothing is saved until Accept.
-3. The old project's per-part assignments (the T-CC1b blob, JC uuids) are
-   offered as suggestions too, where a part's entry and the uuid's stock row
-   agree (F13), never linked by themselves.
-4. `test/turn-cc2a-f09-suggest.test.js`: the code and thickness rule; no
-   suggestion on a thickness mismatch; Accept all saves only the ticked;
-   nothing is saved before Accept.
+### F9 · The red drawer finding (the owner: *"ciagly czerwony blad z szufladami"*)
+Facts: `src/components/studio/lib/studioIssues.js:76` gives a red triangle for
+any red finding; `src/engine/checks.js:1024` to `:1048` (#18 red: a runner row
+with no article in the catalogue) is the likeliest; also `:770` and `:839` to
+`:847` (#20 SLOPE_DRAWER_CROSSES), `:1134` to `:1146` (#2, front gaps).
+1. Reproduce FIRST on the four owner projects and on a fresh wardrobe with
+   drawers: list every red finding on a drawer with its check id, its numbers
+   and the engine's numbers. Fix the CAUSE (a runner length the catalogue does
+   not map, a wrong reading of the system), never by silencing the check; a
+   finding that is TRUE stays and the PR says why it is true, in words the
+   owner can act on.
+2. `test/turn-cc3a-f09-drawer-red.test.js`: the reproduced case red before,
+   green after, for the stated reason; a truly wrong drawer still red.
 
-### F10 · The BOM: materials and costs (laws 3, 7, 9)
-1. `BomPanel.jsx` (Julia): every line shows the catalogue entry's name, the
-   quantity and unit, the JC material (photo, number, name) and the line cost,
-   or the red words of F5; a not-linked line has a "Link" button that opens
-   the window at that entry (the T-CC1b "Assign..." button sent a `partId` the
-   hardware lines do not have, `BomPanel.jsx:299` to `:306`; this one sends the
-   catalogue id). After a link made here, a toast: "Saved for all projects".
-2. The Materials tab's selects (`:527` boards, `:594` hardware) are DELETED
-   (Deletion licence); the tab is the same list read only, with "Link".
-3. A block at the bottom: "Bespoke, this project only": rows of name, quantity,
-   unit (chips: pcs, m, m², sheets, litres, set), unit price, "Supplied by
-   client" (price 0, nothing to buy), "Add bespoke item", Remove. Stored in
-   the project as `project.bespoke` (Marek: projectStore, the save, the crash
-   buffer, the keepalive and every export, the T-CC1b lesson: a new field is
-   checked on every road and every limit). Bespoke rows go to the purchase list
-   and the Purchase CSV marked "Bespoke"; they never enter the catalogue.
-4. The header: "<n> of <m> lines linked" and the total with law 7's words.
-   No export to Joinery Core in this turn (T-CC2b, Production only); the
-   Purchase CSV stays as it is.
-5. `test/turn-cc2a-f10-bom.test.js`: the selects are gone (grep); Link opens
-   the window at the clicked hinge's entry; the toast; a bespoke row survives
-   save, reload, crash buffer and the CSV; the incomplete total.
+### F10 · Nothing opens through a closed door (law 1; Julia, Marek the store)
+Facts: `src/stores/uiStore.js:1133` to `:1151` `toggleFront` (opening checks
+nothing; only closing a leaf closes what it covers, `:1122`); `:1180` to `:1184`
+`toggleKit` (the pull-down) checks nothing; `src/3d/UnitView.jsx:3380` to `:3405`
+and `src/engine/covers.js:30`, `:48`, `:64` (`coveredByLeaf`, `pullOutsOf`);
+`src/3d/Hardware.jsx:1381` the pull-down's click; Open all `uiStore.js:1194`.
+1. Opening a drawer front, an internal drawer or a pull-down that a SHUT leaf
+   covers opens that leaf first, then the drawer (one click, CONFIRMED: *"3 moze
+   byc"*). Open all opens leaves before what they cover. Closing a leaf closes
+   what it covers first (as today).
+2. `test/turn-cc3a-f10-doors.test.js`: every covered drawer and pull-down of the
+   fixtures: a click with the leaf shut ends with the leaf open; the drawer is
+   never open while its leaf is shut, through every road (click, Open all,
+   export frames).
 
-### F11 · Project settings and the new item (laws 2, 3)
-1. `SettingsPanel.jsx` (Julia): the three "MaterialStock" selects (`:494`,
-   `:715`, `:827`) are DELETED (Deletion licence). Each board slot keeps its
-   choice of WHAT (decor, colour, source, thickness, with the Recompute or Keep
-   gate of `:183` to `:211` unchanged) and shows under it the slot's entry and
-   its link: "JC: <name>" or red "Not linked" with "Link".
-2. Two new board slots, "Back panels" and "Drawer bottoms" (and the existing
-   run materials: plinth, infill, end panel, mask), each "As today" by default
-   (the part takes the slot the engine uses today) or another sheet chosen from
-   a visible list with search of the catalogue's sheets OF THE SAME THICKNESS
-   as the engine cuts that part at (a different thickness is not offered:
-   geometry is not this turn). The choice is stored in the design as a board
-   choice of F2 (`design.boards.back`, `design.boards.drawerBottom`) and the
-   cut list and the purchase list follow it (one source). The company default
-   for both (`companyDefaults.js`, Bruno): "As today" until the company changes
-   it in Settings, Company defaults.
-3. `NewProjectFlow.jsx` (Julia) and `companyDefaults.js` (Bruno): a NEW item,
-   when the company has no default of its own, starts with Carcass 1 EGGER
-   H3325 ST28 Tobacco Gladstone Oak (`profile.projectSettings.defaultCarcassDecorId`)
-   and Front 1 sprayed RAL 3005 Wine red on MDF 18 (the retail defaults, the
-   owner *"jak dadza next next next zeby im biale nie wyskoczylo"*), preselected
-   in the wizard and changeable there. Existing items are not touched.
-4. `test/turn-cc2a-f11-settings.test.js`: the selects are gone; the slot shows
-   its link; a back panel moved to another sheet of the same thickness moves in
-   the cut list and the purchase list together; another thickness is not
-   offered; a new item starts on H3325 and RAL 3005; an old item keeps its own.
+### F11 · Delete removes what is selected (law 5; Marek, Julia the clicks)
+Facts: `src/pages/ConfiguratorPage.jsx:253` the keydown, `:303` to `:306` the
+element looked up only among the engine panels, `:337` `if (!panel) return;`,
+`:345` to `:348` no element: `removeUnit(selectedUnitId)`; `uiStore.js:950`,
+`:990`, `:1040`, `:911` (`selectUnit` keeps a stale element on the same unit);
+the hanging rail is not a panel (`elements.js:145` to `:151`): its pointer
+down `UnitView.jsx:2918` `startRailDrag` calls `selectUnit`; the watch insert's
+click `UnitView.jsx:3235` to `:3238` and `Scene.jsx:2228` select the unit; the
+drawer box `UnitView.jsx:3427`; the rail's own remove `RailModal.jsx:143`; the
+pull-down is a kit (`uiStore.js:1180`).
+1. A click on a hanging rail, a pull-down, a watch insert, an internal drawer or
+   any other interior element that has a remove action selects THAT element
+   (`selectElement` with a kind: `rail`, `pulldown`, `watch-insert`, ...;
+   PROPOSED kinds), outlined as selected elements are today. Delete then calls
+   that element's own remove action (the one its window uses). An element with
+   no remove action: Delete does nothing and says "Remove this part in its own
+   window." A stale element of another click never survives a new click.
+   `selectUnit` clears the element (`uiStore.js:911`).
+2. Every element kind of `elements.js` is listed in the test with what Delete
+   does to it; the cabinet goes ONLY with the cabinet selected.
+3. `test/turn-cc3a-f11-delete.test.js`: click the rail, Delete: the rail is
+   gone, the cabinet stands; the same for the pull-down and the watch insert;
+   click the carcass, Delete: the cabinet goes; the list of every kind.
 
-## PART D · CLEAN START, OLD PROJECTS, THE OLD WINDOW (F12 to F14; Marek)
+### F12 · The pull-down's mesh, lighter (the owner, 02:12: *"siatka 3d ... jakby to troche uproscic, to by sie latwiej ladowalo"*)
+Facts: the pull-down is a GLB from the bucket (`profile.js:1595` to `:1598`,
+`lifts/conero/conero-pantograf-730.glb`, not in the repo); `src/3d/coneroModels.js:62`
+to `:153` `coneroClone` clones it with no decimation; `src/3d/glbSource.js:50`
+loads it.
+1. Count its triangles and its bytes at load and write both in the PR. When it is
+   over the PROPOSED ceiling `profile.visuals.pulldownMaxTriangles` 8000,
+   simplify it ONCE at load with three's own `SimplifyModifier`
+   (`three/examples/jsm/modifiers/SimplifyModifier.js`, inside the `three`
+   package already installed: NO new dependency) to the ceiling, the silhouette
+   checked on a frame beside the original.
+2. Honest about loading: a simplification at load makes the scene draw faster,
+   not the file download faster. When the session can read the GLB, it writes a
+   lighter copy of the same file to `verify/t-cc3a/conero-pantograf-730.light.glb`
+   with its size, for the owner to upload to the bucket in place of the old one;
+   when it cannot reach the bucket, the PR says so and only point 1 is done.
+3. `test/turn-cc3a-f12-pulldown.test.js`: a fixture mesh over the ceiling comes
+   out under it; one under the ceiling is untouched; the clone keeps its pose.
 
-### F12 · A new item inherits nothing
-1. `materialAssignmentStore.js` (Marek): `readLocal` (:259 to :273) no longer
-   falls back to the legacy global blob `cc.assignments.v2` for a project with
-   no blob of its own (Deletion licence); `newProject` (`projectStore.js:2687`)
-   starts with an empty blob and never the previous project's (the owner's
-   decision 4 of 01.11: *"nowy projekt przestaje dziedziczyc materialy z
-   poprzedniego"*).
-2. `test/turn-cc2a-f12-clean.test.js`: open item A with assignments, create item
-   B: B's blob is empty and B's save carries no material of A.
+### F13 · The watches load every time (the owner: *"czasami nie laduje mi sie srodek z zegarkami"*)
+Facts: the insert is engine boxes (`cabinet.js:10999` to `:11293`,
+`watchDrawer.js:662`), built unless a warning says why (`:11027` to `:11079`);
+the watches are GLB props (`src/3d/Props.jsx`, mounted at `UnitView.jsx:4080`);
+the props toggle defaults to off (`uiStore.js:645`); a failed GLB stays failed
+for the session (`glbSource.js:53`, `:57`, `:81`) and a failed manifest stays
+absent (`propsSource.js:71`, `:103`); the props get no drawer motion
+(`UnitView.jsx:4080` passes only `result`, the panels follow `motion.forPanel`
+at `:2298`, `:3066`).
+1. A failed GLB or manifest is retried: once after 3 s, then on the next toggle
+   (PROPOSED numbers in `profile.visuals`), never left failed for the session.
+2. The watches move with their drawer (the drawer's motion offset reaches the
+   props of its slots).
+3. When the insert is not built, the cabinet says why in the panel's warnings
+   (the engine's own words).
+4. `test/turn-cc3a-f13-watches.test.js`: a GLB that fails once then loads is
+   shown; a manifest that fails once then loads is used; an open drawer carries
+   its watches; each not-built reason reaches the panel.
 
-### F13 · Old projects open, nothing lost (FROZEN 4)
-1. `projectStore.js` (Marek) and `catalogue.js` (Bruno): an old project's
-   stored board `material_id`s are read once at load to fill the board choice
-   where the design lacks it: the old CC ids (`mat_mdf18`, `mat_mfc18_oak`,
-   `mat_mfc19_front`, `mat_mdf25_shaker`, `generic-18`, `generic-22`,
-   `generic-25`, and every other `mat_*` and `generic-*` id grep finds in
-   `src/` history and the fixtures) map through ONE table in `catalogue.js` to
-   the source and thickness they meant; a JC uuid is never mapped by name: it
-   becomes a suggestion (F9.3). The stored field stays as saved.
-2. `test/fixtures/owner-projects/` (four files from the owner, 28 to 31.10, committed on the spec branch:
-   "0003 Black Kitchen", "0002 Test qwardrobe" twice, "0004 Project 0004"):
-   each opens, saves, opens again with the same units, the same design, the
-   same blob and the same cut list (F3.4); the board entries they resolve to are
-   listed in the PR; idempotent on a second load.
-3. `test/turn-cc2a-f13-old.test.js`: the above, plus a schema 2 blob and a
-   T-CC1b schema 3 blob open without loss.
+### F14 · Connect JoineryCore out of the BOM (the owner, 18:21: removed in the next turn)
+`BomPanel.jsx:521` to `:528`: the "Connect JoineryCore" button and its toast
+handler are DELETED (Deletion licence); `jcConnected` in the store stays (other
+readers); `test/turn-cc3a-f14-bom-button.test.js`: no such words in the BOM.
 
-### F14 · The old window, read only for one turn
-1. `AssignMaterialsModal.jsx` (Julia; the banner only): a banner on top
-   "Replaced by Link materials. This window is read only until the next
-   update." with a button "Open Link materials"; every assign, clear,
-   automatics and family control disabled; the lists still visible. Deleted in
-   T-CC2b.
-2. `test/turn-cc2a-f14-old-window.test.js`: the banner; no control changes the
-   blob; the door "Assign materials..." still found (T-CC1b's SAME DOORS test
-   passes unchanged).
+### F15 · The X-ray sheet out of the set (the owner: *"usun, niepotrzebny gadget, tylko przeszkadza"*)
+Facts: `src/engine/drawings/wallSheets.js:209` to `:211` pushes it per wall;
+`projector.js:1784` `projectRun` with the `xray` branches (`:1438` to `:1752`,
+`inkOf` `:1340` to `:1345`); `layers.js:101` to `:102` (XRAY_FRONT,
+XRAY_CARCASE); `setSheet.js:542` to `:543` (the legend rows);
+`DrawingModal.jsx:573` ("every wall in <b>X-ray</b>"). The 3D X-ray toggle of
+the scene is a DIFFERENT thing and stays.
+1. DELETED (Deletion licence): the X-ray sheet in the set, its words in the
+   window, and every line only it reads (the `xray` mode of the projector, its
+   inks, its legend rows) when grep shows no other reader; a line another
+   reader needs stays and the PR names that reader. The sheets renumber.
+2. The tests that name the X-ray sheet or count the set are REWRITTEN or
+   DELETED by name, each listed in the PR (the census:
+   `test/turn81-f05-xray.test.js` whole, `turn81-f02-order`, `turn71-the-set`,
+   `turn75-fixtures-the-set`, `turn40-f5-wall-drawings`,
+   `turn42-f0-wall-pdf-speaks`, `turn43-f5-the-sections`, `turn43-f4-pen-map`,
+   `turn82-f22-f24-sheets`, `turn82-f21-chains`, `turn81-f07-silhouettes`,
+   `turn81-f01-projector`, `turn81-f08-layers`, `turn83-f11-export-pick`,
+   `turn-cc1b-f06-window`; grep again, miss none).
+3. `test/turn-cc3a-f15-no-xray.test.js`: no sheet of any fixture is X-ray; the
+   set of one wall is the old set less one; grep `src/` for the deleted mode: 0.
+
+## PART D · EDGING (F16; Bruno writes the codes, Wiktor applies them in cabinet.js, Hania the labels in F19)
+
+### F16 · Every part taped as built (law 6)
+Facts: `cabinet.js:1845` to `:1856` the panel factory's `edging: {code,
+len_m}`, the codes `profile.js:5489` (`<` `>` `^v` `<>^v` none); fronts are
+always all four (`:8856`, `:8881`, `:8982`, `:9272`, `:9030`, `:6179`, `:6280`,
+`:6856`, `:6151`, `:6763`, `:6794`) and only the purchase list drops the tape
+for MDF (`bom.js:1207`); shelves are `codes.right`, one front edge, for every
+variant (`:5211` to `:5212`, also `:4227`, `:4278`, `:4337`, `:4358`, `:5100`,
+`:5115`, `:6935`); the drawer box is `codes.none` (`:6081`, `:6210`, `:6550`);
+the DP panels and fillers `codes.none` (`:5961` to `:5971`, `:6350` to `:6351`,
+`:5986`).
+1. A sprayed or raw MDF front (`isMdfSource`, `catalogue.js:123`): no code, at
+   the source, so the labels, the CSV, the DXF arrows and every BOM read none.
+2. An adjustable shelf: all four edges. A fixed shelf: its front edge (as
+   today, PROPOSED: the owner named the adjustable ones).
+3. The drawer box: the top edge of each side, of the back and of the box front
+   (*"gory szuflad nie sa zaznaczone"*); the edge each part's own frame calls
+   its top (the engine's frame, written in the test).
+4. A DP standing behind a hinged leaf: its front edge (*"jak sa drzwi, nie
+   maja okleiny od frontu"*); a DP with no leaf in front: as today.
+5. An audit in `verify/t-cc3a/edging.txt`: every part of the four owner
+   projects and the fixtures, its edges before and after, and every case where
+   the label said something else than the part (the owner: *"naklejki nie
+   zawsze pokazuja okleine poprawnie"*).
+6. `test/turn-cc3a-f16-edging.test.js`: the five rules on fixtures; the edge
+   metres of the BOM equal the sum of the taped edges.
+
+## PART E · GROUP C WITHOUT A MOCKUP (F17 to F20; Julia windows, Hania print; Ewa checks the frames)
+The layouts below are this turn's mockup; Ewa checks the built frames against
+them; the owner corrects them in the morning.
+
+### F17 · J-pull: move it, its length, its height (the owner's problem of 00:45)
+Facts: `src/components/JpullRunModal.jsx:57` `MIN_RUN_MM = 300` typed in the
+UI (a number in the UI: it moves to the profile), `:83`, `:84`, `:100`,
+`:138`; `projectStore.js:12404` `setFrontJpullRun` writes
+`params.front_jpull[panelId].jpull_run_mm`; the profile `profile.js:340` to
+`:360` (`runMm` 500, `fromBottomMm` 700); `src/engine/handles.js:420` to
+`:588` (`jpullSpec`, `jpullRunOf`, `jpullEdgeHeight`, `resolveJpull`, the leaf
+override `:584` to `:588`); 3D `src/3d/jpullProfile.js`, `UnitView.jsx:413`.
+```
+ J-pull of this door                         [x]
+ Length (mm)        [  500 ]   300 to <leaf>
+ Height (mm)        [  700 ]   from the bottom of the door to the pull's centre
+ Position           (o) Centred  ( ) From the hinge side [ 0 ] mm
+ [ Apply to this door ]  [ Apply to every J-pull door of this cabinet ]
+```
+1. `handles.js` (Julia) reads the leaf's `jpull_run_mm`, `jpull_from_bottom_mm`
+   and `jpull_offset_mm` (PROPOSED names; offset 0 = centred, measured from the
+   hinge side when given), each clamped to the leaf, the profile's numbers as
+   the defaults; `JpullRunModal.jsx` is the window above (the standard modal,
+   drags by its header); `MIN_RUN_MM` moves to `profile.handles.jpull.minRunMm`
+   (Bruno's row). The 3D and the CNC notch follow the same resolver (one law,
+   one path).
+2. `test/turn-cc3a-f17-jpull.test.js`: a 1990 door: length 800, height 900,
+   offset 50 from the hinge side: the notch in the CNC and the band in the 3D at
+   the same place; out of range values clamp and say so.
+
+### F18 · Pack labels, the window (the owner, 02:12: *"okolo 6 naklejek na jednej stronie, po zapakowaniu"*)
+```
+ Pack labels                                  [x]
+ Labels per cabinet  [ 1 ]        Sheet  2 x 3 (6 on A4)  <- profile numbers
+ [x] 01 Wardrobe 1000      [x] 02 Wardrobe 600     ...   (all ticked, a search box)
+ Preview: the first page            [ Export PDF ]
+```
+1. Output menu: "Pack labels..." (Marek, the entry in `src/lib/outputMenu.js` and its wiring in `TopBar.jsx:342`) opens
+   `PackLabelsModal.jsx` (Julia, NEW, the standard modal): labels per cabinet
+   (1 default), the cabinets listed and ticked with a search box (lists always
+   visible), a preview of page 1, Export PDF.
+2. `test/turn-cc3a-f18-pack-window.test.js`: the entry; the list; the count of
+   labels equals the ticked cabinets x labels per cabinet.
+
+### F19 · Pack labels, the print (Hania)
+```
+ +---------------------------------+
+ | 03  Wardrobe 1000               |  cabinet number big, bold
+ | Client name                     |  client
+ | 12 Site Road, Oxford OX4 1AA    |  site address, one line, shrinks to fit
+ | Fronts RAL 3005 Wine red        |  colour: fronts, then carcass decor
+ | Carcass H3325 Tobacco Gladstone |
+ +---------------------------------+
+```
+1. `src/lib/packLabelsPdf.js` (NEW, pure, jsPDF as the part labels use it):
+   A4, a grid from `profile.labels.pack` (columns, rows, label width and
+   height, top and left margin, gaps: PROPOSED 2 x 3 = 6 of 99.1 x 93.1 mm, the
+   standard 6 on A4 sheet, big enough to read on a packed item across the
+   workshop); the cabinet number at 36 pt, the rest at 14 pt (PROPOSED); the
+   cabinet number as the
+   drawings name it, the client and the site address from the title block's
+   source (the project as JC gives it; a missing one prints nothing, never
+   "undefined"), the colours as the BOM names them. Nothing under 7 pt; a line
+   too long shrinks to 7 pt, then cuts with an ellipsis.
+2. `test/turn-cc3a-f19-pack-print.test.js`: 6 labels on page 1 at the grid's
+   places; 7 labels make two pages; a long address never leaves its label; no
+   "undefined" or "null" in the text.
+
+### F20 · The edge order on the part labels (the owner: *"kolejnosc 1 - 2 na przeciwko, boki plyty, i 3 i 4 front i tyl"*)
+Facts: `src/engine/partNumbers.js:239` to `:257` `edgeArrowOf` keeps ONE arrow
+(right > left > up > down) and loses the rest; `:396` the record; `:276` the DXF
+arrow; `src/lib/labelsPdf.js:42` to `:106` `drawEdgeIcon` prints only NO EDGE,
+ALL EDGES or EDGE.
+```
+      3 (front)
+   +-----------+
+ 1 |  SHELF-2  | 2        the board drawn to its proportions,
+   +-----------+          each taped edge a thick line with its number
+      4 (back)
+```
+1. `partNumbers.js` (Hania): the record gains `edges`: every taped edge with its
+   number in the banding order: 1 and 2 the two opposite side edges, then 3 the
+   front, 4 the back (a part with no front: 1 and 2 the short edges, 3 and 4 the
+   long, PROPOSED); only taped edges are numbered (a front-only shelf shows "1"
+   on its front). `edgeArrowOf` and the DXF arrow stay as they are (FROZEN 1).
+2. `labelsPdf.js`: `drawEdgeIcon` draws the board with the numbered edges;
+   "NO EDGE" stays for none. The part labels' sheet, their size, their grid and
+   everything else on them do NOT change (the owner, 02:12: *"a4 naklejki nie
+   zmieniaj"*): only the edge drawing inside each label.
+3. `test/turn-cc3a-f20-edge-order.test.js`: an adjustable shelf 1-2 sides, 3
+   front, 4 back; a front-only shelf "1"; a door with four edges 1-2 short, 3-4
+   long; the label agrees with the part for every part of the fixtures.
 
 ## NOT THIS TURN
-- The export of the materials list into the Joinery Core project (Production
-  only, a warning and a clean replace on a second export, JC does the stock):
-  T-CC2b. The deletion of the old window and of the per-part blob: T-CC2b.
-- Veneer, Fenix, Kronospan entries (*"bedziemy dodawac po troche"*); bespoke
-  boards in the catalogue; the cut list nested on sheets; the CNC cross check
-  of sheet counts (*"pozniej to zrobimy"*).
-- The UX block of the morning (the right panel that hides, Back to Joinery Core
-  on the left, the Drawings window enlarged with its list on the left): a later
-  turn (*"zrob jako pozniejsza ture, najpierw materialy"*).
-- The profile and the company defaults in JC's `cc_company_profile`: T-CC1c.
-- Any engine geometry; any new kit; the 3D; retail (`src/retail/**`).
+- The mitre joints meeting inside the carcass (mockup first).
+- Render current view folding the Drawings window (*"2 - zostaw jak jest"*).
+- T-CC2b (the old Assign window's deletion and the export to JC Production);
+  T-CC1c (the profile in JC's `cc_company_profile`).
+- Any new kit; retail (`src/retail/**`) except what the copy machine makes.
 
 ## IF THE NIGHT RUNS SHORT (the order things fall, whole)
-F9's "Accept all suggestions" falls first (single Accept stays), then F9.3
-(old assignments as suggestions), then F8.2's family chips, then F11.2 (the two
-new board slots; backs and drawer bottoms stay "As today"). F1 to F7, F8 (but
-the chips), F10, F11.1, F11.3, F12, F13 and F14 never fall.
+F12.2 (the lighter GLB copy) falls first, then F13.2 (the watches moving with
+the drawer), then F17's Position (length and height stay), then F18's preview,
+then F20's numbering for parts other than shelves. F1 to F11, F14 to F16, F18
+and F19 never fall.
 
 ## DELETION LICENCE (BY NAME, nothing else)
-In `BomPanel.jsx`: the Materials tab's board select (`:527`) and hardware select
-(`:594`) with their handlers. In `SettingsPanel.jsx`: the three MaterialStock
-selects (`:494`, `:715`, `:827`) with their handlers. In
-`materialAssignmentStore.js`: the legacy fallback of `readLocal` for a
-`projectId` without a blob (the `if (projectId) { ... localStorage.getItem(KEY)
-... }` branch). In `bom.js`: the board road's `assignmentFor` read in the
-purchase list and the `qty × costPerUnit` of an m² row. In `profile.js`: the
-second offcut number of `bomInvoice` (:5500 to :5505) in favour of
-`materials.sheetYield`. Nothing else.
+In `BomPanel.jsx`: the "Connect JoineryCore" button and its handler (`:521` to
+`:528`). In the drawings: the X-ray sheet of the set (`wallSheets.js:209` to
+`:211`), its words in `DrawingModal.jsx`, and the lines only it reads (F15.1),
+with the tests named in F15.2. In `cabinet.js`: the one `shelf_pins` line
+(`:12261` to `:12262`) for the two lines of F5, and `set.dpL = false; set.dpR =
+false;` of the recess column (`:5647` to `:5648`). In `JpullRunModal.jsx`: the
+typed `MIN_RUN_MM` for the profile's number. Nothing else.
 
 ## LINEAGE (lines tests read from this file)
 T79's horizontal notch stays as built and its owner's words stay here because
@@ -615,54 +618,56 @@ T79's horizontal notch stays as built and its owner's words stay here because
 działa idealnie, ale możesz zrobić mi też poziome cut? wszystkich 4 rogów?"*
 (18.10.2026). T-CC1b's deletion licence stands as merged and
 `test/turn-cc1b-f05-output.test.js` reads it from here: the Database menu's five
-entries (two of them, Clients... and Projects..., die for good) and the six Output entries named in F5.1 of T-CC1b's file stay deleted. T-CC1b (PR #96)
-and main at its merge (c3542b9) are the base of this turn; their numbers hold
+entries (two of them, Clients... and Projects..., die for good) and the six Output entries named in F5.1 of T-CC1b's file stay deleted. T-CC2a (PR #97)
+and main at the merge of this brief are the base of this turn; their numbers hold
 untouched but those this file names.
 
 ## TESTS AND PROOF
 Full suite once per PART and at the end (never `--silent`, Ola, in the
-background); the classifier strict with `f56-t-cc2a-f*.mjs` naming every lib
-delta and the LICENSED engine files with the owner's words (`catalogue.js`,
-`catalogueData.js`, `bom.js`, `materials.js`, `thickness.js` :104, `spray.js`,
-`companyDefaults.js`, `profile.js` numbers) and NO geometry delta; every golden
-IDENTICAL (`scripts/t64-classify.mjs --dump` vs `verify/t70/goldens-base.json`,
-`t75-goldens --check`, `t78-goldens --check` and every later check T-CC1b
-names); `t78-copy --check` CLEAN; `vite build` green with `base: '/cabinet/'`;
-`scripts/t-cc2a-walk.mjs` against the fake (link a sheet with sizes, link a
-hinge, unlink, accept a suggestion, a BOM with one line not linked, a bespoke
-row, the not-set-up switch, a new item on H3325 and RAL 3005) with frames
-under `verify/t-cc2a/`; Ewa's check of those frames in `verify/t-cc2a/ewa.txt`
-(the task, the clicks, PASS or FAIL per rule, her objections); NEW_FILES; the
-Skylon header; no em or en dash; grep of `src/` for `MaterialStock` selects in
-SettingsPanel and the BOM selects: 0; grep "worker" in added lines: 0; every F
-the six stations of DONE in twenty lines.
+background; the count on main first); the classifier strict with
+`f61-t-cc3a-*.mjs` naming every engine delta with the owner's words (`cabinet.js`
+F1, F2, F5, F16; `ledStrips.js` F3; `bom.js`, `bomInvoice.js`, `catalogue.js`,
+`catalogueData.js` F5 to F7; `profile.js` numbers; `design.js` metal;
+`extension.js`; `handles.js` F17; `checks.js` F9) and every re-pinned golden
+named; every other golden IDENTICAL (`scripts/t64-classify.mjs --dump` vs
+`verify/t70/goldens-base.json`, `t75-goldens --check`, `t78-goldens --check`);
+`t78-copy --check` CLEAN; LISP balanced; `vite build` green with `base:
+'/cabinet/'`; `scripts/t-cc3a-walk.mjs` against the fake (a recess drawer
+wardrobe with doors and its DP, a fixed shelf and its BOM, screws linked with a
+pack of 1000, the `CC_FAKE_NO_PACK` switch, click a rail and Delete, open a
+drawer behind a shut door, the watches, the J-pull window, the pack labels
+window and its PDF page 1, a part label with numbered edges, the drawings set
+without X-ray) with frames under `verify/t-cc3a/`; Ewa's check of those frames
+in `verify/t-cc3a/ewa.txt` (the task, the clicks, PASS or FAIL per rule, her
+objections); Hania's check of the two PDFs; NEW_FILES; the Skylon header; no em
+or en dash; grep "worker" in added lines: 0; every F the six stations of DONE in
+twenty lines.
 
 ## PR BODY
-First line: "Stands on main at the merge of PR #96 (c3542b9); meets T-JC3a of
-the Joinery Core repository (the table cc_material_links and two functions);
-no live JC was called. RELEASE ORDER: run sql/2026-11-01-cabinet-core-material-links.sql
-in JC's Supabase, merge T-JC3a, then merge this." Then files and lines per F;
-the catalogue's counts per department and brand; the hardware roles mapped and
-any not mapped with why; the old CC ids table of F13; the four owner projects'
-resolved entries and their IDENTICAL cut lists; the EXEMPT rows and the
-manifest count before and after; the tests rewritten by name; the test count
-before and after; the walk; Ewa's table; Ola's numbers; DECISIONS TAKEN; the
-PROPOSED points for the owner (the id shapes, the unit word lists, the
-suggestion rules, primer coats 1, the hardware bridge rows); SKIPPED AND WHY;
-RED AT THE END; THE NUMBERS below.
+First line: "Stands on main at the merge of the T-CC3a brief; meets T-JC3b of the
+Joinery Core repository (the column pack_qty); no live JC was called. RELEASE
+ORDER: run sql/2026-11-02-cabinet-core-pack-qty.sql in JC's Supabase, merge
+T-JC3b, then merge this." Then files and lines per F; F9's and F12's findings
+in words (what was true, what was fixed); the edging audit's counts; the
+re-pinned goldens with their rows; the EXEMPT rows and the manifest count before
+and after; the tests rewritten and deleted by name; the test count before and
+after; the walk; Ewa's table; Hania's check; Ola's numbers; DECISIONS TAKEN; the
+PROPOSED points for the owner (the pack words, the element kinds, the pull-down ceiling, the retry numbers, the J-pull field names,
+the label sheet numbers, the edge order of parts without a front); SKIPPED AND
+WHY; RED AT THE END; THE NUMBERS below.
 
 ## THE NUMBERS (in the profile; none typed in the UI)
 | Number | Where | Value | Status |
 | - | - | - | - |
-| the sheet offcut allowance | `profile.materials.sheetYield` (a link may hold its own) | 1.10 | CONFIRMED (*"dajmy 10 procent na offcuts"*) |
-| the sheet count | `bom.js` | ceiling, always up | CONFIRMED (*"nawet jesli wyjdzie 2.1 plyty musimy zamowic 3"*) |
-| the solvent | `profile.spray.solventPct` | 5 | CONFIRMED (*"rozpuszczalnik 5 procent ilosc farby"*) |
-| the primer coats | `profile.spray.primerCoats` | 1 | PROPOSED |
-| the paint coverage without a link value | today's spray default | as today | T78 proposed, unchanged |
-| a sheet size typed at linking | the link | 100 to 6000 mm, both required | CONFIRMED (*"pole ... ktore wymusi wpisanie"*), bounds PROPOSED |
-| a yield typed at linking | the link | 1.00 to 3.00 | PROPOSED |
-| links per save call | `jcLinks.js` | 500 | as JC's function |
-| the Egger thicknesses in the catalogue | `catalogueData.js` | 18, 19, 22, 25 | from the profile's options |
-| the default carcass of a new item | `profile.projectSettings.defaultCarcassDecorId` | H3325_28 | CONFIRMED (*"domyslny h3325 tabaco gladstone oak"*) |
-| the default front of a new item | the wizard | sprayed RAL 3005 on MDF 18 | CONFIRMED (12:02) |
-| the price of a stock row | JC `cost_per_unit` | weighted average | CONFIRMED (*"srednia"*) |
+| the DP inset and the filler | the wardrobe law (`KIT_WARDROBE_FULL.lsp:498`) | 30 mm, 30 mm | CONFIRMED (*"30 mm odsuniecia"*; the list of 01:59) |
+| spoons per adjustable shelf | `profile.shelfHoles.pinsPerShelf` | 4 | CONFIRMED (the confirmed list of 01:59) |
+| sleeves | every drilled support hole | the drilling's count (12 per shelf in the list) | CONFIRMED (the confirmed list of 01:59) |
+| the default metal | `profile.appearance.metalDefault` | chrome | CONFIRMED (*"chrome domyslnie"*) |
+| the metals offered | design | gold, chrome, onyx | CONFIRMED |
+| a pack size typed at linking | the link | 1 to 100000 | bounds PROPOSED |
+| packs on a line | `bom.js` | qty / pack, up to 2 decimals | CONFIRMED (*"500 / 1000 = 0.5 paczki"*) |
+| the pull-down triangle ceiling | `profile.visuals.pulldownMaxTriangles` | 8000 | PROPOSED |
+| a failed picture's retry | `profile.visuals` | once after 3 s, then on the next toggle | PROPOSED |
+| the J-pull shortest run | `profile.handles.jpull.minRunMm` | 300 | as today, moved out of the UI |
+| the pack label sheet | `profile.labels.pack` | 2 x 3 of 99.1 x 93.1 mm, 36 pt and 14 pt | PROPOSED (*"okolo 6 naklejek na jednej stronie"*) |
+| the smallest print on a label | `profile.labels.minPt` | 7 | PROPOSED |

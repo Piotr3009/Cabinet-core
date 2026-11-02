@@ -911,6 +911,17 @@ export const useUiStore = create((set, get) => ({
       ...(primary === get().selectedUnitId ? {} : { selectedElement: null, selectedElements: [], centreBetween: null }),
     });
   },
+  // ─── THE RIGHT-CLICK MENU TURN (01.11.2026), J4: SELECT SEVERAL ───────────
+  // The owner's board (iPad, *"9 - ok"*): *"iPad nie ma Ctrl ani Cmd. Wlaczasz
+  // Select several w pasku po lewej: kazde dotkniecie dodaje albo zdejmuje
+  // szafke, przytrzymanie dalej otwiera menu. Wylaczasz: dotkniecie znow
+  // wybiera jedna szafke."* One yes or no: while it is on, every press on a
+  // cabinet in the scene is the tick Ctrl+click is on a keyboard
+  // (3d/UnitView.jsx reads it); off, a press selects one cabinet, as ever. It
+  // changes no selection by itself, on or off.
+  selectSeveral: false,
+  setSelectSeveral: (on) => set({ selectSeveral: on === true }),
+  toggleSelectSeveral: () => set((s) => ({ selectSeveral: !s.selectSeveral })),
   clearSelection: () => {
     // T84 F4 · the same guard and the same rule as selectUnit.
     const now = get();

@@ -151,7 +151,14 @@ test('F2 — the modifier travels with the click, off the NATIVE event', () => {
   // The turn-13 lesson, applied one level down: react-three-fiber builds its
   // own event object by spreading the DOM one, which leaves every modifier
   // behind — so the native event is asked first.
-  assert.match(view, /const native = e\.nativeEvent \|\| e;\n\s+const additive = Boolean\(native\.ctrlKey \|\| native\.metaKey \|\| e\.ctrlKey \|\| e\.metaKey\);/);
+  // AMENDED BY THE RIGHT-CLICK MENU TURN, J3 (the owner's board, 01.11.2026: *"Na Macu Ctrl + klik
+  // to menu, nie zaznaczanie"*): the modifier is read by ONE helper, lib/platform.js `additiveClick`,
+  // still off the native event first (asserted on the helper's own source below): Cmd on a Mac,
+  // Ctrl or the meta key elsewhere, as before. test/menu-ui.test.js runs it on both platforms.
+  assert.match(view, /const native = e\.nativeEvent \|\| e;\n\s+const additive = additiveClick\(native, e\);/);
+  const helper = src('lib/platform.js');
+  assert.match(helper, /function held\(native, e, key\) \{\n\s+return Boolean\(native\?\.\[key\] \|\| e\?\.\[key\]\);/);
+  assert.match(helper, /if \(mac\) return held\(native, e, 'metaKey'\);\n\s+return held\(native, e, 'ctrlKey'\) \|\| held\(native, e, 'metaKey'\);/);
   assert.match(view, /onSelectElement\?\.\(p\.id, \{ additive: true \}\);/);
   // With the modifier down it is a TICK, not a grab: no drag starts…
   assert.match(view, /e\.stopPropagation\(\);\n\s+onSelectElement\?\.\(p\.id, \{ additive: true \}\);\n\s+return;/);

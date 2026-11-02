@@ -181,6 +181,17 @@ export const T78_PRO_EDITS = [
       + 'window, the upper became the lower, nothing centred); the door window\'s conduct (T37) is what it was.',
     words: 'the owner, 29.10.2026: *"droban funcje ale jej nei ma czyli center between soprawdz jeszcze raz prosze"*.',
   },
+  {
+    pro: 'src/components/ContextMenu.jsx',
+    by: 'Right-click menu (01.11.2026, chat), J1 and J2',
+    why: 'the menu rebuilt on the approved boards: 280 px, a 35 px header with the title and the grip, one 16 px tick '
+      + 'column, 12 px squares for switches (on, off, mixed) and 10 px circles for one choice rows, submenus, Delete '
+      + 'alone under a line, the Actions icon (32 px, 44 px for a finger) that opens the same menu; the rows the owner '
+      + 'kept, added and removed live in the shared table (lib/contextActions.js). The copy is the machine\'s, its 43 '
+      + 'new tokens mapped in THE MAP (T78_MACHINE_EDITS below).',
+    words: 'the owner, 01.11.2026: *"tak jak teraz na wszystkie dzialaja ktore sa zaznaczone oczywiscie"*; *"na gorze '
+      + 'prawego panelu"*; *"4 koduj"* (22:05).',
+  },
 ];
 
 /**
@@ -322,12 +333,23 @@ export const T78_RETAIL_EDITS = [
 
 /**
  * THE COPY MACHINE'S OWN FILES EDITED THIS TURN, each `{ file, by, why, words }`.
- * The setup artwork dependency is registered in the manifest; the generator remains unchanged.
+ * The setup artwork dependency is registered in the manifest. An edit of THE MAP
+ * (`scripts/t63-copy.mjs`) that grows the generated sheet says so with
+ * `sheet: true`: the sheet is then licensed exactly as a named copy is, byte for
+ * byte what the machine makes, and nothing else may move it.
  */
 export const T78_MACHINE_EDITS = [{
   file: 'scripts/t63-copies.mjs', by: 'Setup UI 26.10.2026 F1',
   why: 'Register the local SetupArt dependency copied with the optional wall workspace; no generator behavior changes.',
   words: 'the owner: *"te grafiki zrob troche lkepsze"* and *"zakoduj mi prosze te zmiany"*.',
+}, {
+  file: 'scripts/t63-copy.mjs', by: 'Right-click menu (01.11.2026, chat), J1 and J2',
+  why: 'THE MAP grows by 43 rows, the tokens of the rebuilt ContextMenu.jsx: geometry Tailwind\'s to the pixel, colour '
+    + 'one of the twelve (PRO\'s gold fills Onyx, as cc-btn-gold is, gold never a fill; Deep Gold outlines; a Deep Gold '
+    + 'wash at 15 % on the chosen segment; a Porcelain tick; Soft Graphite outlines when off), the coarse pointer sizes '
+    + 'as an @media (pointer: coarse) rule; no pass of the machine changes.',
+  words: 'the owner, 01.11.2026: *"4 koduj"* (22:05); the law: *"jak piszę 1 do 1 to KOPIUJ"* (01.09.2026).',
+  sheet: true,
 }];
 
 // ─── THE TOOLS ─────────────────────────────────────────────────────────────
@@ -490,7 +512,9 @@ const failures = [];
 const fail = (what) => failures.push(what);
 const ref = BASE_COMMIT;
 const named = T78_PRO_EDITS;
-const wanted = named.map((e) => retailOf(e.pro)).filter(Boolean);
+// The sheet is licensed only by a named edit of THE MAP that says it grows it.
+const sheetBy = T78_MACHINE_EDITS.find((e) => e.file === MACHINE && e.sheet)?.by || null;
+const wanted = [...named.map((e) => retailOf(e.pro)).filter(Boolean), ...(sheetBy ? [SHEET] : [])];
 const ownEdits = T78_RETAIL_EDITS.map((e) => e.retail);
 const handPro = HAND_COPY_EDITS.map((e) => e.pro);
 const handRetail = HAND_COPY_EDITS.map((e) => e.retail);
@@ -614,7 +638,13 @@ for (const rel of retailMoved) {
   let kind;
   if (handRetail.includes(rel)) kind = `T62 hand copy of ${pro}, named in HAND_COPY_EDITS`;
   else if (ownEdits.includes(rel)) kind = 'retail edit, named';
-  else if (isNamedCopy && isMade) kind = `copy of ${pro}, byte for byte the machine's`;
+  else if (rel === SHEET && sheetBy) {
+    kind = isMade ? `the machine's sheet, byte for byte, its map named in T78_MACHINE_EDITS (${sheetBy})`
+      : 'the machine\'s sheet, NOT what the machine makes';
+    say(`  ${rel.padEnd(56)} ${kind}\n`);
+    if (!isMade) fail(`${rel} moved and is not byte for byte what the machine makes`);
+    continue;
+  } else if (isNamedCopy && isMade) kind = `copy of ${pro}, byte for byte the machine's`;
   else if (isNamedCopy) kind = `copy of ${pro}, NOT what the machine makes`;
   else if (pro) kind = `copy of ${pro}, whose PRO file is NOT named`;
   else if (rel === SHEET) kind = 'the machine\'s sheet, NOT licensed by any name';
@@ -629,6 +659,7 @@ const editsAreCopies = ownEdits.filter((rel) => proOf(rel) || rel === SHEET);
 say(`  ${retailMoved.length} moved · retail edits named and unspent: ${editsUnspent.join(', ') || 'none'}`
   + ` · retail edits that are the machine's files: ${editsAreCopies.join(', ') || 'none'}\n`);
 for (const rel of editsUnspent) fail(`${rel} is named as a retail edit and did not move since the base`);
+if (sheetBy && !retailMoved.includes(SHEET)) fail(`${SHEET} is licensed by T78_MACHINE_EDITS (${sheetBy}) and did not move since the base`);
 for (const rel of editsAreCopies) fail(`${rel} is made by the machine (manifest or sheet), so it cannot be edited by hand`);
 
 // ─── 2. NOTHING ELSE MOVED: THE RETAIL EDITS, BY FILE AND HUNK ────────────

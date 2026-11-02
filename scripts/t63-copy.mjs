@@ -368,6 +368,74 @@ const MAP = {
   'bg-shell-600': ['pbi-re-fill-line', '.pbi-re-fill-line { background: var(--pbi-stone-line); }'],
   'bg-[#131313]': ['pbi-re-fill-onyx', '.pbi-re-fill-onyx { background: var(--pbi-onyx); }'],
   'border-black/40': ['pbi-re-hair-onyx40', '.pbi-re-hair-onyx40 { border-color: rgba(9, 10, 9, 0.4); }'],
+
+  // ─── THE RIGHT-CLICK MENU TURN (01.11.2026) · THE MENU REBUILT, FOR ITS COPY ─
+  // PRO's ContextMenu is 280 px rows with squares and circles, a mixed mark,
+  // submenus and the Actions icon (the owner's boards; *"4 koduj"*, 22:05). Its
+  // copy wears 43 tokens no copy before it did. Geometry is PRO's to the pixel;
+  // the colours are PBI's: gold is never a fill on the PBI side, so PRO's gold
+  // FILLS (the switch's square when on, the circle's dot, the mixed bar) are
+  // Onyx, as PRO's gold primary `cc-btn-gold` is the filled Onyx button, while
+  // their 1 px outlines stay Deep Gold (`border-gold`, already mapped); the
+  // chosen segment's wash is Deep Gold at 15 %, as `bg-gold/5` is at 6 %; the
+  // tick drawn on the filled square is Porcelain, as `text-shell-900` is; an
+  // empty square or circle is Soft Graphite, as `text-ink-400` is. No thirteenth.
+  'w-[280px]': ['pbi-re-w280', null],
+  'max-h-[calc(100vh-16px)]': ['pbi-re-maxh100vh-16', '.pbi-re-maxh100vh-16 { max-height: calc(100vh - 16px); }'],
+  'h-[35px]': ['pbi-re-h35px', '.pbi-re-h35px { height: 35px; }'],
+  'leading-[18px]': ['pbi-re-lead18px', '.pbi-re-lead18px { line-height: 18px; }'],
+  'leading-5': ['pbi-re-lead5', '.pbi-re-lead5 { line-height: 1.25rem; }'],
+  'leading-4': ['pbi-re-lead4', '.pbi-re-lead4 { line-height: 1rem; }'],
+  'tracking-[0.08em]': ['pbi-re-track08', '.pbi-re-track08 { letter-spacing: 0.08em; }'],
+  'touch-none': ['pbi-re-notouch', null],
+  'outline-none': ['pbi-re-nooutline', '.pbi-re-nooutline { outline: 2px solid transparent; outline-offset: 2px; }'],
+  'inline-flex': ['pbi-re-inline-flex', '.pbi-re-inline-flex { display: inline-flex; }'],
+  'whitespace-nowrap': ['pbi-re-nowrap', '.pbi-re-nowrap { white-space: nowrap; }'],
+  'min-h-5': ['pbi-re-minh5', '.pbi-re-minh5 { min-height: 1.25rem; }'],
+  'min-h-10': ['pbi-re-minh10', '.pbi-re-minh10 { min-height: 2.5rem; }'],
+  'pl-6': ['pbi-re-pl6', '.pbi-re-pl6 { padding-left: 1.5rem; }'],
+  // The Actions icon is `cc-btn-ghost p-0`: in PRO the utility beats the
+  // component. T62's `pbi-re-p0` sits in roomeditor.css, BEFORE this sheet, so
+  // the ghost button's own padding would beat it (T62's cascade rule); this
+  // name is defined here, after `pbi-re-btn-ghost`, and so it wins as in PRO.
+  'p-0': ['pbi-re-pad0', '.pbi-re-pad0 { padding: 0; }'],
+  // The switch's 12 px SQUARE. A radius may only be one of the three tokens;
+  // the nearest to PRO's 2 px is `--pbi-radius` (0). `pbi-re-round` (6 px, the
+  // field's) would turn a 12 px square into a circle, and the board's law is
+  // squares for switches, circles for one choice rows.
+  'rounded-[2px]': ['pbi-re-square', '.pbi-re-square { border-radius: var(--pbi-radius); }'],
+  'rotate-45': ['pbi-re-rot45', '.pbi-re-rot45 { transform: rotate(45deg); }'],
+  'border-r-2': ['pbi-re-line-r2', '.pbi-re-line-r2 { border-right-width: 2px; border-right-style: solid; }'],
+  'border-b-2': ['pbi-re-line-b2', '.pbi-re-line-b2 { border-bottom-width: 2px; border-bottom-style: solid; }'],
+  'grid-cols-[3px_3px]': ['pbi-re-grid-3px-3px', '.pbi-re-grid-3px-3px { grid-template-columns: 3px 3px; }'],
+  'gap-[3px]': ['pbi-re-gap-3px', '.pbi-re-gap-3px { gap: 3px; }'],
+  // The marks inside the square and the circle, to the pixel.
+  'left-[2px]': ['pbi-re-left2px', '.pbi-re-left2px { left: 2px; }'],
+  'left-[4px]': ['pbi-re-left4px', '.pbi-re-left4px { left: 4px; }'],
+  'top-[1px]': ['pbi-re-top1px', '.pbi-re-top1px { top: 1px; }'],
+  'top-[2px]': ['pbi-re-top2px', '.pbi-re-top2px { top: 2px; }'],
+  'top-[4px]': ['pbi-re-top4px', '.pbi-re-top4px { top: 4px; }'],
+  'w-1': ['pbi-re-w1', '.pbi-re-w1 { width: 0.25rem; }'],
+  'w-2.5': ['pbi-re-w25', '.pbi-re-w25 { width: 0.625rem; }'],
+  'w-[3px]': ['pbi-re-w3px', '.pbi-re-w3px { width: 3px; }'],
+  'w-[4px]': ['pbi-re-w4px', '.pbi-re-w4px { width: 4px; }'],
+  'w-[6px]': ['pbi-re-w6px', '.pbi-re-w6px { width: 6px; }'],
+  'h-1': ['pbi-re-h1', '.pbi-re-h1 { height: 0.25rem; }'],
+  'h-2.5': ['pbi-re-h25', '.pbi-re-h25 { height: 0.625rem; }'],
+  'h-[2px]': ['pbi-re-h2px', '.pbi-re-h2px { height: 2px; }'],
+  'h-[3px]': ['pbi-re-h3px', '.pbi-re-h3px { height: 3px; }'],
+  'h-[7px]': ['pbi-re-h7px', '.pbi-re-h7px { height: 7px; }'],
+  // A finger is the pointer (an iPad): the Actions icon grows to 44 px. Named
+  // `w` and `h` first so the sheet sorts them with the widths, AFTER
+  // `pbi-re-w8` and `pbi-re-h8`, which they must beat inside the query.
+  '[@media(pointer:coarse)]:w-11': ['pbi-re-w11-coarse', '@media (pointer: coarse) { .pbi-re-w11-coarse { width: 2.75rem; } }'],
+  '[@media(pointer:coarse)]:h-11': ['pbi-re-h11-coarse', '@media (pointer: coarse) { .pbi-re-h11-coarse { height: 2.75rem; } }'],
+  // Colour, PBI's (the rule above).
+  'bg-gold': ['pbi-re-fill-on', null],
+  'bg-gold/15': ['pbi-re-fill-gold-15', '.pbi-re-fill-gold-15 { background: rgb(128 106 68 / 15%); }'],
+  'bg-current': ['pbi-re-fill-current', '.pbi-re-fill-current { background-color: currentColor; }'],
+  'border-shell-900': ['pbi-re-hair-on-dark', '.pbi-re-hair-on-dark { border-color: var(--pbi-porcelain); }'],
+  'border-ink-400': ['pbi-re-hair-quiet', '.pbi-re-hair-quiet { border-color: var(--pbi-soft-graphite); }'],
 };
 
 /**

@@ -323,6 +323,85 @@ export function clampToViewport({
   return { left: axisClamp(left, vw, w), top: axisClamp(top, vh, h) };
 }
 
+// THE RIGHT-CLICK MENU TURN (01.11.2026), J1 and J2. The menu is 280 px wide
+// now and opens from two more places than the pointer: from the "..." icon at
+// the top of the right panel (the owner's option B, *"na gorze prawego
+// panelu"*), and as a submenu beside one of its own rows ("All cabinet
+// actions"). Both are arithmetic on rectangles, like everything above.
+
+/**
+ * The menu opened from a button: its right edge on the button's right edge,
+ * just under it, so it hangs from the icon over the scene; above the button
+ * when there is no room below; always wholly on screen.
+ *
+ * @param {object} args
+ *   anchor          the button's rectangle { x, y, width, height }, client px
+ *   width, height   the menu's MEASURED size
+ *   viewport        { width, height }
+ *   gap             clear space between the button and the menu
+ *   margin          how close to an edge the menu may come
+ * @returns {{left:number, top:number, flippedY:boolean}}
+ */
+export function placeMenuUnderAnchor({
+  anchor, width, height, viewport, gap = 4, margin = 8,
+}) {
+  const vw = Math.max(0, Number(viewport?.width) || 0);
+  const vh = Math.max(0, Number(viewport?.height) || 0);
+  const w = Math.max(0, Number(width) || 0);
+  const h = Math.max(0, Number(height) || 0);
+  const g = Math.max(0, Number(gap) || 0);
+  const m = Math.max(0, Number(margin) || 0);
+  const a = normaliseAnchor(anchor);
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, Math.max(lo, hi)));
+
+  const left = vw ? clamp(a.x + a.width - w, m, vw - w - m) : a.x + a.width - w;
+  const below = a.y + a.height + g;
+  const above = a.y - g - h;
+  const fitsBelow = !vh || below + h + m <= vh;
+  const flippedY = !fitsBelow && above >= m;
+  const wanted = flippedY ? above : below;
+  const top = vh ? clamp(wanted, m, vh - h - m) : wanted;
+  return { left, top, flippedY };
+}
+
+/**
+ * A submenu beside the row that opened it: to the right of the menu, its top
+ * level with the row; to the left of the menu when the right has no room;
+ * slid up when it would run off the bottom.
+ *
+ * @param {object} args
+ *   menu       the menu's rectangle { x, y, width, height }
+ *   row        the row's rectangle
+ *   size       the submenu's MEASURED { width, height }
+ *   viewport   { width, height }
+ *   overlap    how far the submenu tucks under the menu's edge (px)
+ *   margin     how close to an edge it may come
+ * @returns {{left:number, top:number, side:'right'|'left'}}
+ */
+export function placeSubmenu({
+  menu, row, size, viewport, overlap = 4, margin = 8,
+}) {
+  const vw = Math.max(0, Number(viewport?.width) || 0);
+  const vh = Math.max(0, Number(viewport?.height) || 0);
+  const w = Math.max(0, Number(size?.width) || 0);
+  const h = Math.max(0, Number(size?.height) || 0);
+  const o = Math.max(0, Number(overlap) || 0);
+  const m = Math.max(0, Number(margin) || 0);
+  const box = normaliseAnchor(menu);
+  const r = normaliseAnchor(row);
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, Math.max(lo, hi)));
+
+  const rightLeft = box.x + box.width - o;
+  const leftLeft = box.x - w + o;
+  let side = 'right';
+  let left = rightLeft;
+  if (vw && rightLeft + w + m > vw) {
+    if (leftLeft >= m) { side = 'left'; left = leftLeft; } else left = clamp(rightLeft, m, vw - w - m);
+  }
+  const top = vh ? clamp(r.y - 4, m, vh - h - m) : r.y - 4;
+  return { left, top, side };
+}
+
 /**
  * One axis of it. `at` is where the pointer is, and the menu opens in the
  * positive direction from there unless it does not fit.

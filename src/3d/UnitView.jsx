@@ -172,6 +172,11 @@ import { wallElements } from '../lib/wallElements.js';
 import { aboveDividerOpening, centreBetweenPick, useProjectStore } from '../stores/projectStore.js';
 // T79 F12 · Center between's two-pick mode, read where the picks are made.
 import { useUiStore } from '../stores/uiStore.js';
+// THE RIGHT-CLICK MENU TURN (01.11.2026), J3 and J4: which hand adds to the
+// selection on each machine, and the finger held still that opens the menu.
+import {
+  additiveClick, isTouchPress, menuOnlyClick, startLongPress, swallowClickAfterRelease,
+} from '../lib/platform.js';
 import { useStorageBase } from '../lib/storageBase.js';
 import {
   columnOfItem, columnOfShelf, fieldFromPos, interiorFloor, lightBelow, shelfColumns,
@@ -2013,8 +2018,13 @@ export default function UnitView({
     // enumerable properties and therefore leaves every modifier behind. Read
     // off the synthetic event alone, Ctrl+click is an ordinary click and the
     // selection replaces instead of growing. The browser walk is what found it.
+    //
+    // THE RIGHT-CLICK MENU TURN, J3 and J4: the hand is the platform's
+    // (`lib/platform.js additiveClick`: Cmd on a Mac, where Ctrl+click is the
+    // right click; Ctrl or the meta key elsewhere, as before), and a touch
+    // screen's "Select several" switch makes every press a tick while it is on.
     const native = e.nativeEvent || e;
-    const additive = Boolean(native.ctrlKey || native.metaKey || e.ctrlKey || e.metaKey);
+    const additive = additiveClick(native, e) || useUiStore.getState().selectSeveral === true;
     onSelect({ additive });
     if (additive) return;
     // ─── T82 F16 · A FREE PANEL IS IN THE HAND ON THREE AXES ───────────────
@@ -2087,6 +2097,43 @@ export default function UnitView({
   }, [onSelect, pointerToPlane, alongMm, unit.position.x_mm, unit.position.wall, orbitRef,
     onMove, onMoveEnd, onMoveToWall, pointerToFloor, walls, snapStep, W,
     unit, profile, onMovePanelY, onMovePanelZ, startPanelOffDrag]);
+
+  // ─── THE RIGHT-CLICK MENU TURN, J4: A FINGER HELD STILL OPENS THE MENU ────
+  //
+  // The owner's board (iPad): *"Przytrzymaj palec 0,5 s na szafce: kolko sie
+  // zapelnia i menu sie otwiera."* Armed by a finger or a pen on any board of
+  // this cabinet (lib/platform.js `startLongPress`: half a second, under 8 px
+  // of travel, no second finger), so a tap is still a tap and a drag is still
+  // a drag. When it fires: the press's own drag is ended where it stands
+  // (nothing has travelled, so nothing goes back), the click the lift may
+  // bring is swallowed, the cabinet joins the selection if it is not in it
+  // (into the set with "Select several" on, as the selection otherwise, as a
+  // right click does), and the SAME menu the right click opens comes up at the
+  // finger.
+  const armLongPress = (e, p) => {
+    const native = e.nativeEvent || e;
+    if (!onContextMenu || !isTouchPress(native)) return;
+    startLongPress({
+      x: Number(native.clientX) || 0,
+      y: Number(native.clientY) || 0,
+      pointerId: native.pointerId ?? null,
+      onFire: ({ x, y }) => {
+        if (typeof window.PointerEvent === 'function') {
+          window.dispatchEvent(new window.PointerEvent('pointercancel', { pointerId: native.pointerId }));
+        }
+        swallowClickAfterRelease();
+        const ui = useUiStore.getState();
+        if (!ui.selectedUnitIds.includes(unit.id)) onSelect({ additive: ui.selectSeveral === true });
+        onContextMenu({
+          x,
+          y,
+          panelId: p.id,
+          part: p.part,
+          drawer: Number(p.meta?.drawer) > 0 ? Number(p.meta.drawer) : null,
+        });
+      },
+    });
+  };
 
   // Cabinet origin: on its wall, back against it (local z = 0 is the wall
   // face), standing on its legs or hanging at its mount height.
@@ -3157,6 +3204,12 @@ export default function UnitView({
               // right button belongs to the menu and to the orbit; the middle
               // one to the pan. Neither is a grab.
               if (((e.nativeEvent || e).button ?? 0) !== 0) return;
+              // ─── THE RIGHT-CLICK MENU TURN, J3: CTRL+CLICK ON A MAC ───────
+              // The Mac turns Ctrl+click into a right click: the press itself
+              // ticks nothing and drags nothing, and the context menu event
+              // that follows it (below) opens the menu. Windows and Linux are
+              // untouched: there Ctrl still adds (lib/platform.js).
+              if (menuOnlyClick(e.nativeEvent || e, e)) return;
               if (edgeHandleBehind(e)) return;
               // ─── T79 (CLAUDE.md F12): CENTER BETWEEN TAKES THE PRESS ──────
               // While armed on this cabinet a press on a board that may be
@@ -3217,6 +3270,14 @@ export default function UnitView({
               // A LOCKED shelf is neither: grabbing a screwed shelf and pulling
               // is grabbing the cabinet (turn 8, F4). It still selects, because
               // a shelf that cannot move can still be made thicker.
+              //
+              // THE RIGHT-CLICK MENU TURN, J4: a finger or a pen arms the long
+              // press here, on whichever board it touched, before the press
+              // goes on to do what it always did. With "Select several" on, a
+              // press on any board is a tick of the CABINET (the board: *"kazde
+              // dotkniecie dodaje albo zdejmuje szafke"*), never a grab.
+              armLongPress(e, p);
+              if (useUiStore.getState().selectSeveral === true) { startDrag(e); return; }
               if (isElement) {
                 // ─── TURN 36 (CLAUDE.md F2): CTRL+CLICK BUILDS A SET ───────
                 // The modifier travels with the click, exactly as it has for
@@ -3227,7 +3288,7 @@ export default function UnitView({
                 // With the modifier down this is a TICK, not a grab: the
                 // piece joins or leaves the set and stays where it is.
                 const native = e.nativeEvent || e;
-                const additive = Boolean(native.ctrlKey || native.metaKey || e.ctrlKey || e.metaKey);
+                const additive = additiveClick(native, e);
                 if (additive) {
                   // …and it must NOT travel on to the boards behind this one.
                   // Without this the same press reaches the carcass, whose own
@@ -3393,6 +3454,10 @@ export default function UnitView({
             onContextMenu={(e) => {
               e.stopPropagation();
               e.nativeEvent?.preventDefault?.();
+              // THE RIGHT-CLICK MENU TURN, J4: on a touch screen the browser's
+              // own long-press menu event (Android sends one) is not a second
+              // road: the half-second hold above opens the menu, once.
+              if (isTouchPress(e.nativeEvent || e)) return;
               // ─── Turn 13 (CLAUDE.md F5.3) ───
               // Right-clicking a cabinet that is ALREADY in the selection must
               // not collapse it: the whole point of the menu over a set is that
